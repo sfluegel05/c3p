@@ -1,24 +1,59 @@
 """
 Classifies: CHEBI:17408 monoacylglycerol
 """
-The previous program appears to be a decent attempt at classifying monoacylglycerols, but there are a few potential issues and areas for improvement based on the outcomes provided:
+"""
+Classifies: CHEBI:83497 monoacylglycerol
+A glyceride in which any one of the R groups (position not specified) is an acyl group while the remaining two R groups can be either H or alkyl groups.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Molecular Weight Cutoff**: The program uses a molecular weight cutoff of 350 Da for monoacylglycerols. However, some of the false negatives such as "3-octanoyl-sn-glycerol" and "(R)-glycerol 1-acetate" have molecular weights below 350 Da but are still valid monoacylglycerols. The molecular weight cutoff may need to be lowered or removed entirely.
+def is_monoacylglycerol(smiles: str):
+    """
+    Determines if a molecule is a monoacylglycerol based on its SMILES string.
 
-2. **Oxygen Count Check**: The program checks that the oxygen count is between 4 and 6 for a valid monoacylglycerol. However, one of the false negatives, "prostaglandin E2 1-glyceryl ester," has an oxygen count outside this range but is still classified as a monoacylglycerol in the benchmark. The oxygen count check may need to be adjusted or removed.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Acyl Chain Pattern**: The program uses a simple pattern `"[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"` to detect an acyl chain. This pattern may be too permissive, as it can match any chain of three connected carbons, including those not typically found in acyl chains. A more specific pattern or additional checks may be needed to ensure the matched chain is a valid acyl chain.
-
-4. **False Positives**: The program seems to struggle with some false positives, such as "Carbamidocyclophane V" and "3a,7b,12b-Trihydroxy-5b-cholanoic acid." These molecules likely contain the glycerol backbone and an ester group but do not fit the definition of a monoacylglycerol. Additional checks or patterns may be needed to exclude these types of molecules.
-
-5. **Stereochemistry**: The program does not consider stereochemistry, which may be important for correctly identifying certain monoacylglycerols. For example, the benchmark distinguishes between "MG(15:0/0:0/0:0)" and "rac-1-monopalmitoylglycerol," which have the same molecular formula but different stereochemistry.
-
-To improve the program, you could consider the following strategies:
-
-- Adjust or remove the molecular weight and oxygen count cutoffs based on the benchmark data.
-- Develop a more specific pattern or set of patterns to accurately identify valid acyl chains.
-- Implement additional checks or patterns to exclude false positives, such as checking for specific functional groups or substructures that should not be present in monoacylglycerols.
-- Consider incorporating stereochemistry information into the classification process, either by using more specific SMARTS patterns or by analyzing the stereochemistry directly using RDKit functionality.
-- Investigate any systematic errors or biases in the benchmark data, as there may be occasional mistakes or inconsistencies that could affect the program's performance.
-
-It's important to note that while the F1 score of 0.08 is low, it's difficult to assess the program's true performance without a reliable and consistent benchmark. If you believe the program's classifications are consistent with the chemical definition of monoacylglycerols, you may choose to prioritize that understanding over the benchmark results, while still addressing any clear errors or oversights in the program.
+    Returns:
+        bool: True if molecule is a monoacylglycerol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for glycerol backbone pattern (C-C-C with 2-3 oxygens attached)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X2,CH2X3][CHX2,CHX3][CH2X2,CH2X3]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+    
+    # Look for 1 ester group (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+    
+    # Check for acyl chain pattern (at least 3 connected carbons)
+    acyl_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
+    if not acyl_chain_matches:
+        return False, "No acyl chain found"
+    
+    # Check that the ester group connects the glycerol and acyl chain
+    ester_atom_idx = ester_matches[0][0]
+    ester_atom = mol.GetAtomWithIdx(ester_atom_idx)
+    ester_neighbors = [mol.GetAtomWithIdx(n).GetSymbol() for n in ester_atom.GetNeighbors()]
+    if "C" not in ester_neighbors or "O" not in ester_neighbors:
+        return False, "Ester group not connecting glycerol and acyl chain"
+    
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    # No strict limits on molecular weight or oxygen count based on examples
+    
+    return True, "Contains glycerol backbone with one acyl chain attached via ester bond"
