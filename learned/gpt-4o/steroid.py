@@ -7,8 +7,9 @@ from rdkit.Chem import AllChem
 def is_steroid(smiles: str):
     """
     Determines if a molecule is a steroid based on its SMILES string.
-    A steroid is identified by the cyclopenta[a]phenanthrene carbon skeleton with possible additional structural features.
-
+    A steroid is identified by the cyclopenta[a]phenanthrene carbon skeleton with flexible pattern matching
+    for typical structural variations and functional groups.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,30 +22,24 @@ def is_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Basic steroid skeleton pattern (cyclopenta[a]phenanthrene)
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C3CC4CCCC3CCC4C2C1")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid cyclopenta[a]phenanthrene backbone found"
-    
-    # Check for methyl groups at C-10 and C-13
-    methyl_pattern_C10_13 = Chem.MolFromSmarts("[CH3]C1CCC2C3CC4CCCC3CCC4C2C1")
-    if not mol.HasSubstructMatch(methyl_pattern_C10_13):
-        return False, "Methyl groups at C-10 and/or C-13 are missing"
-    
-    # Optional: Check for an alkyl group at C-17
-    alkyl_pattern_C17 = Chem.MolFromSmarts("[CX4,H]C1CCC2C3CC4CCCC3CCC4C2C1")
-    if not mol.HasSubstructMatch(alkyl_pattern_C17):
-        return False, "Alkyl group at C-17 is missing"
 
-    # Successful classification
-    return True, "Molecule contains a steroid backbone with typical functional groups"
+    # Generalized steroid backbone pattern - cyclopenta[a]phenanthrene with flexible saturation
+    steroid_pattern = Chem.MolFromSmarts("C12C3C4C1C5C3C(C4)CCC5C2")
+    if mol.HasSubstructMatch(steroid_pattern):
+        # Optional: Check for typical methyl group presence
+        methyl_checker = Chem.MolFromSmarts("[C@@H]([CH3])[C@H]1C[C@@H]2CC[C@]3C1[C@H]2CC[C@@]3C")
+        methyl_matches = mol.GetSubstructMatches(methyl_checker)
+        if methyl_matches:
+            return True, "Molecule contains a steroid backbone with typical methyl groups."
+
+        return True, "Molecule contains a steroid backbone."
+
+    return False, "No detectable steroid backbone structure found."
 
 # Examples SMILES test
 smiles_examples = [
-    "CC(C)C1CCC2C3CC4CCC5=CC(=O)CCC5C4CC3CCC12C",  # Example like cholesterol
-    "C[C@@]12[C@](C)C(C)([C@@H]3CC(O)CCC3)(O[C@H](C2)CC1)OC",  # Example like cortisone
-    "O[C@@H]1[C@]2(C[C@H](O)[C@](C)(C[C@@H]3[C@H](O)CC[C@]12C3)C)[H]",  # Estrogen derivative
+    "C[C@]12CC[C@H]3[C@H]([C@H]1CC[C@]2(C#C)O)CCC4=C3C=CC(=C4)OC",  # Expected True
+    "CC(C)=CCC[C@](C)(O)[C@H]1CC[C@]2(C)[C@@H]1[C@H](O)C[C@@H]1[C@@]3(C)CC[C@H](O)C(C)(C)[C@@H]3CC[C@@]21C",  # True
 ]
 
 for example in smiles_examples:
