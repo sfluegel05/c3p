@@ -8,7 +8,7 @@ from rdkit import Chem
 
 def is_alditol(smiles: str):
     """
-    Determines if a molecule contains an alditol substructure based on its SMILES string.
+    Determines if a molecule is an alditol based on its SMILES string.
     An alditol is an acyclic polyol having the general formula HOCH2[CH(OH)]nCH2OH,
     formally derivable from an aldose by reduction of the carbonyl group.
 
@@ -16,7 +16,7 @@ def is_alditol(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule contains an alditol substructure, False otherwise
+        bool: True if molecule is an alditol, False otherwise
         str: Reason for classification
     """
     # Parse SMILES
@@ -24,33 +24,50 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the alditol pattern using SMARTS
-    # Terminal CH2OH group: [C;H2;!R][O;H1]
-    # Internal carbons: [C;H1,H2;!R]([O;H1]?)([O;H1]?)
-    # Build patterns for chain lengths from 2 to 10 (adjustable range)
-    min_chain_length = 2  # Minimum number of carbons in the chain
-    max_chain_length = 10  # Maximum number of carbons in the chain
+    # Check if molecule is acyclic
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule is cyclic"
 
-    alditol_found = False
-    for chain_length in range(min_chain_length, max_chain_length + 1):
-        # Start with terminal CH2OH group
-        pattern = '[C;H2;!R]-[O;H1]'
-        # Add internal carbons: allow for optional hydroxyl groups to account for deoxy sugars
-        for _ in range(chain_length - 2):
-            pattern += '-[C;H1,H2;!R]([O;H1]?)-[H]'
-        # End with terminal CH2OH group
-        pattern += '-[C;H2;!R]-[O;H1]'
+    # Get all carbon atoms
+    carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    oxygen_counts = 0
 
-        # Create the RDKit molecule from SMARTS
-        alditol_pattern = Chem.MolFromSmarts(pattern)
-        if alditol_pattern is None:
-            continue  # Skip invalid patterns
+    for atom in carbons:
+        # Check if carbon is sp3 hybridized (single bonds only)
+        if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+            return False, "Carbon atom not sp3 hybridized"
 
-        # Search for the pattern in the molecule
-        matches = mol.GetSubstructMatches(alditol_pattern)
-        if matches:
-            alditol_found = True
-            return True, f"Molecule contains an alditol substructure of chain length {chain_length}"
+        # Check for attached hydroxyl group
+        has_OH = False
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                    if neighbor.GetTotalNumHs() == 1:
+                        has_OH = True
+                        oxygen_counts += 1
+                        break
+        if not has_OH:
+            return False, "Carbon atom without hydroxyl group found"
 
-    if not alditol_found:
-        return False, "No alditol substructure found"
+    # Check if terminal carbons are CH2OH
+    terminal_carbons = [atom for atom in carbons if atom.GetDegree() == 2]
+    if len(terminal_carbons) != 2:
+        return False, "Incorrect number of terminal carbons"
+
+    for atom in terminal_carbons:
+        # Should be connected to two atoms: one carbon and one oxygen (OH group)
+        neighbors = atom.GetNeighbors()
+        if len(neighbors) != 2:
+            return False, "Terminal carbon has incorrect number of neighbors"
+        has_CH2OH = False
+        for neighbor in neighbors:
+            if neighbor.GetAtomicNum() == 8:
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE and neighbor.GetTotalNumHs() == 1:
+                    has_CH2OH = True
+                    break
+        if not has_CH2OH:
+            return False, "Terminal carbon is not CH2OH group"
+
+    return True, "Molecule is an alditol"
