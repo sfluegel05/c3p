@@ -22,22 +22,15 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the basic substructure of zwitterion
-    zwitterion_pattern = Chem.MolFromSmarts("[CH]([NH3+])C([O-])=O")
-    if not mol.HasSubstructMatch(zwitterion_pattern):
+    # Use a more flexible SMARTS pattern for zwitterionic alpha-amino acid
+    zwitterion_pattern = Chem.MolFromSmarts("[C]([NH2+,NH3+])([C](=[O])[O-])")
+
+    matches = mol.GetSubstructMatches(zwitterion_pattern)
+    if not matches:
+          return False, "Missing zwitterionic alpha-amino acid core structure"
+
+    # Ensure at least one match
+    if len(matches) < 1:
         return False, "Missing zwitterionic alpha-amino acid core structure"
-
-    # Verify that there is at least one [NH3+] and one [O-]
-    nh3_pattern = Chem.MolFromSmarts("[NH3+]")
-    o_minus_pattern = Chem.MolFromSmarts("[O-]")
-    if not mol.HasSubstructMatch(nh3_pattern) or not mol.HasSubstructMatch(o_minus_pattern):
-        return False, "Missing either positively charged nitrogen or negatively charged oxygen"
-
-
-    # Exclude peptides (more than one alpha aminoacid)
-    zwitterion_count = len(mol.GetSubstructMatches(zwitterion_pattern))
-    if zwitterion_count > 1:
-        return False, "Molecule contains multiple alpha-amino acid units (possibly a peptide)"
-
 
     return True, "Molecule contains the zwitterionic alpha-amino acid structure"
