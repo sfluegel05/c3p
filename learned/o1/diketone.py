@@ -20,13 +20,13 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ketone SMARTS pattern: carbonyl carbon bonded to two carbons
-    ketone_pattern = Chem.MolFromSmarts('[CX3](=O)([C])[C]')
+    # Define ketone SMARTS pattern: carbonyl carbon double-bonded to oxygen and single-bonded to two carbons
+    ketone_pattern = Chem.MolFromSmarts('[#6;X3](=O)([#6])[#6]')
+    if ketone_pattern is None:
+        return False, "Invalid ketone pattern"
 
     # Find ketone matches
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-
-    # Count number of ketone groups
     num_ketones = len(ketone_matches)
 
     if num_ketones == 2:
