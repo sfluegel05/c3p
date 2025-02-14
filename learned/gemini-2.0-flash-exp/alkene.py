@@ -34,14 +34,11 @@ def is_alkene(smiles: str):
     
     # Check for only carbon and hydrogen
     c_count = 0
-    h_count = 0
     for atom in mol.GetAtoms():
         atomic_num = atom.GetAtomicNum()
         if atomic_num == 6:
             c_count += 1
-        elif atomic_num == 1:
-            h_count += 1
-        else:
+        elif atomic_num != 1:
             return False, "Molecule contains atoms other than C and H"
 
     # Add explicit hydrogens to molecule
