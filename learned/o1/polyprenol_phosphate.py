@@ -23,65 +23,50 @@ def is_polyprenol_phosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for phosphate or diphosphate group attached via oxygen
-    phosphate_smarts = "[O]-P(=O)([O])[O]"
-    diphosphate_smarts = "[O]-P(=O)([O])-O-P(=O)([O])[O]"
+    phosphate_smarts = "OP(O)(=O)[O-]"
+    diphosphate_smarts = "OP(O)(=O)OP(O)(=O)[O-]"
     phosphate_pattern = Chem.MolFromSmarts(phosphate_smarts)
     diphosphate_pattern = Chem.MolFromSmarts(diphosphate_smarts)
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
 
     if not phosphate_matches and not diphosphate_matches:
-        return False, "No phosphate or diphosphate group found attached via oxygen"
+        return False, "No phosphate or diphosphate group found"
 
-    # Combine matches
+    # Identify the phosphate group
     phosphate_atoms = set()
     for match in phosphate_matches + diphosphate_matches:
         phosphate_atoms.update(match)
 
-    # Identify terminal phosphate group attached to terminal allylic carbon
+    # Find terminal carbon connected to phosphate group
     terminal_phosphate_found = False
     for atom in mol.GetAtoms():
-        if atom.GetIdx() in phosphate_atoms and atom.GetAtomicNum() == 8:
-            # Check if this oxygen is connected to phosphate and carbon
-            neighbors = atom.GetNeighbors()
-            is_connected_to_phosphate = any(
-                nbr.GetAtomicNum() == 15 and nbr.GetIdx() in phosphate_atoms for nbr in neighbors)
-            is_connected_to_carbon = any(
-                nbr.GetAtomicNum() == 6 for nbr in neighbors)
-            if is_connected_to_phosphate and is_connected_to_carbon:
-                carbon_atom = [nbr for nbr in neighbors if nbr.GetAtomicNum() == 6][0]
-                # Check if carbon is terminal (only connected to one heavy atom besides oxygen)
-                carbon_neighbors = [nbr for nbr in carbon_atom.GetNeighbors() if nbr.GetAtomicNum() > 1 and nbr.GetIdx() != atom.GetIdx()]
-                if len(carbon_neighbors) == 1:
-                    # Check if carbon is allylic (adjacent to a double bond)
-                    allylic = False
-                    for nbr in carbon_neighbors:
-                        bond = mol.GetBondBetweenAtoms(carbon_atom.GetIdx(), nbr.GetIdx())
-                        if bond.GetBondType() == rdchem.BondType.SINGLE and nbr.GetAtomicNum() == 6:
-                            # Check if neighbor carbon has a double bond
-                            for nnbr in nbr.GetNeighbors():
-                                if nnbr.GetIdx() == carbon_atom.GetIdx():
-                                    continue
-                                bond = mol.GetBondBetweenAtoms(nbr.GetIdx(), nnbr.GetIdx())
-                                if bond.GetBondType() == rdchem.BondType.DOUBLE and nnbr.GetAtomicNum() == 6:
-                                    allylic = True
-                                    break
-                            if allylic:
+        if atom.GetAtomicNum() == 15:  # Phosphorus atom
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:  # Oxygen connected to phosphorus
+                    for o_neighbor in neighbor.GetNeighbors():
+                        if o_neighbor.GetAtomicNum() == 6 and o_neighbor.GetDegree() == 2:
+                            # Potentially terminal carbon
+                            terminal_carbon = o_neighbor
+                            # Check if this carbon is at the end of a polyprenol chain
+                            path = Chem.rdmolops.GetShortestPath(mol, terminal_carbon.GetIdx(), atom.GetIdx())
+                            # Exclude short paths (should be longer for polyprenols)
+                            if len(path) > 5:
+                                terminal_phosphate_found = True
                                 break
-                    if allylic:
-                        terminal_phosphate_found = True
+                    if terminal_phosphate_found:
                         break
+            if terminal_phosphate_found:
+                break
     if not terminal_phosphate_found:
-        return False, "Phosphate group not attached to terminal allylic carbon"
+        return False, "Phosphate group not attached to terminal carbon of polyprenol chain"
 
     # Check for polyprenol backbone (multiple isoprene units)
-    # Isoprene unit SMARTS allowing for cis/trans
-    isoprene_smarts = "[CH2]=[CH]-[CH2]-[CH2]"
-    isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    # The molecule should have at least 2 isoprene units to be considered a polyprenol
-    if len(isoprene_matches) < 2:
-        return False, f"Insufficient number of isoprene units: found {len(isoprene_matches)} units"
+    # Isoprene units are 5-carbon units with alternating double bonds
+    isoprene_unit = Chem.MolFromSmarts("C(=C)C-C=C")
+    num_isoprene_units = len(mol.GetSubstructMatches(isoprene_unit))
+    if num_isoprene_units < 2:
+        return False, f"Insufficient number of isoprene units: found {num_isoprene_units} units"
 
     # Optionally, check the total number of carbon atoms
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
