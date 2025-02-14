@@ -16,50 +16,29 @@ def is_long_chain_fatty_alcohol(smiles: str):
         bool: True if the molecule is a long-chain fatty alcohol, False otherwise.
         str: Reason for classification
     """
+
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for at least one alcohol group
-    alcohol_pattern = Chem.MolFromSmarts("[CX4,CX3][OX2H]")
-    if alcohol_pattern is None:
-        return False, "Could not parse alcohol SMARTS pattern"
-
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    if len(alcohol_matches) == 0:
-        return False, "Molecule does not have an alcohol group"
-
-    # Identify a long chain (at least 12 carbons) using SMARTS
-    # Use a more flexible pattern to identify a chain within the molecule
-    chain_smarts = "[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"
-    chain_pattern = Chem.MolFromSmarts(chain_smarts)
-    if chain_pattern is None:
-        return False, "Could not parse chain SMARTS pattern"
-
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Molecule does not contain a chain with at least 12 carbons."
+    # Count the number of alcohol groups (OH)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    num_hydroxyls = len(hydroxyl_matches)
+    if num_hydroxyls != 1:
+        return False, f"Molecule has {num_hydroxyls} alcohol groups, it should have exactly 1"
 
 
-    # Iterate through all atoms and check for carbon chain length and ensure that it is
-    # between 13 and 22 and that it contains a hydroxyl group.
-    
-    chain_carbon_count = 0
-    has_oh = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:
-            # Find all non-ring atoms
-            if not atom.IsInRing():
-                chain_carbon_count += 1
-        if atom.GetAtomicNum() == 8 and atom.HasProp('molAtomMapNumber') == False:
-            has_oh = True
+    # Count the number of carbons
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    if not has_oh:
-            return False, "Molecule has no hydroxyl group"
+    # Check if the chain length is within the range of C13-C22
+    if carbon_count < 13 or carbon_count > 22:
+          return False, f"Molecule has {carbon_count} carbons, should be between 13 and 22"
 
+    # Check that the only heteroatoms are a single oxygen from the -OH
+    heteroatoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1]
+    if len(heteroatoms) != 1 or heteroatoms[0] != 8: # Only one heteroatom and must be Oxygen
+       return False, "Molecule contains heteroatoms other than a single oxygen"
 
-    if chain_carbon_count < 13:
-          return False, f"Molecule has a carbon chain less than 13 carbons ({chain_carbon_count})"
-    if chain_carbon_count > 22:
-         return False, f"Molecule has a carbon chain more than 22 carbons ({chain_carbon_count})"
-
-    return True, f"Molecule is a long-chain fatty alcohol (C13-C22) with {chain_carbon_count} carbon atoms."
+    return True, "Molecule is a long-chain fatty alcohol (C13-C22) with one alcohol group."
