@@ -21,14 +21,15 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for beta-D-galactoside
-    beta_d_galactoside_smarts = "[C@@H]1([C@@H]([C@@H](O)[C@H]([C@H](O1)CO)O)O)"
+    # SMARTS pattern for beta-D-galactopyranoside
+    # The pattern specifies the beta-anomeric configuration of D-galactose
+    beta_d_galactopyranoside_smarts = "[C@@H]1(O[C@H]([C@@H]([C@@H]([C@H](O1)O)O)CO)[C@H]2[*:1])[C@H]([C@@H]([C@@H]([C@H]2O)O)O)CO"
 
     # Create a molecule from the SMARTS pattern
-    galactoside_pattern = Chem.MolFromSmarts(beta_d_galactoside_smarts)
+    galactopyranoside_pattern = Chem.MolFromSmarts(beta_d_galactopyranoside_smarts)
     
-    # Check if the molecule matches the beta-D-galactoside pattern
-    if mol.HasSubstructMatch(galactoside_pattern):
-        return True, "Contains beta-D-galactoside moiety"
+    # Check if the molecule matches the beta-D-galactopyranoside pattern
+    if mol.HasSubstructMatch(galactopyranoside_pattern):
+        return True, "Contains beta-D-galactopyranoside moiety"
     else:
-        return False, "Beta-D-galactoside moiety not found"
+        return False, "Beta-D-galactopyranoside moiety not found"
