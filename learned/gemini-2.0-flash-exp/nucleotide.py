@@ -29,7 +29,8 @@ def is_nucleotide(smiles: str):
         return False, "No phosphate group found"
 
     # Check for a pentose sugar
-    pentose_pattern = Chem.MolFromSmarts("C1OC(C)C(C)C1")  # basic pentose ring
+    # More flexible pattern: 5 member ring with one O and 4 C
+    pentose_pattern = Chem.MolFromSmarts("[C;X4]1[O;X2][C;X4][C;X4][C;X4]1")
     if not mol.HasSubstructMatch(pentose_pattern):
        return False, "No pentose sugar ring found"
 
@@ -45,7 +46,7 @@ def is_nucleotide(smiles: str):
        return False, "Phosphate not connected to sugar"
 
     # check for N-glycosidic bond to the pentose
-    N_glycosidic_pattern = Chem.MolFromSmarts("[N;!H0]~[#6]1O[#6][#6][#6]1") # base N attached to pentose
+    N_glycosidic_pattern = Chem.MolFromSmarts("[N;!H0]~[#6]1[O;X2][#6;X4][#6;X4][#6;X4]1") # base N attached to pentose
     if not mol.HasSubstructMatch(N_glycosidic_pattern):
         return False, "No N-glycosidic linkage"
     
