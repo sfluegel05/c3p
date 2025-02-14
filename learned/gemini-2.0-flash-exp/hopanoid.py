@@ -22,8 +22,11 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the core hopane skeleton SMARTS pattern. This is 5 fused rings, with C and CC bonds.
-    hopane_core_pattern = Chem.MolFromSmarts("[CX4]1[CX4]2[CX4]3[CX4]4[CX4]5[CX4]1[CX4]1[CX4]2[CX4]3[CX4]4[CX4]5")
+    # Define the core hopane skeleton SMARTS pattern. This pattern represents the pentacyclic ring system of hopane with correct fusion
+    # pattern. 
+    #  The core structure of hopane: 5 fused rings - four 6-membered rings and one 5-membered ring
+    #  The carbon atoms at the ring fusions are quaternary carbons.
+    hopane_core_pattern = Chem.MolFromSmarts("[C]12[C]3[C]4[C]5([C]1[C]2([C]3)C)([C]6[C]4[C]5)C6") 
     if not mol.HasSubstructMatch(hopane_core_pattern):
           return False, "Molecule does not contain the core hopane pentacyclic ring system."
 
@@ -34,6 +37,13 @@ def is_hopanoid(smiles: str):
     if len(methyl_matches) < 4:
          return False, f"Too few methyl groups, should have at least 4, got {len(methyl_matches)}"
         
+    # Check for at least 5 quaternary carbons, which are core to the hopane system
+    quaternary_carbon_pattern = Chem.MolFromSmarts("[CX4](C)(C)(C)(C)")
+    quaternary_matches = mol.GetSubstructMatches(quaternary_carbon_pattern)
+    
+    if len(quaternary_matches) < 5:
+      return False, f"Too few quaternary carbons, must have at least 5, got {len(quaternary_matches)}"
+       
     # Check for the number of carbons (hopane is C30, but it can be higher, so at least 25 is OK)
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 25:
