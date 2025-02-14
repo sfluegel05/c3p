@@ -1,28 +1,63 @@
 """
 Classifies: CHEBI:25409 monoterpenoid
 """
-The previous program attempted to classify molecules as monoterpenoids based on several criteria, including the number of carbon atoms, the presence of a carbon ring, the number of unsaturated bonds, the presence of a monoterpene-like skeleton, and the presence of certain functional groups (alcohols, esters, ethers, aldehydes, ketones, carboxylic acids, and sulfur-containing groups).
+"""
+Classifies: CHEBI:36939 monoterpenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-However, based on the outcomes provided, there are a few issues with the current approach:
+def is_monoterpenoid(smiles: str):
+    """
+    Determines if a molecule is a monoterpenoid based on its SMILES string.
+    A monoterpenoid is any terpenoid derived from a monoterpene, including compounds
+    where the C10 skeleton has been rearranged or modified.
 
-1. **Overly strict criteria**: The program seems to be too strict in its criteria, resulting in a high number of false negatives. For example, it incorrectly classified molecules like (-)-secologanin, Thiolactomycin IV, Panicein D, citrifolinoside, and Didrovaltratum as non-monoterpenoids, even though they belong to this class according to the benchmark.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Functional group bias**: The program heavily relies on the presence of specific functional groups to classify a molecule as a monoterpenoid. While many monoterpenoids do contain these functional groups, this criterion alone is not sufficient to accurately classify all members of this class. For example, the program wrongly classified molecules like (S)-(-)-citronellol and 9-Hydroxygeraniol as non-monoterpenoids because they lack a carbon ring, despite being valid monoterpenoids.
+    Returns:
+        bool: True if molecule is a monoterpenoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Structural pattern limitations**: The program uses a simple SMARTS pattern ([C&r5,C&r6,C&r7,C&r8,C&r9,C&r10]) to identify a "monoterpene-like skeleton." While this pattern may capture some monoterpenoids, it is likely too simplistic to accurately represent the diverse structural variations within this class.
+    # Check for isoprenoid units
+    ipr_pattern = Chem.MolFromSmarts("[C@H]1CC=C(C)C1")
+    has_ipr_unit = mol.HasSubstructMatch(ipr_pattern)
 
-4. **False positives**: Despite the strict criteria, the program still produced a significant number of false positives, classifying non-monoterpenoids as members of this class. This suggests that the criteria are not specific enough to reliably distinguish monoterpenoids from other molecules.
+    # Check for common monoterpene skeletons
+    pinane_pattern = Chem.MolFromSmarts("[C@@]12C[C@H]([C@@H]([C@H]1[C@@H]3C[C@H](C3)C2)C)C")
+    fenchane_pattern = Chem.MolFromSmarts("[C@H]12C[C@@H](C[C@H]1C2)C")
+    has_mono_skeleton = mol.HasSubstructMatch(pinane_pattern) or mol.HasSubstructMatch(fenchane_pattern)
 
-To improve the program's performance, the following modifications could be considered:
+    # Check for common monoterpene functional groups
+    alcohol_pattern = Chem.MolFromSmarts("OC")
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ether_pattern = Chem.MolFromSmarts("CO")
+    aldehyde_pattern = Chem.MolFromSmarts("C=O")
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX3]")
+    acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    sulfur_pattern = Chem.MolFromSmarts("[#16]")
+    has_mono_groups = any([mol.HasSubstructMatch(p) for p in [alcohol_pattern, ester_pattern, ether_pattern,
+                                                            aldehyde_pattern, ketone_pattern, acid_pattern,
+                                                            sulfur_pattern]])
 
-1. **Relax the criteria**: Instead of relying on strict rules for the number of carbon atoms, unsaturated bonds, or specific functional groups, the program could adopt a more flexible approach that considers the overall structural features and patterns characteristic of monoterpenoids.
+    # Check molecular properties
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-2. **Use more sophisticated structural patterns**: Rather than a simple SMARTS pattern, the program could utilize more complex patterns or machine learning models trained on a diverse set of monoterpenoid structures to better capture the structural diversity within this class.
-
-3. **Incorporate additional structural features**: In addition to the current features (carbon count, rings, unsaturation, functional groups), the program could consider other structural features that are relevant to monoterpenoids, such as the presence of isoprenoid units, specific ring systems, or stereochemical configurations.
-
-4. **Leverage existing knowledge bases**: Instead of relying solely on structural features, the program could incorporate information from existing knowledge bases or databases that contain curated lists of known monoterpenoids. This could help improve the accuracy of classification, especially for more complex or atypical structures.
-
-5. **Consider systematic errors in the benchmark**: While the benchmark is generally reliable, there may be occasional or systematic errors. If your understanding of the chemical class is consistent with the classifications made by your program, you can consider ignoring some outliers in the benchmark, provided you can justify your reasoning.
-
-It is important to note that accurately classifying chemical entities based solely on their structural representation is a challenging task, and there may not be a single, simple set of rules that can capture all members of a diverse class like monoterpenoids. A combination of different approaches, including structural patterns, machine learning models, and knowledge base integration, may be required to achieve high accuracy.
+    if c_count == 10 and mol_wt < 300 and n_rings <= 2 and n_rotatable <= 5:
+        if has_ipr_unit or has_mono_skeleton or has_mono_groups:
+            return True, "Molecule contains features characteristic of monoterpenoids"
+        else:
+            return False, "Molecule lacks typical monoterpenoid features"
+    else:
+        return False, "Molecule does not meet basic criteria for monoterpenoids"
