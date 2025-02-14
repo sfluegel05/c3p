@@ -5,13 +5,12 @@ Classifies: CHEBI:64583 sphingomyelin
 Classifies: sphingomyelin
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_sphingomyelin(smiles: str):
     """
     Determines if a molecule is a sphingomyelin based on its SMILES string.
     A sphingomyelin is defined as a phospholipid where the amino group of a sphingoid base 
-    is in amide linkage with one of several fatty acids, while the terminal hydroxy group of 
+    is in amide linkage with a fatty acid, and the terminal hydroxy group of 
     the sphingoid base is esterified to phosphorylcholine.
 
     Args:
@@ -27,50 +26,52 @@ def is_sphingomyelin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generate molecule with hydrogens for proper matching
-    mol = Chem.AddHs(mol)
-
     # Define SMARTS patterns
-    # Sphingoid base backbone pattern: long-chain amino alcohol (with possible double bonds)
-    sphingoid_pattern = Chem.MolFromSmarts("NC[C@H](O)CCCCCCCCCCCCCCCC")
-    # Amide linkage between sphingoid base amino group and fatty acid
-    amide_pattern = Chem.MolFromSmarts("NC(=O)C")
-    # Phosphorylcholine group attached to terminal hydroxyl of sphingoid base
+    # Sphingoid base: long-chain amino alcohol with variable chain length and unsaturation
+    sphingoid_pattern = Chem.MolFromSmarts("N[C;@H][C;@H](O)[C;!H0]CCCCCCCCCCCC")
+    # Amide linkage: amide bond between amino group and fatty acid
+    amide_pattern = Chem.MolFromSmarts("N[C;!H0]=O")
+    # Phosphorylcholine group
     phosphocholine_pattern = Chem.MolFromSmarts("O[P](=O)(OC[C,N](C)(C)C)O")
 
-    # Find amide groups in the molecule
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    
-    if not amide_matches:
-        return False, "No amide linkage found between amino group and fatty acid"
+    # Ensure patterns are valid
+    if sphingoid_pattern is None or amide_pattern is None or phosphocholine_pattern is None:
+        return False, "Invalid SMARTS pattern(s)"
 
-    # Check for phosphorylcholine group
-    phospho_matches = mol.GetSubstructMatches(phosphocholine_pattern)
-    if not phospho_matches:
-        return False, "No phosphorylcholine group found"
-
-    # Check for sphingoid base backbone
+    # Search for sphingoid base
     sphingoid_matches = mol.GetSubstructMatches(sphingoid_pattern)
     if not sphingoid_matches:
-        return False, "No sphingoid base backbone found"
+        return False, "No sphingoid base found"
 
-    # Verify connectivity between sphingoid base, amide linkage, and phosphorylcholine group
+    # Search for amide linkage
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if not amide_matches:
+        return False, "No amide linkage found"
+
+    # Search for phosphorylcholine group
+    phosphocholine_matches = mol.GetSubstructMatches(phosphocholine_pattern)
+    if not phosphocholine_matches:
+        return False, "No phosphorylcholine group found"
+
+    # Verify connectivity
     is_valid_sphingomyelin = False
-    for amide_match in amide_matches:
-        amide_n_idx = amide_match[0]
-        amide_c_idx = amide_match[2]
+    for sphingoid_match in sphingoid_matches:
+        sphingoid_n_idx = sphingoid_match[0]
+        sphingoid_c1_idx = sphingoid_match[1]
+        sphingoid_o_idx = sphingoid_match[2]
+        sphingoid_c_chain_idx = sphingoid_match[3]
 
-        # Check if the amide nitrogen is part of the sphingoid base
-        for sphingoid_match in sphingoid_matches:
-            sphingoid_n_idx = sphingoid_match[0]
-            sphingoid_o_idx = sphingoid_match[2]
+        # Check if amide nitrogen is the same as sphingoid base nitrogen
+        for amide_match in amide_matches:
+            amide_n_idx = amide_match[0]
+            amide_c_idx = amide_match[1]
 
-            if amide_n_idx == sphingoid_n_idx:
-                # Check if the phosphorylcholine group is connected to the terminal hydroxyl of the sphingoid base
-                for phospho_match in phospho_matches:
-                    phospho_o_idx = phospho_match[0]  # Oxygen connected to phosphate
-                    # Check if phospho group is connected to sphingoid terminal hydroxyl oxygen
-                    if sphingoid_o_idx == mol.GetAtomWithIdx(phospho_o_idx).GetIdx():
+            if sphingoid_n_idx == amide_n_idx:
+                # Check if phosphorylcholine is connected to sphingoid terminal hydroxyl
+                for phosphocholine_match in phosphocholine_matches:
+                    phospho_o_idx = phosphocholine_match[0]  # Oxygen attached to phosphate
+                    # Check for bond between sphingoid O and phospho O
+                    if mol.GetBondBetweenAtoms(sphingoid_o_idx, phospho_o_idx):
                         is_valid_sphingomyelin = True
                         break
             if is_valid_sphingomyelin:
@@ -81,4 +82,4 @@ def is_sphingomyelin(smiles: str):
     if is_valid_sphingomyelin:
         return True, "Molecule is a sphingomyelin with sphingoid base, amide-linked fatty acid, and phosphorylcholine group"
     else:
-        return False, "No sphingomyelin structure found"
+        return False, "Molecule does not meet the criteria for sphingomyelin"
