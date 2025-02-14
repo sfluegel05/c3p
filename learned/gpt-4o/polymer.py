@@ -2,19 +2,19 @@
 Classifies: CHEBI:60027 polymer
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
+from rdkit.Chem import rdmolops, rdMolDescriptors
 
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    Focuses on identifying complex chains and repeating units, common in polymers.
+    Focuses on identifying extensive chains, repeating units, and significant molecular size—common polymer features.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is identified as a polymer-like structure, False otherwise
-        str: Reason for classification
+        bool: True if molecule is identified as a polymer-like structure, False otherwise.
+        str: Reason for classification.
     """
     
     # Parse the SMILES string to create a molecule object
@@ -22,32 +22,28 @@ def is_polymer(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define polymer-like repeating unit patterns
+    # Define polymer-like repeating unit patterns with more representative recurrence
     patterns = [
-        Chem.MolFromSmarts("[C](=[O,N])-[C]"),  # polymethacrylate motifs
-        Chem.MolFromSmarts("[C]([C])[C]([C])[C]"),  # generally for polyolefins
-        Chem.MolFromSmarts("[O]-[C]-[O]"),  # linkage common in polyethers
-        Chem.MolFromSmarts("C=C-C"),  # unsaturated backbone common in rubbers
-        Chem.MolFromSmarts("C-C-C-C"),  # flexible hydrocarbon chain
+        Chem.MolFromSmarts("[C](-[C,C])(-[C,C])[C]"),  # generic polymer backbone
+        Chem.MolFromSmarts("C-C-C-C"),  # flexible aliphatic chain
+        Chem.MolFromSmarts("c1ccccc1"),  # aromatic polymer (e.g., polystyrenes)
+        Chem.MolFromSmarts("[N,O]-[C]-[O,N]"),  # amide/ester linkages common in polyamides, polyesters
     ]
 
     # Check matches for polymer-like chains
-    total_matches = 0
-    for pattern in patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        total_matches += len(matches)
+    total_matches = sum(len(mol.GetSubstructMatches(pattern)) for pattern in patterns)
 
-    # Lower threshold to identify polymers more consistently
-    if total_matches > 5:  # refined threshold
-        return True, f"Contains repeating substructural patterns: found {total_matches}"
-
-    # Consider large size and patterns together for polymer detection
-    if mol.GetNumAtoms() > 50 and total_matches > 2:  # balance of size and pattern detection
-        return True, f"Large molecular size with repeating units, possible polymer ({mol.GetNumAtoms()} atoms)"
-
-    # Check for long single bond chains (indicative of polymer backbone)
-    dm = rdmolops.GetDistanceMatrix(mol)
-    if dm.size > 0 and max(dm.flatten()) > 30:  # refined chain length threshold
-        return True, "Contains long chains indicative of polymeric structure"
-
-    return False, "No explicit polymer-like features detected"
+    # Refined logic: multiple criteria check
+    num_atoms = mol.GetNumAtoms()
+    rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    
+    if total_matches > 10:
+        return True, f"Contains significant repeating substructural patterns: found {total_matches}"
+    
+    if num_atoms > 100 and total_matches > 5:
+        return True, f"Large molecular size with polymer-linked repeating units, {num_atoms} atoms"
+    
+    if rotatable_bonds > 50:
+        return True, f"High flexibility and length hinting at polymeric property, {rotatable_bonds} rotatable bonds"
+    
+    return False, "No distinct polymer characteristics detected"
