@@ -7,7 +7,6 @@ An alkylamine in which the alkyl group is substituted by an aromatic group.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_aralkylamine(smiles: str):
     """
@@ -27,8 +26,8 @@ def is_aralkylamine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for aromatic ring(s)
-    aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
-    if not aromatic_atoms:
+    aromatic_rings = mol.GetAromaticRings()
+    if not aromatic_rings:
         return False, "No aromatic rings found"
     
     # Look for primary/secondary amine group(s)
@@ -37,12 +36,14 @@ def is_aralkylamine(smiles: str):
     if not amine_matches:
         return False, "No primary or secondary amine groups found"
     
-    # Check if amine group is directly attached to aromatic ring
+    # Check if amine group is connected to an aromatic ring (possibly via an alkyl chain)
     for amine_idx in amine_matches:
         amine_atom = mol.GetAtomWithIdx(amine_idx)
-        for neighbor in amine_atom.GetNeighbors():
-            if neighbor.GetIsAromatic():
+        for ring in aromatic_rings:
+            if mol.AreAtomsSeparatedByAnyRing(amine_atom.GetIdx(), ring):
+                continue  # Amine and ring are on opposite sides of another ring
+            elif mol.GetShortestPathBetweenAtoms(amine_atom.GetIdx(), ring[0]) is not None:
                 return True, "Contains an alkylamine with aromatic substituent"
     
-    # Amine group(s) not directly attached to aromatic ring
-    return False, "Amine group(s) not directly attached to aromatic ring"
+    # Amine group(s) not connected to aromatic ring
+    return False, "Amine group(s) not connected to aromatic ring"
