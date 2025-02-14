@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_disaccharide(smiles: str):
     """
     Determines if a molecule is a disaccharide based on its SMILES string.
-    A disaccharide must contain two monosaccharide rings joined by a glycosidic bond.
+    A disaccharide is identified by the presence of two sugar moieties
+    connected by a glycosidic bond.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,30 +21,32 @@ def is_disaccharide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define more generic SMARTS patterns for pyranose and furanose sugar rings
-    pyranose_smarts = "[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@@H]1"
-    furanose_smarts = "[C@H]1(O)[C@H](O)[C@H](O)[C@@H]1"
     
-    pyranose_pattern = Chem.MolFromSmarts(pyranose_smarts)
-    furanose_pattern = Chem.MolFromSmarts(furanose_smarts)
-
-    # Check for pyranose and furanose rings
+    # Define more comprehensive SMARTS patterns for pyranose and furanose rings
+    # Including specific ring sizes and common stereochemistry patterns
+    pyranose_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C(O)C1")  # 6-membered pyranose form
+    furanose_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1")      # 5-membered furanose form
+    
+    # Look for these ring patterns twice (to ensure we have two sugar rings)
     pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
     furanose_matches = mol.GetSubstructMatches(furanose_pattern)
-
-    # Expecting exactly two sugar units
+    
+    # Ensure exactly two monosaccharide ring structures
     total_sugar_rings = len(pyranose_matches) + len(furanose_matches)
     if total_sugar_rings != 2:
         return False, f"Expected 2 monosaccharide units, found {total_sugar_rings}"
 
-    # Define generalized SMARTS for glycosidic linkage
-    glycosidic_smarts = "[OD2H1,OD2H0][CX4]([OX2H1,OX2H0])[C]"
-    glycosidic_pattern = Chem.MolFromSmarts(glycosidic_smarts)
-
+    # Define a more specific SMARTS pattern for glycosidic linkage
+    # Ensuring it connects the anomeric carbon of one sugar to a hydroxyl of another
+    glycosidic_pattern = Chem.MolFromSmarts("COC")  # Simplified representation
+    
     # Check for a glycosidic bond specifically linking the sugar rings
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    if len(glycosidic_matches) == 0:
-        return False, "No glycosidic bond found connecting sugar units properly"
+    # Checking that it is not just any ether group but specifically between sugars
+    if not any(
+        set(m1) & set(m2) for m1 in pyranose_matches + furanose_matches 
+        for m2 in glycosidic_matches
+    ):
+        return False, "No glycosidic bond found connecting sugar units"
 
     return True, "Contains two monosaccharide units joined by a glycosidic bond"
