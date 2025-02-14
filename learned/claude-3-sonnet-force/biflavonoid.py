@@ -29,33 +29,23 @@ def is_biflavonoid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for flavonoid subunits
-    flavonoid_pattern = Chem.MolFromSmarts("c1c(O)cc2c(c1O)C(=O)c3ccccc3O2")
+    flavonoid_pattern = Chem.MolFromSmarts("c1c(O)cc2c(c1)C(=O)c3ccccc3O2")
     flavonoid_matches = mol.GetSubstructMatches(flavonoid_pattern)
     
-    # Check for at least 2 flavonoid subunits
-    if len(flavonoid_matches) < 2:
-        return False, "Molecule does not contain at least 2 flavonoid subunits"
+    # Check for at least 2 unique flavonoid subunits
+    unique_subunits = set(map(tuple, flavonoid_matches))
+    if len(unique_subunits) < 2:
+        return False, "Molecule does not contain at least 2 unique flavonoid subunits"
     
-    # Check that flavonoid subunits are joined by a single atom or bond
-    joined_subunits = []
-    for match1, match2 in itertools.combinations(flavonoid_matches, 2):
-        match1_atoms = set(match1)
-        match2_atoms = set(match2)
+    # Check if flavonoid subunits are joined by a single atom or bond
+    fragments = Chem.GetAtomJoinedMolecules(mol)
+    if len(fragments) == 2:
+        fragment1_atoms = set(fragments[0].GetAtoms())
+        fragment2_atoms = set(fragments[1].GetAtoms())
         
-        # Check if subunits share a single atom
-        shared_atoms = match1_atoms.intersection(match2_atoms)
-        if len(shared_atoms) == 1:
-            joined_subunits.append((match1, match2))
-            continue
-        
-        # Check if subunits are joined by a bond
-        for atom1 in match1_atoms:
-            for atom2 in match2_atoms:
-                if mol.GetBondBetweenAtoms(atom1, atom2):
-                    joined_subunits.append((match1, match2))
-                    break
+        # Check if fragments correspond to flavonoid subunits
+        if any(set(match).issubset(fragment1_atoms) for match in unique_subunits) and \
+           any(set(match).issubset(fragment2_atoms) for match in unique_subunits):
+            return True, "Contains at least 2 flavonoid subunits joined by a single atom or bond"
     
-    if len(joined_subunits) >= 1:
-        return True, "Contains at least 2 flavonoid subunits joined by a single atom or bond"
-    else:
-        return False, "Flavonoid subunits not joined by a single atom or bond"
+    return False, "Flavonoid subunits not joined by a single atom or bond"
