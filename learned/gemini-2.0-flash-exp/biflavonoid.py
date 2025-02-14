@@ -23,10 +23,9 @@ def is_biflavonoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define flavonoid substructure using SMARTS
-    # A more generalized pattern for the core of a flavonoid structure.
-    # Allows different oxidation states and substitution patterns
+    # Simplified version of a flavonoid core to match more cases
     flavonoid_pattern = Chem.MolFromSmarts(
-        "[c]1[c][c]([O])[c]([c]1)[CX4,CX3][c]2[c][c][c][c]([O])[c]2" # Changed to allow flexibility in oxidation state, and allow substitutions on the aromatic rings
+        "[c]1[c]([c][c][c][c]1)[C](=[O])[c]2[c][c]([O])[c][c][c]2"
         )
 
     # Count number of flavonoid units
