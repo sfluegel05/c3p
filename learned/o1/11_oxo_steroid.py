@@ -5,7 +5,6 @@ Classifies: CHEBI:47787 11-oxo steroid
 Classifies: 11-oxo steroid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_11_oxo_steroid(smiles: str):
     """
@@ -24,52 +23,39 @@ def is_11_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for steroid fused ring system: three 6-membered rings and one 5-membered ring fused together
-    ri = mol.GetRingInfo()
-    rings = ri.BondRings()
-    if len(rings) < 4:
-        return False, "Molecule does not have enough rings to be a steroid"
-    
-    # Identify ring sizes
-    ring_sizes = [len(ring) for ring in ri.AtomRings()]
-    if ring_sizes.count(6) < 3 or ring_sizes.count(5) < 1:
-        return False, "Molecule does not have the characteristic steroid ring sizes"
-
-    # Check for fused ring system
-    fused_rings = rdMolDescriptors.CalcNumSpiroAtoms(mol) + rdMolDescriptors.CalcNumBridgeheadAtoms(mol)
-    if fused_rings < 3:
-        return False, "Molecule does not have a fused steroid ring system"
-
-    # Define SMARTS pattern for steroid nucleus
-    steroid_smarts = 'C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C'  # Simplified pattern
-    steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
+    # Define SMARTS pattern for the steroid nucleus (four fused rings)
+    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3C(C1)CC4CC(C(C2)C3)C4')  # Basic steroid backbone
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "Molecule does not match steroid nucleus pattern"
+        return False, "Molecule does not have a steroid nucleus"
 
-    # Define SMARTS pattern for 11-oxo group attached to ring C
-    # Position 11 is in ring C, we can look for ketone attached to the steroid nucleus at specific position
-    oxo_smarts = '[#6;R][#6;R](=O)[#6;R]'  # Carbonyl group within a ring
-    oxo_pattern = Chem.MolFromSmarts(oxo_smarts)
-    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    if not oxo_matches:
-        return False, "No oxo group (=O) found in the molecule"
+    # Identify the rings in the molecule
+    ssr = Chem.GetSymmSSSR(mol)
+    if len(ssr) < 4:
+        return False, "Molecule does not have the required four rings of a steroid nucleus"
 
-    # Attempt to locate oxo group at position 11
-    # Since direct mapping is difficult, we approximate by checking if the ketone is attached to ring C
-    ring_atoms = ri.AtomRings()
-    ringC_atoms = None
-    # Find the third 6-membered ring (ring C)
-    six_membered_rings = [ring for ring in ring_atoms if len(ring) == 6]
-    if len(six_membered_rings) >= 3:
-        ringC_atoms = six_membered_rings[2]  # Assuming rings are ordered A, B, C
-    else:
-        return False, "Cannot identify ring C in the steroid nucleus"
+    # Separate six-membered and five-membered rings
+    six_membered_rings = [ring for ring in ssr if len(ring) == 6]
+    five_membered_rings = [ring for ring in ssr if len(ring) == 5]
 
-    # Check if any oxo group is attached to ring C
-    for match in oxo_matches:
-        # Check if the carbonyl carbon is in ring C
-        carbonyl_carbon_idx = match[1]
-        if carbonyl_carbon_idx in ringC_atoms:
-            return True, "Molecule is an 11-oxo steroid with oxo group at position 11"
-    
-    return False, "No oxo group (=O) at position 11 of the steroid nucleus"
+    if len(six_membered_rings) < 3 or len(five_membered_rings) < 1:
+        return False, "Steroid nucleus must have three six-membered rings and one five-membered ring"
+
+    # Define SMARTS pattern for ketone (=O) group
+    ketone_pattern = Chem.MolFromSmarts('C=O')
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    if not ketone_matches:
+        return False, "No ketone (=O) group found in molecule"
+
+    # Check if any ketone is in ring C (the third six-membered ring)
+    ring_C = six_membered_rings[2]  # Assuming ring C is the third six-membered ring
+    ketone_in_ringC = False
+    for match in ketone_matches:
+        carbon_idx = match[0]
+        if carbon_idx in ring_C:
+            ketone_in_ringC = True
+            break
+
+    if not ketone_in_ringC:
+        return False, "Ketone group is not located on ring C (position 11)"
+
+    return True, "Molecule has a steroid nucleus with a ketone group at position 11"
