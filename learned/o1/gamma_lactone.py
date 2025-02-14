@@ -38,36 +38,38 @@ def is_gamma_lactone(smiles: str):
             # Collect atoms in the ring
             ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
             # Count number of oxygen atoms in the ring
-            n_oxygen_atoms = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
-            # Continue only if there is exactly one oxygen atom in the ring
-            if n_oxygen_atoms == 1:
-                # Check for carbonyl group in the ring (C=O)
+            oxygen_atoms = [atom for atom in ring_atoms if atom.GetAtomicNum() == 8]
+            # Continue only if there are exactly two oxygen atoms in the ring
+            if len(oxygen_atoms) == 2:
+                # Find the carbonyl oxygen (double-bonded to carbon)
+                carbonyl_oxygen = None
+                carbonyl_carbon = None
+                ester_oxygen = None
+                # Loop over the atoms in the ring to find the carbonyl group
                 for atom in ring_atoms:
-                    if atom.GetAtomicNum() == 6:  # Carbon atom
-                        # Check if atom has a double bond to oxygen
-                        for bond in atom.GetBonds():
-                            if bond.GetBondType() == Chem.BondType.DOUBLE:
-                                neighbor = bond.GetOtherAtom(atom)
-                                if neighbor.GetAtomicNum() == 8 and neighbor.IsInRing():
-                                    # Found carbonyl oxygen in ring
-                                    carbonyl_carbon = atom
-                                    carbonyl_oxygen = neighbor
-                                    # Find the ring oxygen (single bonded oxygen)
-                                    ring_oxygen = next((a for a in ring_atoms if a.GetAtomicNum() == 8 and a != carbonyl_oxygen), None)
-                                    if ring_oxygen is not None:
-                                        # Check if ring oxygen is single bonded to carbonyl carbon (forming ester linkage)
-                                        bond_to_oxygen = mol.GetBondBetweenAtoms(carbonyl_carbon.GetIdx(), ring_oxygen.GetIdx())
-                                        if bond_to_oxygen and bond_to_oxygen.GetBondType() == Chem.BondType.SINGLE:
-                                            # Confirm both atoms are in the same five-membered ring
-                                            if ri.IsAtomInRingOfSize(carbonyl_carbon.GetIdx(), 5) and ri.IsAtomInRingOfSize(ring_oxygen.GetIdx(), 5):
-                                                gamma_lactone_found = True
-                                                break
-                            if gamma_lactone_found:
-                                break
-                    if gamma_lactone_found:
+                    if atom.GetAtomicNum() == 8:
+                        for neighbor in atom.GetNeighbors():
+                            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                            if bond.GetBondType() == Chem.BondType.DOUBLE and neighbor.GetAtomicNum() == 6 and neighbor in ring_atoms:
+                                carbonyl_oxygen = atom
+                                carbonyl_carbon = neighbor
+                    # Break if carbonyl oxygen and carbon found
+                    if carbonyl_oxygen:
                         break
-                if gamma_lactone_found:
-                    break
+                # If carbonyl group found, find the ester oxygen
+                if carbonyl_oxygen:
+                    for atom in oxygen_atoms:
+                        if atom != carbonyl_oxygen:
+                            ester_oxygen = atom
+                            break
+                    # Check if ester oxygen is single-bonded to carbons in the ring
+                    if ester_oxygen:
+                        single_bonds = [bond for bond in ester_oxygen.GetBonds() if bond.GetBondType() == Chem.BondType.SINGLE]
+                        ring_bonds = [bond for bond in single_bonds if bond.GetOtherAtom(ester_oxygen) in ring_atoms]
+                        # Ester oxygen should have at least two single bonds in the ring
+                        if len(ring_bonds) >= 2:
+                            gamma_lactone_found = True
+                            break
 
     if gamma_lactone_found:
         return True, "Contains gamma-lactone ring (five-membered lactone ring)"
