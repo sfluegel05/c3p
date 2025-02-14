@@ -12,9 +12,9 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     """
     Determines if a molecule is a 1-phosphatidyl-1D-myo-inositol based on its SMILES string.
     This involves checking for:
-    - A glycerol backbone esterified at positions 1 and 2 with fatty acids
-    - A phosphate group at position 3 of glycerol
-    - An inositol ring attached to the phosphate group at position 1 of the inositol
+    - A glycerol backbone esterified at positions sn-1 and sn-2 with fatty acids
+    - A phosphate group at position sn-3 of glycerol
+    - An inositol ring attached to the phosphate group at position 1
     - The inositol ring should be the 1D-myo isomer (specific stereochemistry)
     
     Args:
@@ -29,33 +29,39 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for glycerol backbone esterified at positions 1 and 2 with fatty acids
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H]([CH2]OC(=O)*)([CH2]OC(=O)*)")  # Glycerol with esters at positions 1 and 2
+    # Ensure that hydrogens are explicit for accurate stereochemistry matching
+    mol = Chem.AddHs(mol)
+    
+    # Check for glycerol backbone esterified at sn-1 and sn-2 positions with fatty acids
+    glycerol_pattern = Chem.MolFromSmarts("""
+        [C@H]([O][C](=[O])[C])([O][C](=[O])[C])    # sn-glycerol esterified at sn-1 and sn-2
+    """)
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone esterified at positions 1 and 2 found"
+        return False, "No glycerol backbone esterified at sn-1 and sn-2 positions found"
     
-    # Check for phosphate group at position 3 of glycerol
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")  # Phosphate group attached via oxygen
+    # Check for phosphate group at sn-3 position of glycerol
+    phosphate_pattern = Chem.MolFromSmarts("""
+        [C@H]([O][P](=O)([O])[O][#6])             # Phosphate group attached at sn-3 position
+    """)
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group attached to glycerol found"
+        return False, "No phosphate group at sn-3 position of glycerol found"
     
-    # Check for inositol ring attached to phosphate group at position 1
+    # Check for inositol ring attached to phosphate group
     # Inositol ring: six-membered ring with six hydroxyl groups
-    inositol_ring = Chem.MolFromSmarts("C1(CO)C(O)C(O)C(O)C(O)O1")
-    if not mol.HasSubstructMatch(inositol_ring):
+    inositol_pattern = Chem.MolFromSmarts("""
+        [O][P](=O)([O])[O][C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O
+    """)
+    if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring attached to phosphate group found"
     
-    # Check for correct stereochemistry in inositol ring (1D-myo-inositol)
-    # 1D-myo-inositol has specific stereochemistry at the ring carbons
-    stereo_inositol = Chem.MolFromSmiles("O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
-    stereo_match = mol.HasSubstructMatch(stereo_inositol, useChirality=True)
-    if not stereo_match:
+    # Check for correct stereochemistry of 1D-myo-inositol
+    # Ensure the inositol ring has the correct stereochemistry
+    stereo_inositol_pattern = Chem.MolFromSmarts("""
+        [C@H]1([O])[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O
+    """)
+    matches = mol.GetSubstructMatches(stereo_inositol_pattern, useChirality=True)
+    if not matches:
         return False, "Inositol ring does not have correct stereochemistry (1D-myo-inositol)"
-    
-    # Confirm attachment point of inositol ring to phosphate group is at position 1
-    phosphate_inositol_pattern = Chem.MolFromSmarts("OP(=O)(O)OC1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)CO1")  # Phosphate connected to O1 of inositol
-    if not mol.HasSubstructMatch(phosphate_inositol_pattern):
-        return False, "Phosphate group not attached at position 1 of inositol ring"
     
     return True, "Molecule is a 1-phosphatidyl-1D-myo-inositol with correct structure"
 
@@ -79,7 +85,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
