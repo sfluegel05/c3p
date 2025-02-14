@@ -30,13 +30,21 @@ def is_cyclic_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Identify non-aromatic aliphatic rings
+    # Identify rings (aromatic and aliphatic)
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
-    aliphatic_rings = [ring for ring in rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() == 0 for idx in ring)]
 
-    if not aliphatic_rings:
-        return False, "No non-aromatic aliphatic rings found in the structure"
+    # Check if any ring is connected to the carboxylic acid group
+    acid_atoms = mol.GetSubstructMatches(acid_pattern)
+    acid_connected_rings = []
+    for ring in rings:
+        for atom_idx in ring:
+            if atom_idx in [x[0] for x in acid_atoms]:
+                acid_connected_rings.append(ring)
+                break
+
+    if not acid_connected_rings:
+        return False, "No rings connected to the carboxylic acid group"
 
     # Check for carbon chains
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -45,4 +53,4 @@ def is_cyclic_fatty_acid(smiles: str):
 
     # Additional checks or filters can be added here if needed
 
-    return True, "Contains a carboxylic acid group and at least one non-aromatic aliphatic ring in the structure"
+    return True, "Contains a carboxylic acid group and at least one ring (aromatic or aliphatic) connected to the fatty acid chain"
