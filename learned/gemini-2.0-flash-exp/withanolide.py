@@ -23,8 +23,8 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Detect the steroid core using a more relaxed pattern
-    steroid_pattern = Chem.MolFromSmarts("[R]1[R][R]2[R][R]3[R]([R]1)[R]4[R]2[R]5[R]3[R]4[R]5")
+    # 1. Detect the steroid core using a more specific pattern (tetracyclic ring system).
+    steroid_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]([C]1)[C]3[C]([C]2)[C][C]4[C]([C]3)[C][C]([C]4)[C]")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid core found"
     
@@ -38,9 +38,14 @@ def is_withanolide(smiles: str):
     if carbon_count < 26 or carbon_count > 30:
         return False, f"Carbon count ({carbon_count}) not in range for a withanolide (26-30)"
     
-    # 4. Check for the side chain
-    side_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # 4. Check for a carbonyl in sidechain.
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    
+    # 5. Check for the side chain attached to core with a carbonyl.
+    side_chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[CX3]=[OX1]")
     if not mol.HasSubstructMatch(side_chain_pattern):
-         return False, "No characteristic side chain found"
-
+        side_chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[CX3]=[OX1]")
+        if not mol.HasSubstructMatch(side_chain_pattern):
+            return False, "No characteristic side chain with carbonyl found"
+    
     return True, "Contains a steroid core with lactone and a characteristic sidechain"
