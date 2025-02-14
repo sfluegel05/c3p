@@ -3,7 +3,7 @@ Classifies: CHEBI:15693 aldose
 """
 """
 Classifies: CHEBI:17395 aldose
-An aldose is an aldehydic parent sugar (polyhydroxy aldehyde H[CH(OH)]nC(=O)H, n >= 2) 
+An aldose is an aldehydic parent sugar (polyhydroxy aldehyde H[CH(OH)]nC(=O)H, n >= 2)
 or its intramolecular hemiacetal.
 """
 
@@ -21,52 +21,42 @@ def is_aldose(smiles: str):
         bool: True if molecule is an aldose, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Count aldehyde groups (C=O)
-    aldehyde_pattern = Chem.MolFromSmarts("C=O")
+
+    # Check for aldehyde or hemiacetal group
+    aldehyde_pattern = Chem.MolFromSmarts("[CH](=O)[OH]")
+    hemiacetal_pattern = Chem.MolFromSmarts("[CH1](O)[OH]")
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    n_aldehydes = len(aldehyde_matches)
-    
-    # Count hydroxyl groups (-OH)
+    hemiacetal_matches = mol.GetSubstructMatches(hemiacetal_pattern)
+    if not aldehyde_matches and not hemiacetal_matches:
+        return False, "No aldehyde or hemiacetal group found"
+
+    # Check for multiple hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     n_hydroxyls = len(hydroxyl_matches)
-    
+    if n_hydroxyls < 2:
+        return False, "Less than 2 hydroxyl groups found"
+
     # Count carbon atoms
     n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Aldoses must have at least 1 aldehyde, 2 hydroxyls, and a minimum number of carbon atoms
-    if n_aldehydes == 0 or n_hydroxyls < 2 or n_carbons < 4:
-        return False, "Not enough aldehyde/hydroxyl groups or carbon atoms for aldose"
-    
-    # Check for linear aldose (H[CH(OH)]nC(=O)H or C(=O)H[CH(OH)]n)
-    linear_aldose_pattern = Chem.MolFromSmarts("[CH](O)[CH](O)[CH](O)[CH](=O)O")
-    if mol.HasSubstructMatch(linear_aldose_pattern):
-        return True, "Linear aldose detected"
-    
-    # Check for cyclic hemiacetal
-    ring_info = mol.GetRingInfo()
-    for ring in ring_info.AtomRings():
-        # Check if ring contains aldehyde and hydroxyl groups
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        ring_aldehydes = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1)
-        ring_hydroxyls = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8 and atom.GetDegree() == 2)
-        if ring_aldehydes == 1 and ring_hydroxyls >= 1:
-            return True, "Cyclic hemiacetal aldose detected"
-    
-    # Check for molecular weight (typical aldoses are >120 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 120:
-        return False, "Molecular weight too low for aldose"
-    
-    # Check for carboxylic acid groups (-COOH) or other functional groups
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "Contains carboxylic acid group, not an aldose"
-    
-    return False, "No aldose patterns found"
+    if n_carbons < 3:
+        return False, "Less than 3 carbon atoms found"
+
+    # Check for incompatible functional groups
+    incompatible_patterns = [
+        Chem.MolFromSmarts("C(=O)O"),  # Carboxylic acid
+        Chem.MolFromSmarts("N"),  # Amine
+        Chem.MolFromSmarts("O=C-O-C"),  # Ester
+        Chem.MolFromSmarts("C-O-C"),  # Ether
+    ]
+    for pattern in incompatible_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, f"Incompatible functional group found: {pattern.GetSmarts()}"
+
+    # Passed all checks
+    return True, "Molecule meets structural requirements for an aldose"
