@@ -6,6 +6,7 @@ Classifies: CHEBI:27022 ubiquinones
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_ubiquinones(smiles: str):
     """
@@ -26,28 +27,32 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for benzoquinone core derived from 2,3-dimethoxy-5-methylbenzoquinone
-    core_pattern = Chem.MolFromSmarts("C1=C(C(=O)C(=C(C1=O)[O,OX1])[O,OX1])C")
+    # Look for benzoquinone core with 2 methoxy groups
+    core_pattern = Chem.MolFromSmarts("C1=C(C(=O)C(=C(C1=O)O[CH3])O[CH3])C")
     core_matches = mol.GetSubstructMatches(core_pattern)
     if not core_matches:
-        return False, "Missing benzoquinone core derived from 2,3-dimethoxy-5-methylbenzoquinone"
+        return False, "Missing benzoquinone core with 2 methoxy groups"
 
-    # Look for polyprenoid side chain of any length
-    side_chain_pattern = Chem.MolFromSmarts("C=C(C)CCC")
-    side_chain_matches = mol.GetSubstructMatches(side_chain_pattern, maxMatches=1)
-    if not side_chain_matches:
+    # Look for polyprenoid side chain of at least 5 carbon atoms
+    prenoid_pattern = Chem.MolFromSmarts("C=C(C)CCC=C")
+    prenoid_matches = mol.GetSubstructMatches(prenoid_pattern)
+    if not prenoid_matches:
         return False, "No polyprenoid side chain found"
 
     # Check if side chain is attached to the core
     for core_match in core_matches:
         for atom_idx in core_match:
-            for bond in mol.GetAtomWithIdx(atom_idx).GetBonds():
-                neighbor_atom = bond.GetNeighbor(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for bond in atom.GetBonds():
+                neighbor_atom = bond.GetBeginAtom() if bond.GetEndAtom().GetIdx() == atom_idx else bond.GetEndAtom()
                 # Traverse the side chain and check for polyprenoid pattern
                 path = Chem.FindAllPathsOfLengthN(mol, neighbor_atom.GetIdx(), 5, useBondOrder=True)
                 for p in path:
                     submol = Chem.PathToSubmol(mol, p, atomMap={neighbor_atom.GetIdx(): 1})
-                    if submol.HasSubstructMatch(side_chain_pattern):
-                        return True, "Contains benzoquinone core derived from 2,3-dimethoxy-5-methylbenzoquinone with polyprenoid side chain attached"
+                    if submol.HasSubstructMatch(prenoid_pattern):
+                        # Check side chain length (at least 5 carbon atoms)
+                        n_carbon = sum(1 for atom in submol.GetAtoms() if atom.GetAtomicNum() == 6)
+                        if n_carbon >= 5:
+                            return True, "Contains benzoquinone core derived from 2,3-dimethoxy-5-methylbenzoquinone with polyprenoid side chain attached"
 
-    return False, "Polyprenoid side chain not attached to the benzoquinone core"
+    return False, "Polyprenoid side chain not properly attached to the benzoquinone core"
