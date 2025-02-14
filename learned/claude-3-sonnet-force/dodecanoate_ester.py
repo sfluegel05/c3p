@@ -40,10 +40,10 @@ def is_dodecanoate_ester(smiles: str):
 
     # Check if ester is connected to lauric acid
     for ester_match in ester_matches:
-        ester_atom = mol.GetAtomWithIdx(ester_match[1])
-        for nbr in ester_atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6 and nbr.GetDegree() == 3 and nbr.GetTotalNumHs() == 0:
-                if list(mol.GetAtomBonds(nbr.GetIdx())[2].GetBeginAtomIdx()) == lauric_matches[0]:
-                    return True, "Contains lauric acid ester group"
+        ester_oxygen = mol.GetAtomWithIdx(ester_match[1])
+        for lauric_atom_idx in lauric_matches[0]:
+            lauric_atom = mol.GetAtomWithIdx(lauric_atom_idx)
+            if mol.GetBondBetweenAtoms(ester_oxygen.GetIdx(), lauric_atom.GetIdx()):
+                return True, "Contains lauric acid ester group"
 
     return False, "Lauric acid not connected to ester group"
