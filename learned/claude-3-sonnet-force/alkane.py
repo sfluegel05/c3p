@@ -26,14 +26,12 @@ def is_alkane(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of elements other than C and H
+    # Check if SMILES contains only valid alkane atoms and bonds
     allowed_atoms = [6, 1]  # C and H
-    if any(atom.GetAtomicNum() not in allowed_atoms for atom in mol.GetAtoms()):
-        return False, "Contains atoms other than carbon and hydrogen"
-
-    # Check for unsaturated bonds
-    if any(bond.GetBondType() != Chem.BondType.SINGLE for bond in mol.GetBonds()):
-        return False, "Contains unsaturated bonds"
+    allowed_bonds = [Chem.BondType.SINGLE]
+    if any(atom.GetAtomicNum() not in allowed_atoms for atom in mol.GetAtoms()) or \
+       any(bond.GetBondType() not in allowed_bonds for bond in mol.GetBonds()):
+        return False, "Contains invalid atoms or bonds for an alkane"
 
     # Check for cycles
     if any(ring for ring in mol.GetRingInfo().AtomRings()):
@@ -43,7 +41,9 @@ def is_alkane(smiles: str):
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6:  # Carbon atom
             substituents = [neighbor.GetAtomicNum() for neighbor in atom.GetNeighbors()]
-            if 6 in substituents and sum(substituents) != (2 * len(substituents) + 2):
-                return False, "Contains non-alkane substituents"
+            if len(substituents) > 4:
+                return False, "Carbon atom has more than 4 substituents"
+            elif 6 in substituents and any(substituent != 1 for substituent in substituents):
+                return False, "Contains non-alkyl substituents"
 
     return True, "Acyclic compound containing only carbon and hydrogen in the correct ratio"
