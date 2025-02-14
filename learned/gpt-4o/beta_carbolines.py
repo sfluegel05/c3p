@@ -21,19 +21,14 @@ def is_beta_carbolines(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define SMARTS patterns for the beta-carboline skeleton
-    # Patterns include a broader range for hydrogenated derivatives and possible ring closures.
-    beta_carboline_patterns = [
-        Chem.MolFromSmarts("c1cc2[nH]cc(c3ccccc32)c1"),  # Standard beta-carboline core
-        Chem.MolFromSmarts("c1cnc2c3ccccc3[nH]c2c1"),    # Classic and some hydrogenated forms
-        Chem.MolFromSmarts("c1[nH]cc2c3ccccc3cnc2c1"),   # Another common hydrogenation
-        Chem.MolFromSmarts("C1=CC=2C([nH]c3ccccc23)=NC1") # Variations of pyridoindole with shifts
-    ]
 
-    # Check if the molecule matches any of the beta-carboline patterns
-    for pattern in beta_carboline_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains beta-carboline skeleton or derivative"
+    # Define the beta-carboline core pattern (pyridoindole)
+    # This pattern includes the core tricyclic structure of beta-carbolines 
+    # assuming typical connectivity of pyridine and indole portions
+    beta_carboline_pattern = Chem.MolFromSmarts("c1ccc2[nH]c3cccc(c3n2)c1")
+
+    # Check if the molecule matches the beta-carboline pattern
+    if mol.HasSubstructMatch(beta_carboline_pattern):
+        return True, "Contains beta-carboline skeleton"
 
     return False, "Does not contain beta-carboline skeleton"
