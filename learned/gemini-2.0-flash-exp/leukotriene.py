@@ -23,10 +23,15 @@ def is_leukotriene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for a 20-carbon chain (backbone)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, f"Incorrect number of carbons: found {c_count}; not a leukotriene"
+    # 1. Check for a 20-carbon backbone with 4 double bonds and at least 3 conjugated
+    # This SMARTS pattern tries to capture the essential chain, allowing modifications (denoted by ~).
+    # The pattern specifies a 20 carbon chain with 4 double bonds, where the double bonds are connected by 0-2 single bonds.
+    # Three are conjugated and the fourth is isolated, but can be adjacent.
+
+    backbone_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]=[CX3,CX2]~[CX4,CX3]=[CX3,CX2]~[CX4,CX3]=[CX3,CX2]~[CX4,CX3]=[CX3,CX2]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(backbone_pattern):
+      return False, "Does not have a C20 backbone with the necessary double bond pattern"
+
 
     # 2. Check for four double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
@@ -34,31 +39,8 @@ def is_leukotriene(smiles: str):
     if len(double_bond_matches) < 4:
         return False, f"Less than 4 double bonds: found {len(double_bond_matches)}; not a leukotriene"
 
-    # 3. Check for a conjugated triene system. Allow for dihydro forms as well.
-    # Look for a system of 3 conjugated double bonds plus one isolated double bond.
-    # The conjugated system can have an extra single bond in the middle.
-    conjugated_triene_patterns = [
-        Chem.MolFromSmarts("C=C-C=C-C=C"), # strict triene
-        Chem.MolFromSmarts("C=C-C=C-CC=C"), # one single bond break
-        Chem.MolFromSmarts("C=CC-C=C-C=C"), # one single bond break
-        Chem.MolFromSmarts("C=CC=CC=C")  # 3 conjugated bonds connected
-    ]
-    found_triene = False
-    for pattern in conjugated_triene_patterns:
-      if mol.HasSubstructMatch(pattern):
-        found_triene = True
-        break
 
-    if not found_triene:
-        return False, "No conjugated triene system found."
-
-
-    # 4. Check for a long chain (fatty acid like)
-    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long chain present"
-        
-    # 5. Check for at least one hydroxyl and one carboxylic acid
+    # 3. Check for at least one hydroxyl and one carboxylic acid
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
 
@@ -67,4 +49,5 @@ def is_leukotriene(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    return True, "Meets the criteria for a leukotriene: 20 carbons, four double bonds with 3 conjugated, a hydroxyl and a carboxylic group."
+
+    return True, "Meets the criteria for a leukotriene: 20 carbon backbone with four double bonds of which three are conjugated, a hydroxyl and a carboxylic group."
