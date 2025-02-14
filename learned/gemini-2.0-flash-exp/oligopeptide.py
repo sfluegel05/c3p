@@ -2,6 +2,7 @@
 Classifies: CHEBI:25676 oligopeptide
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_oligopeptide(smiles: str):
@@ -21,36 +22,38 @@ def is_oligopeptide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Look for peptide bonds (-C(=O)N-)
     peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3]")
     peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    num_peptide_bonds = len(peptide_matches)
-    if num_peptide_bonds < 1:
-        return False, "Found no peptide bonds"
+    if len(peptide_matches) < 1: #An oligopeptide should have at least one peptide bond
+        return False, f"Found {len(peptide_matches)} peptide bonds, at least 1 required"
     
-    amino_acid_residues = 0
-    for match in peptide_matches:
-        c_atom_index = match[0]
-        n_atom_index = match[1]
-        c_atom = mol.GetAtomWithIdx(c_atom_index)
-        n_atom = mol.GetAtomWithIdx(n_atom_index)
+    # Look for amino acid residue pattern (N-C-C(=O))
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
 
-        # Find alpha carbon
-        for neighbor in c_atom.GetNeighbors():
-            if neighbor.GetSymbol() == 'C' and neighbor.GetDegree() == 4:
-                alpha_carbon = neighbor
-                for alpha_neighbor in alpha_carbon.GetNeighbors():
-                     if alpha_neighbor.GetIdx() == n_atom_index:
-                         amino_acid_residues += 1
-                         break;
+    if len(amino_acid_matches) < 2 or len(amino_acid_matches) > 25: #set limits for oligopeptides
+        return False, f"Found {len(amino_acid_matches)} amino acid residues, must be between 2 and 25"
+
+    # Check for free carboxylic acid and amine groups (or amide bond)
+    has_terminal_carboxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)O"))
+    has_terminal_amino    = mol.HasSubstructMatch(Chem.MolFromSmarts("N"))
+    has_amide             = mol.HasSubstructMatch(Chem.MolFromSmarts("[NX3][CX3](=[OX1])"))
+
+    if not (has_terminal_carboxyl or has_amide) or not (has_terminal_amino or has_amide):
+        return False, "Not a typical oligopeptide structure without terminal amino or carboxyl group and without amides"
     
-    if amino_acid_residues < 2:
-        return False, f"Found {amino_acid_residues} amino acid residues, at least 2 required"
-    
-    # Check for number of residues
-    num_atoms = mol.GetNumAtoms()
-    if num_atoms < 4 or num_atoms > 500: #Rough sanity check
-        return False, f"Molecule has {num_atoms}, which is outside of the reasonable size for oligopeptides"
+    # Check chain length using molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 3000: # set an upper limit on MW based on typical oligopeptide, increased
+        return False, "Molecular weight is too high for a typical oligopeptide"
+
+    #check for the presence of nitrogens and oxygens
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+
+    if n_count < 1 or o_count < 2:
+        return False, "Oligopeptide must have at least one N and at least two O atoms"
     
     return True, "Has peptide bonds and amino acid residues, within size range of a typical oligopeptide"
