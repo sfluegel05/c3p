@@ -21,24 +21,32 @@ def is_hemiaminal(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for hemiaminal: C bonded to OH and NRx (where R can vary)
-    hemiaminal_pattern = Chem.MolFromSmarts("[C]([OH])([NH2,NHR,NHR2])")  
+    # Adjusted SMARTS pattern for hemiaminal: C with OH and NR groups
+    hemiaminal_pattern = Chem.MolFromSmarts("[C;H2,H3;!R]([OH])[NH2,NHR,NHR2]")
     
-    # Check if the molecule matches the hemiaminal pattern
+    # Find matches with the hemiaminal pattern
     matches = mol.GetSubstructMatches(hemiaminal_pattern)
     if matches:
-        # Verify each match to ensure it is not part of larger functional groups
         for match in matches:
-            carbon_atom = mol.GetAtomWithIdx(match[0])
-            oxygen_atom = mol.GetAtomWithIdx(match[1])
-            nitrogen_atom = mol.GetAtomWithIdx(match[2])
+            carbon_index = match[0]
+            oxygen_index = match[1]
+            nitrogen_index = match[2]
             
-            # Ensure OH and NR group are both directly attached to the same carbon
-            if carbon_atom.GetTotalValence() <= 4 and oxygen_atom.GetAtomicNum() == 8 and nitrogen_atom.GetAtomicNum() == 7:
+            # Ensuring OH and NR are directly attached to the same carbon atom
+            carbon_atom = mol.GetAtomWithIdx(carbon_index)
+            if carbon_atom.GetDegree() != 3:
+                continue  # Should have exactly 3 substituents (2 plus implicit hydrogen)
+        
+            # Ensure atoms are correctly classified
+            oxygen_atom = mol.GetAtomWithIdx(oxygen_index)
+            nitrogen_atom = mol.GetAtomWithIdx(nitrogen_index)
+            if (oxygen_atom.GetAtomicNum() == 8 and 
+                nitrogen_atom.GetAtomicNum() == 7 and
+                carbon_atom.GetAtomicNum() == 6):
                 return True, "Contains hemiaminal motif: C with OH and NR attached"
     
     return False, "No hemiaminal motif found"
 
-# Example usage:
-# result, reason = is_hemiaminal("OC(N)CC")
+# Example usage for debugging:
+# result, reason = is_hemiaminal("NC(O)C(O)=O")
 # print(f"Is hemiaminal: {result}, Reason: {reason}")
