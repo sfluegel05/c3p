@@ -2,7 +2,6 @@
 Classifies: CHEBI:143004 ultra-long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_ultra_long_chain_fatty_acid(smiles: str):
     """
@@ -28,25 +27,46 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     # Find the carboxyl carbon
     matches = mol.GetSubstructMatches(carboxyl_pattern)
     carboxyl_carbon_idx = matches[0][0] # Get the index of the carbon in C=O
-    
-    def get_longest_chain(start_atom_idx, current_path, max_path_len):
-        max_path_len[0] = max(max_path_len[0], len(current_path))
-        
-        atom = mol.GetAtomWithIdx(start_atom_idx)
-        
-        for neighbor in atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor.GetAtomicNum() == 6 and neighbor_idx not in current_path:
-                get_longest_chain(neighbor_idx, current_path + [neighbor_idx], max_path_len)
-        return
-    
-    max_path_len = [0]
-    get_longest_chain(carboxyl_carbon_idx, [carboxyl_carbon_idx], max_path_len)
-    
-    # Count carbons in longest path
-    longest_chain_carbon_count = max_path_len[0]
 
-    if longest_chain_carbon_count > 27:
-        return True, f"Longest carbon chain has {longest_chain_carbon_count} carbons, which is > 27."
+    # find a carbon connected to the carboxyl carbon
+    carboxyl_atom = mol.GetAtomWithIdx(carboxyl_carbon_idx)
+    chain_start_idx = None
+    for neighbor in carboxyl_atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6:
+            chain_start_idx = neighbor.GetIdx()
+            break
+
+    if chain_start_idx is None:
+        return False, "No carbon chain connected to carboxyl group"
+
+    # Follow the carbon chain
+    current_atom_idx = chain_start_idx
+    previous_atom_idx = carboxyl_carbon_idx
+    carbon_count = 1 # we have already started at one carbon
+    
+    while True:
+      current_atom = mol.GetAtomWithIdx(current_atom_idx)
+      next_atom_idx = None
+
+      # Find neighbor that is carbon and is not the previous
+      for neighbor in current_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != previous_atom_idx:
+                if next_atom_idx is not None: # if there are more than 1 neighbor, break as we are not following a single chain
+                    next_atom_idx = None
+                    break
+                next_atom_idx = neighbor.GetIdx()
+
+
+      if next_atom_idx is None: # if we don't find any neighbor or multiple neighbors, we have reached the end of the chain
+        break
+
+      # Continue following
+      carbon_count += 1
+      previous_atom_idx = current_atom_idx
+      current_atom_idx = next_atom_idx
+
+
+    if carbon_count > 27:
+        return True, f"Longest carbon chain has {carbon_count} carbons, which is > 27."
     else:
-        return False, f"Longest carbon chain has {longest_chain_carbon_count} carbons, which is <= 27."
+        return False, f"Longest carbon chain has {carbon_count} carbons, which is <= 27."
