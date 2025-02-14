@@ -1,53 +1,26 @@
 """
 Classifies: CHEBI:61910 very long-chain fatty acyl-CoA
 """
-"""
-Classifies: CHEBI:36345 very long-chain fatty acyl-CoA
-A fatty acyl-CoA in which the fatty acyl group has a chain length greater than C22.
-"""
+The previous program had some issues that led to missed classifications. Here's an analysis of what went wrong and how we can improve:
 
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+1. **Missing CoA Backbone Pattern**: The CoA backbone pattern used in the program was too specific and rigid. It did not account for variations in the CoA backbone structure, such as different stereochemistry or different functional groups (e.g., hydroxyl groups) attached to the ribose ring. This led to false negatives for many valid very long-chain fatty acyl-CoA structures.
 
-def is_very_long_chain_fatty_acyl_CoA(smiles: str):
-    """
-    Determines if a molecule is a very long-chain fatty acyl-CoA based on its SMILES string.
+**Improvement**: We can use a more flexible and general pattern for the CoA backbone. Instead of matching the entire backbone structure, we can look for the presence of the characteristic adenosine and pantothenic acid moieties, which are common to all CoA derivatives.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Overly Strict Fatty Acid Chain Pattern**: The pattern used to match the fatty acid chain was too specific, requiring a continuous chain of carbon atoms without any substitutions or variations. This pattern would not match fatty acid chains with double bonds, cyclic structures, or other functional groups.
 
-    Returns:
-        bool: True if molecule is a very long-chain fatty acyl-CoA, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for CoA backbone
-    coa_pattern = Chem.MolFromSmarts("C(C)(CO[P@](=O)(O)O[P@](=O)(O)OC[C@H]1[C@@H]([C@@H](O)[C@H](O)OP(O)(O)=O)O[C@@H]1n1cnc2c(N)ncnc12)C(=O)NCCC(=O)NCCSC(=O)")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Missing CoA backbone"
-    
-    # Look for long fatty acid chain (>22 carbons)
-    long_chain_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]([CX3])([CX3])[CX3]")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "Fatty acid chain too short (<=C22)"
-    
-    # Count double bonds in fatty acid chain
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    n_double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
-    
-    # Check for other functional groups or substituents
-    allowed_atoms = [1, 6, 8, 7, 15, 16]  # C, H, O, N, P, S
-    disallowed_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in allowed_atoms]
-    if disallowed_atoms:
-        return False, f"Contains disallowed atoms: {', '.join(str(num) for num in set(disallowed_atoms))}"
-    
-    # Classify based on chain length and double bonds
-    chain_length = rdMolDescriptors.CalcNumAliphaticCarbons(mol)
-    reason = f"Very long-chain fatty acyl-CoA with {chain_length} carbons and {n_double_bonds} double bonds"
-    
-    return True, reason
+**Improvement**: We can use a more flexible pattern that allows for double bonds, cyclic structures, and other functional groups commonly found in fatty acids. Additionally, instead of checking for a specific chain length, we can simply count the number of carbon atoms in the fatty acid chain and check if it exceeds 22.
+
+3. **Disallowed Atoms Check**: The check for disallowed atoms was too strict and did not account for common functional groups or substituents found in fatty acyl-CoA structures, such as hydroxyl groups or keto groups.
+
+**Improvement**: We can relax the disallowed atoms check or remove it entirely, as the presence of certain functional groups or substituents does not necessarily disqualify a molecule from being a very long-chain fatty acyl-CoA.
+
+4. **Double Bond Counting**: The program counted the number of double bonds in the entire molecule, which may not be accurate for some structures where double bonds are present in the CoA backbone or other parts of the molecule.
+
+**Improvement**: We can modify the double bond counting to focus specifically on the fatty acid chain portion of the molecule.
+
+5. **Lack of Explicit Stereochemistry Handling**: The program did not explicitly handle stereochemistry, which can be important for accurate classification of some very long-chain fatty acyl-CoA structures.
+
+**Improvement**: We can incorporate explicit stereochemistry handling in the pattern matching and atom traversal steps to ensure accurate classification of stereoisomers.
+
+By addressing these issues, we can improve the accuracy and robustness of the program for classifying very long-chain fatty acyl-CoA structures based on their SMILES strings.
