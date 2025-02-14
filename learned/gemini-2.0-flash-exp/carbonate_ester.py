@@ -21,11 +21,22 @@ def is_carbonate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core carbonate ester SMARTS pattern: Any non-H atom - O - C(=O) - O - any non-H atom
-    carbonate_pattern = Chem.MolFromSmarts("[!H][O][CX3](=[OX1])[O][!H]")
+    # Define the core carbonate ester SMARTS pattern (non-cyclic, two organic groups):  [!H][O][CX3](=[OX1])[O][!H]
+    carbonate_pattern = Chem.MolFromSmarts("[!H][O][C](=[O])([O][!H])")
+
+    # Define SMARTS for cyclic carbonates, such as ethylene carbonate.
+    cyclic_carbonate_pattern = Chem.MolFromSmarts("[O]1-[C](=[O])-[O]-[A]1")
     
-    # Check if the molecule has the carbonate group
-    if not mol.HasSubstructMatch(carbonate_pattern):
-        return False, "No carbonate group found"
-    
-    return True, "Contains a carbonate group with organyl groups attached."
+    # Define SMARTS for hydrogen carbonates (R-O-C(=O)-OH)
+    hydrogen_carbonate_pattern = Chem.MolFromSmarts("[!H][O][C](=[O])[OH1]")
+
+
+    # Check if the molecule has the carbonate group using any of the patterns.
+    if mol.HasSubstructMatch(carbonate_pattern):
+        return True, "Contains a carbonate group with two organic groups"
+    elif mol.HasSubstructMatch(cyclic_carbonate_pattern):
+         return True, "Contains a cyclic carbonate group"
+    elif mol.HasSubstructMatch(hydrogen_carbonate_pattern):
+        return True, "Contains a hydrogen carbonate group"
+    else:
+      return False, "No carbonate group found"
