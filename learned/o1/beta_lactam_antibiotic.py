@@ -5,7 +5,7 @@ Classifies: CHEBI:27933 beta-lactam antibiotic
 Classifies: CHEBI:35627 beta-lactam antibiotic
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
+from rdkit.Chem import AllChem
 
 def is_beta_lactam_antibiotic(smiles: str):
     """
@@ -19,59 +19,34 @@ def is_beta_lactam_antibiotic(smiles: str):
         bool: True if molecule is a beta-lactam antibiotic, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Get ring information
+    
+    # Define beta-lactam ring pattern
+    beta_lactam_smarts = '[N;R][C;R][C;R][C;R](=O)'
+    beta_lactam_pattern = Chem.MolFromSmarts(beta_lactam_smarts)
+    
+    # Check for beta-lactam ring
+    if not mol.HasSubstructMatch(beta_lactam_pattern):
+        return False, "No beta-lactam ring found"
+    
+    # Check for organonitrogen heterocyclic nature
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
-
-    beta_lactam_found = False
-
-    # Loop over atom rings to find beta-lactam ring
+    is_organonitrogen_heterocycle = False
+    
+    # Iterate over rings to find rings containing nitrogen
     for ring in atom_rings:
-        if len(ring) == 4:
-            atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
-            num_nitrogen = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 7)
-            num_carbonyl = 0
-            # Check for carbonyl group (C=O) in ring
-            for idx in ring:
-                atom = mol.GetAtomWithIdx(idx)
-                if atom.GetAtomicNum() == 6:  # Carbon atom
-                    for bond in atom.GetBonds():
-                        if bond.GetBondType() == rdchem.BondType.DOUBLE:
-                            neighbor = bond.GetOtherAtom(atom)
-                            if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() in ring:
-                                num_carbonyl += 1
-            if num_nitrogen == 1 and num_carbonyl == 1:
-                beta_lactam_found = True
-                break
-
-    if not beta_lactam_found:
-        return False, "No beta-lactam ring found"
-
-    # Check if molecule is an organonitrogen heterocycle (contains nitrogen in a ring)
-    organonitrogen_heterocycle = False
-    for ring in atom_rings:
-        atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
-        if any(atom.GetAtomicNum() == 7 for atom in atoms_in_ring):
-            organonitrogen_heterocycle = True
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        # Check if any atom in the ring is nitrogen
+        if any(atom.GetAtomicNum() == 7 for atom in ring_atoms):
+            is_organonitrogen_heterocycle = True
             break
-
-    if not organonitrogen_heterocycle:
+    
+    if not is_organonitrogen_heterocycle:
         return False, "Molecule is not an organonitrogen heterocycle"
-
-    # Optional: Check for antibiotic-like properties (presence of carboxylic acid or ester group)
-    antibiotic_features = False
-    carboxylic_acid_smarts = '[CX3](=O)[OX1H0-,OX2H1]'
-    carboxylic_acid_pattern = Chem.MolFromSmarts(carboxylic_acid_smarts)
-    if mol.HasSubstructMatch(carboxylic_acid_pattern):
-        antibiotic_features = True
-
-    if not antibiotic_features:
-        return False, "No carboxylic acid or ester group found"
-
+    
     return True, "Contains beta-lactam ring and is an organonitrogen heterocycle"
