@@ -2,13 +2,12 @@
 Classifies: CHEBI:48024 3'-hydroxyflavanones
 """
 """
-Classifies: CHEBI:25657 3'-hydroxyflavanone
+Classifies: CHEBI:87871 3'-hydroxyflavanone
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from typing import Tuple
 
-def is_3__hydroxyflavanones(smiles: str) -> Tuple[bool, str]:
+def is_3__hydroxyflavanones(smiles: str):
     """
     Determines if a molecule is a 3'-hydroxyflavanone based on its SMILES string.
     A 3'-hydroxyflavanone is a flavanone with a hydroxy substituent at position 3' of the phenyl ring.
@@ -26,45 +25,21 @@ def is_3__hydroxyflavanones(smiles: str) -> Tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Enumerate tautomers and stereoisomers
-    tautomers = [Chem.MolFromSmiles(Chem.MolToSmiles(taut, isomericSmiles=True)) for taut in AllChem.EnumerateTautomers(mol)]
-    stereoisomers = list({Chem.MolToSmiles(Chem.MolFromSmiles(Chem.MolToSmiles(isomer, isomericSmiles=True)), isomericSmiles=True)
-                          for isomer in AllChem.EnumerateStereoisomers(mol)})
-    
-    # Check if any tautomer/stereoisomer matches the 3'-hydroxyflavanone pattern
-    for tautomer in tautomers:
-        for stereoisomer in stereoisomers:
-            if _is_3__hydroxyflavanone(stereoisomer):
-                return True, "Matches the 3'-hydroxyflavanone structural pattern"
-    
-    return False, "Does not match the 3'-hydroxyflavanone structural pattern"
-
-def _is_3__hydroxyflavanone(mol: Chem.Mol) -> bool:
-    """
-    Checks if a molecule matches the 3'-hydroxyflavanone structural pattern.
-
-    Args:
-        mol (Chem.Mol): RDKit molecule object
-
-    Returns:
-        bool: True if the molecule matches the 3'-hydroxyflavanone pattern, False otherwise
-    """
-    
-    # Check for flavanone scaffold
-    flavanone_pattern = Chem.MolFromSmarts("[O;R]c1ccc(cc1)[C@H]2CC(=O)Oc2")
+    # Look for flavanone scaffold (C=C-C-C=O-C=C)
+    flavanone_pattern = Chem.MolFromSmarts("[C&R1]=1[C&R1]=C[C&R1]([C&R1]=C[C&R1]=1)[C&R2]=2[C&R1]=C[C&R1]=C([C&R1]=2)[O&R1]")
     if not mol.HasSubstructMatch(flavanone_pattern):
-        return False
+        return False, "No flavanone scaffold found"
     
-    # Check for hydroxy group at 3' position
-    hydroxy_3__pattern = Chem.MolFromSmarts("c1ccc(cc1O)c2ccc(cc2)")
-    if not mol.HasSubstructMatch(hydroxy_3__pattern):
-        return False
+    # Look for hydroxy group at 3' position of phenyl ring
+    hydroxy_pattern = Chem.MolFromSmarts("[c&R1]1[c&R1][c&R1]([O&R1])[c&R1][c&R1][c&R1]1")
+    hydroxy_match = mol.GetSubstructMatches(hydroxy_pattern)
+    if not hydroxy_match:
+        return False, "No hydroxy group at 3' position"
     
-    # Additional checks for common substituents (prenyl, glycosidic)
-    prenyl_pattern = Chem.MolFromSmarts("[CH2]=[CH][CH2]=[CH][CH3]")
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2]C[C@@H]([C@H]([C@@H]([C@H](O[C@@H]1[C@H]([C@@H]([C@@H](O1)O)O)O)O)O)O")
+    # Check if the matched hydroxy group is part of the phenyl ring
+    phenyl_ring_atoms = set(AllChem.GetMolFragFromAtomSmilesPattern(mol, "c1ccccc1", atomDepictionOptions=Chem.AtomDepictionOptions()))
+    hydroxy_atom = hydroxy_match[0][2]
+    if hydroxy_atom not in phenyl_ring_atoms:
+        return False, "Hydroxy group not part of phenyl ring"
     
-    if mol.HasSubstructMatch(prenyl_pattern) or mol.HasSubstructMatch(glycosidic_pattern):
-        return True
-    
-    return True
+    return True, "Contains flavanone scaffold with hydroxy group at 3' position of phenyl ring"
