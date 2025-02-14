@@ -9,10 +9,9 @@ from rdkit import Chem
 def is_secondary_amine(smiles: str):
     """
     Determines if a molecule is a secondary amine based on its SMILES string.
-    A secondary amine is a nitrogen atom bonded to exactly two carbon atoms and one hydrogen,
-    excluding cases where nitrogen is part of amides, aromatic systems, nitro groups,
-    nitriles, imines, or other functional groups where nitrogen is double-bonded
-    or bonded to heteroatoms other than hydrogen.
+    A secondary amine is a nitrogen atom bonded to two carbon atoms and zero or one hydrogen,
+    excluding cases where nitrogen is part of amides, nitro groups, nitriles, or other
+    functional groups where nitrogen is double-bonded to carbon or bonded to oxygen in nitro groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,65 +24,57 @@ def is_secondary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Define SMARTS patterns to exclude unwanted functional groups
+    amide_pattern = Chem.MolFromSmarts("N-C(=O)")
+    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
+    nitrile_pattern = Chem.MolFromSmarts("C#N")
+    imine_pattern = Chem.MolFromSmarts("N=C")
+    azide_pattern = Chem.MolFromSmarts("N=[N+]=[N-]")
+
+    # Check for excluded functional groups
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Contains amide group"
+    if mol.HasSubstructMatch(nitro_pattern):
+        return False, "Contains nitro group"
+    if mol.HasSubstructMatch(nitrile_pattern):
+        return False, "Contains nitrile group"
+    if mol.HasSubstructMatch(imine_pattern):
+        return False, "Contains imine group"
+    if mol.HasSubstructMatch(azide_pattern):
+        return False, "Contains azide group"
+
+    # Iterate over nitrogen atoms
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 7:  # Skip if not nitrogen
+        if atom.GetAtomicNum() != 7:  # Nitrogen atoms only
             continue
 
-        # Check if nitrogen has exactly one hydrogen
-        if atom.GetTotalNumHs(includeNeighbors=True) != 1:
+        if atom.GetFormalCharge() != 0:
             continue
 
-        # Check if nitrogen is bonded to exactly two carbon atoms
+        # Check if nitrogen is connected to exactly two carbons
         neighbors = atom.GetNeighbors()
         carbon_count = 0
-        has_heteroatom_neighbor = False
         for nbr in neighbors:
-            atomic_num = nbr.GetAtomicNum()
-            if atomic_num == 6:
+            if nbr.GetAtomicNum() == 6:
                 carbon_count += 1
-            elif atomic_num != 1:  # Exclude hydrogen
-                has_heteroatom_neighbor = True
-                break
 
-        if carbon_count != 2 or has_heteroatom_neighbor:
+        if carbon_count != 2:
             continue
 
-        # Exclude nitrogens with double bonds (e.g., imines, nitriles)
-        has_double_bond = False
-        for bond in atom.GetBonds():
-            if bond.GetBondTypeAsDouble() == 2.0 and bond.GetOtherAtom(atom).GetAtomicNum() != 1:
-                has_double_bond = True
-                break
-
-        if has_double_bond:
+        # Check total valence (should be 3 for secondary amine)
+        if atom.GetTotalValence() != 3:
             continue
 
-        # Exclude nitrogens in amides (N-C(=O))
-        is_amide = False
-        for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6:  # Neighbor is carbon
-                for nbr2 in nbr.GetNeighbors():
-                    if nbr2.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx()).GetBondTypeAsDouble() == 2.0:
-                        is_amide = True
-                        break
-                if is_amide:
-                    break
-        if is_amide:
+        # Secondary amines can have 0 or 1 hydrogen (due to substitutions like nitrosamines)
+        hydrogen_count = atom.GetTotalNumHs()
+
+        if hydrogen_count > 1:
             continue
 
-        # Exclude nitro groups (N(=O)-O)
-        is_nitro = False
-        if atom.GetFormalCharge() == 1:
-            for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 8:
-                    is_nitro = True
-                    break
-        if is_nitro:
-            continue
-
-        # Exclude aromatic nitrogens participating in aromatic systems
-        if atom.GetIsAromatic():
-            continue
+        # Exclude nitrogens bonded to oxygen (e.g., N-oxides)
+        has_oxygen_neighbor = any(nbr.GetAtomicNum() == 8 for nbr in neighbors)
+        if has_oxygen_neighbor and not atom.IsInRing():
+            continue  # Allow oxygen if in ring (e.g., oximes)
 
         # If all checks passed, it's a secondary amine
         return True, "Contains secondary amine group"
