@@ -21,8 +21,8 @@ def is_sulfonamide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the sulfonamide pattern S(=O)(=O)N
-    sulfonamide_pattern = Chem.MolFromSmarts("S(=O)(=O)N")
+    # Define the sulfonamide pattern ensuring more restrictions
+    sulfonamide_pattern = Chem.MolFromSmarts("N([#6,#1])S(=O)(=O)")
     if mol.HasSubstructMatch(sulfonamide_pattern):
         return True, "Contains the sulfonamide functional group S(=O)(=O)N"
     else:
