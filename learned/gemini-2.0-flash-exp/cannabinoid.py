@@ -2,12 +2,12 @@
 Classifies: CHEBI:67194 cannabinoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
-    This function uses specific substructure searches rather than a scoring system
-    to identify cannabinoid characteristics.
+    This function uses a combination of substructure searches and property checks.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,43 +20,43 @@ def is_cannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for dibenzopyran core (classical cannabinoids) - stricter pattern
-    dibenzopyran_pattern = Chem.MolFromSmarts("c1cc2c3c(cc1)Oc1ccccc1C3CC2")
-    if mol.HasSubstructMatch(dibenzopyran_pattern):
-        # Check for at least one phenolic -OH
-        phenolic_oh_pattern = Chem.MolFromSmarts("[c]O[H]")
-        if mol.HasSubstructMatch(phenolic_oh_pattern):
-          return True, "Contains classical cannabinoid dibenzopyran core and a phenolic hydroxyl."
+    # Helper function to count carbons and oxygens
+    def count_atoms(molecule, atom_symbol):
+        return sum(1 for atom in molecule.GetAtoms() if atom.GetSymbol() == atom_symbol)
 
-    # 2. Check for modified dibenzopyran core
-    modified_dibenzopyran_pattern = Chem.MolFromSmarts("c1cc2c(cc1[C,c])Oc1ccccc1C2")
-    if mol.HasSubstructMatch(modified_dibenzopyran_pattern):
-       # Check for at least one phenolic -OH
-      phenolic_oh_pattern = Chem.MolFromSmarts("[c]O[H]")
-      if mol.HasSubstructMatch(phenolic_oh_pattern):
-        return True, "Contains modified dibenzopyran core and a phenolic hydroxyl."
+    # Minimum Carbon and oxygen atoms check (to remove small/unlikely molecules)
+    min_carbons = 10
+    min_oxygens = 1
+    c_count = count_atoms(mol, "C")
+    o_count = count_atoms(mol, "O")
+    if c_count < min_carbons or o_count < min_oxygens:
+      return False, f"Too few carbon ({c_count}) or oxygen atoms ({o_count}). Must have at least {min_carbons} C and {min_oxygens} O atoms."
 
-    # 3. Check for a cyclic terpene core with phenolic OH. For CBD like compounds.
-    cyclic_terpene_pattern = Chem.MolFromSmarts("[C]1(C)C=C([C,c])[C,c]CC1") # Simplified, look for monoterpene core
-    if mol.HasSubstructMatch(cyclic_terpene_pattern):
-        # Check for at least one phenolic -OH
-      phenolic_oh_pattern = Chem.MolFromSmarts("[c]O[H]")
-      if mol.HasSubstructMatch(phenolic_oh_pattern):
-        return True, "Contains cyclic terpene core and a phenolic hydroxyl."
+
+    # 1. Check for a fused ring system containing a 6-membered ring (core of cannabinoids)
+    fused_ring_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c]2[c]1[c][c][c][c]2")
+    if mol.HasSubstructMatch(fused_ring_pattern):
+        return True, "Contains a fused ring system characteristic of many cannabinoids"
+
+
+    # 2. Check for long carbon chains with amides/esters/ethers
+    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if mol.HasSubstructMatch(long_chain_pattern):
+      #check if it has any of the functional groups of interest
+        amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX2]")
+        ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
+        ether_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
+        
+        if mol.HasSubstructMatch(amide_pattern) or mol.HasSubstructMatch(ester_pattern) or mol.HasSubstructMatch(ether_pattern):
+            return True, "Contains a long carbon chain with a functional group (amide/ester/ether)."
+
+    #3. Check for indoles or other nitrogen heterocycles.
+    indole_pattern = Chem.MolFromSmarts("c1ccnc2c1cc[cH]2")
+    if mol.HasSubstructMatch(indole_pattern):
+         return True, "Contains an indole heterocycle"
     
-    # 4. Check for fatty acid chains with specific functional groups (amides, esters) common in endocannabinoids
-    fatty_acid_amide_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]=[CX3,CX4][CX3](=[OX1])[NX2]")
-    if mol.HasSubstructMatch(fatty_acid_amide_pattern):
-        return True, "Contains fatty acid chain with an amide."
-
-    fatty_acid_ester_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]=[CX3,CX4][CX3](=[OX1])[OX2][CX4]")
-    if mol.HasSubstructMatch(fatty_acid_ester_pattern):
-         return True, "Contains fatty acid chain with an ester."
-
-    # Negative constraint: if it is a peptide.
-    peptide_pattern = Chem.MolFromSmarts("[NX2][CX3](=[OX1])[CX4]")
-    if mol.HasSubstructMatch(peptide_pattern):
-        return False, "Contains peptide bonds, unlikely to be a cannabinoid."
-
+    other_n_het_pattern = Chem.MolFromSmarts("N1[c][c][c][c][c]1")
+    if mol.HasSubstructMatch(other_n_het_pattern):
+        return True, "Contains a nitrogen heterocycle."
 
     return False, "Does not fit the criteria for a cannabinoid structure."
