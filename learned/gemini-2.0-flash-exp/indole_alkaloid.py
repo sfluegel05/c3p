@@ -20,9 +20,16 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for indole substructure
-    indole_pattern = Chem.MolFromSmarts("c1c[nH]c2ccccc12")
-    if mol.HasSubstructMatch(indole_pattern):
+    # More specific SMARTS pattern for indole:
+    #  - c1: Aromatic carbon
+    #  - c2: Aromatic carbon
+    #  - [nH+] or [nH]: Nitrogen (protonated or not)
+    #  - c3-c6: Remaining aromatic carbons
+    #  - The ~ represents an aromatic bond and is more explicit than specifying double and single bonds
+    indole_pattern = Chem.MolFromSmarts("c1~c~[nH+]~c2~c~c~c~c1~2") # Added protonated N
+    indole_pattern2 = Chem.MolFromSmarts("c1~c~[nH]~c2~c~c~c~c1~2") # added neutral N
+
+    if mol.HasSubstructMatch(indole_pattern) or mol.HasSubstructMatch(indole_pattern2):
         return True, "Contains an indole substructure"
     else:
         return False, "Does not contain an indole substructure"
