@@ -16,16 +16,18 @@ def is_enone(smiles: str):
         bool: True if molecule is an enone, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Define an improved SMARTS for enone (alpha, beta-unsaturated ketone)
-    # - Ensure conjugation and presence of non-H on the ketone carbon
-    enone_pattern = Chem.MolFromSmarts("C=CC(=O)[C,N,#6][!H]")
+    # Improved SMARTS for enone: broadening conditions and patterns.
+    # Each atom is specified with constraints: 
+    # - Two carbon double bond (C=C)
+    # - Followed by a single bond ketone (C=O) with non-H
+    enone_pattern = Chem.MolFromSmarts("[C;R0]=[C;R0]-[C;R0](=O)[C,N,#6]")
 
+    # Check for enone substructure
     if mol.HasSubstructMatch(enone_pattern):
         return True, "Contains alpha, beta-unsaturated ketone (enone) structure"
     
