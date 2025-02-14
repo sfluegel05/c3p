@@ -27,13 +27,13 @@ def is_long_chain_fatty_acyl_CoA_4_(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for CoA backbone pattern
+    # Look for CoA backbone pattern with specific stereochemistry
     coa_pattern = Chem.MolFromSmarts("C(C(C(=O)NCCC(=O)NCCS)O)(C)COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)([O-])[O-])n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA backbone found"
     
     # Look for fatty acid chain (long carbon chain with carboxyl group)
-    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)CCCCCCC")
+    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)CCCCCCCCCCC")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) != 1:
         return False, f"Found {len(fatty_acid_matches)} fatty acid chains, need exactly 1"
@@ -46,7 +46,15 @@ def is_long_chain_fatty_acyl_CoA_4_(smiles: str):
     
     # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
-        return False, "Fatty acid chain too short"
+    if n_rotatable < 12:
+        return False, "Fatty acid chain too short (less than 12 rotatable bonds)"
+    
+    # Additional checks for specific functional groups or double bond patterns
+    # ...
     
     return True, "Contains CoA backbone with a long fatty acid chain and deprotonated phosphate/diphosphate groups"
+
+# Example usage
+smiles = "CC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12"
+result, reason = is_long_chain_fatty_acyl_CoA_4_(smiles)
+print(result, reason)
