@@ -27,30 +27,41 @@ def is_cyclic_fatty_acid(smiles: str):
 
     # Check for carboxylic acid group
     acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    if not mol.HasSubstructMatch(acid_pattern):
+    acid_atoms = mol.GetSubstructMatches(acid_pattern)
+    if not acid_atoms:
         return False, "No carboxylic acid group found"
 
     # Identify rings (aromatic and aliphatic)
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
 
-    # Check if any ring is connected to the carboxylic acid group
-    acid_atoms = mol.GetSubstructMatches(acid_pattern)
-    acid_connected_rings = []
+    # Check if the carboxylic acid group is part of a ring
+    acid_in_ring = False
     for ring in rings:
-        for atom_idx in ring:
-            if atom_idx in [x[0] for x in acid_atoms]:
-                acid_connected_rings.append(ring)
+        for atom_idx in acid_atoms[0]:
+            if atom_idx in ring:
+                acid_in_ring = True
                 break
-
-    if not acid_connected_rings:
-        return False, "No rings connected to the carboxylic acid group"
 
     # Check for carbon chains
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 8:
         return False, "Too few carbons for a fatty acid"
 
-    # Additional checks or filters can be added here if needed
+    if acid_in_ring:
+        return True, "Contains a carboxylic acid group as part of a ring structure"
+    else:
+        # Check if any ring is connected to the carboxylic acid group
+        acid_connected_rings = []
+        for ring in rings:
+            for atom_idx in ring:
+                if atom_idx in [x[0] for x in acid_atoms]:
+                    acid_connected_rings.append(ring)
+                    break
 
-    return True, "Contains a carboxylic acid group and at least one ring (aromatic or aliphatic) connected to the fatty acid chain"
+        if acid_connected_rings:
+            return True, "Contains a carboxylic acid group and at least one ring (aromatic or aliphatic) connected to the fatty acid chain"
+        else:
+            return False, "No rings connected to or including the carboxylic acid group"
+
+    # Additional checks or filters can be added here if needed
