@@ -1,76 +1,32 @@
 """
 Classifies: CHEBI:13601 3-oxo-5alpha-steroid
 """
-"""
-Classifies: CHEBI:63502 3-oxo-5alpha-steroid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Reasoning:
 
-def is_3_oxo_5alpha_steroid(smiles: str):
-    """
-    Determines if a molecule is a 3-oxo-5alpha-steroid based on its SMILES string.
-    A 3-oxo-5alpha-steroid is a steroid that has a ketone group at position 3 and
-    an alpha configuration at position 5.
+The previous program aimed to classify 3-oxo-5alpha-steroids, which are steroids with a ketone group at position 3 and an alpha configuration at position 5. The program checks for the presence of a steroid backbone, a ketone group at position 3, and the 5alpha configuration. However, it seems that the program's approach may have been too strict or narrow, leading to a low F1 score.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+Several potential issues can be identified:
 
-    Returns:
-        bool: True if molecule is a 3-oxo-5alpha-steroid, False otherwise
-        str: Reason for classification
-    """
+1. **Steroid backbone patterns**: The program uses a limited set of predefined SMARTS patterns to identify the steroid backbone. While these patterns may cover common steroid skeletons, they may not account for all possible variations, leading to false negatives.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Ketone group identification**: The program assumes that the ketone group is directly attached to a carbon atom with a degree of 4 (sp3 hybridized). This assumption may not hold true for all cases, potentially missing some valid 3-oxo-steroids.
 
-    # Check for steroid backbone
-    steroid_patterns = [
-        Chem.MolFromSmarts("[C@]13[C@H]([C@H]([C@@H]2[C@@]([C@@]1(CC[C@H](C2)C)(C)C)(C)CCC(=O)O)C"),
-        Chem.MolFromSmarts("[C@]13[C@H]([C@H]([C@@H]2[C@@]([C@@]1(CC[C@H](C2)C)(C)C)(C)CC(=O)O)C"),
-        Chem.MolFromSmarts("[C@]13[C@H]([C@H]([C@@H]2[C@@]([C@@]1(CC[C@H](C2)C)(C)C)(C)CCC(=O)C)C"),
-        # Add more patterns as needed
-    ]
-    has_steroid_backbone = any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns)
-    if not has_steroid_backbone:
-        return False, "No steroid backbone found"
+3. **Chiral center identification**: The program relies on the `FindMolChiralUnassignedAtoms` function to identify chiral centers and then checks for the specific atom index corresponding to position 5. This approach may be error-prone, especially if the atom ordering or indexing is different from what is expected.
 
-    # Check for 3-oxo group
-    oxo_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 2]
-    has_oxo_group = len(oxo_atoms) > 0
+4. **Molecular property checks**: The program includes checks for molecular weight and carbon count ranges, which may be too restrictive and exclude valid 3-oxo-5alpha-steroids that fall outside these ranges.
 
-    # Check if oxo group is at position 3
-    is_oxo_at_position_3 = False
-    for oxo_idx in oxo_atoms:
-        oxo_atom = mol.GetAtomWithIdx(oxo_idx)
-        neighbor_atoms = [mol.GetAtomWithIdx(nbr_idx) for nbr_idx in oxo_atom.GetNeighbors()]
-        if any(nbr_atom.GetAtomicNum() == 6 and nbr_atom.GetDegree() == 4 for nbr_atom in neighbor_atoms):
-            is_oxo_at_position_3 = True
-            break
+Improvements:
 
-    if not has_oxo_group or not is_oxo_at_position_3:
-        return False, "No ketone group at position 3"
+1. **Use a more comprehensive set of SMARTS patterns**: Instead of relying on a few predefined patterns, consider generating a more extensive set of SMARTS patterns that can cover a broader range of steroid backbones. This can be achieved by analyzing the structures of known 3-oxo-5alpha-steroids and extracting common substructures.
 
-    # Check for 5alpha configuration
-    chiral_centers = Chem.FindMolChiralUnassignedAtoms(mol, includeUnassigned=True)
-    has_5alpha_config = any(atom_idx == mol.GetAtomWithIdx(atom_idx).GetNeighbors()[0] - 1 and
-                             mol.GetAtomWithIdx(atom_idx).GetHybridization() == Chem.HybridizationType.SP3 and
-                             mol.GetAtomWithIdx(atom_idx).GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW
-                             for atom_idx in chiral_centers)
+2. **Improve ketone group identification**: Instead of relying on specific atom degrees, consider using a more general approach to identify ketone groups, such as detecting carbonyl groups (C=O) and checking their neighboring atoms.
 
-    if not has_5alpha_config:
-        return False, "No alpha configuration at position 5"
+3. **Use a more robust method for identifying chiral centers**: Instead of relying on atom indices, consider using the `AssignStereochemistry` function from RDKit to assign stereochemistry to the molecule and then check the stereochemistry of the relevant atoms directly.
 
-    # Additional checks for molecular properties
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 600:
-        return False, "Molecular weight outside typical range for steroids"
+4. **Relax molecular property checks**: Instead of using strict ranges for molecular weight and carbon count, consider using broader ranges or omitting these checks altogether if they are not essential for the classification.
 
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 17 or c_count > 30:
-        return False, "Carbon count outside typical range for steroids"
+5. **Incorporate additional structural features**: Explore other structural features that may be relevant for identifying 3-oxo-5alpha-steroids, such as ring systems, carbon skeletons, or specific functional groups.
 
-    return True, "Contains 3-oxo and 5alpha configurations in a steroid backbone"
+6. **Use a machine learning approach**: If the rule-based approach proves too complex or prone to errors, consider using a machine learning model trained on a large dataset of known 3-oxo-5alpha-steroids and non-steroids.
+
+By addressing these potential issues and incorporating improvements, the program should be able to achieve a higher F1 score and accurately classify 3-oxo-5alpha-steroids.
