@@ -2,12 +2,13 @@
 Classifies: CHEBI:26333 prostaglandin
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_prostaglandin(smiles: str):
     """
     Determines if a molecule is a prostaglandin based on its SMILES string.
     Prostaglandins are C20 compounds derived from prostanoic acid, generally featuring a
-    substituted cyclopentane ring and various functional groups.
+    cyclopentane ring and various functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,24 +23,25 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Updated pattern for cyclopentane ring allowing more variation
-    cyclopentane_pattern = Chem.MolFromSmarts("C1CCC(C1)O")
+    # Count carbons
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 20:
+        return False, "Prostaglandins usually have 20 carbons; too few carbons found"
+    
+    # Check for cyclopentane ring (C5 ring)
+    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
     if not mol.HasSubstructMatch(cyclopentane_pattern):
-        return False, "No flexible cyclopentane or substituted cyclopentane ring detected"
+        return False, "No cyclopentane ring found"
     
-    # Check for an acid or derivative functional group (e.g., carboxylic acid, ester, amide)
-    acid_or_ester_pattern = Chem.MolFromSmarts("COC=O | C(=O)[O,N,S]")
-    if not mol.HasSubstructMatch(acid_or_ester_pattern):
-        return False, "Missing typical acid or acid-derivative functional group"
+    # Check for characteristic functional groups: hydroxyl or carbonyl groups on the ring, or nearby
+    oxy_groups_pattern = Chem.MolFromSmarts("[OH1,CX3](=O)")
+    oxy_matches = mol.GetSubstructMatches(oxy_groups_pattern)
+    if len(oxy_matches) < 1:
+        return False, "Missing hydroxyl or carbonyl groups usually present in prostaglandins"
     
-    # Add alternate double bond pattern considerations more aligned with prostaglandin molecules
-    db_pattern_subtle = Chem.MolFromSmarts("C/C=C/C")
-    if not mol.HasSubstructMatch(db_pattern_subtle):
-        return False, "Missing expected double bond patterns in the side chain"
+    # Count double bonds
+    db_count = len([bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE])
+    if db_count < 2:
+        return False, "Prostaglandins typically have double bonds; too few found"
 
-    # Consider molecular size or framework typical of C20 structures
-    num_atoms = mol.GetNumHeavyAtoms()
-    if num_atoms < 18 or num_atoms > 24:
-        return False, "Molecule size not typical for prostaglandins based on heavy atoms count"
-
-    return True, "Molecule contains essential features of C20 prostaglandins, including cyclopentane, functional groups, and double bond patterns."
+    return True, "Molecule contains a C20 backbone with a cyclopentane ring and key functional groups typical of prostaglandins"
