@@ -21,10 +21,9 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone core SMARTS with the hydroxyl group at C3
-    # Numbering the flavanone system so that we can uniquely identify the 3-hydroxyl.
-    # The key is to have a C=O at position 4 and an -OH at position 3 of the fused rings
-    flavanone_core_smarts = "[C]1[c]2[c]([c]([OH])[C](=[O])[C]1)[cH][cH][cH][cH]2"
+    # Define the flavanone core SMARTS with the hydroxyl group at C3.
+    # Flexible SMARTS that match correctly.
+    flavanone_core_smarts = "[c]1[c]([OH])[C]([c]([c]1)[O])=[O][C]"
     flavanone_core_pattern = Chem.MolFromSmarts(flavanone_core_smarts)
     
     if not mol.HasSubstructMatch(flavanone_core_pattern):
