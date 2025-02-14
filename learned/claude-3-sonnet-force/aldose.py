@@ -33,19 +33,20 @@ def is_aldose(smiles: str):
     n_aldehydes = len(aldehyde_matches)
     
     # Count hydroxyl groups (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("O")
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     n_hydroxyls = len(hydroxyl_matches)
     
     # Count carbon atoms
     n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Aldoses must have at least 1 aldehyde and 2 hydroxyls
-    if n_aldehydes == 0 or n_hydroxyls < 2:
-        return False, "Not enough aldehyde/hydroxyl groups for aldose"
+    # Aldoses must have at least 1 aldehyde, 2 hydroxyls, and a minimum number of carbon atoms
+    if n_aldehydes == 0 or n_hydroxyls < 2 or n_carbons < 4:
+        return False, "Not enough aldehyde/hydroxyl groups or carbon atoms for aldose"
     
-    # Check for linear aldose (H[CH(OH)]nC(=O)H)
-    if n_carbons == n_hydroxyls + 1:
+    # Check for linear aldose (H[CH(OH)]nC(=O)H or C(=O)H[CH(OH)]n)
+    linear_aldose_pattern = Chem.MolFromSmarts("[CH](O)[CH](O)[CH](O)[CH](=O)O")
+    if mol.HasSubstructMatch(linear_aldose_pattern):
         return True, "Linear aldose detected"
     
     # Check for cyclic hemiacetal
@@ -57,5 +58,15 @@ def is_aldose(smiles: str):
         ring_hydroxyls = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8 and atom.GetDegree() == 2)
         if ring_aldehydes == 1 and ring_hydroxyls >= 1:
             return True, "Cyclic hemiacetal aldose detected"
+    
+    # Check for molecular weight (typical aldoses are >120 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 120:
+        return False, "Molecular weight too low for aldose"
+    
+    # Check for carboxylic acid groups (-COOH) or other functional groups
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    if mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "Contains carboxylic acid group, not an aldose"
     
     return False, "No aldose patterns found"
