@@ -53,18 +53,21 @@ def is_phosphatidic_acid(smiles: str):
     if n_rotatable < 8:
         return False, "Chains too short to be fatty acids"
     
-    # Count carbons and phosphorus
+    # Count carbons, oxygens, and phosphorus
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     
-    if c_count < 15:
+    if c_count < 20:
         return False, "Too few carbons for phosphatidic acid"
+    if o_count != 8:
+        return False, "Must have exactly 8 oxygen atoms"
     if p_count != 1:
         return False, "Must have exactly 1 phosphorus atom"
     
-    # Optional: Check molecular weight range
+    # Check molecular weight range
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500 or mol_wt > 800:
+    if mol_wt < 600 or mol_wt > 900:
         return False, "Molecular weight outside typical range for phosphatidic acid"
     
     return True, "Contains glycerol backbone with one hydroxyl group esterified with phosphoric acid and the other two esterified with fatty acids"
