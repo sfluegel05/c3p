@@ -29,55 +29,72 @@ def is_proteinogenic_amino_acid(smiles: str):
     # Add hydrogens to ensure proper valence
     mol = Chem.AddHs(mol)
 
-    # Define alpha-amino acid backbone SMARTS pattern with variable side chain (R)
-    backbone_smarts = '[NX3][C@H](*)C(=O)[OH]'
+    # Assign stereochemistry
+    Chem.AssignAtomChiralTagsFromStructure(mol)
+    Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
+
+    # Define amino acid backbone SMARTS patterns
+    # General pattern for alpha-amino acids (including isotopes and labels)
+    backbone_smarts = '[N;X3H2,+0][C@?H](*)C(=O)[O;H1,-1]'
     backbone = Chem.MolFromSmarts(backbone_smarts)
 
-    # Check if molecule matches the backbone (excluding glycine)
+    # Define glycine pattern (non-chiral)
+    glycine_smarts = '[N;X3H2,+0][CH2]C(=O)[O;H1,-1]'
+    glycine = Chem.MolFromSmarts(glycine_smarts)
+
+    # Check for glycine first
+    if mol.HasSubstructMatch(glycine):
+        # Ensure the molecule is glycine and not part of a larger structure
+        if mol.GetNumAtoms() > 7:
+            return False, "Molecule is larger than glycine"
+        return True, "Molecule is glycine, a proteinogenic amino acid"
+
+    # Check for alpha-amino acid backbone
     matches = mol.GetSubstructMatches(backbone)
     if matches:
-        # For chiral amino acids, check that the alpha carbon has L-configuration
-        match = matches[0]
-        alpha_carbon_idx = match[1]
-        alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
+        # Ensure the molecule is a single amino acid (no peptide bonds)
+        amide_bonds = 0
+        for bond in mol.GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                atom1 = bond.GetBeginAtom()
+                atom2 = bond.GetEndAtom()
+                if (atom1.GetAtomicNum() == 7 and atom2.GetAtomicNum() == 6) or \
+                   (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 7):
+                    if atom1.GetHybridization() == Chem.rdchem.HybridizationType.SP2 or \
+                       atom2.GetHybridization() == Chem.rdchem.HybridizationType.SP2:
+                        amide_bonds += 1
+        if amide_bonds > 1:
+            return False, "Molecule contains peptide bonds, not a single amino acid"
 
-        # Check chirality of alpha carbon
-        chiral_tag = alpha_carbon.GetChiralTag()
-        if chiral_tag == Chem.ChiralType.CHI_TETRAHEDRAL_CW or chiral_tag == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
-            # Assign stereochemistry
-            Chem.AssignAtomChiralTagsFromStructure(mol)
-            stereochemistry = Chem.FindMolChiralCenters(mol, includeUnassigned=False)
-            for center in stereochemistry:
-                idx, config = center
-                if idx == alpha_carbon_idx:
-                    # For most amino acids, L-configuration corresponds to S
-                    # For cysteine, L-configuration corresponds to R due to sulfur priority
-                    side_chain_atoms = [nbr for nbr in alpha_carbon.GetNeighbors() if nbr.GetIdx() not in match]
-                    if len(side_chain_atoms) != 1:
-                        return False, "Could not identify side chain"
-                    side_chain_atom = side_chain_atoms[0]
-                    if side_chain_atom.GetSymbol() == 'S':
-                        # Cysteine case
-                        if config == 'R':
-                            return True, "Molecule is L-cysteine, a proteinogenic amino acid"
+        # Identify the alpha carbon atom
+        for match in matches:
+            alpha_carbon_idx = match[1]
+            alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
+
+            # Check chirality of alpha carbon
+            chiral_tag = alpha_carbon.GetChiralTag()
+            if chiral_tag == Chem.ChiralType.CHI_TETRAHEDRAL_CW or chiral_tag == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
+                # Get the stereochemistry (R or S)
+                stereochemistry = Chem.rdMolDescriptors.CalcChiralCenters(mol, force=True, includeUnassigned=True)
+                for center in stereochemistry:
+                    idx, config = center
+                    if idx == alpha_carbon_idx:
+                        side_chain_atom_symbols = [nbr.GetSymbol() for nbr in alpha_carbon.GetNeighbors() if nbr.GetAtomicNum() > 1]
+                        # For cysteine and selenocysteine, L-configuration corresponds to R
+                        if 'S' in side_chain_atom_symbols or 'Se' in side_chain_atom_symbols:
+                            if config == 'R':
+                                return True, "Molecule has L-configuration at alpha carbon, a proteinogenic amino acid"
+                            else:
+                                return False, "Cysteine and selenocysteine must have R configuration at alpha carbon"
                         else:
-                            return False, "Cysteine must have R configuration at alpha carbon"
-                    else:
-                        if config == 'S':
-                            return True, "Molecule has L-configuration at alpha carbon, a proteinogenic amino acid"
-                        else:
-                            return False, "Amino acids must have L-configuration at alpha carbon"
-            return False, "Could not determine chirality"
-        else:
-            return False, "Alpha carbon is not properly chiral"
+                            if config == 'S':
+                                return True, "Molecule has L-configuration at alpha carbon, a proteinogenic amino acid"
+                            else:
+                                return False, "Amino acids must have L-configuration at alpha carbon"
+                return False, "Could not determine chirality"
+            else:
+                return False, "Alpha carbon is not properly chiral"
     else:
-        # Check for glycine, which is achiral and has two hydrogens on the alpha carbon
-        glycine_smarts = '[NX3][CH2]C(=O)[OH]'
-        glycine = Chem.MolFromSmarts(glycine_smarts)
-        glycine_matches = mol.GetSubstructMatches(glycine)
-        if glycine_matches:
-            return True, "Molecule is glycine, a proteinogenic amino acid"
-        else:
-            return False, "Molecule does not have alpha-amino acid backbone"
+        return False, "Molecule does not have alpha-amino acid backbone"
 
     return False, "Molecule does not match proteinogenic amino acid"
