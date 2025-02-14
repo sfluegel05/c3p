@@ -5,8 +5,8 @@ Classifies: CHEBI:51006 unsaturated fatty acyl-CoA
 Classifies: unsaturated fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem.rdmolops import GetShortestPath
+from rdkit.Chem import rdchem
+from rdkit.Chem import rdmolops
 
 def is_unsaturated_fatty_acyl_CoA(smiles: str):
     """
@@ -26,76 +26,64 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Coenzyme A SMILES string from PubChem (CID 977)
-    coa_smiles = (
-        "C[C@@H](O)C(=O)NCCSCCNC(=O)CCNC(=O)"
-        "[C@H](O)[C@H](C)(C)COP(=O)(O)OP(=O)(O)"
-        "OC[C@H]1O[C@H]([C@@H](O)[C@H]1O)"
-        "N1C=NC2=C1N=CN=C2N"
-    )
-    coa_mol = Chem.MolFromSmiles(coa_smiles)
+    # Coenzyme A core SMARTS pattern (flexible to accommodate variations)
+    coa_smarts = "NC(=O)CCNC(=O)[C@H](O)[C@H](C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H](CO[P](=O)(O)O)[C@@H](O)[C@H]1O"
+    coa_mol = Chem.MolFromSmarts(coa_smarts)
     if coa_mol is None:
-        return False, "Error generating CoA molecule from SMILES"
+        return False, "Error generating CoA pattern from SMARTS"
 
-    # Perform substructure search for CoA in the molecule without chirality
-    if not mol.HasSubstructMatch(coa_mol, useChirality=False):
+    # Find CoA substructure matches
+    coa_matches = mol.GetSubstructMatches(coa_mol, useChirality=False)
+    if not coa_matches:
         return False, "No Coenzyme A moiety found"
 
-    # Define thioester linkage pattern (C(=O)-S-C)
+    # Define thioester linkage pattern (C(=O)-S)
     thioester_smarts = "C(=O)S"
     thioester_mol = Chem.MolFromSmarts(thioester_smarts)
-    if thioester_mol is None:
-        return False, "Error parsing thioester SMARTS pattern"
-
-    # Find thioester linkages in the molecule
     thioester_matches = mol.GetSubstructMatches(thioester_mol)
     if not thioester_matches:
         return False, "No thioester linkage found"
 
-    # For each thioester linkage, check if sulfur is connected to CoA
-    for match in thioester_matches:
-        carbonyl_c_idx = match[0]  # Index of the carbonyl carbon
-        sulfur_idx = match[2]      # Index of the sulfur atom
+    # Identify the fatty acyl chain connected via thioester bond to CoA
+    for thioester_match in thioester_matches:
+        carbonyl_c_idx = thioester_match[0]  # Carbonyl carbon index
+        sulfur_idx = thioester_match[2]      # Sulfur atom index
 
-        # Get indices of CoA atoms in the molecule
-        coa_matches = mol.GetSubstructMatches(coa_mol, useChirality=False)
-        coa_atom_indices = set()
-        for cm in coa_matches:
-            coa_atom_indices.update(cm)
-        if not coa_atom_indices:
-            continue  # Should not happen as CoA is present
+        # Check if sulfur is connected to CoA
+        is_sulfur_in_coa = False
+        for coa_match in coa_matches:
+            if sulfur_idx in coa_match:
+                is_sulfur_in_coa = True
+                break
+        if not is_sulfur_in_coa:
+            continue  # Sulfur not in CoA, skip to next thioester linkage
 
-        # Check if sulfur atom is connected to CoA
-        paths_to_coa = [
-            GetShortestPath(mol, sulfur_idx, coa_idx) for coa_idx in coa_atom_indices
-        ]
-        paths_to_coa = [path for path in paths_to_coa if path]
-        if not paths_to_coa:
-            continue  # Sulfur not connected to CoA, check next thioester linkage
-
-        # Extract fatty acyl chain connected to the carbonyl carbon
+        # Extract fatty acyl chain (atoms connected to carbonyl carbon, excluding CoA)
         fatty_acyl_atoms = set()
-        visited = set()
-        to_visit = [carbonyl_c_idx]
-        while to_visit:
-            current_idx = to_visit.pop()
-            if current_idx in visited:
+        atoms_to_explore = [carbonyl_c_idx]
+        while atoms_to_explore:
+            atom_idx = atoms_to_explore.pop()
+            if atom_idx in fatty_acyl_atoms:
                 continue
-            visited.add(current_idx)
-            fatty_acyl_atoms.add(current_idx)
-            atom = mol.GetAtomWithIdx(current_idx)
+            fatty_acyl_atoms.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
             for neighbor in atom.GetNeighbors():
                 neighbor_idx = neighbor.GetIdx()
-                # Exclude sulfur and CoA atoms
-                if neighbor_idx == sulfur_idx or neighbor_idx in coa_atom_indices:
+                # Skip sulfur atom and CoA atoms
+                if neighbor_idx == sulfur_idx:
                     continue
-                if neighbor_idx not in visited:
-                    to_visit.append(neighbor_idx)
+                is_neighbor_in_coa = any(neighbor_idx in coa_match for coa_match in coa_matches)
+                if is_neighbor_in_coa:
+                    continue
+                if neighbor_idx not in fatty_acyl_atoms:
+                    atoms_to_explore.append(neighbor_idx)
 
-        # Create a sub-molecule of the fatty acyl chain
-        fatty_acyl_submol = Chem.PathToSubmol(mol, fatty_acyl_atoms)
+        # Create sub-molecule of the fatty acyl chain
+        fatty_acyl_submol = Chem.PathToSubmol(mol, list(fatty_acyl_atoms))
+        if fatty_acyl_submol is None:
+            continue
 
-        # Check for unsaturation (presence of C=C bonds)
+        # Check for unsaturation (presence of carbon-carbon double bonds)
         has_double_bond = False
         for bond in fatty_acyl_submol.GetBonds():
             if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
