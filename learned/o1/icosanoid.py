@@ -21,46 +21,40 @@ def is_icosanoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Identify the longest continuous carbon chain
-    def get_longest_carbon_chain_length(mol):
-        max_length = 0
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6:
-                visited = set()
-                stack = [(atom.GetIdx(), 1)]
-                while stack:
-                    current_atom_idx, length = stack.pop()
-                    if length > max_length:
-                        max_length = length
-                    visited.add(current_atom_idx)
-                    current_atom = mol.GetAtomWithIdx(current_atom_idx)
-                    for neighbor in current_atom.GetNeighbors():
-                        neighbor_idx = neighbor.GetIdx()
-                        if neighbor.GetAtomicNum() == 6 and neighbor_idx not in visited:
-                            stack.append((neighbor_idx, length + 1))
-        return max_length
 
-    longest_chain_length = get_longest_carbon_chain_length(mol)
-    if longest_chain_length < 18 or longest_chain_length > 22:
-        return False, f"Longest carbon chain length ({longest_chain_length}) not in range for icosanoids (18-22)"
+    # Count total number of carbons in the molecule
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 18 or c_count > 24:
+        return False, f"Total carbon count ({c_count}) not in range for icosanoids (18-24)"
     
-    # Check for carboxylic acid group (-COOH)
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H]")
-    if not mol.HasSubstructMatch(carboxylic_pattern):
-        return False, "No carboxylic acid group found"
+    # Look for characteristic icosanoid substructures
+    # Prostaglandin core: cyclopentane ring with side chains
+    prostaglandin_pattern = Chem.MolFromSmarts("C1CCC(C1)C(=O)")
+    has_prostaglandin = mol.HasSubstructMatch(prostaglandin_pattern)
     
-    # Check for oxidative functional groups
-    has_hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2H]"))  # Hydroxyl group
-    has_keto = mol.HasSubstructMatch(Chem.MolFromSmarts("C=O"))         # Keto group
-    has_epoxy = mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3]1[OX2][CX3]1"))  # Epoxy group
+    # Leukotriene pattern: linear chain with conjugated double bonds and hydroxyl groups
+    leukotriene_pattern = Chem.MolFromSmarts("C=C/C=C/C=C/C(=O)")
+    has_leukotriene = mol.HasSubstructMatch(leukotriene_pattern)
     
-    if not (has_hydroxyl or has_keto or has_epoxy):
-        return False, "No oxidative functional groups found (hydroxyl, keto, epoxy)"
+    # Thromboxane core: oxane (six-membered ring with one oxygen) with side chains
+    thromboxane_pattern = Chem.MolFromSmarts("C1COC(C1)C(=O)")
+    has_thromboxane = mol.HasSubstructMatch(thromboxane_pattern)
+    
+    if not (has_prostaglandin or has_leukotriene or has_thromboxane):
+        return False, "No characteristic icosanoid substructures found"
+    
+    # Look for oxidative functional groups at specific positions
+    hydroxyl_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("[C;!$(C=O)][OH]"))
+    keto_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)[C;!$(C=O)]"))
+    epoxy_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("C1OC1"))
+    oxidative_mods = len(hydroxyl_groups) + len(keto_groups) + len(epoxy_groups)
+    
+    if oxidative_mods < 1:
+        return False, "No oxidative modifications characteristic of icosanoids found"
     
     # Check for multiple double bonds
-    num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
-    if num_double_bonds < 2:
-        return False, f"Only {num_double_bonds} double bonds found, less than expected for icosanoids"
+    unsat_bonds = [bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE]
+    if len(unsat_bonds) < 3:
+        return False, f"Only {len(unsat_bonds)} double bonds found, less than expected for icosanoids"
     
-    return True, "Molecule matches key features of icosanoids: C20 backbone, oxidative modifications, multiple double bonds"
+    return True, "Molecule matches key features of icosanoids: C20 backbone, characteristic substructures, oxidative modifications"
