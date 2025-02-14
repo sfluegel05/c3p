@@ -21,24 +21,11 @@ def is_decanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the ester group
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
+    # Define the SMARTS pattern for the decanoyl group attached to an ester oxygen
+    decanoyl_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)O")
 
-    # Find all ester groups
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-
-    if not ester_matches:
-        return False, "No ester bond found"
-    
-    # Check for the decanoyl group (10 carbon chain attached to C=O) for each ester
-    decanoyl_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4]([CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4])")
-    
-    for match in ester_matches:
-          
-        # Now check for the decanoyl group as a substructure attached to the ester group
-        if mol.HasSubstructMatch(decanoyl_pattern):
-
-             return True, "Contains a decanoyl group connected via an ester bond"
-    
+    # Check for the decanoate ester substructure
+    if mol.HasSubstructMatch(decanoyl_ester_pattern):
+         return True, "Contains a decanoyl group connected via an ester bond"
     
     return False, "No decanoate ester core found"
