@@ -26,47 +26,43 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define specific SMARTS patterns for nucleobases and their analogues
-    nucleobase_patterns = [
-        # Purines
-        Chem.MolFromSmarts("c1ncnc2ncnn12"),  # Adenine
-        Chem.MolFromSmarts("c1nc2c(n1)nc(nc2=O)N"),  # Guanine
-        Chem.MolFromSmarts("c1nc2c(n1)ncnc2=O"),     # Hypoxanthine
-        Chem.MolFromSmarts("c1nc2c(n1)ncnc2=O"),     # Xanthine
-        # Pyrimidines
-        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)N"),     # Cytosine
-        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)C"),     # Thymine
-        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)O"),     # Uracil
-        # Modified nucleobases
-        Chem.MolFromSmarts("c1[nH]c(=O)c[nH]c1=O"),   # 5-fluorouracil and analogues
-        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)[C,N,O]"),  # Substituted pyrimidine
-        Chem.MolFromSmarts("c1ncnc2ncnc(=O)c12"),     # Purine analogues with oxygen
-        Chem.MolFromSmarts("c1ncnc2ncnn12"),          # Purine analogues
+    # Define SMARTS patterns for purine and pyrimidine cores
+    purine_core = Chem.MolFromSmarts("c1ncnc2ncnn12")  # Purine core
+    pyrimidine_core = Chem.MolFromSmarts("c1cncnc1")    # Pyrimidine core
+    
+    # Define SMARTS patterns for modified nucleobases
+    nucleobase_analogues_patterns = [
+        # Modified purines
+        Chem.MolFromSmarts("c1ncnc2nc[nH]c12"),       # 2-aminopurine
+        Chem.MolFromSmarts("c1ncnc2nc[nH]c(=O)n12"),  # Hypoxanthine analogues
+        Chem.MolFromSmarts("c1ncnc2nc[nH]nc12"),      # Azaadenine analogues
+        Chem.MolFromSmarts("c1ncnc2nc(=O)[nH]c1n2"),  # 8-oxoadenine analogues
+        # Modified pyrimidines
+        Chem.MolFromSmarts("O=C1C=CN=C(N1)[O,N,S]"),  # Uracil analogues with substitutions
+        Chem.MolFromSmarts("O=C1NC(=O)C=C[N,O,S]1"),  # Thymine analogues with substitutions
+        Chem.MolFromSmarts("O=C1NC(=O)C=CN1[O,N,S]"), # Modified uracil/thymine
+        Chem.MolFromSmarts("c1nc(N)[nH]cc1[O,N,S]"),  # Cytosine analogues with substitutions
+        # Heterocyclic analogues
+        Chem.MolFromSmarts("c1n[c,n]c[nH]c1=O"),      # Azauracil analogues
+        Chem.MolFromSmarts("c1nc2[nH]nnc2c(=O)[nH]1"),# 8-azaguanine analogues
+        # Other analogues
+        Chem.MolFromSmarts("c1ncnc2ncnc(=O)c12"),     # Xanthine analogues
+        Chem.MolFromSmarts("c1ccn[c,n]c1=O"),         # 5-substituted uracils
+        Chem.MolFromSmarts("c1ccn[c,n]c1=O"),         # 5-fluorouracil and analogues
     ]
     
-    # Check for matches with any of the nucleobase patterns
-    for pattern in nucleobase_patterns:
+    # Check for purine or pyrimidine core
+    purine = mol.HasSubstructMatch(purine_core)
+    pyrimidine = mol.HasSubstructMatch(pyrimidine_core)
+    
+    # Check for matches with nucleobase analogue patterns
+    analogue_match = False
+    for pattern in nucleobase_analogues_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Matches nucleobase analogue pattern"
+            analogue_match = True
+            break
+    
+    if purine or pyrimidine or analogue_match:
+        return True, "Matches nucleobase analogue pattern"
     
     return False, "Does not match nucleobase analogue patterns"
-
-# The above code refines the SMARTS patterns to specifically match nucleobases and their analogues, avoiding overgeneralization.
-
-# Short Summary:
-# The previous attempt failed because it overgeneralized by classifying any molecule with an aromatic nitrogen-containing ring as a nucleobase analogue, leading to many false positives.
-# To improve, we defined more specific SMARTS patterns that accurately represent nucleobases and their analogues.
-# This approach reduces false positives by only matching molecules that have core structures similar to known nucleobases.
-
-# The function 'is_nucleobase_analogue' checks if the input molecule matches any of the specific nucleobase patterns. If a match is found, it returns True with a reason; otherwise, it returns False.
-
-# Finally, we avoid using overly broad criteria and focus on the structural features that are characteristic of nucleobase analogues.
-
-# Note: This function assumes that the input SMILES string is valid and that RDKit is properly installed.
-
-# Try running the function with some example SMILES strings:
-# print(is_nucleobase_analogue("N1C=NC2=C1N=CN=C2"))  # Adenine
-# print(is_nucleobase_analogue("O=C1NC(=O)NC=C1"))    # Uracil
-# print(is_nucleobase_analogue("CC(=O)O"))            # Acetic acid (should return False)
-
-# Answer Ends Here
