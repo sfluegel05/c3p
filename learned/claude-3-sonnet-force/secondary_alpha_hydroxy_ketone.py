@@ -5,7 +5,7 @@ Classifies: CHEBI:2468 secondary alpha-hydroxy ketone
 Classifies: CHEBI:35654 secondary alpha-hydroxy ketone
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_secondary_alpha_hydroxy_ketone(smiles: str):
     """
@@ -27,35 +27,30 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the alpha-hydroxy ketone pattern: C(=O)C(O)
-    pattern = Chem.MolFromSmarts("[C&D3](=O)[C&D3](O)")
+    pattern = Chem.MolFromSmarts("[C&D3](=O)[C&D3](O)[!#1]")  # Exclude cases where C(=O)C(O) is in a ring
     matches = mol.GetSubstructMatches(pattern)
     
     if not matches:
         return False, "No secondary alpha-hydroxy ketone group found"
     
-    # Make sure the carbon is not part of a ring
-    for atom_idx in matches:
+    for match in matches:
+        atom_idx = match
         atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.IsInRing():
-            return False, "Alpha-hydroxy ketone group is part of a ring"
         
         # Check if the carbon is attached to an organyl group and a hydrogen
         organyl_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetDegree() > 1)
         hydrogen_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 1)
         
-        if organyl_count != 1 or hydrogen_count != 1:
-            return False, "Alpha-hydroxy ketone carbon is not attached to an organyl group and a hydrogen"
+        if organyl_count < 1 or hydrogen_count != 1:
+            continue  # Skip this match if conditions are not met
+        
+        # Check for exactly 1 carbonyl and 1 hydroxyl group
+        carbonyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalDegree() == 1)
+        hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalDegree() == 2)
+        
+        if carbonyl_count != 1 or hydroxyl_count != 1:
+            continue  # Skip this match if conditions are not met
+        
+        return True, "Contains a secondary alpha-hydroxy ketone group"
     
-    # Check for exactly 1 carbonyl and 1 hydroxyl group
-    carbonyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalDegree() == 1)
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalDegree() == 2)
-    
-    if carbonyl_count != 1 or hydroxyl_count != 1:
-        return False, "Incorrect number of carbonyl/hydroxyl groups"
-    
-    # Check molecular weight - secondary alpha-hydroxy ketones typically <500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 500:
-        return False, "Molecular weight too high for secondary alpha-hydroxy ketone"
-    
-    return True, "Contains a secondary alpha-hydroxy ketone group"
+    return False, "No valid secondary alpha-hydroxy ketone group found"
