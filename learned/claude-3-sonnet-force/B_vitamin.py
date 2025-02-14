@@ -49,7 +49,7 @@ def is_B_vitamin(smiles: str):
     
     # Check if any pattern matches
     for pattern in patterns:
-        if mol.HasSubstructMatch(pattern):
+        if pattern is not None and mol.HasSubstructMatch(pattern):
             return True, "Molecule matches a known B vitamin substructure"
     
     # Additional checks based on molecular properties
