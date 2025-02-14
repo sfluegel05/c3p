@@ -27,29 +27,38 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for hydroxyl group
+    # Check for hydroxyl group
     hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No hydroxyl group found"
     
-    # Look for isoprene unit pattern (CH2=C(CH3)CH=CH2)
+    # Check for isoprene units
     isoprene_pattern = Chem.MolFromSmarts("[CH2]=[C]([CH3])[CH]=[CH2]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) == 0:
         return False, "No isoprene units found"
     
-    # Check that isoprene units are connected in a linear chain
+    # Check for linear carbon skeleton
+    carbon_skeleton = Chem.DeleteRedundantBonds(mol, Chem.RemoveHsFromMol(mol))
+    sssr = Chem.GetSymmSSSR(carbon_skeleton)
+    if len(sssr) > 1:
+        return False, "Carbon skeleton not linear"
+    
+    # Check for terminal hydroxyl group
+    hydroxyl_atom = next((atom for atom in mol.GetAtoms() if atom.GetSymbol() == "O" and atom.GetTotalNumHs() == 1), None)
+    if hydroxyl_atom is None:
+        return False, "No terminal hydroxyl group found"
+    
+    # Check for isoprene units in linear skeleton
     isoprene_atoms = set([atom.GetIdx() for match in isoprene_matches for atom in match])
-    isoprene_bonds = [bond for bond in mol.GetBonds() if bond.GetBeginAtomIdx() in isoprene_atoms and bond.GetEndAtomIdx() in isoprene_atoms]
-    if len(isoprene_bonds) != len(isoprene_matches) * 2:
-        return False, "Isoprene units not connected in a linear chain"
+    skeleton_atoms = set([atom.GetIdx() for atom in carbon_skeleton.GetAtoms()])
+    if not isoprene_atoms.issubset(skeleton_atoms):
+        return False, "Isoprene units not part of linear carbon skeleton"
     
-    # Check for hydroxyl group at one end of the isoprene chain
-    start_atom = mol.GetAtomWithIdx(isoprene_matches[0][0])
-    end_atom = mol.GetAtomWithIdx(isoprene_matches[-1][-1])
-    has_start_hydroxyl = start_atom.GetTotalNumHs() == 1 and sum(bond.GetBondTypeAsDouble() for bond in mol.GetBondEdges(start_atom.GetIdx())) == 2
-    has_end_hydroxyl = end_atom.GetTotalNumHs() == 1 and sum(bond.GetBondTypeAsDouble() for bond in mol.GetBondEdges(end_atom.GetIdx())) == 2
-    if not (has_start_hydroxyl or has_end_hydroxyl):
-        return False, "Hydroxyl group not at end of isoprene chain"
+    # Check molecular weight and number of atoms
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    n_atoms = mol.GetNumAtoms()
+    if mol_wt < 200 or n_atoms < 10:
+        return False, "Molecule too small to be a prenol"
     
-    return True, "Molecule contains a linear chain of isoprene units with a terminal hydroxyl group"
+    return True, "Molecule contains a linear carbon skeleton with isoprene units and a terminal hydroxyl group"
