@@ -42,7 +42,7 @@ def is_nonclassic_icosanoid(smiles: str):
     
     # Look for multiple double bonds
     double_bond_pattern = Chem.MolFromSmarts("=")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern, mol)
     if len(double_bond_matches) < 3:
         return False, "Fewer than 3 double bonds found"
     
@@ -50,9 +50,16 @@ def is_nonclassic_icosanoid(smiles: str):
     if o_count < 3:
         return False, "Fewer than 3 oxygen atoms found"
     
-    # Check molecular weight - nonclassic icosanoids typically 300-400 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 500:
-        return False, "Molecular weight outside typical range for nonclassic icosanoids (300-500 Da)"
+    # Look for C20 chain with oxygenated functional groups
+    c20_chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C")
+    c20_chain_matches = mol.GetSubstructMatches(c20_chain_pattern, mol)
+    if not c20_chain_matches:
+        return False, "No C20 chain found"
+    
+    # Check for oxygenated functional groups on C20 chain
+    oxygenated_groups_pattern = Chem.MolFromSmarts("[O;X2]")
+    oxygenated_groups_matches = mol.GetSubstructMatches(oxygenated_groups_pattern, mol)
+    if not oxygenated_groups_matches:
+        return False, "No oxygenated functional groups found on C20 chain"
 
-    return True, "Contains 20 carbons, carboxyl group, multiple double bonds, and multiple oxygens"
+    return True, "Contains C20 chain with carboxyl group, multiple double bonds, and oxygenated functional groups"
