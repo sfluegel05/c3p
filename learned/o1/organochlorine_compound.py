@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_organochlorine_compound(smiles: str):
     """
     Determines if a molecule is an organochlorine compound based on its SMILES string.
-    An organochlorine compound contains at least one carbon-chlorine (C-Cl) bond.
+    An organochlorine compound contains at least one chlorine atom within an organic molecule.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,13 +23,24 @@ def is_organochlorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate over all chlorine atoms in the molecule
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 17:  # Atomic number of chlorine
-            # Check if any neighbor atom is carbon
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:  # Atomic number of carbon
-                    return True, "Contains at least one carbon-chlorine (C-Cl) bond"
+    has_carbon = False
+    has_chlorine = False
 
-    # If no C-Cl bonds are found
-    return False, "No carbon-chlorine (C-Cl) bonds found"
+    # Iterate over all atoms in the molecule to check for carbon and chlorine
+    for atom in mol.GetAtoms():
+        atomic_num = atom.GetAtomicNum()
+        if atomic_num == 6:  # Carbon
+            has_carbon = True
+        elif atomic_num == 17:  # Chlorine
+            has_chlorine = True
+
+    # Check if both carbon and chlorine are present
+    if has_carbon and has_chlorine:
+        return True, "Contains both carbon and chlorine atoms"
+    else:
+        reason_parts = []
+        if not has_carbon:
+            reason_parts.append("No carbon atoms found")
+        if not has_chlorine:
+            reason_parts.append("No chlorine atoms found")
+        return False, "; ".join(reason_parts)
