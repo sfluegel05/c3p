@@ -2,15 +2,13 @@
 Classifies: CHEBI:143084 organometalloidal compound
 """
 """
-Classifies: CHEBI:35498 organometalloidal compound
+Classifies: CHEBI:33709 organometalloidal compound
 
-A compound having bonds between one or more metalloid atoms and one or more carbon atoms of an organyl group.
+An organometalloidal compound is defined as a compound having bonds between one or more metalloid
+atoms and one or more carbon atoms of an organyl group.
 """
 
 from rdkit import Chem
-
-# List of metalloid atomic numbers
-METALLOID_ATOMIC_NUMBERS = [5, 14, 32, 33, 51, 52, 83, 84]  # B, Si, Ge, As, Sb, Te, Bi, Po
 
 def is_organometalloidal_compound(smiles: str):
     """
@@ -29,17 +27,20 @@ def is_organometalloidal_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for metalloid atoms
-    has_metalloid = any(atom.GetAtomicNum() in METALLOID_ATOMIC_NUMBERS for atom in mol.GetAtoms())
+    # Get list of metalloid atomic numbers
+    metalloids = [5, 14, 32, 33, 51, 52, 83, 84]
+
+    # Check if molecule contains any metalloid atoms
+    has_metalloid = any(atom.GetAtomicNum() in metalloids for atom in mol.GetAtoms())
     if not has_metalloid:
-        return False, "No metalloid atoms present"
+        return False, "No metalloid atoms found"
 
-    # Check for bonds between metalloid and carbon atoms
+    # Check if any metalloid atoms are bonded to carbon atoms
     for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if (atom1.GetAtomicNum() in METALLOID_ATOMIC_NUMBERS and atom2.GetAtomicNum() == 6) or \
-           (atom2.GetAtomicNum() in METALLOID_ATOMIC_NUMBERS and atom1.GetAtomicNum() == 6):
-            return True, "Contains bond(s) between metalloid and carbon atoms"
+        atom1 = mol.GetAtomWithIdx(bond.GetBeginAtomIdx())
+        atom2 = mol.GetAtomWithIdx(bond.GetEndAtomIdx())
+        if (atom1.GetAtomicNum() in metalloids and atom2.GetAtomicNum() == 6) or \
+           (atom2.GetAtomicNum() in metalloids and atom1.GetAtomicNum() == 6):
+            return True, "Contains bonds between metalloid and carbon atoms"
 
-    return False, "No bond found between metalloid and carbon atoms"
+    return False, "No bonds between metalloid and carbon atoms found"
