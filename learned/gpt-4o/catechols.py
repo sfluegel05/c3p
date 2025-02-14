@@ -21,12 +21,19 @@ def is_catechols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More precise SMARTS pattern for ortho-diphenol
-    # Focusing on benzene-like systems due to common occurrence in catechols
-    catechol_pattern = Chem.MolFromSmarts("c1cc(O)c(O)c1")  # Specifically matches benzene rings with ortho-hydroxy groups
+    # Broader SMARTS patterns for catechol moiety
+    # Detecting o-dihydroxy groups (ortho-diphenol) in potentially various aromatic rings
+    catechol_patterns = [
+        Chem.MolFromSmarts("c1c(O)c(O)c[c,n]c1"),  # Basic ortho-diphenol pattern, allowing variable connectivity
+        Chem.MolFromSmarts("c1(O)c(O)cc[n,c]c1"),  # Including nitrogen-containing heterocycles
+        Chem.MolFromSmarts("c1(O)c(O)c[c,n]cc1"),  # Extended aromatic rings with ortho-dihydroxy
+        Chem.MolFromSmarts("Oc1ccc(O)c[c,H]c1"),  # Generalized aromatic with ortho hydroxys
+        Chem.MolFromSmarts("Oc1ccc2cc(O)c(O)cc2c1"),  # Biphenyl systems
+    ]
 
-    # Check the pattern
-    if mol.HasSubstructMatch(catechol_pattern):
-        return True, "Contains o-diphenol component in an aromatic ring system"
+    # Check each pattern
+    for pattern in catechol_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains o-diphenol component in an aromatic ring system"
     
     return False, "Does not contain o-diphenol component in an aromatic ring system"
