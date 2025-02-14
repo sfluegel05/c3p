@@ -24,23 +24,33 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for sn-glycerol-3-phosphate core with correct stereochemistry
-    # More flexible SMARTS to find glycerol backbone with a phosphate group.
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("C[CH](O)COP(=O)(O)(O)")
-    glycerol_phosphate_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
+    # Using multiple SMARTS to cover different representations
+    glycerol_phosphate_patterns = [
+        Chem.MolFromSmarts("[CH2][C@H](O)COP(=O)(O)(O)"), # C1-C2(R)-C3-O-P
+        Chem.MolFromSmarts("[CH2][C@H](O)C[O]P(=O)(O)(O)"), # C1-C2(R)-C3-[O]-P
+        Chem.MolFromSmarts("[CH2][C@H](O)C[OP](=O)(O)O"),  #C1-C2(R)-C3-O-P
+        Chem.MolFromSmarts("[CH2][C@H](O)C[O][P](O)(O)=O"), # C1-C2(R)-C3-[O]-P
+        Chem.MolFromSmarts("[CH2][C@H](O)COP([O-])([O-])=O"), # C1-C2(R)-C3-O-P (charged form)
+        Chem.MolFromSmarts("[CH2][C@H](O)C[O][P]([O-])([O-])=O"),  #C1-C2(R)-C3-[O]-P (charged form)
+        Chem.MolFromSmarts("[CH2]C[C@@H](O)OP(=O)(O)(O)"), # C3-C2(S)-C1-O-P (enantiomer - not sn)
+        Chem.MolFromSmarts("C[C@@H](O)C[O]P(=O)(O)(O)") # C2(S)-C3-[O]-P (enantiomer - not sn)
+    ]
+    
+    glycerol_phosphate_matches = []
+    for pattern in glycerol_phosphate_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        if matches:
+           glycerol_phosphate_matches = matches
+           break # Stop on the first match
+
     if not glycerol_phosphate_matches:
-      glycerol_phosphate_pattern = Chem.MolFromSmarts("C[CH](O)C[O]P(=O)(O)(O)") #trying alternative because the phosphate group can be represented with single or double bonds to the O.
-      glycerol_phosphate_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-      if not glycerol_phosphate_matches:
-        glycerol_phosphate_pattern = Chem.MolFromSmarts("O[CH](CO)C[O]P(=O)(O)(O)")
-        glycerol_phosphate_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-      if not glycerol_phosphate_matches:
         return False, "No sn-glycerol-3-phosphate core found"
 
-    # Verify the chirality of the central carbon is S
+    # Verify the chirality of the central carbon is S (CCW)
     glycerol_carbon_index = glycerol_phosphate_matches[0][1]
     chiral_center = mol.GetAtomWithIdx(glycerol_carbon_index)
-    if chiral_center.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW:
-         return False, "Central carbon is not S chiral"
+    if chiral_center.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
+        return False, "Central carbon is not S chiral"
 
     # Look for ester groups (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -53,29 +63,44 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     carbonyl_carbon_index = ester_match[1]
     
     glycerol_phosphate_match = glycerol_phosphate_matches[0]
-    glycerol_carbons = [glycerol_phosphate_match[0], glycerol_phosphate_match[1]]
+    
+    glycerol_carbon1_index = glycerol_phosphate_match[0] #C1
+    glycerol_carbon2_index = glycerol_phosphate_match[1] #C2
     
     ester_connected = False
-    for glycerol_carbon in glycerol_carbons:
-      for neighbor in mol.GetAtomWithIdx(glycerol_carbon).GetNeighbors():
+    
+    #Get the neighboring oxygen for each glycerol carbon
+    glycerol_carbon1_oxygen_index = None
+    for neighbor in mol.GetAtomWithIdx(glycerol_carbon1_index).GetNeighbors():
+        if neighbor.GetAtomicNum() == 8:
+           glycerol_carbon1_oxygen_index = neighbor.GetIdx()
+           break
+    
+    glycerol_carbon2_oxygen_index = None
+    for neighbor in mol.GetAtomWithIdx(glycerol_carbon2_index).GetNeighbors():
+        if neighbor.GetAtomicNum() == 8:
+            glycerol_carbon2_oxygen_index = neighbor.GetIdx()
+            break
+
+    if glycerol_carbon1_oxygen_index is not None:
+        for neighbor in mol.GetAtomWithIdx(glycerol_carbon1_oxygen_index).GetNeighbors():
+            if neighbor.GetIdx() == carbonyl_carbon_index:
+                ester_connected = True
+                break
+        
+    if not ester_connected and glycerol_carbon2_oxygen_index is not None:
+      for neighbor in mol.GetAtomWithIdx(glycerol_carbon2_oxygen_index).GetNeighbors():
         if neighbor.GetIdx() == carbonyl_carbon_index:
             ester_connected = True
             break
-      if ester_connected:
-        break
+           
     if not ester_connected:
        return False, "Ester not connected to position 1 or 2 of glycerol"
-
+       
     # Check for long carbon chains
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if not fatty_acid_matches:
-        return False, "Missing acyl chain"
-    
-    # count carbons and hydrogens to check for long chain
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    if c_count < 6 or h_count < 10:
-        return False, "Not a long chain fatty acid"
-    
+      return False, "Missing acyl chain"
+        
     return True, "Contains a glycerol backbone, a phosphate group at position 3, and a single acyl group at position 1 or 2"
