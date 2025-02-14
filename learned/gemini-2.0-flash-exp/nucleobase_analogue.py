@@ -22,12 +22,14 @@ def is_nucleobase_analogue(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Check for pyrimidine or purine ring system
-    pyrimidine_pattern = Chem.MolFromSmarts("c1[cn][cn][cn]1") # c1ncncn1
-    purine_pattern = Chem.MolFromSmarts("c1[cn][cn][cn][cn]2c1[cn]2") # c1ncncn2c1cn2
+    # Allow for carbonyls, saturated atoms in the ring and multiple nitrogen atoms
+    pyrimidine_pattern = Chem.MolFromSmarts("[c,n]1[c,n][c,n][c,n][c,n]1")
+    purine_pattern = Chem.MolFromSmarts("[c,n]1[c,n][c,n][c,n][c,n]2[c,n]1[c,n]2")
+    
     if not mol.HasSubstructMatch(pyrimidine_pattern) and not mol.HasSubstructMatch(purine_pattern):
         return False, "No pyrimidine or purine ring found."
 
-    # 2. Check for common substituents
+    # 2. Check for common substituents (same as before)
     # Define SMARTS patterns for common functional groups
     methyl_pattern = Chem.MolFromSmarts("[CX4H3]")
     formyl_pattern = Chem.MolFromSmarts("[CX3H1]=O")
@@ -51,18 +53,17 @@ def is_nucleobase_analogue(smiles: str):
     # If at least one of them is found, then it is probably a nucleobase analog
     if num_methyl > 0 or num_formyl > 0 or num_hydroxy > 0 or num_amino > 0 or num_carboxy > 0 or num_halogen > 0 or num_carbonyl > 0 or num_etheno > 0:
        return True, "Contains a pyrimidine or purine ring with common substitutions."
-
+    
     # 3. Handling Aza/Oxa analogs (we already check it is pyrimidine/purine)
     # Add here an extra check to identify nitrogen at specific positions
-    azapurine_pattern = Chem.MolFromSmarts("n1[cn][cn][cn][cn]2c1[cn]2")
-    azapyrimidine_pattern = Chem.MolFromSmarts("n1[cn][cn][cn]1")
-    oxapurine_pattern = Chem.MolFromSmarts("o1[cn][cn][cn][cn]2c1[cn]2")
-    oxapyrimidine_pattern = Chem.MolFromSmarts("o1[cn][cn][cn]1")
-
+    azapurine_pattern = Chem.MolFromSmarts("n1[c,n][c,n][c,n][c,n]2[c,n]1[c,n]2")
+    azapyrimidine_pattern = Chem.MolFromSmarts("n1[c,n][c,n][c,n][c,n]1")
+    oxapurine_pattern = Chem.MolFromSmarts("o1[c,n][c,n][c,n][c,n]2[c,n]1[c,n]2")
+    oxapyrimidine_pattern = Chem.MolFromSmarts("o1[c,n][c,n][c,n][c,n]1")
 
     if mol.HasSubstructMatch(azapurine_pattern) or mol.HasSubstructMatch(azapyrimidine_pattern) or mol.HasSubstructMatch(oxapurine_pattern) or mol.HasSubstructMatch(oxapyrimidine_pattern):
        return True, "Contains a substituted pyrimidine or purine ring."
-    
+
 
     # If none of the above is satisfied, then its not a nucleobase analog
     return False, "Does not resemble a nucleobase."
