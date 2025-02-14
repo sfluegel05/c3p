@@ -4,12 +4,11 @@ Classifies: CHEBI:26660 sesterterpenoid
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import Descriptors
 
 def is_sesterterpenoid(smiles: str):
     """
     Determines if a molecule is a sesterterpenoid based on its SMILES string.
-    Sesterterpenoids are C25 isoprenoids with possible rearrangements.
+    Sesterterpenoids are C25 isoprenoids.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,39 +24,23 @@ def is_sesterterpenoid(smiles: str):
 
     # Count the number of carbon atoms
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    carbon_check =  23 <= carbon_count <= 70
-    
-    # Check for isoprene units using a more general pattern
-    isoprene_pattern = Chem.MolFromSmarts("[C]([C])([C])C")
+    if carbon_count < 20 or carbon_count > 35 : # Increased carbon range
+        return False, f"Number of carbons is {carbon_count}, expected around 25 for a sesterterpenoid"
+
+    # Check for isoprene units (C5H8)
+    isoprene_pattern = Chem.MolFromSmarts("CC(C)=CC")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     isoprene_count = len(isoprene_matches)
-    isoprene_check = isoprene_count >= 3
+
+    # Score the presence of isoprene units.
+    # Ideally, a sesterterpenoid will have 5 isoprene units (25 carbons)
+    if isoprene_count < 2 : # at least 2 isoprene units
+         return False, f"Too few isoprene units ({isoprene_count}). Expected at least 2."
+    
 
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    mol_wt_check = 300 <= mol_wt <= 1400
+    if mol_wt < 300 or mol_wt > 600: # Broader range
+        return False, f"Molecular weight is {mol_wt}, expected between 300 and 600 for a sesterterpenoid"
     
-    # Check for branching (quaternary carbons with methyl groups)
-    branching_pattern = Chem.MolFromSmarts("[C]([CH3])([CH3])([!H])")
-    branching_matches = mol.GetSubstructMatches(branching_pattern)
-    branching_check = len(branching_matches) >= 2
-
-     # Check for a core substructure
-    core_pattern = Chem.MolFromSmarts("C1CC(C)(C)CC2C(C)(C)CC3C(C)(C)CC(C)(C)C(C)(C)C(C)(C)C3CC2CC1")
-    core_match = mol.HasSubstructMatch(core_pattern)
-
-    # Combine criteria
-    if carbon_check and mol_wt_check and branching_check and (isoprene_check or core_match):
-        return True, "Matches criteria for a sesterterpenoid based on number of carbons, molecular weight, branching and isoprene units."
-    else:
-        reasons = []
-        if not carbon_check:
-             reasons.append(f"Number of carbons is {carbon_count}, expected between 23 and 70.")
-        if not mol_wt_check:
-            reasons.append(f"Molecular weight is {mol_wt}, expected between 300 and 1400.")
-        if not branching_check:
-            reasons.append(f"Too few branching points ({len(branching_matches)}), expected at least 2.")
-        if not (isoprene_check or core_match):
-             reasons.append(f"Too few isoprene units ({isoprene_count}) or core substructure was not found.")
-
-        return False, "Does not match sesterterpenoid criteria: " + " ".join(reasons)
+    return True, "Matches criteria for a sesterterpenoid based on number of carbons, isoprene units, and molecular weight."
