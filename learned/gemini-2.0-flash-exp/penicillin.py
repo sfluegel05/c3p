@@ -25,13 +25,15 @@ def is_penicillin(smiles: str):
 
     # 1. Penam core pattern (with numbering for easy referencing)
     #     7    6     5
-    #   --N--[C@H]--[CH]--
+    #   --N--[C]--[C]--
     #  |   |     |     |
     #  |   C------C------S
     #  |   2     3     4
     #   --    C=O  --
     #
-    penam_core_pattern = Chem.MolFromSmarts("[N1][C@H]([C@H]2[S][C@](C)(C)[C@H]2C(O)=O)C(=O)1")
+    # Relaxed SMARTS pattern for penam core
+    # Use non stereospecific C for carbon, n for ring nitrogen, s for ring sulfur
+    penam_core_pattern = Chem.MolFromSmarts("[n1][C]([C]2[s][C](C)(C)[C]2C(O)=O)C(=O)1")
     if penam_core_pattern is None:
         return False, "Invalid Penam Core SMARTS"
     
