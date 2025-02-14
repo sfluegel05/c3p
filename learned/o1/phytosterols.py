@@ -5,14 +5,13 @@ Classifies: CHEBI:26125 phytosterols
 Classifies: CHEBI:18374 phytosterol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdqueries
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.Scaffolds import MurckoScaffold
 
 def is_phytosterols(smiles: str):
     """
     Determines if a molecule is a phytosterol based on its SMILES string.
-    A phytosterol is a plant sterol similar to cholesterol, varying only in carbon side chains
-    and/or presence or absence of double bonds.
+    A phytosterol is a plant sterol similar to cholesterol, varying only in carbon side chains and/or presence or absence of double bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,56 +20,52 @@ def is_phytosterols(smiles: str):
         bool: True if molecule is a phytosterol, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general steroid nucleus SMARTS pattern (cyclopentanoperhydrophenanthrene skeleton)
-    steroid_nucleus_smarts = '[#6]1([#6])[#6][#6]2[#6]1[#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6][#6]4'
-    steroid_nucleus = Chem.MolFromSmarts(steroid_nucleus_smarts)
+    # Define sterol core SMARTS pattern (four fused rings typical of sterols)
+    sterol_core_smarts = 'C1CCC2(C1)C3CCC4(C(C3)C2)CCC=C4'  # Simplified sterol core
+    sterol_core = Chem.MolFromSmarts(sterol_core_smarts)
+    if sterol_core is None:
+        return False, "Error in sterol core SMARTS pattern"
 
-    # Check if molecule contains steroid nucleus
-    if not mol.HasSubstructMatch(steroid_nucleus):
-        return False, "Steroid nucleus not found"
+    # Check if molecule contains sterol core
+    if not mol.HasSubstructMatch(sterol_core):
+        return False, "Sterol core not found"
 
-    # Identify the steroid skeleton match
-    matches = mol.GetSubstructMatches(steroid_nucleus)
-    if not matches:
-        return False, "Steroid nucleus not found"
+    # Generate Murcko scaffolds to compare the core structures
+    mol_scaffold = MurckoScaffold.GetScaffoldForMol(mol)
+    mol_scaffold_smiles = Chem.MolToSmiles(mol_scaffold, isomericSmiles=True)
 
-    # Check for typical phytosterol side chains at C17 (position after the steroid nucleus)
-    # Phytosterols have an alkyl side chain at C17 longer than cholesterol (which has 8 carbons in side chain)
-    # We will check for side chains with at least 9 carbons
+    # Cholesterol scaffold SMILES
+    cholesterol_smiles = 'C[C@H](CCCC(C)C)C1CCC2C1(CC=C3C2CCC4=C3CC[C@@H](O)C4)C'  # Cholesterol
+    cholesterol_mol = Chem.MolFromSmiles(cholesterol_smiles)
+    cholesterol_scaffold = MurckoScaffold.GetScaffoldForMol(cholesterol_mol)
+    cholesterol_scaffold_smiles = Chem.MolToSmiles(cholesterol_scaffold, isomericSmiles=True)
 
-    # Assuming that the atom at index 17 in the match is C17
-    for match in matches:
-        steroid_atoms = set(match)
-        c17_atom_idx = match[-1]  # Last atom in the steroid nucleus SMARTS
-        c17_atom = mol.GetAtomWithIdx(c17_atom_idx)
-        # Get side chain atoms connected to C17 that are not part of steroid nucleus
-        side_chain_atoms = set()
-        atoms_to_visit = []
-        for neighbor in c17_atom.GetNeighbors():
-            if neighbor.GetIdx() not in steroid_atoms:
-                atoms_to_visit.append(neighbor.GetIdx())
-                side_chain_atoms.add(neighbor.GetIdx())
-        # Traverse the side chain
-        while atoms_to_visit:
-            current_atom_idx = atoms_to_visit.pop()
-            current_atom = mol.GetAtomWithIdx(current_atom_idx)
-            for neighbor in current_atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx not in steroid_atoms and neighbor_idx not in side_chain_atoms:
-                    side_chain_atoms.add(neighbor_idx)
-                    atoms_to_visit.append(neighbor_idx)
-        # Count carbon atoms in the side chain
-        carbon_count = sum(1 for idx in side_chain_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-        # Phytosterols typically have side chains with more than 8 carbons
-        if carbon_count >= 9:
-            # Optionally check for double bonds in side chain or ring system
-            # For simplicity, we will accept this as a phytosterol
-            return True, "Molecule contains steroid nucleus with phytosterol characteristic side chain"
+    # Check if the scaffolds are the same (allowing for stereochemistry differences)
+    if mol_scaffold_smiles != cholesterol_scaffold_smiles:
+        return False, "Molecule does not share the sterol scaffold with cholesterol"
 
-    return False, "Side chain at C17 does not match phytosterol characteristics"
+    # Count the number of carbon atoms in side chains
+    mol_atoms = mol.GetNumHeavyAtoms()
+    scaffold_atoms = mol_scaffold.GetNumHeavyAtoms()
+    side_chain_atoms = mol_atoms - scaffold_atoms
+
+    # Phytosterols typically have longer side chains than cholesterol
+    cholesterol_side_chain_atoms = cholesterol_mol.GetNumHeavyAtoms() - cholesterol_scaffold.GetNumHeavyAtoms()
+    if side_chain_atoms < cholesterol_side_chain_atoms:
+        return False, "Side chains are not consistent with phytosterols (too short)"
+
+    # Check for differences only in side chains and/or double bonds
+    # Remove side chains to compare the core
+    mol_core = Chem.DeleteSubstructs(mol, Chem.MolFromSmarts('*~[*]~[*]~[*]-[*]'))  # Remove side chains
+    cholesterol_core = Chem.DeleteSubstructs(cholesterol_mol, Chem.MolFromSmarts('*~[*]~[*]~[*]-[*]'))
+
+    # Check if cores are identical
+    if not mol_core.HasSubstructMatch(cholesterol_core):
+        return False, "Core structure differs beyond side chains and double bonds"
+
+    return True, "Molecule contains sterol core and matches phytosterol criteria"
