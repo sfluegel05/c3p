@@ -38,33 +38,39 @@ def is_cyclohexenones(smiles: str):
         if len(ring) != 6:
             continue
 
-        # Check that ring is alicyclic (non-aromatic) and composed of carbon atoms
-        is_valid_ring = True
+        # Check that ring is alicyclic (non-aromatic)
+        is_aromatic = False
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
             if atom.GetIsAromatic():
-                is_valid_ring = False
+                is_aromatic = True
                 break
-            if atom.GetAtomicNum() != 6:
-                is_valid_ring = False
+        if is_aromatic:
+            continue  # Skip aromatic rings
+
+        # Check that ring is composed of carbon atoms
+        is_all_carbon = all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring)
+        if not is_all_carbon:
+            continue  # Ring contains non-carbon atoms
+
+        # Check that atoms are only in one ring (avoid fused rings)
+        is_fused = False
+        for idx in ring:
+            num_rings = ring_info.NumAtomRings(idx)
+            if num_rings > 1:
+                is_fused = True
                 break
-            # Check that atom is only in one ring (to avoid fused rings)
-            if len(atom.GetOwningMol().GetRingInfo().AtomRingsForAtom(idx)) > 1:
-                is_valid_ring = False
-                break
-        if not is_valid_ring:
-            continue
+        if is_fused:
+            continue  # Skip fused rings
 
         # Collect bonds in the ring
         bond_idxs = []
-        bond_atoms = []
         for i in range(len(ring)):
             atom1_idx = ring[i]
             atom2_idx = ring[(i + 1) % len(ring)]
             bond = mol.GetBondBetweenAtoms(atom1_idx, atom2_idx)
             if bond is not None:
                 bond_idxs.append(bond.GetIdx())
-                bond_atoms.append((atom1_idx, atom2_idx))
 
         # Count double bonds in the ring
         double_bond_count = 0
@@ -76,15 +82,17 @@ def is_cyclohexenones(smiles: str):
         if double_bond_count != 1:
             continue  # Need exactly one double bond in the ring
 
-        # Check for ketone group attached to ring carbon (exocyclic ketone)
+        # Check for ketone group (C=O) within the ring
         ketone_found = False
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            # Check if carbon atom is double-bonded to an oxygen atom outside the ring
+            if atom.GetAtomicNum() != 6:
+                continue  # Skip non-carbon atoms
             for bond in atom.GetBonds():
                 neighbor = bond.GetOtherAtom(atom)
-                if neighbor.GetIdx() in ring:
-                    continue  # Skip atoms in the ring
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in ring:
+                    continue  # Skip atoms outside the ring
                 if neighbor.GetAtomicNum() == 8:  # Oxygen atom
                     if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
                         ketone_found = True
@@ -97,6 +105,6 @@ def is_cyclohexenones(smiles: str):
             break  # No need to check other rings
 
     if cyclohexenone_found:
-        return True, "Contains a six-membered carbocyclic alicyclic ring with one double bond and an exocyclic ketone group"
+        return True, "Contains a six-membered alicyclic ketone ring with one double bond"
     else:
         return False, "Does not contain a cyclohexenone ring structure"
