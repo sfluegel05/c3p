@@ -23,14 +23,11 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
         return False, "Invalid SMILES string"
     
     # SMARTS pattern for secondary alpha-hydroxy ketone
-    # We'll use:
-    # 1. C[OH]: Hydroxyl group bonded to a carbon.
-    # 2. C: Secondary nature should be captured by non-terminal, but SMARTS doesn't limit directly; 
-    #    hence check hydroxyl presence and alpha connection.
-    # 3. C(=O): Alpha position of ketone.
-    # Ensuring that the SMARTS match describes a secondary character and ketone relation.
-    secondary_alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts('[C@H](O)[CH2][C](=O)')
-    
+    # 1. [C](O) - The secondary alpha carbon bearing the hydroxy group.
+    # 2. [C](=O) - The ketone group at the alpha position.
+    #    Ensure the alpha carbon with the hydroxyl is connected to two other carbons, meeting the secondary nature.
+    secondary_alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts('[C](O)([C])[C;!R](=O)')
+
     if not mol.HasSubstructMatch(secondary_alpha_hydroxy_ketone_pattern):
         return False, "No secondary alpha-hydroxy ketone structure found"
 
