@@ -21,40 +21,48 @@ def is_mononitrophenol(smiles: str):
         bool: True if molecule is a mononitrophenol, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
+    # Get rings and check for aromaticity
+    rings = mol.GetRingInfo().AtomRings()
+    aromatic_rings = [ring for ring in rings if mol.GetAtomWithIdx(ring[0]).GetIsAromatic()]
+    if not aromatic_rings:
+        return False, "No aromatic rings found"
+
     # Check for phenol ring
-    phenol_pattern = Chem.MolFromSmarts("c1ccccc1O")
-    if not mol.HasSubstructMatch(phenol_pattern):
+    phenol_rings = []
+    for ring in aromatic_rings:
+        atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        if (
+            len(ring) == 6
+            and sum(1 for atom in atoms if atom.GetAtomicNum() == 6) == 6
+            and sum(1 for atom in atoms if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1) == 1
+        ):
+            phenol_rings.append(ring)
+
+    if not phenol_rings:
         return False, "No phenol ring found"
-    
+
     # Check for single nitro group
     nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
     if len(nitro_matches) != 1:
         return False, f"Found {len(nitro_matches)} nitro groups, expected 1"
-    
-    # Check for aromaticity
-    if not mol.GetAromaticRings():
-        return False, "Not aromatic"
-    
-    # Count carbons, hydrogens, nitrogens and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 6 or c_count > 12:
-        return False, "Wrong number of carbons for mononitrophenol"
-    if h_count < 5 or h_count > 9:
-        return False, "Wrong number of hydrogens for mononitrophenol"
-    if n_count != 1:
-        return False, "Expected exactly 1 nitrogen for mononitrophenol"
-    if o_count != 2:
-        return False, "Expected exactly 2 oxygens for mononitrophenol"
-    
+
+    # Check if nitro group is attached to phenol ring
+    nitro_atom_idx = nitro_matches[0][0]
+    nitro_ring_idx = mol.GetAtomWithIdx(nitro_atom_idx).GetIsAromatic()
+    if nitro_ring_idx is None or nitro_ring_idx not in [ring[0] for ring in phenol_rings]:
+        return False, "Nitro group not attached to phenol ring"
+
+    # Check for other substituents on phenol ring
+    for ring in phenol_rings:
+        atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        if sum(1 for atom in atoms if atom.GetAtomicNum() not in [6, 8, 7]) > 0:
+            return False, "Phenol ring has additional substituents other than nitro group"
+
     return True, "Contains a phenol ring with a single nitro substituent"
