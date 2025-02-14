@@ -1,28 +1,118 @@
 """
 Classifies: CHEBI:64482 phosphatidylcholine
 """
-The previous program seems to be a good attempt at classifying phosphatidylcholines, but there are a few issues that might be causing the low F1 score:
+"""
+Classifies: CHEBI:17719 phosphatidylcholine
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Error handling**: The program is using a try-except block to catch any exceptions, but it may be too broad. The reported errors suggest that there are issues with accessing specific atom indices, which could be due to incorrect indexing or handling of hydrogens. A more specific exception handling mechanism might help identify and resolve these issues.
+def is_phosphatidylcholine(smiles: str):
+    """
+    Determines if a molecule is a phosphatidylcholine based on its SMILES string.
+    A phosphatidylcholine is a glycerophosphocholine bearing two acyl substituents at positions 1 and 2.
 
-2. **Substructure matching**: The program relies heavily on substructure matching using SMARTS patterns. While this is a valid approach, it can sometimes be brittle and miss certain cases. For example, the program checks for the presence of a glycerol backbone and a phosphocholine group using SMARTS patterns, but it might miss cases where the atoms are arranged differently or have different bond orders.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Fatty acid chain detection**: The method used to detect fatty acid chains seems reasonable, but it might be too strict or too lenient in certain cases. The program considers any carbon chain of length 4 or more as a fatty acid chain, but some phosphatidylcholines might have shorter or longer chains. Additionally, the program doesn't seem to account for the presence of double bonds or other functional groups in the fatty acid chains.
+    Returns:
+        bool: True if molecule is a phosphatidylcholine, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Get ring info and identify potential glycerol backbone
+    ring_info = mol.GetRingInfo()
+    ring_atoms = [ring_info.AtomRings()[i] for i in range(ring_info.NumRings())]
+    potential_backbone = []
+    for ring in ring_atoms:
+        if len(ring) == 3:
+            potential_backbone.extend(ring)
+    
+    # Check for glycerol backbone pattern
+    backbone_smarts = Chem.MolFromSmarts("[OX2]C([OX2])C([OX2])")
+    backbone_match = mol.GetSubstructMatches(backbone_smarts)
+    if not backbone_match:
+        return False, "No glycerol backbone found"
+    
+    # Check for choline group
+    choline_smarts = Chem.MolFromSmarts("[N+]([C])([C])([C])")
+    choline_match = mol.GetSubstructMatches(choline_smarts)
+    if not choline_match:
+        return False, "No choline group found"
+    
+    # Check for phosphate group
+    phosphate_smarts = Chem.MolFromSmarts("P(=O)([OX2])([OX2])[OX2]")
+    phosphate_match = mol.GetSubstructMatches(phosphate_smarts)
+    if not phosphate_match:
+        return False, "No phosphate group found"
+    
+    # Check for presence of two ester groups
+    ester_smarts = Chem.MolFromSmarts("C(=O)OC")
+    ester_matches = mol.GetSubstructMatches(ester_smarts)
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+    
+    # Check for fatty acid chains
+    chain_smarts = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(chain_smarts)
+    if len(chain_matches) < 2:
+        return False, f"Missing fatty acid chains, got {len(chain_matches)}"
+    
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Chains too short to be fatty acids"
+    
+    # Count carbons, oxygens, and nitrogens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    
+    if c_count < 20:
+        return False, "Too few carbons for phosphatidylcholine"
+    if o_count < 6:
+        return False, "Too few oxygens for phosphatidylcholine"
+    if n_count != 1:
+        return False, "Must have exactly 1 nitrogen (choline group)"
+    
+    return True, "Contains glycerol backbone with two fatty acid chains and a phosphocholine group"
 
-4. **Molecular weight calculation**: The method used to calculate the expected molecular weight based on the detected fatty acid chains seems reasonable, but it might be sensitive to errors in the chain detection step. If the chain detection is inaccurate, the expected molecular weight calculation will also be incorrect.
 
-To improve the program, you might consider the following:
-
-1. **Improve error handling**: Instead of catching broad exceptions, try to catch and handle specific exceptions related to atom indexing and bond order issues.
-
-2. **Use alternative substructure matching methods**: Consider using alternative methods for substructure matching, such as RDKit's `GetSubstructMatches` or `GetSubstructMatch` functions, which might be more robust and flexible than SMARTS patterns.
-
-3. **Refine fatty acid chain detection**: Explore more sophisticated methods for detecting fatty acid chains, taking into account the presence of double bonds, functional groups, and variable chain lengths.
-
-4. **Incorporate additional checks**: Consider adding additional checks or constraints based on the definition of phosphatidylcholines, such as the presence of a specific number of carbon, oxygen, or nitrogen atoms, or the presence of specific functional groups or substituents.
-
-5. **Analyze false positives and false negatives**: Carefully analyze the false positives and false negatives reported in the outcomes to identify patterns or edge cases that the program might be missing. Use this information to refine the classification logic and improve the overall accuracy.
-
-6. **Consider alternative approaches**: If the substructure matching approach continues to struggle, consider alternative approaches, such as using machine learning models or rule-based systems that can capture more complex patterns and relationships.
-
-It's important to note that the benchmark might have occasional and systematic mistakes, as mentioned. If you believe that your program's classifications are consistent with the meaning of the chemical class, you can consider ignoring outliers or false negatives, but be sure to explain your reasoning clearly.
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:17719',
+                          'name': 'phosphatidylcholine',
+                          'definition': 'A glycerophosphocholine that is '
+                                        'glycero-3-phosphocholine bearing two '
+                                        'acyl substituents at positions 1 and '
+                                        '2.',
+                          'parents': ['CHEBI:17693', 'CHEBI:17854']},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 1,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 147,
+    'num_false_positives': 0,
+    'num_true_negatives': 182445,
+    'num_false_negatives': 2,
+    'num_negatives': None,
+    'precision': 1.0,
+    'recall': 0.9866321243523316,
+    'f1': 0.9932785885966384,
+    'accuracy': 0.9999906878950462}
