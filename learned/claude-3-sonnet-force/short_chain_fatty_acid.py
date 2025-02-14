@@ -50,15 +50,24 @@ def is_short_chain_fatty_acid(smiles: str):
             current = queue.pop(0)
             if current not in visited:
                 visited.add(current)
-                neighbors = [n.GetIdx() for n in mol.GetAtomWithIdx(current).GetNeighbors() if n.GetSymbol() == 'C']
+                neighbors = [n for n in mol.GetAtomWithIdx(current).GetNeighbors() if n.GetSymbol() == 'C']
                 chain_length += len(neighbors)
-                queue.extend(neighbors)
+                queue.extend(n.GetIdx() for n in neighbors)
         longest_chain = max(longest_chain, chain_length)
     if longest_chain >= 6:
         return False, "Carbon chain is too long (>= C6)"
     
     # Check for non-hydrocarbon substituents
-    non_h_substituents = [atom for atom in mol.GetAtoms() if atom.GetSymbol() != 'H' and sum(n.GetSymbol() != 'H' and n.GetSymbol() != 'C' and n.GetSymbol() != 'O' for n in atom.GetNeighbors()) > 0]
+    non_h_substituents = False
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() != 'H' and atom.GetSymbol() != 'C' and atom.GetSymbol() != 'O':
+            non_h_substituents = True
+            break
+        elif atom.GetSymbol() == 'C' or atom.GetSymbol() == 'O':
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetSymbol() not in ['H', 'C', 'O']:
+                    non_h_substituents = True
+                    break
     if non_h_substituents:
         return False, "Molecule contains non-hydrocarbon substituents"
     
