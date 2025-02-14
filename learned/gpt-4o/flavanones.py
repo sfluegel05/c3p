@@ -24,7 +24,7 @@ def is_flavanones(smiles: str):
 
     # Define a more flexible SMARTS pattern for the flavanone core
     # The pattern here allows subtle variations and substitutions typical for flavanones
-    flavanone_pattern = Chem.MolFromSmarts("O=C1C=Cc2ccccc2O1")  # 2-aryl-2H-chromene-4-one core
+    flavanone_pattern = Chem.MolFromSmarts("C1Oc2ccccc2C(=O)C1")  # 3,4-dihydro-2-phenylchromen-4-one core
     
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No 3,4-dihydro-2-aryl-2H-1-benzopyran-4-one skeleton found"
