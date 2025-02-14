@@ -5,13 +5,13 @@ Classifies: CHEBI:17962 CDP-diacylglycerol
 Classifies: CDP-diacylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_CDP_diacylglycerol(smiles: str):
     """
     Determines if a molecule is a CDP-diacylglycerol based on its SMILES string.
     A CDP-diacylglycerol is a glycerol backbone with two fatty acid chains attached via ester bonds
-    at positions 1 and 2, and a cytidine diphosphate group attached via a phosphodiester bond
+    at positions 1 and 2, and a CDP (cytidine diphosphate) group attached via a phosphodiester bond
     at position 3.
 
     Args:
@@ -27,85 +27,39 @@ def is_CDP_diacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Suppress sanitization warnings
-    Chem.SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
-
-    # Define SMARTS patterns
-
-    # Glycerol backbone: three carbons connected sequentially
-    glycerol_pattern = Chem.MolFromSmarts("C(C)C")
+    # Check for glycerol backbone with ester groups at positions 1 and 2
+    # Glycerol backbone with two esterified hydroxyls at positions 1 and 2
+    glycerol_pattern = Chem.MolFromSmarts("C(COC(=O)*)COC(=O)*")
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
     if not glycerol_matches:
-        return False, "No glycerol backbone found"
+        return False, "No diacylglycerol backbone found"
 
-    # Ester linkage pattern: O=C-O-C (ester group)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C;!$(C=O)]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester linkages, need at least 2"
-
-    # Phosphodiester linkage pattern: O-P(=O)(O)-O
-    phosphodiester_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
+    # Check for phosphodiester bond at position 3
+    phosphodiester_pattern = Chem.MolFromSmarts("COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](N2C=CC(=NC2=O)N)[C@@H](O)[C@H]1O")  # Simplified pattern for CDP group
     phosphodiester_matches = mol.GetSubstructMatches(phosphodiester_pattern)
     if not phosphodiester_matches:
-        return False, "No phosphodiester group found"
+        return False, "No CDP group attached via phosphodiester bond found"
 
-    # Cytidine moiety pattern: pyrimidine ring with amine and keto groups
-    cytidine_pattern = Chem.MolFromSmarts("n1ccnc(N)c1")
+    # Check for cytidine group attached to phosphate
+    cytidine_pattern = Chem.MolFromSmarts("N2C=CC(=NC2=O)N")  # Pattern for cytosine base
     cytidine_matches = mol.GetSubstructMatches(cytidine_pattern)
     if not cytidine_matches:
-        return False, "No cytidine base found"
+        return False, "No cytidine (cytosine base) group found"
 
-    # Ribose sugar attached to cytidine base
-    ribose_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)O1")
-    ribose_matches = mol.GetSubstructMatches(ribose_pattern)
-    if not ribose_matches:
-        return False, "No ribose sugar found"
+    # Check for fatty acid chains (long carbon chains attached via ester bonds)
+    # Fatty acid chain pattern: Long aliphatic chain connected via ester linkage
+    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)OCC(C)C")  # Simplified pattern
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, f"Found {len(fatty_acid_matches)} fatty acid chains, need at least 2"
 
-    # Check that the cytidine base is connected to ribose
-    cytidine_atom_indices = [atom_idx for match in cytidine_matches for atom_idx in match]
-    ribose_atom_indices = [atom_idx for match in ribose_matches for atom_idx in match]
-    cytidine_neighbors = set()
-    for idx in cytidine_atom_indices:
-        atom = mol.GetAtomWithIdx(idx)
-        for neighbor in atom.GetNeighbors():
-            cytidine_neighbors.add(neighbor.GetIdx())
-    if not any(idx in ribose_atom_indices for idx in cytidine_neighbors):
-        return False, "Cytidine base not connected to ribose sugar"
+    # Check molecular weight - CDP-diacylglycerol typically > 700 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 700:
+        return False, "Molecular weight too low for CDP-diacylglycerol"
 
-    # Check that the ribose is connected to the phosphodiester group
-    phospho_atom_indices = [atom_idx for match in phosphodiester_matches for atom_idx in match]
-    ribose_neighbors = set()
-    for idx in ribose_atom_indices:
-        atom = mol.GetAtomWithIdx(idx)
-        for neighbor in atom.GetNeighbors():
-            ribose_neighbors.add(neighbor.GetIdx())
-    if not any(idx in phospho_atom_indices for idx in ribose_neighbors):
-        return False, "Ribose sugar not connected to phosphodiester group"
+    return True, "Contains glycerol backbone with two fatty acid chains and CDP group attached via phosphodiester bond"
 
-    # Check that the phosphodiester group is connected to the glycerol backbone
-    glycerol_atom_indices = [atom_idx for match in glycerol_matches for atom_idx in match]
-    phospho_neighbors = set()
-    for idx in phospho_atom_indices:
-        atom = mol.GetAtomWithIdx(idx)
-        for neighbor in atom.GetNeighbors():
-            phospho_neighbors.add(neighbor.GetIdx())
-    if not any(idx in glycerol_atom_indices for idx in phospho_neighbors):
-        return False, "Phosphodiester group not connected to glycerol backbone"
-
-    # Check that the glycerol backbone has two ester linkages
-    ester_oxygen_indices = [match[2] for match in ester_matches]  # Oxygen connected to glycerol
-    ester_glycerol_connections = 0
-    for idx in ester_oxygen_indices:
-        atom = mol.GetAtomWithIdx(idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() in glycerol_atom_indices:
-                ester_glycerol_connections += 1
-                break
-    if ester_glycerol_connections < 2:
-        return False, "Ester groups not properly attached to glycerol backbone"
-
-    return True, "Molecule is a CDP-diacylglycerol"
 
 __metadata__ = {
     'chemical_class': {
