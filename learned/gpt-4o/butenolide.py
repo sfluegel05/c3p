@@ -21,14 +21,14 @@ def is_butenolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a versatile gamma-lactone pattern for 2-furanone which allows for substituents
+    # Improved pattern list for gamma-lactone structure:
     gamma_lactone_patterns = [
-        Chem.MolFromSmarts("O=C1OCC=C1"),  # Basic 2-furanone core
-        Chem.MolFromSmarts("O=C1O/C=C/C1"),  # Tolerates other bond changes
-        Chem.MolFromSmarts("O=C1[C;R1]=[C;R1]OC1"),  # Tolerate substitution variations
+        Chem.MolFromSmarts("O=C1OC=CC1"),  # Basic 2-furanone core
+        Chem.MolFromSmarts("O=C1[O,c]=C[C,c]C1"),  # Allow substitutions on the lactone ring
+        Chem.MolFromSmarts("O=C1OC=C([C,c])C1"),  # Allow substitution at various positions 
     ]
     
-    # Check if the structure matches any of the gamma-lactone patterns
+    # Check if the SMILES structure has the gamma-lactone pattern
     for pattern in gamma_lactone_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Structure matches gamma-lactone (2-furanone) backbone pattern"
