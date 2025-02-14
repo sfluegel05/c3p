@@ -6,6 +6,7 @@ Classifies: CHEBI:16646 D-hexose
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_D_hexose(smiles: str):
     """
@@ -33,41 +34,23 @@ def is_D_hexose(smiles: str):
 
     # Check for the presence of a ring structure
     ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
+    if not ring_info.AtomRings():
+        return False, "Not a hexose (no ring structure found)"
 
-    # Check if there is a single ring of size 5 or 6 (pyranose or furanose)
-    if len(rings) == 1 and (len(rings[0]) == 5 or len(rings[0]) == 6):
-        # Identify the anomeric carbon (the carbon connected to the ring oxygen)
-        anomeric_carbon = None
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 4:
-                neighbors = [mol.GetAtomWithIdx(n).GetAtomicNum() for n in atom.GetNeighbors()]
-                if 8 in neighbors:
-                    anomeric_carbon = atom.GetIdx()
-                    break
+    # Get the stereochemistry of the molecule
+    stereo_chem = Chem.FindMolChiralCenters(mol)
 
-        if anomeric_carbon is not None:
-            # Get the chiral centers of the molecule
-            chiral_centers = [atom.GetIdx() for atom in mol.GetAtoms() if atom.HasProp('_ChiralityPossible') and atom.GetProp('_ChiralityPossible') == 'Unk']
+    # Define a reference D-hexose (e.g., D-glucose) and its stereochemistry
+    reference_smiles = "OC[C@H]1OC(O)[C@@H](O)[C@@H](O)[C@@H]1O"
+    reference_mol = Chem.MolFromSmiles(reference_smiles)
+    reference_stereo_chem = Chem.FindMolChiralCenters(reference_mol)
 
-            # Check if there are at least 4 chiral centers (minimum for a hexose)
-            if len(chiral_centers) >= 4:
-                # Find the chiral center corresponding to position 5
-                position_5 = None
-                for idx in chiral_centers:
-                    atom = mol.GetAtomWithIdx(idx)
-                    ring_bond_count = sum(1 for neighbor in atom.GetNeighbors() if mol.GetAtomWithIdx(neighbor).IsInRing())
-                    if ring_bond_count == 1:
-                        position_5 = idx
-                        break
+    # Compare the stereochemistry of the molecule with the reference D-hexose
+    if stereo_chem == reference_stereo_chem:
+        return True, "Molecule has the same stereochemistry as a reference D-hexose"
+    else:
+        return False, "Stereochemistry does not match a reference D-hexose"
 
-                if position_5 is not None:
-                    # Check if the chiral center at position 5 has D-configuration
-                    atom = mol.GetAtomWithIdx(position_5)
-                    if atom.GetProp('_CIPCode') == 'R':
-                        return True, "Molecule has D-configuration at position 5"
-                    else:
-                        return False, "Molecule does not have D-configuration at position 5"
-
-    # If no ring structure or linear form
-    return False, "Not a hexose (no valid ring structure or linear form found)"
+# Example usage
+print(is_D_hexose("OC[C@H]1OC(O)[C@@H](O)[C@@H](O)[C@@H]1O"))  # True, 'Molecule has the same stereochemistry as a reference D-hexose'
+print(is_D_hexose("OC[C@@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O"))  # False, 'Stereochemistry does not match a reference D-hexose'
