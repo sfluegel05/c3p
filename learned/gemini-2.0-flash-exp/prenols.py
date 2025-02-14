@@ -23,32 +23,21 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for at least one terminal alcohol, phosphate or diphosphate group
-    terminal_group_pattern = Chem.MolFromSmarts("[OX2H,OP(=O)([O-])[O-]]")
+    # Check for terminal group with oxygen or phosphorus
+    terminal_group_pattern = Chem.MolFromSmarts("[CX4][OX2,OP(=O)([O-])[O-]]")
     if not mol.HasSubstructMatch(terminal_group_pattern):
-        return False, "No terminal alcohol, phosphate or diphosphate group found"
-
-    # Check for the presence of the basic isoprene unit.
-    isoprene_unit = Chem.MolFromSmarts("C[CX3](C)=[CX3][CX4]")
+        return False, "No terminal oxygen or phosphate/diphosphate group found"
+    
+     # Check for the presence of the isoprene unit.
+    isoprene_unit = Chem.MolFromSmarts("C[C]=[C][C]")
     if not mol.HasSubstructMatch(isoprene_unit):
-      return False, "No isoprene unit found"
-    
-    # Count carbons, hydrogens, and oxygens:
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Check for sufficient carbons for the isoprene unit(s). Prenols have chains of isoprenes, so the number of carbon atoms should be a multiple of 5 (isoprene) plus some carbons in the terminal group
-    if carbon_count < 5 :
-      return False, "Too few carbons for an isoprene unit"
+        return False, "No isoprene unit found"
 
 
-    # Check chain length based on rotatable bonds
+    # Check if molecule has at least 2 rotatable bonds to verify some kind of chain is present
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 2:
-        return False, "Chain too short, less than 2 rotatable bonds"
-    
-    # Approximate number of isoprene units
-    isoprene_units = (carbon_count) / 5  
-    if isoprene_units < 0.8:
-        return False, f"Too few isoprene units ({isoprene_units})."
+         return False, "Chain too short, less than 2 rotatable bonds"
 
+    
     return True, "Matches prenol criteria"
