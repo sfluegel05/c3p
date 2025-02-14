@@ -19,20 +19,23 @@ def is_porphyrins(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES
+    # Parse SMILES to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the porphyrin core SMARTS pattern
-    # The pattern represents the macrocyclic structure of porphyrins
-    porphyrin_smarts = 'n1c(ccc1)-c1c2c(ccc2)[nH]c2ccc(-c3ccc([nH]3)c(-c3ccc([nH]3)c1))c2'
-    porphyrin_pattern = Chem.MolFromSmarts(porphyrin_smarts)
-    if porphyrin_pattern is None:
-        return None, "Failed to create porphyrin SMARTS pattern"
+    # Get ring information from the molecule
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
 
-    # Check for porphyrin core
-    if mol.HasSubstructMatch(porphyrin_pattern):
-        return True, "Contains porphyrin core structure with four pyrrole rings connected via methine bridges"
-    else:
-        return False, "Does not contain the porphyrin core macrocyclic structure"
+    # Iterate over all rings in the molecule
+    for ring in atom_rings:
+        # Check if the ring is 16-membered
+        if len(ring) == 16:
+            # Count the number of nitrogen atoms in the ring
+            num_nitrogen = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
+            # Check if there are exactly four nitrogen atoms
+            if num_nitrogen == 4:
+                return True, "Contains porphyrin core: 16-membered ring with 4 nitrogen atoms"
+    
+    return False, "Does not contain porphyrin core macrocyclic structure"
