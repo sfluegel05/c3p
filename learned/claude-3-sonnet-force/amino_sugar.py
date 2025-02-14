@@ -1,55 +1,36 @@
 """
 Classifies: CHEBI:28963 amino sugar
 """
-"""
-Classifies: CHEBI:26651 amino sugar
+Based on the outcomes provided, it appears that the current program has some limitations in accurately classifying amino sugars. Here's an analysis of the issues and potential improvements:
 
-An amino sugar is any sugar having one or more alcoholic hydroxy groups replaced by
-substituted or unsubstituted amino groups.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+1. False Negatives:
+   The program missed several true amino sugar structures, indicating that the implemented criteria are too restrictive. This can be due to the following reasons:
+   - The sugar backbone pattern is too specific and may not cover all possible variations of the sugar backbone. Different structural variations, such as branched structures or cyclic forms, might not be detected.
+   - The requirement of having both amino groups and remaining hydroxy groups may be too strict, as some amino sugars might not have any remaining hydroxy groups.
 
-def is_amino_sugar(smiles: str):
-    """
-    Determines if a molecule is an amino sugar based on its SMILES string.
+   Potential Improvements:
+   - Relax the sugar backbone pattern to cover more structural variations.
+   - Allow for the possibility of amino sugars without remaining hydroxy groups.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. False Positives:
+   The program incorrectly classified some non-amino sugar structures as amino sugars. This could be due to the following reasons:
+   - The amino group pattern is too general and can match other nitrogen-containing groups, such as amides or cyclic nitrogen-containing heterocycles.
+   - The program does not account for other structural features that might disqualify a molecule from being an amino sugar, such as the presence of certain functional groups or ring systems.
 
-    Returns:
-        bool: True if molecule is an amino sugar, False otherwise
-        str: Reason for classification
-    """
-    try:
-        # Parse SMILES
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return False, "Invalid SMILES string"
+   Potential Improvements:
+   - Refine the amino group pattern to be more specific to amino groups replacing hydroxy groups in sugars.
+   - Implement additional checks for disqualifying structural features or functional groups.
 
-        # Check for sugar backbone
-        sugar_backbone_pattern = Chem.MolFromSmarts("[OX2]C[CX4][CX4][CX4][CX4][CX4][OX2]")
-        if not mol.HasSubstructMatch(sugar_backbone_pattern):
-            return False, "No sugar backbone found"
+3. Handling Edge Cases:
+   The program does not seem to handle edge cases or specific exceptions well, such as sugar alcohols or other closely related structures.
 
-        # Check for amino groups replacing hydroxy groups
-        amino_pattern = Chem.MolFromSmarts("[NX3][CX4][OX2]")
-        amino_matches = mol.GetSubstructMatches(amino_pattern)
-        if not amino_matches:
-            return False, "No amino groups replacing hydroxy groups"
+   Potential Improvements:
+   - Implement more robust checks for edge cases or closely related structures that should be excluded from the amino sugar classification.
 
-        # Check for remaining hydroxy groups
-        hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
-        hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-        if not hydroxy_matches:
-            return False, "No remaining hydroxy groups found"
+4. Confidence in Classifications:
+   As mentioned in the note, there may be occasional and systematic mistakes in the benchmark used for evaluation. In such cases, it is essential to rely on your understanding of chemistry and the definition of the chemical class.
 
-        # Negative check: exclude sugar alcohols
-        sugar_alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2H][CX4][OX2H]")
-        if mol.HasSubstructMatch(sugar_alcohol_pattern):
-            return False, "Molecule appears to be a sugar alcohol, not an amino sugar"
+   Potential Improvements:
+   - Carefully review the false positive and false negative cases, and if the program's classifications align with your understanding of amino sugars, consider adjusting the benchmark or ignoring outliers with proper justification.
 
-        return True, "Contains a sugar backbone with one or more amino groups replacing hydroxy groups"
-
-    except Exception as e:
-        return False, f"An error occurred: {str(e)}"
+Overall, the current program can be improved by refining the structural patterns, implementing additional checks for disqualifying features, and handling edge cases more robustly. Additionally, a thorough review of the false positive and false negative cases, combined with your chemical knowledge, can help identify areas for further improvement and potentially adjust the benchmark if needed.
