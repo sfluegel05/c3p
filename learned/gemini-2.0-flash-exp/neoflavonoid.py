@@ -19,22 +19,37 @@ def is_neoflavonoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define the chromene core with flexibility for saturation, and a connection point.
+    # [CH2X4,CHX3] means either CH2 (saturated ring) or CH (unsaturated)
+    # [*] means that this atom must have an extra attachment to something.
+    chromene_core_pattern = Chem.MolFromSmarts('c1ccccc1[CH2X4,CHX3]([*])O[CHX4,CHX3]')
+    if not mol.HasSubstructMatch(chromene_core_pattern):
+          return False, "Does not contain a 1-benzopyran core"
 
-    # Define the neoflavonoid core pattern with aryl at position 4.
-    # This pattern uses a more specific SMARTS to capture the 1-benzopyran core.
-    # The core is composed of fused benzene and a 6 membered ring with oxygen and double bonds.
-    # [c] denotes aromatic carbon, [C] denotes a carbon with 4 explicit bonds.
-    # The pattern considers 1-benzopyran-2-one (coumarin) as well.
-    # [c]1[c](-[CH]=[CH]-O-[CH](-[c]2[c][c][c][c][c]2)-[CH]=[CH]1) also considers the case where we do not have a carbonyl
-    # Variations for a dihydro system are also considered.
-
-    core_pattern1 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(-c3ccccc3)=C-C=C2') # 1-benzopyran with phenyl at pos 4
-    core_pattern2 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(=O)-C(-c3ccccc3)=C-C2') # 1-benzopyran-2-one (coumarin) with phenyl at pos 4
-    core_pattern3 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(-c3ccccc3)-C-C2') # dihydro-1-benzopyran with phenyl at pos 4
-    core_pattern4 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(-c3ccccc3)=C-C-C2') # Partially saturated 1-benzopyran
-    core_pattern5 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(=O)-C(-c3ccccc3)-C-C2') # Partially saturated coumarin
-
-    if not (mol.HasSubstructMatch(core_pattern1) or mol.HasSubstructMatch(core_pattern2) or mol.HasSubstructMatch(core_pattern3) or mol.HasSubstructMatch(core_pattern4) or mol.HasSubstructMatch(core_pattern5)):
-        return False, "Does not contain a 1-benzopyran core with an aryl substituent at position 4."
+    # Define aryl substituent, connected via a single bond to the core. 
+    #  Allow for substituted aryl rings at position 4.
+    aryl_substituent_pattern = Chem.MolFromSmarts('[c]1:[c]:[c]:[c]:[c]:[c]1')
+    
+    # Find the attachment point to the ring.
+    matches = mol.GetSubstructMatches(chromene_core_pattern)
+    
+    found_aryl_at_pos_4 = False
+    for match in matches:
+      core_C4_index = match[1] # the position bonded to the aryl.
+      # iterate over the bonds of the matching atom.
+      for bond in mol.GetAtomWithIdx(core_C4_index).GetBonds():
+        if bond.GetOtherAtomIdx(core_C4_index) == match[2]:
+          # skip the core bond
+          continue
+        other_atom = mol.GetAtomWithIdx(bond.GetOtherAtomIdx(core_C4_index))
+        if mol.HasSubstructMatch(aryl_substituent_pattern,[other_atom.GetIdx()]):
+          found_aryl_at_pos_4 = True
+          break
+      if found_aryl_at_pos_4:
+        break
+          
+    if not found_aryl_at_pos_4:
+        return False, "Does not have an aryl substituent at position 4 of the 1-benzopyran core."
 
     return True, "Contains a 1-benzopyran core with an aryl substituent at position 4."
