@@ -1,25 +1,58 @@
 """
 Classifies: CHEBI:73702 wax
 """
-Based on the outcomes provided, the previous program appears to have a few limitations in accurately classifying waxes. Here's an analysis of what may have gone wrong and how to improve the program:
+"""
+Classifies: CHEBI:26119 wax
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **False Positives**: Several false positives were classified as waxes, even though they do not seem to fit the definition of waxes being "organic compounds or mixtures of compounds composed of long-chain molecules and malleable at ambient temperatures." These false positives are likely due to the program's criteria being too broad, as it only checks for the presence of long carbon chains and characteristic wax functional groups (esters, ethers, alcohols). However, many non-wax compounds, such as peptides and other complex organic molecules, can also satisfy these criteria.
+def is_wax(smiles: str):
+    """
+    Determines if a molecule is a wax based on its SMILES string.
+    A wax is a long-chain organic compound or mixture that is malleable at ambient temperatures.
 
-   To improve the specificity of the program, additional criteria could be introduced to distinguish waxes from other organic compounds. For example:
-   - Check for a predominantly aliphatic (non-aromatic) structure.
-   - Ensure the long carbon chains are predominantly linear or branched, rather than cyclic.
-   - Verify the absence of certain functional groups that are uncommon in waxes (e.g., amines, amides, carboxylic acids).
-   - Impose stricter molecular weight and rotatable bond constraints specific to waxes.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **False Negatives**: Several true waxes were missed by the program, as it classified them as non-waxes. This issue likely arises from the program's strict requirement of having at least 20 continuous carbon atoms in a ring or chain. Many waxes may have slightly shorter chains or a mixture of chain lengths, making this criterion too restrictive.
+    Returns:
+        bool: True if molecule is a wax, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-   To address this limitation, the program could:
-   - Lower the threshold for minimum carbon chain length, perhaps to around 16-18 continuous carbon atoms.
-   - Allow for a combination of multiple shorter chains to collectively satisfy the long-chain requirement.
-   - Consider the overall molecular weight and rotatable bond count as a proxy for long chains, rather than relying solely on the continuous carbon count.
-
-3. **Benchmark Confidence**: As mentioned, there may be occasional and systematic mistakes in the benchmark used for evaluation. If the classifications provided by the program align with the broader understanding of waxes as long-chain, malleable organic compounds, it is reasonable to trust the program's judgments over the benchmark in case of disagreements.
-
-4. **Generalization**: The current program specifically checks for esters, ethers, and alcohols as characteristic wax functional groups. While these are common in many waxes, other functional groups such as ketones, aldehydes, or even halides may also be present in certain wax classes. To improve generalization, the program could consider a broader range of functional groups or rely more on the overall molecular structure and properties rather than specific functional group patterns.
-
-In summary, while the previous program captures some essential characteristics of waxes, it could benefit from additional refinements to improve its accuracy and generalization. Introducing more specific structural constraints, relaxing certain thresholds, and considering a broader range of wax-like properties could lead to better classification performance.
+    # Count rotatable bonds as a proxy for chain length
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 15:
+        return False, "Not enough rotatable bonds, likely too short chain"
+    
+    # Look for common wax functional groups (esters, ethers, alcohols)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
+    alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
+    
+    has_ester = mol.HasSubstructMatch(ester_pattern)
+    has_ether = mol.HasSubstructMatch(ether_pattern)
+    has_alcohol = mol.HasSubstructMatch(alcohol_pattern)
+    
+    if not (has_ester or has_ether or has_alcohol):
+        return False, "No common wax functional group found"
+    
+    # Check for long carbon chains
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    
+    if not chain_matches:
+        return False, "No long carbon chains found"
+    
+    # Waxes typically have molecular weight > 300 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for wax"
+    
+    return True, "Contains long hydrocarbon chains with ester, ether, or alcohol functional groups"
