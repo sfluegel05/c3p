@@ -1,48 +1,30 @@
 """
 Classifies: CHEBI:25676 oligopeptide
 """
-"""
-Classifies: CHEBI:32988 oligopeptide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous code attempted to classify oligopeptides based on the presence of peptide bonds and the number of amino acid residues. However, the approach had some limitations that likely led to the failed outcomes.
 
-def is_oligopeptide(smiles: str):
-    """
-    Determines if a molecule is an oligopeptide based on its SMILES string.
-    An oligopeptide is a peptide containing a relatively small number of amino acids.
+One issue was that the code relied solely on the SMARTS pattern matching to identify amino acid residues. This approach may not be robust enough to handle the diverse structures and modifications that can occur in oligopeptides. For example, some residues may not match the SMARTS pattern due to cyclization, unusual bond orders, or non-standard modifications.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+Additionally, the cutoff of 10 amino acid residues to classify an oligopeptide may be too strict or too lenient, depending on the definition and examples used.
 
-    Returns:
-        bool: True if molecule is an oligopeptide, False otherwise
-        str: Reason for classification
-    """
+To improve the classification, we could incorporate additional structural features and heuristics that are more specific to oligopeptides. Here are some suggestions:
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+1. **Check for a linear or cyclic peptide backbone**: Oligopeptides typically have a linear or cyclic backbone composed of amino acid residues linked by peptide bonds.
 
-    # Check for peptide bonds (-C(=O)-N-)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)NC")
-    peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
+2. **Consider the presence of terminal modifications**: Oligopeptides can have terminal modifications such as acetylation, amidation, or the presence of protecting groups.
 
-    # If no peptide bonds, it's not a peptide
-    if not peptide_bonds:
-        return False, "Not a peptide"
+3. **Analyze the amino acid composition**: Oligopeptides are expected to contain a diverse set of proteinogenic and non-proteinogenic amino acids.
 
-    # Count amino acid residues
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3H2,NX4H3+][C@H](N)C(=O)"
-                                              "|"
-                                              "[NX3H0,NX4H+0]([C@@H](C(=O))"
-                                              "[C@@H](N)C(=O))[C@@H](N)C(=O)")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    n_residues = len(amino_acid_matches)
+4. **Incorporate molecular weight or size considerations**: Oligopeptides typically fall within a certain molecular weight or size range, which could be used as a rough filter.
 
-    # Oligopeptides typically have < 10 amino acids
-    if n_residues < 10:
-        return True, f"Contains {n_residues} amino acid residues"
-    else:
-        return False, f"Contains {n_residues} amino acid residues, likely not an oligopeptide"
+5. **Examine the presence of side-chain modifications**: Some oligopeptides may have modifications on the side chains of amino acid residues, such as methylation, hydroxylation, or glycosylation.
+
+6. **Consider the context or origin of the molecule**: If available, information about the biological source or synthetic origin of the molecule could provide additional clues for classification.
+
+While implementing all of these considerations may be challenging, incorporating a few key structural features and heuristics could significantly improve the classification accuracy.
+
+It's also important to note that there may be borderline cases or exceptions where the classification could be ambiguous or subjective. In such cases, it may be helpful to provide a confidence score or a more nuanced classification result, rather than a binary True/False output.
+
+Additionally, it's worth considering the benchmark data and examples you are using for evaluation. If there are clear inconsistencies or outliers, it may be appropriate to disregard them or adjust the classification criteria accordingly, while providing a justification for the decision.
+
+Overall, the task of classifying oligopeptides based on SMILES strings requires a careful consideration of structural features, heuristics, and potentially incorporating additional data sources or domain knowledge to achieve accurate and robust classification.
