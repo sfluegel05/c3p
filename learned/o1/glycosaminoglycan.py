@@ -2,6 +2,7 @@
 Classifies: CHEBI:18085 glycosaminoglycan
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolStandardize
 
 def is_glycosaminoglycan(smiles: str):
     """
@@ -20,73 +21,35 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify sugar rings (5 or 6-membered rings with oxygen)
-    ring_info = mol.GetRingInfo()
-    ring_atoms = ring_info.AtomRings()
-    sugar_rings = []
-    for ring in ring_atoms:
-        if len(ring) == 5 or len(ring) == 6:
-            oxygens_in_ring = 0
-            for idx in ring:
-                atom = mol.GetAtomWithIdx(idx)
-                if atom.GetSymbol() == 'O':
-                    oxygens_in_ring += 1
-            if oxygens_in_ring >= 1:
-                sugar_rings.append(set(ring))
+    # Use SugarRemover to identify sugar units
+    remover = rdMolStandardize.SugarRemover()
+    sugar_fragments = remover.GetSugarFragments(mol)
 
-    if len(sugar_rings) == 0:
-        return False, "No sugar rings found"
+    total_sugars = len(sugar_fragments)
+    if total_sugars == 0:
+        return False, "No sugar units found"
 
-    # Identify amino sugars (sugar rings with attached amino groups)
+    # Identify amino sugars
     amino_sugar_count = 0
-    for ring in sugar_rings:
-        has_amino_group = False
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetSymbol() == 'C':
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetSymbol() == 'N':
-                        # Check if nitrogen is part of an amino group (-NH2 or -NH-)
-                        if neighbor.GetDegree() <= 2:
-                            has_amino_group = True
-                            break
-                if has_amino_group:
-                    break
-        if has_amino_group:
+    for sugar in sugar_fragments:
+        has_nitrogen = False
+        for atom in sugar.GetAtoms():
+            if atom.GetSymbol() == 'N':
+                has_nitrogen = True
+                break
+        if has_nitrogen:
             amino_sugar_count += 1
 
     if amino_sugar_count == 0:
         return False, "No amino sugars found"
 
-    # Check for glycosidic linkages between sugar rings
-    # A glycosidic linkage is an oxygen atom connecting two sugar rings
-    glycosidic_bonds = 0
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-            if atom1.GetSymbol() == 'O' and atom2.GetSymbol() == 'C':
-                rings1 = [ring for ring in sugar_rings if atom1.GetIdx() in ring]
-                rings2 = [ring for ring in sugar_rings if atom2.GetIdx() in ring]
-                if rings1 and rings2 and rings1 != rings2:
-                    glycosidic_bonds += 1
-            elif atom2.GetSymbol() == 'O' and atom1.GetSymbol() == 'C':
-                rings1 = [ring for ring in sugar_rings if atom2.GetIdx() in ring]
-                rings2 = [ring for ring in sugar_rings if atom1.GetIdx() in ring]
-                if rings1 and rings2 and rings1 != rings2:
-                    glycosidic_bonds += 1
-
-    if glycosidic_bonds == 0:
-        return False, "No glycosidic linkages between sugar units found"
-
-    # Check for polysaccharide chain (more than 3 sugar units)
-    total_sugars = len(sugar_rings)
-    if total_sugars < 3:
-        return False, f"Only {total_sugars} sugar units found, not enough for a polysaccharide"
-
     # Check proportion of amino sugars
     proportion = amino_sugar_count / total_sugars
-    if proportion < 0.5:
+    if proportion < 0.3:
         return False, f"Only {amino_sugar_count} out of {total_sugars} sugars are amino sugars"
+
+    # Check for polysaccharide chain (more than 3 sugar units)
+    if total_sugars < 3:
+        return False, f"Only {total_sugars} sugar units found, not enough for a polysaccharide"
 
     return True, f"Contains polysaccharide chain with {amino_sugar_count} amino sugars out of {total_sugars} sugar units"
