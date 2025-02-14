@@ -28,26 +28,24 @@ def is_UDP_sugar(smiles: str):
     
     # Look for pyrimidine ring pattern
     pyrimidine_pattern = Chem.MolFromSmarts("nc1ncnc(n1)")
-    if not mol.HasSubstructMatch(pyrimidine_pattern):
+    pyrimidine_match = mol.GetSubstructMatches(pyrimidine_pattern)
+    if not pyrimidine_match:
         return False, "No pyrimidine ring found"
     
     # Look for ribose/deoxyribose sugar pattern
     sugar_pattern = Chem.MolFromSmarts("[OX2r]~[CX4r]~[OX2r]~[CX4r]~[OX2r]")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
+    sugar_match = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_match:
         return False, "No sugar substructure found"
     
     # Look for diphosphate linkage pattern
     diphosphate_pattern = Chem.MolFromSmarts("[OX2r][P]([OX2r])([OX2r])=O")
-    diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
-    if not diphosphate_matches:
+    diphosphate_match = mol.GetSubstructMatches(diphosphate_pattern)
+    if not diphosphate_match:
         return False, "No diphosphate linkage found"
     
-    # Check if the diphosphate connects pyrimidine and sugar
-    for match in diphosphate_matches:
-        pyrimidine_atom = mol.GetAtomWithIdx(match[2])
-        sugar_atom = mol.GetAtomWithIdx(match[0])
-        if pyrimidine_atom.IsInRing() and sugar_atom.IsInRing():
-            return True, "Contains a pyrimidine linked to a sugar via an anomeric diphosphate linkage"
+    # Check if all components (pyrimidine, sugar, diphosphate) are present
+    if pyrimidine_match and sugar_match and diphosphate_match:
+        return True, "Contains a pyrimidine, a sugar, and a diphosphate linkage (UDP-sugar)"
     
-    return False, "Pyrimidine and sugar not connected via a diphosphate linkage"
+    return False, "Missing one or more components of a UDP-sugar"
