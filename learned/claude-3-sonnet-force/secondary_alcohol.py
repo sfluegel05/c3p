@@ -8,7 +8,7 @@ A secondary alcohol is a compound in which a hydroxy group, -OH, is attached to 
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
+from rdkit.Chem import MolFromSmarts
 
 def is_secondary_alcohol(smiles: str):
     """
@@ -27,13 +27,11 @@ def is_secondary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find atoms with -OH group
-    oh_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(mol.GetAtomWithIdx(n).GetTotalNumHs() for n in atom.GetNeighbors()) == 1]
+    # SMARTS pattern for secondary alcohol group
+    secondary_alcohol_pattern = MolFromSmarts("[CX4H2][OX2H]")
 
-    # Check if any of those atoms are bound to a saturated carbon with at least 2 other carbons
-    for oh_atom in oh_atoms:
-        carbon = mol.GetAtomWithIdx(list(oh_atom.GetNeighbors())[0])
-        if carbon.GetAtomicNum() == 6 and carbon.GetTotalNumHs() + len(carbon.GetNeighbors()) >= 4 and sum(1 for n in carbon.GetNeighbors() if mol.GetAtomWithIdx(n).GetAtomicNum() == 6) >= 2:
-            return True, "Contains a hydroxy group attached to a saturated carbon with at least two other carbon atoms"
+    # Check if the molecule has a substructure match for the secondary alcohol pattern
+    if mol.HasSubstructMatch(secondary_alcohol_pattern):
+        return True, "Contains a secondary alcohol group"
 
     return False, "No secondary alcohol group found"
