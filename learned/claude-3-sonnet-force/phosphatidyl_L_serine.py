@@ -1,32 +1,89 @@
 """
 Classifies: CHEBI:18303 phosphatidyl-L-serine
 """
-The previous program had a reasonable approach to identifying phosphatidyl-L-serine molecules, but it appears to have some issues that led to the poor performance.
+"""
+Classifies: CHEBI:26811 phosphatidyl-L-serine
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-Potential issues:
+def is_phosphatidyl_L_serine(smiles: str):
+    """
+    Determines if a molecule is a phosphatidyl-L-serine based on its SMILES string.
+    Phosphatidyl-L-serine is an aminophospholipid with a phosphatidyl group esterified
+    to the hydroxy group of L-serine.
 
-1. **Phosphatidyl group pattern**: The SMARTS pattern used to identify the phosphatidyl group (`P(OCC(OC(=O))OC(=O))`) may be too specific or not capturing all possible variations of the phosphatidyl group. Phosphatidyl-L-serine molecules can have different substituents or arrangements around the phosphate group.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Serine residue pattern**: The SMARTS pattern used to identify the serine residue (`C(N)C(O)=O`) may be too specific or not capturing all possible variations of the serine residue. The serine residue can have different protonation states or modifications.
+    Returns:
+        bool: True if molecule is a phosphatidyl-L-serine, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Ester linkage check**: The check for the ester linkage between the phosphatidyl group and the serine residue (`OC(=O)C`) may be too strict or not accounting for all possible arrangements of the ester bond.
+    # Check for phosphatidyl group
+    phosphatidyl_pattern = Chem.MolFromSmarts("[P](=[O])([O-])O[C@@H]([C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H](O)CO)")
+    if not mol.HasSubstructMatch(phosphatidyl_pattern):
+        return False, "Missing phosphatidyl group"
 
-4. **Fatty acid chain pattern**: The SMARTS pattern used to identify fatty acid chains (`[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]`) may be too specific or not capturing all possible variations of fatty acid chains. Fatty acid chains can have different lengths, degrees of unsaturation, and branching patterns.
+    # Check for serine residue
+    serine_pattern = Chem.MolFromSmarts("C(N)C(=O)O")
+    if not mol.HasSubstructMatch(serine_pattern):
+        return False, "Missing serine residue"
 
-5. **Molecular weight check**: The molecular weight check (`mol_wt < 600`) may be too strict or not accounting for all possible variations of phosphatidyl-L-serine molecules. Depending on the fatty acid chain lengths and substituents, the molecular weight can vary significantly.
+    # Check for ester linkage between phosphatidyl group and serine
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "Missing ester linkage"
 
-To improve the program, you could try the following:
+    # Check for fatty acid chains
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, "Missing fatty acid chains"
 
-1. **Refine the SMARTS patterns**: Analyze the false positives and false negatives to identify patterns that are not being correctly captured by the current SMARTS patterns. Update the patterns or use more general patterns that can capture a wider range of variations.
+    # Check molecular weight (typical range: 700-900 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 700 or mol_wt > 900:
+        return False, "Molecular weight outside typical range"
 
-2. **Consider alternative approaches**: Instead of relying solely on SMARTS patterns, you could explore alternative approaches such as fingerprint-based similarity calculations or machine learning models trained on a diverse set of phosphatidyl-L-serine molecules.
+    return True, "Contains phosphatidyl group esterified to serine, with fatty acid chains"
 
-3. **Analyze structural features**: Investigate other structural features that could help distinguish phosphatidyl-L-serine molecules, such as atom counts, charge distributions, or specific functional group arrangements.
-
-4. **Adjust thresholds and parameters**: Experiment with different thresholds and parameters (e.g., molecular weight range, number of rotatable bonds) to find the optimal values for your dataset.
-
-5. **Handle exceptions and edge cases**: Identify and handle exceptions or edge cases that may not be covered by the general rules or patterns.
-
-6. **Incorporate additional validation steps**: Consider adding additional validation steps or checks to increase the confidence in the classification, such as checking for specific atom environments or substructures.
-
-It's also important to note that some of the false positives or false negatives could be due to errors or inconsistencies in the benchmark data itself. If you have a strong understanding of the chemical class and the classifications seem reasonable based on your knowledge, you can choose to adjust the program accordingly and provide justification for your decisions.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:26811',
+        'name': 'phosphatidyl-L-serine',
+        'definition': 'A class of aminophospholipids in which a phosphatidyl group is esterified to the hydroxy group of serine.',
+        'parents': ['CHEBI:26865', 'CHEBI:18059']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 30,
+    'num_false_positives': 0,
+    'num_true_negatives': 182418,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 1.0,
+    'recall': 1.0,
+    'f1': 1.0,
+    'accuracy': 1.0
+}
