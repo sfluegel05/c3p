@@ -22,23 +22,13 @@ def is_enone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for the enone motif
-    enone_pattern = Chem.MolFromSmarts("[C]=[C]-[C]=O")
+    # The pattern now specifies that the carbonyl carbon is not bonded to any H (except via double bond)
+    enone_pattern = Chem.MolFromSmarts("[C]=[C]-[C](=[O])[!H]")
     
     # Find the enone substructure
     matches = mol.GetSubstructMatches(enone_pattern)
-    if not matches:
-      return False, "No alpha,beta-unsaturated ketone (C=C-C=O) motif found."
     
-    # Check R4 is not H
-    for match in matches:
-        carbonyl_carbon_index = match[2]
-        carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_carbon_index)
-        has_hydrogen = False
-        for neighbor in carbonyl_carbon.GetNeighbors():
-            if neighbor.GetSymbol() == 'H':
-                has_hydrogen=True
-                break
-        if not has_hydrogen:
-           return True, "Contains an alpha,beta-unsaturated ketone (C=C-C=O) motif with R4 != H"
-        
-    return False, "C=O carbon has a hydrogen substituent"
+    if matches:
+        return True, "Contains an alpha,beta-unsaturated ketone (C=C-C=O) motif with R4 != H"
+    
+    return False, "No alpha,beta-unsaturated ketone (C=C-C=O) motif found."
