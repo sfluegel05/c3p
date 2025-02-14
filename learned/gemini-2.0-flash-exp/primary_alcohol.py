@@ -23,17 +23,35 @@ def is_primary_alcohol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS pattern for primary alcohol carbons, matching a -CH2-OH group 
-    # with the carbon being saturated, not bonded to any other non-hydrogen, non-oxygen
-    # atom by a double or triple bond
-    primary_alcohol_pattern = Chem.MolFromSmarts("[CH2;!$(C=[C,N,O,S]);!$(C#[C,N])][OH]")
-
-    # Find matches for the pattern
-    matches = mol.GetSubstructMatches(primary_alcohol_pattern)
     
-    # Check if any of the patterns are present
+    # Modified SMARTS pattern that matches -C-OH,
+    # where the carbon has to be saturated
+    # and it has 0 or 1 carbon neighbor only
+    primary_alcohol_pattern = Chem.MolFromSmarts("[CX4H0-3;!$(C=[C,N,O,S]);!$(C#[C,N])][OH]")
+    carbon_pattern=Chem.MolFromSmarts("[CH0-3][OH]") #to identify the alcohol bond
+    
+    matches= mol.GetSubstructMatches(carbon_pattern)
+    
+    
+    # Check if any matches are found
     if not matches:
-        return False, "No primary alcohol group found"
+        return False, "No alcohol group found"
 
-    return True, "Primary alcohol group found"
+    # Check each carbon to see if it's primary
+    for match in matches:
+      carbon_index = match[0]
+      carbon = mol.GetAtomWithIdx(carbon_index)
+      
+      # count the number of carbon neighbors
+      carbon_neighbors=0
+      for neighbor in carbon.GetNeighbors():
+        if neighbor.GetAtomicNum()==6:
+          carbon_neighbors=carbon_neighbors+1
+
+      if carbon_neighbors > 1:
+            continue #not primary
+      
+      # now we verify that the matched carbon also has the pattern 
+      if mol.HasSubstructMatch(primary_alcohol_pattern):
+        return True, "Primary alcohol group found"
+    return False, "No primary alcohol group found"
