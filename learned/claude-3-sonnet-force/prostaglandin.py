@@ -26,20 +26,10 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for prostanoic acid core structure
-    prostanoic_pattern = Chem.MolFromSmarts("[C@@]12[C@@H]([C@H]([C@@]1(CCC(=O)O)[H])[H])[C@@H](C[C@@]2([H])O)C=O")
+    # Look for prostanoic acid core structure, allowing for minor modifications
+    prostanoic_pattern = Chem.MolFromSmarts("[C@@]12[C@@H]([C@H]([C@@]1(CCC(=O)[O,X1])[H])[H])[C@@H](C[C@@]2([H])[O,X1])[C,X2]=O")
     if not mol.HasSubstructMatch(prostanoic_pattern):
-        return False, "Does not contain prostanoic acid core structure"
-    
-    # Count carbon atoms - prostaglandins have 20 carbons
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, f"Incorrect number of carbons ({c_count}), prostaglandins have 20"
-    
-    # Count oxygen atoms - prostaglandins have 3-6 oxygens
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3 or o_count > 6:
-        return False, f"Incorrect number of oxygens ({o_count}), prostaglandins have 3-6"
+        return False, "Does not contain a recognizable prostanoic acid core structure"
     
     # Count rings - prostaglandins have 2 rings
     ring_info = mol.GetRingInfo()
@@ -59,41 +49,4 @@ def is_prostaglandin(smiles: str):
         return False, "Missing cis-double bond in cyclopentenone ring"
     
     # All checks pass, classify as prostaglandin
-    return True, "Contains prostanoic acid core structure with characteristic ring systems and side chain"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:17915',
-        'name': 'prostaglandin',
-        'definition': 'Naturally occurring compounds derived from the parent C20 acid, prostanoic acid.',
-        'parents': ['CHEBI:36594', 'CHEBI:51305']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 235,
-    'num_false_positives': 3,
-    'num_true_negatives': 182374,
-    'num_false_negatives': 0,
-    'num_negatives': None,
-    'precision': 0.9874212535345849,
-    'recall': 1.0,
-    'f1': 0.9936576614967748,
-    'accuracy': 0.9998361457454583
-}
+    return True, "Contains a recognizable prostanoic acid core structure with characteristic ring systems and side chain"
