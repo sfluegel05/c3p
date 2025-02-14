@@ -12,8 +12,7 @@ def is_ceramide(smiles: str):
     Determines if a molecule is a ceramide based on its SMILES string.
     A ceramide is an N-acyl-sphingoid base with an amide-linked fatty acid.
     The fatty acid is typically saturated or monounsaturated with 14 to 26 carbons.
-    The sphingoid base is a long-chain amino alcohol, possibly with additional hydroxyl groups or unsaturation.
-    Substitutions at the primary alcohol (e.g., glycosylation) are common.
+    The sphingoid base is a long-chain amino alcohol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,92 +27,71 @@ def is_ceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    try:
-        # Define SMARTS patterns
-        amide_pattern = Chem.MolFromSmarts('C(=O)N')  # Simple amide bond
-        sphingoid_base_pattern = Chem.MolFromSmarts('NCC(O)C')  # Amino alcohol
-        long_chain_pattern = Chem.MolFromSmarts('CCCCCCCCCCCCCCCC')  # Long hydrocarbon chain (at least 14 carbons)
+    # Check for amide bond (C(=O)-N)
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if not amide_matches:
+        return False, "No amide bond found"
 
-        # Check for amide bond
-        amide_matches = mol.GetSubstructMatches(amide_pattern)
-        if not amide_matches:
-            return False, "No amide bond found"
+    # Assume first amide bond is the linkage
+    amide_match = amide_matches[0]
+    carbonyl_c_idx = amide_match[0]
+    nitrogen_idx = amide_match[2]
 
-        # Check for sphingoid base
-        sphingoid_matches = mol.GetSubstructMatches(sphingoid_base_pattern)
-        if not sphingoid_matches:
-            return False, "No sphingoid base found"
+    # Break the molecule at the amide bond to separate fatty acid and sphingoid base
+    amide_bond = mol.GetBondBetweenAtoms(carbonyl_c_idx, nitrogen_idx)
+    bond_idx = amide_bond.GetIdx()
+    fragmented_mol = Chem.FragmentOnBonds(mol, [bond_idx])
 
-        # Check for long hydrocarbon chain in sphingoid base
-        has_long_chain = False
-        for match in sphingoid_matches:
-            nitrogen_idx = match[0]
-            # Find connected carbon chains from nitrogen
-            chain_length = get_chain_length(mol, nitrogen_idx, exclude_heteroatoms=True)
-            if chain_length >= 12:
-                has_long_chain = True
-                break
+    # Get the fragments
+    frags = Chem.GetMolFrags(fragmented_mol, asMols=True, sanitizeFrags=True)
+    if len(frags) != 2:
+        return False, "Could not separate fatty acid and sphingoid base"
 
-        if not has_long_chain:
-            return False, "Sphingoid base does not have a long hydrocarbon chain"
+    # Identify fatty acid and sphingoid base fragments
+    fatty_acid = None
+    sphingoid_base = None
+    for frag in frags:
+        atom_nums = [atom.GetAtomicNum() for atom in frag.GetAtoms()]
+        num_carbons = atom_nums.count(6)
+        num_nitrogens = atom_nums.count(7)
+        num_oxygens = atom_nums.count(8)
+        num_hydroxyls = len(frag.GetSubstructMatches(Chem.MolFromSmarts("[OX2H]")))
 
-        # Check for fatty acid chain length attached to amide bond
-        valid_fatty_acid = False
-        for amide_match in amide_matches:
-            carbonyl_c_idx = amide_match[0]
-            nitrogen_idx = amide_match[2]
-            # Exclude sphingoid base nitrogen
-            if nitrogen_idx in [idx for match in sphingoid_matches for idx in match]:
-                # Get fatty acid chain length
-                chain_length = get_chain_length(mol, carbonyl_c_idx, exclude_idx=nitrogen_idx, exclude_heteroatoms=True)
-                if 14 <= chain_length <= 26:
-                    valid_fatty_acid = True
-                    break
+        if num_nitrogens == 0 and num_carbons >= 14:
+            fatty_acid = frag
+            fatty_acid_carbons = num_carbons
+        elif num_nitrogens >= 1:
+            sphingoid_base = frag
+            sphingoid_base_carbons = num_carbons
+            sphingoid_base_hydroxyls = num_hydroxyls
 
-        if not valid_fatty_acid:
-            return False, "Fatty acid chain length is not within 14 to 26 carbons"
+    if fatty_acid is None or sphingoid_base is None:
+        return False, "Could not identify fatty acid and sphingoid base fragments"
 
-        # All checks passed
-        return True, "Molecule is classified as a ceramide"
+    # Check fatty acid chain length
+    if fatty_acid_carbons < 14 or fatty_acid_carbons > 26:
+        return False, f"Fatty acid chain length is {fatty_acid_carbons}, which is outside 14-26 carbons"
 
-    except Exception as e:
-        return False, f"Error during processing: {e}"
+    # Check if fatty acid is saturated or monounsaturated
+    fatty_acid_unsaturations = rdMolDescriptors.CalcNumDoubleBonds(fatty_acid)
+    if fatty_acid_unsaturations > 1:
+        return False, f"Fatty acid has {fatty_acid_unsaturations} double bonds, should be saturated or monounsaturated"
 
-def get_chain_length(mol, start_idx, exclude_idx=None, exclude_heteroatoms=False):
-    """
-    Calculates the length of a chain starting from a given atom index.
+    # Check sphingoid base chain length
+    if sphingoid_base_carbons < 12:
+        return False, f"Sphingoid base chain length is {sphingoid_base_carbons}, which is too short"
 
-    Args:
-        mol (Chem.Mol): Molecule object
-        start_idx (int): Starting atom index
-        exclude_idx (int or list): Atom index or indices to exclude from traversal
-        exclude_heteroatoms (bool): Whether to exclude heteroatoms in the chain length
+    # Check for hydroxyl groups in sphingoid base
+    if sphingoid_base_hydroxyls < 1:
+        return False, "No hydroxyl groups found on sphingoid base"
+    else:
+        hydroxyl_positions = sphingoid_base.GetSubstructMatches(Chem.MolFromSmarts("[C][O][H]"))
+        if not hydroxyl_positions:
+            return False, "Hydroxyl groups not attached to carbon in sphingoid base"
 
-    Returns:
-        int: Number of carbon atoms in the chain
-    """
-    if exclude_idx is None:
-        exclude_idx = []
-    elif isinstance(exclude_idx, int):
-        exclude_idx = [exclude_idx]
+    # Optional: Check for hydroxyl group on carbon 2 (common but not mandatory)
+    # This would require mapping atom indices which can be complex
+    # Skipping for simplicity
 
-    visited = set()
-    queue = [start_idx]
-    carbon_count = 0
-
-    while queue:
-        idx = queue.pop(0)
-        if idx in visited or idx in exclude_idx:
-            continue
-        visited.add(idx)
-        atom = mol.GetAtomWithIdx(idx)
-        atomic_num = atom.GetAtomicNum()
-        if atomic_num == 6:
-            carbon_count += 1
-        elif exclude_heteroatoms and atomic_num != 6:
-            continue
-        for neighbor in atom.GetNeighbors():
-            n_idx = neighbor.GetIdx()
-            if n_idx not in visited:
-                queue.append(n_idx)
-    return carbon_count
+    return True, "Molecule is a ceramide with appropriate chain lengths and functional groups"
