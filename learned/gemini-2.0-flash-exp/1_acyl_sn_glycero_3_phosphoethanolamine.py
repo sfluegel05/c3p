@@ -22,28 +22,41 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Glycerol Backbone
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)(CO)")
-    glycerol_match = mol.GetSubstructMatch(glycerol_pattern)
-    if not glycerol_match:
-        return False, "No glycerol backbone with correct stereochemistry found"
-    glycerol_carbon_idx = glycerol_match[0]
-    glycerol_ch2_1_idx = -1
-    glycerol_ch2_2_idx = -1
+    # 1. Glycerol Backbone with (R)-configuration at central carbon
+    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)(CO)CO") # [C@H](O)(C)-C-O
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not glycerol_matches:
+      return False, "No glycerol backbone with correct stereochemistry found"
+    if len(glycerol_matches) != 1:
+        return False, "More than one glycerol group found"
 
-    for neighbor in mol.GetAtomWithIdx(glycerol_carbon_idx).GetNeighbors():
-         if neighbor.GetAtomicNum() == 6 and len(mol.GetAtomWithIdx(neighbor.GetIdx()).GetNeighbors()) == 3:
+    glycerol_match = glycerol_matches[0]
+    glycerol_ch2_1_idx = glycerol_match[2]  #sn-1
+    glycerol_ch2_2_idx = glycerol_match[3] # sn-3
+
+
+    # 2. Phosphoethanolamine Group
+    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(=O)(O)OCCN")
+    phosphoethanolamine_matches = mol.GetSubstructMatches(phosphoethanolamine_pattern)
+    if not phosphoethanolamine_matches or len(phosphoethanolamine_matches) != 1:
+       return False, "No phosphoethanolamine group found or found more than one"
+    
+    phosphoethanolamine_match = phosphoethanolamine_matches[0]
+    phosphorus_idx = phosphoethanolamine_match[1]
+    
+    phospho_oxygen_glycerol_idx = -1
+    for neighbor in mol.GetAtomWithIdx(phosphorus_idx).GetNeighbors():
+        if neighbor.GetAtomicNum() == 8:
             for neighbor2 in mol.GetAtomWithIdx(neighbor.GetIdx()).GetNeighbors():
-                if neighbor2.GetAtomicNum() == 8:
-                     glycerol_ch2_1_idx = neighbor.GetIdx()
-                     break
-         if neighbor.GetAtomicNum() == 6 and len(mol.GetAtomWithIdx(neighbor.GetIdx()).GetNeighbors()) == 4:
-            glycerol_ch2_2_idx = neighbor.GetIdx()
+                if neighbor2.GetIdx() == glycerol_ch2_2_idx:
+                    phospho_oxygen_glycerol_idx = neighbor.GetIdx()
+                    break
+            if phospho_oxygen_glycerol_idx != -1:
+                break
+    if phospho_oxygen_glycerol_idx == -1:
+       return False, "Phosphate group not correctly attached to the glycerol backbone at sn-3"
 
-    if glycerol_ch2_1_idx == -1 or glycerol_ch2_2_idx == -1:
-        return False, "Glycerol chain not correctly formed"
-
-    # 2. Ester at sn-1
+    # 3. Ester at sn-1
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
 
@@ -54,60 +67,43 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
             ester_oxygen_idx = match[1]
             
             for neighbor in mol.GetAtomWithIdx(ester_oxygen_idx).GetNeighbors():
-                if neighbor.GetIdx() == glycerol_ch2_1_idx:
-                      ester_at_sn1 = True
-                      break
+               if neighbor.GetIdx() == glycerol_ch2_1_idx:
+                   ester_at_sn1 = True
+                   break
             if ester_at_sn1:
-               break
-
+              break
     if not ester_at_sn1:
         return False, "No ester group at sn-1 glycerol position"
+    
+    # 4. Fatty Acid Chain (checking a minimum length of 3 carbons)
+    fatty_acid_connected = False
+    if ester_matches:
+        for match in ester_matches:
+          carbonyl_carbon_idx = match[0]
+          for neighbor in mol.GetAtomWithIdx(carbonyl_carbon_idx).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:
+                chain_len = 0
+                current_atom_idx = neighbor.GetIdx()
+                visited_atoms = {carbonyl_carbon_idx, ester_oxygen_idx}
+                while True:
+                    
+                  chain_len += 1
+                  neighbors = [n for n in mol.GetAtomWithIdx(current_atom_idx).GetNeighbors() if n.GetIdx() not in visited_atoms and n.GetAtomicNum() == 6]
+                  if len(neighbors) != 1:
+                      break
+                  
+                  visited_atoms.add(current_atom_idx)
+                  current_atom_idx = neighbors[0].GetIdx()
 
-    # 3. Phosphoethanolamine Group
-    phosphoethanolamine_pattern = Chem.MolFromSmarts("COP(=O)(O)OCCN")
-    phosphoethanolamine_match = mol.GetSubstructMatch(phosphoethanolamine_pattern)
-    if not phosphoethanolamine_match:
-       return False, "No phosphoethanolamine group found"
-
-    phosphorus_idx = phosphoethanolamine_match[1]
-    phospho_oxygen_glycerol_idx = -1
-
-    for neighbor in mol.GetAtomWithIdx(phosphorus_idx).GetNeighbors():
-        if neighbor.GetAtomicNum() == 8:
-            for neighbor2 in mol.GetAtomWithIdx(neighbor.GetIdx()).GetNeighbors():
-                if neighbor2.GetIdx() == glycerol_ch2_2_idx:
-                   phospho_oxygen_glycerol_idx = neighbor.GetIdx()
-                   break
-            if phospho_oxygen_glycerol_idx != -1:
-               break
-    if phospho_oxygen_glycerol_idx == -1:
-        return False, "Phosphate group not correctly attached to the glycerol backbone"
-
-
-    # 4. Fatty Acid Chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if not fatty_acid_matches:
-         return False, "Missing fatty acid chain"
-
-    # 5. Verify that there is a carbonyl group
-    carbonyl_pattern = Chem.MolFromSmarts("C=O")
-    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
-    if not carbonyl_matches:
-        return False, "No carbonyl group found"
+                if chain_len >= 3:
+                    fatty_acid_connected = True
+                    break
+        if not fatty_acid_connected:
+             return False, "Missing or too short fatty acid chain"
 
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 400:
          return False, "Molecular weight too low for a phosphoethanolamine"
-
-    # 6. Check for exactly one glycerol, ester, and phosphoethanolamine group
-    if not glycerol_match:
-        return False, "Incorrect number of glycerol groups"
-    if not ester_at_sn1:
-        return False, "Incorrect number of ester groups"
-    if not phosphoethanolamine_match:
-        return False, "Incorrect number of phosphoethanolamine groups"
-
 
     return True, "Matches 1-acyl-sn-glycero-3-phosphoethanolamine criteria"
