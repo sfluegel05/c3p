@@ -20,34 +20,45 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Updated CoA pattern to capture key structural motifs more robustly
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc23)[C@H](O)[C@@H]1OP([O-])([O-])=O")
+    # Updated CoA moiety pattern
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)C[C@H](O)C(C)(C)COP(O)(=O)OCC1OC(n2cnc3nc[nH]c(N)c23)[C@@H](O)C1OP(O)(O)=O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
     
-    # Check for the presence of thioester linkage
-    # Expanded pattern to ensure coverage
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCC")
+    # Generalized thioester pattern for flexibility
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SC")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
-    # Check for carbon chain length: look for C(=O)S followed by the carbon chain
-    chains = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)SCC"))
-    chain_lengths = []
-    
-    for match in chains:
-        chain_length = 0
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() == 'C':
-                chain_length += 1
-        # Account the carbon atoms in the backbone after the thioester
-        chain_lengths.append(chain_length)
+    # Check for medium-chain length in the fatty acyl portion
+    acyl_pattern = Chem.MolFromSmarts("C(=O)SC")
+    matches = mol.GetSubstructMatches(acyl_pattern)
+    medium_chain_found = False
 
-    if not any(chain_length >= 8 and chain_length <= 12 for chain_length in chain_lengths):
-        return False, f"Chain lengths {chain_lengths} do not include a medium-chain length (8-12 carbons)"
+    for match in matches:
+        # Check chain length from the carbonyl adjacent to thioester
+        carbon_count = 0
+        atom_queue = [mol.GetAtomWithIdx(match[-1])]
+        visited = set()
+        
+        while atom_queue:
+            current_atom = atom_queue.pop(0)
+            if current_atom.GetIdx() not in visited:
+                visited.add(current_atom.GetIdx())
+                if current_atom.GetSymbol() == 'C':
+                    carbon_count += 1
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetIdx() not in visited and neighbor.GetSymbol() in ['C', 'H']:
+                        atom_queue.append(neighbor)
+
+        if 8 <= carbon_count <= 12:
+            medium_chain_found = True
+            break
     
-    # Check that there are enough deprotonated oxygens (4- charge)
+    if not medium_chain_found:
+        return False, "No medium-chain (8-12 carbons) fatty acyl portion found"
+
+    # Check for the number of deprotonated oxygens
     deprotonated_oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1)
     if deprotonated_oxygen_count < 4:
         return False, f"Insufficient number of deprotonated oxygens: {deprotonated_oxygen_count}"
