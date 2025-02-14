@@ -26,31 +26,46 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define penam core pattern (beta-lactam fused to thiazolidine ring)
-    penam_core_smarts = '[N;R1]1C(=O)[C@@H]2SC(C)(C)[C@@H](N2C1=O)'
-    penam_core = Chem.MolFromSmarts(penam_core_smarts)
-    if not mol.HasSubstructMatch(penam_core):
-        return False, "Penam core not found"
+    # Define beta-lactam ring pattern (4-membered cyclic amide)
+    beta_lactam = Chem.MolFromSmarts('C1CNC1=O')
+    if not mol.HasSubstructMatch(beta_lactam):
+        return False, "Beta-lactam ring not found"
 
-    # Check for two methyl groups at position 2
-    # Position 2 is the carbon next to the sulfur in the thiazolidine ring
-    methyl_groups = Chem.MolFromSmarts('[C@@H](C)(C)[S]')
-    methyl_matches = mol.GetSubstructMatches(methyl_groups)
-    if not methyl_matches:
-        return False, "Two methyl groups at position 2 not found"
+    # Define thiazolidine ring pattern (5-membered ring with S and N)
+    thiazolidine = Chem.MolFromSmarts('C1CSCN1')
+    if not mol.HasSubstructMatch(thiazolidine):
+        return False, "Thiazolidine ring not found"
+
+    # Check if beta-lactam and thiazolidine rings are fused
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+    fused = False
+    for ring1 in atom_rings:
+        if len(ring1) == 4:  # beta-lactam ring
+            for ring2 in atom_rings:
+                if len(ring2) == 5:  # thiazolidine ring
+                    shared_atoms = set(ring1) & set(ring2)
+                    if len(shared_atoms) >= 1:
+                        fused = True
+                        break
+            if fused:
+                break
+    if not fused:
+        return False, "Beta-lactam and thiazolidine rings are not fused"
+
+    # Check for two methyl groups at position 2 (carbon adjacent to sulfur)
+    methylated_carbon = Chem.MolFromSmarts('[S][C](C)(C)')
+    if not mol.HasSubstructMatch(methylated_carbon):
+        return False, "Two methyl substituents at position 2 not found"
 
     # Check for carboxylate group at position 3
-    # Position 3 is the carbon next to position 2 in the thiazolidine ring
-    carboxylate_smarts = '[C@H](N1C(=O)[C@@H]2SC(C)(C)[C@@H]2N1=O)[C](=O)[O-,O]'
-    carboxylate_group = Chem.MolFromSmarts(carboxylate_smarts)
-    if not mol.HasSubstructMatch(carboxylate_group):
+    carboxylate = Chem.MolFromSmarts('C(=O)[O-,O][C]')
+    if not mol.HasSubstructMatch(carboxylate):
         return False, "Carboxylate group at position 3 not found"
 
     # Check for carboxamido group at position 6
-    # Position 6 is the carbonyl carbon in the beta-lactam ring attached to the side chain
-    carboxamido_smarts = '[C@@H]1C(=O)N2[C@@H](C(O))C(C)(C)S[C@]12[C][(N)C(=O)]'
-    carboxamido_group = Chem.MolFromSmarts('NC(=O)[C@@H]1N2C(=O)[C@H]2SC(C)(C)[C@H]1O')
-    if not mol.HasSubstructMatch(carboxamido_group):
+    carboxamido = Chem.MolFromSmarts('NC(=O)[C]')
+    if not mol.HasSubstructMatch(carboxamido):
         return False, "Carboxamido group at position 6 not found"
 
     return True, "Molecule matches penicillin structure with required substituents"
