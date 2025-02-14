@@ -41,25 +41,21 @@ def is_alkane(smiles: str):
         if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
             return False, "Contains multiple bonds, not all bonds are single"
 
-    # Check all carbons are sp3 hybridized (saturated)
+    # Check all carbons are saturated (total valence of 4)
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6:  # Carbon atom
-            if atom.GetDegree() != 4:
-                return False, "Carbon atom not saturated (not sp3 hybridized)"
+            if atom.GetTotalValence() != 4:
+                return False, "Carbon atom not saturated (total valence not equal to 4)"
 
-    # Calculate molecular formula
-    formula = rdMolDescriptors.CalcMolFormula(mol)
-    # Parse formula to get counts of C and H
-    from collections import Counter
-    import re
-    elements = re.findall('([A-Z][a-z]?)(\d*)', formula)
-    element_counts = Counter()
-    for (elem, count) in elements:
-        count = int(count) if count else 1
-        element_counts[elem] += count
-
-    num_carbons = element_counts.get('C', 0)
-    num_hydrogens = element_counts.get('H', 0)
+    # Calculate number of carbons and hydrogens
+    num_carbons = 0
+    num_hydrogens = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:
+            num_carbons += 1
+            num_hydrogens += atom.GetTotalNumHs()
+        elif atom.GetAtomicNum() == 1:
+            num_hydrogens += 1  # Count explicit hydrogens if any
 
     # Check general formula CnH2n+2
     if num_hydrogens != (2 * num_carbons + 2):
@@ -71,5 +67,5 @@ __metadata__ = {   'chemical_class': {   'name': 'alkane',
                               'definition': 'An acyclic branched or unbranched hydrocarbon having the general formula CnH2n+2, consisting entirely of hydrogen atoms and saturated carbon atoms.'},
         'config': {   'llm_model_name': 'lbl/claude-sonnet'},
         'message': None,
-        'attempt': 0,
+        'attempt': 1,
         'success': True}
