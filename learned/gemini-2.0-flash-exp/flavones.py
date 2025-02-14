@@ -7,7 +7,7 @@ from rdkit.Chem import AllChem
 def is_flavones(smiles: str):
     """
     Determines if a molecule is a flavone based on its SMILES string.
-    A flavone has a 2-arylchromen-4-one skeleton with potential substitutions.
+    A flavone has a 2-phenylchromen-4-one skeleton with potential substitutions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,11 +22,9 @@ def is_flavones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the flavone core substructure using SMARTS
-    # [c]1[c]([c])[o][c](=[O])[c][c]2[c][c][c][c]2[c]1
-    # where first [c] represents the substituted phenyl ring
-    # where next [c] represents the carbon at the 2 position, where the phenyl is attached.
-
-    flavone_core_smarts = "[c]1[c]([c])[o][c](=O)[c][c]2[c][c][c][c]2[c]1"
+    # The key is the fused ring system, the C=O, and the exocyclic phenyl
+    # [C;!H0](:[c]:[c]):[c](:[c]):[c]1:[o]:[c]:[c](:[c]):[c](:[c]):[c]1=[O]
+    flavone_core_smarts = "[C;!H0]1:[c]:[c]:[c]:[c]:[o]:[c](:[c]):[c](:[c]):[c]1=[O]"
     flavone_core = Chem.MolFromSmarts(flavone_core_smarts)
 
     if flavone_core is None:
