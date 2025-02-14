@@ -33,21 +33,17 @@ def is_primary_amine(smiles: str):
         return False, "No nitrogen atom found"
 
     # Check for primary amine groups
+    primary_amine_found = False
     for n_atom in n_atoms:
         # Check if nitrogen has exactly one hydrogen and one carbon neighbor
         h_neighbors = sum(1 for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 1)
         c_neighbors = sum(1 for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
         if h_neighbors == 1 and c_neighbors == 1:
             # This is a primary amine nitrogen
+            primary_amine_found = True
             break
-    else:
-        # No primary amine group found
-        return False, "No primary amine group found"
 
-    # Check if the molecule has no secondary or tertiary amines
-    smarts_patterns = ['[NX3H2]', '[NX4H3+]']
-    for pattern in smarts_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return False, "Contains secondary or tertiary amine groups"
+    if not primary_amine_found:
+        return False, "No primary amine group found"
 
     return True, "Contains a primary amine group (-NH2) bonded to a carbon"
