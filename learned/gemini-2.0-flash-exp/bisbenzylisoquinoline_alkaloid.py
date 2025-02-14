@@ -28,7 +28,7 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     # Define SMARTS for a benzylisoquinoline unit.
     # This pattern covers common substitution patterns around the isoquinoline and benzyl parts.
     # The aromatic ring can have X for C or N and includes substitutions. The rest is fixed.
-    benzylisoquinoline_pattern = Chem.MolFromSmarts("[CX3,CX4,NX3,NX4]1=C2C=CC=CC=2C([CH2]C3=CC=CC=C3)=C1")
+    benzylisoquinoline_pattern = Chem.MolFromSmarts("[NX3]1([CX4])=C2C=CC=CC=2C([CH2][c]3ccccc3)=C1")
     if benzylisoquinoline_pattern is None:
         return None, "Invalid SMARTS Pattern"
 
@@ -74,9 +74,7 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
                             break
 
             if is_connected_to_bzisoquinolines:
-                break
-        if is_connected_to_bzisoquinolines:
-            ether_count+=1
+                ether_count+=1
         
 
     if ether_count < 1:
