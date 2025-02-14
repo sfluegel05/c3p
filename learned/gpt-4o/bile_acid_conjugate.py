@@ -20,33 +20,29 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid skeleton pattern (generalized cyclopenta[a]phenanthrene pattern)
-    steroid_skeleton_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCC4)C")
+    # Revised steroid skeleton pattern
+    steroid_skeleton_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC(C4)C3CCC12")  # Generalized cyclopenta[a]phenanthrene pattern
     if not mol.HasSubstructMatch(steroid_skeleton_pattern):
         return False, "No steroidal skeleton typical of bile acids found"
 
     # Conjugation moiety patterns
-    # Glycine pattern
-    glycine_pattern = Chem.MolFromSmarts("NC(C)C(=O)O")
-    # Taurine pattern
-    taurine_pattern = Chem.MolFromSmarts("NCCS(=O)(=O)O")
-    # Glucuronic acid pattern
-    glucuronic_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@H](C(O)[C@H](O)C1=O)")
-    # Sulfuric acid pattern (for sulfated bile acids)
-    sulfate_pattern = Chem.MolFromSmarts("[O;R0][S;R0](=O)(=O)O")
-    
-    # Check for glycine, taurine, glucuronic acid, and sulfate conjugation
-    if mol.HasSubstructMatch(glycine_pattern):
-        return True, "Contains steroid skeleton with glycine conjugate"
-    elif mol.HasSubstructMatch(taurine_pattern):
-        return True, "Contains steroid skeleton with taurine conjugate"
-    elif mol.HasSubstructMatch(glucuronic_pattern):
-        return True, "Contains steroid skeleton with glucuronic acid conjugate"
-    elif mol.HasSubstructMatch(sulfate_pattern):
-        return True, "Contains steroid skeleton with sulfate conjugate"
-    
-    return False, "No recognizable bile acid conjugate structure found"
+    conjugate_patterns = {
+        'glycine': Chem.MolFromSmarts("NCC(=O)O"),
+        'taurine': Chem.MolFromSmarts("NCCS(=O)(=O)O"),
+        'sulfate': Chem.MolFromSmarts("O[S](=O)(=O)O"),
+        'glucuronic': Chem.MolFromSmarts("OC[C@@H]1O[C@H](C(O)[C@H](O)C1=O)"),
+        'alanine': Chem.MolFromSmarts("NC(C)C(=O)O"),
+        'valine': Chem.MolFromSmarts("NC(C(C)C)C(=O)O"),
+        'serine': Chem.MolFromSmarts("NC(CO)C(=O)O"),
+        'phenylalanine': Chem.MolFromSmarts("NC(CC1=CC=CC=C1)C(=O)O"),
+        'arginine': Chem.MolFromSmarts("NC(CCCNC(N)=N)C(=O)O"),
+        # Add more conjugation patterns as needed
+    }
 
-__metadata__ = {   'chemical_class': {   'id': 'custom',
-                          'name': 'bile acid conjugate',
-                          'definition': 'Any bile acid conjugated to a functional group that gives additional hydrophilicity or charge to the molecule.'}}
+    # Check for conjugation
+    for conjugate_name, pattern in conjugate_patterns.items():
+        if mol.HasSubstructMatch(pattern):
+            return True, f"Contains steroid skeleton with {conjugate_name} conjugate"
+
+    # If it reaches here, no conjugation was detected
+    return False, "No recognizable bile acid conjugate structure found"
