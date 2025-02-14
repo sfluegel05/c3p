@@ -5,7 +5,6 @@ Classifies: CHEBI:39418 straight-chain saturated fatty acid
 Classifies: CHEBI:35838 straight-chain saturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_straight_chain_saturated_fatty_acid(smiles: str):
@@ -37,8 +36,9 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         return False, "Branched carbon chain found"
     
     # Check for saturation (no double or triple bonds)
-    if not AllChem.EmbeddedMolecule.GetAtomQuerySet(mol, "aliphaticOnly"):
-        return False, "Unsaturated bonds found"
+    for bond in mol.GetBonds():
+        if bond.GetBondType() not in (Chem.BondType.SINGLE, Chem.BondType.AROMATIC):
+            return False, "Unsaturated bond found"
     
     # Check for hydroxy groups (optional, but no other substituents)
     hydroxy_pattern = Chem.MolFromSmarts("O[H]")
@@ -50,39 +50,3 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
         return False, f"Found other substituents: {', '.join(other_substituents)}"
     
     return True, "Straight-chain saturated fatty acid"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:35838',
-        'name': 'straight-chain saturated fatty acid',
-        'definition': 'Any saturated fatty acid lacking a side-chain.',
-        'parents': ['CHEBI:35839', 'CHEBI:76579']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 2,
-    'num_true_negatives': 182401,
-    'num_false_negatives': 31,
-    'num_negatives': None,
-    'precision': 0.9868421052631579,
-    'recall': 0.8287292817679558,
-    'f1': 0.9032258064516129,
-    'accuracy': 0.9998182876992198
-}
