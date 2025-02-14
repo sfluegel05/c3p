@@ -29,11 +29,6 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-    
     # Look for ether oxygen (-O-)
     ether_pattern = Chem.MolFromSmarts("[OX2]")
     ether_matches = mol.GetSubstructMatches(ether_pattern)
@@ -42,13 +37,9 @@ def is_ether_lipid(smiles: str):
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
-    # Ether lipids must have at least one ether linkage
-    if not ether_matches:
-        return False, "No ether linkages found"
-    
-    # Ether lipids can have ester linkages, but not exclusively
-    if ester_matches and not ether_matches:
-        return False, "Found only ester linkages, need at least one ether linkage"
+    # Ether lipids must have at least one ether linkage and no ester linkages
+    if not ether_matches or ester_matches:
+        return False, "Incorrect linkage pattern for ether lipid"
     
     # Check for long alkyl chains
     alkyl_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -56,9 +47,14 @@ def is_ether_lipid(smiles: str):
     if not alkyl_chain_matches:
         return False, "No alkyl chains found"
     
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
+    # Count carbons in the longest alkyl chain
+    longest_chain_length = max([len(chain) for chain in alkyl_chain_matches])
+    if longest_chain_length < 8:
         return False, "Chains too short for ether lipid"
     
-    return True, "Contains glycerol backbone with at least one ether linkage and long alkyl chains"
+    # Check molecular weight - ether lipids typically >300 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for ether lipid"
+    
+    return True, "Contains at least one ether linkage and long alkyl chains"
