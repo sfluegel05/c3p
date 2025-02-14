@@ -25,66 +25,63 @@ def is_fatty_aldehyde(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
-    
-    # Check if molecule is acyclic (no rings)
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains ring(s), not a fatty aldehyde."
-    
-    # Check for disallowed elements (only C, H, O allowed)
-    allowed_atomic_nums = {1, 6, 8}  # H, C, O
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atomic_nums:
-            return False, f"Contains disallowed element with atomic number {atom.GetAtomicNum()}."
-    
-    # Define the aldehyde group pattern (terminal aldehyde)
-    # Carbonyl carbon (C=O) connected to one carbon and implicit hydrogen
-    aldehyde_carbons = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 2:
-            has_double_bond_to_oxygen = False
-            has_single_bond_to_carbon = False
-            for bond in atom.GetBonds():
-                neighbor = bond.GetOtherAtom(atom)
-                if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    has_double_bond_to_oxygen = True
-                elif neighbor.GetAtomicNum() == 6 and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    has_single_bond_to_carbon = True
-            if has_double_bond_to_oxygen and has_single_bond_to_carbon:
-                aldehyde_carbons.append(atom)
-    
-    if not aldehyde_carbons:
-        return False, "No terminal aldehyde group found."
-    
-    # Check if any aldehyde group is at the end of a sufficiently long carbon chain
-    for aldehyde_c in aldehyde_carbons:
-        # Get the carbon connected to the aldehyde carbon
-        chain_atoms = set()
-        for neighbor in aldehyde_c.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:
-                chain_atom_idx = neighbor.GetIdx()
-                break
+
+    # Define functional group SMARTS patterns
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H]=O")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
+
+    # Check for exactly one aldehyde group
+    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
+    if len(aldehyde_matches) != 1:
+        return False, f"Contains {len(aldehyde_matches)} aldehyde groups, expected exactly one."
+
+    # Check for carboxylic acid groups
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(carboxylic_acid_matches) > 0:
+        return False, "Contains carboxylic acid group(s), not a fatty aldehyde."
+
+    # Check for ketone groups
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    # Exclude the aldehyde match from ketone matches
+    ketone_atoms = set([atom_idx for match in ketone_matches for atom_idx in match])
+    aldehyde_atoms = set([atom_idx for match in aldehyde_matches for atom_idx in match])
+    ketone_only_atoms = ketone_atoms - aldehyde_atoms
+    if len(ketone_only_atoms) > 0:
+        return False, "Contains ketone group(s), not a fatty aldehyde."
+
+    # Get the aldehyde carbon atom
+    aldehyde_carbon_idx = aldehyde_matches[0][0]
+    aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_carbon_idx)
+
+    # Check that aldehyde carbon is terminal (connected to only one carbon)
+    neighbors = aldehyde_carbon.GetNeighbors()
+    carbon_neighbor = None
+    for atom in neighbors:
+        if atom.GetAtomicNum() == 6:
+            carbon_neighbor = atom
         else:
-            continue  # No carbon neighbor found, continue to next aldehyde carbon
-        
-        # Traverse the carbon chain starting from the chain_atom_idx
-        visited = set()
-        def traverse_chain(atom_idx):
-            atom = mol.GetAtomWithIdx(atom_idx)
-            visited.add(atom_idx)
-            count = 1 if atom.GetAtomicNum() == 6 else 0
-            for neighbor in atom.GetNeighbors():
-                n_idx = neighbor.GetIdx()
-                neighbor_atom = mol.GetAtomWithIdx(n_idx)
-                if n_idx not in visited and neighbor_atom.GetAtomicNum() == 6:
-                    count += traverse_chain(n_idx)
-            return count
-        
-        chain_length = traverse_chain(chain_atom_idx)
-        
-        # Check if chain length is at least 4 carbons
-        if chain_length >= 4:
-            return True, "Molecule is a fatty aldehyde with a terminal aldehyde group and appropriate carbon chain."
-        else:
-            continue  # Try next aldehyde group
-    
-    return False, "No suitable terminal aldehyde group with sufficient carbon chain found."
+            return False, "Aldehyde carbon has non-carbon neighbor, not terminal."
+    if carbon_neighbor is None:
+        return False, "Aldehyde carbon has no carbon neighbor, not part of a chain."
+
+    # Traverse the carbon chain starting from the neighbor of aldehyde carbon
+    visited = set()
+    def traverse_chain(atom):
+        visited.add(atom.GetIdx())
+        count = 1 if atom.GetAtomicNum() == 6 else 0
+        for neighbor in atom.GetNeighbors():
+            n_idx = neighbor.GetIdx()
+            if n_idx not in visited and neighbor.GetAtomicNum() == 6:
+                count += traverse_chain(neighbor)
+        return count
+
+    chain_length = traverse_chain(carbon_neighbor)
+    # Include aldehyde carbon in chain length
+    chain_length += 1
+
+    # Check if chain length is at least 4 carbons
+    if chain_length < 4:
+        return False, f"Carbon chain too short ({chain_length} carbons), not a fatty aldehyde."
+
+    return True, "Molecule is a fatty aldehyde with a terminal aldehyde group and appropriate carbon chain."
