@@ -27,19 +27,24 @@ def is_sphingomyelin_d18_1(smiles: str) -> Tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sphingosine backbone pattern (general pattern with double bond and hydroxy group)
-    sphingosine_pattern = Chem.MolFromSmarts("[C@@H]([CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH]=C)([C@@H](O)COP(=O)([O-])OCC[N+](C)(C)C)NC(=O)[CH2]")
-    if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "No sphingosine backbone found"
-
-    # Check for sphingosine backbone properties (chain length, double bond, hydroxy group)
-    sphingosine_chain = Chem.Mol(mol.GetMolFrags()[0])
-    if not (16 <= Chem.Lipinski.NumCarbonRings(sphingosine_chain) <= 24):
+    # Look for sphingosine backbone features
+    # 1. Check for long aliphatic chain (16-24 carbon atoms)
+    longest_chain = Chem.GetLongestAliphaticChain(mol)
+    if not (16 <= len(longest_chain) <= 24):
         return False, "Sphingosine chain length not in expected range (16-24 carbons)"
-    if not any(bond.GetIsAromatic() for bond in sphingosine_chain.GetBonds()):
+
+    # 2. Check for presence of a double bond in the chain
+    if not any(bond.GetIsAromatic() for bond in longest_chain.GetBonds()):
         return False, "No double bond found in sphingosine chain"
-    if sum(1 for atom in sphingosine_chain.GetAtoms() if atom.GetAtomicNum() == 8) != 1:
-        return False, "Incorrect number of hydroxy groups in sphingosine chain"
+
+    # 3. Check for presence of a primary hydroxy group (-OH) in the chain
+    has_primary_alcohol = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8 and atom.GetHybridization() == Chem.HybridizationType.SP3 and atom.GetTotalNumHs() == 1:
+            has_primary_alcohol = True
+            break
+    if not has_primary_alcohol:
+        return False, "No primary alcohol group found in sphingosine chain"
 
     # Look for C18:1 fatty acyl chain
     c18_1_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCC(=O)")
