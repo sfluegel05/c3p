@@ -16,29 +16,38 @@ def is_amino_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string into a molecular object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (C(=O)O)
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O-]")  # Slightly modified for flexibility
-    if not mol.HasSubstructMatch(carboxylic_pattern):
+    # Define the carboxylic acid pattern including the ionized and non-ionized forms
+    carboxylic_patterns = [
+        Chem.MolFromSmarts("C(=O)[O-]"),  # Ionized form
+        Chem.MolFromSmarts("C(=O)O")      # Non-ionized form
+    ]
+    
+    # Check if any carboxylic pattern exists
+    if not any(mol.HasSubstructMatch(pattern) for pattern in carboxylic_patterns):
         return False, "No carboxylic acid group found"
 
-    # Check for amino group (N)
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")
+    # Define the amino group pattern, capturing primary and secondary amines
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1]")
+
+    # Ensure the presence of an amino group
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "No amino group found"
 
-    # Check for typical amino acid structure (free or side-chain modifications)
-    amino_acid_patterns = [
-        Chem.MolFromSmarts("[C;X4](N)([C;X4])(C(=O)[O-])"),  # General alpha amino acids
-        Chem.MolFromSmarts("[C;X4](C(=O)[O-])([N;X3])"),     # Beta or gamma alternative structure
-        Chem.MolFromSmarts("[NX3;H2,H1,H0]-[C;X4](C=O)[O-]") # Variations with N-C-C-C backbone
+    # Define patterns that capture typical amino acid backbone connectivity
+    # N-C-C(-C)-C(=O)O / N-C-C(-C)-C(=O)[O-]
+    backbone_patterns = [
+        Chem.MolFromSmarts("[NX3][CH2][CH](C)[C](=O)O"),
+        Chem.MolFromSmarts("[NX3][CH2][CH](C)[C](=O)[O-]"),
+        Chem.MolFromSmarts("[NX3][CH2][CH2][C](=O)[O-]")
     ]
     
-    if not any(mol.HasSubstructMatch(pattern) for pattern in amino_acid_patterns):
-        return False, "No suitable amino acid connectivity pattern found"
+    # Check that at least one backbone pattern is present
+    if not any(mol.HasSubstructMatch(pattern) for pattern in backbone_patterns):
+        return False, "No typical amino acid backbone found"
 
     return True, "Contains carboxylic acid group and amino group in a typical amino acid structure"
