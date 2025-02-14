@@ -27,15 +27,19 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found indicative of acyl-CoA"
 
-    # Identify the coenzyme A moiety using a more comprehensive pattern
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OOC[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Missing segments indicative of coenzyme A"
+    # Identify key components of the Coenzyme A
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)N")
+    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)O")
+    if not mol.HasSubstructMatch(adenine_pattern) or not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Missing adenine or phosphate groups indicative of coenzyme A"
 
     # Look for branching in the fatty acyl chain
-    # Check for any C bonded to three other carbons, which implies branching
-    branching_pattern = Chem.MolFromSmarts("[C](C)(C)C")
-    if not mol.HasSubstructMatch(branching_pattern):
+    # Check for tertiary or quaternary carbons
+    branching_patterns = [
+        Chem.MolFromSmarts("[C](C)(C)C"),
+        Chem.MolFromSmarts("[C](C)(C)(C)")  # This accounts for more complex branching
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in branching_patterns):
         return False, "No branching in the fatty acid chain found"
 
     return True, "Structure matches branched-chain fatty acyl-CoA"
