@@ -16,27 +16,33 @@ def is_porphyrins(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for pyrrole
-    pyrrole_pattern = Chem.MolFromSmarts("c1cc[nH]c1")
-    
-    # Check for exactly four pyrrole substructures
+    # Enhanced SMARTS pattern for pyrrole-like units with possible substitutions
+    pyrrole_pattern = Chem.MolFromSmarts("c1[c,nH]c[nH]c1")  # More flexible in matching pyrrole variations
     pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
+
+    # Ensure at least four pyrrole-like units
     if len(pyrrole_matches) < 4:
-        return False, f"Insufficient pyrrole units found: {len(pyrrole_matches)} (requires at least 4)"
+        return False, f"Insufficient pyrrole-like units found: {len(pyrrole_matches)} (requires at least 4)"
     
-    # SMARTS pattern for methine groups bridging
-    methine_bridge_pattern = Chem.MolFromSmarts("C(c1cc[nH]c1)C(c1cc[nH]c1)C(c1cc[nH]c1)C")
+    # SMARTS pattern for methine bridges: a single carbon possibly bonded to other heteroatoms in different porphyrin forms
+    methine_bridge_pattern = Chem.MolFromSmarts("C(c1[c,nH]c[nH]c1)C")
     if not mol.HasSubstructMatch(methine_bridge_pattern):
         return False, "Methine bridge pattern not found"
     
-    # Check for macrocyclic structure
+    # Verify if there's a macrocyclic structure consisting of the pyrroles and methine bridges
+    # Revised logic for macrocycle detection
     cycle_info = mol.GetRingInfo()
-    if not cycle_info.IsAtomInRingOfSize(0, len(pyrrole_matches) + 4):  # Expect a large ring of size pyrroles + methines
-        return False, "No large macrocyclic structure found"
+    rings = cycle_info.AtomRings()
 
-    return True, "Contains four pyrrole units connected by methine bridges forming a macrocyclic structure"
+    # Check for at least one large cycle containing enough atoms (approximately 18-22 typical for porphyrins)
+    macrocyclic_detected = any(len(ring) >= 18 and sum(int(cycle_info.IsAtomInRingOfSize(atom, 5)) for atom in ring) >= 4 for ring in rings)
+    
+    if not macrocyclic_detected:
+        return False, "No macrocyclic structure consistent with porphyrin found"
+    
+    return True, "Contains four pyrrole-like units connected by methine bridges forming a macrocyclic structure"
