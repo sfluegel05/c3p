@@ -16,8 +16,8 @@ def is_tertiary_amine(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a tertiary amine, False otherwise
-        str: Reason for classification
+        tuple: (bool, str) where the bool indicates if the molecule is a tertiary amine,
+               and the str provides the reason for the classification
     """
     
     # Parse SMILES
