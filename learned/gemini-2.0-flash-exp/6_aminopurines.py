@@ -20,7 +20,7 @@ def is_6_aminopurines(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for the 6-aminopurine (adenine) moiety
-    adenine_smarts = Chem.MolFromSmarts("n1cnc2c(n1)nc(N)n2")
+    adenine_smarts = Chem.MolFromSmarts("n1cnc2c(n1)nc([NH2])n2")
 
     if adenine_smarts is None:
         return False, "Invalid SMARTS string"
