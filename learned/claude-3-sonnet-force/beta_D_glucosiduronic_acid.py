@@ -1,14 +1,18 @@
 """
 Classifies: CHEBI:15341 beta-D-glucosiduronic acid
 """
+"""
+Classifies: CHEBI:27732 beta-D-glucosiduronic acid
+A glucosiduronic acid resulting from the formal condensation of any substance 
+with beta-D-glucuronic acid to form a glycosidic bond.
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_beta_D_glucosiduronic_acid(smiles: str):
     """
     Determines if a molecule is a beta-D-glucosiduronic acid based on its SMILES string.
-    A beta-D-glucosiduronic acid is defined as a glucosiduronic acid resulting from the
-    formal condensation of any substance with beta-D-glucuronic acid to form a glycosidic bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,33 +21,28 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
         bool: True if molecule is a beta-D-glucosiduronic acid, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define beta-D-glucuronic acid substructure
-    beta_d_glucuronic_acid = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H]([C@H](O1)O)O)O)O)C(=O)O")
-
-    # Check for beta-D-glucuronic acid substructure
-    matches = mol.GetSubstructMatches(beta_d_glucuronic_acid)
-    if not matches:
+    
+    # Look for beta-D-glucuronic acid substructure
+    glucuronic_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H](O)[C@H](O)[C@@H](O)[C@H](O1)O)[C@H](O)C(O)=O")
+    if not mol.HasSubstructMatch(glucuronic_pattern):
         return False, "No beta-D-glucuronic acid substructure found"
-
-    # Define glycosidic bond pattern
-    glycosidic_bond = Chem.MolFromSmarts("[OX2]C")
-
-    # Check for glycosidic bond connecting beta-D-glucuronic acid to the rest of the molecule
-    for match in matches:
-        o_idx = match[0]  # Index of the ring oxygen in beta-D-glucuronic acid
-        neighbors = [mol.GetBondBetweenAtoms(o_idx, n).GetBondType() for n in mol.GetAtomWithIdx(o_idx).GetNeighbors()]
-        if Chem.BondType.SINGLE in neighbors and mol.HasSubstructMatch(glycosidic_bond, atomIds=[o_idx]):
-            # Additional checks (optional)
-            mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-            if mol_wt < 300:  # Adjust as needed
-                return False, "Molecular weight too low for beta-D-glucosiduronic acid"
-
-            return True, "Contains beta-D-glucuronic acid substructure connected via a glycosidic bond"
-
-    return False, "No glycosidic bond connecting beta-D-glucuronic acid found"
+    
+    # Look for glycosidic bond (O-C)
+    glycosidic_pattern = Chem.MolFromSmarts("[OX2][CX4]")
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+    if not glycosidic_matches:
+        return False, "No glycosidic bond found"
+    
+    # Check for carbon skeleton attached to glycosidic oxygen
+    for match in glycosidic_matches:
+        o_atom = mol.GetAtomWithIdx(match[0])
+        c_atom = mol.GetAtomWithIdx(match[1])
+        if c_atom.GetAtomicNum() == 6 and c_atom.GetTotalNumHs() <= 1:
+            return True, "Contains beta-D-glucuronic acid substructure linked via glycosidic bond"
+    
+    return False, "No carbon skeleton attached to glycosidic oxygen"
