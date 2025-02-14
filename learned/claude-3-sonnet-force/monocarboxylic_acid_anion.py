@@ -8,7 +8,6 @@ A carboxylic acid anion formed when the carboxy group of a monocarboxylic acid i
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monocarboxylic_acid_anion(smiles: str):
     """
@@ -41,15 +40,5 @@ def is_monocarboxylic_acid_anion(smiles: str):
     carbonyl_oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0)
     if carbonyl_oxygen_count > 1:
         return False, "Found multiple carbonyl oxygens, expected a monocarboxylic acid"
-
-    # Check for no additional ionizable groups (e.g. phosphates, sulfonates)
-    ionizable_pattern = Chem.MolFromSmarts("[$([O-]);$([N+]);$([P-]);$([S-])]")
-    if mol.HasSubstructMatch(ionizable_pattern):
-        return False, "Found additional ionizable groups, expected only a carboxylate anion"
-
-    # Check that the molecule is not a salt (e.g. sodium acetate)
-    formal_charge = rdMolDescriptors.CalcFormalCharge(mol)
-    if abs(formal_charge) > 1:
-        return False, "Molecule has a formal charge greater than 1, may be a salt"
 
     return True, "Contains a single carboxylate anion (-COO-) group"
