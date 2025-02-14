@@ -23,33 +23,41 @@ def is_ganglioside(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Ceramide Identification
+    # Broader pattern for ceramide - captures common variations
     ceramide_pattern = Chem.MolFromSmarts("[CHX4][CHX4](O)[CHX4](-[OX2])~[NX3][CX3](=[OX1])[CX4]")
-    ceramide_matches = mol.GetSubstructMatches(ceramide_pattern)
-    if not ceramide_matches:
+    if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide structure found."
 
     # 2. Sialic Acid (Neu5Ac and Neu5Gc) Detection
-    sialic_acid_pattern = Chem.MolFromSmarts("[C]([C](=[O])[N][C])([C]([C]([C]([C]([C]([C]([C])O)O)O)O)O)C(=O)O")
-    sialic_acid_matches = mol.GetSubstructMatches(sialic_acid_pattern)
+    neu5ac_pattern = Chem.MolFromSmarts("CC(=O)N[C][C](C(=O)O)([C])([C]([C]([C]([C])O)O)O)O")
+    neu5gc_pattern = Chem.MolFromSmarts("C(O)N[C][C](C(=O)O)([C])([C]([C]([C]([C])O)O)O)O")
 
-    if not sialic_acid_matches:
+    has_sialic_acid = mol.HasSubstructMatch(neu5ac_pattern) or mol.HasSubstructMatch(neu5gc_pattern)
+
+    if not has_sialic_acid:
         return False, "No sialic acid (Neu5Ac or Neu5Gc) found."
 
-   # 3. Check for Glycosidic bonds (ether oxygens) - ensure sugar is present, sugar has at least 2 ether bonds
-    ether_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and len(atom.GetBonds()) > 1 )
-    if ether_count < 3:
-       return False, "No sugar chain found."
 
-    # 4. Verify ceramide link to sugar
-    ceramide_atom_idx = [match[3] for match in ceramide_matches[0]] # index of the oxygen atom in the ceramide
-    if ceramide_atom_idx:
-        ceramide_atom = mol.GetAtomWithIdx(ceramide_atom_idx[0])
-        has_sugar_link = False
-        for neighbor in ceramide_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8 and len(neighbor.GetBonds()) > 1:
-                has_sugar_link = True
-                break
-        if not has_sugar_link:
-            return False, "Ceramide not linked to a sugar."
+    # 3. Oligosaccharide Detection (looking for multiple sugar rings)
+    sugar_pattern = Chem.MolFromSmarts("C1[OX2]C([CX4])C([CX4])C([CX4])C1")
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if len(sugar_matches) < 2 :
+        return False, "No oligosaccharide chain found."
+
+
+    # Basic confirmation of link between Ceramide and Sugar Chain (check for an ether in the ceramide attached to a sugar ring)
+    ceramide_matches = mol.GetSubstructMatches(ceramide_pattern)
+    if ceramide_matches:
+        ceramide_oxygen_idx = [match[3] for match in ceramide_matches[0]]
+        if ceramide_oxygen_idx:
+           ceramide_oxygen_atom = mol.GetAtomWithIdx(ceramide_oxygen_idx[0])
+           linked_to_sugar = False
+           for neighbor in ceramide_oxygen_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and mol.HasSubstructMatch(sugar_pattern, [neighbor.GetIdx()]):
+                    linked_to_sugar = True
+                    break
+           if not linked_to_sugar:
+             return False, "Ceramide not linked to a sugar chain"
+
 
     return True, "Contains a ceramide, an oligosaccharide, and at least one sialic acid (Neu5Ac or Neu5Gc) unit."
