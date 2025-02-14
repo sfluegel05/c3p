@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_hemiaminal(smiles: str):
     """
     Determines if a molecule is a hemiaminal based on its SMILES string.
-    A hemiaminal is an organic compound where a single carbon atom is attached to both
-    an amino group and a hydroxy group.
+    A hemiaminal is an organic compound where a single sp3-hybridized carbon atom is attached to both
+    an amino group and a hydroxy group, and not part of a carbonyl group.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -22,15 +22,50 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string."
 
-    # Define the SMARTS pattern for a carbon attached to both hydroxyl and amino groups
-    # [CX4;!$(C(=O))]: sp3-hybridized carbon not double-bonded to oxygen (exclude carbonyl carbons)
-    # ([OH]): hydroxyl group attached to the carbon
-    # ([NX3;H2,H1,H0]): trivalent nitrogen (amine group) with 0-2 hydrogens
-    hemiaminal_pattern = Chem.MolFromSmarts('[CX4;!$(C(=O))]([OH])[NX3;H2,H1,H0]')
+    # Iterate over all carbon atoms in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 6:
+            continue  # Skip if not carbon
 
-    # Search for substructure matches in the molecule
-    matches = mol.GetSubstructMatches(hemiaminal_pattern)
-    if matches:
-        return True, "Contains a carbon atom attached to both hydroxyl and amino groups (hemiaminal)."
-    else:
-        return False, "Does not contain a hemiaminal functional group."
+        if atom.GetHybridization() != Chem.HybridizationType.SP3:
+            continue  # Skip if not sp3-hybridized
+
+        # Exclude carbons that are part of a carbonyl group (C=O)
+        is_carbonyl = False
+        for bond in atom.GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                nbr = bond.GetOtherAtom(atom)
+                if nbr.GetAtomicNum() == 8:  # Oxygen
+                    is_carbonyl = True
+                    break
+        if is_carbonyl:
+            continue
+
+        # Initialize counts
+        has_hydroxyl = False
+        has_amino = False
+        other_heteroatom = False
+
+        # Analyze neighbors
+        for neighbor in atom.GetNeighbors():
+            nbr_atomic_num = neighbor.GetAtomicNum()
+            if nbr_atomic_num == 8:
+                # Possible hydroxyl group
+                if neighbor.GetTotalDegree() == 1 and neighbor.GetTotalNumHs() == 1:
+                    has_hydroxyl = True
+                else:
+                    other_heteroatom = True  # Oxygen that's not hydroxyl
+            elif nbr_atomic_num == 7:
+                # Possible amino group
+                if neighbor.GetFormalCharge() == 0:
+                    has_amino = True
+                else:
+                    other_heteroatom = True  # Charged nitrogen
+            elif nbr_atomic_num not in [1, 6]:  # Exclude hydrogen and carbon
+                other_heteroatom = True
+
+        # Check if the atom meets the criteria for a hemiaminal carbon
+        if has_hydroxyl and has_amino and not other_heteroatom:
+            return True, "Contains a carbon atom attached to both hydroxyl and amino groups (hemiaminal)."
+
+    return False, "Does not contain a hemiaminal functional group."
