@@ -26,44 +26,46 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure molecule has explicit hydrogens
-    mol = Chem.AddHs(mol)
-
-    # Check for CoA substructure (simplified pattern)
-    coa_smarts = 'NC(=O)CCNC(=O)[C@H](O)C(C)(C)CO[P](=O)([O-])O[P](=O)([O-])OC[C@H]1O[C@H](C)[C@H](O)[C@@H]1O'
+    # Use a more general CoA SMARTS pattern (excluding stereochemistry)
+    coa_smarts = 'NC(=O)CCNC(=O)C(O)C(C)(C)CO[P](=O)(O)O[P](=O)(O)OCC1OC(CO[P](=O)(O)O)C(O)C1O'
     coa_mol = Chem.MolFromSmarts(coa_smarts)
+    if coa_mol is None:
+        return False, "Invalid CoA SMARTS pattern"
+
     if not mol.HasSubstructMatch(coa_mol):
         return False, "Coenzyme A moiety not found"
 
     # Find the thioester linkage (C(=O)S)
     thioester_smarts = 'C(=O)S'
     thioester_mol = Chem.MolFromSmarts(thioester_smarts)
-    thioester_matches = mol.GetSubstructMatch(thioester_mol)
+    thioester_matches = mol.GetSubstructMatches(thioester_mol)
     if not thioester_matches:
         return False, "Thioester linkage not found"
 
-    # Identify the fatty acyl chain starting from the carbonyl carbon
-    fatty_acyl_start = thioester_matches[0]  # carbonyl carbon index
+    # Identify the carbonyl carbon in the thioester linkage
+    carbonyl_c_idx = thioester_matches[0][0]  # Index of the carbonyl carbon
 
-    # Traverse the fatty acyl chain to number the carbons
-    chain_atoms = [fatty_acyl_start]
-    current_atom = mol.GetAtomWithIdx(fatty_acyl_start)
-    prev_atom = None
-    while len(chain_atoms) < 20:  # Limit to avoid infinite loops
-        neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom]
+    # Traverse the fatty acyl chain starting from the carbonyl carbon
+    fatty_acyl_chain = [carbonyl_c_idx]
+    current_atom = mol.GetAtomWithIdx(carbonyl_c_idx)
+    prev_atom_idx = None
+
+    while True:
+        neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom_idx]
         if not neighbors:
             break
         next_atom = neighbors[0]
-        chain_atoms.append(next_atom.GetIdx())
-        prev_atom = current_atom.GetIdx()
+        fatty_acyl_chain.append(next_atom.GetIdx())
+        prev_atom_idx = current_atom.GetIdx()
         current_atom = next_atom
 
-    if len(chain_atoms) < 12:
+    # The fatty acyl chain should have at least 12 carbons to check the bond between carbons 11 and 12
+    if len(fatty_acyl_chain) < 12:
         return False, "Fatty acyl chain is shorter than 12 carbons"
 
-    # Check the bond between carbons 11 and 12
-    c11_idx = chain_atoms[10]  # zero-based indexing
-    c12_idx = chain_atoms[11]
+    # Get the bond between carbons 11 and 12
+    c11_idx = fatty_acyl_chain[10]  # Zero-based indexing
+    c12_idx = fatty_acyl_chain[11]
     bond = mol.GetBondBetweenAtoms(c11_idx, c12_idx)
     if bond is None:
         return False, "No bond between carbons 11 and 12"
