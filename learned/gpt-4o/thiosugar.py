@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_thiosugar(smiles: str):
     """
     Determines if a molecule is a thiosugar based on its SMILES string.
-    A thiosugar is a carbohydrate derivative in which one or more of the oxygens
-    or hydroxy groups of the parent sugar is replaced by sulfur or -SR groups.
+    A thiosugar has one or more oxygens or hydroxy groups replaced by sulfur or sulfur-containing groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,24 +21,20 @@ def is_thiosugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General pattern for sugar backbones (generic C-O-C-O patterns typical in sugars)
-    sugar_backbone_pattern = Chem.MolFromSmarts("C1O[C@@H]([C@H](O)C)C(CO1)O")
-    if not mol.HasSubstructMatch(sugar_backbone_pattern):
-        return False, "No conceivable sugar backbone found"
+    # Check for sugar framework (e.g., pyran, furan rings with hydroxyl groups)
+    # In SMARTS representation, this would be a cyclic ether with hydroxyl (O) groups
+    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@H]([C@@H]([C@H](O)[C@H](O)[C@H]1O)O)CO")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No sugar backbone found"
 
-    # Define sulfur substitution patterns
-    sulfur_patterns = [
-        Chem.MolFromSmarts("[#16]"),                   # Match sulfur
-        Chem.MolFromSmarts("[C@H]S"),                  # S connected to a chiral center
-        Chem.MolFromSmarts("[C]-S-[C]"),               # Thioether configurations
-        Chem.MolFromSmarts("C-S(=O)"),                 # Sulfoxide: Sulfur bonded to carbon with double-bonded O
-        Chem.MolFromSmarts("[O;H0]S"),                 # Sulfur replacing non-hydroxy oxygen
-    ]
-
-    # Check for any sulfur substituting traditionally oxygen positions
-    sulfur_substitution_found = any(mol.HasSubstructMatch(pat) for pat in sulfur_patterns)
-
-    if not sulfur_substitution_found:
+    # Check for sulfur substitution (-S- or -SH)
+    sulfur_pattern = Chem.MolFromSmarts("[#16]")  # Sulfur atom
+    if not mol.HasSubstructMatch(sulfur_pattern):
         return False, "No sulfur substitution found"
     
+    # Check for cases where sulfur atom is attached in place of a hydroxy group
+    thio_pattern = Chem.MolFromSmarts("[C@@H](-[S])")
+    if not mol.HasSubstructMatch(thio_pattern):
+        return False, "No thio substitution in sugar structure"
+
     return True, "Contains sugar backbone with sulfur substitution"
