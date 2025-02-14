@@ -31,12 +31,16 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
             return False, f"Molecule does not have L configuration on all chiral carbons. Atom {atom_index} is S"
            elif not atom.GetProp('_Chirality') == 'R':
             return False, f"Molecule does not have L configuration on all chiral carbons. Atom {atom_index} is not R"
+           
 
-    # Check for N-acyl-L-alpha-amino acid pattern.
-    # This SMARTS pattern looks for an L-alpha-amino acid with an N-acyl group.
-    # It looks for C(=O)-[C@H]-N-C(=O) where the C(=O) is attached to the N of the amino acid.
-    n_acyl_amino_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NH1X2][C@H](C(=O)O)")
-    if not mol.HasSubstructMatch(n_acyl_amino_acid_pattern):
-         return False, "Molecule does not match N-acyl-L-alpha-amino acid pattern"
+    # Check for L-alpha-amino acid core pattern
+    amino_acid_pattern = Chem.MolFromSmarts("[NX2][C@H](C(=O)O)")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "Molecule does not contain L-alpha-amino acid core."
+    
+    # Check for N-acyl group (-C(=O)-) attached to any N atom.
+    acyl_group_pattern = Chem.MolFromSmarts("[NX2][CX3](=[OX1])")
+    if not mol.HasSubstructMatch(acyl_group_pattern):
+         return False, "Molecule does not contain an N-acyl group"
 
     return True, "Molecule is an N-acyl-L-alpha-amino acid"
