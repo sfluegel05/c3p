@@ -6,7 +6,9 @@ Classifies: 3beta-hydroxy-Delta(5)-steroid
 
 Definition: 'Any 3beta-hydroxy-steroid that contains a double bond between positions 5 and 6.'
 """
+
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     """
@@ -24,45 +26,47 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define steroid nucleus pattern (four fused rings with sizes 6-6-6-5)
-    steroid_nucleus = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3=CC=C4')  # Simplified steroid nucleus
+
+    # Kekulize the molecule to avoid aromaticity issues
+    Chem.Kekulize(mol, clearAromaticFlags=True)
+
+    # Define the steroid nucleus with atom numbering
+    steroid_nucleus_smarts = """
+    [#6]1CC[C@H]2CC[C@H]3CC[C@]4(C)CC[C@H](O)CC4=C3CC2C1
+    """
+    steroid_nucleus = Chem.MolFromSmarts(steroid_nucleus_smarts)
     if steroid_nucleus is None:
         return False, "Invalid steroid nucleus SMARTS pattern"
-    if not mol.HasSubstructMatch(steroid_nucleus):
+
+    # Check for steroid nucleus
+    match = mol.GetSubstructMatch(steroid_nucleus)
+    if not match:
         return False, "No steroid nucleus found"
-    
-    # Define 3beta-hydroxy group pattern
-    hydroxy_3beta = Chem.MolFromSmarts('[C@H]([C;R0][OH])')  # Chiral center connected to hydroxyl group
-    if hydroxy_3beta is None:
-        return False, "Invalid hydroxy_3beta SMARTS pattern"
-    if not mol.HasSubstructMatch(hydroxy_3beta):
-        return False, "No 3beta-hydroxy group found"
-    
-    # Define Delta(5) double bond between positions 5 and 6
-    delta5_double_bond = Chem.MolFromSmarts('C=C')  # Double bond between two carbons
-    if delta5_double_bond is None:
-        return False, "Invalid delta5_double_bond SMARTS pattern"
-    matches = mol.GetSubstructMatches(delta5_double_bond)
-    if not matches:
-        return False, "No double bonds found"
-    # Check if the double bond is between positions 5 and 6 in the steroid nucleus
-    # Since atom numbering may not correspond, we approximate by checking if the double bond is in ring C
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    found_double_bond_in_ring = False
+
+    # Map the steroid nucleus to get atom indices for positions
+    atom_indices = {}
+    for idx, atom in enumerate(steroid_nucleus.GetAtoms()):
+        atom_map_num = atom.GetAtomMapNum()
+        if atom_map_num:
+            atom_indices[atom_map_num] = match[idx]
+
+    # Check for 3beta-hydroxy group at position 3
+    # Position 3 is atom map number 3 in the SMARTS pattern
+    # For simplicity, assume position 3 is connected to an -OH group with correct stereochemistry
+    hydroxyl = Chem.MolFromSmarts("[C@@H](O)")
+    if not mol.HasSubstructMatch(hydroxyl, useChirality=True):
+        return False, "No 3beta-hydroxy group found at position 3"
+
+    # Check for double bond between positions 5 and 6
+    # Position 5 and 6 are atom map numbers 5 and 6
+    # Create a bond query between these positions
+    # Since atom indices might not match, we search for a double bond in any ring
+    double_bond_found = False
     for bond in mol.GetBonds():
-        if bond.IsInRing() and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            begin_atom = bond.GetBeginAtom()
-            end_atom = bond.GetEndAtom()
-            # Check if both atoms are in the same ring of size 6 (ring C)
-            for ring in atom_rings:
-                if len(ring) == 6 and begin_atom.GetIdx() in ring and end_atom.GetIdx() in ring:
-                    found_double_bond_in_ring = True
-                    break
-            if found_double_bond_in_ring:
-                break
-    if not found_double_bond_in_ring:
+        if bond.GetBondType() == Chem.BondType.DOUBLE and bond.IsInRing():
+            double_bond_found = True
+            break
+    if not double_bond_found:
         return False, "No Delta(5) double bond found between positions 5 and 6"
-    
+
     return True, "Molecule is a 3beta-hydroxy-Delta(5)-steroid"
