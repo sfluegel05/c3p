@@ -23,16 +23,16 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flavanone/dihydoflavanone core pattern - less restrictive
-    flavanone_core_pattern = Chem.MolFromSmarts("[c]1[c][c][c]2[C]([C]([C]=[O])[C]2)[c]1")
-    if not mol.HasSubstructMatch(flavanone_core_pattern):
-        return False, "Molecule does not contain flavanone/dihydoflavanone core"
 
-    # 3'-hydroxy substitution pattern - targets the 3' position with more precision.
-    hydroxy_3_pattern = Chem.MolFromSmarts("[c]1-[c](-[OH])-[c](-[c]-[c]1)-[CH]")
+    # Combined pattern to identify the flavanone core and 3'-OH
+    # [c]1:[c]:[c]:[c](-[C](=O)-[C]2:[c](-[c]:[c]3):[c](:[c]:2):[c]:3)[c]:1 means that we are targeting a carbon in the A-ring with the right substitution pattern, and is connected to a C=O which is then connected to the B-ring
+    # [c]1-[c](-[OH])-[c]-[c]-[c]-1 means that we target a 6-membered aromatic ring with an OH in the 2 position.
+    # The atom mapping is done so we are sure the 3'-OH group is on the B-ring, using the substructure match.
+
+    flavanone_3_oh_pattern = Chem.MolFromSmarts("[c]1:[c]:[c]:[c](-[C](=O)-[C]2:[c](-[c:1]-[OH]):[c](:[c]:2):[c]:3)[c]:1")
 
 
-    if not mol.HasSubstructMatch(hydroxy_3_pattern):
-        return False, "Molecule does not contain a hydroxyl at 3' position"
+    if not mol.HasSubstructMatch(flavanone_3_oh_pattern):
+        return False, "Molecule does not contain a flavanone/dihydoflavanone core with a hydroxyl group at the 3' position"
 
     return True, "Molecule contains a flavanone/dihydoflavanone core with a hydroxyl group at the 3' position"
