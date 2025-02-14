@@ -13,7 +13,7 @@ def is_phosphoinositide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a phosphoinositide, False otherwise
+        bool: True if the molecule is a phosphoinositide, False otherwise
         str: Reason for classification
     """
 
@@ -22,25 +22,33 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the glycerophospholipid backbone
-    # Glycerol backbone with two fatty acid chains esterified at sn-1 and sn-2 positions, and phosphate at sn-3
-    glycerophospholipid_pattern = Chem.MolFromSmarts("""
-    [$([C@@H](CO[P](=O)(O)O)(O[C](=O)[C;H1,$(C([CH2])[CH2])][C;H1,$(C([CH2])[CH2])[CH2])[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]),
-    $([C@@H](CO[P](=O)(O)O)(O[C](=O)[C;H1,$(C([CH2])[CH2])][C;H1,$(C([CH2])[CH2])[CH2])[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2])])]
-    """)
+    # Define SMARTS pattern for glycerophospholipid backbone
+    glycerophospholipid_smarts = """
+    [C;!R]-C(O[P](=O)(O)O)-O-C(=O)-[*]
+    """
+    glycerophospholipid_pattern = Chem.MolFromSmarts(glycerophospholipid_smarts)
+    if glycerophospholipid_pattern is None:
+        return False, "Invalid glycerophospholipid SMARTS pattern"
 
+    # Check for glycerophospholipid backbone
     if not mol.HasSubstructMatch(glycerophospholipid_pattern):
-        return False, "No glycerophospholipid backbone with fatty acids and phosphate group found"
+        return False, "No glycerophospholipid backbone found"
 
-    # Define SMARTS pattern for the inositol ring attached via phosphate group
-    # Inositol ring: six-membered ring with carbons each bearing a hydroxyl group
-    inositol_pattern = Chem.MolFromSmarts("C1(O)C(O)C(O)C(O)C(O)C1O")
-    if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol ring found"
+    # Define SMARTS pattern for inositol ring attached via phosphate to glycerol
+    # Inositol ring: six-membered ring with six hydroxyl groups
+    inositol_smarts = "C1(O)C(O)C(O)C(O)C(O)C1O"
+    inositol_pattern = Chem.MolFromSmarts(inositol_smarts)
+    if inositol_pattern is None:
+        return False, "Invalid inositol SMARTS pattern"
 
-    # Check if inositol ring is connected via phosphate group to glycerol backbone
-    # We can check for phosphatidylinositol substructure
-    phosphatidylinositol_pattern = Chem.MolFromSmarts("[O]-[P](=O)([O])-[O]-C1(CO)C(O)C(O)C(O)C(O)C1O")
+    # Check for phosphatidylinositol structure (glycerol linked to inositol via phosphate)
+    phosphatidylinositol_smarts = """
+    [O;H0]-P(=O)([O;H0])[O]-[C@H]1([O])C(O)C(O)C(O)C(O)C1O
+    """
+    phosphatidylinositol_pattern = Chem.MolFromSmarts(phosphatidylinositol_smarts)
+    if phosphatidylinositol_pattern is None:
+        return False, "Invalid phosphatidylinositol SMARTS pattern"
+
     if not mol.HasSubstructMatch(phosphatidylinositol_pattern):
         return False, "No phosphatidylinositol structure found"
 
@@ -48,26 +56,29 @@ def is_phosphoinositide(smiles: str):
     inositol_matches = mol.GetSubstructMatches(inositol_pattern)
     if not inositol_matches:
         return False, "No inositol ring found"
-    inositol_atoms = inositol_matches[0]
-    inositol_atom_set = set(inositol_atoms)
 
-    # Count the number of phosphate groups attached to the inositol ring hydroxyls
+    # Count the number of phosphate groups attached to inositol hydroxyls
     num_phosphates_on_inositol = 0
 
-    for atom_idx in inositol_atoms:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        # Look for hydroxyl groups on inositol ring carbons
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8:  # Oxygen
-                # Check if oxygen is bonded to phosphorus
-                for nei in neighbor.GetNeighbors():
-                    if nei.GetAtomicNum() == 15 and nei.GetIdx() not in inositol_atom_set:
-                        num_phosphates_on_inositol += 1
-                        break
+    for match in inositol_matches:
+        inositol_atoms = set(match)
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 6:  # Carbon in inositol ring
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 8:  # Oxygen
+                        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                            # Check if oxygen is connected to a phosphate group
+                            for nei in neighbor.GetNeighbors():
+                                if nei.GetAtomicNum() == 15 and nei.GetIdx() not in inositol_atoms:
+                                    num_phosphates_on_inositol += 1
+                                    break
 
-    # The linkage phosphate to glycerol counts as one, so additional phosphates indicate phosphorylation
-    if num_phosphates_on_inositol >= 2:
-        num_additional_phosphates = num_phosphates_on_inositol - 1
+    # Exclude the linkage phosphate to glycerol backbone
+    num_additional_phosphates = num_phosphates_on_inositol - 1  # Subtract linkage phosphate
+
+    if num_additional_phosphates >= 1:
         return True, f"Phosphoinositide with {num_additional_phosphates} additional phosphate group(s) on inositol ring"
     else:
         return False, "No additional phosphate groups on inositol ring"
