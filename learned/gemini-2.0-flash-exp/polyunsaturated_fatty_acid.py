@@ -5,11 +5,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-
 def is_polyunsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a polyunsaturated fatty acid based on its SMILES string.
-    A polyunsaturated fatty acid is a fatty acid with more than one carbon-carbon double bond.
+    A polyunsaturated fatty acid is a fatty acid with more than one carbon-carbon double or triple bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,19 +27,26 @@ def is_polyunsaturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for more than one double bond
+    # Check for more than one double or triple bond
     double_bond_pattern = Chem.MolFromSmarts("C=C")
+    triple_bond_pattern = Chem.MolFromSmarts("C#C")
+
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    if len(double_bond_matches) <= 1:
-       return False, f"Found {len(double_bond_matches)} double bonds, need more than one."
-   
-    # Check for long carbon chains by counting carbon atoms and rotatable bonds
+    triple_bond_matches = mol.GetSubstructMatches(triple_bond_pattern)
+
+    if len(double_bond_matches) + len(triple_bond_matches) <= 1:
+        return False, f"Found {len(double_bond_matches)} double and {len(triple_bond_matches)} triple bonds, need more than one."
+
+    #Check for main carbon chain with double/triple bonds and carboxylic acid
+    main_chain_pattern = Chem.MolFromSmarts("[CH2,CH1,CH0][CH2,CH1,CH0](=[CH,CH0])-[CH2,CH1,CH0](=[CH,CH0])-[CH2,CH1,CH0]-[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~[CH2,CH1,CH0]~C(=O)O") # at least 12 carbons
+    if not mol.HasSubstructMatch(main_chain_pattern):
+        return False, "Double/triple bonds not part of main fatty acid carbon chain."
+        
+
+    # Check for long carbon chains by counting carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8:
+    if c_count < 12:
         return False, "Too few carbons for a fatty acid"
+    
 
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 4:
-        return False, "Too few rotatable bonds, chain too short"
-
-    return True, "Contains a carboxylic acid group and more than one double bond, characteristic of a polyunsaturated fatty acid."
+    return True, "Contains a carboxylic acid group and more than one double/triple bond within the main chain, characteristic of a polyunsaturated fatty acid."
