@@ -24,11 +24,7 @@ def is_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for rings
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains rings, not a fatty acid"
-
-    # Define SMARTS patterns for carboxylic acid and carboxylate groups
+    # Define SMARTS pattern for carboxylic acid group
     carboxylic_acid_smarts = '[CX3](=O)[OX1H0-,OX2H1]'
     carboxylic_acid = Chem.MolFromSmarts(carboxylic_acid_smarts)
     matches = mol.GetSubstructMatches(carboxylic_acid)
@@ -37,11 +33,16 @@ def is_long_chain_fatty_acid(smiles: str):
     if len(matches) != 1:
         return False, f"Found {len(matches)} carboxylic acid groups, expected exactly 1"
 
-    # Get the carboxyl carbon index
-    carboxyl_carbon_idx = matches[0][0]
+    # Get the carboxyl carbon index and oxygen indices
+    carboxyl_match = matches[0]
+    carboxyl_carbon_idx = carboxyl_match[0]
+    carboxyl_oxygen_idxs = set(carboxyl_match[1:])
 
-    # Get the chain length from the carboxyl carbon
-    chain_length = get_linear_chain_length(mol, carboxyl_carbon_idx)
+    # Exclude carboxyl oxygens from chain search
+    excluded_atoms = carboxyl_oxygen_idxs
+
+    # Compute the longest carbon chain starting from the carboxyl carbon
+    chain_length = get_longest_chain_length(mol, carboxyl_carbon_idx, excluded_atoms)
 
     # Check if the chain length is within the specified range
     if 13 <= chain_length <= 22:
@@ -49,46 +50,40 @@ def is_long_chain_fatty_acid(smiles: str):
     else:
         return False, f"Chain length is {chain_length}, not within 13-22"
 
-def get_linear_chain_length(mol, carboxyl_carbon_idx):
+def get_longest_chain_length(mol, start_atom_idx, excluded_atoms):
     """
-    Finds the length of the unbranched carbon chain starting from the carboxyl carbon.
+    Finds the length of the longest carbon chain starting from the start atom.
 
     Args:
         mol (Mol): RDKit molecule object
-        carboxyl_carbon_idx (int): Atom index of the carboxyl carbon
+        start_atom_idx (int): Atom index to start the search from
+        excluded_atoms (set): Set of atom indices to exclude from the search
 
     Returns:
-        int: Length of the carbon chain including the carboxyl carbon
+        int: Length of the longest carbon chain
     """
-    chain_length = 1  # Include carboxyl carbon
-    visited = set()
-    current_atom_idx = carboxyl_carbon_idx
-    previous_atom_idx = None
+    max_length = 0
+    stack = [(start_atom_idx, 1, {start_atom_idx})]  # (current atom idx, length, visited set)
 
-    while True:
-        visited.add(current_atom_idx)
+    while stack:
+        current_atom_idx, length, visited = stack.pop()
+        if length > max_length:
+            max_length = length
+
         current_atom = mol.GetAtomWithIdx(current_atom_idx)
 
-        # Get neighboring carbon atoms excluding the previous atom
-        neighbors = [
-            neighbor for neighbor in current_atom.GetNeighbors()
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != previous_atom_idx
-        ]
+        for neighbor in current_atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
 
-        # Exclude carbons already visited
-        neighbors = [neighbor for neighbor in neighbors if neighbor.GetIdx() not in visited]
+            if neighbor_idx in visited:
+                continue
+            if neighbor_idx in excluded_atoms:
+                continue
+            if mol.GetAtomWithIdx(neighbor_idx).GetAtomicNum() != 6:
+                continue  # Only consider carbon atoms
 
-        # If more than one neighbor (excluding previous), branching occurs
-        if len(neighbors) > 1:
-            break  # Branching occurs, so chain is no longer linear
+            new_visited = visited.copy()
+            new_visited.add(neighbor_idx)
+            stack.append((neighbor_idx, length + 1, new_visited))
 
-        if len(neighbors) == 0:
-            break  # End of chain
-
-        # Move to the next carbon
-        next_atom = neighbors[0]
-        chain_length += 1
-        previous_atom_idx = current_atom_idx
-        current_atom_idx = next_atom.GetIdx()
-
-    return chain_length
+    return max_length
