@@ -21,40 +21,41 @@ def is_17alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a generic steroid core pattern based on fused rings
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]1[C][C]([C])([C])2[C][C]3") # Modified core pattern
+    # Define the basic steroid core with a 17-hydroxy substituent (no stereochemistry requirement yet)
+    # Steroid core, C17 connected to C and O
+    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C][C]2[C]1[C][C][C]3[C]2[C][C][C]4[C]3[C](O)[C][C]4")
     if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "No steroid core found."
-
-    # Get the matches of the steroid core.
+        return False, "No steroid core with a 17-hydroxy group found."
+    
+    #Find the C17 atom
     matches = mol.GetSubstructMatches(steroid_core_pattern)
     
+    #If no matches for the substructure, return False
     if not matches:
-      return False, "No steroid core match found"
-
-    for match in matches:
-      # C13 is the 8th atom in the SMARTS
-      c13_index_in_match = 7
-      c13_atom_index = match[c13_index_in_match]
-      c13_atom = mol.GetAtomWithIdx(c13_atom_index)
+        return False, "No steroid core match found"
     
-      # Get neighbors of C13
-      neighbors_c13 = c13_atom.GetNeighbors()
-      
-      c17_atom = None
-      for neighbor in neighbors_c13:
-        if neighbor.GetAtomicNum() == 6:
-           c17_atom = neighbor
-           break
-      
-      if c17_atom is None:
-        return False, "No C17 atom found connected to C13"
-      
-      c17_neighbors = c17_atom.GetNeighbors()
-
-      for neighbor in c17_neighbors:
-          if neighbor.GetAtomicNum() == 8: #Oxygen
-              if neighbor.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW:  # Check for alpha configuration
-                  return True, "Contains a steroid core with a 17-alpha hydroxyl group"
+    # We take the first match, as any match must have the correct C-17 atom with attached -OH, and only consider the first match
+    match = matches[0]
     
-    return False, "No steroid core with a 17-alpha-hydroxy group found."
+    #Find the index of C17 atom in the match - it is the penultimate atom in the pattern
+    c17_index_in_match = 15 # from the SMARTS string we used
+    
+    #Get atom index of c17 in the overall molecule by indexing the match object with the index
+    c17_atom_index = match[c17_index_in_match]
+    
+    # Get the C17 atom object in the molecule
+    c17_atom = mol.GetAtomWithIdx(c17_atom_index)
+    
+    # Get its stereo information
+    c17_stereo = c17_atom.GetChiralTag()
+    
+    #Check if atom is chiral
+    if c17_stereo == Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
+        return False, "C17 has no stereochemistry information available"
+    
+    #Check for alpha-configuration by seeing if it is defined as anti-clockwise
+    if c17_stereo != Chem.rdchem.ChiralType.CHI_1:
+        return False, "C17 stereochemistry not alpha"
+    
+    
+    return True, "Contains a steroid core with a 17-alpha hydroxyl group"
