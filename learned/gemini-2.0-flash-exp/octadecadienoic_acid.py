@@ -32,51 +32,16 @@ def is_octadecadienoic_acid(smiles: str):
     if len(double_bond_matches) != 2:
          return False, f"Found {len(double_bond_matches)} double bonds, need exactly 2"
 
-    # Check for a long straight chain of 18 C atoms, where the double bonds must reside
-    # Find the carbon chain atoms first, then verify the chain length
-    all_carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-
-    # Get the carbon atoms connected to the carboxylic acid
-    carboxylic_carbons = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O[C]"))
-    if not carboxylic_carbons:
-       return False, "No carbon chain directly attached to the carboxylic acid"
-    carboxylic_carbon_atom = mol.GetAtomWithIdx(carboxylic_carbons[0][0])
-
-    # Find the longest chain by following the carbons from the acid end
-    carbons_in_chain = [carboxylic_carbon_atom]
-    current_atom = carboxylic_carbon_atom
-    previous_atom = None
-    chain_length = 1
-
-    while chain_length < 18:
-        # Get the neighbors of the current atom, except the previous atom
-        neighbors = [neighbor for neighbor in current_atom.GetNeighbors()
-                     if neighbor.GetAtomicNum() == 6 and neighbor != previous_atom]
-        
-        # If there is exactly one neighbor in the chain, then follow it
-        if len(neighbors) == 1:
-            next_atom = neighbors[0]
-            carbons_in_chain.append(next_atom)
-            previous_atom = current_atom
-            current_atom = next_atom
-            chain_length += 1
-        else:
-            # If it doesn't have exactly one carbon neighbor, this is not a straight chain
-            return False, "Not a straight chain with 18 carbons"
-
-    #verify that all the double bonds are on the 18-carbon chain
-    double_bonds_on_chain = 0
-    for match in double_bond_matches:
-        for atom_idx in match:
-            if mol.GetAtomWithIdx(atom_idx) in carbons_in_chain:
-                double_bonds_on_chain +=1
-                break
-    if double_bonds_on_chain != 4:
-      return False, "Double bonds not on the 18 carbon chain"
-
-    # Check for non-cyclic structure
-    if mol.GetRingInfo().NumRings() > 0:
-         return False, "Molecule contains a ring structure"
+    # Check for 18 carbon atoms
+    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    if len(carbon_atoms) != 18:
+        return False, f"Found {len(carbon_atoms)} carbon atoms, need exactly 18"
+    
+    # Check that every carbon has at most 2 carbon neighbours
+    for atom in carbon_atoms:
+      carbon_neighbours = [neighbour for neighbour in atom.GetNeighbors() if neighbour.GetAtomicNum() == 6]
+      if len(carbon_neighbours) > 2:
+        return False, "Not a straight carbon chain"
     
 
     return True, "Contains 18 carbons in a straight chain, a carboxylic acid group and two double bonds"
