@@ -21,11 +21,15 @@ def is_anilide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aniline-like structure pattern (phenyl group bonded to nitrogen)
-    aniline_pattern = Chem.MolFromSmarts("c1ccccc1NC(=O)")
+    # Aniline feature: Phenyl group attached to a nitrogen directly forming an amide
+    aniline_pattern = Chem.MolFromSmarts("c1ccc(cc1)NC(=O)")
+    # Allows variation in acyl group by expanding the pattern to include any carbonyl attached to N
+    extended_pattern = Chem.MolFromSmarts("c1ccc(cc1)N=[OD1]")
+
+    # Check if the molecule contains an aniline-like substructure
     if mol.HasSubstructMatch(aniline_pattern):
         return True, "Contains aniline-like aromatic amide structure"
+    elif mol.HasSubstructMatch(extended_pattern):
+        return True, "Contains extended aniline-like aromatic amide structure"
     else:
-        return False, "Missing aniline-like structure characteristic of anilides"
-
-    return False, "Does not match anilide structural criteria"
+        return False, "Does not match anilide structural criteria"
