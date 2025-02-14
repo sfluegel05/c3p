@@ -5,6 +5,7 @@ Classifies: CHEBI:27283 very long-chain fatty acid
 Classifies: CHEBI:36976 very long-chain fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_very_long_chain_fatty_acid(smiles: str):
@@ -30,21 +31,26 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carbonyl_pattern):
         return False, "No carboxylic acid group found"
 
-    # Get the longest chain length
-    chain_length = rdMolDescriptors.CalcMolWt(mol) / 14.0 - 2  # Approximation based on molecular weight
-    chain_length = int(round(chain_length))
+    # Get the longest linear chain length
+    chain_length = AllChem.CalcPriPartialChargeDescriptor(mol, True, 1)[0]
 
     # Check chain length
     if chain_length <= 22:
-        return False, f"Chain length {chain_length} is too short for very long-chain fatty acid"
+        return False, f"Chain length {int(chain_length)} is too short for very long-chain fatty acid"
 
-    # Check for linear chain (allowing for double bonds and other functional groups)
-    linear_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]~[C]")  # Relaxed pattern
-    if not mol.HasSubstructMatch(linear_pattern):
-        return False, "Not a linear chain"
+    # Check for linear chain (no rings, no substituents other than -C(=O)O)
+    linear_pattern = Chem.MolFromSmarts("[C][C](=[O])[O]")
+    matches = mol.GetSubstructMatches(linear_pattern)
+    if len(matches) != 1:
+        return False, "Not a linear chain or has additional substituents"
 
     # Check for additional rings
     if Chem.MolFromSmiles(smiles).GetRingInfo().NumRings() > 0:
         return False, "Contains rings, not a pure fatty acid"
 
-    return True, f"Linear fatty acid with chain length {chain_length} (> C22)"
+    # Check for additional functional groups
+    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
+    if mol.HasSubstructMatch(alcohol_pattern):
+        return False, "Contains alcohol groups, not a pure fatty acid"
+
+    return True, f"Linear fatty acid with chain length {int(chain_length)} (> C22)"
