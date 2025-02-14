@@ -26,30 +26,31 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the glycerol backbone with phosphate at position 3 and correct stereochemistry
+    # Check for the 3-sn-glycerol backbone with phosphate at position 3 and correct stereochemistry
     # The pattern C[C@H](COP(...)) is crucial to determine the sn-3 configuration.
     glycerol_pattern = Chem.MolFromSmarts("C[C@H](COP)")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No 3-sn-glycerol-phosphate backbone found"
 
-    # Check for the phosphoserine headgroup. The phosphate is directly connected to an oxygen.
-    # This pattern covers multiple forms of the phosphoserine moiety and does not make bond assumptions
+    # Check for the phosphoserine headgroup.
     phosphoserine_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@H](N)C(=O)O")
     if not mol.HasSubstructMatch(phosphoserine_pattern):
         return False, "No phosphoserine headgroup found"
     
-    # Check for two ester groups linked to the glycerol backbone
+    # Check for ester groups linked to the glycerol backbone
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
-    
-    # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    if len(ester_matches) != 3:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 3"
+
+
+    # Check for two fatty acid chains attached via ester groups.
+    # Look for long chains, longer than 4 C atoms, linked to a carbonyl group of an ester. 
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
-        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
-
+        return False, f"Missing two fatty acid chains connected via ester bonds, got {len(fatty_acid_matches)}"
+        
     # Count rotatable bonds to verify long chains - make sure they are at least medium length
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 8:
