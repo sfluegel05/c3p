@@ -45,10 +45,12 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom.GetTotalNumHs() == 0:  # If the atom has no hydrogens attached
             for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.IsInRingSize(0):  # Oxygen, not in a ring
-                    for neighbor_neighbor in neighbor.GetNeighbors():
-                        if neighbor_neighbor.GetAtomicNum() == 6 and neighbor_neighbor.GetFormalCharge() == 0 and len(neighbor_neighbor.GetBonds()) == 3 and any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in neighbor_neighbor.GetBonds()):
-                            ester_count += 1
+                if neighbor.GetAtomicNum() == 8:  # Oxygen atom
+                    for bond in neighbor.GetBonds():
+                        if bond.GetBondType() == Chem.BondType.SINGLE:
+                            atom2 = bond.GetOtherAtom(neighbor)
+                            if atom2.GetAtomicNum() == 6 and atom2.GetFormalCharge() == 0 and len(atom2.GetBonds()) == 3 and any(b.GetBondType() == Chem.BondType.DOUBLE for b in atom2.GetBonds()):
+                                ester_count += 1
 
     # Check if there are exactly 2 ester groups attached to the glycerol backbone
     if ester_count != 2:
