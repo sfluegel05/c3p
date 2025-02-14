@@ -27,42 +27,33 @@ def is_glycerophosphoinositol(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # 2. Check for the presence of a phosphorylated inositol attached to the glycerol
-    phosphorylated_inositol_glycerol_pattern = Chem.MolFromSmarts("([CH2X4][OX2][P](=[OX1])([OX2])([OX2])-[OX2]-[C]1([O])[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1) or ([CHX4][OX2][P](=[OX1])([OX2])([OX2])-[OX2]-[C]1([O])[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1)")
+    # 2. Check for the presence of a phosphate group attached to the glycerol
+    phosphate_glycerol_pattern = Chem.MolFromSmarts("[CH2X4][OX2][P](=[OX1])([OX2])[OX2]")
+    phosphate_glycerol_pattern2 = Chem.MolFromSmarts("[CHX4][OX2][P](=[OX1])([OX2])[OX2]")
+    
+    if not (mol.HasSubstructMatch(phosphate_glycerol_pattern) or mol.HasSubstructMatch(phosphate_glycerol_pattern2)):
+          return False, "No phosphate group linked to glycerol found"
+    
+    # 3. Check for the presence of inositol attached to phosphate
+    inositol_phosphate_pattern = Chem.MolFromSmarts("[P]([OX2])([OX2])-[OX2]-[C]1([O])[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1")
+    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
+        return False, "No inositol group linked to the phosphate group found"
 
-    if not mol.HasSubstructMatch(phosphorylated_inositol_glycerol_pattern):
-          return False, "No phosphorylated inositol group linked to glycerol found"
-
-    # 3. Check for two fatty acid chains (long carbon chains attached to the glycerol via ester bonds)
+    # 4. Check for exactly two ester groups
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    if len(ester_matches) < 2:
-       return False, f"Found {len(ester_matches)} ester groups, need at least 2 (for 2 fatty acids)"
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
-    # Check for fatty acid chains (long carbon chains attached to esters)
+    # 5. Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
 
-    # 4. Check rotatable bonds for fatty acid chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
-        return False, "Fatty acid chains are too short"
-
-    # Check for carbons and oxygens and phosphorus
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # 6. Check for exactly one phosphate group attached to the glycerol
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    
-    if c_count < 15:
-        return False, "Too few carbons for glycerophosphoinositol"
-    
     if p_count != 1:
-        return False, "Must have exactly 1 phosphate group"
-        
-    if o_count < 10:
-        return False, "Too few oxygen atoms for glycerophosphoinositol"
+       return False, f"Found {p_count} phosphate groups, need exactly 1"
 
     return True, "Contains glycerol backbone, 2 fatty acid chains, inositol, and a phosphate group attached to inositol and glycerol"
