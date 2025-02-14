@@ -26,36 +26,11 @@ def is_secondary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Count nitrogen atoms
-    n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    if len(n_atoms) != 1:
-        return False, "Must have exactly one nitrogen atom"
+    # Define SMARTS pattern for secondary amine
+    pattern = Chem.MolFromSmarts("[NX3H2]([CX4,cX3])[CX4,cX3]")
     
-    # Get the nitrogen atom
-    n_atom = n_atoms[0]
-    
-    # Check if nitrogen is aromatic
-    if n_atom.GetIsAromatic():
-        return False, "Nitrogen atom is aromatic, should be aliphatic"
-    
-    # Get the hydrocarbyl groups attached to the nitrogen atom
-    hydrocarbyl_groups = [bond.GetOtherAtom(n_atom) for bond in n_atom.GetBonds()]
-    hydrocarbyl_groups = [atom for atom in hydrocarbyl_groups if atom.GetAtomicNum() in [6, 7]]
-    
-    # Check if there are exactly two hydrocarbyl groups
-    if len(hydrocarbyl_groups) != 2:
-        return False, "Nitrogen atom does not have exactly two hydrocarbyl groups attached"
-    
-    # Check if the hydrocarbyl groups are alkyl or aryl
-    for atom in hydrocarbyl_groups:
-        if atom.GetAtomicNum() == 6:  # Carbon
-            if not any(bond.GetIsAromatic() for bond in atom.GetBonds()):
-                continue  # Alkyl group
-            else:
-                aromatic_rings = Chem.GetSymmSSSR(mol)
-                if not any(atom.IsInRingOfSize(r.NumAtoms()) for r in aromatic_rings):
-                    return False, "Hydrocarbyl group is not alkyl or aryl"
-        else:  # Nitrogen
-            return False, "Nitrogen atom attached to another nitrogen atom"
-    
-    return True, "Contains a secondary aliphatic amine group"
+    # Check if the molecule matches the pattern
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains a secondary aliphatic amine group"
+    else:
+        return False, "Does not contain a secondary aliphatic amine group"
