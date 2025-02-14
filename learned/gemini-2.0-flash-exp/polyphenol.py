@@ -20,8 +20,8 @@ def is_polyphenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a benzene ring
-    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
+    # SMARTS pattern for an aromatic ring
+    benzene_pattern = Chem.MolFromSmarts("c1c([!c])c([!c])c([!c])c([!c])c1[!c]")
     
     # Get all the benzene ring matches
     benzene_matches = mol.GetSubstructMatches(benzene_pattern)
@@ -37,14 +37,9 @@ def is_polyphenol(smiles: str):
       for atom in benzene_atoms:
         for neighbor in atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 8:
-                # Ensure it's an OH group (single bond to O, O has one H)
-                if mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.BondType.SINGLE:
-                  
-                  h_count = 0
-                  for n2 in neighbor.GetNeighbors():
-                    if n2.GetAtomicNum() == 1:
-                      h_count += 1
-                  if h_count == 1:
+                # check if it's a hydroxyl group (O with one H)
+                oh_pattern = Chem.MolFromSmarts("[OX2H]")
+                if mol.HasSubstructMatch(Chem.MolFromSmarts(f"[{atom.GetIdx()}]-[{neighbor.GetIdx()}]")) and mol.HasSubstructMatch(Chem.MolFromSmarts(f"[{neighbor.GetIdx()}]-[OX2H]")):
                     has_oh = True
                     break
         if has_oh:
