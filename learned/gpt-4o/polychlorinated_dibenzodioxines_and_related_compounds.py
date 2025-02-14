@@ -19,33 +19,26 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for relevant structures
-    # Dioxin pattern (basic 2-benzene rings with dioxin bridge pattern)
-    dioxin_pattern = Chem.MolFromSmarts('Oc1ccc2cccc3Oc1c(c34)ccc4')
+    # Define SMARTS patterns for the relevant structures
+    # General pattern for dioxins/furans (2 benzene rings connected through oxygen)
+    dioxin_furan_pattern = Chem.MolFromSmarts('Oc1c2ccccc2Oc3c1ccccc3')
     
-    # Benzofuran pattern
-    benzofuran_pattern = Chem.MolFromSmarts('oc1ccc2ccccc2c1')
-    
-    # Biphenyl pattern
-    biphenyl_pattern = Chem.MolFromSmarts('c1ccc(c2ccccc2)c1')
+    # General pattern for biphenyl (two phenyl groups cross-coupled)
+    biphenyl_pattern = Chem.MolFromSmarts('c1ccccc1-c2ccccc2')
     
     # Check for chlorination/bromination
-    halogenated_pattern = Chem.MolFromSmarts('[Cl,Br]')
+    halogenated_pattern = Chem.MolFromSmarts('[*;#6][Cl,Br]') # Matches C-Cl or C-Br bonds.
     
-    # Check for any benzodioxin, benzofuran or biphenyl structure
-    has_dioxin = mol.HasSubstructMatch(dioxin_pattern)
-    has_benzofuran = mol.HasSubstructMatch(benzofuran_pattern)
+    # Check for required structures
+    has_dioxin_furan = mol.HasSubstructMatch(dioxin_furan_pattern)
     has_biphenyl = mol.HasSubstructMatch(biphenyl_pattern)
     
-    # Check for any halogen substitutions
-    halogenated_atoms = mol.GetAtomWithIdx(0).GetNeighbors()
+    if not (has_dioxin_furan or has_biphenyl):
+        return False, "Does not contain dioxin, furan, or biphenyl structure"
     
-    if not (has_dioxin or has_benzofuran or has_biphenyl):
-        return False, "Does not contain dioxin, benzofuran, or biphenyl structure"
-    
-    # Check if structure is halogenated (with chlorine or bromine)
-    if not any(atom.GetSymbol() in ["Cl", "Br"] for atom in mol.GetAtoms()):
-        return False, "Structure is not halogenated"
+    # Check if structure is halogenated (containing at least one C-Cl or C-Br bond)
+    if not mol.HasSubstructMatch(halogenated_pattern):
+        return False, "Structure is not halogenated with Cl or Br"
     
     # All checks passed
     return True, "Classified as polychlorinated dibenzodioxin or related compound"
