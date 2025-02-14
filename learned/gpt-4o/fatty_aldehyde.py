@@ -20,23 +20,30 @@ def is_fatty_aldehyde(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for the aldehyde pattern: [C]=[O]
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1]=[OX1]")
+
+    # Look for the aldehyde carbonyl group pattern: C=O
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)C")
     if not mol.HasSubstructMatch(aldehyde_pattern):
         return False, "No aldehyde group found"
-        
-    # Check for a likely carbon chain - basic version: ensure at least 4 carbons connected
-    carbon_chain_pattern = Chem.MolFromSmarts("C~C~C~C")
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "Carbon chain is too short"
-        
-    # Ensure the placement of the aldehyde is at the terminal end of the carbon chain
-    # For simplicity, assume a typical linear chain construction with terminal C=O
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 1:
-            connected_atoms = list(atom.GetNeighbors())
-            if len(connected_atoms) == 1 and connected_atoms[0].GetAtomicNum() == 8:
-                return True, "Has terminal aldehyde group in long carbon chain"
-    
-    return False, "Aldehyde group not terminal or improper chain structure"
+
+    # Check each terminal aldehyde carbon to confirm it is part of a longer, acyclic chain
+    for match in mol.GetSubstructMatches(aldehyde_pattern):
+        carbon_atom = mol.GetAtomWithIdx(match[0])
+        if carbon_atom.GetTotalDegree() == 2:
+            # Ensure the connected chain is acyclic and reasonably long (4+ carbons)
+            # Walk through the chain and count consecutive carbon bonds
+            visited = set()
+            carbon_count = 0
+            to_visit = [carbon_atom]
+            while to_visit:
+                current = to_visit.pop()
+                visited.add(current.GetIdx())
+                if current.GetAtomicNum() == 6:  # Count only carbon atoms
+                    carbon_count += 1
+                    for neighbor in current.GetNeighbors():
+                        if neighbor.GetIdx() not in visited and not neighbor.IsInRing():
+                            to_visit.append(neighbor)
+            if carbon_count >= 4:
+                return True, f"Has terminal aldehyde group in acyclic carbon chain of {carbon_count} carbons"
+
+    return False, "Aldehyde group not terminal in proper chain structure"
