@@ -5,7 +5,6 @@ Classifies: CHEBI:25413 monounsaturated fatty acid
 Classifies: monounsaturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_monounsaturated_fatty_acid(smiles: str):
@@ -27,60 +26,89 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group
-    carboxylic_acid = Chem.MolFromSmarts("C(=O)[O;H1]")
-    if not mol.HasSubstructMatch(carboxylic_acid):
+    # Look for carboxylic acid group (including deprotonated forms)
+    carboxylic_acid = Chem.MolFromSmarts("C(=O)[O-,OH]")
+    matches = mol.GetSubstructMatches(carboxylic_acid)
+    if not matches:
         return False, "No carboxylic acid group found"
 
-    # Get the indices of the carboxylic acid carbon
-    carboxy_matches = mol.GetSubstructMatches(carboxylic_acid)
-    carboxy_carbons = [match[0] for match in carboxy_matches]
-    if not carboxy_carbons:
-        return False, "No carboxylic acid carbon found"
-    carboxy_carbon_idx = carboxy_carbons[0]
+    # Assume the first match is the carboxylic acid group
+    carboxy_c_idx = matches[0][0]
+    carboxy_o_idx = matches[0][1]
 
-    # Identify the longest carbon chain starting from the carboxylic acid carbon
-    def get_longest_chain(atom_idx, visited):
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetAtomicNum() != 6:
-            return []
-        visited.add(atom_idx)
-        max_chain = []
-        for neighbor in atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
-                chain = get_longest_chain(neighbor_idx, visited.copy())
-                if len(chain) > len(max_chain):
-                    max_chain = chain
-        return [atom_idx] + max_chain
+    # Find the carbon atom attached to the carboxylic acid carbon
+    carboxy_c_atom = mol.GetAtomWithIdx(carboxy_c_idx)
+    chain_c_atoms = set()
 
-    longest_chain = get_longest_chain(carboxy_carbon_idx, set())
-    if len(longest_chain) < 2:
-        return False, "Chain is too short to be a fatty acid"
+    # Use BFS to find the carbon chain connected to the carboxylic acid carbon
+    visited = set()
+    queue = [(carboxy_c_atom.GetIdx(), None)]
+    while queue:
+        current_idx, prev_idx = queue.pop(0)
+        if current_idx in visited:
+            continue
+        visited.add(current_idx)
+        atom = mol.GetAtomWithIdx(current_idx)
+        if atom.GetAtomicNum() == 6:
+            chain_c_atoms.add(current_idx)
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx != prev_idx and neighbor.GetAtomicNum() == 6:
+                    queue.append((neighbor_idx, current_idx))
+        else:
+            continue
 
-    # Count double and triple bonds in the chain
+    # Exclude the carboxylic acid carbon
+    chain_c_atoms.discard(carboxy_c_idx)
+    if not chain_c_atoms:
+        return False, "No carbon chain found attached to carboxylic acid"
+
+    # Extract the subgraph of the chain
+    chain_atoms = list(chain_c_atoms)
+    chain_bonds = []
+    for bond in mol.GetBonds():
+        begin_idx = bond.GetBeginAtomIdx()
+        end_idx = bond.GetEndAtomIdx()
+        if begin_idx in chain_c_atoms and end_idx in chain_c_atoms:
+            chain_bonds.append(bond)
+
+    # Create a molecule of the chain
+    chain_mol = Chem.PathToSubmol(mol, chain_bonds)
+
+    # Count the number of double and triple bonds in the chain
     unsaturation_count = 0
-    for i in range(len(longest_chain) - 1):
-        bond = mol.GetBondBetweenAtoms(longest_chain[i], longest_chain[i+1])
+    for bond in chain_mol.GetBonds():
+        if bond.IsInRing():
+            continue  # Exclude rings
         if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE or bond.GetBondType() == Chem.rdchem.BondType.TRIPLE:
             unsaturation_count += 1
-            bond_type = bond.GetBondType()
-        elif bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
-            return False, "Non-single bond found that is not double or triple"
+
+    # Include double bonds in rings (e.g., cyclopropene fatty acids)
+    ring_bonds = chain_mol.GetRingInfo().BondRings()
+    for ring in ring_bonds:
+        for bond_idx in ring:
+            bond = chain_mol.GetBondWithIdx(bond_idx)
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE or bond.GetBondType() == Chem.rdchem.BondType.TRIPLE:
+                unsaturation_count += 1
 
     if unsaturation_count == 0:
         return False, "No double or triple bonds found in the chain"
     elif unsaturation_count > 1:
         return False, f"More than one double or triple bond found in the chain ({unsaturation_count} unsaturations)"
 
-    # Check that other bonds are single bonds
-    for i in range(len(longest_chain) - 1):
-        bond = mol.GetBondBetweenAtoms(longest_chain[i], longest_chain[i+1])
-        if bond.GetBondType() not in [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]:
-            return False, "Bond type not single, double, or triple found in chain"
+    # Check for additional functional groups
+    allowed_elements = {1, 6, 8}  # H, C, O
+    for atom in chain_mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_elements:
+            return False, "Chain contains atoms other than carbon, hydrogen, and oxygen"
+        if atom.GetAtomicNum() == 8:
+            # Oxygen atoms should only be present in hydroxyl groups on the chain
+            num_O_neighbors = sum(1 for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6)
+            if num_O_neighbors > 1:
+                return False, "Chain contains disallowed oxygen-containing functional groups"
 
-    # Ensure rest of the chain is saturated
-    if unsaturation_count == 1:
-        return True, "Molecule is a monounsaturated fatty acid"
-    else:
-        return False, "Unsaturation count does not match monounsaturated fatty acid definition"
+    # Check chain length (optional threshold, e.g., chain length >= 4)
+    if len(chain_c_atoms) < 4:
+        return False, "Chain is too short to be a fatty acid"
+
+    return True, "Molecule is a monounsaturated fatty acid"
