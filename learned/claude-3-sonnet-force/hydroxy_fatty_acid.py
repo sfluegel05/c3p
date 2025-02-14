@@ -1,47 +1,21 @@
 """
 Classifies: CHEBI:24654 hydroxy fatty acid
 """
-"""
-Classifies: CHEBI:36676 hydroxy fatty acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Reasoning step:
 
-def is_hydroxy_fatty_acid(smiles: str):
-    """
-    Determines if a molecule is a hydroxy fatty acid based on its SMILES string.
-    A hydroxy fatty acid is any fatty acid carrying one or more hydroxy substituents.
+The previous program aimed to classify molecules as hydroxy fatty acids by checking for the presence of a carboxylic acid group, at least one hydroxy group, and a minimum number of carbon atoms (excluding the carboxylic acid carbon). However, the outcomes suggest that this approach missed many true positives, indicating that the criteria used were too strict or incomplete.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+One potential issue with the program is that it only considers the presence of a carboxylic acid group and a hydroxy group, without accounting for their positions or connectivity within the molecule. For example, a molecule like 2-hydroxybutyric acid (SMILES: CC(O)C(O)=O) would be classified as a false negative because the hydroxy group is not directly attached to the carbon chain.
 
-    Returns:
-        bool: True if molecule is a hydroxy fatty acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Another issue is the requirement for a minimum of 4 carbon atoms (excluding the carboxylic acid carbon). While this criterion may be reasonable for typical fatty acids, it could exclude smaller hydroxy fatty acids, such as 2-hydroxy-2-butenoic acid (SMILES: OC(=CC)C(O)=O), which has only 3 carbon atoms.
 
-    # Look for carboxylic acid group (-C(=O)O)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
+To improve the program, we need to consider the broader definition of hydroxy fatty acids, which includes any fatty acid carrying one or more hydroxy substituents, regardless of their position or connectivity within the molecule. Additionally, we should avoid imposing strict constraints on the carbon chain length, as hydroxy fatty acids can vary in size.
 
-    # Look for hydroxy group (-OH)
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxy_matches) == 0:
-        return False, "No hydroxy group found"
+Proposed improvements:
 
-    # Count carbon atoms (excluding carboxyl carbon)
-    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetSymbol() != "C")
-    
-    # Check for fatty acid chain length (at least 4 carbons, excluding the carboxyl carbon)
-    if n_carbons < 4:
-        return False, "Carbon chain too short for fatty acid derivative"
+1. Instead of looking for a specific pattern, we can identify the carboxylic acid group by checking for the presence of a carbon atom with one double-bonded oxygen and one single-bonded oxygen.
+2. For the hydroxy group, we can check for any oxygen atom bonded to a hydrogen atom and a carbon atom, without restricting its position or connectivity.
+3. Remove the strict requirement for a minimum number of carbon atoms, and instead, focus on identifying the presence of a carbon chain (aliphatic or unsaturated) connected to the carboxylic acid group.
+4. Consider additional checks, such as molecular weight or the presence of other functional groups, if needed, to improve the classification accuracy.
 
-    return True, "Molecule contains a carboxylic acid group, at least one hydroxy group, and a sufficient number of carbon atoms"
+By implementing these improvements, the program should be more flexible and better aligned with the definition of hydroxy fatty acids, allowing it to correctly classify a wider range of molecules in this class.
