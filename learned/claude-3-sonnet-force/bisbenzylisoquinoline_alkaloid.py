@@ -40,76 +40,63 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     if o_count < 1:
         return False, f"Need oxygen atoms for ether bridges, found {o_count}"
 
-    # More flexible patterns for isoquinoline/tetrahydroisoquinoline units
-    # Matches both saturated and unsaturated variants with possible N-methylation
-    isoquinoline_patterns = [
-        # Basic tetrahydroisoquinoline core with optional N-methylation
-        "[#6]1[#6][#6][N,N-C][#6][#6]2[#6](=[#6][#6]=[#6][#6]=2)[#6]1",
-        # Alternative connection pattern
-        "[#6]1[#6][#6][N,N-C][#6][#6]2[#6][#6]=[#6][#6]=[#6]12",
-        # Pattern allowing for various substitutions
-        "[#6]1[#6][#6][N,N-C][#6][#6]2[#6][#6][#6][#6][#6]12"
-    ]
-
-    # Convert patterns to RDKit molecules
-    pattern_mols = [Chem.MolFromSmarts(p) for p in isoquinoline_patterns]
+    # Pattern for tetrahydroisoquinoline core (more flexible)
+    thiq_pattern = """
+        [#6]~1~[#6]~[#6]~[#7X3]~[#6]~[#6]~2~[#6]~[#6]~[#6]~[#6]~[#6]~12
+    """
+    thiq_mol = Chem.MolFromSmarts(thiq_pattern)
     
-    # Count total matches across all patterns
-    total_iso_units = 0
-    for pattern in pattern_mols:
-        if pattern is not None:
-            matches = len(mol.GetSubstructMatches(pattern))
-            total_iso_units += matches
-
-    if total_iso_units < 2:
-        return False, f"Need at least 2 isoquinoline-like units, found {total_iso_units}"
-
-    # Look for benzyl groups attached to the isoquinoline cores
-    benzyl_pattern = Chem.MolFromSmarts("[CH2]c1ccccc1")
-    if benzyl_pattern:
-        benzyl_count = len(mol.GetSubstructMatches(benzyl_pattern))
-        if benzyl_count < 1:
-            return False, "Missing benzyl groups"
+    if thiq_mol is None:
+        return False, "Invalid SMARTS pattern"
+        
+    thiq_matches = mol.GetSubstructMatches(thiq_mol)
+    num_thiq = len(thiq_matches)
+    
+    if num_thiq < 2:
+        return False, f"Found {num_thiq} tetrahydroisoquinoline units, need at least 2"
 
     # Look for ether bridges between aromatic rings
-    ether_bridge_patterns = [
+    ether_patterns = [
         "c-O-c",  # Direct ether bridge
         "c-O-C-c", # Extended ether bridge
-        "c-O-C(-*)c" # Branched ether bridge
     ]
     
-    total_ether_bridges = 0
-    for pattern in ether_bridge_patterns:
+    ether_count = 0
+    for pattern in ether_patterns:
         pat = Chem.MolFromSmarts(pattern)
         if pat:
-            total_ether_bridges += len(mol.GetSubstructMatches(pat))
+            ether_count += len(mol.GetSubstructMatches(pat))
 
-    if total_ether_bridges < 1:
+    if ether_count < 1:
         return False, "No suitable ether bridges found"
 
-    # Molecular weight check
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, "Molecular weight too low for bisbenzylisoquinoline alkaloid"
-
-    # Check for typical substituents
-    substituent_patterns = {
-        "methoxy": "cOC",
-        "hydroxy": "cO[H]",
-        "methylenedioxy": "OCO"
+    # Check for characteristic substituents
+    substituents = {
+        "methoxy": ("cOC", 0),
+        "hydroxy": ("cO[H]", 0),
+        "N-methyl": ("[NX3]-C", 0)
     }
     
-    substituent_counts = {}
-    for name, pattern in substituent_patterns.items():
+    for name, (pattern, _) in substituents.items():
         pat = Chem.MolFromSmarts(pattern)
         if pat:
-            substituent_counts[name] = len(mol.GetSubstructMatches(pat))
+            substituents[name] = (pattern, len(mol.GetSubstructMatches(pat)))
     
-    total_substituents = sum(substituent_counts.values())
-    if total_substituents < 1:
-        return False, "Missing typical oxygen-containing substituents"
+    # Molecular weight check
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 450 or mol_wt > 800:
+        return False, f"Molecular weight {mol_wt:.1f} outside typical range for this class"
 
-    reason = (f"Contains {total_iso_units} isoquinoline-like units, {total_ether_bridges} ether bridges, "
-             f"and appropriate substituents. MW: {mol_wt:.1f}")
+    # Check for benzyl groups
+    benzyl_pattern = Chem.MolFromSmarts("c1ccccc1-[CH2]")
+    if benzyl_pattern:
+        benzyl_count = len(mol.GetSubstructMatches(benzyl_pattern))
+        if benzyl_count < 2:
+            return False, f"Found only {benzyl_count} benzyl groups, need at least 2"
+
+    # Build detailed reason string
+    substituent_str = ", ".join(f"{count} {name}" for name, (_, count) in substituents.items())
+    reason = (f"Contains {num_thiq} tetrahydroisoquinoline units, {ether_count} ether bridges, "
+             f"and typical substituents ({substituent_str}). MW: {mol_wt:.1f}")
     
     return True, reason
