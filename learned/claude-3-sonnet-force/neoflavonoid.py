@@ -30,7 +30,7 @@ def is_neoflavonoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for benzopyran core
-    benzopyran_pattern = Chem.MolFromSmarts("c1c(oc2ccccc2)cccc1")
+    benzopyran_pattern = Chem.MolFromSmarts("[c&r4]1[c&r3][c&r4][c&r3][c&r4][c&r3]2[O&r3][C&r4][c&r3][c&r4][c&r3]12")
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "No benzopyran core found"
 
