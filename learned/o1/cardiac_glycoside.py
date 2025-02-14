@@ -27,55 +27,55 @@ def is_cardiac_glycoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define steroid nucleus pattern (cyclopenta[a]phenanthrene system)
-    steroid_nucleus = Chem.MolFromSmarts('C1CCC2C1CCC3C2CCC4=C3C=CC=C4')  # Simplified pattern
+    # Define a more general steroid nucleus pattern (three 6-membered and one 5-membered rings fused)
+    steroid_nucleus_smarts = '[#6&R]1-[#6&R]-[#6&R]-[#6&R]2-[#6&R]-[#6&R]-[#6&R]3-[#6&R]-[#6&R]-[#6&R]-[#6&R]-[#6&R]-[#6&R]3-[#6&R]-[#6&R]-[#6&R]-2-[#6&R]-1'
+    steroid_nucleus = Chem.MolFromSmarts(steroid_nucleus_smarts)
     if not mol.HasSubstructMatch(steroid_nucleus):
         return False, "No steroid nucleus found"
 
-    # Define unsaturated lactone ring at C17 (butenolide attached to steroid)
-    lactone_pattern = Chem.MolFromSmarts('C=1C=CC(=O)O1')  # α,β-unsaturated γ-lactone
-    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
-    if not lactone_matches:
-        return False, "No unsaturated lactone ring found"
+    # Define unsaturated lactone ring (butenolide)
+    lactone_smarts = 'C=1C=COC(=O)1'  # Five-membered lactone ring with unsaturation
+    lactone_pattern = Chem.MolFromSmarts(lactone_smarts)
+    if not mol.HasSubstructMatch(lactone_pattern):
+        return False, "No unsaturated lactone ring (butenolide) found"
 
-    # Check if lactone is attached to C17 position of steroid nucleus
-    # For simplicity, we'll check proximity between steroid and lactone substructures
+    # Check if lactone is attached to steroid nucleus
+    # Get the matching atoms for steroid nucleus and lactone ring
     steroid_matches = mol.GetSubstructMatch(steroid_nucleus)
-    lactone_atoms = [atom_idx for match in lactone_matches for atom_idx in match]
-    shared_atoms = set(steroid_matches) & set(lactone_atoms)
-    if not shared_atoms:
-        return False, "Lactone ring not attached to steroid nucleus"
+    lactone_matches = mol.GetSubstructMatch(lactone_pattern)
 
-    # Define sugar residue pattern (pyranose ring) attached via glycosidic bond at C3
-    sugar_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)C1')  # Simplified pyranose
-    glycosidic_bond = Chem.MolFromSmarts('O[C@H]')  # Oxygen linked to anomeric carbon
-    # Search for sugars in the molecule
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
-        return False, "No sugar residues found"
-
-    # Check for glycosidic bond connection to the steroid nucleus at C3
-    # Identify attachment point
-    sugar_atom_indices = [atom_idx for match in sugar_matches for atom_idx in match]
-    steroid_atom_indices = list(steroid_matches)
-    bonds = mol.GetBonds()
-    glycosidic_attachment = False
-    for bond in bonds:
+    # Check for connection between steroid nucleus and lactone ring
+    connected = False
+    for bond in mol.GetBonds():
         begin_idx = bond.GetBeginAtomIdx()
         end_idx = bond.GetEndAtomIdx()
-        if (begin_idx in steroid_atom_indices and end_idx in sugar_atom_indices) or \
-           (end_idx in steroid_atom_indices and begin_idx in sugar_atom_indices):
-            glycosidic_attachment = True
+        if (begin_idx in steroid_matches and end_idx in lactone_matches) or \
+           (end_idx in steroid_matches and begin_idx in lactone_matches):
+            connected = True
             break
+    if not connected:
+        return False, "Lactone ring not attached to steroid nucleus"
 
-    if not glycosidic_attachment:
+    # Define sugar residue pattern (pyranose ring)
+    sugar_pattern = Chem.MolFromSmarts('OC1COC(O)C(O)C1O')  # Simplified pyranose ring
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No sugar residues found"
+
+    # Check if sugar is attached to steroid nucleus
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    attached = False
+    for sugar_match in sugar_matches:
+        for bond in mol.GetBonds():
+            begin_idx = bond.GetBeginAtomIdx()
+            end_idx = bond.GetEndAtomIdx()
+            if (begin_idx in steroid_matches and end_idx in sugar_match) or \
+               (end_idx in steroid_matches and begin_idx in sugar_match):
+                attached = True
+                break
+    if not attached:
         return False, "Sugar residues not attached to steroid nucleus"
 
-    # Check if sugar is attached at C3 position (requires mapping positions)
-    # For simplicity, assume attachment if connected to steroid nucleus
-    # Note: Detailed atom mapping would be needed for precise position checking
-
-    return True, "Contains steroid nucleus with C17 lactone ring and sugars attached at C3"
+    return True, "Contains steroid nucleus with attached lactone ring and sugar residues"
 
 __metadata__ = {
     'chemical_class': {
