@@ -27,31 +27,31 @@ def is_anthoxanthin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for flavonoid backbone
-    flavonoid_patterns = [
-        Chem.MolFromSmarts("c1c(oc2ccccc2)cc2ccccc12"),  # Flavone
-        Chem.MolFromSmarts("c1c(oc2ccccc2)cc2cccc(O)c12"),  # Flavonol
-        Chem.MolFromSmarts("c1c(oc2ccccc2)ccc1O"),  # Flavanone
-        Chem.MolFromSmarts("c1c(oc2ccccc2)cc(O)c1O"),  # Flavan-3-ol
-        Chem.MolFromSmarts("c1c(oc2ccccc2)ccc1"),  # Flavene
-        Chem.MolFromSmarts("c1c(oc2ccccc2)ccc1O"),  # Flavanone
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in flavonoid_patterns):
-        return False, "No flavonoid backbone found"
+    flavonoid_pattern = Chem.MolFromSmarts("c1c(oc2ccccc2)cc2ccccc12")  # Flavone
+    if not mol.HasSubstructMatch(flavonoid_pattern):
+        return False, "No flavone backbone found"
 
-    # Check for anthoxanthin-specific substituents
+    # Check for anthoxanthin-specific substituents and patterns
     anthoxanthin_patterns = [
-        Chem.MolFromSmarts("O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O"),  # Glucose
-        Chem.MolFromSmarts("O[C@@H](CO)[C@H](O)[C@H](O)[C@H]1O"),  # Rhamnoside
+        Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O"),  # Glucose
+        Chem.MolFromSmarts("O[C@@H](C)[C@H](O)[C@@H](O)[C@H]1O"),  # Rhamnoside
         Chem.MolFromSmarts("OS(O)(=O)=O"),  # Sulfate
-        Chem.MolFromSmarts("OC"),  # Methoxy
-        Chem.MolFromSmarts("O"),  # Hydroxy
     ]
     if not any(mol.HasSubstructMatch(pattern) for pattern in anthoxanthin_patterns):
         return False, "No anthoxanthin-specific substituents found"
 
+    # Check for specific substitution patterns
+    anthoxanthin_subst_patterns = [
+        Chem.MolFromSmarts("c1cc(O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)cc(O)c1"),  # 3-O-glycosylated
+        Chem.MolFromSmarts("c1cc(OS(O)(=O)=O)cc(O)c1"),  # 3-O-sulfated
+        Chem.MolFromSmarts("c1cc(O)c(OS(O)(=O)=O)c(O)c1"),  # 7-O-sulfated
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in anthoxanthin_subst_patterns):
+        return False, "Substitution pattern not characteristic of anthoxanthins"
+
     # Check molecular properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 800:
+    if mol_wt < 300 or mol_wt > 800:
         return False, "Molecular weight outside typical range for anthoxanthins"
 
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
