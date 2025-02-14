@@ -24,29 +24,26 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
+    # Ensure proper aromaticity perception
+    Chem.SanitizeMol(mol)
 
-    pyrrole_count = 0
+    # Define pyrrole SMARTS pattern
+    # Matches a five-membered ring with one nitrogen atom with a hydrogen ([#7&H1])
+    # and four carbon atoms, allowing for aromaticity variation and fused rings
+    pyrrole_smarts = '[nH]1cccc1'  # Aromatic pyrrole
+    pyrrole_pattern = Chem.MolFromSmarts(pyrrole_smarts)
 
-    # Iterate over rings
-    for ring in atom_rings:
-        # Check if ring has 5 atoms
-        if len(ring) != 5:
-            continue
+    # Find all matches of the pyrrole substructure
+    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
+    pyrrole_count = len(pyrrole_matches)
 
-        # Check if ring is aromatic
-        is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
-        if not is_aromatic:
-            continue
-
-        # Count number of nitrogen atoms in the ring
-        n_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
-
-        if n_count == 1:
-            # Found a pyrrole unit
-            pyrrole_count += 1
+    # Check for non-aromatic pyrrole units (tautomeric forms)
+    if pyrrole_count < 2:
+        # Non-aromatic pyrrole pattern
+        pyrrole_non_aromatic_smarts = '[#7&H1]-[#6]-[#6]-[#6]-[#6]'
+        pyrrole_non_aromatic_pattern = Chem.MolFromSmarts(pyrrole_non_aromatic_smarts)
+        pyrrole_non_aromatic_matches = mol.GetSubstructMatches(pyrrole_non_aromatic_pattern)
+        pyrrole_count += len(pyrrole_non_aromatic_matches)
 
     if pyrrole_count >= 2:
         return True, f"Contains {pyrrole_count} pyrrole units"
