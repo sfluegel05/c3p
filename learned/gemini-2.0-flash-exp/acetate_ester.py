@@ -7,8 +7,9 @@ from rdkit.Chem import rdMolDescriptors
 def is_acetate_ester(smiles: str):
     """
     Determines if a molecule is an acetate ester based on its SMILES string.
-    An acetate ester contains the substructure CH3C(=O)O- with an additional carbon attached to the oxygen
-
+    An acetate ester is a carboxylic ester where the carboxylic acid component is acetic acid.
+    That means that the substructure must be CH3C(=O)O- attached to any other atom via the O
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,9 +22,9 @@ def is_acetate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for acetate group (CH3C(=O)O-)
-    # The oxygen should be an ester oxygen (-O-)
-    acetate_pattern = Chem.MolFromSmarts("CC(=O)O[CX4]")
+    # Define SMARTS pattern for acetate ester group (CH3C(=O)O-)
+    # The O atom is connected to any other atom.
+    acetate_pattern = Chem.MolFromSmarts("CC(=O)O*")
 
     # Search for the substructure
     matches = mol.GetSubstructMatches(acetate_pattern)
