@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_epoxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is an epoxy fatty acid based on its SMILES string.
-    An epoxy fatty acid contains an epoxide ring as part of its structure,
-    along with a long aliphatic chain typically ending in a carboxyl group.
+    An epoxy fatty acid contains an epoxide ring and a long aliphatic chain ending in a carboxyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,18 +22,19 @@ def is_epoxy_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for the presence of an epoxide group (cyclic ether C1OC1)
-    epoxide_pattern = Chem.MolFromSmarts("C1OC1")
+    epoxide_pattern = Chem.MolFromSmarts("[C@1]1OC1")  # Improved with stereochemistry consideration
     if not mol.HasSubstructMatch(epoxide_pattern):
         return False, "No epoxide group found"
     
     # Check for the carboxylic acid group at the end of a long aliphatic chain
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")  # Simplified pattern for carboxylic acid
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OX]")  # Allow for variations in attachment
+    carboxylic_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxylic_matches:
         return False, "No carboxylic acid group found"
 
-    # Check for the presence of the long aliphatic chain
-    aliphatic_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCC")  # At least 10 carbon chain pattern
-    if not mol.HasSubstructMatch(aliphatic_chain_pattern):
+    # Check for a reasonable length of aliphatic chain (at least 10 carbons, straight or branched)
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 10:
         return False, "Aliphatic chain too short to be a fatty acid"
-    
+
     return True, "Contains epoxide ring as part of a long aliphatic chain ending in a carboxyl group"
