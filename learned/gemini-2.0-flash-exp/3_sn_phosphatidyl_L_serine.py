@@ -38,22 +38,29 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
         return False, "No phosphoserine headgroup found"
     
     # Check for ester groups linked to the glycerol backbone
+    # We are looking for two esters in this position
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 3:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 3"
-
+    
+    # The molecule will have 3 ester groups total, but only 2 of them linked to the glycerol
+    # Let's check the number of esters directly connected to the glycerol backbone
+    glycerol_ester_pattern = Chem.MolFromSmarts("C[C@H](C(O*)=O)OC(=O)") #simplified, 3 carbons + ester pattern
+    glycerol_ester_matches = mol.GetSubstructMatches(glycerol_ester_pattern)
+    if len(glycerol_ester_matches) != 2: # Must have two ester linkages
+        return False, f"Found {len(glycerol_ester_matches)} glycerol-linked ester groups, need exactly 2"
 
     # Check for two fatty acid chains attached via ester groups.
-    # Look for long chains, longer than 4 C atoms, linked to a carbonyl group of an ester. 
+    # Look for long chains (at least 4 carbons) attached to ester carbonyls
     fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    
     if len(fatty_acid_matches) < 2:
-        return False, f"Missing two fatty acid chains connected via ester bonds, got {len(fatty_acid_matches)}"
-        
-    # Count rotatable bonds to verify long chains - make sure they are at least medium length
+          return False, f"Missing two fatty acid chains connected via ester bonds, got {len(fatty_acid_matches)}"
+
+
+    # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8:
+    if n_rotatable < 10:
         return False, "Chains too short to be fatty acids"
 
     # Molecular weight should be somewhat high for a phospholipid
