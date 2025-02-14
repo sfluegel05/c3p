@@ -26,7 +26,6 @@ def is_tetradecanoate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define ester functional group pattern
-    # [C:1](=O)[O:2][C:3]
     ester_pattern = Chem.MolFromSmarts('[C:1](=O)[O:2][#6]')
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
@@ -36,41 +35,36 @@ def is_tetradecanoate_ester(smiles: str):
     for match in ester_matches:
         carbonyl_c_idx = match[0]  # Carbonyl carbon atom index
         ester_o_idx = match[1]     # Ester oxygen atom index
-        acyl_chain_atoms = set()
-        visited = set()
 
         # Traverse the acyl chain starting from the carbonyl carbon
+        acyl_chain_atoms = set()
+        visited = set([ester_o_idx])  # Exclude ester oxygen to avoid traversing into alcohol part
+
         def traverse_acyl_chain(atom_idx, prev_idx=None):
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() != 6:
-                return False  # Non-carbon atom in acyl chain
             if atom_idx in visited:
                 return False  # Cycle detected
             visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() != 6:
+                # Non-carbon atom, stop traversal
+                return True
             acyl_chain_atoms.add(atom_idx)
-            neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetIdx() != prev_idx]
-            
-            # Remove the ester oxygen from neighbors
-            neighbors = [idx for idx in neighbors if idx != ester_o_idx]
-
-            # Check for branching
+            neighbors = [n.GetIdx() for n in atom.GetNeighbors() if n.GetIdx() != prev_idx and n.GetIdx() != ester_o_idx]
             carbon_neighbors = [idx for idx in neighbors if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
+            # Check for branching
             if len(carbon_neighbors) > 1:
                 return False  # Branching detected
-
             for neighbor_idx in carbon_neighbors:
-                if neighbor_idx != prev_idx:
-                    if not traverse_acyl_chain(neighbor_idx, atom_idx):
-                        return False
-            return True
+                if not traverse_acyl_chain(neighbor_idx, atom_idx):
+                    return False
+            return True  # Continue traversal
 
-        if traverse_acyl_chain(carbonyl_c_idx):
-            # Check that the acyl chain length is 14 carbons
-            if len(acyl_chain_atoms) == 14:
-                return True, "Contains tetradecanoate ester group"
-            else:
-                continue  # Acyl chain length does not match
-        else:
-            continue  # Branching detected or invalid acyl chain
+        if not traverse_acyl_chain(carbonyl_c_idx):
+            continue  # Skip this ester group due to branching or cycle
+
+        # Count the number of carbons in acyl chain (including carbonyl carbon)
+        acyl_chain_length = len(acyl_chain_atoms)
+        if acyl_chain_length == 14:
+            return True, "Contains tetradecanoate ester group"
 
     return False, "No tetradecanoate ester groups found"
