@@ -20,24 +20,21 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Pattern for 2'-deoxyribose sugar with no hydroxyl at 2' position, hydroxy at 3', and correct stereochemistry
-    deoxyribose_pattern = Chem.MolFromSmarts("C1([C@@H](O)C([C@H](O)CO[P](=O)(O)O)O[C@H]1)")
+
+    # Pattern for 2'-deoxyribose sugar with hydroxyl at 3' position, no hydroxyl at 2'
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H](O)[C@H]([C]([O-])O)O[C@@H]1CO)")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "No 2'-deoxyribose sugar backbone found"
-
-    # Nucleobase patterns for adenine, guanine, thymine, cytosine, and uracil
-    purine_base_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")
-    pyrimidine_base_pattern = Chem.MolFromSmarts("n1ccn(C)c(=O)c1")
     
-    is_purine = mol.HasSubstructMatch(purine_base_pattern)
-    is_pyrimidine = mol.HasSubstructMatch(pyrimidine_base_pattern)
+    # Nucleobase patterns for adenine, guanine (purines) and thymine, cytosine, uracil (pyrimidines)
+    purine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")
+    pyrimidine_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c(=O)c1")
     
-    if not (is_purine or is_pyrimidine):
-        return False, "No nucleobase found"
-
-    # Check for a phosphate group at 5' location
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
+    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
+        return False, "No common nucleobase found (purine or pyrimidine)"
+    
+    # Check for a phosphate group at 5'-location
+    phosphate_pattern = Chem.MolFromSmarts("COP(=O)([O-])O")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No 5'-phosphate group found"
 
