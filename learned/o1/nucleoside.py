@@ -5,7 +5,6 @@ Classifies: CHEBI:33838 nucleoside
 Classifies: CHEBI:33838 nucleoside
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_nucleoside(smiles: str):
     """
@@ -26,53 +25,56 @@ def is_nucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Remove salts and counterions
-    frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
-    if len(frags) > 1:
-        mol = max(frags, default=mol, key=lambda m: m.GetNumAtoms())
+    # Get ring information
+    ring_info = mol.GetRingInfo()
 
-    # Check for phosphate groups to exclude nucleotides
-    phosphate_smarts = Chem.MolFromSmarts('P(=O)(O)(O)O')
-    if mol.HasSubstructMatch(phosphate_smarts):
-        return False, "Contains phosphate group, likely a nucleotide"
+    # Identify sugar rings (five-membered rings containing oxygen)
+    sugar_rings = []
+    for ring in ring_info.AtomRings():
+        if len(ring) == 5:
+            atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
+            o_count = sum(1 for atom in atoms_in_ring if atom.GetSymbol() == 'O')
+            if o_count == 1:
+                sugar_rings.append(set(ring))
 
-    # Define SMARTS patterns for ribose and deoxyribose
-    ribose_smarts = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O1')
-    deoxyribose_smarts = Chem.MolFromSmarts('O[C@H]1[C@@H](O)[C@H](CO)[C@@H]([CH2])O1')
+    if not sugar_rings:
+        return False, "No sugar ring found"
 
-    # Check for sugar moiety
-    has_sugar = mol.HasSubstructMatch(ribose_smarts) or mol.HasSubstructMatch(deoxyribose_smarts)
-    if not has_sugar:
-        return False, "No ribose or deoxyribose sugar found"
+    # Identify nucleobase rings (rings containing nitrogen atoms)
+    nucleobase_rings = []
+    for ring in ring_info.AtomRings():
+        atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
+        n_count = sum(1 for atom in atoms_in_ring if atom.GetSymbol() == 'N')
+        c_count = sum(1 for atom in atoms_in_ring if atom.GetSymbol() == 'C')
+        if n_count >= 2 and c_count >= 3:
+            nucleobase_rings.append(set(ring))
 
-    # Define SMARTS patterns for common nucleobases
-    nucleobase_smarts = [
-        # Adenine
-        'n1c[nH]c2c1ncn2',
-        # Guanine
-        'n1c2c(c(=O)[nH]1)nc[nH]2',
-        # Cytosine
-        'n1c(N)ccn1',
-        # Uracil/Thymine
-        'O=C1NC(=O)C=C1',
-        # Xanthine
-        'O=C1NC(=O)Nc2ncnc12',
-    ]
+    if not nucleobase_rings:
+        return False, "No nucleobase ring found"
 
-    # Check for nucleobase
-    has_base = False
-    for base in nucleobase_smarts:
-        base_pattern = Chem.MolFromSmarts(base)
-        if mol.HasSubstructMatch(base_pattern):
-            has_base = True
+    # Check for N-glycosidic bond between sugar ring and nucleobase ring
+    has_nglycosidic_bond = False
+    for sugar_ring in sugar_rings:
+        for nucleobase_ring in nucleobase_rings:
+            # Find bonds between sugar ring and nucleobase ring
+            for sugar_atom_idx in sugar_ring:
+                sugar_atom = mol.GetAtomWithIdx(sugar_atom_idx)
+                for bond in sugar_atom.GetBonds():
+                    neighbor = bond.GetOtherAtom(sugar_atom)
+                    neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx in nucleobase_ring and neighbor.GetSymbol() == 'N':
+                        # Check for bond between sugar carbon and nucleobase nitrogen
+                        if sugar_atom.GetSymbol() == 'C' and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                            has_nglycosidic_bond = True
+                            break
+                if has_nglycosidic_bond:
+                    break
+            if has_nglycosidic_bond:
+                break
+        if has_nglycosidic_bond:
             break
 
-    if not has_base:
-        return False, "No common nucleobase found"
-
-    # Check for N-glycosidic bond between sugar and base
-    glycosidic_bond_smarts = Chem.MolFromSmarts('[C@H]1([O])[C@@H]([O])[C@H]([O])[C@@H](CO1)N2C=NC=NC2')  # Generic pattern
-    if not mol.HasSubstructMatch(glycosidic_bond_smarts):
+    if not has_nglycosidic_bond:
         return False, "No N-glycosidic bond between sugar and nucleobase found"
 
     return True, "Contains nucleobase attached to sugar via N-glycosidic bond"
