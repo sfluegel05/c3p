@@ -19,8 +19,8 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Correct N-acylglycine pattern
-    acyl_glycine_pattern = Chem.MolFromSmarts("[N;H1]-[C](=[O])-[C](=O)[O;H1]")
+    # Corrected N-acylglycine pattern
+    acyl_glycine_pattern = Chem.MolFromSmarts("[N]-[C](=[O])-[C](-[H])(-[H])-[C](=O)[O]")
 
     if not mol.HasSubstructMatch(acyl_glycine_pattern):
         return False, "Molecule does not contain the N-acylglycine core structure"
