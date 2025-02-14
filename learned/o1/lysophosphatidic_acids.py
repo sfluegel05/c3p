@@ -16,72 +16,116 @@ def is_lysophosphatidic_acids(smiles: str):
         bool: True if molecule is a lysophosphatidic acid, False otherwise
         str: Reason for classification
     """
-    from rdkit.Chem import AllChem
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find glycerol backbone (three connected carbons)
-    # Define SMARTS pattern for glycerol backbone carbons
-    glycerol_pattern = Chem.MolFromSmarts('C-C-C')
-    matches = mol.GetSubstructMatches(glycerol_pattern)
+    # Define the glycerol backbone pattern with atom indices
+    glycerol_pattern = Chem.MolFromSmarts('[C:1]-[C:2]-[C:3]')
 
+    # Find glycerol backbone matches
+    matches = mol.GetSubstructMatches(glycerol_pattern)
     if not matches:
         return False, "No glycerol backbone found"
 
     found_lysophosphatidic_acid = False
+
     for match in matches:
         c1_idx, c2_idx, c3_idx = match
-
-        # Now, check the substituents of each carbon
         c1 = mol.GetAtomWithIdx(c1_idx)
         c2 = mol.GetAtomWithIdx(c2_idx)
         c3 = mol.GetAtomWithIdx(c3_idx)
 
-        # Initialize substituent flags
-        has_phosphate = False
-        has_ester = False
-        has_hydroxyl = False
+        # Check for hydroxyl group on central carbon (c2)
+        has_hydroxyl_c2 = False
+        for neighbor in c2.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+                # Hydroxyl oxygen
+                has_hydroxyl_c2 = True
+                break
+        if not has_hydroxyl_c2:
+            continue  # Move to next match if no hydroxyl on c2
 
-        # Check substituents of c1 for phosphate group
+        # Option 1: c1 connected to phosphate, c3 connected to acyl chain
+        is_c1_phosphate = False
         for bond in c1.GetBonds():
             nbr = bond.GetOtherAtom(c1)
-            if nbr.GetAtomicNum() == 8:  # Oxygen atom
-                # Check if this oxygen is connected to a phosphate group
+            if nbr.GetAtomicNum() == 8:
                 oxygen = nbr
                 for obond in oxygen.GetBonds():
-                    phosphorus = obond.GetOtherAtom(oxygen)
-                    if phosphorus.GetAtomicNum() == 15:  # Phosphorus atom
-                        has_phosphate = True
+                    onbr = obond.GetOtherAtom(oxygen)
+                    if onbr.GetAtomicNum() == 15:
+                        is_c1_phosphate = True
+                        break
+                if is_c1_phosphate:
+                    break
 
-        # Check substituents of c2 for hydroxyl group
-        for bond in c2.GetBonds():
-            nbr = bond.GetOtherAtom(c2)
-            if nbr.GetAtomicNum() == 8:  # Oxygen atom
-                if nbr.GetDegree() == 1:
-                    has_hydroxyl = True
-
-        # Check substituents of c3 for ester group
+        is_c3_acyl_chain = False
         for bond in c3.GetBonds():
             nbr = bond.GetOtherAtom(c3)
-            if nbr.GetAtomicNum() == 8:  # Oxygen atom
+            if nbr.GetAtomicNum() == 8:
+                oxygen = nbr
+                # Check for ester linkage to acyl chain
+                for obond in oxygen.GetBonds():
+                    onbr = obond.GetOtherAtom(oxygen)
+                    if onbr.GetAtomicNum() == 6 and onbr.GetIdx() != c3_idx:
+                        carbonyl_carbon = onbr
+                        # Check for carbonyl group (C=O)
+                        is_carbonyl = False
+                        for cbond in carbonyl_carbon.GetBonds():
+                            cnbr = cbond.GetOtherAtom(carbonyl_carbon)
+                            if cnbr.GetAtomicNum() == 8 and cbond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                is_carbonyl = True
+                                break
+                        if is_carbonyl:
+                            is_c3_acyl_chain = True
+                            break
+                if is_c3_acyl_chain:
+                    break
+
+        if is_c1_phosphate and is_c3_acyl_chain:
+            found_lysophosphatidic_acid = True
+            break
+
+        # Option 2: c3 connected to phosphate, c1 connected to acyl chain
+        is_c3_phosphate = False
+        for bond in c3.GetBonds():
+            nbr = bond.GetOtherAtom(c3)
+            if nbr.GetAtomicNum() == 8:
                 oxygen = nbr
                 for obond in oxygen.GetBonds():
-                    carbonyl = obond.GetOtherAtom(oxygen)
-                    if carbonyl.GetAtomicNum() == 6 and carbonyl.GetIdx() != c3_idx:
-                        # Check if carbon is a carbonyl carbon (C=O)
-                        is_carbonyl = False
-                        for cbond in carbonyl.GetBonds():
-                            o_nbr = cbond.GetOtherAtom(carbonyl)
-                            if o_nbr.GetAtomicNum() == 8 and o_nbr.GetIdx() != oxygen.GetIdx():
-                                is_carbonyl = True
-                        if is_carbonyl:
-                            has_ester = True
+                    onbr = obond.GetOtherAtom(oxygen)
+                    if onbr.GetAtomicNum() == 15:
+                        is_c3_phosphate = True
+                        break
+                if is_c3_phosphate:
+                    break
 
-        # Check if we have all required substituents
-        if has_phosphate and has_hydroxyl and has_ester:
+        is_c1_acyl_chain = False
+        for bond in c1.GetBonds():
+            nbr = bond.GetOtherAtom(c1)
+            if nbr.GetAtomicNum() == 8:
+                oxygen = nbr
+                # Check for ester linkage to acyl chain
+                for obond in oxygen.GetBonds():
+                    onbr = obond.GetOtherAtom(oxygen)
+                    if onbr.GetAtomicNum() == 6 and onbr.GetIdx() != c1_idx:
+                        carbonyl_carbon = onbr
+                        # Check for carbonyl group (C=O)
+                        is_carbonyl = False
+                        for cbond in carbonyl_carbon.GetBonds():
+                            cnbr = cbond.GetOtherAtom(carbonyl_carbon)
+                            if cnbr.GetAtomicNum() == 8 and cbond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                is_carbonyl = True
+                                break
+                        if is_carbonyl:
+                            is_c1_acyl_chain = True
+                            break
+                if is_c1_acyl_chain:
+                    break
+
+        if is_c3_phosphate and is_c1_acyl_chain:
             found_lysophosphatidic_acid = True
             break
 
