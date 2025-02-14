@@ -41,14 +41,12 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     # Check if the Delta(4) alkene and 3-oxo group are part of the same fused ring system
     ring_info = mol.GetRingInfo()
     for ring in ring_info.AtomRings():
-        if len(ring) >= 6:
+        if len(ring) >= 6:  # Only consider rings with at least 6 atoms
             ring_atoms = set(ring)
             if oxo_match[0][0] in ring_atoms and any(delta4_match[0][i] in ring_atoms for i in range(2)):
-                # Check for cyclopentanoperhydrophenanthrene ring system
-                if len(ring) == 17:
-                    break
+                break
     else:
-        return False, "Delta(4) alkene and 3-oxo group not part of a cyclopentanoperhydrophenanthrene ring system"
+        return False, "Delta(4) alkene and 3-oxo group not part of the same fused ring system"
     
     # Check for correct stereochemistry
     # ... (implement stereochemistry checks)
@@ -58,4 +56,4 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol_wt < 200 or mol_wt > 500:
         return False, "Molecular weight outside typical range for steroids"
     
-    return True, "Contains a 3-oxo group and a Delta(4) alkene in a cyclopentanoperhydrophenanthrene ring system"
+    return True, "Contains a 3-oxo group and a Delta(4) alkene in the same fused ring system"
