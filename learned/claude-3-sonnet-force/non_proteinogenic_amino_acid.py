@@ -1,76 +1,26 @@
 """
 Classifies: CHEBI:83820 non-proteinogenic amino acid
 """
-"""
-Classifies: CHEBI:33709 non-proteinogenic amino acid
+After analyzing the previous program and the outcomes, I can identify a few issues that may have contributed to the low F1 score.
 
-Any amino acid that is not naturally encoded in the genetic code of any organism.
-"""
+1. **Proteinogenic Amino Acid Exclusion**: The current approach of excluding proteinogenic amino acids by checking for specific SMILES strings might not be comprehensive enough. There could be other SMILES representations or tautomeric forms of proteinogenic amino acids that are not covered in the current list. Additionally, some non-proteinogenic amino acids might be missed if their SMILES representations match those in the exclusion list.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+2. **Chirality Handling**: The SMARTS pattern used to identify the core amino acid backbone (`"[C@H](N)(C(=O)O).*"`) only matches alpha-carbons with a specific chirality. However, non-proteinogenic amino acids can have different chiralities or lack chirality altogether. This approach might miss some valid non-proteinogenic amino acids.
 
-def is_non_proteinogenic_amino_acid(smiles: str):
-    """
-    Determines if a molecule is a non-proteinogenic amino acid based on its SMILES string.
+3. **Functional Group Identification**: The current approach of checking for additional modifications or functional groups by looking for specific atomic numbers and degrees might not be sufficient. It could miss more complex modifications or rearrangements that are not captured by these simple rules.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+4. **Molecular Weight and Atom Count Thresholds**: The thresholds used for molecular weight and atom counts might not be optimal for distinguishing non-proteinogenic amino acids from other chemical classes. These thresholds might need to be adjusted or supplemented with additional rules.
 
-    Returns:
-        bool: True if molecule is a non-proteinogenic amino acid, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the program, we can consider the following approaches:
 
-    # Check for core amino acid backbone (alpha-carbon with amino and carboxyl groups)
-    amino_acid_pattern = Chem.MolFromSmarts("[C@H](N)(C(=O)O).*")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "Missing core amino acid backbone"
+1. **Use a more comprehensive approach for excluding proteinogenic amino acids**: Instead of relying on a predefined list of SMILES strings, we could use a more robust approach, such as substructure matching with a generalized SMARTS pattern or a set of patterns that cover all proteinogenic amino acids, including their tautomeric forms and different chiralities.
 
-    # Check for proteinogenic amino acids (exclude them)
-    proteinogenic_smiles = ["N[C@@H](Cc1ccccc1)C(=O)O", "N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O",
-                             "N[C@@H](CCc1ccccc1)C(=O)O", "N[C@@H](CO)C(=O)O",
-                             "N[C@@H](CCS)C(=O)O", "N[C@@H](CCC(=O)N)C(=O)O",
-                             "N[C@@H](CCC(=O)O)C(=O)O", "N[C@@H](Cc1c[nH]cn1)C(=O)O",
-                             "N[C@@H](Cc1cnc[nH]1)C(=O)O", "N[C@@H](CC(C)C)C(=O)O",
-                             "N[C@@H](CCC(N)=O)C(=O)O", "N[C@@H](CCCC(N)C(=O)O)C(=O)O",
-                             "N[C@@H](CCSCC)C(=O)O", "N[C@@H](CC=C(C)C)C(=O)O",
-                             "N[C@@H](CCC(N)=O)C(=O)O", "N[C@@H](CCc1c[nH]c2ccccc12)C(=O)O",
-                             "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O", "N[C@@H](CS)C(=O)O",
-                             "N[C@@H](CC1=CNC=N1)C(=O)O", "N[C@@H](CC1=CN=CN1)C(=O)O"]
+2. **Relax the chirality constraint**: Instead of using a specific SMARTS pattern for the core amino acid backbone, we could use a more general pattern that allows for different chiralities or lack of chirality. For example, `"[CH](N)(C(=O)O).*"` would match both chiral and non-chiral alpha-carbons.
 
-    proteinogenic_mols = [Chem.MolFromSmiles(smi) for smi in proteinogenic_smiles]
-    if any(mol.HasSubstructMatch(prot_mol) for prot_mol in proteinogenic_mols):
-        return False, "Proteinogenic amino acid"
+3. **Implement a more sophisticated functional group identification strategy**: We could use existing cheminformatics tools or libraries to identify common functional groups or substructures that are characteristic of non-proteinogenic amino acids. This could involve pattern matching with a set of predefined SMARTS patterns or using machine learning models trained on known examples.
 
-    # Check for additional modifications or functional groups
-    has_mods = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in [6, 7, 8, 9]:  # Allow only C, N, O, F
-            has_mods = True
-            break
-        elif atom.GetIsAromatic():
-            has_mods = True
-            break
-        elif atom.GetTotalDegree() > 4:
-            has_mods = True
-            break
+4. **Refine the molecular weight and atom count thresholds**: We could analyze a larger dataset of known non-proteinogenic amino acids and adjust the thresholds based on the observed distributions of molecular weights and atom counts. Additionally, we could incorporate other descriptors or rules to better differentiate non-proteinogenic amino acids from other chemical classes.
 
-    # Check molecular weight and atom counts
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    n_atoms = mol.GetNumAtoms()
-    n_heavy_atoms = rdMolDescriptors.CalcNumHeavyAtoms(mol)
+5. **Consider using a machine learning approach**: If the above rule-based approaches prove insufficient, we could explore the use of machine learning techniques, such as neural networks or support vector machines, to classify non-proteinogenic amino acids. This would require a sufficiently large and diverse dataset of labeled examples for training and validation.
 
-    if not has_mods and mol_wt < 100:
-        return False, "Too small to be a non-proteinogenic amino acid"
-    elif has_mods and mol_wt > 500:
-        return False, "Molecular weight too high for an amino acid"
-    elif n_atoms < 5 or n_heavy_atoms < 4:
-        return False, "Too few atoms for an amino acid"
-
-    return True, "Contains core amino acid backbone and additional modifications"
+It's important to note that while the benchmark classifications might not be 100% accurate, they can still provide valuable insights and guidance. If there are clear and systematic errors in the benchmark, it might be reasonable to disregard some outliers, provided that the program's classifications align with our understanding of the chemical class and the reasoning is well-justified.
