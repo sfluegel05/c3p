@@ -24,30 +24,33 @@ def is_diterpenoid(smiles: str):
     # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Check carbon count (allow some loss of methyl groups from 20)
-    if not 15 <= c_count <= 24:
-        return False, f"Carbon count is {c_count}, not in the diterpenoid range (15-24)"
+     # Check carbon count (allow for some variation around 20 carbons)
+    if c_count < 15 or c_count > 40:  # Adjusted range to be more lenient on modifications.
+         return False, f"Carbon count is {c_count}, not in the typical diterpenoid range (15-40)"
+
 
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 450 :
-         return False, f"Molecular weight of {mol_wt} is not in the diterpenoid range (250-450)"
+    if mol_wt < 250 or mol_wt > 500 :
+         return False, f"Molecular weight of {mol_wt} is not in the typical diterpenoid range (250-500)"
+    
 
 
     # Check for ring systems
     n_rings = rdMolDescriptors.CalcNumRings(mol)
 
-    if n_rings < 1: #Most diterpenoids should have at least 2 rings.
-         return False, f"Diterpenoids should have 2 or more rings, this one has {n_rings}"
+    if n_rings < 2: #Most diterpenoids should have at least 2 rings.
+         return False, f"Diterpenoids should have at least 2 rings, this one has {n_rings}"
     
-    # Basic isoprene unit pattern - very general
-    isoprene_pattern = Chem.MolFromSmarts("[CX4](C)([CX4])[CX4]~[CX4]") #Matches a branched isoprene unit
+    # More specific isoprene unit pattern - looking for connected branches
+    # This is a more specific SMARTS pattern for two isoprene units connected together
+    isoprene_pattern = Chem.MolFromSmarts("[CX4](C)([CX4])[CX4]~[CX4]~[CX4](C)([CX4])[CX4]") # Two connected branched isoprene units
 
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
 
-    if len(isoprene_matches) < 2:
-        return False, "Too few isoprene units detected (less than 2)"
+    if len(isoprene_matches) < 1:  # Require at least one pair of connected isoprenes
+        return False, "Too few connected isoprene units detected (less than 1)"
     
     
-    
+
     return True, "Likely a diterpenoid based on carbon count, ring system, molecular weight and isoprene units"
