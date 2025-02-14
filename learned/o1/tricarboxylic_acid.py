@@ -12,7 +12,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_tricarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a tricarboxylic acid based on its SMILES string.
-    A tricarboxylic acid is an oxoacid containing exactly three carboxy groups.
+    A tricarboxylic acid is an oxoacid containing exactly three carboxy groups,
+    without peptide bonds or other interfering functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,7 +29,7 @@ def is_tricarboxylic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the carboxy group pattern (both protonated and deprotonated forms)
-    carboxy_pattern = Chem.MolFromSmarts('[CX3](=O)[O;H1,-]')
+    carboxy_pattern = Chem.MolFromSmarts('[CX3](=O)[O;H1,-1]')
     if carboxy_pattern is None:
         return False, "Failed to create carboxy group pattern"
 
@@ -39,11 +40,28 @@ def is_tricarboxylic_acid(smiles: str):
     if num_carboxy_groups != 3:
         return False, f"Found {num_carboxy_groups} carboxy groups, need exactly 3"
 
-    # Check if the molecule is an oxoacid (contains oxygen and hydrogen in acidic groups)
-    # Presence of carboxy groups ensures it's an oxoacid
-    is_oxoacid = True  # Since carboxy groups are oxoacid functional groups
+    # Check for peptide bonds (amide linkages)
+    peptide_bond_pattern = Chem.MolFromSmarts('[NX3][CX3](=O)[#6]')
+    has_peptide_bond = mol.HasSubstructMatch(peptide_bond_pattern)
+    if has_peptide_bond:
+        return False, "Contains peptide bonds (amide linkages), not a simple tricarboxylic acid"
 
-    if not is_oxoacid:
-        return False, "Molecule is not an oxoacid"
+    # Check for ester groups (to exclude carboxylic acid derivatives)
+    ester_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2][#6]')
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if ester_matches:
+        return False, "Contains ester groups, carboxy groups are not free"
 
-    return True, "Contains exactly three carboxy groups (tricarboxylic acid)"
+    # Check for size of the molecule (exclude very large molecules)
+    num_atoms = mol.GetNumAtoms()
+    if num_atoms > 50:
+        return False, f"Molecule is too large ({num_atoms} atoms), likely not a simple tricarboxylic acid"
+
+    # Ensure carboxy groups are not part of ring systems (optional, depending on definition)
+    for match in carboxy_matches:
+        carbon_index = match[0]
+        carbon_atom = mol.GetAtomWithIdx(carbon_index)
+        if carbon_atom.IsInRing():
+            return False, "Carboxy group is part of a ring system"
+
+    return True, "Contains exactly three free carboxy groups and no peptide bonds (tricarboxylic acid)"
