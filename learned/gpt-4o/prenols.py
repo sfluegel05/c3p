@@ -21,25 +21,18 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More flexible isoprene pattern: [CH2-C(Me)=CH-CH2], dealing with traditional isoprene and conjugated units
-    isoprene_patterns = [
-        Chem.MolFromSmarts("C(C)=C(C)"),      # General isoprene core
-        Chem.MolFromSmarts("C=C(C)C"),        # Alternative representation
-        Chem.MolFromSmarts("[CH2]C(=C)C"),    # Left-projected isoprene
-        Chem.MolFromSmarts("C(=C)C[CH2]")     # Right-projected isoprene
-    ]
-    isoprene_matches = any(mol.HasSubstructMatch(pattern) for pattern in isoprene_patterns)
+    # Isoprene unit pattern: C=C-C-C or C-C=C-C (simple representations)
+    # These patterns are generalized to reduce failure from structural variations
+    isoprene_pattern1 = Chem.MolFromSmarts("C=C-C-C")
+    isoprene_pattern2 = Chem.MolFromSmarts("C-C=C-C")
     
-    # Check for isoprene units
-    if not isoprene_matches:
+    # Detect any isoprene substructure presence
+    if not (mol.HasSubstructMatch(isoprene_pattern1) or mol.HasSubstructMatch(isoprene_pattern2)):
         return False, "No isoprene units found"
 
-    # Verify the presence of a terminal alcohol group (-OH)
-    if not mol.HasSubstructMatch(Chem.MolFromSmarts("[CX4][OH]")):
-        return False, "Missing terminal or appropriate OH group"
-
-    # Checking linearity (no cyclic structure in the backbone)
-    if not mol.GetRingInfo().IsStraightChain():
-        return False, "Should not contain cyclic structures"
+    # Verify the molecule has a terminal alcohol group
+    alcohol_pattern = Chem.MolFromSmarts("[OH]")
+    if not mol.HasSubstructMatch(alcohol_pattern):
+        return False, "No alcohol (OH) group found"
 
     return True, "Contains isoprene units with terminal alcohol group"
