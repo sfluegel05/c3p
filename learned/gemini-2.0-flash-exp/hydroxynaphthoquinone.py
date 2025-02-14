@@ -22,7 +22,8 @@ def is_hydroxynaphthoquinone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS for naphthoquinone core and hydroxy
-    naphthoquinone_pattern = Chem.MolFromSmarts("c1ccccc1C(=O)c2ccccc2C=O")
+    # using the SMARTS for a naphtalene with two conjugated ketones
+    naphthoquinone_pattern = Chem.MolFromSmarts("c1cc2c(cc1)C(=O)CC(=O)c2") 
     hydroxy_pattern = Chem.MolFromSmarts("[OH]")
     
     # Check if core is present
