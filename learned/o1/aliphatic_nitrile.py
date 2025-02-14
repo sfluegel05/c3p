@@ -10,7 +10,7 @@ def is_aliphatic_nitrile(smiles: str):
     """
     Determines if a molecule is an aliphatic nitrile based on its SMILES string.
     An aliphatic nitrile is any nitrile derived from an aliphatic compound,
-    meaning the nitrile group (-C#N) is attached to a non-aromatic carbon atom.
+    meaning the nitrile group (-C#N) is attached to an aliphatic (sp3-hybridized, non-aromatic) carbon atom.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -47,22 +47,42 @@ def is_aliphatic_nitrile(smiles: str):
 
         # If nitrile carbon has no other neighbors, it's a terminal atom (unlikely but check)
         if not neighbors:
-            return False, "Nitrile carbon has no adjacent atoms (isolated nitrile group)"
+            continue  # No adjacent atom to nitrile carbon other than nitrogen
 
-        # Check if the adjacent atom to nitrile carbon is aromatic
-        is_aromatic_attachment = False
+        # Check if the adjacent atom to nitrile carbon is:
+        # - A carbon atom
+        # - Not aromatic
+        # - sp3 hybridized
+        # - Not double or triple bonded to nitrile carbon
         for neighbor in neighbors:
-            if neighbor.GetIsAromatic():
-                is_aromatic_attachment = True
-                break  # No need to check further if attached to aromatic carbon
+            # Check if neighbor is a carbon atom
+            if neighbor.GetAtomicNum() != 6:
+                continue  # Not a carbon atom
 
-        if is_aromatic_attachment:
-            continue  # This nitrile group is attached to aromatic carbon; check next one
-        else:
+            # Check if neighbor is aromatic
+            if neighbor.GetIsAromatic():
+                continue  # Neighbor is aromatic
+
+            # Check hybridization of neighbor (should be sp3)
+            if neighbor.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+                continue  # Neighbor is not sp3 hybridized
+
+            # Check bond type between nitrile carbon and neighbor
+            bond = mol.GetBondBetweenAtoms(nitrile_c_idx, neighbor.GetIdx())
+            if bond is None:
+                continue  # No bond found (should not happen)
+
+            if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+                continue  # Bond is not a single bond
+
+            # Passed all checks; nitrile is attached to an aliphatic carbon
             has_aliphatic_nitrile = True
-            break  # Found an aliphatic nitrile group; no need to check further
+            break  # No need to check other neighbors
+
+        if has_aliphatic_nitrile:
+            break  # Found an aliphatic nitrile group
 
     if has_aliphatic_nitrile:
         return True, "Contains nitrile group(s) attached to aliphatic carbon(s)"
     else:
-        return False, "All nitrile groups are attached to aromatic carbons"
+        return False, "No nitrile groups attached to aliphatic carbons found"
