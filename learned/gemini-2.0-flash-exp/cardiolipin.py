@@ -34,10 +34,9 @@ def is_cardiolipin(smiles: str):
     if len(phosphate_matches) != 2:
         return False, f"Found {len(phosphate_matches)} phosphate groups, need exactly 2"
 
-
     # Phosphatidic acid unit (glycerol-phosphate-2 fatty acids). The fatty acid part is just 2 chains
-    # that have at least 3 carbon atoms
-    phosphatidic_acid_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4][OX2][P](=[OX1])([OX2])([OX2])([OX2])~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") # at least 3 carbons chain
+    # that have at least 1 carbon atoms
+    phosphatidic_acid_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4][OX2][P](=[OX1])([OX2])([OX2])([OX2])~[CX4,CX3]~[CX4,CX3]") # at least 1 carbons chain
     phosphatidic_acid_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
     if len(phosphatidic_acid_matches) < 2:
        return False, f"Found {len(phosphatidic_acid_matches)} phosphatidic acid units, need at least 2"
@@ -48,12 +47,6 @@ def is_cardiolipin(smiles: str):
     if len(ester_matches) != 4:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 4"
 
-
-    # Check for fatty acid chains (long carbon chains) attached to esters - at least 3 C per chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") # at least 3 carbons chain
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 4:
-         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
 
     # Check for the number of glycerol carbons: central glycerol + two from each phosphatidic acid.
     # Each phosphatidic acid should have at least 3 carbons from glycerol, so total glycerol carbons should be at least 3 * 3 = 9
