@@ -20,19 +20,15 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavone core pattern using SMARTS.
-    # The core structure: C1=CC=C(C=C1)-C2=C(C(=O)C3=CC=CC=C3O2)-O is a good starting point.
-    # But we will be more specific with query.
-    # It's crucial to define the aromaticity of the rings in this pattern and include the O in position 1 (or 4) of the pyran ring.
-    # We also specify the correct atom connectivities
-    flavone_core = Chem.MolFromSmarts('c1ccccc1-c2oc(c3ccccc3)c(=O)c2-O') # 1-2-3
+    # Define the flavone core pattern using SMARTS, allowing for substitutions
+    # The core is c1ccccc1-c2oc(c3ccccc3)c(=O)c2 but with substitutions allowed on the rings (not hydrogens)
+    flavone_core = Chem.MolFromSmarts('c1ccc2oc(-c3ccccc3)c(=O)c2c1')
     if not mol.HasSubstructMatch(flavone_core):
         return False, "Not a flavone core structure"
 
     # Check for the hydroxyl group at position 3 of the pyran ring (C ring).
     # This is the carbon directly attached to the carbonyl group in the flavone core
-    # We will try to identify the C next to the carbonyl C, and check it has -OH group.
-    hydroxyl_at_3 = Chem.MolFromSmarts('c1ccccc1-c2oc(-[C;H1]([O;H1])c(=O)c3ccccc3)c2') #1-2-3-OH
+    hydroxyl_at_3 = Chem.MolFromSmarts('c1ccccc1-c2oc(-[C;H1]([O;H1])c(=O)c3ccccc3)c2')
     if not mol.HasSubstructMatch(hydroxyl_at_3):
       return False, "No hydroxyl group at position 3 of the flavone core"
 
