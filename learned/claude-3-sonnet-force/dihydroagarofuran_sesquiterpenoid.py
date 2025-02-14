@@ -5,7 +5,7 @@ Classifies: CHEBI:71548 dihydroagarofuran sesquiterpenoid
 Classifies: CHEBI:51841 dihydroagarofuran sesquiterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
 def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     """
@@ -30,9 +30,19 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if formula not in ['C15H24', 'C15H22']:
         return False, "Not a sesquiterpenoid (formula not C15H24 or C15H22)"
 
-    # Look for dihydroagarofuran skeleton pattern
-    dihydroagarofuran_pattern = Chem.MolFromSmarts("[C@H]1[C@]2([C@@H](OC(=O)[C])OC(=O)[C])C[C@@H]([C@H](OC(=O)[C])[C@@H]1OC(=O)[C])[C@@H]2OC(=O)[C]")
-    if not mol.HasSubstructMatch(dihydroagarofuran_pattern):
-        return False, "No dihydroagarofuran skeleton found"
+    # Look for dihydroagarofuran core
+    dihydroagarofuran_core = Chem.MolFromSmarts("[C@H]1[C@]2([C@H](O)[C@@H]([C@H](O)[C@@H]1O)[C@@H]2O)O")
+    if not mol.HasSubstructMatch(dihydroagarofuran_core):
+        return False, "No dihydroagarofuran core found"
 
-    return True, "Contains the dihydroagarofuran skeleton characteristic of dihydroagarofuran sesquiterpenoids"
+    # Check for ring system and double bond equivalents (DBE) typical of sesquiterpenoids
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    if num_rings < 2 or num_rings > 4:
+        return False, "Number of rings not typical for sesquiterpenoids"
+
+    dbe = rdMolDescriptors.CalcNumAromaticRings(mol) + rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if dbe < 3 or dbe > 7:
+        return False, "Double bond equivalents not typical for sesquiterpenoids"
+
+    return True, "Contains the dihydroagarofuran core and other structural features typical of dihydroagarofuran sesquiterpenoids"
