@@ -23,53 +23,59 @@ def is_CDP_diacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CDP core.
-    # Core pattern: Cytosine-Ribose-Diphosphate
-    cdp_core_pattern = Chem.MolFromSmarts('C1[C@H]([C@H]([C@@H]([C@H](O1)O)N2C=CC(=NC2=O)N)O)COP(=O)(O)OP(=O)(O)O')
+    # Check for CDP core
+    # Nucleoside with ribose and 2 phosphate
+    cdp_core_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H]([C@@H](O[C@H]1[n]2[c]([n][cH][c]([n]2)[N])=O)O)COP(=O)([O])OP(=O)([O])O')
     if not mol.HasSubstructMatch(cdp_core_pattern):
        return False, "CDP core not found"
-    
-    # Look for the glycerol phosphate pattern connected to the CDP core:
-    # This pattern identifies glycerol attached to diphosphate.
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("OC[C@H](CO[P](=O)(O)O[P](=O)(O)O)[CH2]O")
-    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
-        return False, "Glycerol-phosphate part of CDP-DG not found"
 
-    # Look for 2 ester groups connected to the glycerol
-    ester_pattern = Chem.MolFromSmarts("[CX4]([OX2])[CX3](=[OX1])~[CX4]")
+    # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+
+    # Look for 2 ester groups (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    #  Count ester groups in the right position - i.e. adjacent to the glycerol.
-    
-    count = 0
-    for match in ester_matches:
-            atom_idx = match[0] # The oxygen atom
-            
-            #Check if the oxygen is attached to the glycerol part
-            
-            for atom in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
-                if atom.GetSymbol() == "C" and atom.GetDegree() == 4:
-                    glycerol_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("OC[C@H](CO[P](=O)(O)O[P](=O)(O)O)[CH2]O"))
-                    for gly_match in glycerol_matches:
-                        for gly_atom_idx in gly_match:
-                           if mol.GetAtomWithIdx(gly_atom_idx).GetSymbol()=="C" and mol.GetAtomWithIdx(gly_atom_idx).GetDegree() == 4:
-                                   if atom.GetIdx() == mol.GetAtomWithIdx(gly_atom_idx).GetIdx():
-                                     count += 1
-                                     break
-                        if count > 2:
-                            break    
-            if count > 2:
-              break
-    if count < 2:
-        return False, f"Missing at least two acyl groups, got {count}"
-        
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
-    # Count phosphorus and nitrogen to ensure correct stoichiometry.
+    # Look for a phosphate ester linkage to the glycerol (C-O-P)
+    phosphate_ester_pattern = Chem.MolFromSmarts("[CX4][OX2][P]")
+    phosphate_ester_matches = mol.GetSubstructMatches(phosphate_ester_pattern)
+    
+    if len(phosphate_ester_matches) < 1:
+        return False, f"Missing phosphate ester group"
+
+    # Check for fatty acid chains (long carbon chains attached to esters)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:
+        return False, "Chains too short to be fatty acids"
+
+    # Check molecular weight - CDP-diacylglycerols typically >700 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 700:
+        return False, "Molecular weight too low for CDP-diacylglycerol"
+    
+    # Count carbons, oxygens, phosphorus and nitrogen
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+
+    if c_count < 20:
+        return False, "Too few carbons for CDP-diacylglycerol"
+    if o_count < 14:
+        return False, "Too few oxygens for CDP-diacylglycerol"
     if p_count != 2:
         return False, "Must have exactly 2 phosphorus atoms (diphosphate group)"
     if n_count != 3:
-         return False, "Must have 3 nitrogen atoms in CDP base"
-
+        return False, "Must have 3 nitrogen atoms in CDP base"
+    
     return True, "Contains CDP core with diacylglycerol attached"
