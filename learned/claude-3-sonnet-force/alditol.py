@@ -26,7 +26,7 @@ def is_alditol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for acyclic structure
-    if mol.GetRingInfo().AtomRings():
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("R1R2R3R4")):
         return False, "Molecule contains rings, but alditols are acyclic"
     
     # Check for polyol structure (multiple hydroxy groups)
@@ -40,20 +40,10 @@ def is_alditol(smiles: str):
         return False, "Does not have 2 terminal hydroxy groups as required for alditols"
     
     # Count carbon atoms
-    num_carbon = mol.GetNumAtoms(onlyObsMask=Chem.AtomProp.Query(["#6"]))
+    num_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
     # Check if number of hydroxy groups matches the expected formula (n + 2)
     if num_hydroxy != num_carbon + 2:
         return False, f"Incorrect number of hydroxy groups for alditol (expected {num_carbon + 2}, got {num_hydroxy})"
 
     return True, "Acyclic polyol matching the formula HOCH2[CH(OH)]nCH2OH"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:17937',
-        'name': 'alditol',
-        'definition': 'A carbohydrate that is an acyclic polyol having the general formula HOCH2[CH(OH)]nCH2OH (formally derivable from an aldose by reduction of the carbonyl group).',
-        'parents': ['CHEBI:36973', 'CHEBI:16646']
-    },
-    # ... (rest of metadata omitted for brevity)
-}
