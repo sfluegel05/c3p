@@ -34,11 +34,15 @@ def is_diterpenoid(smiles: str):
 
     # Check for diterpenoid backbone (C20 skeleton)
     diterpenoid_backbone = Chem.MolFromSmarts("[C&r5,r6,r7,r8]")
+    if diterpenoid_backbone is None:
+        return False, "Invalid SMARTS pattern for diterpenoid backbone"
     if not mol.HasSubstructMatch(diterpenoid_backbone):
         return False, "No diterpenoid backbone found"
 
     # Look for typical functional groups (hydroxy, carbonyl, ether, ester, etc.)
     functional_groups = Chem.MolFromSmarts("[OH,O,C(=O)O,COC]")
+    if functional_groups is None:
+        return False, "Invalid SMARTS pattern for functional groups"
     if not mol.HasSubstructMatch(functional_groups):
         return False, "No typical diterpenoid functional groups found"
 
