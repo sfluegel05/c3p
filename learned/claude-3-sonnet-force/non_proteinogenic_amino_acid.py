@@ -1,28 +1,76 @@
 """
 Classifies: CHEBI:83820 non-proteinogenic amino acid
 """
-After analyzing the previous program and the outcomes, it seems that the approach of checking for the presence of one carboxyl and one amino group, and then excluding proteinogenic amino acids, is too simplistic and results in many false positives and false negatives.
+"""
+Classifies: CHEBI:33709 non-proteinogenic amino acid
 
-False positives:
-The program incorrectly classified many non-amino acid molecules as non-proteinogenic amino acids because they contained one carboxyl and one amino group, but did not satisfy other structural requirements for amino acids. Examples include various drug molecules, intermediates, and byproducts.
+Any amino acid that is not naturally encoded in the genetic code of any organism.
+"""
 
-False negatives:
-The program missed many valid non-proteinogenic amino acids because they did not strictly follow the pattern of having one carboxyl and one amino group. Examples include amino acids with modified backbones, additional functional groups, or unusual side chains.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-To improve the program, we need a more sophisticated approach that considers the overall structural features of amino acids, rather than just counting specific functional groups. Here are some potential improvements:
+def is_non_proteinogenic_amino_acid(smiles: str):
+    """
+    Determines if a molecule is a non-proteinogenic amino acid based on its SMILES string.
 
-1. Use a more comprehensive SMARTS pattern or substructure matching to identify the core amino acid backbone structure (alpha-carbon with amino and carboxyl groups).
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. Allow for additional functional groups or modifications on the amino acid backbone, but still enforce the core structural requirements.
+    Returns:
+        bool: True if molecule is a non-proteinogenic amino acid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. Use machine learning techniques or expert-curated rules to identify non-proteinogenic amino acids based on their structural features, rather than relying solely on substructure matching.
+    # Check for core amino acid backbone (alpha-carbon with amino and carboxyl groups)
+    amino_acid_pattern = Chem.MolFromSmarts("[C@H](N)(C(=O)O).*")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "Missing core amino acid backbone"
 
-4. Incorporate additional checks or filters, such as molecular weight, atom counts, or other molecular descriptors, to further refine the classification.
+    # Check for proteinogenic amino acids (exclude them)
+    proteinogenic_smiles = ["N[C@@H](Cc1ccccc1)C(=O)O", "N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O",
+                             "N[C@@H](CCc1ccccc1)C(=O)O", "N[C@@H](CO)C(=O)O",
+                             "N[C@@H](CCS)C(=O)O", "N[C@@H](CCC(=O)N)C(=O)O",
+                             "N[C@@H](CCC(=O)O)C(=O)O", "N[C@@H](Cc1c[nH]cn1)C(=O)O",
+                             "N[C@@H](Cc1cnc[nH]1)C(=O)O", "N[C@@H](CC(C)C)C(=O)O",
+                             "N[C@@H](CCC(N)=O)C(=O)O", "N[C@@H](CCCC(N)C(=O)O)C(=O)O",
+                             "N[C@@H](CCSCC)C(=O)O", "N[C@@H](CC=C(C)C)C(=O)O",
+                             "N[C@@H](CCC(N)=O)C(=O)O", "N[C@@H](CCc1c[nH]c2ccccc12)C(=O)O",
+                             "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O", "N[C@@H](CS)C(=O)O",
+                             "N[C@@H](CC1=CNC=N1)C(=O)O", "N[C@@H](CC1=CN=CN1)C(=O)O"]
 
-5. Consider using a curated database or list of known non-proteinogenic amino acids as a reference, rather than relying solely on the exclusion of proteinogenic amino acids.
+    proteinogenic_mols = [Chem.MolFromSmiles(smi) for smi in proteinogenic_smiles]
+    if any(mol.HasSubstructMatch(prot_mol) for prot_mol in proteinogenic_mols):
+        return False, "Proteinogenic amino acid"
 
-6. Analyze the false positives and false negatives to identify systematic issues or patterns that can be addressed through refinements to the program logic or additional checks.
+    # Check for additional modifications or functional groups
+    has_mods = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in [6, 7, 8, 9]:  # Allow only C, N, O, F
+            has_mods = True
+            break
+        elif atom.GetIsAromatic():
+            has_mods = True
+            break
+        elif atom.GetTotalDegree() > 4:
+            has_mods = True
+            break
 
-It's important to note that the classification of non-proteinogenic amino acids can be challenging, as there can be ambiguities or borderline cases. Therefore, it may be necessary to make reasonable assumptions or simplifications, and to clearly document the limitations of the program.
+    # Check molecular weight and atom counts
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    n_atoms = mol.GetNumAtoms()
+    n_heavy_atoms = rdMolDescriptors.CalcNumHeavyAtoms(mol)
 
-In summary, while the previous program had the right idea of using SMARTS patterns and substructure matching, it was too simplistic and missed many valid non-proteinogenic amino acids while also incorrectly classifying many non-amino acid molecules. A more sophisticated approach that considers the overall structural features and incorporates additional checks or machine learning techniques is likely required to improve the accuracy of the classification.
+    if not has_mods and mol_wt < 100:
+        return False, "Too small to be a non-proteinogenic amino acid"
+    elif has_mods and mol_wt > 500:
+        return False, "Molecular weight too high for an amino acid"
+    elif n_atoms < 5 or n_heavy_atoms < 4:
+        return False, "Too few atoms for an amino acid"
+
+    return True, "Contains core amino acid backbone and additional modifications"
