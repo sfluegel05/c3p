@@ -1,64 +1,24 @@
 """
 Classifies: CHEBI:90546 medium-chain fatty acyl-CoA(4-)
 """
-"""
-Classifies: CHEBI:63128 medium-chain fatty acyl-CoA(4-)
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and the provided outcomes, here are my observations and suggestions for improvement:
 
-def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
-    """
-    Determines if a molecule is a medium-chain fatty acyl-CoA(4-) based on its SMILES string.
-    A medium-chain fatty acyl-CoA(4-) is an acyl-CoA oxoanion resulting from deprotonation 
-    of the phosphate and diphosphate groups of any medium-chain fatty acyl-CoA, with a chain
-    length typically between 6 and 12 carbons.
+1. **Backbone Recognition**: The program correctly identifies the presence of the CoA backbone by checking for the ribose, phosphate, adenine, and pantothenate substructures. However, some of the false negatives (e.g., 3-methylnonanoyl-CoA(4-)) were classified as such because the backbone was not recognized, despite having the correct substructures.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+   **Potential Improvement**: Double-check the SMARTS patterns used for backbone recognition and ensure they are flexible enough to match different conformations and stereochemistries of the CoA backbone.
 
-    Returns:
-        bool: True if molecule is a medium-chain fatty acyl-CoA(4-), False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for CoA backbone substructures
-    coa_ribose = mol.GetSubstructMatches(Chem.MolFromSmarts("[C@@H]1[C@H]([C@@H]([C@H](O1)OP([O-])([O-])=O)O)OP([O-])([O-])=O"))
-    coa_phosphates = mol.GetSubstructMatches(Chem.MolFromSmarts("OP([O-])([O-])=O"))
-    coa_adenine = mol.GetSubstructMatches(Chem.MolFromSmarts("N1C2=C(C(=NC=N2)N)N=C1"))
-    coa_pantothenate = mol.GetSubstructMatches(Chem.MolFromSmarts("[C@H](C(=O)NCCC(=O)NCCSC(=O)[C])[C@@H](O)[C@](C)(C)COP([O-])(=O)OP([O-])(=O)O[C@@H]1[C@@H]([C@H]([C@@H](O1)OP([O-])([O-])=O)O)OP([O-])([O-])=O"))
-    
-    if not (coa_ribose and coa_phosphates and coa_adenine and coa_pantothenate):
-        return False, "No valid CoA backbone found"
-    
-    # Look for acyl chain (typically between 6-12 carbons)
-    acyl_chain_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3]~[CX3]~[CX3]~[CX3]~[CX3]")
-    acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
-    if not acyl_chain_matches:
-        return False, "No acyl chain found"
-    
-    valid_chain_lengths = []
-    for match in acyl_chain_matches:
-        chain_length = sum(1 for atom in mol.GetAtomWithIdx(idx).GetNeighbors() if atom.GetAtomicNum() == 6 for idx in match)
-        if 6 <= chain_length <= 12:
-            valid_chain_lengths.append(chain_length)
-    
-    if not valid_chain_lengths:
-        return False, "Acyl chain length not in medium-chain range (6-12 carbons)"
-    
-    # Check for deprotonated phosphate groups
-    if sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() == -1 and atom.GetAtomicNum() == 8) != 4:
-        return False, "Incorrect number of deprotonated phosphate groups"
-    
-    # Additional checks (e.g., molecular weight, functional groups)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 800 or mol_wt > 1200:
-        return False, "Molecular weight outside typical range for medium-chain fatty acyl-CoA(4-)"
-    
-    return True, f"Contains CoA backbone with acyl chain(s) of length(s) {', '.join(str(length) for length in valid_chain_lengths)} and deprotonated phosphate groups"
+2. **Acyl Chain Length**: The program checks for the presence of an acyl chain and verifies that its length falls within the medium-chain range (6-12 carbons). However, some false negatives (e.g., trans-3-cis-5-octadienoyl-CoA(4-)) have the correct chain length but were not recognized.
+
+   **Potential Improvement**: Review the SMARTS pattern used for acyl chain detection and consider enhancing it to account for different substituents, branching, and unsaturation patterns.
+
+3. **Deprotonated Phosphate Groups**: The program correctly checks for the presence of four deprotonated phosphate groups. However, some false negatives (e.g., 4-phosphodecanoyl-CoA(6-)) have the correct number of deprotonated phosphate groups but were not recognized.
+
+   **Potential Improvement**: Investigate if there are any specific cases where the program fails to count the deprotonated phosphate groups correctly, and address those edge cases.
+
+4. **Molecular Weight Check**: The molecular weight check seems reasonable, but it may need to be adjusted or removed if it causes too many false negatives or false positives.
+
+5. **False Positives**: There were no false positives reported in the outcomes, which suggests that the program is reasonably specific in its classification.
+
+6. **Confidence in Benchmark**: As mentioned, there may be occasional and systematic mistakes in the benchmark data. If you have a strong understanding of the chemical class and believe that the classifications made by your program are consistent with the class definition, you can choose to ignore or adjust for the outliers in the benchmark data.
+
+Overall, the program seems to be on the right track, but some fine-tuning of the SMARTS patterns and additional checks may be necessary to improve its performance. Additionally, it would be helpful to analyze the specific false negatives and false positives to identify any patterns or edge cases that need to be addressed.
