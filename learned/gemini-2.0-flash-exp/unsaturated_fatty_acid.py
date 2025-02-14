@@ -7,8 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_unsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is an unsaturated fatty acid based on its SMILES string.
-    An unsaturated fatty acid contains at least one C=C or C#C bond and a carboxylic acid.
-    It also must be a long, linear chain, with no aromatic rings and no phosphorus.
+    An unsaturated fatty acid contains a carboxylic acid group at the end of a linear carbon chain,
+    at least one C=C or C#C bond, and no aromatic rings or phosphorus atoms.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -21,8 +21,8 @@ def is_unsaturated_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-     # Check for phosphorus atoms
+    
+    # Check for phosphorus atoms
     has_phosphorus = any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms())
     if has_phosphorus:
         return False, "Contains phosphorus, not a fatty acid"
@@ -32,23 +32,26 @@ def is_unsaturated_fatty_acid(smiles: str):
     if mol.HasSubstructMatch(aromatic_pattern):
         return False, "Contains aromatic rings, not a fatty acid"
 
-    # Check for carboxylic acid group (-C(=O)O or -C(=O)[O-]) at the end of a chain
-    acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2;!$([OX2](C)(C))!H0]")
-    if not mol.HasSubstructMatch(acid_pattern):
-       return False, "Does not contain a carboxylic acid group"
-
-    # Define SMARTS patterns for C=C and C#C bonds
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    triple_bond_pattern = Chem.MolFromSmarts("C#C")
-    if not (mol.HasSubstructMatch(double_bond_pattern) or mol.HasSubstructMatch(triple_bond_pattern)):
-        return False, "Does not contain any C=C or C#C bond"
-
-    # Check for a long carbon chain (at least 4 carbons) outside of a ring. Also ensure that it's a linear chain.
-    chain_pattern = Chem.MolFromSmarts("[!R;CX4,CX3]~[!R;CX4,CX3]~[!R;CX4,CX3]~[!R;CX4,CX3]")
+    # More specific check for carboxylic acid group at the end of a chain, both protonated and deprotonated, and with no explicit Hs.
+    acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0-,OX1-]")
+    acid_matches = mol.GetSubstructMatches(acid_pattern)
+    if len(acid_matches) != 1:
+        return False, f"Must have exactly one carboxylic acid group, found {len(acid_matches)}"
+    
+    # Check that the chain is connected to the carboxyl group and has at least 4 carbons, including the carbonyl carbon
+    chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0-,OX1-]-[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[!R;CX4,CX3]")
     if not mol.HasSubstructMatch(chain_pattern):
-         return False, "Does not contain a sufficiently long linear carbon chain"
+      return False, "Does not contain a sufficiently long linear carbon chain attached to the carboxylic acid"
 
-    # Check number of carbons
+    # Check for at least one C=C or C#C bond *in the chain*
+    unsaturated_chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0-,OX1-]-[CX4,CX3]~[CX4,CX3]=[CX4,CX3]~[!R;CX4,CX3]")
+    unsaturated_chain_pattern2 = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H0-,OX1-]-[CX4,CX3]~[CX4,CX3]#[CX4,CX3]~[!R;CX4,CX3]")
+    
+    if not (mol.HasSubstructMatch(unsaturated_chain_pattern) or mol.HasSubstructMatch(unsaturated_chain_pattern2)):
+       return False, "Does not contain any C=C or C#C bond in the main carbon chain"
+
+
+    # Check number of carbons in total (at least 4)
     n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if n_carbons < 4:
         return False, "Too few carbon atoms"
