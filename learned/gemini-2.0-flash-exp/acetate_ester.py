@@ -22,19 +22,14 @@ def is_acetate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for acetate group (CH3C(=O)O-)
-    acetate_pattern = Chem.MolFromSmarts("CC(=O)O")
+    # Adding H1 to the oxygen helps avoid false positives
+    acetate_pattern = Chem.MolFromSmarts("CC(=O)[O;H1]")
 
     # Search for the substructure
     matches = mol.GetSubstructMatches(acetate_pattern)
 
-    # Check if the number of matches is exactly 1
-    if len(matches) == 1:
-       # Check if the molecule is large enough
-        mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-        if mol_wt < 100:
-             return False, "Molecule too small to be an acetate ester."
+    # Check if at least one match is found
+    if len(matches) > 0:
         return True, "Contains an acetate group"
-    elif len(matches) > 1:
-        return False, f"Contains {len(matches)} acetate groups, needs exactly 1"
     else:
         return False, "Does not contain an acetate group"
