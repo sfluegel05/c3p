@@ -29,35 +29,40 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
         return False, "No Coenzyme A (CoA) core structure found"
     
     # Locate the acyl chain part, i.e., part before thioester linkage
-    thioester_idx = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16]  # S atom in thioester linkage
-    if not thioester_idx:
+    # Use S atom in thioester linkage (closest to CoA pattern) to identify acyl chain
+    thioester_sulfur = None
+    for match in mol.GetSubstructMatches(coa_pattern):
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 16 and any(n.GetAtomicNum() == 6 for n in atom.GetNeighbors()):
+                thioester_sulfur = atom
+                break
+    
+    if thioester_sulfur is None:
         return False, "No thioester linkage found"
 
-    # Trace acyl chain: Start from any carbon directly attached to sulfur
-    acyl_chain_atoms = set()
-    visited = set()
-
-    def atom_dfs(atom):
-        if atom.GetIdx() in visited or atom.GetAtomicNum() != 6:  # Only consider carbons
-            return
-        acyl_chain_atoms.add(atom.GetIdx())
-        visited.add(atom.GetIdx())
-        # Check linear connections and avoid cyclic/branched paths
+    # Use DFS to find longest acyl chain starting from carbon neighbors of thioester sulfur
+    def find_longest_linear_chain(atom, visited=None):
+        if visited is None:
+            visited = set()
+        max_length = 0
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in acyl_chain_atoms:
-                atom_dfs(neighbor)
+            if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6:
+                visited.add(neighbor.GetIdx())
+                chain_length = 1 + find_longest_linear_chain(neighbor, visited)
+                max_length = max(max_length, chain_length)
+                visited.remove(neighbor.GetIdx())
+        return max_length
 
-    thioester_sulfur = mol.GetAtomWithIdx(thioester_idx[0])
+    # Start counting carbons from the carbon directly bonded to sulfur, do not include sulfur itself
+    max_chain_length = 0
     for neighbor in thioester_sulfur.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:  # Start DFS tree from carbon atoms
-            atom_dfs(neighbor)
-            break  # Consider only one primary chain extending from the attachment point
-
-    # Count the number of carbon atoms in the acyl chain
-    carbon_count = len(acyl_chain_atoms)
+        if neighbor.GetAtomicNum() == 6:
+            length = find_longest_linear_chain(neighbor)
+            max_chain_length = max(max_chain_length, length)
     
-    # Determine if it's a very long-chain fatty acyl-CoA
-    if carbon_count > 22:
-        return True, f"Fatty acyl chain length is {carbon_count} (> 22 carbons, valid)"
-
-    return False, f"Fatty acyl chain length is {carbon_count} (<= 22 carbons, not valid)"
+    # Check the length of the identified acyl chain
+    if max_chain_length > 22:
+        return True, f"Fatty acyl chain length is {max_chain_length} (> 22 carbons, valid)"
+    
+    return False, f"Fatty acyl chain length is {max_chain_length} (<= 22 carbons, not valid)"
