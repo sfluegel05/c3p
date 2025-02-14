@@ -20,10 +20,8 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a hemiaminal: a carbon with single bond to OH and single bond to N
-    # Use [NX2,NX3] to capture different forms of nitrogen atoms
-    hemiaminal_pattern = Chem.MolFromSmarts("[CX4]([OH1])[NX2,NX3]")
-
+    # Define SMARTS pattern for a hemiaminal: a carbon with single bond to OH and single bond to NX3
+    hemiaminal_pattern = Chem.MolFromSmarts("[CX4]([OH1])[NX3]") #X3 is any atom with 3 bonds
 
     #Check if the pattern is present
     if mol.HasSubstructMatch(hemiaminal_pattern):
