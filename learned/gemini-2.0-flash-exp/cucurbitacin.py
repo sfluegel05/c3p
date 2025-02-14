@@ -21,22 +21,17 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count Rings (must be 4 or more)
-    ring_info = mol.GetRingInfo()
-    n_rings = ring_info.NumRings()
-    if n_rings < 4:
-        return False, "Less than 4 rings"
-    
     # Molecular Weight check - cucurbitacins are triterpenoids
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400 or mol_wt > 1000:
-      return False, f"Molecular weight {mol_wt} is out of the typical range (400-1000 Da)"
+    if mol_wt < 400:
+      return False, f"Molecular weight {mol_wt} is too low (less than 400 Da)"
     
     # Check for tetracyclic core using a more specific SMARTS pattern
-    # This pattern looks for a fused 4-ring system
-    # Note that the rings must be fused!
-    core_pattern = Chem.MolFromSmarts("[C]1:[C]:[C]2:[C]:[C]3:[C]:[C]4:[C]1:[C]2:[C]34") #This requires a fused system
-    
+    # This pattern looks for a series of connected rings forming the core
+    # It does NOT require them to be fused directly
+    # Note: The pattern below identifies key carbon atoms forming the core.
+    core_pattern = Chem.MolFromSmarts("[C]1~[C]~[C]~[C]2~[C]~[C]~[C]3~[C]~[C]~[C]4~[C]~[C]~[C]~[C]1~[C]2~[C]34")
+
     if not mol.HasSubstructMatch(core_pattern):
         return False, "Tetracyclic core not found"
           
