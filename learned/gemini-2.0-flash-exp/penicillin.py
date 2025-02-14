@@ -23,63 +23,39 @@ def is_penicillin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Penam core pattern (no specific numbering)
-    penam_core_pattern = Chem.MolFromSmarts("[N]1[C]([C]2[S][C](C)(C)[C]2[C](O)=O)[C](=O)1")
-    if penam_core_pattern is None:
-        return False, "Invalid Penam Core SMARTS"
-    
+    # 1. Penam core pattern (with numbering for easy referencing)
+    #     7    6     5
+    #   --N--[C@H]--[CH]--
+    #  |   |     |     |
+    #  |   C------C------S
+    #  |   2     3     4
+    #   --    C=O  --
+    #
+    penam_core_pattern = Chem.MolFromSmarts("[N1][C@H]([C@H]2[S][C@](C)(C)[C@H]2C(O)=O)C(=O)1")
+
+    if not mol.HasSubstructMatch(penam_core_pattern):
+        return False, "Penam core not found"
+
+
+    # 2. Two methyl substituents at position 2. These are already checked in the penam core definition above.
+    # 3. Carboxylate substituent at position 3. This is already checked in the penam core definition above.
+
+    # 4. Carboxamido group at position 6 (R-CONH-). It's not a specific R group.
+    carboxamido_pattern = Chem.MolFromSmarts("N[C@H](C=O)")
+    carboxamido_matches = mol.GetSubstructMatches(carboxamido_pattern)
+
+    # Use the core substructure to count the matches, instead of the whole molecule.
     substructure_matches = mol.GetSubstructMatches(penam_core_pattern)
-    if not substructure_matches:
-       return False, "Penam core not found"
+    if len(substructure_matches) == 0:
+        return False, "Penam core not found when checking amido group."
+    
+    match = substructure_matches[0] # Get the atoms from the first match.
+    
+    sub_mol = Chem.PathToSubmol(mol,match)
+    sub_match = sub_mol.GetSubstructMatches(carboxamido_pattern)
+    
+    if len(sub_match) !=1:
+        return False, f"Carboxamido group at position 6 not found within the penam core. Found {len(sub_match)} matches."
 
-    # 2. and 3. Two methyl substituents at position 2 and 3, and carboxylate at pos 3 are already captured by the SMARTS
-
-    # 4. Carboxamido group at position 6 (R-CONH-).
-    carboxamido_pattern = Chem.MolFromSmarts("[N][C](=O)")
-    if carboxamido_pattern is None:
-        return False, "Invalid carboxamido SMARTS"
-    
-    # Identify the carbon at position 6. Find the nitrogen of the core and then one of its neighbors should be the carbon we look for.
-    match = substructure_matches[0]
-    
-    # The nitrogen in the core will be the first atom in the match.
-    nitrogen_index = match[0]
-
-    # Get the nitrogen of the core.
-    nitrogen_atom = mol.GetAtomWithIdx(nitrogen_index)
-    
-    # The carbon at position 6 is a neighbor of the nitrogen in the core. There could be other neighbors, but it will always be a carbon.
-    carbon_6_index = None
-    for neighbor in nitrogen_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:
-            carbon_6_index = neighbor.GetIdx()
-            break
-    
-    if carbon_6_index is None:
-        return False, "Could not identify carbon at position 6"
-    
-    # Check if any carboxamido group matches the whole molecule.
-    all_carboxamido_matches = mol.GetSubstructMatches(carboxamido_pattern)
-
-    if not all_carboxamido_matches:
-        return False, "Carboxamido group not found"
-    
-    found_correct_carboxamido = False
-    for carboxamido_match in all_carboxamido_matches:
-        #check that any of the carboxamido nitrogen atoms are neighbours of the carbon 6 of the penam core.
-        for atom_index in carboxamido_match:
-           atom = mol.GetAtomWithIdx(atom_index)
-           for neighbor in atom.GetNeighbors():
-               if neighbor.GetIdx() == carbon_6_index:
-                   found_correct_carboxamido = True
-                   break
-           if found_correct_carboxamido:
-               break
-        if found_correct_carboxamido:
-            break
-            
-    if not found_correct_carboxamido:
-        return False, "Carboxamido group not at position 6."
-    
 
     return True, "Molecule contains penam core, two methyl substituents, carboxylate, and carboxamido group"
