@@ -22,7 +22,7 @@ def is_macrolide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Ensure ring information is computed
-    Chem.GetSSSR(mol)
+    mol.UpdatePropertyCache(strict=False)
 
     # Get ring information
     ring_info = mol.GetRingInfo()
@@ -33,15 +33,22 @@ def is_macrolide(smiles: str):
     # Define lactone pattern where both carbonyl carbon and ester oxygen are in a ring
     lactone_smarts = '[C;R](=O)[O;R]'
     lactone_pattern = Chem.MolFromSmarts(lactone_smarts)
+    if lactone_pattern is None:
+        return False, "Invalid lactone SMARTS pattern"
 
-    # Iterate over rings
+    # Find all matches of the lactone pattern
+    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
+    if not lactone_matches:
+        return False, "No lactone functional groups found"
+
+    # Iterate over rings of size >=12
     for ring_atoms in atom_rings:
         ring_size = len(ring_atoms)
         if ring_size >= 12:
-            # Create a sub-molecule of the ring
-            submol = Chem.PathToSubmol(mol, ring_atoms)
-            # Search for lactone in the ring sub-molecule
-            if submol.HasSubstructMatch(lactone_pattern):
-                return True, f"Contains macrocyclic lactone ring of size {ring_size} with lactone functionality"
+            ring_atom_set = set(ring_atoms)
+            # Check if any lactone match is fully within the ring
+            for match in lactone_matches:
+                if set(match).issubset(ring_atom_set):
+                    return True, f"Contains macrocyclic lactone ring of size {ring_size} with lactone functionality"
 
     return False, "No macrocyclic lactone ring of size 12 or more with lactone functionality found"
