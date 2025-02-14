@@ -10,7 +10,7 @@ from rdkit import Chem
 def is_aldehyde(smiles: str):
     """
     Determines if a molecule is an aldehyde based on its SMILES string.
-    An aldehyde is a compound with a carbonyl group bonded to one hydrogen atom and one R group.
+    An aldehyde is a compound with a carbonyl group bonded to at least one hydrogen atom and to one R group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,7 +26,8 @@ def is_aldehyde(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the aldehyde functional group SMARTS pattern
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[!O]")  # Carbon with one H, double bonded to O, single bonded to any atom except O
+    # Matches carbon with at least one hydrogen, double bonded to oxygen, single bonded to carbon or hydrogen
+    aldehyde_pattern = Chem.MolFromSmarts("[$([CX3H][#6,#1])](=O)")
 
     # Check for aldehyde group
     if mol.HasSubstructMatch(aldehyde_pattern):
