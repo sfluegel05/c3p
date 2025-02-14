@@ -9,6 +9,7 @@ hydrogens has been replaced by nitro groups.
 """
 
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_nitrohydrocarbon(smiles: str):
     """
@@ -38,9 +39,9 @@ def is_nitrohydrocarbon(smiles: str):
     if not mol.HasSubstructMatch(nitro_pattern):
         return False, "No nitro groups present"
     
-    # Check if molecule contains at least one carbon-hydrogen bond
-    ch_bond_pattern = Chem.MolFromSmarts("[C-H]")
-    if not mol.HasSubstructMatch(ch_bond_pattern):
-        return False, "No carbon-hydrogen bonds present"
+    # Check if molecule has a hydrocarbon skeleton
+    hydrocarbon_pattern = Chem.MolFromSmarts("[#6;R]")  # Carbon in a ring or chain
+    if not mol.HasSubstructMatch(hydrocarbon_pattern):
+        return False, "No hydrocarbon skeleton present"
     
     return True, "Molecule is a nitrohydrocarbon"
