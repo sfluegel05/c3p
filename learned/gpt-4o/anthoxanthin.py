@@ -6,10 +6,10 @@ from rdkit import Chem
 def is_anthoxanthin(smiles: str):
     """
     Determines if a molecule is an anthoxanthin based on its SMILES string.
-    Anthoxanthins are a type of flavonoid with specific structural characteristics.
+    Anthoxanthins are flavonoids with specific structural characteristics.
 
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of molecule
 
     Returns:
         bool: True if molecule is an anthoxanthin, False otherwise
@@ -21,31 +21,29 @@ def is_anthoxanthin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define some SMARTS patterns for core flavonoid structure:
-    # Anthoxanthins have a typical flavone core structure
-    flavonoid_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)ccc1oc(=O)cc2c1")
-    hydroxyl_group_pattern = Chem.MolFromSmarts("[OX2H]")
-    methoxy_group_pattern = Chem.MolFromSmarts("O[C;H3]c")
-   
-    # Check for flavonoid core
-    if not mol.HasSubstructMatch(flavonoid_pattern):
+    # Use more general patterns for flavonoid core that can account for variations
+    flavonoid_core_patterns = [
+        Chem.MolFromSmarts("O=c1cc2ccccc2oc1"),  # Basic flavone pattern
+        Chem.MolFromSmarts("Oc1cc2c(O)cc(O)cc2oc1"),  # More complex flavonoid core
+    ]
+
+    # Check for the flavonoid core
+    if not any(mol.HasSubstructMatch(p) for p in flavonoid_core_patterns):
         return False, "Flavonoid core structure not found"
 
     # Check for hydroxyl groups - essential for anthoxanthins
+    hydroxyl_group_pattern = Chem.MolFromSmarts("[OX2H]")
     if not mol.HasSubstructMatch(hydroxyl_group_pattern):
         return False, "No hydroxyl groups found, these are essential for anthoxanthins"
 
-    # Methoxy groups are optional; they are common but not required
-    methoxy_matches = mol.GetSubstructMatches(methoxy_group_pattern)
-    has_methoxy = len(methoxy_matches) > 0
-
-    # Checking elemental composition or large ring structure is beyond SMILES matching
-    # Focus on typical anthoxanthin features and report if they include sugar/sulfate moieties
-
+    # Check for glycosylation pattern (sugar components)
+    sugar_pattern = Chem.MolFromSmarts("C1([OX2H][C@H]([O])C([O])[C@H](O)[C@H]1O)O")  # Simplified sugar pattern
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    has_sugar = len(sugar_matches) > 0
+    
     # Return results based on identified patterns
-    if has_methoxy:
-        return True, "Flavonoid core with hydroxyl and methoxy groups present"
-    else:
-        return True, "Flavonoid core with hydroxyl groups present"
+    details = "Flavonoid core with hydroxyl groups"
+    if has_sugar:
+        details += " and glycosylation present"
 
-    return False, "Does not match the expected features of an anthoxanthin"
+    return True, details
