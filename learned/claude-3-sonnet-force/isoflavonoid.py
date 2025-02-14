@@ -1,26 +1,45 @@
 """
 Classifies: CHEBI:50753 isoflavonoid
 """
-The previous program attempted to identify isoflavonoids by looking for a 1-benzopyran core and an aryl substituent at position 3. However, the outcomes show that it missed several known isoflavonoids, likely due to the following reasons:
+"""
+Classifies: CHEBI:16676 isoflavonoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Rigid pattern matching**: The program searches for the exact 1-benzopyran core structure, which may not account for various substitutions or modifications present in many isoflavonoids. Some isoflavonoids may have different ring systems or fused ring systems that are not captured by the rigid pattern.
+def is_isoflavonoid(smiles: str):
+    """
+    Determines if a molecule is an isoflavonoid based on its SMILES string.
+    An isoflavonoid is defined as any 1-benzopyran with an aryl substituent at position 3.
 
-2. **Limited aryl substituent recognition**: The program looks for an aryl substituent at position 3 using a simple SMARTS pattern. However, some isoflavonoids may have more complex substituents or substituents with additional fused ring systems that are not recognized by the pattern.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of additional checks**: The program does not perform any additional checks or constraints that could help filter out false positives or identify true positives more reliably. For example, it does not check for specific functional groups, atom environments, or molecular properties that are characteristic of isoflavonoids.
+    Returns:
+        bool: True if molecule is an isoflavonoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, you could consider the following approaches:
+    # Look for 1-benzopyran core
+    benzopyran_pattern = Chem.MolFromSmarts("O=C1C=2C=CC=CC2=CC=C1")
+    if not mol.HasSubstructMatch(benzopyran_pattern):
+        return False, "No 1-benzopyran core found"
 
-1. **Use more flexible substructure matching**: Instead of looking for the exact 1-benzopyran core, you could use a more flexible substructure matching approach that allows for various substitutions and modifications. This could be achieved by using a more general SMARTS pattern or by breaking down the substructure search into multiple steps.
+    # Look for aryl substituent at position 3
+    aryl_pattern = Chem.MolFromSmarts("[a]")
+    aryl_matches = mol.GetSubstructMatches(aryl_pattern, maxMatches=1, useChirality=True)
+    if not aryl_matches:
+        return False, "No aryl substituent found at position 3"
+    
+    aryl_idx = aryl_matches[0][0]
+    atom = mol.GetAtomWithIdx(aryl_idx)
+    neighbors = [n.GetIdx() for n in atom.GetNeighbors()]
+    if 2 not in neighbors:
+        return False, "Aryl substituent not attached at position 3"
 
-2. **Expand aryl substituent recognition**: Develop more sophisticated patterns or algorithms to recognize a wider range of aryl substituents, including those with additional fused ring systems or complex substitution patterns.
-
-3. **Incorporate additional checks**: Implement additional checks or filters based on functional groups, atom environments, molecular properties, or other structural features that are characteristic of isoflavonoids. This could include checking for specific oxygen patterns, ring systems, or other structural motifs.
-
-4. **Use machine learning**: If the structural patterns are too complex or diverse, you could consider training a machine learning model on a dataset of known isoflavonoids and non-isoflavonoids, using molecular descriptors or fingerprints as input features.
-
-5. **Combine multiple approaches**: Combine different approaches, such as substructure matching, functional group recognition, and molecular property checks, to improve the overall accuracy and robustness of the classification.
-
-6. **Investigate outliers**: Carefully investigate the outliers and false negatives to understand if there are any systematic errors or if the benchmark itself may have inconsistencies or errors.
-
-By addressing these limitations and incorporating more sophisticated pattern recognition techniques or machine learning approaches, you should be able to improve the performance of the isoflavonoid classification program.
+    return True, "Contains a 1-benzopyran core with an aryl substituent at position 3"
