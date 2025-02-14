@@ -5,6 +5,7 @@ Classifies: CHEBI:37141 organobromine compound
 Classifies: CHEBI:38241 organobromine compound
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_organobromine_compound(smiles: str):
     """
@@ -24,22 +25,16 @@ def is_organobromine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for bromine atoms
-    bromine_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 35]
-    if not bromine_atoms:
-        return False, "No bromine atoms present"
-
-    # Check for carbon-bromine bonds (direct and in rings)
-    has_c_br_bond = False
-    for br_atom in bromine_atoms:
-        for neighbor in br_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                has_c_br_bond = True
-                break
-        if has_c_br_bond:
+    # Check if molecule contains at least one C-Br bond
+    has_c_br = False
+    for bond in mol.GetBonds():
+        a1 = bond.GetBeginAtom()
+        a2 = bond.GetEndAtom()
+        if (a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 35) or (a1.GetAtomicNum() == 35 and a2.GetAtomicNum() == 6):
+            has_c_br = True
             break
 
-    if has_c_br_bond:
+    if has_c_br:
         return True, "Contains at least one carbon-bromine bond"
     else:
-        return False, "No carbon-bromine bonds found"
+        return False, "Does not contain any carbon-bromine bonds"
