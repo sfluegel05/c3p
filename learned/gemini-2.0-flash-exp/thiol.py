@@ -20,14 +20,25 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a thiol group (-SH) attached to a carbon atom (aliphatic or aromatic)
-    aliphatic_thiol_pattern = Chem.MolFromSmarts("[SH1][CX4]") # [SH1] explicitly captures sulfur with one H
-    aromatic_thiol_pattern = Chem.MolFromSmarts("[SH1][c]")  # [SH1] explicitly captures sulfur with one H
+    # Look for a sulfur atom attached to a carbon atom (aliphatic or aromatic)
+    thiol_pattern_aliphatic = Chem.MolFromSmarts("[S][CX4]")
+    thiol_pattern_aromatic = Chem.MolFromSmarts("[S][c]")
 
-    aliphatic_matches = mol.GetSubstructMatches(aliphatic_thiol_pattern)
-    aromatic_matches = mol.GetSubstructMatches(aromatic_thiol_pattern)
+    aliphatic_matches = mol.GetSubstructMatches(thiol_pattern_aliphatic)
+    aromatic_matches = mol.GetSubstructMatches(thiol_pattern_aromatic)
 
     if not aliphatic_matches and not aromatic_matches:
-        return False, "No thiol group (-SH) attached to a carbon atom found"
+          return False, "No sulfur atom attached to a carbon atom found"
 
-    return True, "Molecule contains a thiol group attached to a carbon"
+
+    for match in aliphatic_matches:
+        sulfur_atom = mol.GetAtomWithIdx(match[0])
+        if sulfur_atom.GetTotalNumHs() <= 1:
+             return True, "Molecule contains a thiol group attached to a carbon"
+
+    for match in aromatic_matches:
+        sulfur_atom = mol.GetAtomWithIdx(match[0])
+        if sulfur_atom.GetTotalNumHs() <= 1:
+             return True, "Molecule contains a thiol group attached to a carbon"
+             
+    return False, "No thiol group (-SH) attached to a carbon atom found"
