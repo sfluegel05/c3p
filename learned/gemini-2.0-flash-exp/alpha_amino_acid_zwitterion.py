@@ -33,25 +33,11 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     if not mol.HasSubstructMatch(nh3_pattern) or not mol.HasSubstructMatch(o_minus_pattern):
         return False, "Missing either positively charged nitrogen or negatively charged oxygen"
 
-    # Verify that there are NO uncharged COOH or NH2 (or other charged forms).
-    # This is not a robust check, but is helpful to avoid false positives.
-    nh2_pattern = Chem.MolFromSmarts("[NH2]")
-    cooh_pattern = Chem.MolFromSmarts("C(=O)O")
-    nh_plus_pattern = Chem.MolFromSmarts("[NH+]")
-    o_plus_pattern = Chem.MolFromSmarts("[O+]")
-    o_minus_2_pattern = Chem.MolFromSmarts("[O-2]")
-    nh2_minus_pattern = Chem.MolFromSmarts("[NH2-]")
-    nh_minus_pattern = Chem.MolFromSmarts("[NH-]")
-
-    if mol.HasSubstructMatch(nh2_pattern) or mol.HasSubstructMatch(cooh_pattern) \
-            or mol.HasSubstructMatch(nh_plus_pattern) or mol.HasSubstructMatch(o_plus_pattern) \
-            or mol.HasSubstructMatch(o_minus_2_pattern) or mol.HasSubstructMatch(nh2_minus_pattern) \
-            or mol.HasSubstructMatch(nh_minus_pattern):
-        return False, "Found uncharged/other charged amino/carboxyl groups, thus is not a zwitterion alpha-amino acid."
 
     # Exclude peptides (more than one alpha aminoacid)
     zwitterion_count = len(mol.GetSubstructMatches(zwitterion_pattern))
     if zwitterion_count > 1:
         return False, "Molecule contains multiple alpha-amino acid units (possibly a peptide)"
+
 
     return True, "Molecule contains the zwitterionic alpha-amino acid structure"
