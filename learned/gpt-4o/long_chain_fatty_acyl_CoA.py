@@ -22,8 +22,8 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Coenzyme A-specific SMARTS pattern: Recognizes phosphorylated ribose, adenosine, phosphopantetheine
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)C(O)C(C)(C)COP(O)(=O)OC[C@H]1O[C@H](CO[P](O)(O)=O)[C@H](O)[C@H]1OP(O)(O)=O")
+    # Refined Coenzyme A pattern: Check presence of key coenzyme A structure
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)O[C@H]1O[C@H](CO[P]([O-])([O-]))[C@H](O)[C@H]1OP(=O)([O-])[O-]")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No coenzyme A moiety found"
     
@@ -33,38 +33,34 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if not thioester_matches:
         return False, "No thioester linkage found"
 
-    # Detect longest carbon chain attached to thioester
+    # Detect carbon chain length, starting from thioester carbon (first atom in match)
+    # Traverse the molecule to determine the length of the longest contiguous carbon chain
     for match in thioester_matches:
-        carbon_chain = []
+        start_atom_idx = match[0]  # C(=O) carbon atom index
 
-        # Atom index for thioester carbon
-        atom_idx = match[0]
-        visited = set(match)
-        carbon_count = 0
+        # Use a breadth-first search (BFS) to determine carbon chain length
+        visited = set()
+        queue = [(start_atom_idx, 0)]  # (atom index, chain length)
+        max_chain_length = 0
         
-        def traverse_chain(atom_idx):
-            nonlocal carbon_count
-            queue = [atom_idx]
-            while queue:
-                current_idx = queue.pop()
-                current_atom = mol.GetAtomWithIdx(current_idx)
-                visited.add(current_idx)
-                
-                if current_atom.GetAtomicNum() == 6:  # Check for carbon
-                    carbon_chain.append(current_idx)
-                    carbon_count += 1
+        while queue:
+            current_idx, current_length = queue.pop(0)
+            if current_idx in visited:
+                continue
+            
+            visited.add(current_idx)
+            atom = mol.GetAtomWithIdx(current_idx)
+            
+            if atom.GetAtomicNum() == 6:  # Check for carbon
+                max_chain_length = max(max_chain_length, current_length)
 
-                for neighbor in current_atom.GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
-                        queue.append(neighbor_idx)
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited:
+                    queue.append((neighbor_idx, current_length + (1 if neighbor.GetAtomicNum() == 6 else 0)))
 
-        for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                traverse_chain(neighbor.GetIdx())
+        # Check if the detected longest carbon chain is in the range of 13 to 22
+        if 13 <= max_chain_length <= 22:
+            return True, f"Valid long-chain fatty acyl-CoA with {max_chain_length} carbon atoms in chain"
 
-        # Check carbon chain length
-        if 13 <= carbon_count <= 22:
-            return True, f"Valid long-chain fatty acyl-CoA with {carbon_count} carbon atoms in chain"
-    
     return False, "No suitable long-chain fatty acid chain found"
