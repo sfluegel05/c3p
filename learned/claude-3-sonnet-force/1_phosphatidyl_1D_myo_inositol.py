@@ -1,24 +1,61 @@
 """
 Classifies: CHEBI:16749 1-phosphatidyl-1D-myo-inositol
 """
-Based on the outcomes provided, it seems like the previous program has a few issues:
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors, AllChem
 
-1. **False Negatives**: The program is missing a significant number of true positive cases, as evident from the 361 false negatives. Upon examining some of the false negative examples, it appears that the program is failing to identify molecules with the correct inositol backbone and phosphate group at position 1, even though they have the two required fatty acid chains.
+def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
+    """
+    Determines if a molecule is a 1-phosphatidyl-1D-myo-inositol based on its SMILES string.
+    A 1-phosphatidyl-1D-myo-inositol is a phosphatidylinositol where the inositol moiety is the 1D-myo isomer,
+    and the phosphatidyl group is located at position 1. It should have two fatty acid chains attached.
 
-2. **False Positives**: Although the number of false positives is relatively low (15), it is still worth examining these cases to identify any potential flaws in the program's logic.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Analyzing the false positive examples, it seems that the program is incorrectly classifying molecules with an inositol backbone, a phosphate group at position 1, and only one fatty acid chain as 1-phosphatidyl-1D-myo-inositol. This is likely due to the program's requirement of having "two fatty acid chains" being too lenient or improperly implemented.
+    Returns:
+        bool: True if the molecule is a 1-phosphatidyl-1D-myo-inositol, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we can consider the following steps:
+    # Check for 1D-myo-inositol backbone
+    inositol_pattern = Chem.MolFromSmarts("[C@H]1(O[C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)O")
+    inositol_match = mol.GetSubstructMatches(inositol_pattern)
+    if not inositol_match:
+        return False, "No 1D-myo-inositol backbone found"
 
-1. **Refine the identification of the inositol backbone**: Instead of relying solely on the SMARTS pattern for the inositol backbone, we could incorporate additional checks to ensure that the identified substructure is indeed the correct inositol backbone. This could involve verifying the stereochemistry, connectivity, and atom types more rigorously.
+    # Check for phosphate group at position 1
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O[C@H]1[C@@H]([C@H]([C@@H]([C@H]([C@H]1O)O)O)O)O")
+    phosphate_match = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_match:
+        return False, "No phosphate group at position 1 found"
 
-2. **Improve the detection of fatty acid chains**: The current approach of using a generic SMARTS pattern for fatty acid chains may be too broad, leading to false positives. We could refine the pattern to specifically target long, hydrophobic carbon chains typically found in fatty acids. Additionally, we could incorporate checks for the presence of specific functional groups (e.g., carbonyl groups) that are common in fatty acid chains.
+    # Check for two fatty acid chains
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern, maxMatches=2)
+    if len(fatty_acid_matches) != 2:
+        return False, f"Found {len(fatty_acid_matches)} fatty acid chains, expected exactly 2"
 
-3. **Ensure the correct number of fatty acid chains**: Instead of simply checking if there are at least two fatty acid chain matches, we should explicitly count the number of distinct fatty acid chains and ensure that there are exactly two.
+    # Check for long fatty acid chains (>= 12 carbon atoms)
+    fatty_acid_chains = []
+    for match in fatty_acid_matches:
+        chain = []
+        for idx in match:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() == 6:  # Carbon
+                chain.append(atom)
+        if len(chain) >= 12:
+            fatty_acid_chains.append(chain)
+    if len(fatty_acid_chains) != 2:
+        return False, "Fatty acid chains are too short"
 
-4. **Consider additional constraints**: Depending on the specific requirements of the 1-phosphatidyl-1D-myo-inositol class, we may need to incorporate additional constraints or checks. For example, we could verify the molecular weight range, the presence of specific functional groups, or the stereochemistry of the fatty acid chains.
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 25 or o_count < 9:
+        return False, "Insufficient carbon and oxygen atoms for a 1-phosphatidyl-1D-myo-inositol"
 
-5. **Examine outliers and potential benchmark errors**: While the benchmark dataset is generally reliable, there may be occasional mistakes or inconsistencies. If you strongly believe that some of the false positive or false negative cases are incorrectly classified by the benchmark, you could consider ignoring those outliers or adjusting the program accordingly, while providing a clear explanation for your reasoning.
-
-By addressing these issues and refining the program's logic, we should be able to improve the classification accuracy and reduce the number of false positives and false negatives.
+    return True, "Molecule is a 1-phosphatidyl-1D-myo-inositol with two fatty acid chains attached"
