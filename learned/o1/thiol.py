@@ -25,31 +25,42 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define thiol SMARTS pattern: sulfur atom bonded to hydrogen and carbon
-    # [#16]-[H]: sulfur bonded to hydrogen
-    # [#16]-[H]-[C]: sulfur bonded to hydrogen and carbon
-    thiol_pattern = Chem.MolFromSmarts("[#16][H]")  # Sulfur atom bonded to hydrogen
-
-    # Search for thiol group
-    matches = mol.GetSubstructMatches(thiol_pattern)
-    if matches:
-        for match in matches:
-            s_idx = match[0]  # Index of the sulfur atom
-            s_atom = mol.GetAtomWithIdx(s_idx)
+    # Iterate over sulfur atoms in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 16:  # Sulfur atom
             # Check if sulfur is bonded to at least one carbon atom
             bonded_to_carbon = False
-            for neighbor in s_atom.GetNeighbors():
+            for neighbor in atom.GetNeighbors():
                 if neighbor.GetAtomicNum() == 6:  # Carbon atom
                     bonded_to_carbon = True
                     break
-            if bonded_to_carbon:
-                # Exclude peptides by checking for peptide bonds (amide linkages)
-                # Peptide bond pattern: [C](=O)[N]
-                peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
-                if mol.HasSubstructMatch(peptide_bond_pattern):
-                    return False, "Contains a thiol group but is likely a peptide or protein"
-                else:
-                    return True, "Contains a thiol group (-SH) attached to a carbon atom"
-        return False, "Thiol group (-SH) not attached to a carbon atom"
-    else:
-        return False, "No thiol group (-SH) found"
+            if not bonded_to_carbon:
+                continue  # Not a thiol if sulfur is not bonded to carbon
+
+            # Get total number of hydrogens (implicit and explicit) on sulfur
+            total_hydrogens = atom.GetTotalNumHs()
+            if total_hydrogens != 1:
+                continue  # Thiol sulfur must have exactly one hydrogen
+
+            # Check that sulfur is not double-bonded (no multiple bonds)
+            multiple_bonds = False
+            for bond in atom.GetBonds():
+                if bond.GetBondType() != Chem.BondType.SINGLE:
+                    multiple_bonds = True
+                    break
+            if multiple_bonds:
+                continue  # Not a thiol if sulfur has multiple bonds
+
+            # Check that sulfur is not part of a disulfide bond (S-S)
+            bonded_to_sulfur = False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 16:  # Sulfur atom
+                    bonded_to_sulfur = True
+                    break
+            if bonded_to_sulfur:
+                continue  # Not a thiol if sulfur is bonded to another sulfur
+
+            # All conditions met; molecule contains a thiol group
+            return True, "Contains thiol group (-SH) attached to a carbon atom"
+
+    return False, "No thiol group (-SH) attached to a carbon atom found"
