@@ -2,7 +2,6 @@
 Classifies: CHEBI:48953 cyclohexenones
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_cyclohexenones(smiles: str):
     """
@@ -17,31 +16,35 @@ def is_cyclohexenones(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES
+    # Parse SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find six-membered rings
+    # Get ring information
     ring_info = mol.GetRingInfo()
     for ring in ring_info.BondRings():
-        if len(ring) == 6:
-            # Check if it has exactly one ketone group (C=O)
+        if len(ring) == 6:  # Focus on six-membered rings
             ketone_count = 0
-            double_bond_count = 0
+            other_double_bond_count = 0
 
+            # Iterate over all bonds in the ring
             for bond_idx in ring:
                 bond = mol.GetBondWithIdx(bond_idx)
                 if bond.GetBondType() == Chem.BondType.DOUBLE:
-                    double_bond_count += 1
-                    # Check if it's a double bond with oxygen (part of ketone)
                     begin_atom = bond.GetBeginAtom()
                     end_atom = bond.GetEndAtom()
+
+                    # Check if the bond is part of a ketone (C=O)
                     if (begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 8) or \
                        (begin_atom.GetAtomicNum() == 8 and end_atom.GetAtomicNum() == 6):
                         ketone_count += 1
-
-            if ketone_count == 1 and double_bond_count == 2:
+                    else:
+                        # Count other types of double bonds
+                        other_double_bond_count += 1
+            
+            # Verify that there is exactly one ketone and exactly one additional double bond
+            if ketone_count == 1 and other_double_bond_count == 1:
                 return True, "Contains a six-membered ring with one ketone group and another double bond"
-    
+            
     return False, "Does not meet cyclohexenone criteria"
