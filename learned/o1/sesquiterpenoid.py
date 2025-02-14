@@ -25,16 +25,18 @@ def is_sesquiterpenoid(smiles: str):
 
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    # Count oxygen atoms
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    # Count other heteroatoms (excluding hydrogen)
-    heteroatoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1,6])
+    # Sesquiterpenoids typically have around 15 carbons, but can vary due to rearrangements or loss of methyl groups
+    if c_count < 13 or c_count > 17:
+        return False, f"Carbon count is {c_count}, which is not typical for a sesquiterpenoid (13-17 carbons including possible modifications)"
 
-    # Sesquiterpenoids typically have around 15 carbons
-    if c_count < 12 or c_count > 15:
-        return False, f"Carbon count is {c_count}, which is not typical for a sesquiterpenoid (12-15 carbons including possible modifications)"
+    # Check for presence of rings
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    if num_rings == 0:
+        return False, "No ring structures found, which is uncommon for sesquiterpenoids"
 
-    # Check for terpenoid functional groups (hydroxyls, ketones, aldehydes, carboxyls, esters, epoxides)
+    # Check for common terpenoid functional groups
+    # (hydroxyls, ketones, aldehydes, carboxylic acids, esters, ethers, epoxides, double bonds)
     functional_groups = {
         'hydroxyl': '[OX2H]',                         # Alcohol
         'ketone': '[CX3](=O)[#6]',                   # Ketone
@@ -55,20 +57,11 @@ def is_sesquiterpenoid(smiles: str):
     if not fg_found:
         return False, "No typical terpenoid functional groups found"
 
-    # Check for isoprene units (C5 units)
-    isoprene_pattern = Chem.MolFromSmarts('C(=C)C=C(C)C')
-    if isoprene_pattern:
-        isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-        if len(isoprene_matches) < 2:
-            return False, f"Found {len(isoprene_matches)} isoprene units, less than expected for a sesquiterpenoid"
-    else:
-        return False, "Invalid isoprene SMARTS pattern"
-
-    # Optional: Check for ring systems common in sesquiterpenoids (e.g., 5 or 6 membered rings)
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings == 0:
-        return False, "No ring structures found, which is uncommon for sesquiterpenoids"
+    # Check that molecule is mostly composed of C, H, O, N, S atoms
+    allowed_atomic_nums = {1, 6, 7, 8, 16}  # H, C, N, O, S
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_atomic_nums:
+            return False, f"Contains heteroatom {atom.GetSymbol()} not typical in sesquiterpenoids"
 
     # If all checks pass, classify as sesquiterpenoid
-    return True, "Molecule meets criteria for a sesquiterpenoid (carbon count, functional groups, isoprene units, ring structures)"
+    return True, "Molecule meets criteria for a sesquiterpenoid (carbon count, functional groups, ring structures)"
