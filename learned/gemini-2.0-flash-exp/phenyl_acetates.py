@@ -21,26 +21,9 @@ def is_phenyl_acetates(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phenyl ring
-    phenyl_pattern = Chem.MolFromSmarts("c1ccccc1")
-    if not mol.HasSubstructMatch(phenyl_pattern):
-        return False, "No phenyl ring found"
-
-    # Check for acetate group connected to oxygen
-    acetate_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]-[OX2]")
-    acetate_matches = mol.GetSubstructMatches(acetate_pattern)
-
-    if not acetate_matches:
-        return False, "No acetate group found"
-
-    for match in acetate_matches:
-        # The last oxygen in the match is the one that should be attached to phenyl
-        oxygen_index = match[2]
-        oxygen_atom = mol.GetAtomWithIdx(oxygen_index)
-        
-        for neighbor in oxygen_atom.GetNeighbors():
-           for phenyl_atom_idx in mol.GetSubstructMatch(phenyl_pattern):
-               if neighbor.GetIdx() == phenyl_atom_idx:
-                   return True, "Contains a phenyl ring with at least one acetate group attached to a phenol oxygen"
-
-    return False, "Acetate is not attached to a phenyl ring"
+    # Check for phenyl ring and acetate directly attached using SMARTS
+    phenyl_acetate_pattern = Chem.MolFromSmarts("CC(=O)Oc1ccccc1")
+    if mol.HasSubstructMatch(phenyl_acetate_pattern):
+         return True, "Contains a phenyl ring with an acetate group directly attached via a phenolic oxygen"
+    
+    return False, "No phenyl acetate structure found"
