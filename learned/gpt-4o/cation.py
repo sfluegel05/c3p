@@ -26,6 +26,20 @@ def is_cation(smiles: str):
 
     # Check if net charge is positive
     if net_charge > 0:
-        return True, f"Net positive charge of {net_charge} detected"
+        # Additional checking for specific cation groups
+        # Here we define known cation groups' SMARTS patterns
+        cation_patterns = [
+            '[N+]',     # Generic quaternary ammonium
+            '[P+]',     # Phosphonium
+            '[S+]',     # Sulfonium
+            '[O+]',     # Oxonium (less common but valid)
+            '[C+]',     # Carbocation
+            '[Fe+3]',   # Ferric ion example
+            # Add more if necessary
+        ]
+        
+        for pattern in cation_patterns:
+            if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+                return True, f"Positive charge of {pattern} detected"
 
-    return False, "No net positive charge found"
+    return False, "No cationic groups found"
