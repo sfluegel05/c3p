@@ -31,20 +31,17 @@ def is_aromatic_amino_acid(smiles: str):
     if not amino_acid_match:
         return False, "No amino acid pattern found"
     
-    # Get smallest set of smallest rings (SSSR)
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
+    # Check if any atom in the amino acid backbone is aromatic
+    amino_acid_atoms = [mol.GetAtomWithIdx(idx) for idx in amino_acid_match[0]]
+    aromatic_atoms = [atom for atom in amino_acid_atoms if atom.GetIsAromatic()]
+    if not aromatic_atoms:
+        return False, "No aromatic atoms in amino acid backbone"
     
-    # Check for aromatic rings
-    aromatic_rings = [ring for ring in ring_info.BondRings() if ring_info.IsBondAromaticRing(ring)]
-    if not aromatic_rings:
-        return False, "No aromatic rings found"
+    # Additional checks for increased confidence
+    has_carboxyl = any(atom.GetDegree() == 2 and atom.GetFormalCharge() == -1 for atom in mol.GetAtoms())
+    has_amino = any(atom.GetDegree() == 3 and atom.GetFormalCharge() == 0 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 3 for atom in mol.GetAtoms())
     
-    # Check if aromatic ring is part of the amino acid backbone
-    amino_acid_atoms = set.union(*[set(mol.GetAtomWithIdx(idx).GetNeighbors()) for idx in amino_acid_match[0]])
-    for ring in aromatic_rings:
-        ring_atoms = set(ring)
-        if ring_atoms.intersection(amino_acid_atoms):
-            return True, "Contains an aromatic ring and an amino acid backbone"
-    
-    return False, "Aromatic ring not part of amino acid backbone"
+    if has_carboxyl and has_amino:
+        return True, "Contains an aromatic ring in the amino acid backbone, with carboxyl and amino groups"
+    else:
+        return False, "Missing carboxyl or amino group"
