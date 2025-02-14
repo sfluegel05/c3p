@@ -21,11 +21,10 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Define a steroid core pattern with a marked position (position 3)
+    # 1. Define a flexible steroid core pattern with a marked position (position 3)
     # This pattern matches the four fused rings of a steroid, with possible double bonds
-    # and it marks the carbon at position 3 using the special atom index 1
-    steroid_core_pattern = Chem.MolFromSmarts("[CX3,CX4]1[CX3,CX4][CX3,CX4][CX3,CX4]2[CX3,CX4][CX3,CX4][CX3,CX4]3[CX3,CX4][CX3,CX4]4[CX3,CX4]1[CX3,CX4]243")
-
+    # and marks a carbon at position 3 using the special atom index 1
+    steroid_core_pattern = Chem.MolFromSmarts("[C]1-[C]-[C]-[C]2-[C]-[C]-[C]3-[C]-[C]4-[C]1-[C]243")
 
     # Find the steroid core in the molecule
     core_match = mol.GetSubstructMatch(steroid_core_pattern)
@@ -35,26 +34,14 @@ def is_sterol_ester(smiles: str):
     #get position 3, by the marked atom in the SMARTS
     pos3_atom = core_match[0]
 
-    # 2. Define the ester pattern
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    
+    # 2. Define the ester pattern connected to any C of the steroid core
+    ester_pattern = Chem.MolFromSmarts("[C]1-[C]-[C]-[C]2-[C]-[C]-[C]3-[C]-[C]4-[C]1-[C]243[C](=O)O")
+
     # Find all ester groups
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    # 3. Check if any ester is connected to position 3
-    ester_at_pos3 = False
-    for ester_match in ester_matches:
-        for ester_atom in ester_match:
-          ester_atom_obj = mol.GetAtomWithIdx(ester_atom)
-          for neighbor_atom in ester_atom_obj.GetNeighbors():
-              if neighbor_atom.GetIdx() == pos3_atom:
-                ester_at_pos3 = True
-                break
-        if ester_at_pos3:
-          break
-    
-    if not ester_at_pos3:
-      return False, "No ester group found at position 3 of the steroid core"
+    ester_matches = mol.GetSubstructMatch(ester_pattern)
 
 
+    if not ester_matches:
+      return False, "No ester group found connected to the steroid core"
+    
     return True, "Sterol ester detected: Contains a steroid core with an ester bond at position 3"
