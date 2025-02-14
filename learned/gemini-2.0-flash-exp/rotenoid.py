@@ -23,17 +23,12 @@ def is_rotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core rotenoid skeleton using SMARTS - this will be a simplified core, to catch many substitutions
-    # The SMARTS pattern represents the fused ring system with the key oxygen atoms and carbonyl
-    # This is a challenging part to get right for all rotenoids.
-    core_pattern = Chem.MolFromSmarts("c1cc2OC3c4c(c1)C(=O)C5=C(C=C(O3)C=C5)OC4")
-    
+    # Define the core rotenoid skeleton using SMARTS - a more flexible core
+    core_pattern = Chem.MolFromSmarts("[c]12[O][c]3[c]4[c]([c]1)[C](=[O])[c]5[c]([c]([O]3)[c]2)[O][c]45")
+    if core_pattern is None:
+        return False, "Invalid SMARTS pattern"
+
     if not mol.HasSubstructMatch(core_pattern):
          return False, "Core tetrahydrochromenochromene skeleton not found"
-
-    # Additional checks could be added here, like for a carbonyl group in a specific position (position 12),
-    # number of methoxy groups, if available
-    # These additional checks are omitted for simplicity and to classify as many molecules as possible
-
 
     return True, "Contains the core tetrahydrochromenochromene skeleton, consistent with a rotenoid"
