@@ -2,13 +2,13 @@
 Classifies: CHEBI:24043 flavones
 """
 """
-Classifies: CHEBI:17794 flavone
+Classifies: CHEBI:17794 flavones
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-def is_flavone(smiles: str):
+def is_flavones(smiles: str):
     """
     Determines if a molecule is a flavone based on its SMILES string.
     A flavone is a flavonoid with a 2-aryl-1-benzopyran-4-one (2-arylchromen-4-one) skeleton and its substituted derivatives.
