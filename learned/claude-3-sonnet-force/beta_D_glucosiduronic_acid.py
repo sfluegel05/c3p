@@ -37,8 +37,8 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     # Check for glycosidic bond connecting beta-D-glucuronic acid to the rest of the molecule
     for match in matches:
         o_idx = match[0]  # Index of the ring oxygen in beta-D-glucuronic acid
-        neighbors = [mol.GetBondWithAtomAtomIndices(o_idx, n).GetBondType() for n in mol.GetAtomWithIdx(o_idx).GetNeighbors()]
-        if "SINGLE" in neighbors and mol.HasSubstructMatch(glycosidic_bond, atomIds=[o_idx]):
+        neighbors = [mol.GetBondBetweenAtoms(o_idx, n).GetBondType() for n in mol.GetAtomWithIdx(o_idx).GetNeighbors()]
+        if Chem.BondType.SINGLE in neighbors and mol.HasSubstructMatch(glycosidic_bond, atomIds=[o_idx]):
             # Additional checks (optional)
             mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
             if mol_wt < 300:  # Adjust as needed
