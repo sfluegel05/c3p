@@ -21,22 +21,14 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone core SMARTS with a placeholder for the hydroxyl group on C3
-    # the core pattern is C1-C(=O)-C(-O-)-C2=CC=CC=C2-C1
-    flavanone_core_smarts = "[C]1[C](=[O])[C]([O])[C]2=CC=CC=C2[C]1"
+    # Define the flavanone core SMARTS with the hydroxyl group at C3
+    # The core SMARTS should represent the ring with O-C-C(=O)-C-C-C plus the hydroxyl on the carbon adjacent to the C=O
+    flavanone_core_smarts = "[C]1[C](=[O])[C]([OH])[C][C][O]1"
     flavanone_core_pattern = Chem.MolFromSmarts(flavanone_core_smarts)
     
     if not mol.HasSubstructMatch(flavanone_core_pattern):
         return False, "Flavanone core not found"
     
-    # Check specifically for a hydroxyl group directly attached to the carbon at position 3
-    # using a SMARTS pattern with the C3 carbon specified as the one adjacent to the carbonyl
-    hydroxyl_c3_smarts = "[CH]([O])[C](=[O])"
-    hydroxyl_c3_pattern = Chem.MolFromSmarts(hydroxyl_c3_smarts)
-    
-    if not mol.HasSubstructMatch(hydroxyl_c3_pattern):
-       return False, "Hydroxyl group not found at C3 position"
-   
     # Optional checks based on molecular weight, carbon and oxygen count to see if it is close to dihydroflavonols.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 250:
