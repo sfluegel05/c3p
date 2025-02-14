@@ -1,24 +1,52 @@
 """
 Classifies: CHEBI:33913 corrinoid
 """
-The previous program attempts to classify molecules as corrinoids or corrinoid precursors/derivatives based on the presence of specific structural patterns. Here's an analysis of the outcomes and potential improvements:
+"""
+Classifies: CHEBI:27042 corrinoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **True Positives**: The program correctly identified several corrinoid structures, such as methylcobalamin, cyanopseudocoenzyme B12, adenosylpseudocoenzyme B12, adenosylcobinamide, cob(II)inamide, cob(I)alamin, and others. These molecules contain the corrin macrocycle or precursor patterns, and in some cases, cobalt coordination.
+def is_corrinoid(smiles: str):
+    """
+    Determines if a molecule is a corrinoid based on its SMILES string.
+    A corrinoid is a derivative of the corrin nucleus, which contains four reduced or partly reduced pyrrole rings
+    joined in a macrocycle by three =C- groups and one direct carbon-carbon bond linking alpha positions.
 
-2. **False Positives**: The program incorrectly classified several molecules as corrinoids due to the presence of specific substructures that are common in corrinoid modifications, but not necessarily indicative of corrinoids themselves. These molecules often contain peptide-like structures with [N&R]C(=O)CC[C@@H] or other patterns.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **False Negatives**: The program missed several corrinoid structures, such as precorrin-6X, precorrin-3B, cobalt-precorrin-5B, and others. This is likely because these molecules have slightly different structural patterns or modifications that are not captured by the current set of SMARTS patterns.
-
-To improve the program, we can consider the following:
-
-a. **Expand the set of SMARTS patterns**: The current set of patterns may not be comprehensive enough to cover all corrinoid structures and their derivatives/precursors. We could analyze the false negatives and add additional patterns to account for the missed structures.
-
-b. **Use a more holistic approach**: Instead of relying solely on the presence of specific substructures, we could consider more holistic properties of corrinoids, such as the presence of the corrin macrocycle, the number and arrangement of pyrrole rings, the presence of cobalt coordination, and the overall molecular weight and composition.
-
-c. **Incorporate machine learning**: Instead of hard-coding rules and patterns, we could consider training a machine learning model on a large dataset of corrinoid and non-corrinoid structures. This would allow the model to learn the relevant features and patterns automatically.
-
-d. **Consider the chemical context**: Some of the false positives may be due to the presence of corrinoid-like substructures in non-corrinoid molecules. We could consider the chemical context, such as the functional groups, molecular weight, and overall structure, to better differentiate corrinoids from non-corrinoids.
-
-e. **Investigate potential issues with the benchmark**: While we should trust the benchmark to some extent, there may be occasional or systematic mistakes. If you strongly believe that the classifications made by your program are consistent with your understanding of corrinoids, you could consider ignoring some of the outliers, but provide a clear explanation for your reasoning.
-
-Given the complexity of corrinoid structures and the potential for structural variations, a combination of approaches (e.g., expanded SMARTS patterns, holistic properties, machine learning, and chemical context) may be necessary to achieve highly accurate classification.
+    Returns:
+        bool: True if molecule is a corrinoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for corrin macrocycle pattern
+    corrin_pattern = Chem.MolFromSmarts("[n&r4,r5,r6]1[n&r4,r5,r6][c&r4,r5,r6][c&r4,r5,r6][n&r4,r5,r6][c&r4,r5,r6][c&r4,r5,r6][n&r4,r5,r6]1")
+    if not mol.HasSubstructMatch(corrin_pattern):
+        return False, "No corrin macrocycle found"
+    
+    # Count number of reduced pyrrole rings
+    reduced_pyrrole_pattern = Chem.MolFromSmarts("[Nr4,r5,r6]")
+    reduced_pyrroles = len(mol.GetSubstructMatches(reduced_pyrrole_pattern))
+    if reduced_pyrroles < 4:
+        return False, f"Found {reduced_pyrroles} reduced pyrrole rings, need at least 4"
+    
+    # Look for three =C- groups and one direct C-C bond linking alpha positions
+    alpha_link_pattern = Chem.MolFromSmarts("[c&r4,r5,r6][c&r4,r5,r6]")
+    alpha_links = mol.GetSubstructMatches(alpha_link_pattern)
+    if len(alpha_links) != 1:
+        return False, "Incorrect number of alpha-linked carbon atoms"
+    
+    # Check for cobalt coordination
+    cobalt_pattern = Chem.MolFromSmarts("[Co]")
+    if not mol.HasSubstructMatch(cobalt_pattern):
+        return False, "No cobalt coordination found"
+    
+    return True, "Contains corrin macrocycle with 4 reduced pyrrole rings, 3 =C- groups, 1 C-C alpha link, and cobalt coordination"
