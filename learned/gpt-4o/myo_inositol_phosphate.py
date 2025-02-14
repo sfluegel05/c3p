@@ -22,18 +22,20 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the myo-inositol stereochemistry pattern
-    # Myo-inositol configuration follows [C@H] or [C@@H] pattern correctly alternating
-    myo_inositol_pattern = Chem.MolFromSmarts("C1([C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O)")
+    # Check for cyclohexane core with exact hydroxyl position (stereochemistry included)
+    # In myo-inositol, all hydroxyl groups are oriented in a specific manner
+    myo_inositol_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1(O)")
     if not mol.HasSubstructMatch(myo_inositol_pattern):
-        return False, "Molecule does not match the myo-inositol stereochemistry"
-
-    # Check for the presence of phosphate groups (consider both -P(O)(O)=O and -P(O)(=O)-O forms)
-    phosphate_pattern1 = Chem.MolFromSmarts("OP(=O)(O)O")
-    phosphate_pattern2 = Chem.MolFromSmarts("OP(=O)(O)O")  # alternative phosphate visualization
-    phosphate_count1 = len(mol.GetSubstructMatches(phosphate_pattern1))
-    phosphate_count2 = len(mol.GetSubstructMatches(phosphate_pattern2))
-    if phosphate_count1 + phosphate_count2 == 0:
+        return False, "Molecule does not match the myo-inositol configuration"
+    
+    # Search for phosphate groups - note that phosphates can be complex with different charged states
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)[O-]")
+    if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate groups found"
+    
+    # Count number of phosphate groups, expecting at least one
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) == 0:
+        return False, "Insufficient phosphate groups to qualify as myo-inositol phosphate"
 
-    return True, "Molecule matches the myo-inositol stereochemistry with phosphate groups attached"
+    return True, "Molecule contains myo-inositol core with phosphate groups attached"
