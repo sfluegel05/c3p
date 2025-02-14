@@ -25,18 +25,30 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for amino acid backbone pattern (N-C-C-C=O)
-    amino_acid_pattern = Chem.MolFromSmarts("[N;X3][C;X4][C;X4][C;X3](=O)[O;X2]")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    if not amino_acid_matches:
+    # Look for acetyl group attached to nitrogen
+    acetyl_pattern = Chem.MolFromSmarts("CC(=O)N")
+    if not mol.HasSubstructMatch(acetyl_pattern):
+        return False, "No acetyl group attached to nitrogen"
+    
+    # Look for amino acid backbone (C-N-C-C=O)
+    amino_acid_pattern = Chem.MolFromSmarts("[C;X4][N;X3][C;X4][C;X3](=[O;X1])[O;X2]")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No amino acid backbone found"
     
-    # Check if the amino nitrogen has an acetyl group attached
-    for match in amino_acid_matches:
-        amino_N = match[0]
-        amino_atom = mol.GetAtomWithIdx(amino_N)
-        for neighbor in amino_atom.GetNeighbors():
-            if neighbor.GetSmarts() == "CC(=O)":
-                return True, "Contains acetyl group attached to amino nitrogen of an amino acid"
+    # Check if the nitrogen attached to the acetyl group is also part of the amino acid backbone
+    acetyl_N = mol.GetSubstructMatches(acetyl_pattern)[0][1]
+    amino_acid_N = mol.GetSubstructMatches(amino_acid_pattern)[0][1]
+    if acetyl_N != amino_acid_N:
+        return False, "Acetyl group not attached to amino acid nitrogen"
     
-    return False, "No acetyl group attached to amino nitrogen"
+    # Count number of nitrogens - should be 1 for N-acetyl-amino acids
+    n_nitrogens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_nitrogens != 1:
+        return False, "More than one nitrogen atom present"
+    
+    # Check for carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxylic acid group found"
+    
+    return True, "Contains acetyl group attached to nitrogen of an amino acid backbone"
