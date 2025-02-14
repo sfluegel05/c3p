@@ -2,41 +2,61 @@
 Classifies: CHEBI:35341 steroid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
 
 def is_steroid(smiles: str):
     """
     Determines if a molecule is a steroid based on its SMILES string.
-    A steroid is identified by the cyclopenta[a]phenanthrene carbon skeleton with flexible pattern matching
-    for typical structural variations and functional groups.
-    
+    A steroid is identified by the presence of a cyclopenta[a]phenanthrene carbon skeleton,
+    typically comprising three 6-membered rings and one 5-membered ring, with flexibility for common
+    functional modifications.
+
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the chemical compound
 
     Returns:
         bool: True if molecule is a steroid, False otherwise
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Examine ring structures - steroids have three 6-membered rings and one 5-membered ring
+    ring_info = mol.GetRingInfo()
+    sssr = ring_info.NumRings()
+    
+    if sssr < 4:
+        return False, "Fewer than 4 rings identified, not a typical steroid ring system"
+    
+    six_membered_rings = sum(1 for ring in ring_info.AtomRings() if len(ring) == 6)
+    five_membered_rings = sum(1 for ring in ring_info.AtomRings() if len(ring) == 5)
+    
+    if six_membered_rings < 3 or five_membered_rings < 1:
+        return False, "Steroid structure not found in terms of 6:5 ring pattern"
+    
+    # Check for presence of typical functional groups and common modifications
+    # Example: methyl groups at specific positions which are common in steroids
+    methyl_smarts = Chem.MolFromSmarts("[C](C)(C)[CH](C)")
+    if not mol.HasSubstructMatch(methyl_smarts):
+        return False, "Missing typical methyl groups seen in many steroids"
+    
+    # Consider typical molecular weight range of steroids if needed
+    mol_weight = Descriptors.MolWt(mol)
+    if mol_weight < 250 or mol_weight > 500:
+        return False, "Molecular weight atypical for steroids"
+    
+    # Optionally, add more checks for specific functional groups (hydroxyl, carbonyl, etc.)
+    # Hydroxyl presence (common in many steroids)
+    hydroxyl_smarts = Chem.MolFromSmarts("[OX2H]")
+    if mol.HasSubstructMatch(hydroxyl_smarts):
+        return True, "Molecule matches steroid structure with hydroxyl group."
+    
+    return True, "Molecule matches typical steroid structure"
 
-    # Generalized steroid backbone pattern - cyclopenta[a]phenanthrene with flexible saturation
-    steroid_pattern = Chem.MolFromSmarts("C12C3C4C1C5C3C(C4)CCC5C2")
-    if mol.HasSubstructMatch(steroid_pattern):
-        # Optional: Check for typical methyl group presence
-        methyl_checker = Chem.MolFromSmarts("[C@@H]([CH3])[C@H]1C[C@@H]2CC[C@]3C1[C@H]2CC[C@@]3C")
-        methyl_matches = mol.GetSubstructMatches(methyl_checker)
-        if methyl_matches:
-            return True, "Molecule contains a steroid backbone with typical methyl groups."
-
-        return True, "Molecule contains a steroid backbone."
-
-    return False, "No detectable steroid backbone structure found."
-
-# Examples SMILES test
+# Examples SMILES test (these should return True)
 smiles_examples = [
     "C[C@]12CC[C@H]3[C@H]([C@H]1CC[C@]2(C#C)O)CCC4=C3C=CC(=C4)OC",  # Expected True
     "CC(C)=CCC[C@](C)(O)[C@H]1CC[C@]2(C)[C@@H]1[C@H](O)C[C@@H]1[C@@]3(C)CC[C@H](O)C(C)(C)[C@@H]3CC[C@@]21C",  # True
