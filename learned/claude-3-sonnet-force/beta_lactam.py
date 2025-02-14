@@ -2,11 +2,12 @@
 Classifies: CHEBI:35627 beta-lactam
 """
 """
-Classifies: CHEBI:35458 beta-lactams
+Classifies: CHEBI:35460 beta-lactam
 A lactam in which the amide bond is contained within a four-membered ring,
 which includes the amide nitrogen and the carbonyl carbon.
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_beta_lactam(smiles: str):
     """
@@ -24,9 +25,18 @@ def is_beta_lactam(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for 4-membered ring with N and C=O
-    beta_lactam_pattern = Chem.MolFromSmarts("[NR2]1[CR2][CR2][CR2]1=O")
-    if mol.HasSubstructMatch(beta_lactam_pattern):
-        return True, "Contains a 4-membered ring with an amide nitrogen and a carbonyl carbon (key structural feature of beta-lactams)"
-    else:
-        return False, "Does not contain the key structural feature of beta-lactams (4-membered ring with N and C=O)"
+    # Look for 4-membered ring with N and C=O groups
+    beta_lactam_pattern = Chem.MolFromSmarts("[NR2][CR2]1[CR2][CR2]1=O")
+    if not mol.HasSubstructMatch(beta_lactam_pattern):
+        return False, "No beta-lactam ring found"
+
+    # Ensure the N and C=O are part of the same ring
+    rings = mol.GetRingInfo().AtomRings()
+    for ring in rings:
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        n_atom = next((atom for atom in ring_atoms if atom.GetAtomicNum() == 7), None)
+        c_atom = next((atom for atom in ring_atoms if atom.GetFormalCharge() == 0 and atom.GetAtomicNum() == 6 and atom.GetIsAromatic() == False), None)
+        if n_atom and c_atom and any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in c_atom.GetBonds()):
+            return True, "Contains a 4-membered ring with N and C=O groups"
+
+    return False, "No valid beta-lactam ring found"
