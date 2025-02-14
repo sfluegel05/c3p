@@ -5,7 +5,6 @@ Classifies: CHEBI:28034 beta-D-galactoside
 Classifies: CHEBI:28015 beta-D-galactoside
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_beta_D_galactoside(smiles: str):
     """
@@ -25,14 +24,17 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Assign stereochemistry based on heuristics
-    AllChem.AssignStereochemistryFromSmiles(mol)
-    
     # Look for beta-D-galactoside substructure
-    beta_gal_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H](O[C@@]1(O)CO)O)O)O")
-    beta_gal_matches = mol.GetSubstructMatches(beta_gal_pattern)
+    beta_gal_patterns = [
+        Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H](O[C@]1(O)CO)O)O)O"),  # Explicit stereochemistry
+        # Add more SMARTS patterns as needed
+    ]
     
-    if not beta_gal_matches:
+    for pattern in beta_gal_patterns:
+        beta_gal_matches = mol.GetSubstructMatches(pattern)
+        if beta_gal_matches:
+            break
+    else:
         return False, "No beta-D-galactoside substructure found"
     
     # Look for common substituents or modifications
@@ -49,8 +51,3 @@ def is_beta_D_galactoside(smiles: str):
             return True, "Contains beta-D-galactoside substructure with common modification"
     
     return True, "Contains unmodified beta-D-galactoside substructure"
-
-# Example usage
-smiles = "O([C@H]1[C@@H]([C@H]([C@H]([C@H](O1)CO)O)O[C@H]2[C@@H]([C@H]([C@@H]([C@H](O2)C(O)=O)O)OS(=O)(=O)O)O)O)C=3C=CC(=CC3)OC"
-result, reason = is_beta_D_galactoside(smiles)
-print(f"Is beta-D-galactoside? {result} ({reason})")
