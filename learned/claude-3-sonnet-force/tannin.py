@@ -1,28 +1,53 @@
 """
 Classifies: CHEBI:26848 tannin
 """
-After analyzing the previous program and the outcomes, it appears that the program has some limitations in accurately classifying tannins. Here are some observations and potential improvements:
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-1. **Overreliance on specific patterns**: The program heavily relies on the presence of glucose, gallic acid, phenol, catechol, and pyrogallol patterns to classify a molecule as a tannin. While these patterns are relevant, they may not be sufficient to cover the diverse range of tannin structures. Tannins can have various substituents, ring systems, and linkages, which may not match the predefined patterns.
+def is_tannin(smiles):
+    """
+    Determines if a molecule is a tannin based on its SMILES string.
+    Tannins are polyphenolic compounds with a diverse range of structures, often containing galloyl, phenolic, catechol, and pyrogallol subunits.
 
-2. **Lack of structural flexibility**: The program does not consider structural flexibility or variations in the way the phenolic rings are connected. Tannins can have complex structures with different types of linkages (e.g., carbon-carbon bonds, diaryl ether bonds) and ring systems, which the current program may not adequately capture.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **False positives**: The program seems to classify some non-tannin compounds as tannins, possibly due to the presence of phenolic rings and certain substructures like glucose or gallic acid derivatives. This highlights the need for more specific criteria to distinguish tannins from other polyphenolic compounds.
-
-4. **False negatives**: The program misses some known tannin structures, potentially due to the absence of specific patterns or the presence of uncommon linkages or substituents that the program does not account for.
-
-Potential improvements:
-
-1. **Incorporate more diverse tannin examples**: Train the program on a larger and more diverse set of tannin structures, including those with uncommon substituents, linkages, and ring systems. This will help the program learn the structural diversity of tannins and improve its ability to generalize.
-
-2. **Use machine learning techniques**: Consider using machine learning techniques, such as deep learning or graph neural networks, to learn the structural patterns of tannins from a large dataset. These techniques can potentially capture more complex structural features and relationships than predefined patterns.
-
-3. **Incorporate additional structural features**: In addition to the presence of specific substructures, consider incorporating other structural features such as molecular weight, hydrogen bond donor/acceptor counts, topological descriptors, and other relevant molecular properties that can help distinguish tannins from other polyphenolic compounds.
-
-4. **Refine the classification criteria**: Develop a more comprehensive set of criteria for classifying tannins, taking into account the structural diversity and potential exceptions. This may involve combining multiple rules or using a weighted scoring system based on various structural features.
-
-5. **Handle exceptions and outliers**: Identify and handle exceptions or outliers in the dataset, either by manually curating them or by incorporating mechanisms to handle them during the training or classification process.
-
-6. **Validate and iterate**: Continuously validate the program's performance on a separate test set, identify areas for improvement, and iterate on the program's design and implementation accordingly.
-
-It's important to note that classifying chemical entities based on structural features alone can be challenging, and some level of ambiguity or misclassification may be unavoidable, especially for complex and diverse classes like tannins. Additionally, incorporating domain knowledge and expert input can further improve the accuracy and robustness of the classification program.
+    Returns:
+        bool: True if molecule is a tannin, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Calculate molecular properties
+    mw = rdMolDescriptors.CalcExactMolWt(mol)
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    n_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    n_hydrogen_donors = rdMolDescriptors.CalcNumLipinskiHDonors(mol)
+    n_hydrogen_acceptors = rdMolDescriptors.CalcNumLipinskiHAcceptors(mol)
+    
+    # Look for common tannin substructures
+    galloyl_pattern = Chem.MolFromSmarts("*c1c(O)c(O)c(O)c(C(=O)O)c1*")
+    phenol_pattern = Chem.MolFromSmarts("*c1ccc(O)cc1*")
+    catechol_pattern = Chem.MolFromSmarts("*c1c(O)c(O)ccc1*")
+    pyrogallol_pattern = Chem.MolFromSmarts("*c1c(O)c(O)c(O)cc1*")
+    
+    has_galloyl = mol.HasSubstructMatch(galloyl_pattern)
+    has_phenol = mol.HasSubstructMatch(phenol_pattern)
+    has_catechol = mol.HasSubstructMatch(catechol_pattern)
+    has_pyrogallol = mol.HasSubstructMatch(pyrogallol_pattern)
+    
+    # Set up tannin classification criteria
+    is_polyphenolic = n_hydrogen_donors >= 4 and n_hydrogen_acceptors >= 8
+    has_tannin_substructures = has_galloyl or has_phenol or has_catechol or has_pyrogallol
+    complex_structure = n_rings >= 4 and n_aromatic_rings >= 2 and n_rotatable_bonds >= 6
+    molecular_weight_range = 300 < mw < 3000
+    
+    if is_polyphenolic and has_tannin_substructures and complex_structure and molecular_weight_range:
+        return True, "Molecule contains polyphenolic substructures and meets tannin criteria"
+    else:
+        return False, "Molecule does not meet tannin criteria"
