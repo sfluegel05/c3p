@@ -22,18 +22,18 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid backbone: 3 cyclohexane rings and 1 cyclopentane ring fused together
-    steroid_backbone_pattern = Chem.MolFromSmarts("C1CC2CC3CC4CCC(C3)C2C=C1C4")
+    # Stereochemically correct steroid nucleus: three cyclohexane rings and a cyclopentane
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C")
     if not mol.HasSubstructMatch(steroid_backbone_pattern):
         return False, "Steroid backbone not complete."
 
-    # 3-Oxo group: a keto group attached at the C3 position
-    oxo_pattern = Chem.MolFromSmarts("C1(C=O)=CC(C)([C;R2])C=C1")
+    # Identify 3-oxo group: A ketone (C=O) on the third carbon
+    oxo_pattern = Chem.MolFromSmarts("C(=O)[C;R;D4;v4]")  # Versatile ketone group
     if not mol.HasSubstructMatch(oxo_pattern):
         return False, "3-oxo group not correctly positioned."
 
-    # Delta(4) double bond: C=C bond between the 4th and 5th carbon of the steroid nucleus
-    delta_4_pattern = Chem.MolFromSmarts("C=C(C)C1=C")
+    # Identify Delta(4) double bond: Double bond between C4 and C5
+    delta_4_pattern = Chem.MolFromSmarts("C=C([C;R;D3;v4])C[C;R]")  # Double bond from fourth to fifth
     if not mol.HasSubstructMatch(delta_4_pattern):
         return False, "Delta(4) bond not properly located."
 
