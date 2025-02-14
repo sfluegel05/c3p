@@ -2,6 +2,7 @@
 Classifies: CHEBI:23824 diol
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_diol(smiles: str):
     """
@@ -25,10 +26,14 @@ def is_diol(smiles: str):
     hydroxyl_count = 0
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 8: # Check for oxygen atoms
-            for neighbor in atom.GetNeighbors(): # Check oxygen neighbors
-                if neighbor.GetAtomicNum() == 1: # Check for hydrogen neighbors
-                    hydroxyl_count += 1 # Increment if oxygen-hydrogen bond found
-                    break
+           if atom.GetTotalValence() == 2: #must be single bonded 
+            is_hydroxyl = False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 1 or neighbor.GetAtomicNum() == 6:
+                  is_hydroxyl = True
+                  break
+            if is_hydroxyl:
+                hydroxyl_count += 1
     
     if hydroxyl_count >= 2:
         return True, f"Molecule contains at least two hydroxyl groups. It has {hydroxyl_count}."
