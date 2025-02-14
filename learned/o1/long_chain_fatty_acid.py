@@ -24,23 +24,24 @@ def is_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Check for rings
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains rings, not a fatty acid"
+
     # Define SMARTS patterns for carboxylic acid and carboxylate groups
     carboxylic_acid_smarts = '[CX3](=O)[OX1H0-,OX2H1]'
     carboxylic_acid = Chem.MolFromSmarts(carboxylic_acid_smarts)
     matches = mol.GetSubstructMatches(carboxylic_acid)
 
-    if not matches:
-        return False, "No carboxylic acid group found"
+    # Check for exactly one carboxylic acid group
+    if len(matches) != 1:
+        return False, f"Found {len(matches)} carboxylic acid groups, expected exactly 1"
 
-    # Check that there is at least one carboxylic acid group
-    if len(matches) < 1:
-        return False, f"Found {len(matches)} carboxylic acid groups, expected at least 1"
-
-    # Assume the first carboxylic acid group is the main functional group
+    # Get the carboxyl carbon index
     carboxyl_carbon_idx = matches[0][0]
 
-    # Get the longest carbon chain length starting from the carboxyl carbon
-    chain_length = get_longest_chain_length(mol, carboxyl_carbon_idx)
+    # Get the chain length from the carboxyl carbon
+    chain_length = get_linear_chain_length(mol, carboxyl_carbon_idx)
 
     # Check if the chain length is within the specified range
     if 13 <= chain_length <= 22:
@@ -48,47 +49,46 @@ def is_long_chain_fatty_acid(smiles: str):
     else:
         return False, f"Chain length is {chain_length}, not within 13-22"
 
-def get_longest_chain_length(mol, start_atom_idx):
+def get_linear_chain_length(mol, carboxyl_carbon_idx):
     """
-    Finds the length of the longest carbon chain starting from the given atom index.
+    Finds the length of the unbranched carbon chain starting from the carboxyl carbon.
 
     Args:
         mol (Mol): RDKit molecule object
-        start_atom_idx (int): Atom index to start from
+        carboxyl_carbon_idx (int): Atom index of the carboxyl carbon
 
     Returns:
-        int: Length of the longest carbon chain
+        int: Length of the carbon chain including the carboxyl carbon
     """
-    max_length = [0]  # List to allow modification within nested function
+    chain_length = 1  # Include carboxyl carbon
+    visited = set()
+    current_atom_idx = carboxyl_carbon_idx
+    previous_atom_idx = None
 
-    def dfs(current_atom_idx, visited, length):
-        """
-        Depth-first search to find the longest path of carbon atoms.
-
-        Args:
-            current_atom_idx (int): Current atom index
-            visited (set): Set of visited atom indices
-            length (int): Current chain length
-        """
-        atom = mol.GetAtomWithIdx(current_atom_idx)
+    while True:
         visited.add(current_atom_idx)
+        current_atom = mol.GetAtomWithIdx(current_atom_idx)
 
-        # Get unvisited neighboring carbon atoms
+        # Get neighboring carbon atoms excluding the previous atom
         neighbors = [
-            neighbor for neighbor in atom.GetNeighbors()
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited
+            neighbor for neighbor in current_atom.GetNeighbors()
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != previous_atom_idx
         ]
 
-        if not neighbors:
-            # If no unvisited carbon neighbors, update max_length if necessary
-            if length > max_length[0]:
-                max_length[0] = length
-        else:
-            for neighbor in neighbors:
-                dfs(neighbor.GetIdx(), visited, length + 1)
+        # Exclude carbons already visited
+        neighbors = [neighbor for neighbor in neighbors if neighbor.GetIdx() not in visited]
 
-        visited.remove(current_atom_idx)
+        # If more than one neighbor (excluding previous), branching occurs
+        if len(neighbors) > 1:
+            break  # Branching occurs, so chain is no longer linear
 
-    # Start DFS from the carboxyl carbon
-    dfs(start_atom_idx, set(), 1)
-    return max_length[0]
+        if len(neighbors) == 0:
+            break  # End of chain
+
+        # Move to the next carbon
+        next_atom = neighbors[0]
+        chain_length += 1
+        previous_atom_idx = current_atom_idx
+        current_atom_idx = next_atom.GetIdx()
+
+    return chain_length
