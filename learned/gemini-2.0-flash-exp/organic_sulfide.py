@@ -2,6 +2,8 @@
 Classifies: CHEBI:16385 organic sulfide
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+
 
 def is_organic_sulfide(smiles: str):
     """
@@ -21,16 +23,17 @@ def is_organic_sulfide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for an organic sulfide
-    sulfide_pattern = Chem.MolFromSmarts("[#6]~[#16]~[#6]")
-
-    # Check if the molecule matches the pattern
-    if mol.HasSubstructMatch(sulfide_pattern):
-        return True, "Has the structure R-S-R' (R and R' are carbon atoms)"
-    else:
-         # Check for presence of sulfur atom to make reason more precise
-        sulfur_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'S']
-        if not sulfur_atoms:
-            return False, "No sulfur atom found"
-        else:
-            return False, "Sulfur is not bonded to at least two carbon atoms."
+    # Check for presence of sulfur atom
+    sulfur_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'S']
+    if not sulfur_atoms:
+        return False, "No sulfur atom found"
+    
+    for sulfur_atom in sulfur_atoms:
+        carbon_neighbors = 0
+        for neighbor in sulfur_atom.GetNeighbors():
+          if neighbor.GetSymbol() == 'C':
+            carbon_neighbors += 1
+        if carbon_neighbors >= 2:
+          return True, "Has the structure R-S-R' (R and R' not hydrogen)"
+    
+    return False, "Sulfur is not bonded to at least two carbon atoms."
