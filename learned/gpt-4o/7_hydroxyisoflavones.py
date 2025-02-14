@@ -22,12 +22,10 @@ def is_7_hydroxyisoflavones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Correct pattern for isoflavone core with 7-hydroxy group (ensures correct structural alignment)
-    isoflavone_core_7_oh_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)c(=O)cc3c2occ3-c1ccccc1")
-
-    # Check for the isoflavone core structure with a 7-hydroxy group
-    if not mol.HasSubstructMatch(isoflavone_core_7_oh_pattern):
-        return False, "No 7-hydroxyisoflavone structure found"
     
+    # Isoflavone backbone pattern - aromatic rings with characteristic connectivity
+    isoflavone_pattern = Chem.MolFromSmarts("Oc1ccc2c(c1)occ(-c1ccccc1)c2=O")
+    if not mol.HasSubstructMatch(isoflavone_pattern):
+        return False, "No isoflavone backbone with 7-hydroxy group found"
+
     return True, "Molecule is a 7-hydroxyisoflavone with the correct structure"
