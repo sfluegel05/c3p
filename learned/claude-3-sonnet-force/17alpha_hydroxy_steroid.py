@@ -6,7 +6,7 @@ Classifies: CHEBI:38698 17alpha-hydroxy steroid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.Phore import FragmentMatcher
+from rdkit.Chem import rdDistGeom, rdMolDescriptors
 
 def is_17alpha_hydroxy_steroid(smiles: str):
     """
@@ -32,17 +32,27 @@ def is_17alpha_hydroxy_steroid(smiles: str):
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid scaffold found"
     
-    # Check for 17-hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[C@H](O)") 
-    hydroxyl_match = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_match) == 0:
+    # Embed molecule in 3D space
+    AllChem.EmbedMolecule(mol)
+    
+    # Find the 17-hydroxyl group
+    hydroxyl_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1]
+    if len(hydroxyl_atoms) == 0:
         return False, "No hydroxyl group found"
     
     # Check alpha stereochemistry at C17
-    frag_matcher = FragmentMatcher()
-    frag_matcher.addFragNRing("[C@H](O)[C@@]13[C@H]([C@@H]2[C@@]([C@@H]([C@H]([C@@H]1C)C(C)(C)C)C)(C)C=C4C[C@]5([H])C[C@@]6([H])C[C@]7([H])[C@H]([C@@]56C(=O)C=C7)O4)C(=O)C[C@@H]23", ring_nums=[1,2,3])
-    has_alpha_config = frag_matcher.countMatches(mol) > 0
-    if not has_alpha_config:
+    for hydroxyl_idx in hydroxyl_atoms:
+        atom = mol.GetAtomWithIdx(hydroxyl_idx)
+        neighbors = [mol.GetAtomWithIdx(n).GetIdx() for n in atom.GetNeighbors()]
+        if len(neighbors) == 1:
+            c17_idx = neighbors[0]
+            c17_atom = mol.GetAtomWithIdx(c17_idx)
+            if c17_atom.GetHybridization() == Chem.HybridizationType.SP3:
+                perm = list(range(mol.GetNumAtoms()))
+                stereo = rdMolDescriptors.GetStereoWiggleCalculatorForConfId(mol).calculateStereoWiggle(c17_idx, perm)
+                if stereo == 1:
+                    break
+    else:
         return False, "Hydroxyl group not in alpha configuration at C17"
     
     # Additional checks for steroid-like properties
@@ -54,40 +64,3 @@ def is_17alpha_hydroxy_steroid(smiles: str):
         return False, "Contains aromatic rings, steroids should be fully saturated"
     
     return True, "Steroid with hydroxyl group in alpha configuration at C17"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:38698',
-        'name': '17alpha-hydroxy steroid',
-        'definition': 'The alpha-stereoisomer of 17-hydroxy steroid.',
-        'parents': ['CHEBI:38697', 'CHEBI:35796']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 186,
-    'num_false_positives': 0,
-    'num_true_negatives': 182421,
-    'num_false_negatives': 1,
-    'num_negatives': None,
-    'precision': 1.0,
-    'recall': 0.9947598253275109,
-    'f1': 0.9973544973544974,
-    'accuracy': 0.9999945453312859
-}
