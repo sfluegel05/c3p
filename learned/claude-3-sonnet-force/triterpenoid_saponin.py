@@ -1,20 +1,91 @@
 """
 Classifies: CHEBI:61778 triterpenoid saponin
 """
-Based on the provided outcomes, it seems that the previous program performed reasonably well in classifying triterpenoid saponins, achieving a high F1 score of 0.99 and accuracy of 0.9999817424242424. However, there are a few false negatives (3 instances), which means that the program failed to identify some actual triterpenoid saponins correctly.
+"""
+Classifies: CHEBI:47802 triterpenoid saponin
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-To improve the program, we could consider the following:
+def is_triterpenoid_saponin(smiles: str):
+    """
+    Determines if a molecule is a triterpenoid saponin based on its SMILES string.
+    A triterpenoid saponin is a terpene glycoside with a triterpenoid terpene moiety.
 
-1. **Analyze False Negatives**: It would be helpful to examine the false negatives (the 3 instances that were misclassified as non-triterpenoid saponins) and try to understand why the program failed to identify them correctly. This could reveal potential blind spots or edge cases that the current rules do not account for.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Expand Backbone Patterns**: The program currently checks for three specific triterpenoid backbone patterns (oleanane, ursane, and lupane). While these are common backbones, there may be other less common triterpenoid backbones that the program does not recognize. Expanding the list of backbone patterns or using a more general pattern could help capture a wider range of triterpenoid saponins.
+    Returns:
+        bool: True if molecule is a triterpenoid saponin, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Refine Sugar Moiety Detection**: The program currently checks for the presence of any sugar moiety by looking for oxygen atoms with specific atom mapping rules. However, this approach may not be sufficient to accurately identify sugar moieties in all cases. You could consider using more specific SMARTS patterns or leveraging additional rules based on the structural properties of common sugar moieties found in triterpenoid saponins.
+    # Look for triterpenoid backbone
+    triterpenoid_pattern = Chem.MolFromSmarts("[C@@H]1[C@@]2([C@@]([C@@]3([C@]([C@]4([C@@]([C@]5([C@@](CC4)CCC5)C)[H])=CC3)C)(CC2)C)[H]CCC1")
+    if not mol.HasSubstructMatch(triterpenoid_pattern):
+        return False, "No triterpenoid backbone found"
 
-4. **Adjust Molecular Weight Range**: The current molecular weight range (500-1500 Da) may not be optimal for capturing all triterpenoid saponins. You could consider analyzing the molecular weight distribution of the false negatives and adjusting the range accordingly.
+    # Look for sugar moieties (any ring with -O- atoms attached)
+    sugar_pattern = Chem.MolFromSmarts("[OR1]")
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
+        return False, "No sugar moieties found"
 
-5. **Incorporate Additional Rules**: Depending on the specific chemical characteristics of triterpenoid saponins, you could consider incorporating additional rules or filters based on other properties, such as the presence of specific functional groups, the number of certain atom types, or specific structural motifs.
+    # Count rotatable bonds to verify presence of sugar chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 6:
+        return False, "Insufficient rotatable bonds for sugar chains"
 
-6. **Outlier Analysis**: As mentioned in the prompt, there may be occasional and systematic mistakes in the benchmark data. If you have a strong understanding of the chemical class and believe that some of the false negatives are actually correct classifications, you could consider ignoring those outliers and provide a justification for your reasoning.
+    # Check molecular weight - triterpenoid saponins typically >500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for triterpenoid saponin"
 
-It's important to note that while the program performed well overall, there is always room for improvement, especially when dealing with complex chemical structures and diverse subclasses. Iterative refinement based on error analysis and domain knowledge can help enhance the program's performance and robustness.
+    # Check elemental composition - triterpenoid saponins contain C, H, O
+    atoms = [a.GetAtomicNum() for a in mol.GetAtoms()]
+    if set(atoms) - set([6, 1, 8]):
+        return False, "Contains elements other than C, H, O"
+
+    return True, "Contains triterpenoid backbone and sugar moieties"
+
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:47802',
+        'name': 'triterpenoid saponin',
+        'definition': 'A terpene glycoside in which the terpene moiety is a triterpenoid.',
+        'parents': ['CHEBI:36334', 'CHEBI:24702']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 184,
+    'num_false_positives': 24,
+    'num_true_negatives': 182382,
+    'num_false_negatives': 2,
+    'num_negatives': None,
+    'precision': 0.8846153846153846,
+    'recall': 0.9892473118279569,
+    'f1': 0.9337349397590361,
+    'accuracy': 0.9998615447155333
+}
