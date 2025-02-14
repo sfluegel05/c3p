@@ -10,7 +10,6 @@ of which three are conjugated.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, Lipinski
 
 def is_leukotriene(smiles: str):
     """
@@ -60,9 +59,5 @@ def is_leukotriene(smiles: str):
     # Check for carboxylic acid group
     if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 2) < 1:
         return False, "Does not contain a carboxylic acid group"
-
-    # Additional checks based on Lipinski's rules
-    if not Lipinski.IsMolViable(mol):
-        return False, "Does not satisfy Lipinski's rules for drug-likeness"
 
     return True, "Satisfies the structural requirements for a leukotriene"
