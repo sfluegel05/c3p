@@ -6,7 +6,7 @@ Classifies: CHEBI:35510 macrolide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdmolops
+from rdkit.Chem import rdmolring
 
 def is_macrolide(smiles: str):
     """
@@ -26,15 +26,14 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find largest ring
-    adj_matrix = rdmolops.GetAdjacencyMatrix(mol)
-    largest_ring_size = max([len(cycle) for cycle in rdmolops.FindAllCycles(adj_matrix, mol.GetNumBonds(), mol.GetNumAtoms())])
+    # Find largest ring size
+    largest_ring_size = max([len(ring) for ring in rdmolring.GetRingInfo(mol).AtomRings()])
     if largest_ring_size < 12:
         return False, "No ring with 12 or more atoms found"
 
     # Check if largest ring contains a lactone
     lactone_pattern = Chem.MolFromSmarts("[O-]C(=O)")
-    largest_ring_atoms = set(atom.GetIdx() for ring in rdmolops.GetMolRingInfo(mol) for atom in ring if len(ring) == largest_ring_size)
+    largest_ring_atoms = set(atom.GetIdx() for ring in rdmolring.GetRingInfo(mol).AtomRings() if len(ring) == largest_ring_size for atom in ring)
     if not any(mol.HasSubstructMatch(lactone_pattern, atoms=list(largest_ring_atoms))):
         return False, "Largest ring does not contain a lactone"
 
