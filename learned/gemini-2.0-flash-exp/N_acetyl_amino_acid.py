@@ -20,21 +20,18 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for N-acetyl amino acid with more flexible matching of N and carboxylic acid
-    acetyl_amino_acid_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3][CX4][CX3](=[OX1])[OX1,OX2]")
+    # Refined SMARTS pattern for N-acetyl amino acid
+    acetyl_amino_acid_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3][CX4][CX4]([!H])[CX3](=[OX1])[OX1,OX2-]")
+    
+    # Check for the presence of the overall substructure
+    if not mol.HasSubstructMatch(acetyl_amino_acid_pattern):
+      return False, "Molecule does not match the N-acetyl-amino acid core pattern"
+      
+    # Check for the number of acetyl groups to be one and only one
+    acetyl_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3]")
+    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
+    
+    if len(acetyl_matches) != 1:
+      return False, f"Molecule has {len(acetyl_matches)} acetyl groups, must have only 1"
 
-    if mol.HasSubstructMatch(acetyl_amino_acid_pattern):
-        # Further check: there should be one N-acetyl and one amino acid core
-        acetyl_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3]")
-        amino_acid_core = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])[OX1,OX2]")
-        
-        acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
-        amino_matches  = mol.GetSubstructMatches(amino_acid_core)
-
-
-        if len(acetyl_matches) == 1 and len(amino_matches) == 1:
-            return True, "Molecule matches the N-acetyl-amino acid pattern."
-        else:
-            return False, f"Molecule has {len(acetyl_matches)} acetyl group and {len(amino_matches)} amino acid core."
-    else:
-        return False, "Molecule does not match the N-acetyl-amino acid pattern."
+    return True, "Molecule matches the N-acetyl-amino acid pattern."
