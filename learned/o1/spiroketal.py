@@ -21,63 +21,47 @@ def is_spiroketal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information
+    # Define SMARTS pattern for spiroketal
+    # [C;R2;X4] - sp3 carbon in exactly two rings
+    # Connected to two oxygens [O;R1], each connected to another carbon [C]
+    spiroketal_smarts = '[C;R2;X4]([O;R1;$([O][C])])([O;R1;$([O][C])])'
+
+    pattern = Chem.MolFromSmarts(spiroketal_smarts)
+    if pattern is None:
+        return False, "Invalid SMARTS pattern"
+
+    # Search for the spiroketal pattern in the molecule
+    matches = mol.GetSubstructMatches(pattern)
+
+    if not matches:
+        return False, "No spiroketal functionality found"
+
+    # Optionally, we can check if the rings share only the spiro carbon
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
 
-    # Build a dictionary to count the number of rings each atom is in
-    atom_ring_count = {}
-    for ring in atom_rings:
-        for atom_idx in ring:
-            atom_ring_count[atom_idx] = atom_ring_count.get(atom_idx, 0) + 1
+    for match in matches:
+        spiro_atom_idx = match[0]
+        oxygen1_idx = match[1]
+        oxygen2_idx = match[2]
 
-    # Identify potential spiro centers (atoms in exactly two rings)
-    spiro_atoms = [atom_idx for atom_idx, count in atom_ring_count.items() if count == 2]
+        # Get the two rings containing the spiro atom
+        rings_with_spiro = [ring for ring in atom_rings if spiro_atom_idx in ring]
+        if len(rings_with_spiro) != 2:
+            continue  # Spiro atom is not in exactly two rings
 
-    if not spiro_atoms:
-        return False, "No spiro centers found"
-
-    # Loop over spiro atoms to check for ketal functionality
-    for atom_idx in spiro_atoms:
-        atom = mol.GetAtomWithIdx(atom_idx)
-
-        # Check if the two rings share only this atom
-        rings_with_atom = [ring for ring in atom_rings if atom_idx in ring]
-        if len(rings_with_atom) != 2:
-            continue
-
-        shared_atoms = set(rings_with_atom[0]) & set(rings_with_atom[1])
+        # Check that the rings share only the spiro carbon
+        shared_atoms = set(rings_with_spiro[0]) & set(rings_with_spiro[1])
         if len(shared_atoms) != 1:
-            continue  # The rings share more than one atom
+            continue  # Rings share more than one atom
 
-        # Check if the atom is carbon
-        if atom.GetAtomicNum() != 6:
-            continue  # Not a carbon atom
+        # Verify that each oxygen is part of a ring
+        oxygen1 = mol.GetAtomWithIdx(oxygen1_idx)
+        oxygen2 = mol.GetAtomWithIdx(oxygen2_idx)
+        if not oxygen1.IsInRing() or not oxygen2.IsInRing():
+            continue  # Oxygen atoms are not in rings
 
-        # Check if the atom is connected to exactly two oxygens
-        neighbors = atom.GetNeighbors()
-        oxygens = [nbr for nbr in neighbors if nbr.GetAtomicNum() == 8]
-        if len(oxygens) != 2:
-            continue  # Not connected to exactly two oxygens
-
-        # Check that each oxygen is connected to the spiro carbon and another carbon (ether linkage)
-        is_ketal = True
-        for oxygen in oxygens:
-            if oxygen.GetDegree() != 2:
-                is_ketal = False
-                break
-            # Get the other atom connected to oxygen (excluding spiro carbon)
-            oxygen_neighbors = [nbr for nbr in oxygen.GetNeighbors() if nbr.GetIdx() != atom_idx]
-            if len(oxygen_neighbors) != 1:
-                is_ketal = False
-                break
-            if oxygen_neighbors[0].GetAtomicNum() != 6:
-                is_ketal = False
-                break
-        if not is_ketal:
-            continue  # Does not fulfill ketal criteria
-
-        # If all checks passed, this is a spiroketal
-        return True, f"Molecule is a spiroketal with spiro ketal center at atom index {atom_idx}"
+        # If all checks passed, we have found a spiroketal
+        return True, f"Molecule is a spiroketal with spiro ketal center at atom index {spiro_atom_idx}"
 
     return False, "No spiroketal functionality found"
