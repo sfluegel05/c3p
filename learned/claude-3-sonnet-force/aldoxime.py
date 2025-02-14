@@ -38,12 +38,14 @@ def is_aldoxime(smiles: str):
         atom_idx = match[0]
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom.GetDegree() == 1 and atom.GetHybridization() == Chem.HybridizationType.SP2:
-            return True, "Contains aldoxime functional group (-CH=N-O-)"
+            neighbor = atom.GetNeighbors()[0]
+            if neighbor.GetDegree() == 1 and neighbor.GetAtomicNum() == 8:  # Check for C=O
+                return True, "Contains aldoxime functional group (-CH=N-O-)"
 
-    # Check for exceptional cases (e.g., oximes attached to amide nitrogen)
-    amide_oxime_pattern = Chem.MolFromSmarts("[N]([CH])=[N][OH]")
-    amide_oxime_matches = mol.GetSubstructMatches(amide_oxime_pattern)
-    if amide_oxime_matches:
-        return True, "Contains amide-linked oxime functional group"
+    # Check for exceptional cases (e.g., oximes attached to heteroatoms or in conjugated systems)
+    exceptional_pattern = Chem.MolFromSmarts("[CH]=[N][OH]~[cX3]")
+    exceptional_matches = mol.GetSubstructMatches(exceptional_pattern)
+    if exceptional_matches:
+        return True, "Contains oxime functional group in an exceptional environment"
 
     return False, "Oxime not attached to aldehyde carbon or in an exceptional environment"
