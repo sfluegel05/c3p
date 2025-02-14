@@ -26,8 +26,8 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for sphingosine backbone
-    sphingosine_pattern = Chem.MolFromSmarts("[#8]-[#6]-[#6]-[#6]-[#6]-[#6](-[#6]-[#6]-[#6](-[#6](-[#6]-[#6])=[#8])-[#6])=[#6,#7]")
+    # Check for sphingosine backbone (more relaxed pattern)
+    sphingosine_pattern = Chem.MolFromSmarts("[#8]-[#6]-[#6]-[#6]-[#6]-[#6](-[#6]-[#6]-[#6](-[#6](-[#6]-[#6])=[#8])-[#6])=[#6]")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
     
@@ -42,7 +42,7 @@ def is_galactosylceramide(smiles: str):
         return False, "No amide bond linking backbone and head group"
     
     # Check for long alkyl chains (fatty acids)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
         return False, "Missing fatty acid chains"
