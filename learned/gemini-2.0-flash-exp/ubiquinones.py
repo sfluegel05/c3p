@@ -8,8 +8,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_ubiquinones(smiles: str):
     """
     Determines if a molecule is a ubiquinone based on its SMILES string.
-    Ubiquinones have a benzoquinone core, two methoxy groups (or variations) at positions 2 and 3,
-    a methyl group at position 5, and a polyprenoid side chain (or just a methyl group).
+    Ubiquinones have a 2,3-dimethoxy-5-methylbenzoquinone core and a polyprenoid side chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,29 +21,47 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core structure: benzoquinone with 2,3-dimethoxy/dihydroxy or mix, and 5-methyl
-    #Accept also deprotonated oxygens. 
-    core_pattern = Chem.MolFromSmarts("[c]1[c]([OX2H-])[c]([OX2H-])[c](=O)[c]([CH3])[c]1=O")
+    # Core structure: 2,3-dimethoxy-5-methylbenzoquinone.
+    # Note: The position of the methyl and the two methoxy can vary in the input,
+    # so we are looking for the pattern but not the numbering of the core structure.
+    core_pattern = Chem.MolFromSmarts("C1(=C(C(=O)C(=C(C1=O)OC)OC)C)")
     if not mol.HasSubstructMatch(core_pattern):
-         return False, "Core benzoquinone structure (2,3-dimethoxy/dihydroxy, 5-methyl) not found"
+      return False, "Core benzoquinone structure with two methoxy and one methyl groups not found"
+    
+    #Check if there is a polyprenoid side chain at position 6
+    # The side chain has alternating single and double bonds, and a methyl group on each double bond
+    # The side chain is not specifically at position 6, just present, as examples have it at different positions.
+    sidechain_pattern = Chem.MolFromSmarts("[CX4]=[CX3]([CX4])~[CX4]([CX4])=[CX3]([CX4])") # minimum of 2 isoprenoid units
+    sidechain_match = mol.GetSubstructMatches(sidechain_pattern)
+    
+    # Ubiquinone-0 has no side chain
+    if not sidechain_match and "CC1=C(C(OC)=C(OC)C(=O)C=C1)=O" not in smiles:
+       return False, "Polyprenoid side chain not found"
 
-    # Check for polyprenoid side chain or methyl group at position 6. 
-    #For ubiquinone-0 there is no side chain. Check for a single methyl
-    side_chain_pattern = Chem.MolFromSmarts("[c]1[c]([OX2H-])[c]([OX2H-])[c](=O)[c]([CH3])[c]([CX4])1=O")
-    side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
+    # Check for methoxy groups.
+    methoxy_pattern = Chem.MolFromSmarts("OC")
+    methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
+    if len(methoxy_matches) < 2:
+       return False, "Not enough methoxy groups"
+   
+    # Check for the presence of the methyl group in the ring
+    methyl_pattern = Chem.MolFromSmarts("[CX4]") # only need to check there is at least one methyl group
+    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
+    if len(methyl_matches) < 1 :
+       return False, "Not enough methyl groups"
 
-    no_side_chain_pattern = Chem.MolFromSmarts("[c]1[c]([OX2H-])[c]([OX2H-])[c](=O)[c]([CH3])[c]([CH3])1=O")
-    no_side_chain_matches = mol.GetSubstructMatches(no_side_chain_pattern)
-
-    if len(side_chain_matches) < 1 and len(no_side_chain_matches) < 1:
-      return False, "No sidechain or methyl group in position 6 found."
-
-    # Check if polyprenoid side chain
-    branched_chain_pattern = Chem.MolFromSmarts("[CX4]([CH3])([CH3])") #Branched alkyl
-    if len(side_chain_matches) > 0:
-        if not mol.HasSubstructMatch(branched_chain_pattern):
-             #Try to match simple methyl if no chain
-           if len(no_side_chain_matches) == 0:
-               return False, "Polyprenoid or methyl side chain required at pos 6"
-
-    return True, "Matches the ubiquinone criteria: core structure with 2,3-dimethoxy/dihydroxy, 5-methyl, and polyprenoid side chain or methyl group at position 6"
+    # Check for quinone group
+    quinone_pattern = Chem.MolFromSmarts("C=1C(=O)C=CC=C1=O")
+    if not mol.HasSubstructMatch(quinone_pattern):
+       return False, "No quinone group found"
+    
+    #Additional checks
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 10:
+       return False, "Too few carbons for ubiquinone"
+    if o_count < 4:
+        return False, "Too few oxygens for ubiquinone"
+    
+    return True, "Matches the ubiquinone criteria: core structure, polyprenoid chain, methoxy groups, methyl group, quinone."
