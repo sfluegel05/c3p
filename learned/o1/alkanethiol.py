@@ -20,16 +20,14 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define thiol pattern: sulfur with one hydrogen attached to any carbon
+    # Define thiol pattern: sulfur (S) with one hydrogen (H) attached and connected to carbon (C)
     thiol_pattern = Chem.MolFromSmarts("[#16H1]-[#6]")
-    thiol_matches = mol.GetSubstructMatches(thiol_pattern)
+    if not mol.HasSubstructMatch(thiol_pattern):
+        return False, "Does not contain an -SH group attached to an alkyl group"
 
-    if not thiol_matches:
-        return False, "Does not contain an -SH group attached to a carbon"
-
-    # Check for disulfides or other sulfur-sulfur bonds
-    disulfide_pattern = Chem.MolFromSmarts("[*]-[#16]-[#16]-[*]")
-    if mol.HasSubstructMatch(disulfide_pattern):
-        return False, "Contains disulfide bonds, not an alkanethiol"
+    # Define amide bond pattern: carbonyl group attached to nitrogen (peptide bond)
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Contains amide bonds (peptide), not an alkanethiol"
 
     return True, "Contains a sulfanyl group (-SH) attached to an alkyl group"
