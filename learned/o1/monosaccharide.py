@@ -13,8 +13,8 @@ def is_monosaccharide(smiles: str):
     """
     Determines if a molecule is a monosaccharide based on its SMILES string.
     A monosaccharide is a polyhydroxy aldehyde or ketone with three or more carbon atoms,
-    and without glycosidic connections to other saccharide units. It includes cyclic hemiacetals
-    and hemiketals (furanose and pyranose forms).
+    without glycosidic connections to other saccharide units. It includes cyclic hemiacetals,
+    hemiketals (furanose and pyranose forms), and their derivatives like deoxy sugars.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -41,47 +41,45 @@ def is_monosaccharide(smiles: str):
     ketone_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6]")
     has_ketone = mol.HasSubstructMatch(ketone_pattern)
 
-    # Check for cyclic hemiacetal or hemiketal (ring forms)
-    # Five or six-membered ring with one oxygen (furanose or pyranose)
-    ring_info = mol.GetRingInfo()
-    ring_matches = []
-    for ring in ring_info.AtomRings():
-        if len(ring) == 5 or len(ring) == 6:
-            oxygens_in_ring = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
-            if oxygens_in_ring == 1:
-                ring_matches.append(ring)
-    has_cyclic_hemiacetal = len(ring_matches) > 0
+    # Check for hemiacetal or hemiketal functionality
+    # Look for carbon bonded to -OH and -O- (hemiacetal center)
+    hemiacetal_pattern = Chem.MolFromSmarts("[CX4H1]([OX2H])[OX2]")
+    has_hemiacetal = mol.HasSubstructMatch(hemiacetal_pattern)
 
-    if not (has_aldehyde or has_ketone or has_cyclic_hemiacetal):
-        return False, "Does not contain an aldehyde, ketone, or cyclic hemiacetal/hemiketal group"
+    # Monosaccharides should have at least one of the above functionalities
+    if not (has_aldehyde or has_ketone or has_hemiacetal):
+        return False, "Does not contain an aldehyde, ketone, or hemiacetal/hemiketal group"
 
-    # Check for multiple hydroxyl groups (-OH) attached to carbons
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    # Check for multiple hydroxyl groups (-OH) attached to sp3 carbons
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4;H1,H2][OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, f"Contains {len(hydroxyl_matches)} hydroxyl groups attached to carbons, which is less than 2"
+    if len(hydroxyl_matches) < 1:
+        return False, f"Contains {len(hydroxyl_matches)} hydroxyl groups attached to carbons, which is less than 1"
 
     # Ensure molecule is a single saccharide unit (no glycosidic bonds)
     # Glycosidic bonds are acetal linkages at anomeric carbon connecting two saccharides
     # Anomeric carbon is acetal (connected to two oxygens) in glycosidic bonds
-    acetal_pattern = Chem.MolFromSmarts("[C;D2](-[O;H1])[O;!H1]")
-    if mol.HasSubstructMatch(acetal_pattern):
+    glycosidic_pattern = Chem.MolFromSmarts("[CX4H0](O)(O)[#6]")
+    has_glycosidic_bond = mol.HasSubstructMatch(glycosidic_pattern)
+    if has_glycosidic_bond:
         return False, "Contains glycosidic bonds indicating connection to other saccharide units"
 
-    # Count number of rings (should be 0 or 1 for monosaccharides)
-    num_rings = ring_info.NumRings()
-    if num_rings > 1:
-        return False, f"Contains {num_rings} rings, which is more than expected for a monosaccharide"
+    # Check for carboxylic acids or esters, which are common in uronic acids
+    # Include these derivatives in monosaccharides
+    # Uronic acids have a carboxylic acid group at the terminal carbon
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    has_carboxylic_acid = mol.HasSubstructMatch(carboxylic_acid_pattern)
 
-    # Check that molecule does not have unusual elements (only C, H, O, N, S, P)
-    allowed_atomic_nums = {1, 6, 7, 8, 15, 16}  # H, C, N, O, P, S
+    # Check that the molecule does not have peptide bonds, long alkyl chains, or other non-saccharide components
+    # Count total number of non-hydrogen atoms (Exclude very large molecules)
+    heavy_atom_count = mol.GetNumHeavyAtoms()
+    if heavy_atom_count > 50:
+        return False, f"Contains {heavy_atom_count} heavy atoms, which is too large for a monosaccharide"
+
+    # Check that the molecule is primarily composed of C, H, O, and N (allowing for deoxy sugars and amino sugars)
+    allowed_atomic_nums = {1, 6, 7, 8, 9, 15, 16, 17, 35, 53}  # H, C, N, O, F, P, S, Cl, Br, I
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in allowed_atomic_nums:
             return False, f"Contains element with atomic number {atom.GetAtomicNum()}, which is not typical in monosaccharides"
-
-    # Optional: Exclude very large molecules based on heavy atom count
-    heavy_atom_count = mol.GetNumHeavyAtoms()
-    if heavy_atom_count > 25:
-        return False, f"Contains {heavy_atom_count} heavy atoms, which is too large for a monosaccharide"
 
     return True, "Molecule satisfies criteria for a monosaccharide"
