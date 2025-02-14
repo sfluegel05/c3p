@@ -22,12 +22,17 @@ def is_1_2_4_triazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the 1,2,4-triazine core. Includes aromatic and non aromatic N/C
-    triazine_core_smarts = "[N,n]1-[C,c]-[N,n]-[C,c]=[N,n]-[C,c]1"
-    triazine_pattern = Chem.MolFromSmarts(triazine_core_smarts)
+    # Define SMARTS pattern for the 1,2,4-triazine core with aromaticity enforcement
+    triazine_core_smarts_aromatic = "n1-c=n-c=n-c1"
+    triazine_pattern_aromatic = Chem.MolFromSmarts(triazine_core_smarts_aromatic)
+
+    # Define SMARTS pattern for the 1,2,4-triazine core with possible non-aromatic form.
+    triazine_core_smarts_nonaromatic = "N1-C-N-C=N-C1"
+    triazine_pattern_nonaromatic = Chem.MolFromSmarts(triazine_core_smarts_nonaromatic)
+
     
-    # Check if the molecule contains the core 1,2,4-triazine substructure
-    if not mol.HasSubstructMatch(triazine_pattern):
+    # Check if the molecule contains the core 1,2,4-triazine substructure (aromatic or non aromatic)
+    if not mol.HasSubstructMatch(triazine_pattern_aromatic) and not mol.HasSubstructMatch(triazine_pattern_nonaromatic):
         return False, "Molecule does not contain the 1,2,4-triazine core."
 
     return True, "Molecule contains the 1,2,4-triazine core."
