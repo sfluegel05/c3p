@@ -23,10 +23,12 @@ def is_organochlorine_compound(smiles: str):
     
     # Check for C-Cl bond
     for bond in mol.GetBonds():
-      atom1 = bond.GetBeginAtom()
-      atom2 = bond.GetEndAtom()
-      if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 17) or \
-         (atom1.GetAtomicNum() == 17 and atom2.GetAtomicNum() == 6):
-        return True, "Contains at least one carbon-chlorine bond"
-    
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 17) or \
+           (atom1.GetAtomicNum() == 17 and atom2.GetAtomicNum() == 6):
+            
+             if (atom1.GetAtomicNum() == 6 or atom2.GetAtomicNum() == 6):
+                return True, "Contains at least one carbon-chlorine bond"
+                
     return False, "Does not contain any carbon-chlorine bond"
