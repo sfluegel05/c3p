@@ -2,7 +2,6 @@
 Classifies: CHEBI:38077 polypyrrole
 """
 from rdkit import Chem
-from rdkit.Chem import Draw
 
 def is_polypyrrole(smiles: str):
     """
@@ -21,35 +20,26 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the pyrrole substructure using SMARTS (more specific)
-    pyrrole_smarts = "[nX1H1]1cc[cX3]c1"
+    # Define the pyrrole substructure using SMARTS (relaxed version)
+    pyrrole_smarts = "[n;H0,H1]1cc[c,n]c1"
     pyrrole_pattern = Chem.MolFromSmarts(pyrrole_smarts)
 
     # Get all matches of the pattern
     pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
-    
-    if len(pyrrole_matches) == 0:
-        return False, "Contains no pyrrole units, therefore not a polypyrrole."
 
-    # Count the number of pyrrole rings.
+    # Count the number of unique pyrrole rings by counting matches that dont overlap by an edge
+    # Initialize a set to track atoms that are in a pyrrole ring
+    matched_atoms = set()
     num_pyrroles = 0
 
-    #Initialize a set to track all nitrogen atoms in all pyrrole rings
-    pyrrole_n_atoms = set()
-
+    # Loop through all matches.
     for match in pyrrole_matches:
-        #Check if a nitrogen atom from the current match is in the already matched set of N atoms.
-        nitrogen_atom_index = -1
-        for atom_index in match:
-            atom = mol.GetAtomWithIdx(atom_index)
-            if atom.GetAtomicNum() == 7:
-                nitrogen_atom_index = atom_index
-                break #Only one N atom per pyrrole ring
-        
-        if nitrogen_atom_index != -1 and nitrogen_atom_index not in pyrrole_n_atoms:
+        #Convert the tuple to a set of integers so we can check for overlaps
+        match_set = set(match)
+        # Check to see if there are any atoms shared between the current pyrrole, and all the other pyrroles seen so far.
+        if len(matched_atoms.intersection(match_set)) == 0:
             num_pyrroles += 1
-            pyrrole_n_atoms.add(nitrogen_atom_index)
-
+            matched_atoms.update(match_set)
 
     # Classify based on the count of pyrrole rings
     if num_pyrroles >= 2:
