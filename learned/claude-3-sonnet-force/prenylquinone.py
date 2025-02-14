@@ -26,26 +26,31 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for benzoquinone or naphthoquinone core
-    benzoquinone_pattern = Chem.MolFromSmarts("[#6]1=,:[#6](~[#6]=,:[#6](~[#6]1~[#8])~[#8])~[#8]~[#6]")
-    naphthoquinone_pattern = Chem.MolFromSmarts("[#6]1=,:[#6](~[#6]=,:[#6](~[#6]2~[#6]=,:[#6]=,:[#6]=,:[#6]=,:[#6]=,:[#6]2~[#8])~[#8])~[#8]")
-    if not mol.HasSubstructMatch(benzoquinone_pattern) and not mol.HasSubstructMatch(naphthoquinone_pattern):
-        return False, "No benzoquinone or naphthoquinone core found"
+    # Look for quinone core (benzoquinone, naphthoquinone, or other ring systems)
+    quinone_patterns = [
+        Chem.MolFromSmarts("[#6]1=,:[#6](~[#6]=,:[#6](~[#6]1~[#8])~[#8])~[#8]~[#6]"),  # benzoquinone
+        Chem.MolFromSmarts("[#6]1=,:[#6](~[#6]=,:[#6](~[#6]2~[#6]=,:[#6]=,:[#6]=,:[#6]=,:[#6]=,:[#6]2~[#8])~[#8])~[#8]"),  # naphthoquinone
+        Chem.MolFromSmarts("[#6]1=,:[#6](~[#6]=,:[#6](~[#6]2~[#6]=,:[#6]=,:[#6]=,:[#6][#6]=,:[#6]2~[#8])~[#8])~[#8]"),  # menaquinone
+        Chem.MolFromSmarts("[#6]1=,:[#6](~[#6]=,:[#6](~[#6]2~[#6]=,:[#6]=,:[#6][#6]=,:[#6][#6]=,:[#6]2~[#8])~[#8])~[#8]")  # phylloquinone
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in quinone_patterns):
+        return False, "No quinone core found"
     
     # Look for prenyl side chains
     prenyl_pattern = Chem.MolFromSmarts("[#6]-[#6]=,:[#6]-[#6](-[#6])(-[#6])-[#6](-[#6]=,:[#6]-[#6](-[#6])(-[#6])-[#6])*")
     if not mol.HasSubstructMatch(prenyl_pattern):
         return False, "No prenyl side chains found"
     
-    # Check for common functional groups and ring systems
-    hydroxy_pattern = Chem.MolFromSmarts("[OX1H]")
-    methoxy_pattern = Chem.MolFromSmarts("[OX2C]")
-    cyclohexene_pattern = Chem.MolFromSmarts("[#6]1=[#6][#6]=[#6][#6]=[#6][#6]1")
-    has_hydroxy = mol.HasSubstructMatch(hydroxy_pattern)
-    has_methoxy = mol.HasSubstructMatch(methoxy_pattern)
-    has_cyclohexene = mol.HasSubstructMatch(cyclohexene_pattern)
+    # Check for long aliphatic chains
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]([CX4])[CX4]")
+    has_long_chain = bool(mol.GetSubstructMatches(aliphatic_chain_pattern))
     
-    if has_hydroxy or has_methoxy or has_cyclohexene:
-        return True, "Contains a quinone core, prenyl side chains, and common functional groups or ring systems for prenylquinones"
+    # Check molecular weight range (typically > 300 Da for prenylquinones)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for prenylquinone"
+    
+    if has_long_chain:
+        return True, "Contains a quinone core, prenyl side chains, and long aliphatic chains"
     else:
         return True, "Contains a quinone core and prenyl side chains"
