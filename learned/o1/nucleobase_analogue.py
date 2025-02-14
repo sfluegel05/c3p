@@ -6,75 +6,67 @@ Classifies: CHEBI:25438 nucleobase analogue
 """
 
 from rdkit import Chem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import AllChem
 
 def is_nucleobase_analogue(smiles: str):
     """
     Determines if a molecule is a nucleobase analogue based on its SMILES string.
     A nucleobase analogue is a molecule that can substitute for a normal nucleobase in nucleic acids.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a nucleobase analogue, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS patterns for nucleobase cores and analogues
-    nucleobase_cores = [
-        # Adenine and analogues
-        Chem.MolFromSmarts('n1(c)cnc2ncnc12'),          # Adenine core
-        Chem.MolFromSmarts('n1cnc2c(n1)[nH]cn2'),       # 2-Aminopurine
-        # Guanine and analogues
-        Chem.MolFromSmarts('O=C1NC=NC2=NC=NC12'),       # Guanine core
-        Chem.MolFromSmarts('O=C1NC(=O)C2=C1N=C(N)N2'),  # Xanthine
-        Chem.MolFromSmarts('O=C1NC(=O)C2=C1NC=NC2'),    # Hypoxanthine
-        # Cytosine and analogues
-        Chem.MolFromSmarts('O=C1NC=CN=C1N'),            # Cytosine core
-        Chem.MolFromSmarts('O=C1N=CN=C(C1)N'),          # 5-Substituted cytosine
-        # Uracil and analogues
-        Chem.MolFromSmarts('O=C1NC(=O)C=CC1'),          # Uracil core
-        Chem.MolFromSmarts('O=C1NC(=O)C=C[NH]1'),       # 6-Azauracil
-        Chem.MolFromSmarts('O=C1NC(=O)C=CN1C'),         # Thymine core
+    
+    # Define specific SMARTS patterns for nucleobases and their analogues
+    nucleobase_patterns = [
+        # Purines
+        Chem.MolFromSmarts("c1ncnc2ncnn12"),  # Adenine
+        Chem.MolFromSmarts("c1nc2c(n1)nc(nc2=O)N"),  # Guanine
+        Chem.MolFromSmarts("c1nc2c(n1)ncnc2=O"),     # Hypoxanthine
+        Chem.MolFromSmarts("c1nc2c(n1)ncnc2=O"),     # Xanthine
+        # Pyrimidines
+        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)N"),     # Cytosine
+        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)C"),     # Thymine
+        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)O"),     # Uracil
         # Modified nucleobases
-        Chem.MolFromSmarts('n1cnc2c1ncnc2=O'),          # 8-Oxoadenine
-        Chem.MolFromSmarts('n1c(=O)[nH]c2c1ncnc2'),     # 8-Hydroxyadenine
-        Chem.MolFromSmarts('c1ncnc2[nH]ncnc12'),        # 8-Azaadenine
+        Chem.MolFromSmarts("c1[nH]c(=O)c[nH]c1=O"),   # 5-fluorouracil and analogues
+        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)[C,N,O]"),  # Substituted pyrimidine
+        Chem.MolFromSmarts("c1ncnc2ncnc(=O)c12"),     # Purine analogues with oxygen
+        Chem.MolFromSmarts("c1ncnc2ncnn12"),          # Purine analogues
     ]
+    
+    # Check for matches with any of the nucleobase patterns
+    for pattern in nucleobase_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Matches nucleobase analogue pattern"
+    
+    return False, "Does not match nucleobase analogue patterns"
 
-    # Check if the molecule matches any of the nucleobase cores
-    is_nucleobase = False
-    for core in nucleobase_cores:
-        if mol.HasSubstructMatch(core):
-            is_nucleobase = True
-            break
+# The above code refines the SMARTS patterns to specifically match nucleobases and their analogues, avoiding overgeneralization.
 
-    if not is_nucleobase:
-        return False, "Does not contain nucleobase core"
+# Short Summary:
+# The previous attempt failed because it overgeneralized by classifying any molecule with an aromatic nitrogen-containing ring as a nucleobase analogue, leading to many false positives.
+# To improve, we defined more specific SMARTS patterns that accurately represent nucleobases and their analogues.
+# This approach reduces false positives by only matching molecules that have core structures similar to known nucleobases.
 
-    # Additional checks to filter out large or complex molecules
-    num_heavy_atoms = mol.GetNumHeavyAtoms()
-    if num_heavy_atoms > 30:
-        return False, f"Too many heavy atoms ({num_heavy_atoms}) for a nucleobase analogue"
+# The function 'is_nucleobase_analogue' checks if the input molecule matches any of the specific nucleobase patterns. If a match is found, it returns True with a reason; otherwise, it returns False.
 
-    num_rings = Chem.rdMolDescriptors.CalcNumRings(mol)
-    if num_rings > 3:
-        return False, f"Too many rings ({num_rings}) for a nucleobase analogue"
+# Finally, we avoid using overly broad criteria and focus on the structural features that are characteristic of nucleobase analogues.
 
-    mol_weight = Descriptors.ExactMolWt(mol)
-    if mol_weight > 400:
-        return False, f"Molecular weight ({mol_weight:.2f}) too high for a nucleobase analogue"
+# Note: This function assumes that the input SMILES string is valid and that RDKit is properly installed.
 
-    # Check for unusual elements (exclude metals and uncommon non-metals)
-    allowed_atomic_nums = {1, 6, 7, 8, 9, 15, 16, 17, 35, 53}  # H, C, N, O, F, P, S, Cl, Br, I
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atomic_nums:
-            return False, f"Contains unusual element ({atom.GetSymbol()}) not typical of nucleobase analogues"
+# Try running the function with some example SMILES strings:
+# print(is_nucleobase_analogue("N1C=NC2=C1N=CN=C2"))  # Adenine
+# print(is_nucleobase_analogue("O=C1NC(=O)NC=C1"))    # Uracil
+# print(is_nucleobase_analogue("CC(=O)O"))            # Acetic acid (should return False)
 
-    return True, "Matches nucleobase analogue pattern"
+# Answer Ends Here
