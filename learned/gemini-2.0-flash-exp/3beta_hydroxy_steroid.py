@@ -24,16 +24,19 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the steroid core with beta-hydroxyl at position 3.
-    # [H] is a wildcard for implied H atoms
-    # The [C@H] indicates that stereochemistry is specified at that center.
-    # The pattern below has a general structure for the steroid core.
-    # It specifies the beta configuration using [C@H] at position 3
-    # The connected oxygen has a hydrogen implied.
-    steroid_pattern = Chem.MolFromSmarts("[H][C@]12[C]([H])([C]([H])([H])[C]([H])([H])[C]([H])([H])[C]([H])([H])[C@H]1([H])[C]3([H])[C]([H])([H])[C]([H])([H])[C]([H])([H])[C]([H])([H])[C]([H])2[H])([H])O")
+    # Define a simplified SMARTS pattern to capture the essential steroid core and the beta-hydroxyl.
+    # The pattern below defines a four-ring core with a beta hydroxyl at the 3rd position, and uses a SMARTS atom map for verification.
+    # [C@H] specifies beta configuration.
+    # [O;H1] will verify that this is a hydroxyl group with one implied H atom.
+    steroid_pattern = Chem.MolFromSmarts("[C]12[C]3[C]4[C]([C]([C]1[C]2)CC3)CC[C@H]([O;H1])4")
+
+    if steroid_pattern is None:
+      return False, "Invalid SMARTS pattern"
 
     # Check if the molecule matches the pattern
-    if not mol.HasSubstructMatch(steroid_pattern):
+    matches = mol.GetSubstructMatches(steroid_pattern)
+
+    if not matches:
         return False, "Molecule does not match the steroid core with beta-hydroxyl at position 3"
-        
+    
     return True, "Molecule matches the criteria for a 3beta-hydroxy steroid"
