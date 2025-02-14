@@ -31,21 +31,25 @@ def is_monoamine(smiles: str):
 
     if len(amino_matches) + len(ammonium_matches) != 1:
         return False, f"Molecule must have exactly one amino group. Found {len(amino_matches) + len(ammonium_matches)}"
-        
+
+    # Check for the presence of at least one aromatic ring
+    aromatic_ring_pattern = Chem.MolFromSmarts("[c]")
+    if not mol.HasSubstructMatch(aromatic_ring_pattern):
+       return False, "Molecule must contain at least one aromatic ring."
+       
+    # Check for the two-carbon chain directly linking the amino group to an aromatic ring.
+    # The chain is explicitly required to be two single-bonded saturated carbons directly connected to an aromatic atom and the N
+    two_carbon_chain_pattern = Chem.MolFromSmarts("[NX3,NX4][CH2][CH2][c]")
+    two_carbon_matches = mol.GetSubstructMatches(two_carbon_chain_pattern)
+
+    if len(two_carbon_matches) != 1:
+        return False, f"Molecule must have exactly one amino group connected to an aromatic ring by a two-carbon chain. Found {len(two_carbon_matches)}"
+    
     # Check if any nitrogen is part of a ring.
     nitrogen_in_ring = Chem.MolFromSmarts("[NX3,NX4]1[#6,#7,#8,#16]~*1")
-    if mol.HasSubstructMatch(nitrogen_in_ring):
-        return False, "Amino group cannot be part of a ring system."
-
-    # Check for the presence of at least one benzene ring
-    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")
-    if not mol.HasSubstructMatch(aromatic_ring_pattern):
-        return False, "Molecule must contain at least one benzene ring."
-
-    # Check for the 2-carbon chain linking amino group to *a* benzene ring.
-    # The chain is explicitly required to be two single-bonded saturated carbons with the aromatic ring and the N on each end
-    two_carbon_chain_pattern = Chem.MolFromSmarts("[NX3,NX4][CH2][CH2]~c1ccccc1")
-    if not mol.HasSubstructMatch(two_carbon_chain_pattern):
-       return False, "Amino group must be connected to a benzene ring by a two-carbon chain."
-
+    for match in amino_matches + ammonium_matches: # Check for each nitrogen individually.
+        nitrogen_atom = mol.GetAtomWithIdx(match[0])
+        if nitrogen_atom.IsInRing():
+           return False, "Amino group cannot be part of a ring system."
+    
     return True, "Molecule contains one amino group attached to an aromatic ring via a two-carbon chain"
