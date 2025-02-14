@@ -1,30 +1,55 @@
 """
 Classifies: CHEBI:25608 nucleoside phosphate
 """
-After analyzing the previous code and the outcomes, I can see a few potential issues and areas for improvement:
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. The nucleobase pattern used (`"[nr3]1[nr3][nr3][nr3][nr3]1"`) may be too broad and can potentially match non-nucleobases. A more specific pattern or a combination of patterns might be needed to accurately identify nucleobases.
+def is_nucleoside_phosphate(smiles: str):
+    """
+    Determines if a molecule is a nucleoside phosphate based on its SMILES string.
+    A nucleoside phosphate is a nucleoside where one or more sugar hydroxy groups
+    are converted into a mono- or poly-phosphate.
 
-2. The sugar ring pattern used (`"[OX2r3][CX4r3][CX4r3][CX4r3][CX4r3][OX2r3]"`) assumes a 5-membered ring, but some nucleoside phosphates may have a different ring size (e.g., 6-membered or fused rings).
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. The program checks if a phosphate group is attached to a sugar hydroxy group, but it doesn't explicitly check if the entire structure is a nucleoside (nucleobase + sugar) before checking for the phosphate attachment.
+    Returns:
+        bool: True if molecule is a nucleoside phosphate, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. The program doesn't account for potential modifications or substitutions on the nucleobase or sugar moieties, which could still classify as nucleoside phosphates.
+    # Define patterns for purine and pyrimidine bases
+    purine_pattern = Chem.MolFromSmarts("n1cnc2ncnc1[nH]2")
+    pyrimidine_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c(N)nc1")
 
-5. Some false negatives (e.g., 1,4-dihydroxy-2-naphthoyl-CoA) might be due to the presence of additional groups or moieties not directly related to the nucleoside phosphate structure, which could be addressed by focusing on the core structure or using more specific patterns.
+    # Check if molecule contains a nucleobase
+    purine_match = mol.HasSubstructMatch(purine_pattern)
+    pyrimidine_match = mol.HasSubstructMatch(pyrimidine_pattern)
+    if not purine_match and not pyrimidine_match:
+        return False, "No nucleobase found"
 
-To improve the program, here are some potential steps:
+    # Define pattern for sugar ring
+    sugar_pattern = Chem.MolFromSmarts("[OX2r3][CX4r3][CX4r3][CX4r3][CX4r3][OX2r3]")
 
-1. Use a more specific pattern or a combination of patterns to identify nucleobases accurately. For example, consider using separate patterns for purine and pyrimidine bases.
+    # Check if molecule contains a sugar ring
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
+        return False, "No sugar ring found"
 
-2. Modify the sugar ring pattern to account for different ring sizes or use a more general pattern that can match various ring systems.
+    # Define pattern for phosphate group
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
 
-3. Introduce an additional step to check if the molecule contains a nucleoside (nucleobase + sugar) before checking for the phosphate attachment.
+    # Check if phosphate group is attached to sugar hydroxy
+    for sugar_match in sugar_matches:
+        for atom_idx in sugar_match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetSymbol() == "O" and atom.GetIsInRing():
+                neighbor_atoms = atom.GetNeighbors()
+                for neighbor in neighbor_atoms:
+                    if neighbor.HasSubstructMatch(phosphate_pattern):
+                        return True, "Contains nucleobase, sugar ring, and phosphate group"
 
-4. Consider incorporating additional patterns or checks to account for potential modifications or substitutions on the nucleobase or sugar moieties.
-
-5. Explore methods to focus on the core structure or use more specific patterns to avoid false negatives caused by additional groups or moieties not directly related to the nucleoside phosphate structure.
-
-Additionally, it might be helpful to cross-validate the program's classifications against a curated dataset of known nucleoside phosphates to identify any systematic issues or biases.
-
-If, after incorporating these improvements, the program still produces classifications that are inconsistent with your understanding of the chemical class, it may be worthwhile to re-evaluate the benchmark or seek additional expert opinions, as there could be potential issues with the benchmark itself.
+    return False, "Nucleobase and sugar ring present, but no phosphate group attached"
