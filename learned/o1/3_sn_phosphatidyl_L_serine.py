@@ -25,13 +25,13 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define phospho-L-serine pattern
-    phosphoserine_smarts = '[O]-P(=O)([O-])-[O]-C[C@@H](N)C(=O)O'
+    # Define phospho-L-serine pattern (adjusted without charges and specific stereochemistry)
+    phosphoserine_smarts = '[O]-P(=O)(O)-[O]-C-C(N)C(=O)O'
     phosphoserine_pattern = Chem.MolFromSmarts(phosphoserine_smarts)
     if not mol.HasSubstructMatch(phosphoserine_pattern):
         return False, "Phospho-L-serine group not found"
 
-    # Define glycerol backbone pattern (three carbons each attached to oxygen)
+    # Define glycerol backbone pattern (three carbons connected in a chain)
     glycerol_smarts = '[CH2]-[CH]-[CH2]'
     glycerol_pattern = Chem.MolFromSmarts(glycerol_smarts)
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
@@ -39,29 +39,30 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
         return False, "Glycerol backbone not found"
 
     # Check for ester linkages at positions sn-1 and sn-2
-    ester_pattern = Chem.MolFromSmarts('[C;H2](OC(=O)[C])[C;H](OC(=O)[C])[CH2]')
+    # Ester linkage pattern: [O]-C(=O)-[C]
+    ester_smarts = '[O]-C(=O)-[C]'
+    ester_pattern = Chem.MolFromSmarts(ester_smarts)
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if not ester_matches:
-        return False, "Ester linkages at sn-1 and sn-2 not found"
+    if len(ester_matches) < 2:
+        return False, "Less than two ester linkages found"
 
     # Verify that glycerol is connected to phospho-L-serine at sn-3 position
     # Define the linkage between glycerol backbone and phospho-L-serine
-    glycerol_phosphate_smarts = '[C;H2][C;H](O[P](=O)(O)[O][CH2][C@@H](N)C(=O)O)[CH2]'
+    glycerol_phosphate_smarts = '[CH2][CH](O[P](=O)(O)O[CH2][CH](N)C(=O)O)[CH2]'
     glycerol_phosphate_pattern = Chem.MolFromSmarts(glycerol_phosphate_smarts)
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "Glycerol backbone not connected to phospho-L-serine at sn-3"
 
     # Check acyl chain lengths to confirm they are fatty acids
+    # Identify acyl chains attached via ester linkages
     acyl_chain_lengths = []
-    ester_bonds = mol.GetSubstructMatches(Chem.MolFromSmarts('C(=O)O[CH]'))
-    if len(ester_bonds) < 2:
-        return False, "Less than two acyl chains found"
-    for bond in ester_bonds:
-        acyl_carbon_idx = bond[0]  # Carbonyl carbon
-        # Trace the chain from the carbonyl carbon
+    for match in ester_matches:
+        ester_oxygen_idx = match[0]  # Index of the oxygen atom in the ester linkage
+        carbonyl_carbon_idx = mol.GetAtomWithIdx(match[1]).GetIdx()  # Carbonyl carbon
+        # Walk the chain from the carbonyl carbon
         chain_length = 0
         visited = set()
-        stack = [acyl_carbon_idx]
+        stack = [carbonyl_carbon_idx]
         while stack:
             atom_idx = stack.pop()
             if atom_idx in visited:
