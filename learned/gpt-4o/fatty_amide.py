@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_fatty_amide(smiles: str):
     """
     Determines if a molecule is a fatty amide based on its SMILES string.
-    A fatty amide is a monocarboxylic acid amide derived from a fatty acid, characterized by
-    amide groups and typically long hydrocarbon chains.
+    A fatty amide is a monocarboxylic acid amide derived from a fatty acid, 
+    characterized by amide groups and typically long aliphatic hydrocarbon chains.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,30 +22,21 @@ def is_fatty_amide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for primary, secondary, and tertiary amide group patterns
-    amide_patterns = [
-        Chem.MolFromSmarts("C(=O)N"),      # Primary amide
-        Chem.MolFromSmarts("C(=O)NC"),     # Secondary amide
-        Chem.MolFromSmarts("C(=O)N(C)C")   # Tertiary amide
-    ]
+    # Look for primary and secondary amide group patterns
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
 
     # Check if any amide pattern matches
-    amide_found = any(mol.HasSubstructMatch(pattern) for pattern in amide_patterns)
-    if not amide_found:
+    if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide group found"
 
     # Count the number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Count the number of double bonds
-    double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetIsAromatic() == False)
 
-    # Verify if it has characteristics of a fatty acid chain (long, possibly unsaturated)
-    if c_count < 8:
-        return False, f"Insufficient carbon count for fatty chain, found {c_count} carbons"
-    elif c_count > 8 and double_bond_count > 0:
-        return True, "Contains amide group and features of a fatty acid chain (unsaturation)"
-    elif c_count >= 10:
-        return True, "Contains amide group and long hydrocarbon chain characteristic of fatty acids"
+    # Check for a sufficiently long carbon chain
+    aliphatic_chain_pattern = Chem.MolFromSmarts("CCCCCCCCC")
+    has_long_chain = mol.HasSubstructMatch(aliphatic_chain_pattern)
 
-    return False, "Does not match typical characteristics of fatty amides"
+    if c_count >= 12 and has_long_chain:
+        return True, "Contains amide group and a sufficiently long aliphatic chain characteristic of fatty acids"
+
+    return False, "Does not match typical characteristics of fatty amides or chain is too short"
