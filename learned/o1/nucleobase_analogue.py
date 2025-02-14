@@ -25,31 +25,48 @@ def is_nucleobase_analogue(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS patterns for purine and pyrimidine rings
-    purine_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)")  # Basic purine ring
-    pyrimidine_pattern = Chem.MolFromSmarts("c1cncnc1")      # Basic pyrimidine ring
-
-    # Check for purine ring system
-    purine_match = mol.HasSubstructMatch(purine_pattern)
     
-    # Check for pyrimidine ring system
-    pyrimidine_match = mol.HasSubstructMatch(pyrimidine_pattern)
+    # Define specific SMARTS patterns for nucleobases and their analogues
+    nucleobase_patterns = [
+        # Purines
+        Chem.MolFromSmarts("c1ncnc2ncnn12"),  # Adenine
+        Chem.MolFromSmarts("c1nc2c(n1)nc(nc2=O)N"),  # Guanine
+        Chem.MolFromSmarts("c1nc2c(n1)ncnc2=O"),     # Hypoxanthine
+        Chem.MolFromSmarts("c1nc2c(n1)ncnc2=O"),     # Xanthine
+        # Pyrimidines
+        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)N"),     # Cytosine
+        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)C"),     # Thymine
+        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)O"),     # Uracil
+        # Modified nucleobases
+        Chem.MolFromSmarts("c1[nH]c(=O)c[nH]c1=O"),   # 5-fluorouracil and analogues
+        Chem.MolFromSmarts("c1cc(nc(=O)[nH]1)[C,N,O]"),  # Substituted pyrimidine
+        Chem.MolFromSmarts("c1ncnc2ncnc(=O)c12"),     # Purine analogues with oxygen
+        Chem.MolFromSmarts("c1ncnc2ncnn12"),          # Purine analogues
+    ]
     
-    # Additional check for modified nucleobases (e.g., substitutions or analogues)
-    # We can look for heterocyclic rings with nitrogen atoms
-    heterocycle_with_N = Chem.MolFromSmarts("[n;R]")  # Any nitrogen in a ring
+    # Check for matches with any of the nucleobase patterns
+    for pattern in nucleobase_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Matches nucleobase analogue pattern"
+    
+    return False, "Does not match nucleobase analogue patterns"
 
-    heterocycle_N_matches = mol.GetSubstructMatches(heterocycle_with_N)
-    has_heterocycle_N = len(heterocycle_N_matches) > 0
+# The above code refines the SMARTS patterns to specifically match nucleobases and their analogues, avoiding overgeneralization.
 
-    # Check if molecule is aromatic
-    is_aromatic = any(atom.GetIsAromatic() for atom in mol.GetAtoms())
+# Short Summary:
+# The previous attempt failed because it overgeneralized by classifying any molecule with an aromatic nitrogen-containing ring as a nucleobase analogue, leading to many false positives.
+# To improve, we defined more specific SMARTS patterns that accurately represent nucleobases and their analogues.
+# This approach reduces false positives by only matching molecules that have core structures similar to known nucleobases.
 
-    # Decide classification based on matches
-    if purine_match or pyrimidine_match:
-        return True, "Contains purine or pyrimidine ring system"
-    elif has_heterocycle_N and is_aromatic:
-        return True, "Contains aromatic heterocycle(s) with nitrogen, characteristic of nucleobase analogues"
-    else:
-        return False, "Does not contain structures characteristic of nucleobase analogues"
+# The function 'is_nucleobase_analogue' checks if the input molecule matches any of the specific nucleobase patterns. If a match is found, it returns True with a reason; otherwise, it returns False.
+
+# Finally, we avoid using overly broad criteria and focus on the structural features that are characteristic of nucleobase analogues.
+
+# Note: This function assumes that the input SMILES string is valid and that RDKit is properly installed.
+
+# Try running the function with some example SMILES strings:
+# print(is_nucleobase_analogue("N1C=NC2=C1N=CN=C2"))  # Adenine
+# print(is_nucleobase_analogue("O=C1NC(=O)NC=C1"))    # Uracil
+# print(is_nucleobase_analogue("CC(=O)O"))            # Acetic acid (should return False)
+
+# Answer Ends Here
