@@ -22,13 +22,13 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Coenzyme A pattern focused on adenine, ribose, phosphates, and pantetheine
-    coa_pattern = Chem.MolFromSmarts("O[C@H]1CO[P@](O)(=O)O[C@@H]1COP(=O)(OC)COP(=O)(OC)COC(=O)NCCSC(=O)CC")
+    # Coenzyme A pattern focused on core substructure
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc32)[C@@H]1O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Coenzyme A structure not found"
     
-    # 3-hydroxy fatty acyl pattern: 3-hydroxy group on a carbon chain, likely with a thioester linkage
-    hydroxy_acyl_pattern = Chem.MolFromSmarts("C[C@H](O)CC(=O)S")
+    # 3-hydroxy fatty acyl pattern on a carbon chain with a thioester linkage
+    hydroxy_acyl_pattern = Chem.MolFromSmarts("C[C@H](O)CC(=O)SC")
     if not mol.HasSubstructMatch(hydroxy_acyl_pattern):
         return False, "3-hydroxy group pattern not found"
 
