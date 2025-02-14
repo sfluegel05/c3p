@@ -27,40 +27,41 @@ def is_diterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight range (typically 280-360 Da for diterpenoids)
+    # Check molecular weight range (more relaxed range)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 280 or mol_wt > 360:
+    if mol_wt < 200 or mol_wt > 500:
         return False, f"Molecular weight {mol_wt:.2f} outside typical diterpenoid range"
 
-    # Check for diterpenoid backbone (C20 skeleton)
-    diterpenoid_backbone = Chem.MolFromSmarts("[C&r5,r6,r7,r8]")
-    if diterpenoid_backbone is None:
-        return False, "Invalid SMARTS pattern for diterpenoid backbone"
-    if not mol.HasSubstructMatch(diterpenoid_backbone):
-        return False, "No diterpenoid backbone found"
+    # Look for diterpenoid-like core structure
+    core_structure = Chem.MolFromSmarts("[C&r5,r6,r7]")
+    if core_structure is None:
+        return False, "Invalid SMARTS pattern for diterpenoid core"
+    if not mol.HasSubstructMatch(core_structure):
+        return False, "No diterpenoid-like core structure found"
 
-    # Look for typical functional groups (hydroxy, carbonyl, ether, ester, etc.)
-    functional_groups = Chem.MolFromSmarts("[OH,O,C(=O)O,COC]")
+    # Look for common functional groups (expanded pattern)
+    functional_groups = Chem.MolFromSmarts("[OH,O,C(=O)O,COC,C=C,C=O,C#C]")
     if functional_groups is None:
         return False, "Invalid SMARTS pattern for functional groups"
     if not mol.HasSubstructMatch(functional_groups):
         return False, "No typical diterpenoid functional groups found"
 
-    # Check for ring systems (bicyclic or tricyclic)
+    # Check for bicyclic or tricyclic ring systems
     ring_info = mol.GetRingInfo()
-    if not any(len(ring) >= 5 for ring in ring_info.BondRings()):
-        return False, "No ring systems found"
+    ring_sizes = [len(ring) for ring in ring_info.BondRings()]
+    if not any(size >= 5 and size <= 8 for size in ring_sizes):
+        return False, "No bicyclic or tricyclic ring systems found"
 
-    # Count carbon, hydrogen, and oxygen atoms
+    # Count carbon, hydrogen, and oxygen atoms (more relaxed ranges)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    if c_count < 20 or c_count > 25:
+    if c_count < 15 or c_count > 30:
         return False, f"Carbon count {c_count} outside typical diterpenoid range"
-    if h_count < 24 or h_count > 40:
+    if h_count < 20 or h_count > 50:
         return False, f"Hydrogen count {h_count} outside typical diterpenoid range"
-    if o_count < 1 or o_count > 5:
+    if o_count < 0 or o_count > 8:
         return False, f"Oxygen count {o_count} outside typical diterpenoid range"
 
     return True, "Molecule matches diterpenoid structural features"
