@@ -35,12 +35,21 @@ def is_N_sulfonylurea(smiles: str):
     # Look for sulfonyl group (-SO2-) attached to a nitrogen of the urea
     sulfonylurea_pattern = Chem.MolFromSmarts("N(S(=O)(=O))C(=O)N")
     sulfonylurea_matches = mol.GetSubstructMatches(sulfonylurea_pattern)
-    if not sulfonylurea_matches:
-        return False, "No N-sulfonylurea group found"
 
     # Check if the sulfonylurea group is part of the urea group
     for urea_match, sulfonylurea_match in zip(urea_matches, sulfonylurea_matches):
         if set(urea_match) & set(sulfonylurea_match):
-            return True, "Contains an N-sulfonylurea group (urea with a sulfonyl group attached to a nitrogen)"
+            # Check if the sulfonyl group is directly attached to the urea nitrogen
+            urea_nitrogen_idx = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'N' and atom.GetIdx() in urea_match][0]
+            sulfonylurea_sulfur_idx = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'S' and atom.GetIdx() in sulfonylurea_match][0]
+            if mol.GetBondBetweenAtoms(urea_nitrogen_idx, sulfonylurea_sulfur_idx):
+                return True, "Contains an N-sulfonylurea group (urea with a sulfonyl group directly attached to a nitrogen)"
 
-    return False, "N-sulfonylurea group not part of urea group"
+    # Check for cases where the sulfonyl group is not directly attached to the urea nitrogen
+    urea_nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'N' and atom.GetIdx() in urea_match]
+    for urea_nitrogen in urea_nitrogen_atoms:
+        sulfonylurea_match = AllChem.FindMolPathMatchingSmarts(mol, 'N(S(=O)(=O))~C(=O)N')
+        if sulfonylurea_match:
+            return True, "Contains an N-sulfonylurea group (urea with a sulfonyl group indirectly attached to a nitrogen)"
+
+    return False, "No N-sulfonylurea group found"
