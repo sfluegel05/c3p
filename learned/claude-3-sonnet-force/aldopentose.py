@@ -2,11 +2,11 @@
 Classifies: CHEBI:33916 aldopentose
 """
 """
-Classifies: CHEBI:18237 aldopentose
+Classifies: CHEBI:18277 aldopentose
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Descriptors
 
 def is_aldopentose(smiles: str):
     """
@@ -26,16 +26,62 @@ def is_aldopentose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for aldehyde or alcohol group at one end
-    end_group_pattern = Chem.MolFromSmarts("[CH2O,CH2C=O]")
-    has_end_group = mol.HasSubstructMatch(end_group_pattern)
+    # Check for exactly 5 carbon atoms
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons != 5:
+        return False, f"Found {num_carbons} carbon atoms, aldopentoses must have 5"
     
-    # Check for pentose backbone (5 carbons with 4 oxygens attached)
-    pentose_pattern = Chem.MolFromSmarts("[CR2][OR2][CR2][OR2][CR2][OR2][CR2][CR2]")
-    has_pentose_backbone = mol.HasSubstructMatch(pentose_pattern)
+    # Check for aldehyde group
+    aldehyde_pattern = Chem.MolFromSmarts("[CH]=O")
+    if not mol.HasSubstructMatch(aldehyde_pattern):
+        return False, "No aldehyde group found"
     
-    # Classify as aldopentose if it has an aldehyde/alcohol group at one end and a pentose backbone
-    if has_end_group and has_pentose_backbone:
-        return True, "Contains a pentose backbone with an aldehyde or alcohol group at one end"
-    else:
-        return False, "Does not meet the criteria for an aldopentose"
+    # Check for 4 hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) != 4:
+        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, aldopentoses must have 4"
+    
+    # Check for ring structures (furanose or pyranose forms)
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() == 0:
+        return False, "No ring found, aldopentoses typically have furanose or pyranose forms"
+    
+    return True, "Contains 5 carbon atoms, 4 hydroxyl groups, an aldehyde group, and a ring structure"
+
+
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:18277',
+        'name': 'aldopentose',
+        'definition': 'A pentose with a (potential) aldehyde group at one end.',
+        'parents': ['CHEBI:18021', 'CHEBI:16646']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 352,
+    'num_false_positives': 4,
+    'num_true_negatives': 182411,
+    'num_false_negatives': 15,
+    'num_negatives': None,
+    'precision': 0.9888888888888889,
+    'recall': 0.9592233009708737,
+    'f1': 0.9737533699847448,
+    'accuracy': 0.9998932789627203
+}
