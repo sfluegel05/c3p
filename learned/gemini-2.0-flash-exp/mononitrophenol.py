@@ -22,8 +22,9 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phenol substructure
-    phenol_pattern = Chem.MolFromSmarts("c1ccccc1O")
+    # Check for phenol substructure using a more general pattern
+    # phenol_pattern = Chem.MolFromSmarts("[cH1]1[cH1][cH1][cH1][cH1][c]1[OH1]")
+    phenol_pattern = Chem.MolFromSmarts("c1ccccc1[OH]")
     if not mol.HasSubstructMatch(phenol_pattern):
         return False, "No phenol substructure found"
     
