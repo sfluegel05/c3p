@@ -37,26 +37,32 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group found"
     
-    # Check for acyl and alkyl groups at positions 1 and 2
-    acyl_pattern = Chem.MolFromSmarts("C(=O)[CH]")
-    alkyl_pattern = Chem.MolFromSmarts("C[CH]")
-    
-    acyl_match = mol.GetSubstructMatches(acyl_pattern)
-    alkyl_match = mol.GetSubstructMatches(alkyl_pattern)
-    
-    if len(acyl_match) != 1 or len(alkyl_match) != 1:
-        return False, "Incorrect number of acyl/alkyl groups at positions 1 and 2"
-    
-    acyl_idx = acyl_match[0][1]
-    alkyl_idx = alkyl_match[0][1]
-    
-    # Check if acyl and alkyl are at positions 1 and 2
+    # Get the glycerol atoms
     glycerol_atoms = mol.GetSubstructMatch(glycerol_pattern)
     
-    if glycerol_atoms[0] != alkyl_idx and glycerol_atoms[2] != alkyl_idx:
-        return False, "Alkyl group not at position 1"
-    
-    if glycerol_atoms[1] != acyl_idx:
+    # Check for acyl group at position 2
+    acyl_group = Chem.MolFromSmiles("C(=O)") # Simple acyl group
+    acyl_match = mol.GetSubstructMatches(acyl_group, maxMatches=1, uniqueOnly=True)
+    if not acyl_match:
+        return False, "No acyl group found at position 2"
+    acyl_idx = acyl_match[0][0]
+    if acyl_idx != glycerol_atoms[1]:
         return False, "Acyl group not at position 2"
+    
+    # Check for alkyl group at position 1
+    alkyl_atoms = [atom.GetIdx() for atom in mol.GetAtomWithIdx(glycerol_atoms[0]).GetNeighbors() if atom.GetAtomicNum() == 6]
+    if not alkyl_atoms:
+        return False, "No alkyl group found at position 1"
+    
+    # Count carbon atoms in the alkyl chain
+    alkyl_chain = Chem.MolFromSmiles("CCCCCCCCCCCCCCCCCC") # Assume max 18 carbon atoms
+    alkyl_match = mol.GetSubstructMatches(alkyl_chain, maxMatches=1, uniqueOnly=True)
+    if alkyl_match:
+        alkyl_start_idx = alkyl_match[0][0]
+        alkyl_length = len([atom.GetIdx() for atom in mol.GetAtomWithIdx(alkyl_start_idx).GetNeighbors() if atom.GetAtomicNum() == 6])
+        if alkyl_length < 4:
+            return False, "Alkyl chain too short"
+    else:
+        return False, "Alkyl chain not found"
     
     return True, "Molecule is a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine"
