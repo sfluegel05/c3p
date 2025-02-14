@@ -1,64 +1,28 @@
 """
 Classifies: CHEBI:51006 unsaturated fatty acyl-CoA
 """
-"""
-Classifies: CHEBI:35497 unsaturated fatty acyl-CoA
-A fatty acyl-CoA that results from the formal condensation of the thiol group of coenzyme A with the carboxy group of any unsaturated fatty acid.
-"""
+Based on the outcomes provided, it seems that the previous program had a few issues in correctly identifying unsaturated fatty acyl-CoAs. Here's an analysis of what went wrong and how to improve the program:
 
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+1. **Missing CoA Backbone**: The program correctly checked for the presence of the CoA backbone using a SMARTS pattern. However, it seems that some of the examples marked as false negatives did contain the CoA backbone, but the program failed to identify them. This could be due to a limitation in the SMARTS pattern used or a issue with the RDKit's substructure matching algorithm.
 
-def is_unsaturated_fatty_acyl_CoA(smiles: str):
-    """
-    Determines if a molecule is an unsaturated fatty acyl-CoA based on its SMILES string.
+   **Improvement**: Review and refine the SMARTS pattern used to match the CoA backbone. Alternatively, consider breaking down the pattern into smaller substructures and match them individually.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Unsaturated Alkyl Chain Detection**: The program used a specific SMARTS pattern to detect an unsaturated alkyl chain of a specific length. While this approach works for some cases, it fails to generalize to unsaturated chains of different lengths or with different degrees of unsaturation.
 
-    Returns:
-        bool: True if molecule is an unsaturated fatty acyl-CoA, False otherwise
-        str: Reason for classification
-    """
+   **Improvement**: Instead of relying on a specific pattern, consider using RDKit's built-in methods to detect unsaturation in the molecule. You can iterate over the bonds and check for double bonds, or use the `Chem.rdMolDescriptors.CalcNumUnsaturatedBonds` function.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Carboxylate Group Detection**: The program correctly checked for the presence of a carboxylate group, which is a characteristic of fatty acids. However, it did not account for the possibility of other functional groups, such as ketones or alcohols, that could be present in the molecules.
 
-    # Check for CoA backbone
-    coa_pattern = Chem.MolFromSmarts("[N;X3]1([C;X4][N;X3]([C;X3]([C;X3]([C;X3]([C;X3]1)O[P;X4]([O-])([O-])OP([O-])([O-])O[CH2]O[CH2]O[P;X4]([O-])([O-])OP([O-])([O-])OC[C;X4][N;X3]c1[nH]c[nH]c1)[N;X3]c1[nH]c[nH]c1)[N;X3]c1[nH]c[nH]c1)[O-])[C@H]([C@H]([C@@H]([C@H](O)O)O)O)OP([O-])([O-])[O-]")
-    if mol.HasSubstructMatch(coa_pattern):
-        reason = "Contains CoA backbone"
-    else:
-        return False, "Missing CoA backbone"
+   **Improvement**: While the presence of a carboxylate group is a good indicator of a fatty acid, you could consider additional checks for common functional groups found in unsaturated fatty acids, such as ketones or alcohols.
 
-    # Check for unsaturated alkyl chain
-    alkyl_pattern = Chem.MolFromSmarts("[CH2]=[CH][CH2][CH2][CH2][CH2][CH2]")
-    alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
-    if alkyl_matches:
-        reason = f"{reason}, found unsaturated alkyl chain"
-    else:
-        return False, "No unsaturated alkyl chain found"
+4. **Unsaturated Bond Stereochemistry**: The program attempted to check for the presence of defined stereochemistry on the unsaturated bonds. However, this check may not be reliable or necessary for all unsaturated fatty acyl-CoAs.
 
-    # Check for carboxylate group (fatty acid)
-    carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
-    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
-    if carboxylate_matches:
-        reason = f"{reason}, and carboxylate group present (fatty acid)"
-    else:
-        return False, "No carboxylate group found (not a fatty acid)"
+   **Improvement**: Consider removing this check or make it optional, as it might not be a strict requirement for all unsaturated fatty acyl-CoAs.
 
-    # Check for unsaturated bond stereochemistry
-    unsaturated_bond_stereo = any(bond.GetStereo() != Chem.BondStereo.STEREONONE for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-    if unsaturated_bond_stereo:
-        reason = f"{reason}, with defined stereochemistry"
-    else:
-        reason = f"{reason}, without defined stereochemistry"
+5. **Molecular Weight Check**: The program included an optional check for molecular weight, but it was commented out. While molecular weight can be a useful indicator, it should be used cautiously as there could be exceptions.
 
-    # Optionally check molecular weight
-    # mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    # if mol_wt < 500:
-    #     return False, "Molecular weight too low for unsaturated fatty acyl-CoA"
+   **Improvement**: If you decide to include a molecular weight check, make sure to account for potential outliers or exceptions. You could also consider using a range of molecular weights instead of a single cutoff value.
 
-    return True, reason
+6. **Additional Checks**: Depending on the specific requirements of the chemical class, you might need to introduce additional checks or modifications to the program. For example, you could check for the presence of specific functional groups or substructures that are characteristic of unsaturated fatty acyl-CoAs.
+
+Overall, while the previous program had a good approach, it seems to have missed some edge cases and relied too heavily on specific patterns. A more generalized approach that combines multiple checks and utilizes RDKit's built-in functions could improve the performance and robustness of the program.
