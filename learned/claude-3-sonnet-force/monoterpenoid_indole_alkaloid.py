@@ -31,29 +31,24 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if not mol.HasSubstructMatch(indole_pattern):
         return False, "No indole substructure found"
     
-    # Look for tryptophan substructure
-    tryptophan_pattern = Chem.MolFromSmarts("Nc1c(C(=O)O)c2c(cc1)cccc2")
-    if not mol.HasSubstructMatch(tryptophan_pattern):
-        return False, "No tryptophan substructure found"
+    # Look for terpenoid substructure
+    terpenoid_pattern = Chem.MolFromSmarts("C=CC(C)CC")
+    if not mol.HasSubstructMatch(terpenoid_pattern):
+        return False, "No terpenoid substructure found"
     
-    # Look for monoterpenoid substructure
-    monoterpenoid_pattern = Chem.MolFromSmarts("C(C)=CCCC")
-    if not mol.HasSubstructMatch(monoterpenoid_pattern):
-        return False, "No monoterpenoid substructure found"
-    
-    # Check for connectivity between indole, tryptophan, and monoterpenoid
+    # Check for connectivity between indole and terpenoid
     connected = any(atom.GetAtomicNum() == 7 and atom.GetDegree() > 3 for atom in mol.GetAtoms())
     if not connected:
-        return False, "Indole, tryptophan, and monoterpenoid not connected"
+        return False, "Indole and terpenoid not connected"
     
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 500:
-        return False, "Molecular weight outside expected range (200-500 Da)"
+    if mol_wt < 200 or mol_wt > 600:
+        return False, "Molecular weight outside expected range (200-600 Da)"
     
     # Count nitrogen atoms (should have 2-3)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 2 or n_count > 3:
         return False, f"Unexpected number of nitrogen atoms ({n_count})"
     
-    return True, "Contains indole, tryptophan, and monoterpenoid substructures connected"
+    return True, "Contains indole and terpenoid substructures connected"
