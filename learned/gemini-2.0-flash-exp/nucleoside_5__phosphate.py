@@ -21,55 +21,86 @@ def is_nucleoside_5__phosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns
-    phosphate_pattern = Chem.MolFromSmarts("[CX4]-[OP](=[OX1])([OX1])[OX1]") # Phosphate attached to a carbon
+    phosphate_pattern = Chem.MolFromSmarts("[OX2]-[P](=[OX1])([OX1])([OX1])") # Phosphate attached via an oxygen
     ribose_pattern = Chem.MolFromSmarts("C1[CH][CH](O)[CH](O)[O]1")  # Ribose
     deoxyribose_pattern = Chem.MolFromSmarts("C1[CH][CH](O)[CH](C)[O]1") #Deoxyribose
-    purine_pattern = Chem.MolFromSmarts("c1nc2c(n1)ncn2") # Purine
-    pyrimidine_pattern = Chem.MolFromSmarts("c1cncc(=O)[nH]1") # Pyrimidine
+
 
     # Check for phosphate group
     if not mol.HasSubstructMatch(phosphate_pattern):
-          return False, "No phosphate group found"
+        return False, "No phosphate group found"
     
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
 
     # Check that at least one of the phosphates is attached to the C5' of the sugar
-    phosphate_c_atoms = []
-    for match in phosphate_matches:
-        for atom_index in match:
-            atom = mol.GetAtomWithIdx(atom_index)
-            if atom.GetSymbol() == "C":
-                phosphate_c_atoms.append(atom_index) #store all carbon atoms attached to phosphate
-
-
     has_5prime_phosphate = False
-    for c_atom_index in phosphate_c_atoms:
-        c_atom = mol.GetAtomWithIdx(c_atom_index) # get atom
-        neighbors = c_atom.GetNeighbors()
-        for neighbor in neighbors:
-          if neighbor.GetSymbol() == "O":
-            for n_n in neighbor.GetNeighbors():
-                if n_n.GetSymbol() == "C":
-                    if (mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)):
-                      if (len(n_n.GetNeighbors()) == 4): #this is C5
-                        has_5prime_phosphate = True
-                        break
-                if has_5prime_phosphate:
-                  break;
-          if has_5prime_phosphate:
-            break;
-        if has_5prime_phosphate:
-          break;
-    if not has_5prime_phosphate:
-      return False, "Phosphate not at 5' position"
-    
-    # Check for ribose or deoxyribose ring
-    if not (mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)):
-        return False, "No ribose/deoxyribose ring found"
+    for match in phosphate_matches:
+        phosphate_oxygen_idx = match[0] # index of the O connected to the P
+        phosphate_oxygen_atom = mol.GetAtomWithIdx(phosphate_oxygen_idx)
+        for neighbor in phosphate_oxygen_atom.GetNeighbors():
+            if neighbor.GetSymbol() == "C": # this is C5
+              c5_atom = neighbor
+              if (mol.HasSubstructMatch(ribose_pattern)):
+                 ribose_match = mol.GetSubstructMatch(ribose_pattern)
+                 ribose_atoms = [mol.GetAtomWithIdx(x) for x in ribose_match]
+                 
+                 c1_idx = -1
+                 c2_idx = -1
+                 c3_idx = -1
+                 c4_idx = -1
+                 c5_idx = -1
 
-    # Check for purine or pyrimidine base attached to the sugar
-    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
-        return False, "No purine/pyrimidine base found"
+                 for ribose_atom in ribose_atoms:
+                  if (ribose_atom.GetSymbol() == "C"):
+                    hydrogens = [x.GetSymbol() for x in ribose_atom.GetNeighbors() if x.GetSymbol() == "H" ]
+                    oxygens = [x.GetSymbol() for x in ribose_atom.GetNeighbors() if x.GetSymbol() == "O"]
+
+                    if len(hydrogens) == 1 and len(oxygens) == 1 :
+                      if c2_idx == -1:
+                        c2_idx = ribose_atom.GetIdx()
+                      elif c3_idx == -1:
+                        c3_idx = ribose_atom.GetIdx()
+                    elif len(hydrogens) == 1 and len(oxygens) == 0 :
+                        c4_idx = ribose_atom.GetIdx()
+                    elif len(hydrogens) == 2 and len(oxygens) == 0:
+                        c1_idx = ribose_atom.GetIdx()
+                    elif len(hydrogens) == 2 and len(oxygens) == 1 :
+                         c5_idx = ribose_atom.GetIdx()
+                 if c5_idx == c5_atom.GetIdx():
+                     has_5prime_phosphate = True
+                     break
+              elif (mol.HasSubstructMatch(deoxyribose_pattern)):
+                 deoxyribose_match = mol.GetSubstructMatch(deoxyribose_pattern)
+                 deoxyribose_atoms = [mol.GetAtomWithIdx(x) for x in deoxyribose_match]
+
+                 c1_idx = -1
+                 c2_idx = -1
+                 c3_idx = -1
+                 c4_idx = -1
+                 c5_idx = -1
+
+                 for ribose_atom in deoxyribose_atoms:
+                  if (ribose_atom.GetSymbol() == "C"):
+                    hydrogens = [x.GetSymbol() for x in ribose_atom.GetNeighbors() if x.GetSymbol() == "H" ]
+                    oxygens = [x.GetSymbol() for x in ribose_atom.GetNeighbors() if x.GetSymbol() == "O"]
+                    if len(hydrogens) == 1 and len(oxygens) == 1 :
+                      if c2_idx == -1:
+                        c2_idx = ribose_atom.GetIdx()
+                      elif c3_idx == -1:
+                        c3_idx = ribose_atom.GetIdx()
+                    elif len(hydrogens) == 1 and len(oxygens) == 0 :
+                        c4_idx = ribose_atom.GetIdx()
+                    elif len(hydrogens) == 2 and len(oxygens) == 0:
+                        c1_idx = ribose_atom.GetIdx()
+                    elif len(hydrogens) == 2 and len(oxygens) == 1 :
+                         c5_idx = ribose_atom.GetIdx()
+                 if c5_idx == c5_atom.GetIdx():
+                     has_5prime_phosphate = True
+                     break
+        if has_5prime_phosphate:
+            break
+    if not has_5prime_phosphate:
+        return False, "Phosphate not at 5' position"
     
     # If all conditions are met, return True
     return True, "Molecule is a nucleoside 5'-phosphate"
