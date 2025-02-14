@@ -5,7 +5,6 @@ Classifies: CHEBI:28892 ganglioside
 Classifies: CHEBI:17619 ganglioside
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_ganglioside(smiles: str):
     """
@@ -30,11 +29,11 @@ def is_ganglioside(smiles: str):
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide backbone found"
     
-    # Look for sialic acid residue(s) with a more relaxed pattern
-    sialic_acid_pattern = Chem.MolFromSmarts("[C&D2][C&D2][C&D2]([C&D2][C&D2]1[C&D2]([C&D2][C&D2][C&D2]([C&D2]1[C&D2])[O])[O])[O]")
-    sialic_acid_matches = mol.GetSubstructMatches(sialic_acid_pattern)
-    if not sialic_acid_matches:
-        return False, "No sialic acid residues found"
+    # Look for N-acetylneuraminic acid (Neu5Ac) residue(s)
+    neu5ac_pattern = Chem.MolFromSmarts("C[C@@]([C@@H]1[C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)NC(C)=O)([C@@H]([C@@H](CO)O)O)(O)C(=O)O")
+    neu5ac_matches = mol.GetSubstructMatches(neu5ac_pattern)
+    if not neu5ac_matches:
+        return False, "No N-acetylneuraminic acid (Neu5Ac) residues found"
     
     # Look for glycosidic linkages between sugar residues
     glycosidic_pattern = Chem.MolFromSmarts("O[C@H][C@H]1O[C@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O")
@@ -47,4 +46,4 @@ def is_ganglioside(smiles: str):
     if heavy_atoms < 50:
         return False, "Too few heavy atoms for ganglioside"
     
-    return True, "Contains ceramide backbone with sialic acid residue(s) and glycosidic linkages"
+    return True, "Contains ceramide backbone with N-acetylneuraminic acid (Neu5Ac) residue(s) and glycosidic linkages"
