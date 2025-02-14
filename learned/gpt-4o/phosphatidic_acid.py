@@ -24,26 +24,30 @@ def is_phosphatidic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define more general glycerol backbone pattern with flexible ester groups
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)O")
+    # Glycerol backbone pattern with consideration of stereochemistry and ester sites
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     
-    # Define phosphoric acid ester pattern, allow flexibility
-    phosphoester_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
+    # Define phosphoric acid ester pattern
+    phosphoester_pattern = Chem.MolFromSmarts("COP(O)(O)=O")
     
-    # Phosphatidic acid must match the flexible glycerol with esterified positions
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No flexible glycerol backbone found"
+    # Phosphatidic acid should include both the glycerol backbone and the phosphoric acid ester group
+    if not mol.HasSubstructMatch(glycerol_pattern) or not mol.HasSubstructMatch(phosphoester_pattern):
+        return False, "Lacks necessary glycerol backbone or phosphoric ester group"
     
-    # Ensure presence of the phosphoric acid ester group
-    if not mol.HasSubstructMatch(phosphoester_pattern):
-        return False, "No phosphoric acid ester group found"
-
-    # Check for two esterified fatty acid groups, allowing flexibility
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Check for two esterified fatty acid groups with a defined length (at least 12 carbons typically)
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    # specifically check for the length of fatty acids to be more than 10 carbons
-    fatty_acid_count = sum(1 for match in ester_matches if len(match) > 10)
-    if fatty_acid_count < 2:
-        return False, "Less than 2 fatty acid ester groups found"
+    fatty_acid_count = 0
+    for match in ester_matches:
+        chain_length = len(match) - 2  # Compensating for CO group
+        atom_count = 0
+        for atom in match:
+            if mol.GetAtomWithIdx(atom).GetAtomicNum() == 6: # Counting carbons
+                atom_count += 1
+        if atom_count >= 12:
+            fatty_acid_count += 1
 
-    return True, "Contains glycerol backbone with 2 fatty acid esters and a phosphoric acid ester"
+    if fatty_acid_count < 2:
+        return False, "Less than 2 long-chain fatty acid ester groups found"
+
+    return True, "Contains glycerol backbone with 2 long-chain fatty acid esters and a phosphoric acid ester"
