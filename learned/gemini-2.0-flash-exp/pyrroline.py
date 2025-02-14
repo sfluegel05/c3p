@@ -22,20 +22,54 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generalized pattern for a 5-membered ring with one N and one double bond
-    # The nitrogen atom should be sp3 hybridized, hence the [NX3] pattern
-    pyrroline_pattern = Chem.MolFromSmarts("[NX3]1~[#6]~[#6]~[#6]~[#6]1")
+    # Patterns to match pyrroline core with the double bond in different locations and the nitrogen having sp2 or sp3 character.
+    # Pattern 1 : N has 1 double bond within the ring and 1 single bond
+    pyrroline_pattern1 = Chem.MolFromSmarts("[NX2]1-[#6]=[#6]-[#6]-[#6]1")
+    # Pattern 2 : N has 2 single bonds
+    pyrroline_pattern2 = Chem.MolFromSmarts("[NX3]1-[#6]=[#6]-[#6]-[#6]1")
+    pyrroline_pattern3 = Chem.MolFromSmarts("[NX3]1-[#6]-[#6]=[#6]-[#6]1")
+    pyrroline_pattern4 = Chem.MolFromSmarts("[NX3]1-[#6]-[#6]-[#6]=[#6]1")
+
+
+    if not (mol.HasSubstructMatch(pyrroline_pattern1) or mol.HasSubstructMatch(pyrroline_pattern2) or mol.HasSubstructMatch(pyrroline_pattern3) or mol.HasSubstructMatch(pyrroline_pattern4)):
+       return False, "No pyrroline core structure found"
     
-    if not mol.HasSubstructMatch(pyrroline_pattern):
-        return False, "No pyrroline core structure found"
-    
-    #Ensure there is only one double bond within the ring
+    #Ensure there is only one double bond within the ring and it is part of the pyrroline core
     double_bond_pattern = Chem.MolFromSmarts("[#6]=[#6]")
     matches = mol.GetSubstructMatches(double_bond_pattern)
     ring_matches = 0
     for match in matches:
-      if mol.GetAtomWithIdx(match[0]).IsInRing() and mol.GetAtomWithIdx(match[1]).IsInRing():
-        ring_matches += 1
+      is_ring = mol.GetAtomWithIdx(match[0]).IsInRing() and mol.GetAtomWithIdx(match[1]).IsInRing()
+      if is_ring:
+        #Check if the double bond is part of the pyrroline core.
+        is_pyrroline_bond = False
+        substructure_matches = mol.GetSubstructMatches(pyrroline_pattern1)
+        for substructure_match in substructure_matches:
+          if match[0] in substructure_match and match[1] in substructure_match:
+              is_pyrroline_bond = True
+              break
+        if is_pyrroline_bond == False:
+          substructure_matches = mol.GetSubstructMatches(pyrroline_pattern2)
+          for substructure_match in substructure_matches:
+             if match[0] in substructure_match and match[1] in substructure_match:
+               is_pyrroline_bond = True
+               break
+        if is_pyrroline_bond == False:
+          substructure_matches = mol.GetSubstructMatches(pyrroline_pattern3)
+          for substructure_match in substructure_matches:
+            if match[0] in substructure_match and match[1] in substructure_match:
+              is_pyrroline_bond = True
+              break
+        if is_pyrroline_bond == False:
+            substructure_matches = mol.GetSubstructMatches(pyrroline_pattern4)
+            for substructure_match in substructure_matches:
+                if match[0] in substructure_match and match[1] in substructure_match:
+                  is_pyrroline_bond = True
+                  break
+        
+        if is_pyrroline_bond:
+            ring_matches += 1
+
     if ring_matches != 1:
       return False, "The pyrroline ring must have exactly 1 double bond."
 
