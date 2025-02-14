@@ -8,7 +8,7 @@ def is_anthoxanthin(smiles: str):
     """
     Determines if a molecule is an anthoxanthin based on its SMILES string.
     Anthoxanthins are flavonoid pigments, including flavones and flavonols,
-    often with hydroxyl and glycosyl substituents.
+    often with hydroxyl, methoxy, and glycosyl substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,60 +22,39 @@ def is_anthoxanthin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define generalized flavone core (2-phenylchromen-4-one) allowing substitutions
-    flavone_core_smarts = '[O]=C1C=CC(=C2C=CC=CC2=O1)'
-
-    # Define generalized flavonol core (3-hydroxyflavone) allowing substitutions
-    flavonol_core_smarts = '[O]=C1C=CC(=C2C=CC=CC2=O1)O'
-
+    # Define flavone core (2-phenylchromen-4-one)
+    flavone_core_smarts = 'O=C1C=CC2=CC=CC=C2O1-c3ccccc3'
+    
+    # Define flavonol core (3-hydroxyflavone)
+    flavonol_core_smarts = 'O=C1C=CC2=CC=CC=C2O1-c3ccccc3O'
+    
     # Create mol objects from SMARTS
     flavone_core_mol = Chem.MolFromSmarts(flavone_core_smarts)
     flavonol_core_mol = Chem.MolFromSmarts(flavonol_core_smarts)
 
-    # Check for substructure match with flavone core
-    if mol.HasSubstructMatch(flavone_core_mol):
-        return True, "Molecule contains flavone core structure"
+    # Check for substructure match with flavone core or flavonol core
+    is_flavone = mol.HasSubstructMatch(flavone_core_mol)
+    is_flavonol = mol.HasSubstructMatch(flavonol_core_mol)
 
-    # Check for substructure match with flavonol core
-    if mol.HasSubstructMatch(flavonol_core_mol):
-        return True, "Molecule contains flavonol core structure"
+    # If match found, check for substitutions
+    if is_flavone or is_flavonol:
+        # Allow for hydroxyl and methoxy substitutions on the aromatic rings
+        # Define patterns for hydroxyl and methoxy groups attached to aromatic rings
+        substituent_smarts = '[cH]O | [cH]OC'
+        substituent_mol = Chem.MolFromSmarts(substituent_smarts)
 
-    # Check for O-glycosides of flavones/flavonols (attached sugars at hydroxyl positions)
-    # Define SMARTS pattern for glycosylated flavonoids
-    glycoside_pattern = Chem.MolFromSmarts('[O;!R][C@H]1O[C@H]([C@H]([C@H](O)[C@@H]1O)O)CO')
+        # Check for substituents
+        if mol.HasSubstructMatch(substituent_mol):
+            return True, "Molecule is a substituted flavone or flavonol (anthoxanthin)"
 
-    # If molecule has a flavone core and glycoside
-    if mol.HasSubstructMatch(flavone_core_mol) and mol.HasSubstructMatch(glycoside_pattern):
-        return True, "Molecule is a glycosylated flavone (anthoxanthin)"
+        # Check for glycosides (sugar moieties)
+        glycoside_smarts = '[O;!R][C@H]1O[C@H]([C@H]([C@H](O)[C@@H]1O)O)CO'
+        glycoside_mol = Chem.MolFromSmarts(glycoside_smarts)
+        if mol.HasSubstructMatch(glycoside_mol):
+            return True, "Molecule is a glycosylated flavone or flavonol (anthoxanthin)"
 
-    # If molecule has a flavonol core and glycoside
-    if mol.HasSubstructMatch(flavonol_core_mol) and mol.HasSubstructMatch(glycoside_pattern):
-        return True, "Molecule is a glycosylated flavonol (anthoxanthin)"
-
-    # Additional check for substitutions on flavone/flavonol cores
-    # Allow for hydroxyl and methoxy substitutions on core
-    substituents = Chem.MolFromSmarts('[OH,OC]')
-    matches = mol.GetSubstructMatches(flavone_core_mol)
-    if matches:
-        # Check for substitutions attached to the core
-        for match in matches:
-            core_atoms = set(match)
-            for atom in mol.GetAtoms():
-                if atom.GetIdx() in core_atoms:
-                    for neighbor in atom.GetNeighbors():
-                        if neighbor.GetIdx() not in core_atoms:
-                            if neighbor.GetSymbol() == 'O':
-                                return True, "Molecule is a substituted flavone (anthoxanthin)"
-    matches = mol.GetSubstructMatches(flavonol_core_mol)
-    if matches:
-        for match in matches:
-            core_atoms = set(match)
-            for atom in mol.GetAtoms():
-                if atom.GetIdx() in core_atoms:
-                    for neighbor in atom.GetNeighbors():
-                        if neighbor.GetIdx() not in core_atoms:
-                            if neighbor.GetSymbol() == 'O':
-                                return True, "Molecule is a substituted flavonol (anthoxanthin)"
+        # If no substituents found, still consider as anthoxanthin
+        return True, "Molecule contains flavone or flavonol core structure"
 
     # If no match is found
     return False, "Molecule does not match anthoxanthin criteria"
