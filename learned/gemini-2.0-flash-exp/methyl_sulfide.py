@@ -28,12 +28,10 @@ def is_methyl_sulfide(smiles: str):
     if not matches:
         return False, "Molecule does not contain a methyl sulfide group"
 
-    # Check for aliphaticity around the methyl sulfide.
+    # Check that the methyl carbon is aliphatic.
     for match in matches:
-        sulfur_atom = mol.GetAtomWithIdx(match[0])
         methyl_carbon_atom = mol.GetAtomWithIdx(match[1])
-
-        if not sulfur_atom.GetIsAromatic() and not methyl_carbon_atom.GetIsAromatic():
+        if not methyl_carbon_atom.GetIsAromatic():
             return True, "Molecule contains an aliphatic methyl sulfide group"
-        
+    
     return False, "Molecule does not contain an aliphatic methyl sulfide group"
