@@ -21,20 +21,15 @@ def is_organofluorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Flag to track presence of C-F bonds
-    contains_c_f = False
+    # Define a SMARTS pattern to match any single C-F bond
+    cf_pattern = Chem.MolFromSmarts("[#6]-[F]")
 
-    # Traverse through bonds to check for C-F bonds
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        
-        # Check if we've found a carbon-fluorine bond
-        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 9) or (atom1.GetAtomicNum() == 9 and atom2.GetAtomicNum() == 6):
-            contains_c_f = True
-            break
-    
-    if contains_c_f:
+    # Check for the presence of the C-F bond in the molecule
+    if mol.HasSubstructMatch(cf_pattern):
         return True, "Molecule contains at least one carbon-fluorine bond"
     else:
         return False, "No carbon-fluorine bond found in the molecule"
+
+# Example usage:
+# result, reason = is_organofluorine_compound("C[C@@H]1CN(S(=O)(=O)C2=C(C=C(C=C2)C#CC3=CC=C(C=C3)F)O[C@H]1CN(C)C(=O)C)[C@@H](C)CO")
+# print(result, reason)
