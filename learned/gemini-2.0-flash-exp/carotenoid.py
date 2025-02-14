@@ -23,42 +23,33 @@ def is_carotenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 2. Count Carbons
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count != 40:
-        return False, f"Incorrect carbon count: {carbon_count}. Must have 40 carbons."
+    # 2. Check for C40 Core Structure
+    # This checks for a chain of carbons with double bonds, with optional branching
+    core_pattern = Chem.MolFromSmarts("[CX3,CX4]([CH3])[CX3,CX4]=[CX3,CX4][CX3,CX4]=[CX3,CX4][CX3,CX4]=[CX3,CX4][CX3,CX4]=[CX3,CX4][CX3,CX4]=[CX3,CX4][CX3,CX4]=[CX3,CX4][CX3,CX4]=[CX3,CX4][CX3,CX4]=[CX3,CX4][CX3,CX4]") #at least 7 double bonds
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "Does not have a C40 core structure"
 
-    # 3. Check for Long Conjugated Chain (at least 7 conjugated double bonds)
+    # 3. Count Carbons
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 35 or carbon_count > 45:  # Allow for slight deviations
+         if not mol.HasSubstructMatch(Chem.MolFromSmarts("C[C](C)(O[C@@H]1[C@H](O)[C@@H](O)[C@@H](O)[C@H](CO)O1)")): #check for glycosylation
+           return False, f"Incorrect carbon count: {carbon_count}. Must be close to 40 carbons for a basic carotenoid."
+    
+    # 4. Check for Long Conjugated Chain (at least 7 conjugated double bonds, but do not specify exactly how many)
     conjugated_chain_pattern = Chem.MolFromSmarts("[CX3]=[CX3]-[CX3]=[CX3]-[CX3]=[CX3]-[CX3]=[CX3]-[CX3]")
     if not mol.HasSubstructMatch(conjugated_chain_pattern):
          return False, "Does not contain a long conjugated chain of double bonds"
 
-    # 4. Isoprenoid verification, look for isoprene patterns, methyl groups
-    isoprene_pattern = Chem.MolFromSmarts("CC([CH3])=C[CH]")
+    # 5. Isoprenoid verification, look for isoprene patterns
+    isoprene_pattern = Chem.MolFromSmarts("C[CH](C)[CH]=[CH]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 6:  #Typically carotenoids have many isoprene units and methyls
+    if len(isoprene_matches) < 4:  #Typically carotenoids have multiple isoprene units
          return False, "Does not have a typical isoprene pattern"
 
-
-    # 5. Exclude Retinoids (beta-ionone ring, specific ring with double bond and methyls)
+    # 6. Exclude Retinoids (beta-ionone ring, specific ring with double bond and methyls)
     retinoid_pattern = Chem.MolFromSmarts("CC1=C[CH](C)[CH2][CH2][C](C)=C1")
     if mol.HasSubstructMatch(retinoid_pattern):
         return False, "Contains a retinoid-like beta-ionone ring"
-
-
-    # 6. Look for specific carotenoid end groups 
-    # (a broader range of end-groups is hard to define)
-    end_group_pattern1 = Chem.MolFromSmarts("C[C]1([CH3])[CH2][CH2][CH](O)[CH]1")   # end-group with OH
-    end_group_pattern2 = Chem.MolFromSmarts("C[C]1([CH3])[CH2][CH2][C](=O)[CH]1")   # end-group with carbonyl
-    end_group_pattern3 = Chem.MolFromSmarts("C[C]1([CH3])[CH2][CH2][CH]([O])[CH]1")  # end-group with epoxy
-    end_group_matches = mol.GetSubstructMatches(end_group_pattern1)
-    end_group_matches += mol.GetSubstructMatches(end_group_pattern2)
-    end_group_matches += mol.GetSubstructMatches(end_group_pattern3)
-    if len(end_group_matches) == 0 :
-        cyclic_end_pattern = Chem.MolFromSmarts("[CH2]1-[CH2]-[CH2]-[CH](-[CH3])-[CH](-[CH3])-[CH]1")
-        if not mol.HasSubstructMatch(cyclic_end_pattern):
-              return False, "Does not have a typical end group"
-
-
+    
     # If all checks pass
-    return True, "Meets criteria for a carotenoid: C40, long conjugated polyene, isoprenoid and no retinoid beta-ionone"
+    return True, "Meets criteria for a carotenoid: C40 core, long conjugated polyene, isoprenoid and no retinoid beta-ionone"
