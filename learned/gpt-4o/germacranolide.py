@@ -2,6 +2,7 @@
 Classifies: CHEBI:73011 germacranolide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_germacranolide(smiles: str):
     """
@@ -20,18 +21,36 @@ def is_germacranolide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for decalin or cyclodecane-like structure (10-membered carbon-containing ring)
-    cyclodecane_pattern = Chem.MolFromSmarts("C1CCCCCCCC1")
-    if not mol.HasSubstructMatch(cyclodecane_pattern):
-        return False, "No cyclodecane-like structure found"
 
-    # Check for lactone group (-C(=O)O-)
+    # Define SMARTS pattern for germacrane backbone (approximated, focusing on key features typically found)
+    germacrane_pattern = Chem.MolFromSmarts("C1=CCCC[C@H]2C[C@H](C)C=C/C(=O)O[C@@H]12")
+    
+    # Define SMARTS pattern for lactone group (-C(=O)O-)
     lactone_pattern = Chem.MolFromSmarts("C(=O)O")
+    
+    # Check for germacrane-like backbone pattern
+    if not mol.HasSubstructMatch(germacrane_pattern):
+        return False, "No germacrane-like structure found"
+    
+    # Ensure it contains a lactone group
     if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone group found"
+    
+    # Check specific connectivity traits for sesquiterpene characteristics
+    double_bonds_pattern = Chem.MolFromSmarts("C=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bonds_pattern)
+    if len(double_bond_matches) < 2:  # at least two implicit or explicit double bonds
+        return False, "Insufficient double bonds for germacranolide"
 
-    # Optionally, check for decoration like hydroxyl groups, double bonds
-    # This can be expanded based on the specific chemotype details
+    # Ensure the presence of oxygen functionalities (like hydroxyls commonly present)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 2:
+        return False, "Too few oxygens for typical germacranolide functionalization"
 
-    return True, "Contains cyclodecane skeleton with lactone group typical of germacranolides"
+    # Further checks such as stereochemistry validations could be performed if needed
+    # Additional check on rotatable bonds found in typical germacranolides
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 4:
+        return False, "Too few rotatable bonds for typical sesquiterpene complexity"
+
+    return True, "Contains germacrane skeleton and key functional groups typical of germacranolides"
