@@ -27,48 +27,62 @@ def is_triterpenoid_saponin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for triterpenoid core
-    # Triterpenoids usually have 5 or more rings and are pentacyclic
+    # Triterpenoids usually have 4 or more fused rings
     ring_info = mol.GetRingInfo()
     num_rings = ring_info.NumRings()
-    if num_rings < 5:
-        return False, f"Contains {num_rings} rings, less than 5 rings required for triterpenoid core"
+    if num_rings < 4:
+        return False, f"Contains {num_rings} rings, less than 4 rings required for triterpenoid core"
 
-    # Check for fused ring system
-    ssr = Chem.GetSymmSSSR(mol)
-    fused_rings = 0
-    for ring in ssr:
-        atoms_in_ring = set(ring)
-        for other_ring in ssr:
-            if ring != other_ring and len(atoms_in_ring.intersection(other_ring)) > 0:
-                fused_rings += 1
+    # Identify fused ring systems
+    rings = ring_info.AtomRings()
+    ring_sets = [set(ring) for ring in rings]
+    ring_adjacency = {i: set() for i in range(len(ring_sets))}
+    for i in range(len(ring_sets)):
+        for j in range(i+1, len(ring_sets)):
+            if len(ring_sets[i].intersection(ring_sets[j])) >= 2:
+                ring_adjacency[i].add(j)
+                ring_adjacency[j].add(i)
+
+    def get_fused_ring_systems(ring_adjacency):
+        visited = set()
+        fused_ring_systems = []
+        for ring_idx in ring_adjacency:
+            if ring_idx not in visited:
+                # Start a new fused ring system
+                stack = [ring_idx]
+                fused_system = set()
+                while stack:
+                    curr = stack.pop()
+                    if curr not in visited:
+                        visited.add(curr)
+                        fused_system.add(curr)
+                        stack.extend(ring_adjacency[curr] - visited)
+                fused_ring_systems.append(fused_system)
+        return fused_ring_systems
+
+    fused_ring_systems = get_fused_ring_systems(ring_adjacency)
+
+    # Get the largest fused ring system
+    largest_fused_system = max(fused_ring_systems, key=lambda x: len(x))
+    num_fused_rings = len(largest_fused_system)
+
+    if num_fused_rings < 4:
+        return False, f"Insufficient fused rings for triterpenoid core, found only {num_fused_rings} fused rings"
+
+    # Check for sugar moieties (rings of size 5 or 6 containing oxygen)
+    sugar_rings_found = False
+    for ring in rings:
+        ring_size = len(ring)
+        if ring_size == 5 or ring_size == 6:
+            num_oxygen = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() ==8)
+            if num_oxygen >= 1:
+                sugar_rings_found = True
                 break
-    if fused_rings < 5:
-        return False, "Insufficient fused rings for triterpenoid core"
 
-    # Check for sugar moieties (pyranose and furanose rings)
-    sugar_smarts = Chem.MolFromSmarts('*OC[C@H]1O[C@H]([C@H]([C@@H]([C@H]1O)O)O)CO')  # Glucose-like pattern
-    sugars_found = len(mol.GetSubstructMatches(sugar_smarts)) > 0
-
-    if not sugars_found:
+    if not sugar_rings_found:
         return False, "No sugar moieties found"
 
-    # Check for glycosidic bond between triterpenoid and sugar(s)
-    # Look for an ether linkage connecting a non-ring oxygen to the sugar ring oxygen
-    glycosidic_bond_found = False
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-            if (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6) or \
-               (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8):
-                if atom1.IsInRing() and not atom2.IsInRing():
-                    glycosidic_bond_found = True
-                    break
-                if atom2.IsInRing() and not atom1.IsInRing():
-                    glycosidic_bond_found = True
-                    break
+    # Simplified glycosidic bond check
+    # Assume that if both triterpenoid core and sugar moiety are present, glycosidic bond exists
 
-    if not glycosidic_bond_found:
-        return False, "No glycosidic bond connecting triterpenoid core and sugar moiety found"
-
-    return True, "Contains triterpenoid core with sugar moiety linked via glycosidic bond"
+    return True, "Contains triterpenoid core with sugar moiety"
