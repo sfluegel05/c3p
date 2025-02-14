@@ -3,6 +3,7 @@ Classifies: CHEBI:50523 butenolide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_butenolide(smiles: str):
     """
@@ -22,26 +23,20 @@ def is_butenolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find furanone ring
-    ring_info = mol.GetRingInfo()
-    furanone_ring = None
-    for ring in ring_info.AtomRings():
-        if ring.Count() == 5:  # 5-membered ring
-            atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-            has_carbonyl = any(atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 2 for atom in atoms)
-            has_oxygen = any(atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 1 for atom in atoms)
-            has_double_bond = any(bond.GetBondType() == Chem.BondType.DOUBLE for atom in atoms for bond in atom.GetBonds())
-            if has_carbonyl and has_oxygen and has_double_bond:
-                furanone_ring = ring
-                break
-    if furanone_ring is None:
-        return False, "No furanone ring found"
+    # Check for butenolide substructure
+    butenolide_pattern = Chem.MolFromSmarts("[O-,O]1C=CC(=O)O1")
+    if not mol.HasSubstructMatch(butenolide_pattern):
+        return False, "No butenolide substructure found"
     
-    # Check gamma-lactone arrangement
-    ring_atoms = [mol.GetAtomWithIdx(idx) for idx in furanone_ring]
-    carbonyl_atom = next((atom for atom in ring_atoms if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 2), None)
-    oxygen_atom = next((atom for atom in ring_atoms if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 0 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 1), None)
-    if carbonyl_atom is None or oxygen_atom is None or not any(bond.GetBondTypeAsDouble() == 1 for bond in carbonyl_atom.GetBonds() if bond.GetOtherAtom(carbonyl_atom) == oxygen_atom):
-        return False, "Carbonyl and oxygen not in gamma-lactone arrangement"
+    # Check molecular weight range (typically 80-300 Da for butenolides)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 80 or mol_wt > 300:
+        return False, f"Molecular weight ({mol_wt:.2f} Da) out of typical range for butenolides"
+    
+    # Check elemental composition
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 4 or o_count < 2:
+        return False, "Insufficient carbon or oxygen atoms for butenolide"
     
     return True, "Contains a 2-furanone skeleton with a gamma-lactone arrangement (butenolide)"
