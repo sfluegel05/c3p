@@ -27,7 +27,7 @@ def is_galactosylceramide(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for sphingosine backbone
-    sphingosine_pattern = Chem.MolFromSmarts("[#8]-[#6]-[#6]-[#6]-[#6]-[#6](-[#6]-[#6]-[#6](-[#6](-[#6]-[#6])=[#8])-[#6])=[#6]")
+    sphingosine_pattern = Chem.MolFromSmarts("[#8]-[#6]-[#6]-[#6]-[#6]-[#6](-[#6]-[#6]-[#6](-[#6](-[#6]-[#6])=[#8])-[#6])=[#6,#7]")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return False, "No sphingosine backbone found"
     
