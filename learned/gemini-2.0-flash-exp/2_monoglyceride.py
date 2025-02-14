@@ -22,7 +22,7 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Glycerol backbone pattern
+    # Glycerol backbone pattern (C-C-C with oxygens)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2])[CH2X4]")
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
     if not glycerol_matches:
@@ -49,19 +49,25 @@ def is_2_monoglyceride(smiles: str):
     if not ester_connected:
         return False, "Ester group not connected to the central carbon of the glycerol"
 
-    # Verify that the other 2 hydroxyls are free
+    # Verify that the other 2 hydroxyls are free. Check that oxygens at C1 and C3 are part of hydroxyls
     free_OH_count = 0
-    glycerol_carbons = [mol.GetAtomWithIdx(glycerol_atoms[0]), mol.GetAtomWithIdx(glycerol_atoms[2])] # only check 1 and 3 carbons
+    glycerol_carbons = [mol.GetAtomWithIdx(glycerol_atoms[0]), mol.GetAtomWithIdx(glycerol_atoms[2])] # carbons 1 and 3
     for carbon in glycerol_carbons:
         for neighbor in carbon.GetNeighbors():
             if neighbor.GetAtomicNum() == 8: # found an oxygen
-                h_count = 0
-                for n2 in neighbor.GetNeighbors():
-                    if n2.GetAtomicNum() == 1: # found hydrogen connected to oxygen
-                        h_count += 1
-                if h_count ==1:
-                   free_OH_count +=1
-    
+                if len(neighbor.GetNeighbors()) == 1:  # This oxygen is bound to only one other atom (the carbon)
+                    free_OH_count += 1
+                else:
+                     # if there are multiple neighbors, ensure that the oxygen not part of the ester group (connected to carbonyl)
+                    is_ester_oxygen = False
+                    for n2 in neighbor.GetNeighbors():
+                       if n2.GetIdx() == ester_o_atom_index:
+                         is_ester_oxygen = True
+                         break
+                    if not is_ester_oxygen:
+                        if len(neighbor.GetNeighbors()) ==1:
+                           free_OH_count += 1
+
     if free_OH_count != 2:
         return False, "Did not find two free hydroxyl groups at the 1 and 3 positions of the glycerol"
 
