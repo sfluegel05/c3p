@@ -32,8 +32,10 @@ def is_fatty_acid_methyl_ester(smiles: str):
     if len(methyl_ester_matches) == 0:
         return False, "No methyl ester group found"
     
+    if len(methyl_ester_matches) > 1:
+        return False, "Multiple methyl ester groups found, only 1 is allowed"
+    
     # Check for the methyl group attached to the oxygen on the ester
-    has_methyl = False
     for match in methyl_ester_matches:
        ester_o_idx = -1
        for idx in match:
@@ -42,36 +44,13 @@ def is_fatty_acid_methyl_ester(smiles: str):
                 ester_o_idx = idx
                 break
        if ester_o_idx != -1:
+        methyl_attached = False
         for neighbor in mol.GetAtomWithIdx(ester_o_idx).GetNeighbors():
              if neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() == 3:
-                has_methyl = True
+                methyl_attached = True
                 break
-       if has_methyl:
-        break
-
-    if not has_methyl:
-       return False, "Methyl group not found on ester oxygen"
-
-    # Function to count consecutive CH2 groups starting from carbonyl carbon
-    def count_ch2_chain(mol, start_atom_idx):
-        count = 0
-        current_atom_idx = start_atom_idx
-        visited_atoms = {current_atom_idx}
-
-        while True:
-            
-            ch2_found = False
-            for neighbor in mol.GetAtomWithIdx(current_atom_idx).GetNeighbors():
-                if neighbor.GetIdx() not in visited_atoms and neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() == 2:
-                     count += 1
-                     visited_atoms.add(neighbor.GetIdx())
-                     current_atom_idx = neighbor.GetIdx()
-                     ch2_found = True
-                     break
-            if not ch2_found:
-                break #no more ch2 in the chain
-
-        return count
+        if not methyl_attached:
+            return False, "Methyl group not found on ester oxygen"
 
     # Check for fatty acid chains (long carbon chains attached to carbonyl of ester)
     fatty_acid_chain_found = False
@@ -83,10 +62,22 @@ def is_fatty_acid_methyl_ester(smiles: str):
                 carbonyl_idx = idx
                 break
          if carbonyl_idx != -1:
-            ch2_count = count_ch2_chain(mol, carbonyl_idx)
-            if ch2_count >= 3: # fatty acid needs a minimum chain length of 3 consecutive CH2 groups 
-              fatty_acid_chain_found = True
-              break
+             
+            alkyl_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+            
+            # get all neighbours for carbonyl, not including ester oxygen
+            neighbours = [neighbour for neighbour in mol.GetAtomWithIdx(carbonyl_idx).GetNeighbors() if mol.GetAtomWithIdx(neighbour.GetIdx()).GetSymbol() != 'O' ]
+            
+            
+            for neighbour in neighbours:
+                submol = Chem.PathToSubmol(mol, [carbonyl_idx, neighbour.GetIdx()])
+                
+                if submol.HasSubstructMatch(alkyl_chain_pattern):
+                    fatty_acid_chain_found = True
+                    break
+            
+            if fatty_acid_chain_found:
+                break
     
     if not fatty_acid_chain_found:
           return False, "Missing fatty acid chain"
