@@ -20,13 +20,14 @@ def is_beta_lactam(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
     # Refined SMARTS pattern for beta-lactam
-    # This SMARTS pattern: "[N;H1;R]=,:[C;R](=[O;R])[C;R][C;R]" describes
-    # N single-bonded within a ring -> C single-bonded -> C double-bonded to O 
-    # all within a four-membered ring
-    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)N[*]1")
+    # This SMARTS pattern: "C1(=O)NC1" describes a carbonyl carbon attached to nitrogen
+    # in a four-membered ring
+    # C1 = carbon that starts the ring, C(=O) adjacent carbon with a double-bonded O,
+    # N adjacent nitrogen in the ring
+    beta_lactam_pattern = Chem.MolFromSmarts("C1(=O)N[*]C1")
     
     # Check for the refined beta-lactam pattern
     if mol.HasSubstructMatch(beta_lactam_pattern):
