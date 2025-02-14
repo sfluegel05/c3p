@@ -28,26 +28,29 @@ def is_fatty_alcohol(smiles: str):
     if not mol.HasSubstructMatch(alcohol_pattern):
         return False, "No alcohol group found"
 
-    # Count carbon atoms and check length
+    # Count carbon atoms
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     num_carbons = len(carbon_atoms)
-    if num_carbons < 3:
-          return False, f"Too few carbon atoms ({num_carbons}), must be at least 3"
-    if num_carbons == 27:
-          return False, f"Too few carbon atoms ({num_carbons}), must be greater than 27"
 
-    # Check for long carbon chain
-    if num_carbons > 27:
-         # Check carbon chain via carbon chain smarts patterns
-         long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-         if not mol.HasSubstructMatch(long_chain_pattern):
-               return False, f"Has {num_carbons}, but carbon chain not long enough"
+    # Count other atoms to determine the "fatty" nature
+    other_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 8]]
+    num_other = len(other_atoms)
+    if num_other > 0:
+      return False, "Contains atoms other than C, H, O"
+
+    # Check if number of carbon is within the range
+    if num_carbons < 3 :
+        return False, f"Too few carbon atoms ({num_carbons}), must be at least 3"
+    if num_carbons > 27 :
+        #Check that it has a long carbon chain
+         carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+         if not mol.HasSubstructMatch(carbon_chain_pattern):
+              return False, "Has >27 carbons, but no long chain"
+
     
     if num_carbons >= 3 and num_carbons <=27:
-        # Check carbon chain via carbon chain smarts patterns
-         short_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-         if not mol.HasSubstructMatch(short_chain_pattern):
+         carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+         if not mol.HasSubstructMatch(carbon_chain_pattern):
               return False, "Must contain at least 3 carbons in an aliphatic chain"
 
-    #Passed all tests
     return True, "Meets criteria for a fatty alcohol (3 to >27 C, at least one OH)"
