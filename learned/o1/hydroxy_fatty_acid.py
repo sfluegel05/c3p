@@ -32,55 +32,86 @@ def is_hydroxy_fatty_acid(smiles: str):
     if not carboxy_matches:
         return False, "No carboxylic acid group found"
 
-    # Get the carbon atom(s) of the carboxylic acid group(s)
+    # Get the carboxylic acid carbon atom indices
     carboxy_carbons = [match[0] for match in carboxy_matches]
 
-    # Analyze each carboxylic acid group to check for a long hydrocarbon chain
+    # Initialize variables to track the longest aliphatic chain
+    max_chain_length = 0
+    max_chain = []
+    hydroxy_on_chain = False
+
+    # Define patterns to exclude molecules with rings or non-aliphatic structures
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        return False, "Molecule contains ring structures, not a typical fatty acid"
+
+    # Atom indices of oxygen atoms in carboxylic acid groups
+    carboxy_oxygen_indices = [match[1:] for match in carboxy_matches]
+    carboxy_oxygen_indices = set([idx for sublist in carboxy_oxygen_indices for idx in sublist])
+
+    # Iterate over each carboxylic acid group to find the longest aliphatic chain
     for carboxy_carbon_idx in carboxy_carbons:
-        # Use BFS to find the longest carbon chain connected to the carboxylic acid carbon
         visited = set()
-        to_visit = [(carboxy_carbon_idx, 0)]  # Tuple of (atom_idx, chain_length)
-        max_chain_length = 0
+        stack = [(carboxy_carbon_idx, [carboxy_carbon_idx])]
 
-        while to_visit:
-            current_idx, chain_length = to_visit.pop()
-            if current_idx in visited:
+        while stack:
+            current_atom_idx, path = stack.pop()
+            current_atom = mol.GetAtomWithIdx(current_atom_idx)
+
+            if current_atom_idx in visited:
                 continue
-            visited.add(current_idx)
-            atom = mol.GetAtomWithIdx(current_idx)
+            visited.add(current_atom_idx)
 
-            # Only consider carbon atoms
-            if atom.GetAtomicNum() == 6 and current_idx != carboxy_carbon_idx:
-                chain_length += 1
-                if chain_length > max_chain_length:
-                    max_chain_length = chain_length
-
-            # Add neighboring atoms to visit
-            for neighbor in atom.GetNeighbors():
+            # Traverse to neighbor atoms
+            for neighbor in current_atom.GetNeighbors():
                 neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
-                    to_visit.append((neighbor_idx, chain_length))
+                if neighbor_idx in path:
+                    continue  # Avoid cycles
 
-        # Check if the chain length is sufficient (e.g., at least 4 carbons)
-        if max_chain_length < 4:
-            continue  # Try next carboxylic acid group
-        else:
-            break  # Valid chain found
-    else:
-        return False, f"No sufficient carbon chain found (max length {max_chain_length} carbons)"
+                # Exclude carboxylic acid oxygens
+                if neighbor_idx in carboxy_oxygen_indices:
+                    continue
 
-    # Exclude atoms in the carboxylic acid group for hydroxy search
-    carboxy_atoms = set()
-    for match in carboxy_matches:
-        carboxy_atoms.update(match)
+                bond = mol.GetBondBetweenAtoms(current_atom_idx, neighbor_idx)
+                bond_type = bond.GetBondType()
 
-    # Check for hydroxy groups (-OH) not part of the carboxylic acid
-    hydroxy_pattern = Chem.MolFromSmarts('[CX4;!$(C=O)][OX2H]')
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    hydroxy_indices = [match[1] for match in hydroxy_matches if match[1] not in carboxy_atoms]
+                # Exclude non-single or double bonds (e.g., triple bonds)
+                if bond_type not in [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE]:
+                    continue
 
-    if not hydroxy_indices:
-        return False, "No hydroxy substituents found on the hydrocarbon chain"
+                neighbor_atomic_num = neighbor.GetAtomicNum()
+
+                # Only consider carbon atoms in the chain
+                if neighbor_atomic_num == 6:
+                    new_path = path + [neighbor_idx]
+                    stack.append((neighbor_idx, new_path))
+
+                    # Check if this is the longest chain
+                    if len(new_path) > max_chain_length:
+                        max_chain_length = len(new_path)
+                        max_chain = new_path
+
+                # Check for hydroxy groups (-OH) attached to the chain carbons
+                if neighbor_atomic_num == 8:
+                    if neighbor.GetTotalDegree() == 1 and neighbor.GetTotalNumHs() >= 1:
+                        bond_to_neighbor = mol.GetBondBetweenAtoms(current_atom_idx, neighbor_idx)
+                        if bond_to_neighbor.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                            hydroxy_on_chain = True
+
+    if max_chain_length == 0:
+        return False, "No aliphatic chain found connected to carboxylic acid group"
+
+    if not hydroxy_on_chain:
+        return False, "No hydroxy substituents found on the aliphatic chain"
+
+    # Check for presence of other functional groups
+    functional_groups = rdMolDescriptors.CalcNumHeteroatoms(mol)
+    # Subtract the heteroatoms from carboxylic acid group and hydroxy substituents
+    num_hydroxy_groups = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OX2H][CX4]')))
+    num_carboxy_oxygens = len(carboxy_oxygen_indices)
+    additional_heteroatoms = functional_groups - num_hydroxy_groups - num_carboxy_oxygens
+    if additional_heteroatoms > 0:
+        return False, "Molecule contains additional functional groups, not a typical fatty acid"
 
     # All checks passed
     return True, "Molecule is a hydroxy fatty acid"
