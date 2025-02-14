@@ -23,10 +23,10 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS pattern for carboxylate group with adjacent oxo group
-    oxo_monocarboxylic_pattern = Chem.MolFromSmarts("C(=O)C([O-])=O")
-
+    
+    # Define SMARTS pattern for a general 2-oxo group followed by variable chain to a carboxylate
+    oxo_monocarboxylic_pattern = Chem.MolFromSmarts("C(=O)[#6][C](=O)[O-]")
+    
     # Check if the pattern matches within the molecule
     if mol.HasSubstructMatch(oxo_monocarboxylic_pattern):
         return True, "Contains an oxo group in the 2-position adjacent to a carboxylate group"
