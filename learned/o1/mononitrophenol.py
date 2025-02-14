@@ -21,40 +21,54 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all nitro groups
+    # Define nitro group pattern
     nitro_pattern = Chem.MolFromSmarts('[N+](=O)[O-]')
+
+    # Find all nitro groups
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
     num_nitro_groups = len(nitro_matches)
     if num_nitro_groups != 1:
         return False, f"Must have exactly one nitro group, found {num_nitro_groups}"
 
-    # Find all phenolic OH groups
-    phenol_pattern = Chem.MolFromSmarts('[c][OH]')
-    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    if len(phenol_matches) == 0:
-        return False, "No phenolic OH group found"
-
-    # Get indices of nitro nitrogen atoms
-    nitro_n_indices = [match[0] for match in nitro_matches]
-
-    # Get indices of phenolic carbon atoms
-    phenol_c_indices = [match[0] for match in phenol_matches]
-
     # Get ring information
     ri = mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
+    if not atom_rings:
+        return False, "No rings found in molecule"
 
-    # For each phenolic OH group
-    for phenol_match in phenol_matches:
-        phenol_c = phenol_match[0]
-        # Get rings that the phenolic carbon is in
-        rings = [list(ring) for ring in ri.AtomRings() if phenol_c in ring]
-        # Check if any ring contains both the phenolic carbon and the nitro nitrogen
-        for ring in rings:
-            ring_set = set(ring)
-            # Check if nitro group is attached to the ring
-            for n_idx in nitro_n_indices:
-                # Get atom indices in nitro group (nitrogen and oxygens)
-                nitro_atoms = [n_idx] + [nbr.GetIdx() for nbr in mol.GetAtomWithIdx(n_idx).GetNeighbors()]
-                if ring_set.intersection(nitro_atoms):
-                    return True, "Contains phenol ring with one nitro group attached"
-    return False, "Phenolic ring with nitro group not found"
+    # Find phenolic oxygen atoms (both protonated and deprotonated)
+    phenol_pattern = Chem.MolFromSmarts('[c][O;H1,-1]')
+    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
+    phenol_o_indices = [match[1] for match in phenol_matches]
+
+    if not phenol_o_indices:
+        return False, "No phenolic OH group found"
+
+    # For each ring, check if it contains exactly one phenolic oxygen and one nitro group
+    for ring in atom_rings:
+        ring_set = set(ring)
+        hydroxyl_count = 0
+        nitro_count = 0
+
+        # Check for phenolic oxygen in ring
+        for o_idx in phenol_o_indices:
+            o_atom = mol.GetAtomWithIdx(o_idx)
+            for neighbor in o_atom.GetNeighbors():
+                if neighbor.GetIdx() in ring_set:
+                    hydroxyl_count +=1
+                    break  # Only count once per ring
+
+        # Check for nitro group attached to ring
+        for nitro_match in nitro_matches:
+            n_idx = nitro_match[0]
+            n_atom = mol.GetAtomWithIdx(n_idx)
+            for neighbor in n_atom.GetNeighbors():
+                if neighbor.GetIdx() in ring_set:
+                    nitro_count +=1
+                    break  # Only count once per ring
+
+        # Check if ring has exactly one phenolic oxygen and one nitro group
+        if hydroxyl_count == 1 and nitro_count == 1:
+            return True, "Contains phenol ring with one nitro group attached"
+
+    return False, "No ring with exactly one phenolic OH and one nitro group found"
