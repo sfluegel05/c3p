@@ -7,6 +7,7 @@ A derivative of ammonium, NH4(+), in which all four of the hydrogens bonded to n
 have been replaced with univalent (usually organyl) groups.
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_quaternary_ammonium_ion(smiles: str):
     """
@@ -29,11 +30,11 @@ def is_quaternary_ammonium_ion(smiles: str):
     quat_n_candidates = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and atom.GetDegree() == 4]
     
     for candidate in quat_n_candidates:
-        # Check if nitrogen has a formal charge of +1
-        if candidate.GetFormalCharge() == 1:
-            # Check if the sum of formal charges of substituents is -1
-            neighbor_charges = sum(mol.GetAtomWithIdx(neighbor_idx).GetFormalCharge() for neighbor_idx in candidate.GetNeighbors())
-            if neighbor_charges == -1:
-                return True, "Contains a positively charged quaternary nitrogen with 4 substituents"
+        # Check if all substituents are univalent (usually organyl) groups
+        if all(mol.GetAtomWithIdx(neighbor_idx).GetDegree() == 4 for neighbor_idx in candidate.GetNeighbors()):
+            # Check if the molecule has a net positive charge
+            mol_charge = rdMolDescriptors.CalcTPSACharge(mol)
+            if mol_charge > 0:
+                return True, "Contains a positively charged quaternary nitrogen with 4 univalent substituents"
     
     return False, "No quaternary ammonium ion found"
