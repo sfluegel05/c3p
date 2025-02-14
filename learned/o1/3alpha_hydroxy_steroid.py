@@ -6,6 +6,7 @@ Classifies: CHEBI:17855 3alpha-hydroxy steroid
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_3alpha_hydroxy_steroid(smiles: str):
     """
@@ -26,18 +27,19 @@ def is_3alpha_hydroxy_steroid(smiles: str):
         if mol is None:
             return False, "Invalid SMILES string"
 
-        # Define steroid backbone SMARTS pattern
-        steroid_smarts = "C1CCC2C(C1)CCC3C2CCC4C3CCCC4"  # Steroid skeleton
-        steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
-        if steroid_pattern is None:
-            return False, "Invalid steroid SMARTS pattern"
-
-        # Check for steroid backbone
+        # Define a general steroid backbone SMARTS pattern
+        # Steroids have a cyclopentanoperhydrophenanthrene skeleton: three fused six-membered rings and one five-membered ring fused together
+        steroid_smarts = "[$([R2]1[R2][R2][R2][R2][R2][R2][R2]1)]"  # A fused ring system
+        steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCCC4")  # Typical steroid skeleton
         if not mol.HasSubstructMatch(steroid_pattern):
-            return False, "No steroid backbone found"
+            # Try a more general pattern
+            steroid_pattern = Chem.MolFromSmarts("[$([R2]1[R2][R2][R2][R2][R2][R2][R2]1)]")
+            if not mol.HasSubstructMatch(steroid_pattern):
+                return False, "No steroid backbone found"
 
         # Define SMARTS for 3alpha-hydroxy group with alpha stereochemistry
-        hydroxy_smarts = "[C@H](O)[C@@H]1CC[C@H]2C1"  # 3alpha-hydroxy group
+        # Carbon at position 3 with hydroxyl group in alpha configuration
+        hydroxy_smarts = "[C@@H](O)[C@]1([H])CC[C@H]2C1"
         hydroxy_pattern = Chem.MolFromSmarts(hydroxy_smarts)
         if hydroxy_pattern is None:
             return False, "Invalid hydroxy SMARTS pattern"
