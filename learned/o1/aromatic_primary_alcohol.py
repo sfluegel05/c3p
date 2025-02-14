@@ -25,47 +25,32 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add explicit hydrogens to accurately count hydrogen atoms
-    mol = Chem.AddHs(mol)
+    # Define SMARTS pattern for aromatic primary alcohol
+    # [#6;H2][OH] - primary alcohol carbon (C with two hydrogens) attached to OH
+    # [$([#6;H2][OH])] - captures the primary alcohol group
+    # [$(c)] - aromatic carbon
+    # The pattern ensures the alcoholic carbon is connected to an aromatic carbon
+    pattern = Chem.MolFromSmarts('[#6;H2][OH]')
+    aromatic_primary_alcohol = False
 
-    found = False  # Flag to indicate if the pattern is found
+    # Find all matches of the primary alcohol group
+    matches = mol.GetSubstructMatches(pattern)
+    if not matches:
+        return False, "No primary alcohol group found"
 
-    for atom in mol.GetAtoms():
-        # Step 1: Identify hydroxyl groups (-OH)
-        if atom.GetAtomicNum() == 8:  # Oxygen atom
-            neighbors = atom.GetNeighbors()
-            if len(neighbors) != 2:
-                continue
+    for match in matches:
+        alcohol_carbon_idx = match[0]  # Index of the alcoholic carbon
+        alcohol_carbon = mol.GetAtomWithIdx(alcohol_carbon_idx)
 
-            # Check if oxygen is connected to one hydrogen and one carbon
-            attached_hydrogen = None
-            alcoholic_carbon = None
-            for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 1:
-                    attached_hydrogen = neighbor
-                elif neighbor.GetAtomicNum() == 6:
-                    alcoholic_carbon = neighbor
+        # Check if alcoholic carbon is connected to an aromatic carbon
+        neighbors = alcohol_carbon.GetNeighbors()
+        for neighbor in neighbors:
+            if neighbor.GetIsAromatic():
+                aromatic_primary_alcohol = True
+                break  # Found aromatic attachment
 
-            if attached_hydrogen is None or alcoholic_carbon is None:
-                continue
+        if aromatic_primary_alcohol:
+            return True, "Molecule is an aromatic primary alcohol"
 
-            # Step 2: Verify that the alcoholic carbon is primary
-            carbon_neighbors = [n for n in alcoholic_carbon.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != atom.GetIdx()]
-            if len(carbon_neighbors) != 1:
-                continue  # Not a primary carbon
-
-            # Step 3: Check if the alcoholic carbon is connected to an aromatic ring
-            is_connected_to_aromatic = False
-            for neighbor in carbon_neighbors:
-                if neighbor.GetIsAromatic():
-                    is_connected_to_aromatic = True
-                    break
-
-            if is_connected_to_aromatic:
-                found = True
-                break  # Pattern found
-
-    if found:
-        return True, "Molecule is an aromatic primary alcohol"
-    else:
-        return False, "Does not meet criteria for an aromatic primary alcohol"
+    if not aromatic_primary_alcohol:
+        return False, "Primary alcohol is not connected to an aromatic ring"
