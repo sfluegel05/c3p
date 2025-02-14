@@ -27,8 +27,8 @@ def is_aralkylamine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for aromatic ring(s)
-    aromatic_rings = mol.GetAromaticRings()
-    if not aromatic_rings:
+    aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
+    if not aromatic_atoms:
         return False, "No aromatic rings found"
     
     # Look for primary/secondary amine group(s)
