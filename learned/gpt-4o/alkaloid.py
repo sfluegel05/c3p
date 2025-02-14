@@ -29,6 +29,10 @@ def is_alkaloid(smiles: str):
         Chem.MolFromSmarts('Cn1cccc1'),  # Tertiary nitrogen in aromatic
         Chem.MolFromSmarts('C1CNCCN1'),  # Piperidine/pyrrolidine-like
         Chem.MolFromSmarts('c1[nH]c2ccccc2c1'),  # Indole-like structures
+        Chem.MolFromSmarts('C1CCN(C1)C2=CC=CC=C2'),  # Quinolizidine-like
+        Chem.MolFromSmarts('C1CN2CCC1CC2'),  # Tropane-like
+        Chem.MolFromSmarts('c1c2[nH]c3ccccc3c2[nH]c1'), # Isoquinoline-like
+        Chem.MolFromSmarts('c1[nH]c2ncccc2c1')  # Purine-like
     ]
 
     # Check for nitrogen in recognized alkaloid substructures
@@ -36,15 +40,15 @@ def is_alkaloid(smiles: str):
         if mol.HasSubstructMatch(substructure):
             return True, f"Contains recognized alkaloid-like nitrogen ring system #{idx + 1}"
 
-    # Additional filtering to avoid common confounders like simple amines or peptides
+    # Exclude simple amines or peptide-like structures
     peptide_pattern = Chem.MolFromSmarts('C(=O)N-C')
-    amine_pattern = Chem.MolFromSmarts('[CX3](=O)[NX3]')
+    amine_pattern = Chem.MolFromSmarts('[NX3;H2,H1;!$(NC=O)]')  # Primary and secondary amines
     if mol.HasSubstructMatch(peptide_pattern) or mol.HasSubstructMatch(amine_pattern):
         return False, "Contains simple amine or peptide-like structure, likely not an alkaloid"
 
     return False, "No recognizable alkaloid structure found"
 
 # Example usage:
-# smiles = "CCCCCCCCCCC1=CC=C(N1)\C=C1/N=C(C=C1OC)C1=CC=CN1"
+# smiles = "CCCCCCCCCCC1=CC=C(N1)\\C=C1/N=C(C=C1OC)C1=CC=CN1"
 # result, reason = is_alkaloid(smiles)
 # print(result, reason)
