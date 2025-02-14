@@ -20,28 +20,15 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core beta-carboline structure using SMARTS. Allow for single or double bonds.
-    # The N in the indole should be connected to a ring carbon to be a true indole
-    core_pattern1 = Chem.MolFromSmarts('c1cc2[nH]c3C[C,c]c(C[C,c]2c1)[C,c]3') #allow for fully aromatic
-    core_pattern2 = Chem.MolFromSmarts('c1cc2[nH]c3CCN[C,c](C[C,c]2c1)[C,c]3') #allow for double bond reduction
-    core_pattern3 = Chem.MolFromSmarts('c1cc2[nH]c3C[C,c]N[C,c](C[C,c]2c1)[C,c]3') #allow for both reductions
-    core_pattern4 = Chem.MolFromSmarts('c1cc2nc3C[C,c]c(C[C,c]2c1)[C,c]3') #allow for fused pyridine
-    core_pattern5 = Chem.MolFromSmarts('c1cc2nc3CCN[C,c](C[C,c]2c1)[C,c]3')# allow for fused pyridine and reduction
-    core_pattern6 = Chem.MolFromSmarts('c1cc2nc3C[C,c]N[C,c](C[C,c]2c1)[C,c]3')# allow for fused pyridine and both reductions
-    core_pattern7 = Chem.MolFromSmarts('c1cc2[nH]c3[CH2][CH2][C,c](C[C,c]2c1)[C,c]3') #allow for dihydropyrido
-    core_pattern8 = Chem.MolFromSmarts('c1cc2nc3[CH2][CH2][C,c](C[C,c]2c1)[C,c]3') #allow for dihydropyrido, fused pyridine
-    core_pattern9 = Chem.MolFromSmarts('C1CC2=C3C(=CC=C1)NC1=CC=CC=C3N21') #another common form
+    # Define the core beta-carboline structure using SMARTS.
+    # This is a general pattern for the core, allowing for saturation and substitution.
+    # The 5-membered ring has a nitrogen
+    # The connection of the 5 membered nitrogen to the 6-membered ring is important
+    # The connection of the indole nitrogen to the ring carbon is important
+    core_pattern = Chem.MolFromSmarts('c1cc2[nH]c3c[c,n]c(c2c1)c3') 
 
 
-    if (mol.HasSubstructMatch(core_pattern1) or
-        mol.HasSubstructMatch(core_pattern2) or
-        mol.HasSubstructMatch(core_pattern3) or
-        mol.HasSubstructMatch(core_pattern4) or
-        mol.HasSubstructMatch(core_pattern5) or
-        mol.HasSubstructMatch(core_pattern6) or
-        mol.HasSubstructMatch(core_pattern7) or
-        mol.HasSubstructMatch(core_pattern8) or
-        mol.HasSubstructMatch(core_pattern9)):
+    if mol.HasSubstructMatch(core_pattern):
       return True, "Contains the beta-carboline core structure"
 
     return False, "Does not contain the beta-carboline core structure"
