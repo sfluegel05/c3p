@@ -2,16 +2,15 @@
 Classifies: CHEBI:50126 tetrasaccharide
 """
 """
-Classifies: CHEBI:36747 tetrasaccharide
+Classifies: CHEBI:36299 tetrasaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem, rdMolDescriptors
 
 def is_tetrasaccharide(smiles: str):
     """
     Determines if a molecule is a tetrasaccharide based on its SMILES string.
-    A tetrasaccharide is an oligosaccharide comprising four monomeric monosaccharide units.
+    A tetrasaccharide is an oligosaccharide composed of four monosaccharide units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,30 +25,43 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for sugar ring patterns
-    sugar_ring_patterns = [Chem.MolFromSmarts(x) for x in ['OC1C(O)C(O)C(O)C1', 'OC1C(O)C(O)C(O)CC1']]
-    sugar_rings = sum(mol.HasSubstructMatch(pat) for pat in sugar_ring_patterns)
-    if sugar_rings < 4:
-        return False, f"Found less than 4 sugar rings (found {sugar_rings})"
+    # Count sugar rings
+    sugar_rings = AllChem.MMU.FindMolRingInfo(mol).BondRingInfo
+    num_rings = len(sugar_rings)
     
-    # Look for glycosidic bonds (O-C-O)
-    glycosidic_bond_pattern = Chem.MolFromSmarts('[OX2]C[OX2]')
-    glycosidic_bonds = len(mol.GetSubstructMatches(glycosidic_bond_pattern))
-    if glycosidic_bonds < 3:
-        return False, f"Found less than 3 glycosidic bonds (found {glycosidic_bonds})"
+    # Tetrasaccharides should have 4 rings
+    if num_rings != 4:
+        return False, f"Found {num_rings} rings, tetrasaccharides should have 4"
     
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Check ring sizes
+    invalid_rings = False
+    for ring in sugar_rings:
+        ring_size = len(ring)
+        if ring_size < 5 or ring_size > 6:
+            invalid_rings = True
+            break
+    if invalid_rings:
+        return False, "Found rings of invalid size (should be 5 or 6 membered)"
     
-    if c_count < 12 or c_count > 32:
-        return False, "Carbon count outside expected range for tetrasaccharide"
-    if o_count < 6 or o_count > 16:
-        return False, "Oxygen count outside expected range for tetrasaccharide"
+    # Check for glycosidic bonds
+    glycosidic_pattern = Chem.MolFromSmarts("[OX2H0][CX4]")
+    glycosidic_bonds = mol.GetSubstructMatches(glycosidic_pattern)
+    if len(glycosidic_bonds) < 3:
+        return False, "Found fewer than 3 glycosidic bonds"
+    
+    # Count oxygen and carbon atoms
+    num_oxygen = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    num_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    # Tetrasaccharides typically have 14-28 carbons and 8-14 oxygens
+    if num_carbon < 14 or num_carbon > 28:
+        return False, "Carbon count outside typical range for tetrasaccharide"
+    if num_oxygen < 8 or num_oxygen > 14:
+        return False, "Oxygen count outside typical range for tetrasaccharide"
     
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400 or mol_wt > 1200:
-        return False, "Molecular weight outside expected range for tetrasaccharide"
+    if mol_wt < 500 or mol_wt > 1000:
+        return False, "Molecular weight outside typical range for tetrasaccharide"
     
-    return True, "Contains 4 sugar rings connected via glycosidic bonds"
+    return True, "Contains 4 sugar rings linked by glycosidic bonds"
