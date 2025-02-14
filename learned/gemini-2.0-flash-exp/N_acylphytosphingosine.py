@@ -23,9 +23,8 @@ def is_N_acylphytosphingosine(smiles: str):
         return False, "Invalid SMILES string"
     
     # 1. Check for phytosphingosine backbone using SMARTS
-    #   - The pattern checks for C-C(O)-C(O)-C(N)-C(O) where the N atom is connected to three other atoms (to identify the N in the chain)
-    #   - The 3 chiral centers are not enforced. This avoids errors in molecules that have stereoisomers or unspecified stereocenters.
-    phytosphingosine_pattern = Chem.MolFromSmarts("[CH2][CH](O)[CH](O)[CH](N)[CH](O)")
+    #   - Relaxed pattern for the phytosphingosine backbone. 
+    phytosphingosine_pattern = Chem.MolFromSmarts("[C,CH2O]~[C](O)~[C](O)~[C](N)~[C](O)")
     if not mol.HasSubstructMatch(phytosphingosine_pattern):
        return False, "Phytosphingosine backbone not found"
 
@@ -35,22 +34,22 @@ def is_N_acylphytosphingosine(smiles: str):
     if len(amide_matches) < 1:
         return False, "No amide linkage found"
     
-    #3. Check for fatty acyl chain
+    #3. Check for acyl chain
     #   -  Looking for a long carbon chain connected to the carbonyl of the amide linkage
-    fatty_acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") # minimum chain of 4 C atoms
-    fatty_acyl_matches = mol.GetSubstructMatches(fatty_acyl_pattern)
+    acyl_chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") # minimum chain of 4 C atoms
+    acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
     
-    if len(fatty_acyl_matches) < 1:
-      return False, "Fatty acyl chain not found"
+    if len(acyl_chain_matches) < 1:
+      return False, "Acyl chain not found"
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
+    if n_rotatable < 3:
         return False, "Acyl chain too short to be a fatty acid"
 
     # Check molecular weight - N-acylphytosphingosines typically > 400 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
+    if mol_wt < 350:
         return False, "Molecular weight too low for N-acylphytosphingosine"
     
     # Count carbons and oxygens
