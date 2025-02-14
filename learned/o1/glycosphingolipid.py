@@ -6,7 +6,6 @@ Classifies: glycosphingolipid
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_glycosphingolipid(smiles: str):
     """
@@ -27,41 +26,47 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ceramide pattern: sphingoid base with an amide linkage at C-2
-    ceramide_smarts = "[C;H1,C;H2;H3][C@H](O)[C@H](NC(=O)[C;H1,C;H2;H3])[CH2][CH](O)[C;H1,C;H2;H3]"
-    ceramide_pattern = Chem.MolFromSmarts(ceramide_smarts)
-    if ceramide_pattern is None:
-        return False, "Error in defining ceramide pattern"
+    # Define sphingoid base pattern: long-chain amino diol
+    sphingoid_smarts = "[#6]-[CH](O)-[CH](NC(=O)?[*])[CH2]-[CH](O)[#6]"
+    sphingoid_pattern = Chem.MolFromSmarts(sphingoid_smarts)
+    if sphingoid_pattern is None:
+        return False, "Error in defining sphingoid base pattern"
 
-    ceramide_matches = mol.GetSubstructMatches(ceramide_pattern)
-    if not ceramide_matches:
-        return False, "No ceramide backbone found"
+    sphingoid_matches = mol.GetSubstructMatches(sphingoid_pattern)
+    if not sphingoid_matches:
+        return False, "No sphingoid base found"
 
-    # Define glycosidic linkage pattern: sugar attached via oxygen
-    glycosidic_linkage_smarts = "[C@H]1([O,C])[O,C][C@H]([O,C])[C@@H]([O,C])[C@H]([O,C])[C@H]1O[*]"  # Sugar ring attached via O
-    glycosidic_pattern = Chem.MolFromSmarts(glycosidic_linkage_smarts)
-    if glycosidic_pattern is None:
-        return False, "Error in defining glycosidic linkage pattern"
+    # Define sugar (monosaccharide) pattern
+    sugar_smarts = "[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O"
+    sugar_pattern = Chem.MolFromSmarts(sugar_smarts)
+    if sugar_pattern is None:
+        return False, "Error in defining sugar pattern"
 
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    if not glycosidic_matches:
-        return False, "No glycosidic linkage to sugar found"
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
+        return False, "No sugar moiety found"
 
-    # Verify that the glycosidic linkage is connected to O-1 of the ceramide
-    # Find the attachment point of the sugar
-    attachment_found = False
-    for match in ceramide_matches:
-        ceramide_oxygen_idx = match[1]  # Index of the oxygen at C-1 in ceramide pattern
-        for glyco_match in glycosidic_matches:
-            sugar_attachment_idx = glyco_match[0]  # Index where sugar attaches
-            bond = mol.GetBondBetweenAtoms(ceramide_oxygen_idx, sugar_attachment_idx)
+    # Check for glycosidic linkage between sugar and sphingoid base at O-1
+    found_glycosidic_linkage = False
+    for sph_match in sphingoid_matches:
+        sph_O1_idx = sph_match[1]  # Index of O-1 in sphingoid base
+        sph_O1_atom = mol.GetAtomWithIdx(sph_O1_idx)
+        sph_O1_neighbors = [nbr.GetIdx() for nbr in sph_O1_atom.GetNeighbors()]
+
+        for sugar_match in sugar_matches:
+            sugar_anomeric_C_idx = sugar_match[0]  # Anomeric carbon in sugar
+            sugar_C_atom = mol.GetAtomWithIdx(sugar_anomeric_C_idx)
+            sugar_C_neighbors = [nbr.GetIdx() for nbr in sugar_C_atom.GetNeighbors()]
+
+            # Check if O-1 of sphingoid is connected to anomeric carbon of sugar
+            bond = mol.GetBondBetweenAtoms(sph_O1_idx, sugar_anomeric_C_idx)
             if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                attachment_found = True
+                found_glycosidic_linkage = True
                 break
-        if attachment_found:
+        if found_glycosidic_linkage:
             break
 
-    if not attachment_found:
-        return False, "Sugar moiety not attached via glycosidic linkage to O-1 of ceramide"
+    if not found_glycosidic_linkage:
+        return False, "No glycosidic linkage between sphingoid base and sugar at O-1"
 
-    return True, "Molecule is a glycosphingolipid with ceramide backbone and glycosidic linkage to sugar at O-1"
+    return True, "Molecule is a glycosphingolipid with sphingoid base and glycosidic linkage to sugar at O-1"
