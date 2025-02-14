@@ -2,6 +2,7 @@
 Classifies: CHEBI:26848 tannin
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_tannin(smiles: str):
@@ -21,48 +22,71 @@ def is_tannin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
+    score = 0 # Start with score of zero
     reason = ""
+
+    # 1. Check for linked aromatic rings
+    linked_benzene_pattern = Chem.MolFromSmarts("c1ccccc1(-c2ccccc2)")
+    linked_benzene_matches = mol.GetSubstructMatches(linked_benzene_pattern)
+    if len(linked_benzene_matches) > 0:
+        score += len(linked_benzene_matches) * 2  # Award points for linked aromatic rings.
+
+    #Check for multiple aromatic rings - basic check
+    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
+    benzene_matches = mol.GetSubstructMatches(benzene_pattern)
+    if len(benzene_matches) >= 2:
+        score += 2
+    elif len(benzene_matches) > 0: #Only one aromatic ring is not enough, but we give it a point
+        score += 1
+
+    # 2. Check for catechol or pyrogallol units and variations
+    catechol_pattern_1 = Chem.MolFromSmarts("c1c(O)c(O)cc1")
+    catechol_pattern_2 = Chem.MolFromSmarts("c1c(O)c(O)c([OX2])c1") #Ether variations
+    catechol_matches = mol.GetSubstructMatches(catechol_pattern_1) + mol.GetSubstructMatches(catechol_pattern_2)
+
+    pyrogallol_pattern_1 = Chem.MolFromSmarts("c1c(O)c(O)c(O)cc1")
+    pyrogallol_pattern_2 = Chem.MolFromSmarts("c1c(O)c(O)c(O)c([OX2])c1")
+    pyrogallol_matches = mol.GetSubstructMatches(pyrogallol_pattern_1) + mol.GetSubstructMatches(pyrogallol_pattern_2)
+
+    if len(catechol_matches) > 0:
+        score += len(catechol_matches) * 2
+    if len(pyrogallol_matches) > 0:
+        score += len(pyrogallol_matches) * 3
     
-    # 1. Check for multiple aromatic rings (at least 3). This is a broader check
-    aromatic_pattern = Chem.MolFromSmarts("c1ccccc1") # Basic aromatic ring
-    aromatic_matches = mol.GetSubstructMatches(aromatic_pattern)
-    if len(aromatic_matches) < 3:
-        return False, "Fails: fewer than 3 aromatic rings."
-
-    # 2. Check for multiple hydroxyl groups (at least 5)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 5:
-        return False, f"Fails: fewer than 5 hydroxyl groups, got {len(hydroxyl_matches)}."
-
-    # 3. Check for ester or ether linkages
-    ester_ether_pattern = Chem.MolFromSmarts("[OX2]-[CX4]")
-    ester_ether_matches = mol.GetSubstructMatches(ester_ether_pattern)
-    if len(ester_ether_matches) < 3:
-          return False, f"Fails: fewer than 3 ether/ester linkages, got {len(ester_ether_matches)}."
+    # 3. Check for glycosidic bonds (C-O-C with an adjacent 5 or 6 membered ring containing O)
+    glycosidic_pattern_6 = Chem.MolFromSmarts("[CX4]-[OX2]-[C]1[CH2][CH2][CH][CH][CH][O]1") #6 membered ring
+    glycosidic_pattern_5 = Chem.MolFromSmarts("[CX4]-[OX2]-[C]1[CH2][CH2][CH][CH][O]1") #5 membered ring
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern_6) + mol.GetSubstructMatches(glycosidic_pattern_5)
+    score += len(glycosidic_matches)
     
-    # 4. Check for glycosidic bonds (C-O-C where one C is part of a sugar)
-    glycosidic_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[C]1[CH2][CH2][CH](O)[CH][CH][O]1")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-
-
-    # 5. Check for gallic acid and catechin units
-    gallic_acid_pattern = Chem.MolFromSmarts("c1c(O)c(O)c(C(=O)O)c(O)c1")
-    gallic_matches = mol.GetSubstructMatches(gallic_acid_pattern)
+    # 4. Check for catechin core (simplified)
     catechin_core_pattern = Chem.MolFromSmarts("c1cc(O)c(O)c(C[C@H]2[C@H](O)[CH](O)c3c(O)cc(O)cc32)c1")
     catechin_core_matches = mol.GetSubstructMatches(catechin_core_pattern)
+    if len(catechin_core_matches) > 0:
+        score += len(catechin_core_matches) * 4 #High score for a catechin core.
 
-    if len(gallic_matches) < 1 and len(catechin_core_matches) <1 and len(glycosidic_matches) <1:
-        return False, "Fails: does not contain catechin, gallic acid or glycosidic bonds"
+    # 5. Check for Gallic acid component
+    gallic_acid_pattern = Chem.MolFromSmarts("c1c(O)c(O)c(C(=O)O)c(O)c1")
+    gallic_matches = mol.GetSubstructMatches(gallic_acid_pattern)
+    score += len(gallic_matches)
 
 
-    # 6. Molecular weight and atom counts (crude size check)
+    # 6. Check molecular weight and size
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, f"Fails: Molecular weight {mol_wt} is too low."
+    if 500 <= mol_wt <= 2000 : #typical range for a tannin
+        score += 2
+    elif mol_wt > 2000: #Penalise too large molecules
+        score -= 1
+    
     num_atoms = mol.GetNumAtoms()
-    if num_atoms < 25:
-         return False, f"Fails: Too few atoms, only {num_atoms}"
+    if num_atoms >= 30: #Rough check for size
+      score += 1
 
-    # If all checks pass, then its a tannin
-    return True, "Molecule contains multiple aromatic rings, hydroxyl groups, ether/ester linkages, and catechin/gallic acid/glycosidic substructures. Molecular weight and atom count are within range."
+
+    # Final classification based on score.
+    if score >= 8:
+        return True, "Molecule contains multiple linked aromatic rings, hydroxyl groups, and catechol/pyrogallol units, with catechin core, glycosidic bonds and appropriate MW"
+    elif score >= 5:
+        return False, "Molecule has some tannin-like features, but not enough"
+    else:
+         return False, "Molecule does not resemble a tannin"
