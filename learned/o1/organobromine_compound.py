@@ -18,10 +18,10 @@ def is_organobromine_compound(smiles: str):
     # Parse the SMILES string into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a carbon-bromine single bond
-    pattern = Chem.MolFromSmarts("[#6]-Br")  # Carbon atom single-bonded to bromine
+    # Define the SMARTS pattern for a carbon-bromine bond (any bond type)
+    pattern = Chem.MolFromSmarts("[#6][Br]")  # Carbon atom bonded to bromine
 
     # Check if the molecule contains at least one carbon-bromine bond
     if mol.HasSubstructMatch(pattern):
