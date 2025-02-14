@@ -1,24 +1,18 @@
 """
 Classifies: CHEBI:36615 triterpenoid
 """
+"""
+Classifies: CHEBI:36689 triterpenoid
+"""
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
-from rdkit import RDConfig
-import os
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-# Load common triterpenoid skeletons
-fdefName = os.path.join(RDConfig.RDDataDir, 'BaseNameToMol.fsm')
-suppl = Chem.SmilesMolSupplier(fdefName, titleLine=False)
-skeletal_mols = [x for x in suppl if x is not None]
-
-# Define SMARTS patterns for common modifications
-REMOVE_METHYL = "[CH3]"
-REARRANGE_RINGS = "[R2]@[r3,r4,r5,r6]@[R1]"
-ADD_OXYGEN = "[OH],[O]"
-
-def is_triterpenoid(smiles):
+def is_triterpenoid(smiles: str):
     """
     Determines if a molecule is a triterpenoid based on its SMILES string.
+    A triterpenoid is a terpenoid derived from a triterpene, which has a C30 skeleton.
+    The C30 skeleton may be rearranged or modified by removing skeletal atoms (usually methyl groups).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,30 +21,33 @@ def is_triterpenoid(smiles):
         bool: True if molecule is a triterpenoid, False otherwise
         str: Reason for classification
     """
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check carbon count
+    
+    # Check for C30 skeleton
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 28 or c_count > 32:
-        return False, f"Carbon count ({c_count}) outside the expected range for triterpenoids (28-32)"
-
-    # Check for common triterpenoid skeletons
-    mcs = rdFMCS.FindMCS(skeletal_mols + [mol], matchValences=True, completeRingsOnly=True, timeout=1)
-    if mcs.numBonds == 0 or mcs.numAtoms == 0:
-        return False, "No common triterpenoid skeleton found"
-
-    # Check for common modifications
-    remove_methyl_matches = mol.GetSubstructMatches(Chem.MolFromSmarts(REMOVE_METHYL))
-    rearrange_rings_matches = mol.GetSubstructMatches(Chem.MolFromSmarts(REARRANGE_RINGS))
-    add_oxygen_matches = mol.GetSubstructMatches(Chem.MolFromSmarts(ADD_OXYGEN))
-
-    if remove_methyl_matches or rearrange_rings_matches or add_oxygen_matches:
-        return True, "Contains a triterpenoid skeleton with common modifications"
-
-    # If no modifications found, check if it's a pristine triterpenoid skeleton
-    if mcs.numAtoms == mol.GetNumAtoms() and mcs.numBonds == mol.GetNumBonds():
-        return True, "Pristine triterpenoid skeleton"
-
-    return False, "No evidence of being a triterpenoid"
+    if c_count != 30:
+        return False, f"Molecule does not have a C30 skeleton (found {c_count} carbons)"
+    
+    # Look for common triterpenoid skeletons (e.g., lanostane, cycloartane, friedelane, etc.)
+    skeletons = ['[C@H]1[C@@]2([C@@H](C[C@@]3([C@]1(C)CCC3(C)C)C)CCC2)C', # lanostane
+                 '[C@@]12[C@@H](C[C@@H](C1)C)CCC3=[C]2CCC4[C@]3(CCC(=C4)C)C', # cycloartane
+                 '[C@@]12[C@@H](C[C@H](C1)C)CCC3=[C]2[C@H](CC4[C@@]3(CCC(=C4)C)C)C', # friedelane
+                 # Add more skeletons as needed
+                 ]
+    for skeleton in skeletons:
+        skeleton_mol = Chem.MolFromSmarts(skeleton)
+        if mol.HasSubstructMatch(skeleton_mol):
+            return True, f"Contains {skeleton_mol.GetProp('_Name')} skeleton, a common triterpenoid scaffold"
+    
+    # Check for rearranged/modified C30 skeleton
+    rearranged_pattern = Chem.MolFromSmarts('[C@H]1[C@]2([C@H](C[C@@]3([C@]1(C)CCC3(C)C)C)CCC2)C' # lanostane with modified/removed methyl groups
+                                             '|[C@@]12[C@@H](C[C@@H](C1)C)CCC3=[C]2CCC4[C@]3(CCC(=C4)C)C' # cycloartane with modified/removed methyl groups
+                                             '|[C@@]12[C@@H](C[C@H](C1)C)CCC3=[C]2[C@H](CC4[C@@]3(CCC(=C4)C)C)C') # friedelane with modified/removed methyl groups
+    if mol.HasSubstructMatch(rearranged_pattern):
+        return True, "Contains a rearranged/modified C30 skeleton derived from a common triterpenoid scaffold"
+    
+    return False, "No evidence of a triterpenoid scaffold"
