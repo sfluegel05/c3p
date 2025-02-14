@@ -19,41 +19,31 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for phosphate group (allowing for deprotonation)
+    # Define SMARTS pattern for phosphate group (allowing for mono and di-phosphate)
     phosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O])([O,H])[O,H]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+    diphosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O])([O,H])[O][P](=[O])([O])([O,H])[O,H]")
+    if not mol.HasSubstructMatch(phosphate_pattern) and not mol.HasSubstructMatch(diphosphate_pattern):
+       return False, "No phosphate group found"
 
-    # Define SMARTS for a repeating pattern of 3 isoprene units (head to tail)
-    polyprenol_chain_pattern = Chem.MolFromSmarts("[C](C)([H])=[C][C][C][C](=[C][C]([H])[H])[C]([H])=[C][C][C][C](=[C][C]([H])[H])[C]([H])=[C][C]")
-    chain_matches = mol.GetSubstructMatches(polyprenol_chain_pattern)
-    
-    if len(chain_matches) < 1: #minimum 1 chain of three isoprenes.
+    # Define SMARTS for a repeating isoprene unit, with a minimum chain length
+    isoprene_pattern = Chem.MolFromSmarts("C(C)=[C]C[C]")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_matches) < 2: #minimum of two isoprene units
         return False, "Not enough repeating isoprene units in chain"
 
-
-    # Check for connectivity of phosphate to the chain (at the end)
-    connectivity_pattern = Chem.MolFromSmarts("[C]([H])=[C][C][C][C](=[C][C]([H])[H])[C]([H])=[C][C][C][C](=[C][C]([H])[H])[C]([H])=[C][C]O[P]")
+    #Check connectivity, look for -O-P. At least one connection.
+    connectivity_pattern = Chem.MolFromSmarts("[OX2][P]")
     connectivity_matches = mol.GetSubstructMatches(connectivity_pattern)
-
     if len(connectivity_matches) < 1:
-        return False, "Phosphate group is not connected to chain via oxygen at the end"
+       return False, "Phosphate group is not connected to chain via oxygen"
     
-    #Check for saturated bonds in isoprenoid units
-    saturated_pattern = Chem.MolFromSmarts("[C]([H])([H])[C][C][C][C]([H])([H])") #isoprenoid with saturated bonds.
-    saturated_matches = mol.GetSubstructMatches(saturated_pattern)
-    if len(saturated_matches) > 0:
-          return False, "Chain contains saturated isoprenoid units"
-    
-    # Calculate molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-      return False, "Molecular weight too low for a polyprenol phosphate"
 
     # Check number of oxygen atoms - should not be a carbohydrate
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count > 5 :
-        return False, "Too many oxygen atoms, likely a carbohydrate"
-    
+    if o_count > 10:
+        # Check for simple carbohydrate, e.g., [C][C]([O])[C]([O])[C]([O])[C]([O])[C][O]
+        carb_pattern = Chem.MolFromSmarts("[CX4][CX4]([OX2])[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])[CX4][OX2]")
+        if mol.HasSubstructMatch(carb_pattern):
+           return False, "Too many oxygen atoms, likely a carbohydrate"
 
     return True, "Contains a polyprenol chain esterified with a phosphate group"
