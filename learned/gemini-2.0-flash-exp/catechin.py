@@ -10,10 +10,10 @@ def is_catechin(smiles: str):
     Determines if a molecule is a catechin based on its SMILES string.
     Catechins are flavan-3-ols, having the core structure of two benzene rings
     linked by a pyran ring and a hydroxyl group at the 3-position of the pyran ring.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if the molecule is a catechin, False otherwise.
         str: Reason for the classification.
@@ -23,12 +23,14 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core flavan-3-ol substructure: a chromane ring system with a hydroxyl at position 3
-    # The 2nd ring (B ring) is a simple phenyl
-    # No stereochemistry is enforced at this step.
-    flavan_3ol_core = Chem.MolFromSmarts("C1Cc2cc(O)cc(c2O[C]1c3ccccc3)O")
-    
+    # Core flavan-3-ol substructure (generic, no specific substitutions).
+    flavan_3ol_core = Chem.MolFromSmarts("[CH2][CH](O)[CH2]1[c]2[c]([c][c][c][c]2)[O]1~[c]3[c][c][c][c][c]3")
     if not mol.HasSubstructMatch(flavan_3ol_core):
         return False, "Core flavan-3-ol structure not found."
-    
+
+    # Exclude flavanones that have a ketone group at position 4.
+    flavanone_core = Chem.MolFromSmarts("[CH2][C](=[O])[CH2]1[c]2[c]([c][c][c][c]2)[O]1")
+    if mol.HasSubstructMatch(flavanone_core):
+      return False, "Molecule is a flavanone, not a catechin"
+
     return True, "Molecule contains the core flavan-3-ol structure."
