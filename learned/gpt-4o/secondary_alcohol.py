@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_secondary_alcohol(smiles: str):
     """
     Determines if a molecule is a secondary alcohol based on its SMILES string.
-    A secondary alcohol has an -OH group attached to a carbon, which is also bonded to two other carbons.
+    A secondary alcohol has an -OH group attached to a saturated carbon, which is bonded to two other carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,7 +22,8 @@ def is_secondary_alcohol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for secondary alcohol
-    secondary_alcohol_pattern = Chem.MolFromSmarts("[CX4;!H0][CH](O)[CX4;!H0]")
+    # [#6] represents any carbon, [CX4] ensures the carbon is sp3 hybridized (saturated)
+    secondary_alcohol_pattern = Chem.MolFromSmarts("[#6][CX4!H0][CH](O)[CX4!H0]")
 
     # Check for the presence of the secondary alcohol pattern
     if mol.HasSubstructMatch(secondary_alcohol_pattern):
