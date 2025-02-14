@@ -5,7 +5,6 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-
 def is_oligosaccharide(smiles: str):
     """
     Determines if a molecule is an oligosaccharide based on its SMILES string.
@@ -28,46 +27,48 @@ def is_oligosaccharide(smiles: str):
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_linkage_pattern)
     if not glycosidic_matches:
       return False, "Molecule does not contain any glycosidic linkages (C-O-C between rings)."
+      
+    # Define a more general SMARTS pattern for monosaccharide rings
+    # Cyclic structure of carbons and one oxygen, with at least 3 hydroxy groups
+    sugar_ring_pattern = Chem.MolFromSmarts("[C;R]1([OH])[C;R]([OH])[C;R]([OH])[C;R][O;R]1")
 
-    # Define SMARTS patterns for common monosaccharide rings
-    sugar_ring_pattern_5 = Chem.MolFromSmarts("[C;R1,R2]1[C;R1,R2]([OH])[C;R1,R2]([OH])[C;R1,R2]([OH])[O;R1,R2]1") # 5 membered ring
-    sugar_ring_pattern_6 = Chem.MolFromSmarts("[C;R1,R2]1[C;R1,R2]([OH])[C;R1,R2]([OH])[C;R1,R2]([OH])[C;R1,R2]([OH])[O;R1,R2]1") # 6 membered ring
+    # Count potential sugar rings
+    sugar_ring_matches = mol.GetSubstructMatches(sugar_ring_pattern)
 
-    #Get all rings
-    ring_info = mol.GetRingInfo()
-    n_rings = ring_info.NumRings()
-    if n_rings < 2:
-        return False, "Molecule has less than 2 rings, not an oligosaccharide"
+    if len(sugar_ring_matches) < 2:
+      return False, "Molecule does not contain at least two sugar rings."
 
-    # Count sugar rings
-    sugar_ring_matches_5 = mol.GetSubstructMatches(sugar_ring_pattern_5)
-    sugar_ring_matches_6 = mol.GetSubstructMatches(sugar_ring_pattern_6)
-    n_sugar_rings = len(sugar_ring_matches_5) + len(sugar_ring_matches_6)
+    # Verify that rings are connected by glycosidic linkages and are carbohydrates
     
-    if n_sugar_rings == 0:
-        return False, "Molecule does not contain any sugar rings."
-
-    # Check if most rings are sugar rings (allow for a few non-sugar rings, in case of modifications)
-    if n_sugar_rings < n_rings * 0.7 :
-       return False, "Molecule does not have a majority of sugar rings."
-
-    # Check all ring atoms are either C or O
-    for atom in mol.GetAtoms():
-      if atom.IsInRing() and atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 8:
-         return False, "Rings must contain only carbon and oxygen atoms."
-
-    #Check the link between rings
+    verified_rings = 0
     for match in glycosidic_matches:
         start_atom = mol.GetAtomWithIdx(match[0])
         mid_atom = mol.GetAtomWithIdx(match[1])
         end_atom = mol.GetAtomWithIdx(match[2])
+
         if not (mid_atom.GetAtomicNum()==8 and start_atom.IsInRing() and end_atom.IsInRing()):
-            return False, "Linkages between the cycles must be ether links between two rings."
+          continue
+        
+        #verify if this is a real carbohydrate link by checking for -OH groups
+        is_valid_start = False
+        is_valid_end = False
+        
+        for ring_match in sugar_ring_matches:
+          for ring_atom_idx in ring_match:
+            if mol.GetAtomWithIdx(ring_atom_idx).IsInRing() and ring_atom_idx == start_atom.GetIdx():
+              is_valid_start = True
+            if mol.GetAtomWithIdx(ring_atom_idx).IsInRing() and ring_atom_idx == end_atom.GetIdx():
+              is_valid_end = True
+        
+        if is_valid_start and is_valid_end:
+          verified_rings += 2
+        
+    if verified_rings < 4:
+        return False, "Not all rings are properly connected by glycosidic linkages."
 
     # Check molecular weight - oligosaccharides typically >300 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, "Molecular weight too low for oligosaccharide"
-
 
     return True, "Molecule contains multiple sugar rings linked by glycosidic bonds."
