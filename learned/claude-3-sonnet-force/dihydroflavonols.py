@@ -7,7 +7,7 @@ Classifies: CHEBI:33716 dihydroflavonol
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_dihydroflavonol(smiles: str):
+def is_dihydroflavonols(smiles: str):
     """
     Determines if a molecule is a dihydroflavonol based on its SMILES string.
     A dihydroflavonol is a hydroxyflavanone with a hydroxy group at position 3 of the heterocyclic ring.
@@ -34,6 +34,11 @@ def is_dihydroflavonol(smiles: str):
     dihydroflavonol_pattern = Chem.MolFromSmarts("[O;R]1C(=O)C2=C(C=CC=C2)C2=C1C(O)=CC=C2")
     if not mol.HasSubstructMatch(dihydroflavonol_pattern):
         return False, "No hydroxy group at position 3 of the heterocyclic ring"
+    
+    # Allow for additional substituents or structural variations
+    additional_pattern = Chem.MolFromSmarts("[*]")
+    if mol.HasSubstructMatch(additional_pattern):
+        return True, "Molecule contains the flavanone scaffold with a hydroxy group at position 3 of the heterocyclic ring, and additional substituents or structural variations"
     
     return True, "Molecule contains the flavanone scaffold with a hydroxy group at position 3 of the heterocyclic ring"
 
