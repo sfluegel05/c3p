@@ -21,29 +21,23 @@ def is_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 2. Define SMARTS pattern for ketone and neighboring carbon
-    ketone_alpha_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4]")
+    # 2. Define SMARTS pattern for a ketone
+    ketone_pattern = Chem.MolFromSmarts("[CX3]=O")
     
-    # 3. Get all matches of the ketone and neighbor.
-    matches = mol.GetSubstructMatches(ketone_alpha_pattern)
+    # 3. Find all ketone matches
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
 
     # 4. If there is no ketone, return False.
-    if not matches:
+    if not ketone_matches:
       return False, "No ketone found."
-    
-    # 5. Check if any of the alpha carbons have a hydroxy group.
-    for match in matches:
-        ketone_carbon_idx = match[0] # index of the ketone carbon
-        alpha_carbon_idx = match[1] # index of the alpha carbon.
-        
-        alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
 
-        # Get neighbors of the alpha carbon
-        for neighbor in alpha_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8: # check for oxygen
-                # Check if the oxygen is an -OH (i.e. bonded to a hydrogen)
-                for neighbor2 in neighbor.GetNeighbors():
-                    if neighbor2.GetAtomicNum() == 1:
-                        return True, "Hydroxy group found on an alpha carbon of a ketone"
-    
-    return False, "No hydroxy group found on any alpha carbon of a ketone"
+    # 5. Define SMARTS pattern for alpha-hydroxy ketone
+    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[CX4](-[OX2H1])-[CX3](=O)")
+
+    # 6. Check if an alpha-hydroxy ketone is found
+    matches = mol.GetSubstructMatches(alpha_hydroxy_ketone_pattern)
+
+    if matches:
+       return True, "Hydroxy group found on an alpha carbon of a ketone"
+    else:
+       return False, "No hydroxy group found on any alpha carbon of a ketone"
