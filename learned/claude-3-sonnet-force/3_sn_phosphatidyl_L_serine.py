@@ -36,13 +36,23 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if not mol.HasSubstructMatch(ps_head_pattern):
         return False, "No phosphoserine head group found"
 
-    # Look for ester groups (-O-C(=O)-) attached to the glycerol backbone
-    ester_pattern = Chem.MolFromSmarts("[CH2X4][OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # Get the atoms of the glycerol backbone
+    glycerol_atoms = mol.GetSubstructMatches(glycerol_pattern)[0]
+
+    # Check for ester groups (-O-C(=O)-) attached to the glycerol backbone
+    ester_count = 0
+    for atom_idx in glycerol_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetTotalNumHs() == 0:  # If the atom has no hydrogens attached
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.IsInRingSize(0):  # Oxygen, not in a ring
+                    for neighbor_neighbor in neighbor.GetNeighbors():
+                        if neighbor_neighbor.GetAtomicNum() == 6 and neighbor_neighbor.GetFormalCharge() == 0 and len(neighbor_neighbor.GetBonds()) == 3 and any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in neighbor_neighbor.GetBonds()):
+                            ester_count += 1
 
     # Check if there are exactly 2 ester groups attached to the glycerol backbone
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups attached to the glycerol backbone, need exactly 2"
+    if ester_count != 2:
+        return False, f"Found {ester_count} ester groups attached to the glycerol backbone, need exactly 2"
 
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
