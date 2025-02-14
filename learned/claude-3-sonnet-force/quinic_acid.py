@@ -24,32 +24,26 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for cyclitol core pattern
-    cyclitol_pattern = Chem.MolFromSmarts("[OX3r6,OX2r6][CX4r6][CX4r6][CX4r6][CX4r6][CX4r6]")
-    if not mol.HasSubstructMatch(cyclitol_pattern):
-        return False, "No cyclitol core found"
+    # Look for quinic acid core pattern
+    quinic_acid_core = Chem.MolFromSmarts("[OX2r6][CX4r6][CX4r6][CX4r6][CX4r6][CX4r6]1[OX2H1,OX1H0-]")
+    if not mol.HasSubstructMatch(quinic_acid_core):
+        return False, "No quinic acid core found"
 
     # Look for carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX2H1]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for correct atom counts
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    if c_count != 7 or o_count != 7 or h_count != 14:
-        return False, "Incorrect atom counts for quinic acid"
-
     # Look for common substituents (caffeoyl, feruloyl, coumaroyl)
-    sub_patterns = [Chem.MolFromSmarts("O=C/C=C/c:1:c:c:c:c:c:1")]  # Caffeoyl
-    sub_patterns.append(Chem.MolFromSmarts("COc:1:c:c:c:c:c:1/C=C/C=O"))  # Feruloyl
-    sub_patterns.append(Chem.MolFromSmarts("O=C/C=C/c:1:c:c:c:c:c:1"))  # Coumaroyl
+    caffeoyl_pattern = Chem.MolFromSmarts("O=C/C=C/c:1:c:c:c:c:c:1O")
+    feruloyl_pattern = Chem.MolFromSmarts("COc:1:c:c:c:c:c:1/C=C/C=O")
+    coumaroyl_pattern = Chem.MolFromSmarts("O=C/C=C/c:1:c:c:c:c:c:1")
 
+    sub_patterns = [caffeoyl_pattern, feruloyl_pattern, coumaroyl_pattern]
     sub_matches = [mol.GetSubstructMatches(p) for p in sub_patterns]
     num_subs = sum(len(matches) for matches in sub_matches)
 
     if num_subs > 3:
         return False, "Too many substituents for quinic acid"
 
-    return True, "Contains cyclitol core with carboxylic acid group"
+    return True, "Contains quinic acid core with carboxylic acid group"
