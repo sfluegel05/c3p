@@ -29,9 +29,17 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for sphingosine backbone pattern (C-C-C-C=C-C-C-N-C-O)
-    sphingosine_pattern = Chem.MolFromSmarts("[CH2,CH3][CX4][CX4][CX3]=[CX3][CX4][CX4][NX3][CX4][OX2]")
-    if not mol.HasSubstructMatch(sphingosine_pattern):
+    # Look for sphingosine backbone
+    # 1. Double bond in the middle of a long carbon chain
+    # 2. Primary alcohol (-CH2-OH) at one end
+    # 3. Secondary amine (-NH-) at the other end
+    double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
+    primary_alcohol_pattern = Chem.MolFromSmarts("[CH2][OH]")
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3H]")
+
+    if (not mol.HasSubstructMatch(double_bond_pattern) or
+        not mol.HasSubstructMatch(primary_alcohol_pattern) or
+        not mol.HasSubstructMatch(secondary_amine_pattern)):
         return False, "No sphingosine backbone found"
 
     # Look for amide group (-N-C(=O)-)
