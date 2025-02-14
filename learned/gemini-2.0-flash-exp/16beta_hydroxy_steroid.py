@@ -3,6 +3,8 @@ Classifies: CHEBI:17354 16beta-hydroxy steroid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Geometry import Point3D
+import numpy as np
 
 def is_16beta_hydroxy_steroid(smiles: str):
     """
@@ -22,68 +24,97 @@ def is_16beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the steroid core SMARTS pattern (more flexible and handles implicit Hs)
-    steroid_core_smarts = "[C]1[C][C]2[C]3[C]([C]1)[C][C]4[C]3[C]([C]2)[C][C]5[C]4[C]([C])([C]5)"
+    # Define a flexible steroid core SMARTS pattern
+    steroid_core_smarts = "[C]1[C][C]2[C]3[C]([C]1)[C][C]4[C]3[C]([C]2)[C][C]5[C]4([C])[C]([C]5)"
     steroid_core_pattern = Chem.MolFromSmarts(steroid_core_smarts)
 
     # Find substructure match for steroid core
     core_match = mol.GetSubstructMatch(steroid_core_pattern)
-
     if not core_match:
-         return False, "No steroid core found"
+        return False, "No steroid core found"
 
-    # Map the match to the steroid core
-    core_atoms = {}
-    for i, atom_idx in enumerate(core_match):
-       core_atoms[i+1] = atom_idx  # 1-based indexing for core atoms
+    # Get the indices of core atoms
+    core_atoms = list(core_match)
+
+    # Identify C16: C16 is the carbon connected to the carbon at index 14 from the
+    # SMARTS pattern, and the carbon at index 15 from the pattern
+    c14_idx = core_atoms[13]
+    c15_idx = core_atoms[14]
+
+    # Find the neighbors of C14
+    c14_atom = mol.GetAtomWithIdx(c14_idx)
+    c14_neighbors = [neighbor.GetIdx() for neighbor in c14_atom.GetNeighbors()]
     
-    # Identify C16 in the core
-    # In the steroid pattern:
-    # carbon 1: index 0
-    # carbon 2: index 1
-    # carbon 3: index 2
-    # carbon 4: index 9
-    # carbon 5: index 8
-    # carbon 6: index 7
-    # carbon 7: index 6
-    # carbon 8: index 5
-    # carbon 9: index 3
-    # carbon 10: index 10
-    # carbon 11: index 11
-    # carbon 12: index 12
-    # carbon 13: index 4
-    # carbon 14: index 13
-    # carbon 15: index 14
-    # carbon 16: index 15
-    # C16 is the 16th atom of the core, we get its index
-    c16_idx = core_atoms.get(16)
+    # C16 is the common neighbor of C14 and C15
+    c16_idx = None
+    for neighbor in mol.GetAtomWithIdx(c15_idx).GetNeighbors():
+        if neighbor.GetIdx() in c14_neighbors:
+            c16_idx = neighbor.GetIdx()
+            break
+
     if c16_idx is None:
-        return False, "Cannot determine index of C16"
+          return False, "Cannot determine index of C16"
 
     # Get the C16 atom object
     c16_atom = mol.GetAtomWithIdx(c16_idx)
     
-    # Check for a hydroxyl group directly attached to C16 with beta configuration
-    has_beta_oh = False
+    #Check for a hydroxyl group attached to C16
+    has_oh = False
+    oh_oxygen_idx = None
 
     for neighbor in c16_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 8: # Oxygen atom
-           o_atom = neighbor
-           
-           # Count H neighbors on the O atom. We expect 1 hydrogen neighbor
-           h_count = 0
-           for h_neighbor in o_atom.GetNeighbors():
-               if h_neighbor.GetAtomicNum() == 1: # Hydrogen
-                   h_count += 1
-           if h_count == 1:
-               o_c16_bond = mol.GetBondBetweenAtoms(c16_atom.GetIdx(), o_atom.GetIdx())
-               if o_c16_bond:
-                    if o_c16_bond.GetStereo() == Chem.BondStereo.STEREOUP: # check for beta config
-                           has_beta_oh = True
-                           break # found a suitable OH group, exit loop
+        if neighbor.GetAtomicNum() == 8:  # Oxygen atom
+          
+            o_atom = neighbor
+            has_oh = True
+            oh_oxygen_idx = o_atom.GetIdx()
+            break
+
+    if not has_oh:
+       return False, "No hydroxyl group found at C16"
+        
+    # Check for beta configuration
+    # Method:
+    # 1. get coordinates of C16, O, C13, and C17
+    # 2. Construct a normal vector from C13 and C17, using the cross product
+    # 3. Find the vector from C16 to O
+    # 4. Project the C16-O vector onto the normal to find out the direction (z component)
+    # If positive, is beta
+
+    # Get coordinates and C13 and C17 indexes
+    c13_idx = core_atoms[3]
+    c17_idx = core_atoms[15]
+    
+    conf = mol.GetConformer()
+    c13_coords = conf.GetAtomPosition(c13_idx)
+    c17_coords = conf.GetAtomPosition(c17_idx)
+    c16_coords = conf.GetAtomPosition(c16_idx)
+    o_coords = conf.GetAtomPosition(oh_oxygen_idx)
 
 
-    if not has_beta_oh:
-        return False, "No 16-beta hydroxyl group found"
+    # Construct vectors
+    v1 = np.array([c17_coords.x - c13_coords.x, c17_coords.y - c13_coords.y, c17_coords.z - c13_coords.z])
+    
+    # Get the index of C15 from the core_atoms and get C15's coordinates
+    c15_idx = core_atoms[14]
+    c15_coords = conf.GetAtomPosition(c15_idx)
+
+    v2 = np.array([c15_coords.x - c13_coords.x, c15_coords.y - c13_coords.y, c15_coords.z - c13_coords.z])
+
+
+    # Calculate the normal vector to the C13-C17 plane
+    normal_vector = np.cross(v1, v2)
+    
+    # Calculate the C16-O vector
+    c16_o_vector = np.array([o_coords.x - c16_coords.x, o_coords.y - c16_coords.y, o_coords.z - c16_coords.z])
+    
+    # Project onto the normal vector
+    projection = np.dot(c16_o_vector, normal_vector)
+
+    is_beta = projection > 0
+    
+
+    if not is_beta:
+         return False, "Hydroxyl group is not beta-configured at C16"
     
     return True, "16beta-hydroxy steroid found"
