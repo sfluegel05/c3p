@@ -24,23 +24,25 @@ def is_proanthocyanidin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for flavan-3-ol units (catechin/epicatechin units)
-    # This pattern captures the core structure of flavan-3-ol with hydroxyl groups
-    flavan3ol_smarts = """
-    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1-
-    [C@@H]2[C@H](O)-
-    [CH2]-
-    [C@@H]3Oc4cc(O)ccc4[C@@H]23
-    """
-    # Remove whitespace and newlines
-    flavan3ol_smarts = "".join(flavan3ol_smarts.split())
-    flavan3ol = Chem.MolFromSmarts(flavan3ol_smarts)
-    if flavan3ol is None:
-        return False, "Error in flavan-3-ol SMARTS pattern"
+    # Define SMARTS patterns for flavan-3-ol units (catechin and epicatechin cores)
+    catechin_smarts = "Oc1ccc(cc1)[C@@H]2O[C@H](C[C@H]2O)c3ccc(O)cc3"  # Catechin core
+    epicatechin_smarts = "Oc1ccc(cc1)[C@H]2O[C@@H](C[C@H]2O)c3ccc(O)cc3"  # Epicatechin core
 
-    # Find flavan-3-ol units in the molecule (ignore stereochemistry)
-    flavan3ol_matches = mol.GetSubstructMatches(flavan3ol, useChirality=False)
-    num_flavan_units = len(flavan3ol_matches)
+    catechin_mol = Chem.MolFromSmarts(catechin_smarts)
+    epicatechin_mol = Chem.MolFromSmarts(epicatechin_smarts)
+    if catechin_mol is None or epicatechin_mol is None:
+        return False, "Error in flavan-3-ol SMARTS patterns"
+
+    # Initialize count
+    num_flavan_units = 0
+
+    # Check for catechin units
+    catechin_matches = mol.GetSubstructMatches(catechin_mol, useChirality=False)
+    num_flavan_units += len(catechin_matches)
+
+    # Check for epicatechin units
+    epicatechin_matches = mol.GetSubstructMatches(epicatechin_mol, useChirality=False)
+    num_flavan_units += len(epicatechin_matches)
 
     if num_flavan_units < 2:
         return False, f"Found {num_flavan_units} flavan-3-ol units, need at least 2"
