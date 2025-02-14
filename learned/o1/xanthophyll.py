@@ -21,6 +21,8 @@ def is_xanthophyll(smiles: str):
         bool: True if molecule is a xanthophyll, False otherwise
         str: Reason for classification
     """
+    from rdkit.Chem import rdMolOps
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -33,61 +35,58 @@ def is_xanthophyll(smiles: str):
 
     # Count number of carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, f"Too few carbons ({c_count}) to be a carotenoid"
+    if c_count < 30:
+        return False, f"Too few carbons ({c_count}) to be a xanthophyll"
 
     # Check for presence of oxygen atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count == 0:
         return False, "No oxygen atoms found, not a xanthophyll"
 
-    # Find the longest chain of conjugated non-aromatic double bonds
-    def get_longest_conjugated_chain(mol):
-        longest_length = 0
+    # Find the largest conjugated system
+    def get_largest_conjugated_system_size(mol):
+        emol = Chem.EditableMol(mol)
+        bonds_to_remove = []
         for bond in mol.GetBonds():
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and not bond.GetIsAromatic():
-                length = dfs_conjugated_chain(bond, set())
-                if length > longest_length:
-                    longest_length = length
-        return longest_length
-
-    def dfs_conjugated_chain(bond, visited):
-        bond_idx = bond.GetIdx()
-        if bond_idx in visited or bond.GetIsAromatic():
+            if not (bond.GetIsConjugated() and bond.GetBondType() != Chem.rdchem.BondType.AROMATIC):
+                bonds_to_remove.append(bond.GetIdx())
+        # Remove non-conjugated bonds
+        for bond_idx in sorted(bonds_to_remove, reverse=True):
+            bond = mol.GetBondWithIdx(bond_idx)
+            emol.RemoveBond(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
+        conj_mol = emol.GetMol()
+        frags = Chem.GetMolFrags(conj_mol, asMols=True)
+        if not frags:
             return 0
-        visited.add(bond_idx)
-        current_atom = bond.GetEndAtom()
-        length = 1
-        for nbr_bond in current_atom.GetBonds():
-            nbr_bond_type = nbr_bond.GetBondType()
-            if nbr_bond.GetIdx() != bond_idx and nbr_bond_type == Chem.rdchem.BondType.DOUBLE and not nbr_bond.GetIsAromatic():
-                length += dfs_conjugated_chain(nbr_bond, visited)
-                break  # Only consider linear conjugation
-        return length
+        # Get the size (number of atoms) of the largest conjugated system
+        largest_frag_size = max(frag.GetNumAtoms() for frag in frags)
+        return largest_frag_size
 
-    longest_conj_chain = get_longest_conjugated_chain(mol)
-    if longest_conj_chain < 7:
-        return False, f"Longest conjugated chain is too short ({longest_conj_chain}) for a carotenoid"
+    largest_conj_system_size = get_largest_conjugated_system_size(mol)
+    if largest_conj_system_size < 15:
+        return False, f"Longest conjugated system is too small ({largest_conj_system_size} atoms) for a xanthophyll"
 
     # Check for typical oxygen-containing functional groups
     has_hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts('[OX2H]'))
     has_ketone = mol.HasSubstructMatch(Chem.MolFromSmarts('C=O'))
     has_epoxide = mol.HasSubstructMatch(Chem.MolFromSmarts('C1OC1'))
     has_ether = mol.HasSubstructMatch(Chem.MolFromSmarts('COC'))
+    has_carboxylic_acid = mol.HasSubstructMatch(Chem.MolFromSmarts('C(=O)[OH]'))
+    has_ester = mol.HasSubstructMatch(Chem.MolFromSmarts('C(=O)O'))
 
-    if not (has_hydroxyl or has_ketone or has_epoxide or has_ether):
+    if not (has_hydroxyl or has_ketone or has_epoxide or has_ether or has_carboxylic_acid or has_ester):
         return False, "No typical oxygen-containing functional groups found in xanthophyll"
 
-    # Check for carotenoid-like structure: long linear or semi-linear molecule
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 500:
         return False, f"Molecular weight too low ({mol_wt:.2f} Da) for a typical xanthophyll"
 
-    # Verify that the molecule is not cyclic (many carotenoids have ring structures at the ends)
+    # Verify that the molecule has ring structures (many carotenoids have rings at the ends)
     ring_info = mol.GetRingInfo()
     num_rings = ring_info.NumRings()
-    if num_rings < 2:
-        return False, f"Expected at least 2 rings in structure, found {num_rings}"
+    if num_rings < 1:
+        return False, f"Expected at least 1 ring in structure, found {num_rings}"
 
     # All checks passed
     return True, "Molecule is likely a xanthophyll (oxygenated carotenoid)"
@@ -95,10 +94,10 @@ def is_xanthophyll(smiles: str):
 # Note: The function checks for the following:
 # - Valid SMILES string
 # - Does not contain unusual elements (only C, H, O)
-# - Sufficient number of carbons (minimum 20)
+# - Sufficient number of carbons (minimum 30)
 # - Presence of oxygen atoms
-# - Longest chain of conjugated non-aromatic double bonds (minimum length 7)
-# - Presence of typical functional groups in xanthophylls (hydroxyls, ketones, epoxides, ethers)
+# - Size of the largest conjugated system (minimum 15 atoms)
+# - Presence of typical functional groups in xanthophylls (hydroxyls, ketones, epoxides, ethers, carboxylic acids, esters)
 # - Molecular weight consistent with xanthophylls
 # - Presence of ring structures typical for carotenoids
 
