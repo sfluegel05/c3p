@@ -1,91 +1,22 @@
 """
 Classifies: CHEBI:25903 peptide antibiotic
 """
-"""
-Classifies: CHEBI:36352 peptide antibiotic
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and the outcomes, it appears that the main issue is that the program is overly specific in its criteria for identifying peptide antibiotics. The current approach of checking for a peptide backbone and a set of predefined antimicrobial motifs is too restrictive and fails to capture the diverse chemical structures found in this class of compounds.
 
-def is_peptide_antibiotic(smiles: str):
-    """
-    Determines if a molecule is a peptide antibiotic based on its SMILES string.
-    Peptide antibiotics are chemically diverse peptides that exhibit antimicrobial properties.
+The false negatives provided in the outcomes are all valid examples of peptide antibiotics, but they are being missed by the program due to the strict criteria. For instance, the program is failing to identify compounds with alternative antimicrobial motifs or structural features not covered by the predefined SMARTS patterns.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program, we need to adopt a more flexible and comprehensive approach that takes into account the diverse chemical space of peptide antibiotics. Here are some potential improvements:
 
-    Returns:
-        bool: True if molecule is a peptide antibiotic, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for peptide backbone
-    peptide_pattern = Chem.MolFromSmarts("[NX3]([CH2])[CH2][CX3](=[OX1])[NX3][CH2][CX3](=[OX1])")
-    if not mol.HasSubstructMatch(peptide_pattern):
-        return False, "No peptide backbone found"
-    
-    # Check for antimicrobial motifs
-    motifs = (
-        Chem.MolFromSmarts("[NX3+](C)(C)[CH2][CH2][CH2][NH3+]"),  # polymyxin-like motif
-        Chem.MolFromSmarts("[NX3][CH2][CH2]=[CH]C(=[OX1])[NX3]"),  # dehydro amino acid
-        Chem.MolFromSmarts("[OX2][CH2][CH2]Cl"),  # chlorinated side chain
-        Chem.MolFromSmarts("[OX2][CH2][CH2][NX3+](C)(C)"),  # quaternary amine
-        Chem.MolFromSmarts("[cX3]1[cX3][cX3][cX3][nX3]1"),  # heterocyclic ring
-    )
-    has_motif = any(mol.HasSubstructMatch(motif) for motif in motifs)
-    if not has_motif:
-        return False, "No antimicrobial motifs found"
-    
-    # Check molecular weight - peptide antibiotics typically >500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for peptide antibiotic"
-    
-    # Count nitrogen, oxygen, and sulfur atoms
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
-    
-    if n_count < 5 or o_count < 5 or s_count == 0:
-        return False, "Atom counts not typical for peptide antibiotic"
-    
-    return True, "Contains peptide backbone and antimicrobial motifs"
+1. **Expand the set of antimicrobial motifs**: While the current set of motifs covers some common structural features found in peptide antibiotics, it is not exhaustive. We can expand the list of motifs to include other patterns associated with antimicrobial activity, such as specific amino acid sequences, cyclic structures, or the presence of certain functional groups.
 
+2. **Use machine learning techniques**: Instead of relying solely on predefined structural patterns, we could explore the use of machine learning techniques to learn the structural features associated with peptide antibiotics from a larger dataset of known examples. This would allow the program to generalize better and potentially identify novel structures that exhibit antimicrobial properties.
 
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:36352',
-                          'name': 'peptide antibiotic',
-                          'definition': 'A chemically diverse class of peptides '
-                                        'that exhibit antimicrobial properties.',
-                          'parents': ['CHEBI:35434']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 233,
-    'num_false_positives': 24,
-    'num_true_negatives': 185924,
-    'num_false_negatives': 0,
-    'num_negatives': None,
-    'precision': 0.9067796610169491,
-    'recall': 1.0,
-    'f1': 0.9511719511719512,
-    'accuracy': 0.999989872103401}
+3. **Incorporate physicochemical properties**: In addition to structural features, we could consider incorporating physicochemical properties, such as hydrophobicity, charge distribution, or hydrogen bonding potential, as these properties are often relevant for the antimicrobial activity of peptides.
+
+4. **Utilize external databases and annotations**: There are several databases and resources that contain curated information about peptide antibiotics and their structures. We could leverage these external sources to improve the classification process, either by incorporating additional rules or by using the data for training machine learning models.
+
+5. **Relax the criteria for peptide backbone**: While the presence of a peptide backbone is a reasonable criterion for identifying peptide antibiotics, the current SMARTS pattern might be too strict. We could consider relaxing or modifying this pattern to accommodate a broader range of peptide-like structures.
+
+By incorporating one or more of these improvements, we can potentially enhance the program's ability to accurately classify peptide antibiotics while maintaining a high level of recall (i.e., minimizing false negatives).
+
+It's important to note that while the program's performance can be improved, there may still be some inherent limitations or ambiguities in the classification task itself. The chemical class of peptide antibiotics is diverse and not always well-defined, leading to potential disagreements or inconsistencies in the benchmark data. In such cases, it is advisable to use your best judgment, relying on your understanding of chemistry and the intended definition of the chemical class.
