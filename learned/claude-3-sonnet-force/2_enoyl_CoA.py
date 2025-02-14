@@ -1,155 +1,22 @@
 """
 Classifies: CHEBI:19573 2-enoyl-CoA
 """
-"""
-Classifies: CHEBI:36347 2-enoyl-CoA
-An unsaturated fatty acyl-CoA in which the S-acyl group contains a double bond between positions 2 and 3.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous code and the outcomes, it appears that the primary issue is that the program is not properly identifying the CoA group in the molecules. The majority of the false negatives are due to the program reporting "Missing CoA group" when the molecule clearly contains a CoA group.
 
-def is_2_enoyl_CoA(smiles: str):
-    """
-    Determines if a molecule is a 2-enoyl-CoA based on its SMILES string.
+This issue likely stems from the `split_acyl_coa` function, which is responsible for separating the acyl group and the CoA group. The SMARTS pattern used to match the CoA group appears to be too specific, and it may not account for variations in the CoA group structure or stereochemistry.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program, we could consider the following steps:
 
-    Returns:
-        bool: True if molecule is a 2-enoyl-CoA, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Remove explicit hydrogens and ignore stereochemistry
-    mol = Chem.RemoveHs(mol)
-    
-    # Split molecule into acyl group and CoA group
-    acyl_group, coa_group = split_acyl_coa(mol)
-    
-    # Check for CoA group
-    if coa_group is None:
-        return False, "Missing CoA group"
-    
-    # Check for unsaturation in acyl group
-    if not has_unsaturation(acyl_group):
-        return False, "Acyl group is saturated"
-    
-    # Check for double bond between positions 2 and 3
-    if not has_double_bond_2_3(acyl_group):
-        return False, "Double bond not between positions 2 and 3"
-    
-    # Check for fatty acid chain
-    if not has_fatty_acid_chain(acyl_group):
-        return False, "Missing fatty acid chain"
-    
-    # Check molecular weight (typically 800-1000 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 800 or mol_wt > 1000:
-        return False, "Molecular weight outside typical range"
-    
-    # Check atom counts
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
-    
-    if c_count < 25 or o_count < 10 or n_count < 3 or p_count < 2 or s_count < 1:
-        return False, "Atom counts outside typical range"
-    
-    return True, "Molecule is a 2-enoyl-CoA"
+1. **Review and refine the CoA group SMARTS pattern**: Analyze the false negatives and true positives to identify potential issues with the current SMARTS pattern. Consider using a more general pattern or combining multiple patterns to account for variations in the CoA group structure and stereochemistry.
 
-def split_acyl_coa(mol):
-    """
-    Splits a molecule into the acyl group and CoA group.
+2. **Incorporate additional checks for the CoA group**: Instead of relying solely on the SMARTS pattern match, we could incorporate additional checks to verify the presence of the CoA group. For example, we could check for the presence of specific substructures or functional groups that are characteristic of the CoA group, or we could use molecular descriptors or fingerprints to identify the CoA group.
 
-    Args:
-        mol (Mol): RDKit mol object
+3. **Adjust the atom count checks**: The current atom count checks (`c_count`, `o_count`, `n_count`, `p_count`, and `s_count`) may be too strict or not tailored specifically to the 2-enoyl-CoA class. We could revisit these checks and adjust the thresholds based on the analysis of the true positives and false negatives.
 
-    Returns:
-        Mol, Mol: Acyl group and CoA group (or None if not found)
-    """
-    # Define SMARTS pattern for CoA group
-    coa_pattern = Chem.MolFromSmarts("C(C)(COP(=O)([O-])OP(=O)([O-])OC1C(OP(=O)([O-])[O-])C(OC2N=CN=C2N)C(OP(=O)([O-])[O-])C1N)C(=O)NCCC(=O)NCCS")
-    
-    # Match pattern and split molecule
-    match = mol.GetSubstructMatches(coa_pattern)
-    if not match:
-        return mol, None
-    
-    acyl_atoms = list(set(range(mol.GetNumAtoms())) - set(match[0]))
-    acyl_group = Chem.EditableMol(mol).GetMol()
-    acyl_group = Chem.EditableMol(acyl_group).RemoveAtoms([atom for atom in range(mol.GetNumAtoms()) if atom not in acyl_atoms])
-    acyl_group = acyl_group.GetMol()
-    
-    coa_atoms = match[0]
-    coa_group = Chem.EditableMol(mol).GetMol()
-    coa_group = Chem.EditableMol(coa_group).RemoveAtoms([atom for atom in range(mol.GetNumAtoms()) if atom not in coa_atoms])
-    coa_group = coa_group.GetMol()
-    
-    return acyl_group, coa_group
+4. **Enhance the double bond position check**: The `has_double_bond_2_3` function assumes a specific atom neighborhood pattern to identify the double bond position. This approach may not be robust enough to handle all variations in the molecular structures. We could consider using alternative methods, such as identifying the longest carbon chain and checking the position of the double bond relative to that chain.
 
-def has_unsaturation(mol):
-    """
-    Checks if a molecule has at least one double bond.
+5. **Consider additional checks or heuristics**: Depending on the specific characteristics of the 2-enoyl-CoA class, we may need to incorporate additional checks or heuristics to improve the classification accuracy. For example, we could check for specific substituents or functional groups that are common or uncommon in this class of molecules.
 
-    Args:
-        mol (Mol): RDKit mol object
+It's important to note that the benchmark used for evaluation may have occasional and systematic mistakes, as mentioned in the problem statement. If the classifications made by your program are consistent with your understanding of the 2-enoyl-CoA class, you can choose to ignore outliers or false negatives, but be sure to explain your reasoning for doing so.
 
-    Returns:
-        bool: True if molecule has at least one double bond, False otherwise
-    """
-    adj_matrix = Chem.GetAdjacencyMatrix(mol)
-    bonds = [sum(row) for row in adj_matrix]
-    return max(bonds) > 3
-
-def has_double_bond_2_3(mol):
-    """
-    Checks if a molecule has a double bond between positions 2 and 3 of the acyl chain.
-
-    Args:
-        mol (Mol): RDKit mol object
-
-    Returns:
-        bool: True if molecule has a double bond between positions 2 and 3, False otherwise
-    """
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.DOUBLE:
-            atom1 = bond.GetBeginAtom()
-            atom2 = bond.GetEndAtom()
-            
-            # Check if atoms are part of the acyl chain
-            if atom1.GetDegree() > 1 and atom2.GetDegree() > 1:
-                # Get neighbor atoms
-                neighbors1 = [atom.GetIdx() for atom in atom1.GetNeighbors()]
-                neighbors2 = [atom.GetIdx() for atom in atom2.GetNeighbors()]
-                
-                # Check if neighbors are separated by 2 bonds
-                if any(abs(n1 - n2) == 2 for n1 in neighbors1 for n2 in neighbors2):
-                    return True
-    
-    return False
-
-def has_fatty_acid_chain(mol):
-    """
-    Checks if a molecule has a fatty acid chain attached to the acyl group.
-
-    Args:
-        mol (Mol): RDKit mol object
-
-    Returns:
-        bool: True if molecule has a fatty acid chain, False otherwise
-    """
-    # Define SMARTS pattern for fatty acid chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    
-    # Match pattern
-    match = mol.GetSubstructMatches(fatty_acid_pattern)
-    
-    return len(match) > 0
+By implementing these improvements and carefully analyzing the true positives and false negatives, we should be able to enhance the program's accuracy in classifying molecules as 2-enoyl-CoAs.
