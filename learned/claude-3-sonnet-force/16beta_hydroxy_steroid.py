@@ -6,6 +6,7 @@ Classifies: CHEBI:132026 16beta-hydroxy steroid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_16beta_hydroxy_steroid(smiles: str):
     """
@@ -26,17 +27,17 @@ def is_16beta_hydroxy_steroid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C@]1(C[C@@H]2[C@@]1(CC[C@]1([C@]3([C@H](C[C@@H]4[C@@]3(CC[C@]2([C@@]4(C)C)C)C)C)C[C@@H](O)[C@@H]([C@@]1(C)C)O)C)C)C")
+    steroid_pattern = Chem.MolFromSmarts("[C@]12[C@@H]([C@@]3([C@H]([C@@H]1[C@H](C2)C)CC[C@@H]4[C@@]3(CC[C@H](C4)O)C)C)C")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
     # Check for 16beta-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[OH][C@]12[C@H](CC[C@@]1(C)C)CC[C@H]2[C@@H](O)C")
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@H]([C@H]1[C@@H]2[C@H]([C@@H]([C@@H]([C@H](C2)C)O)[C@H]1C)C)O")
     if not mol.HasSubstructMatch(hydroxy_pattern):
         return False, "No 16beta-hydroxy group found"
     
     # Check molecular weight - steroids typically >200 Da
-    mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 200:
         return False, "Molecular weight too low for steroid"
     
