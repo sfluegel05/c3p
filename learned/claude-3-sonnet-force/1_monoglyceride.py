@@ -29,8 +29,12 @@ def is_1_monoglyceride(smiles: str):
 
     # Look for glycerol backbone pattern (C-C-C with a secondary alcohol group)
     glycerol_pattern = Chem.MolFromSmarts("[CH2][C]([OH])[CH2]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    glycerol_match = mol.GetSubstructMatch(glycerol_pattern)
+    if not glycerol_match:
         return False, "No glycerol backbone found"
+    
+    # Get the indices of the glycerol backbone atoms
+    glycerol_atoms = [glycerol_match[0], glycerol_match[1], glycerol_match[2]]
         
     # Look for 1 ester group (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -41,7 +45,7 @@ def is_1_monoglyceride(smiles: str):
     # Check that the ester group is attached at position 1 of the glycerol backbone
     ester_atom_idx = ester_matches[0][0]
     ester_atom = mol.GetAtomWithIdx(ester_atom_idx)
-    if ester_atom.GetAtomMapNum() != 1:
+    if ester_atom.GetNeighbors()[0].GetIdx() not in glycerol_atoms:
         return False, "Ester group not attached at position 1"
 
     # Check for fatty acid chain (long aliphatic chain with no other functional groups)
