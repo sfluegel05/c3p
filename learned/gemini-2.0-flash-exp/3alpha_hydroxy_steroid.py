@@ -20,8 +20,8 @@ def is_3alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for steroid core (simplified)
-    steroid_core_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C)(C)C(CCC4C3(C)CCC2C1)C")
+    # 1. Check for steroid core (generalized tetracyclic ring system)
+    steroid_core_pattern = Chem.MolFromSmarts("[R1]1[R1][R1][R1]2[R1][R1][R1]3[R1]([R1][R1]4[R1][R1]1[R1]2)[R1][R1]43")
     if steroid_core_pattern is None:
         return None, "Invalid steroid core SMARTS pattern"
     if not mol.HasSubstructMatch(steroid_core_pattern):
