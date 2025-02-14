@@ -24,26 +24,26 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for quinic acid core pattern
-    quinic_acid_core = Chem.MolFromSmarts("[OX2r6][CX4r6][CX4r6][CX4r6][CX4r6][CX4r6]1[OX2H1,OX1H0-]")
-    if not mol.HasSubstructMatch(quinic_acid_core):
-        return False, "No quinic acid core found"
+    # Quinic acid core pattern with stereochemistry
+    quinic_acid_pattern = Chem.MolFromSmarts("[OX2r6][C@@H]1[C@@](O)(C[C@H](O)[C@@H]([C@H]1O)C(O)=O)O")
 
-    # Look for carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX2H1]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
-
-    # Look for common substituents (caffeoyl, feruloyl, coumaroyl)
+    # Common substituents
     caffeoyl_pattern = Chem.MolFromSmarts("O=C/C=C/c:1:c:c:c:c:c:1O")
     feruloyl_pattern = Chem.MolFromSmarts("COc:1:c:c:c:c:c:1/C=C/C=O")
     coumaroyl_pattern = Chem.MolFromSmarts("O=C/C=C/c:1:c:c:c:c:c:1")
 
+    # Check for quinic acid core
+    if not mol.HasSubstructMatch(quinic_acid_pattern):
+        return False, "No quinic acid core found"
+
+    # Check for substituents
     sub_patterns = [caffeoyl_pattern, feruloyl_pattern, coumaroyl_pattern]
     sub_matches = [mol.GetSubstructMatches(p) for p in sub_patterns]
     num_subs = sum(len(matches) for matches in sub_matches)
 
-    if num_subs > 3:
-        return False, "Too many substituents for quinic acid"
+    if num_subs == 0:
+        return True, "Unsubstituted quinic acid"
+    elif num_subs > 0:
+        return True, f"Quinic acid with {num_subs} substituents"
 
-    return True, "Contains quinic acid core with carboxylic acid group"
+    return False, "Not a quinic acid derivative"
