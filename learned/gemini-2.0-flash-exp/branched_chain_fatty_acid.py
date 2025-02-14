@@ -26,39 +26,29 @@ def is_branched_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for branching point and long chain. 
+    # Check for a chain of at least 3 carbons
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]([CX4,CX3])[CX4,CX3]")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No 3-carbon chain found"
+    
+    # Check for a branching point
     branch_found = False
-    chain_length_ok = False
-    
-    
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6: # Check only carbon atoms
             neighbors = [neighbor for neighbor in atom.GetNeighbors()]
             carbon_neighbors = [neighbor for neighbor in neighbors if neighbor.GetAtomicNum() == 6]
             non_h_neighbors = [neighbor for neighbor in neighbors if neighbor.GetAtomicNum() != 1]
             
-            # A branch should be connected to at least 2 carbon neighbors and another non-H
-            if len(carbon_neighbors) >= 2 and len(non_h_neighbors) > 2:
+            if len(non_h_neighbors) > 2 and len(carbon_neighbors) >= 2:
                 branch_found = True
-                
+                break
+
     if not branch_found:
       return False, "No appropriate branching point found"
-    
-    #check rotatable bonds
-    rot_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if rot_bonds < 2:
-        return False, "Chain is too short"
-    
-    # Check molecular weight - fatty acids usually > 90 Da (for molecules like 2-methylbutyric acid)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 90:
-         return False, "Molecular weight too low for fatty acid"
-    
-    
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 3 or o_count != 2:
-        return False, "Molecule is too short"
 
+    # Count carbons to ensure minimum length.
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 3:
+      return False, "Molecule is too short"
+      
     return True, "Contains a carboxylic acid group, a long chain and one or more branching points"
