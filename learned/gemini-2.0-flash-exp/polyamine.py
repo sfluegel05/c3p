@@ -20,11 +20,17 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns for different types of amino groups
+    # SMARTS patterns for different types of amino groups. Explicitly look for N with H to differentiate it from amides.
     amino_patterns = [
-        Chem.MolFromSmarts("[NX3;H2,H1,H0]"),  # Neutral amines
+        Chem.MolFromSmarts("[NH2;X4]"),  # Primary amines (with explicit hydrogens)
+        Chem.MolFromSmarts("[NH;X4;H1]"),   # Secondary amines
+        Chem.MolFromSmarts("[N;X4;H0]"),   # Tertiary amines
         Chem.MolFromSmarts("[NH3+]"),         # Primary protonated amines
-        Chem.MolFromSmarts("[NH2+]")          # Secondary protonated amines
+        Chem.MolFromSmarts("[NH2+]"),          # Secondary protonated amines
+        Chem.MolFromSmarts("[nH]1[c,n,o,s]~[c,n,o,s]~[c,n,o,s]1"), #Ring amines,
+         Chem.MolFromSmarts("[c,C]~[NH2;X4]"), # Aromatic Amines
+
+        
     ]
 
     total_amino_count = 0
