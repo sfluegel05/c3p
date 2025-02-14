@@ -22,16 +22,14 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 3beta-hydroxy group SMARTS pattern, aiming for general steroids:
-    hydroxy_pattern = Chem.MolFromSmarts("[C@@H]([C@H2][C@H](C)[C@H]=O)(O)[C@@H](C)C")
+    # Simplified 3beta-hydroxy group pattern
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@H]([O])[C]")
 
-    # Steroid nucleus criterion: four fused rings (ABCD rings, common in steroids)
-    steroid_pattern = Chem.MolFromSmarts(
-        "[#6]1([#6][#6][#6]2[#6][#6][#8][#6]3[#6][#6][#8][#6]4[#6][#6][#6][#6][#6][#6][#6]4[C@H]3[C@@H]1)"
-    )
+    # Steroid nucleus pattern (ABCD rings)
+    steroid_pattern = Chem.MolFromSmarts("[#6]1-[#6]2-[#6]3-[#6]4-[#6]([#6][#6]3)-[#6]([#6]2)-[#6]1") 
 
-    # Delta(5) specific double bond SMARTS pattern:
-    delta5_pattern = Chem.MolFromSmarts("[C;!R]=[C;!R&$(C1C(C=CC(C)=C1)=O)]")
+    # Delta(5) double bond pattern to match any double bond in rings
+    delta5_pattern = Chem.MolFromSmarts("[C]=[C]")
 
     # Check for 3beta-hydroxy group
     if not mol.HasSubstructMatch(hydroxy_pattern):
@@ -41,8 +39,11 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone detected."
 
-    # Check for Delta(5) double bond
-    if not mol.HasSubstructMatch(delta5_pattern):
-        return False, "No specific Delta(5) double bond match found."
+    # Check for Delta(5) double bond within a ring
+    delta5_matches = mol.GetSubstructMatches(delta5_pattern)
+    delta5_within_ring = any(mol.GetRingInfo().NumAtomRings(match[0]) > 0 and mol.GetRingInfo().NumAtomRings(match[1]) > 0 for match in delta5_matches)
+    
+    if not delta5_within_ring:
+        return False, "No specific Delta(5) double bond match found in ring."
 
     return True, "Molecule is classified as 3beta-hydroxy-Delta(5)-steroid."
