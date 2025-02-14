@@ -20,23 +20,41 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generic pyrimidine base pattern. This pattern is more generic than the previous one
-    pyrimidine_base_pattern1 = Chem.MolFromSmarts("[n]1ccccc1")
-    pyrimidine_base_pattern2 = Chem.MolFromSmarts("[n]1c[c]nc[c]1")
-    if not (mol.HasSubstructMatch(pyrimidine_base_pattern1) or mol.HasSubstructMatch(pyrimidine_base_pattern2)):
+    # Pyrimidine base (generic) with a N at position 1 and C at position 6
+    pyrimidine_base_pattern = Chem.MolFromSmarts("n1cncc[c,n]1")
+    if not mol.HasSubstructMatch(pyrimidine_base_pattern):
        return False, "No pyrimidine base detected"
 
-    # Deoxyribose sugar, more robust pattern
-    deoxyribose_pattern = Chem.MolFromSmarts("[C]1[C][C](O)[C](CO)[C](O)1")
+    # Specific pyrimidine bases
+
+    cytosine_pattern = Chem.MolFromSmarts("n1ccnc(N)c1=O")
+    thymine_pattern = Chem.MolFromSmarts("n1cnc(C)c1=O")
+    uracil_pattern = Chem.MolFromSmarts("n1ccnc(O)c1=O")
+    
+    if not (mol.HasSubstructMatch(cytosine_pattern) or mol.HasSubstructMatch(thymine_pattern) or mol.HasSubstructMatch(uracil_pattern)):
+        return False, "No known pyrimidine base found"
+
+
+    # Deoxyribose sugar, C1 must be linked to N of pyrimidine, C2 must not have an OH group attached
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1([C][C@H]([C@@H](CO)O)O)[C][N]") # 1' is linked to a C (can be anything), no OH at 2', 3'- and 4'-OH, C5'-CH2OH and N for glycosidic bond
+    
     if not mol.HasSubstructMatch(deoxyribose_pattern):
          return False, "No deoxyribose sugar detected"
 
-    # Check if there is ribose sugar instead of deoxyribose
-    ribose_pattern = Chem.MolFromSmarts("[C]1[C](O)[C]([C](O)CO)[C]1")
+
+    # Check if there is ribose sugar instead of deoxyribose - fails if this pattern matches,
+    ribose_pattern = Chem.MolFromSmarts("[C@H]1([C][C@H]([C@@H](CO)O)[C@@H](O)O)[C][N]") # 1' is linked to a C (can be anything), 2'-OH present, 3'- and 4'-OH, C5'-CH2OH and N for glycosidic bond
     if mol.HasSubstructMatch(ribose_pattern):
         return False, "Ribose detected, not deoxyribose"
 
-    # Glycosidic bond check: Implied by connection between pyrimidine and deoxyribose pattern
-    #  no need for the glycosidic_bond_pattern as the previous tests ensure connection
+    # Check if phosphate is present (indicates nucleotide, not nucleoside), must NOT have P atom
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O])([O])")
+    if mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Phosphate group detected, molecule is a nucleotide, not a nucleoside"
+
+    # Verify glycosidic bond (N of base to C1' of sugar)
+    glycosidic_bond_pattern = Chem.MolFromSmarts("n~[C@H]1([C][C@H]([C@@H](CO)O)O)[C]")
+    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
+        return False, "No glycosidic bond detected between pyrimidine and sugar"
 
     return True, "Pyrimidine deoxyribonucleoside detected"
