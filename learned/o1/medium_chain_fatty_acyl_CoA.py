@@ -10,7 +10,7 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a medium-chain fatty acyl-CoA based on its SMILES string.
     A medium-chain fatty acyl-CoA results from the condensation of coenzyme A with a medium-chain fatty acid.
-    Medium-chain fatty acids are aliphatic chains with 6 to 13 carbons.
+    Medium-chain fatty acids are aliphatic chains with 6 to 12 carbons.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,72 +20,60 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES
+    # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define thioester linkage pattern: C(=O)S
-    thioester_pattern = Chem.MolFromSmarts('C(=O)S')
+    # Define the Coenzyme A (CoA) SMARTS pattern
+    # This pattern captures the core structure of CoA, including the phosphates, ribose, adenine, and pantetheine moiety
+    coa_smarts = Chem.MolFromSmarts('NC(=O)CCNC(=O)[C@@H](O)C(C)(C)[C@@H](OP(=O)(O)OP(=O)(O)OC[C@@H]1O[C@H](CO[P](=O)(O)O)[C@H](O)[C@@H]1O)O')
+
+    # Check if the molecule contains the CoA moiety
+    if not mol.HasSubstructMatch(coa_smarts):
+        return False, "Coenzyme A moiety not found"
+
+    # Define the thioester linkage pattern connecting the acyl chain to CoA
+    # We look for the C(=O)-S linkage where S is connected to CoA
+    thioester_pattern = Chem.MolFromSmarts('C(=O)SCCNC(=O)')
+
+    # Find the thioester linkage
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
-        return False, "Thioester linkage not found"
+        return False, "Thioester linkage to CoA not found"
 
-    # For each thioester linkage, attempt to find the acyl chain
-    for match in thioester_matches:
-        carbonyl_c_idx = match[0]
-        sulfur_idx = match[1]
+    # Assume the first match is the correct thioester linkage
+    thioester_match = thioester_matches[0]
+    carbonyl_c_idx = thioester_match[0]
+    sulfur_idx = thioester_match[1]
 
-        # Initialize variables for traversal
-        visited = set()
-        carbons_in_chain = set()
-        queue = []
+    # Break the bond between the carbonyl carbon and the sulfur atom to isolate the acyl chain
+    emol = Chem.EditableMol(mol)
+    emol.RemoveBond(carbonyl_c_idx, sulfur_idx)
+    mol_frag = emol.GetMol()
 
-        # Start from the carbonyl carbon, go along the acyl chain away from the sulfur
-        carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
-        for neighbor in carbonyl_c.GetNeighbors():
-            if neighbor.GetIdx() != sulfur_idx:
-                queue.append(neighbor)
+    # Get the fragments of the molecule after the bond break
+    fragments = Chem.GetMolFrags(mol_frag, asMols=True)
 
-        contains_aromatic = False
+    # Identify the acyl chain fragment by searching for the fragment containing the carbonyl carbon
+    acyl_chain = None
+    for frag in fragments:
+        # The acyl chain should contain the carbonyl group C=O
+        if frag.HasSubstructMatch(Chem.MolFromSmarts('C=O')):
+            acyl_chain = frag
+            break
 
-        while queue:
-            atom = queue.pop()
-            atom_idx = atom.GetIdx()
+    if acyl_chain is None:
+        return False, "Acyl chain not found"
 
-            if atom_idx in visited:
-                continue
-            visited.add(atom_idx)
+    # Count the number of carbon atoms in the acyl chain, including the carbonyl carbon
+    carbon_count = 0
+    for atom in acyl_chain.GetAtoms():
+        if atom.GetAtomicNum() == 6:
+            carbon_count += 1
 
-            if atom.GetAtomicNum() == 6:
-                carbons_in_chain.add(atom_idx)
-                if atom.GetIsAromatic():
-                    contains_aromatic = True
-            else:
-                # If we encounter non-carbon atoms (other than O in functional groups), we may be entering CoA or other moieties
-                pass
-
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx in visited:
-                    continue
-                # Avoid going back to the carbonyl carbon or towards the sulfur
-                if neighbor_idx != carbonyl_c_idx and neighbor_idx != sulfur_idx:
-                    bond = mol.GetBondBetweenAtoms(atom_idx, neighbor_idx)
-                    queue.append(neighbor)
-
-        # Exclude aromatic acyl chains
-        if contains_aromatic:
-            continue  # Try next thioester linkage
-
-        # Count the number of carbons in the acyl chain
-        carbon_count = len(carbons_in_chain)
-
-        # Medium-chain fatty acids have 6 to 13 carbons
-        if 6 <= carbon_count <= 13:
-            return True, f"Contains fatty acyl chain with {carbon_count} carbons (medium-chain)"
-        else:
-            return False, f"Fatty acyl chain with {carbon_count} carbons is not medium-chain"
-
-    # If no suitable acyl chain found
-    return False, "No suitable fatty acyl chain found"
+    # Medium-chain fatty acids have 6 to 12 carbons
+    if 6 <= carbon_count <= 12:
+        return True, f"Contains fatty acyl chain with {carbon_count} carbons (medium-chain)"
+    else:
+        return False, f"Fatty acyl chain with {carbon_count} carbons is not medium-chain"
