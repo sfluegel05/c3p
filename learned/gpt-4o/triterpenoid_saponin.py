@@ -22,34 +22,28 @@ def is_triterpenoid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General pattern for hexopyranose sugars (glycosidic part)
-    sugar_smarts = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(sugar_smarts):
-        return False, "No hexopyranose sugar moiety found"
+    # Check for glycosidic linkages, commonly involving sugar units like beta-D-glucopyranosides
+    # We'll define a simple SMARTS pattern for a generic glucopyranoside
+    glucopyranoside_pattern = Chem.MolFromSmarts("O[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H](CO)O1")
+    if not mol.HasSubstructMatch(glucopyranoside_pattern):
+        return False, "No sugar moiety (glucoside) found"
 
-    # Generic pentacyclic triterpenoid backbone patterns
-    triterpenoid_smarts_patterns = [
-        Chem.MolFromSmarts("C1CC2CCCC3C4CCC5=CC(=O)CCC5C4CCC3C2C1"),  # Example pattern for typical triterpenoid
-        Chem.MolFromSmarts("C1CCC2C(C1)C3CCC4C(C3C2)CCC5C4CCC6(C5)CC7=C(C=C6)C(=C7)C"),
-    ]
+    # Check for triterpenoid structure, which would typically involve a C30 terpene structure
+    # With multiple rings and functional groups, such as hydroxyl or acetyl groups.
+    # Example SMARTS pattern for lupane/oleanane type triterpenes (very simplified)
+    triterpenoid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3CCC5C4CC(CC(C5)C)(C)O")
+    if not mol.HasSubstructMatch(triterpenoid_pattern):
+        return False, "No triterpenoid moiety found"
 
-    triterpenoid_found = False
-    for pattern in triterpenoid_smarts_patterns:
-        if mol.HasSubstructMatch(pattern):
-            triterpenoid_found = True
-            break
+    # Check for linkage between glycoside and triterpenoid
+    # Often saponins are linked through an ester or ether bond
+    linkage_pattern = Chem.MolFromSmarts("O[*]-C=O")  # Simplified ester pattern
+    if not mol.HasSubstructMatch(linkage_pattern):
+        return False, "No linkage between glycoside and triterpenoid"
 
-    if not triterpenoid_found:
-        return False, "No triterpenoid backbone found"
-
-    # Check for linkage between glycoside and triterpenoid (assuming ether linkage for simplicity)
-    linkage_found = mol.HasSubstructMatch(Chem.MolFromSmarts("C-O-C"))
-    if not linkage_found:
-        return False, "No glycosidic linkage found"
-
-    # Assess molecular weight
+    # Ensure the overall structure has a significant molecular weight (typically >800 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:
-        return False, "Molecular weight too low for triterpenoid saponin"
+    if mol_wt < 800:
+        return False, "Molecular weight too low for typical triterpenoid saponin"
 
-    return True, "Structure matches a triterpenoid saponin with a glycosidic linkage"
+    return True, "Contains characteristics of a triterpenoid saponin with glycoside linkage"
