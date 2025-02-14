@@ -24,18 +24,12 @@ def is_chalcogen(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check if there is only one atom in the molecule
-    if mol.GetNumAtoms() != 1:
-        return False, "Chalcogen must be a single atom"
+    # Get the atomic numbers of all atoms in the molecule
+    atomic_numbers = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
     
-    # Get the atomic number of the single atom
-    atom = mol.GetAtoms()[0]
-    atomic_number = atom.GetAtomicNum()
-    
-    # Check if the atomic number corresponds to a chalcogen element
+    # Check if the molecule contains any chalcogen elements
     chalcogens = [8, 16, 34, 52, 84, 118]  # Atomic numbers of chalcogen elements
-    if atomic_number in chalcogens:
-        element_symbol = atom.GetSymbol()
-        return True, f"The single atom with symbol '{element_symbol}' is a chalcogen element"
+    if any(atomic_number in chalcogens for atomic_number in atomic_numbers):
+        return True, "The molecule contains one or more chalcogen elements"
     else:
-        return False, "The single atom is not a chalcogen element"
+        return False, "The molecule does not contain any chalcogen elements"
