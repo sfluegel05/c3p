@@ -7,7 +7,7 @@ from rdkit.Chem import AllChem
 def is_1_2_4_triazines(smiles: str):
     """
     Determines if a molecule is a 1,2,4-triazine based on its SMILES string.
-    A 1,2,4-triazine is a six-membered aromatic ring with three nitrogens at positions 1, 2, and 4.
+    A 1,2,4-triazine is a six-membered ring with nitrogens at positions 1, 2, and 4.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,8 +22,8 @@ def is_1_2_4_triazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the 1,2,4-triazine core using aromatic nitrogens
-    triazine_core_smarts = "n1cnncc1"
+    # Define SMARTS pattern for the 1,2,4-triazine core. Includes aromatic and non aromatic N/C
+    triazine_core_smarts = "[N,n]1-[C,c]-[N,n]-[C,c]=[N,n]-[C,c]1"
     triazine_pattern = Chem.MolFromSmarts(triazine_core_smarts)
     
     # Check if the molecule contains the core 1,2,4-triazine substructure
