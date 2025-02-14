@@ -56,4 +56,9 @@ def is_galactosylceramide(smiles: str):
     if o_count < 8:
         return False, "Too few oxygens for galactosylceramide"
     
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for galactosylceramide"
+    
     return True, "Contains sphingosine backbone with galactose head group and fatty acid chains"
