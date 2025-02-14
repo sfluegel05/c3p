@@ -6,6 +6,7 @@ Classifies: triradylglycerol
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_triradylglycerol(smiles: str):
     """
@@ -27,82 +28,69 @@ def is_triradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the substituted glycerol backbone
-    # Pattern: glycerol backbone with three positions substituted via ester or ether linkages
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](CO[!H0])[C@@H](CO[!H0])[C@@H](CO[!H0])")
-    if glycerol_pattern is None:
-        return False, "Invalid glycerol backbone SMARTS pattern"
-
-    # Find matches to the glycerol backbone pattern
+    # Define the SMARTS pattern for the glycerol backbone where each carbon is connected to an oxygen
+    glycerol_pattern = Chem.MolFromSmarts("[C]-[C]-[C]")
     matches = mol.GetSubstructMatches(glycerol_pattern)
     if not matches:
-        return False, "No substituted glycerol backbone found"
+        return False, "No glycerol backbone found"
 
-    # Define SMARTS patterns for acyl, alkyl, and alk-1-enyl groups attached via oxygen
-    # Acyl group attached via ester linkage: -O-C(=O)C
-    acyl_pattern = Chem.MolFromSmarts("COC(=O)[C;!H0]")
-    # Alkyl group attached via ether linkage: -O-C-C
-    alkyl_pattern = Chem.MolFromSmarts("CO[C;!H0][C;!H0]")
-    # Alk-1-enyl group attached via ether linkage: -O-C=C-C
-    alk1enyl_pattern = Chem.MolFromSmarts("COC=C[C;!H0]")
-
-    if None in [acyl_pattern, alkyl_pattern, alk1enyl_pattern]:
-        return False, "Invalid substituent SMARTS pattern"
-
-    # Check each substituent at the glycerol backbone positions
-    is_triradyl = True
-    reasons = []
+    # Iterate through the possible glycerol backbones
     for match in matches:
-        is_triradyl = True
+        c1_idx, c2_idx, c3_idx = match
+        c1 = mol.GetAtomWithIdx(c1_idx)
+        c2 = mol.GetAtomWithIdx(c2_idx)
+        c3 = mol.GetAtomWithIdx(c3_idx)
+
+        # Check that each carbon has an oxygen connected via single bond
+        c_atoms = [c1, c2, c3]
+        valid = True
         reasons = []
-        # Get the indices for the three carbon atoms in the glycerol backbone
-        c1_idx, c2_idx, c3_idx = match[0], match[1], match[2]
-
-        # List to store the oxygen atoms connected to each carbon
-        oxygens = []
-        for c_idx in [c1_idx, c2_idx, c3_idx]:
-            carbon = mol.GetAtomWithIdx(c_idx)
-            # Find oxygen atom connected to this carbon
-            oxygen = None
-            for neighbor in carbon.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:
+        for idx, c_atom in enumerate(c_atoms):
+            oxygen_found = False
+            for neighbor in c_atom.GetNeighbors():
+                bond = mol.GetBondBetweenAtoms(c_atom.GetIdx(), neighbor.GetIdx())
+                if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                    # Found an oxygen connected via single bond
                     oxygen = neighbor
-                    break
-            if oxygen is None:
-                is_triradyl = False
-                reasons.append(f"Carbon at index {c_idx} has no connected oxygen")
+                    # Check if the oxygen is connected to a substituent (acyl, alkyl, alk-1-enyl)
+                    substituents = [nbr for nbr in oxygen.GetNeighbors() if nbr.GetIdx() != c_atom.GetIdx()]
+                    if not substituents:
+                        valid = False
+                        reasons.append(f"Oxygen at position {idx+1} has no substituent")
+                        break
+                    else:
+                        substituent_atom = substituents[0]
+                        # Check for acyl group (O=C-C), alkyl group (C), or alk-1-enyl group (C=C-C)
+                        acyl_pattern = Chem.MolFromSmarts("C(=O)[#6]")
+                        alkyl_pattern = Chem.MolFromSmarts("[#6]")
+                        alk1enyl_pattern = Chem.MolFromSmarts("C=C[#6]")
+                        # Create the fragment starting from substituent_atom
+                        env = Chem.FindAtomEnvironmentOfRadiusN(mol, 2, substituent_atom.GetIdx())
+                        amap = {}
+                        submol = Chem.PathToSubmol(mol, env, atomMap=amap)
+                        if submol.HasSubstructMatch(acyl_pattern):
+                            reasons.append(f"Position {idx+1}: acyl substituent found")
+                            oxygen_found = True
+                        elif submol.HasSubstructMatch(alk1enyl_pattern):
+                            reasons.append(f"Position {idx+1}: alk-1-enyl substituent found")
+                            oxygen_found = True
+                        elif submol.HasSubstructMatch(alkyl_pattern):
+                            reasons.append(f"Position {idx+1}: alkyl substituent found")
+                            oxygen_found = True
+                        else:
+                            valid = False
+                            reasons.append(f"Position {idx+1}: substituent is not acyl, alkyl, or alk-1-enyl")
+                            break
+                elif neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    # Possibly a carbonyl oxygen, skip
+                    continue
+            if not oxygen_found:
+                valid = False
+                reasons.append(f"Carbon at position {idx+1} is not connected to an appropriate oxygen")
                 break
-            oxygens.append(oxygen)
-
-        if not is_triradyl:
-            continue  # Move to next match if any carbon lacks an oxygen
-
-        # Check substituents attached to each oxygen
-        substituent_patterns = [acyl_pattern, alkyl_pattern, alk1enyl_pattern]
-        for oxygen in oxygens:
-            # Get substituents attached to the oxygen (excluding the glycerol carbon)
-            substituents = [nbr for nbr in oxygen.GetNeighbors() if nbr.GetAtomicNum() != 6 or nbr.GetIdx() not in match]
-            if len(substituents) != 1:
-                is_triradyl = False
-                reasons.append(f"Oxygen at index {oxygen.GetIdx()} does not have exactly one substituent")
-                break
-
-            # Create a fragment for the substituent
-            substituent_atom = substituents[0]
-            paths = Chem.rdmolops.GetShortestPath(mol, oxygen.GetIdx(), substituent_atom.GetIdx())
-            substituent_frag = Chem.PathToSubmol(mol, paths)
-
-            # Check if substituent matches any of the allowed patterns
-            if any(substituent_frag.HasSubstructMatch(pattern) for pattern in substituent_patterns):
-                continue
-            else:
-                is_triradyl = False
-                reasons.append(f"Substituent at oxygen index {oxygen.GetIdx()} is not acyl, alkyl, or alk-1-enyl")
-                break
-
-        if is_triradyl:
+        if valid:
             return True, "Molecule is a triradylglycerol"
         else:
-            continue  # Try the next match
+            continue  # Try next possible glycerol backbone
 
     return False, "; ".join(reasons) if reasons else "No valid triradylglycerol structure found"
