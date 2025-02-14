@@ -20,47 +20,45 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES and add hydrogens
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    mol = Chem.AddHs(mol)
 
-    # Iterate over all nitrogen atoms to find protonated amino groups [NH3+]
+    alpha_amino_acid_found = False
+
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7 and atom.GetFormalCharge() == 1:
-            # Check if nitrogen has 4 bonds (including implicit hydrogens)
-            if atom.GetTotalDegree() == 4:
-                # Should have 3 hydrogens
-                if atom.GetTotalNumHs(includeNeighbors=True) == 3:
-                    # Get alpha carbon connected to this nitrogen
-                    neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
-                    for alpha_carbon in neighbors:
-                        # Check if alpha carbon is sp3 hybridized
-                        if alpha_carbon.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
-                            continue
-                        # Check if alpha carbon is connected to carboxylate group [C(=O)[O-]]
-                        has_carboxylate = False
-                        for nbr2 in alpha_carbon.GetNeighbors():
-                            if nbr2.GetAtomicNum() == 6 and nbr2.GetIdx() != atom.GetIdx():
-                                # Check for carboxylate carbon
-                                carboxylate_carbon = nbr2
-                                oxygens = [o for o in carboxylate_carbon.GetNeighbors() if o.GetAtomicNum() == 8]
-                                if len(oxygens) == 2:
-                                    charges = [o.GetFormalCharge() for o in oxygens]
-                                    # One oxygen must have a negative charge
-                                    if -1 in charges:
-                                        # Carboxylate group found
-                                        has_carboxylate = True
-                                        break
-                        if has_carboxylate:
-                            # Check for side chain (any other group connected to alpha carbon)
-                            side_chain_atoms = [nbr for nbr in alpha_carbon.GetNeighbors()
-                                                if nbr.GetIdx() != atom.GetIdx() and nbr.GetAtomicNum() != 6]
-                            if len(side_chain_atoms) >= 1:
-                                return True, "Contains alpha-amino-acid zwitterion structure"
-                            else:
-                                # For glycine, side chain is hydrogen
-                                h_count = sum(1 for nbr in alpha_carbon.GetNeighbors() if nbr.GetAtomicNum() == 1)
-                                if h_count >= 1:
-                                    return True, "Contains alpha-amino-acid zwitterion structure (glycine)"
-    return False, "Alpha-amino-acid zwitterion pattern not found"
+        if atom.GetAtomicNum() != 6:
+            continue  # Skip if not carbon
+        if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+            continue  # Skip if not sp3 hybridized carbon
+
+        neighbors = atom.GetNeighbors()
+        nitrogen_neighbor = None
+        carboxyl_neighbor = None
+
+        for nbr in neighbors:
+            if nbr.GetAtomicNum() == 7:
+                # Found nitrogen neighbor
+                nitrogen_neighbor = nbr
+            elif nbr.GetAtomicNum() == 6:
+                # Potential carboxyl carbon neighbor
+                oxygens = [o for o in nbr.GetNeighbors() if o.GetAtomicNum() == 8]
+                if len(oxygens) >= 2:
+                    # Check for one double-bonded oxygen and one single-bonded oxygen
+                    bond_types = [nbr.GetBondBetweenAtoms(nbr.GetIdx(), o.GetIdx()).GetBondType() for o in oxygens]
+                    if Chem.rdchem.BondType.DOUBLE in bond_types and Chem.rdchem.BondType.SINGLE in bond_types:
+                        carboxyl_neighbor = nbr
+
+        if nitrogen_neighbor and carboxyl_neighbor:
+            # Check that nitrogen has at least one hydrogen (implicit or explicit)
+            n_hydrogens = nitrogen_neighbor.GetTotalNumHs()
+            if n_hydrogens >= 1:
+                alpha_amino_acid_found = True
+                break
+
+    if alpha_amino_acid_found:
+        return True, "Contains alpha-amino-acid zwitterion structure"
+    else:
+        return False, "Alpha-amino-acid zwitterion pattern not found"
