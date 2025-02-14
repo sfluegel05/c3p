@@ -22,26 +22,23 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns
-    # Main components of 2-hydroxy fatty acid
-    alpha_hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("O[C@@H](C)C(=O)O")
-    # A simpler non-stereospecific alpha hydroxy group check
-    non_stereo_alpha_hydroxy_pattern = Chem.MolFromSmarts("OCC(=O)O")
+    # Define pattern for 2-hydroxy fatty acids
+    # Match a carboxylic acid group (C(=O)O) followed by a carbon that has a hydroxy group (O)
+    # Carbon chain must contain at least a few methylene groups between the carboxylic and hydroxyl
+    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("C(O)C([O-])=O")
+
+    # Check for the correct substructure in the molecule
+    if not mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
+        return False, "No hydroxy group adjacently at the 2-position to the carboxylic acid group"
     
-    # Minimum number of carbons in the chain (e.g., 6 for hexanoic acids)
-    # [CH2]6 for a chain of at least 6 methylene (-CH2-) groups
-    min_chain_length_pattern = Chem.MolFromSmarts("[C]([C])([C])[C]")
-
-    # Check if it has alpha hydroxy fatty acid pattern
-    if not mol.HasSubstructMatch(alpha_hydroxy_fatty_acid_pattern) and not mol.HasSubstructMatch(non_stereo_alpha_hydroxy_pattern):
-        return False, "No hydroxy group adjacent to the carboxylic acid group"
-
-    # Check if it has a minimal chain length
-    if not mol.HasSubstructMatch(min_chain_length_pattern):
+    # Ensuring the presence of a sufficient length aliphatic chain
+    # Check for at least 4 consecutive carbon atoms constituting a chain
+    chain_length_pattern = Chem.MolFromSmarts("[C][C][C][C]")
+    if not mol.HasSubstructMatch(chain_length_pattern):
         return False, "Insufficient carbon chain length typical for a fatty acid"
-
+    
     return True, "Contains hydroxy group at 2-position with appropriate aliphatic chain and carboxylic acid group"
 
 # Examples of correct SMILES for debugging
-# is_2_hydroxy_fatty_acid("CCCCCCCC(O)C(O)=O")  # Should return True
-# is_2_hydroxy_fatty_acid("OC(C(O)=O)C")  # Should return False because it is too short
+# is_2_hydroxy_fatty_acid("CCCCCCCC(O)C(=O)O")  # Should return True
+# is_2_hydroxy_fatty_acid("OC(C(O)=O)C")  # Should return False due to short chain
