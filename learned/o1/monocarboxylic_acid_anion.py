@@ -23,13 +23,8 @@ def is_monocarboxylic_acid_anion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get the net formal charge of the molecule
-    net_charge = sum([atom.GetFormalCharge() for atom in mol.GetAtoms()])
-    if net_charge != -1:
-        return False, f"Molecule has net charge {net_charge}, expected -1"
-
     # Find all carboxyl groups (protonated or deprotonated)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[O;H1,-1]")
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[O-,OH]")
     carboxyl_groups = mol.GetSubstructMatches(carboxyl_pattern)
     num_carboxyl_groups = len(carboxyl_groups)
     
@@ -42,20 +37,7 @@ def is_monocarboxylic_acid_anion(smiles: str):
     num_carboxylate_groups = len(carboxylate_groups)
     
     if num_carboxylate_groups != 1:
-        return False, f"Found {num_carboxylate_groups} carboxylate groups, expected exactly 1"
-
-    # Collect indices of carboxylate oxygen atoms
-    carboxylate_oxygen_indices = [match[1] for match in carboxylate_groups]
-
-    # Check for other atoms with negative formal charge (excluding carboxylate oxygen)
-    negative_atoms = [atom for atom in mol.GetAtoms() if atom.GetFormalCharge() < 0 and atom.GetIdx() not in carboxylate_oxygen_indices]
-    if len(negative_atoms) > 0:
-        return False, "Found other negatively charged atoms besides carboxylate oxygen"
-
-    # Check for atoms with positive formal charge
-    positive_atoms = [atom for atom in mol.GetAtoms() if atom.GetFormalCharge() > 0]
-    if len(positive_atoms) > 0:
-        return False, "Molecule contains positively charged atoms (zwitterion)"
-
+        return False, "Carboxyl group is not deprotonated"
+    
     # If all conditions are met, classify as monocarboxylic acid anion
-    return True, "Molecule is a monocarboxylic acid anion with exactly one deprotonated carboxyl group and no other ionizable groups"
+    return True, "Molecule is a monocarboxylic acid anion with exactly one deprotonated carboxyl group"
