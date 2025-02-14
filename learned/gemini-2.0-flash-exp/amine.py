@@ -27,16 +27,19 @@ def is_amine(smiles: str):
     if not has_nitrogen:
         return False, "No nitrogen atom found"
 
-    # General check for amine (N bonded to H or C)
-    # [N;H0,H1,H2] is a nitrogen with 0, 1, or 2 Hs. [!#0] is a non-hydrogen atom.
-    amine_pattern = Chem.MolFromSmarts("[N;H0,H1,H2][!#0]")
+    # Check that at least one N is bonded to at least one non-H atom.
+    amine_pattern = Chem.MolFromSmarts('[N;!H0]-[!H]')
     if not mol.HasSubstructMatch(amine_pattern):
-         return False, "No amine group found: Nitrogen not bonded to non-Hydrogen"
+         return False, "No nitrogen directly bonded to a non-hydrogen atom"
 
-    # Exclude amides (-C(=O)-N-) using a substructure search to eliminate false positives
+    # Exclude amides  (-C(=O)-N-)
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])N")
     if mol.HasSubstructMatch(amide_pattern):
-       return False, "Contains amide group"
+      return False, "Contains amide group"
 
-    # If none of the above exclusion applies, it's an amine.
-    return True, "Contains a nitrogen atom bonded to at least one non-hydrogen atom and is not an amide."
+    # Exclude nitro groups (-NO2)
+    nitro_pattern = Chem.MolFromSmarts("N(=O)=O")
+    if mol.HasSubstructMatch(nitro_pattern):
+        return False, "Contains nitro group"
+
+    return True, "Contains a nitrogen atom bonded to at least one non-hydrogen atom and is not amide nor nitro."
