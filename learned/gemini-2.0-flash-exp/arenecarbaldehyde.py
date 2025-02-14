@@ -23,7 +23,7 @@ def is_arenecarbaldehyde(smiles: str):
     # The aromatic carbon is [c]
     # The carbonyl carbon is [CX3]=O
     # The connection is a single bond
-    aldehyde_pattern = Chem.MolFromSmarts("[c][CX3](=[OX1])[H]") # Explicit hydrogen to match C=O or C[H]=O
+    aldehyde_pattern = Chem.MolFromSmarts("[c][CX3](=[OX1,O])")
 
 
     if not mol.HasSubstructMatch(aldehyde_pattern):
