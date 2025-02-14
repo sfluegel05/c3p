@@ -26,62 +26,35 @@ def is_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string."
 
-    # Define functional group SMARTS patterns
+    # Define aldehyde SMARTS pattern
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H]=O")
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
 
-    # Check for exactly one aldehyde group
+    # Check for at least one aldehyde group
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    if len(aldehyde_matches) != 1:
-        return False, f"Contains {len(aldehyde_matches)} aldehyde groups, expected exactly one."
+    if len(aldehyde_matches) == 0:
+        return False, "No aldehyde group found."
 
-    # Check for carboxylic acid groups
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(carboxylic_acid_matches) > 0:
-        return False, "Contains carboxylic acid group(s), not a fatty aldehyde."
+    # Check each aldehyde group
+    for match in aldehyde_matches:
+        aldehyde_carbon_idx = match[0]
+        aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_carbon_idx)
+        
+        # Get the non-oxygen neighbor atoms of the aldehyde carbon
+        neighbors = [atom for atom in aldehyde_carbon.GetNeighbors() if atom.GetAtomicNum() != 8]
+        
+        # Check if the aldehyde carbon is connected to at least one carbon (part of a chain)
+        chain_found = False
+        for neighbor in neighbors:
+            if neighbor.GetAtomicNum() == 6:
+                chain_found = True
+                break
+        if not chain_found:
+            continue  # Check the next aldehyde group
+        
+        # Optional: traverse the carbon chain to check chain length (not strictly necessary)
+        # For fatty aldehydes, chain length can vary, so we won't enforce a minimum
+        
+        return True, "Contains aldehyde group at the end of a carbon chain."
 
-    # Check for ketone groups
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-    # Exclude the aldehyde match from ketone matches
-    ketone_atoms = set([atom_idx for match in ketone_matches for atom_idx in match])
-    aldehyde_atoms = set([atom_idx for match in aldehyde_matches for atom_idx in match])
-    ketone_only_atoms = ketone_atoms - aldehyde_atoms
-    if len(ketone_only_atoms) > 0:
-        return False, "Contains ketone group(s), not a fatty aldehyde."
-
-    # Get the aldehyde carbon atom
-    aldehyde_carbon_idx = aldehyde_matches[0][0]
-    aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_carbon_idx)
-
-    # Check that aldehyde carbon is terminal (connected to only one carbon)
-    neighbors = aldehyde_carbon.GetNeighbors()
-    carbon_neighbor = None
-    for atom in neighbors:
-        if atom.GetAtomicNum() == 6:
-            carbon_neighbor = atom
-        else:
-            return False, "Aldehyde carbon has non-carbon neighbor, not terminal."
-    if carbon_neighbor is None:
-        return False, "Aldehyde carbon has no carbon neighbor, not part of a chain."
-
-    # Traverse the carbon chain starting from the neighbor of aldehyde carbon
-    visited = set()
-    def traverse_chain(atom):
-        visited.add(atom.GetIdx())
-        count = 1 if atom.GetAtomicNum() == 6 else 0
-        for neighbor in atom.GetNeighbors():
-            n_idx = neighbor.GetIdx()
-            if n_idx not in visited and neighbor.GetAtomicNum() == 6:
-                count += traverse_chain(neighbor)
-        return count
-
-    chain_length = traverse_chain(carbon_neighbor)
-    # Include aldehyde carbon in chain length
-    chain_length += 1
-
-    # Check if chain length is at least 4 carbons
-    if chain_length < 4:
-        return False, f"Carbon chain too short ({chain_length} carbons), not a fatty aldehyde."
-
-    return True, "Molecule is a fatty aldehyde with a terminal aldehyde group and appropriate carbon chain."
+    # If no aldehyde groups are connected to a carbon chain
+    return False, "Aldehyde group not connected to a carbon chain."
