@@ -5,6 +5,13 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
+def remove_charges(mol):
+    """Recursively removes all charges from a molecule."""
+    for atom in mol.GetAtoms():
+        if atom.GetFormalCharge() != 0:
+          atom.SetFormalCharge(0)
+    return mol
+
 def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a very long-chain fatty acyl-CoA (greater than C22) based on its SMILES string.
@@ -20,12 +27,12 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Remove hydrogen atoms before sanitizing
+    # Remove hydrogen atoms
     mol = Chem.RemoveHs(mol)
-    
-    #Sanitize to remove explicit charges
-    Chem.SanitizeMol(mol)
 
+    # Remove explicit charges
+    mol = remove_charges(mol)
+    
     # Define the CoA substructure
     coa_substructure = Chem.MolFromSmiles('SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12')
     if not mol.HasSubstructMatch(coa_substructure):
