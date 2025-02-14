@@ -23,13 +23,11 @@ def is_cardiac_glycoside(smiles: str):
     if mol is None:
         return None, None  # Indicate an issue with SMILES parsing
 
-
     # 1. Check for steroid core
     #   SMARTS for basic steroid structure. Includes a fused 4-ring system.
-    steroid_pattern = Chem.MolFromSmarts("[C]1[C]2[C][C]3[C]1[C]([C]([C]2)C)[C][C]4[C]3[C]([C]([C]4)C)C")
+    steroid_pattern = Chem.MolFromSmarts("[C]12[C]3[C]([C]1)[C][C]4[C]([C]2)[C][C]34")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid core found."
-
 
     # 2. Check for Lactone ring. Often a 5-membered ring, attached to C17 of steroid
     lactone_pattern = Chem.MolFromSmarts("C(=O)O[C]")
@@ -38,11 +36,9 @@ def is_cardiac_glycoside(smiles: str):
 
     # 3. Check for sugar residues. This can be tricky, as sugars have multiple variations.
     #     Looking for a common sugar ring as a proxy
-    sugar_pattern = Chem.MolFromSmarts("[O]1[CH][CH][CH]([O])[CH]([O])[CH]1")
+    sugar_pattern = Chem.MolFromSmarts("O[C][C][O,C]")
     if not mol.HasSubstructMatch(sugar_pattern):
           return False, "No sugar residue found."
-
-
 
     # 4. Check for at least 2 OH groups. Note, this is a simplified check, may cause false positives
     oh_count = 0
@@ -57,5 +53,6 @@ def is_cardiac_glycoside(smiles: str):
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 400 :
         return False, "Molecular weight too low to be a cardiac glycoside."
+
 
     return True, "Meets the criteria for a cardiac glycoside (steroid, lactone, sugar)."
