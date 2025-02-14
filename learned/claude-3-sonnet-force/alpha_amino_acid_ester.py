@@ -2,16 +2,15 @@
 Classifies: CHEBI:46874 alpha-amino acid ester
 """
 """
-Classifies: CHEBI:38791 alpha-amino acid ester
+Classifies: CHEBI:51366 alpha-amino acid ester
+Alpha-amino acid esters are the amino acid ester derivatives obtained by the formal condensation of an alpha-amino acid with an alcohol.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alpha_amino_acid_ester(smiles: str):
     """
     Determines if a molecule is an alpha-amino acid ester based on its SMILES string.
-    An alpha-amino acid ester is an amino acid ester derivative obtained by the formal condensation of an alpha-amino acid with an alcohol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,38 +25,23 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find alpha-amino acid backbone
-    amino_acid_pattern = Chem.MolFromSmarts("[C](=[O])([N])([C])")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    # Find amino acid backbone (-C(=O)N-) with at least one attached carbon
+    aa_pattern = Chem.MolFromSmarts("[C](=[O])([N])([C])")
+    aa_matches = mol.GetSubstructMatches(aa_pattern)
     
-    # Check for alpha-amino acid backbone
-    if not amino_acid_matches:
+    if len(aa_matches) == 0:
         return False, "No alpha-amino acid backbone found"
     
-    # Find ester groups
-    ester_pattern = Chem.MolFromSmarts("[C](=[O])([O])[C]")
+    # Check for ester group (-C(=O)O-) attached to the alpha carbon
+    ester_pattern = Chem.MolFromSmarts("[C]([C](=[O])([O]))")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
-    # Check for ester group
-    if not ester_matches:
-        return False, "No ester group found"
+    if len(ester_matches) == 0:
+        return False, "No ester group found on alpha carbon"
     
-    # Check if ester is attached to alpha carbon of amino acid
-    for amino_acid_match in amino_acid_matches:
-        amino_acid_alpha_carbon = amino_acid_match[2]
-        for ester_match in ester_matches:
-            ester_carbon = ester_match[0]
-            bond = mol.GetBondBetweenAtoms(amino_acid_alpha_carbon, ester_carbon)
-            if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                # Additional checks
-                mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-                if mol_wt < 100 or mol_wt > 500:
-                    return False, "Molecular weight outside typical range for alpha-amino acid esters"
-                
-                n_atoms = mol.GetNumAtoms()
-                if n_atoms < 10 or n_atoms > 60:
-                    return False, "Number of atoms outside typical range for alpha-amino acid esters"
-                
-                return True, "Contains an alpha-amino acid backbone with an ester group attached to the alpha carbon"
+    # Check if ester carbon is part of amino acid backbone
+    for ester_match in ester_matches:
+        if ester_match[0] in [atom_idx for match in aa_matches for atom_idx in match]:
+            return True, "Contains alpha-amino acid backbone with an ester group on the alpha carbon"
     
-    return False, "Ester group not attached to alpha carbon of amino acid backbone"
+    return False, "Ester group not part of alpha-amino acid backbone"
