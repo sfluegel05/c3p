@@ -6,12 +6,11 @@ Classifies: CHEBI:26189 polymer
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    A polymer is characterized by high molecular weight and large size.
+    This is done by analyzing atom environments to detect repeating units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,30 +19,38 @@ def is_polymer(smiles: str):
         bool: True if molecule is likely a polymer, False otherwise
         str: Reason for classification
     """
+    from collections import defaultdict
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # Calculate exact molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    # Get the number of atoms
-    num_atoms = mol.GetNumAtoms()
+    # Dictionary to count substructures
+    substruct_counts = defaultdict(int)
+    radius = 2  # radius for neighborhoods
 
-    # Define thresholds for polymers (these values are somewhat arbitrary)
-    molecular_weight_threshold = 1000  # Da
-    atom_count_threshold = 100
+    for atom_idx in range(mol.GetNumAtoms()):
+        # Get the atom environment for the given radius
+        env = Chem.FindAtomEnvironmentOfRadiusN(mol, radius, atom_idx)
+        if not env:
+            continue  # Skip if no environment is found (e.g., for isolated atoms)
+        amap = {}
+        submol = Chem.PathToSubmol(mol, env, atomMap=amap)
+        # Generate the canonical SMILES of the substructure
+        smiles_submol = Chem.MolToSmiles(submol, canonical=True)
+        substruct_counts[smiles_submol] += 1
 
-    # Check if molecular weight is above the threshold
-    if mol_wt < molecular_weight_threshold:
-        return False, f"Molecular weight {mol_wt:.2f} Da is too low for a polymer"
+    # Find the maximum count of any substructure
+    if not substruct_counts:
+        return False, "No substructures found for analysis"
 
-    # Check if number of atoms is above the threshold
-    if num_atoms < atom_count_threshold:
-        return False, f"Molecule has only {num_atoms} atoms, too small for a polymer"
+    max_count = max(substruct_counts.values())
 
-    # Since detecting repeating units is complex, and cannot be accurately done,
-    # we will assume that molecules with very high molecular weight and large number of atoms
-    # are likely polymers
+    # Threshold for repeating units
+    repeating_unit_threshold = 5  # This value may need adjustment
 
-    return True, f"Molecule has high molecular weight ({mol_wt:.2f} Da) and large size ({num_atoms} atoms), likely a polymer"
+    if max_count >= repeating_unit_threshold:
+        return True, f"Molecule has repeating substructures occurring {max_count} times, likely a polymer"
+    else:
+        return False, "No significant repeating units found"
