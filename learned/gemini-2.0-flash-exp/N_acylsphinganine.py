@@ -23,19 +23,17 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Sphinganine backbone pattern (C-C-C with hydroxyl and amine) 
-    # The 2nd and 3rd carbons should be chiral and have an OH and CH2OH, respectively.
-    # We will use a SMARTS that does not depend on the stereochemistry of the C2 and C3 atoms.
-    sphinganine_pattern = Chem.MolFromSmarts("[CX4][CHX4](O)[CH2X4](CO)N")
+    # Revised Sphinganine backbone pattern, does not define the chain length.
+    sphinganine_pattern = Chem.MolFromSmarts("[CH2X4][CHX4](O)[CHX4]([CH2X4]O)N")
     if not mol.HasSubstructMatch(sphinganine_pattern):
-         return False, "No sphinganine backbone found"
+        return False, "No sphinganine backbone found"
 
     # N-acyl bond pattern (N-C=O), where the C=O is attached to a long chain
     acyl_pattern = Chem.MolFromSmarts("N[CX3](=[OX1])[CX4,CX3]")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if not acyl_matches:
         return False, "No N-acyl group found"
-
+    
     # Verify that there is only one such match (one N-acyl group).
     if len(acyl_matches) != 1:
          return False, "More than one N-acyl group"
@@ -45,7 +43,7 @@ def is_N_acylsphinganine(smiles: str):
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
       return False, f"Missing fatty acyl chain"
-    
+
     # Check for a minimum of rotatable bonds for the fatty chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 7:
@@ -55,10 +53,11 @@ def is_N_acylsphinganine(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count < 14: # a minimum number of carbons in sphinganine backbone
         return False, "Too few carbons for a N-acylsphinganine"
-
+    
     # Count Oxygens
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 3:
       return False, "Too few oxygens"
+
 
     return True, "Contains sphinganine backbone with a fatty acyl group attached to the nitrogen"
