@@ -24,9 +24,9 @@ def is_UDP_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Identify the UDP core
+    # 1. Identify the UDP core (less strict stereochemistry)
     # Define a SMARTS pattern for the UDP core. This includes the uracil, ribose and diphosphate.
-    udp_core_pattern = Chem.MolFromSmarts('O=C1NC(=O)C=CN1[C@H]2[C@@H](O)[C@@H](O)[C@H](COP(=O)(O)OP(=O)(O)O)[C@H]2O')
+    udp_core_pattern = Chem.MolFromSmarts('O=C1NC(=O)C=CN1[C]2[C](O)[C](O)[C](COP(=O)([O])OP(=O)([O])[O])[C]2O')
     if not mol.HasSubstructMatch(udp_core_pattern):
        return False, "No UDP core found"
 
@@ -42,26 +42,29 @@ def is_UDP_sugar(smiles: str):
 
     # Check if the carbon involved in the linkage is part of the sugar by searching for a pattern
     # of [CH2,CH][O] at least 3 times
-    sugar_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4][OX2][CX4][OX2]")
+    sugar_pattern = Chem.MolFromSmarts("[CX4][OX2]~[CX4][OX2]~[CX4]")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if not sugar_matches:
       return False, "No sugar moiety found"
 
-    # 3. Check the overall composition
+
+    # 3. Check the overall composition (relaxed constraints)
     # Check the correct number of atoms of each type
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
 
+
     if n_count < 2:
       return False, "Too few nitrogens"
-    if o_count < 10:
+    if o_count < 8:
         return False, "Too few oxygens"
-    if c_count < 10:
+    if c_count < 8:
       return False, "Too few carbons"
     if p_count != 2:
       return False, "Must have exactly 2 phosphorus atoms"
+
 
     # If all checks passed, it's likely a UDP-sugar
     return True, "Contains UDP core with diphosphate linkage to a sugar"
