@@ -6,6 +6,7 @@ Classifies: CHEBI:18374 phytosterol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdqueries
 
 def is_phytosterols(smiles: str):
     """
@@ -26,40 +27,50 @@ def is_phytosterols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid nucleus SMILES (cyclopentanoperhydrophenanthrene skeleton)
-    sterol_core_smiles = "C1CCC2C(C1)CCC3C2CCC4C3CCCC4"
-    sterol_core = Chem.MolFromSmiles(sterol_core_smiles)
+    # Define a general steroid nucleus SMARTS pattern (cyclopentanoperhydrophenanthrene skeleton)
+    steroid_nucleus_smarts = '[#6]1([#6])[#6][#6]2[#6]1[#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6][#6]4'
+    steroid_nucleus = Chem.MolFromSmarts(steroid_nucleus_smarts)
 
-    # Check if molecule contains sterol core
-    if not mol.HasSubstructMatch(sterol_core):
+    # Check if molecule contains steroid nucleus
+    if not mol.HasSubstructMatch(steroid_nucleus):
         return False, "Steroid nucleus not found"
 
-    # Optional: Exclude cholesterol by checking the side chain at position 17
-    # Phytosterols have variations in the side chain compared to cholesterol
-    # We can check the substituent at C17 (the carbon attached to ring D)
-
-    # Get the atom index of C17 in the sterol core
-    match = mol.GetSubstructMatch(sterol_core)
-    if not match:
+    # Identify the steroid skeleton match
+    matches = mol.GetSubstructMatches(steroid_nucleus)
+    if not matches:
         return False, "Steroid nucleus not found"
-    c17_index = match[16]  # Indexing starts from 0
 
-    # Get the substituents attached to C17
-    c17_atom = mol.GetAtomWithIdx(c17_index)
-    neighbors = c17_atom.GetNeighbors()
-    side_chain_atoms = [atom for atom in neighbors if atom.GetIdx() not in match]
+    # Check for typical phytosterol side chains at C17 (position after the steroid nucleus)
+    # Phytosterols have an alkyl side chain at C17 longer than cholesterol (which has 8 carbons in side chain)
+    # We will check for side chains with at least 9 carbons
 
-    # Check if there is a side chain attached to C17
-    if not side_chain_atoms:
-        return False, "No side chain attached at position C17"
+    # Assuming that the atom at index 17 in the match is C17
+    for match in matches:
+        steroid_atoms = set(match)
+        c17_atom_idx = match[-1]  # Last atom in the steroid nucleus SMARTS
+        c17_atom = mol.GetAtomWithIdx(c17_atom_idx)
+        # Get side chain atoms connected to C17 that are not part of steroid nucleus
+        side_chain_atoms = set()
+        atoms_to_visit = []
+        for neighbor in c17_atom.GetNeighbors():
+            if neighbor.GetIdx() not in steroid_atoms:
+                atoms_to_visit.append(neighbor.GetIdx())
+                side_chain_atoms.add(neighbor.GetIdx())
+        # Traverse the side chain
+        while atoms_to_visit:
+            current_atom_idx = atoms_to_visit.pop()
+            current_atom = mol.GetAtomWithIdx(current_atom_idx)
+            for neighbor in current_atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in steroid_atoms and neighbor_idx not in side_chain_atoms:
+                    side_chain_atoms.add(neighbor_idx)
+                    atoms_to_visit.append(neighbor_idx)
+        # Count carbon atoms in the side chain
+        carbon_count = sum(1 for idx in side_chain_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+        # Phytosterols typically have side chains with more than 8 carbons
+        if carbon_count >= 9:
+            # Optionally check for double bonds in side chain or ring system
+            # For simplicity, we will accept this as a phytosterol
+            return True, "Molecule contains steroid nucleus with phytosterol characteristic side chain"
 
-    # Optionally, check the size of the side chain (phytosterols typically have longer side chains)
-    side_chain_atom = side_chain_atoms[0]  # Assuming one side chain
-    side_chain_frag = Chem.PathToSubmol(mol, Chem.rdmolops.GetShortestPath(mol, c17_index, side_chain_atom.GetIdx()))
-    side_chain_mw = Chem.Descriptors.ExactMolWt(side_chain_frag)
-
-    # If needed, set a threshold for side chain molecular weight
-    if side_chain_mw < 40:
-        return False, "Side chain at C17 is too small for phytosterol"
-
-    return True, "Molecule contains steroid nucleus characteristic of phytosterols"
+    return False, "Side chain at C17 does not match phytosterol characteristics"
