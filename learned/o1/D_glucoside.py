@@ -24,38 +24,17 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for D-glucose moiety in pyranose form
-    # This pattern considers both alpha and beta anomers and correct stereochemistry
-    d_glucose_smarts = """
-    [C@H]1([O])[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@H]1O)CO
-    """
+    # Define SMARTS pattern for D-glucose moiety with glycosidic linkage
+    # at the anomeric carbon (C1). The '*' allows for any attachment.
+    d_glucoside_smarts = "[C@@H]1(O[*])[C@H](O)[C@@H](O)[C@H](O)[C@H]1CO"
 
-    d_glucose_mol = Chem.MolFromSmarts(d_glucose_smarts)
-    if d_glucose_mol is None:
-        return False, "Failed to generate D-glucose SMARTS pattern"
+    d_glucoside_mol = Chem.MolFromSmarts(d_glucoside_smarts)
+    if d_glucoside_mol is None:
+        return False, "Failed to generate D-glucoside SMARTS pattern"
 
-    # Use substructure search to find D-glucose moiety
-    matches = mol.GetSubstructMatches(d_glucose_mol, useChirality=True)
+    # Use substructure search to find D-glucose moiety with glycosidic linkage
+    matches = mol.GetSubstructMatches(d_glucoside_mol, useChirality=True)
     if not matches:
-        return False, "No D-glucose moiety found"
+        return False, "No D-glucoside moiety found"
 
-    # For each match, check for glycosidic linkage at the anomeric carbon (C1)
-    for match in matches:
-        glucose_atoms = set(match)
-        anomeric_carbon_idx = match[0]  # C1 in our SMARTS pattern
-        anomeric_carbon = mol.GetAtomWithIdx(anomeric_carbon_idx)
-
-        # Check bonds from the anomeric carbon
-        glycosidic_bond_found = False
-        for bond in anomeric_carbon.GetBonds():
-            neighbor = bond.GetOtherAtom(anomeric_carbon)
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in glucose_atoms:
-                # Atom outside the glucose moiety
-                if neighbor.GetAtomicNum() in [8, 7]:  # Oxygen or Nitrogen
-                    glycosidic_bond_found = True
-                    break  # Glycosidic bond found
-        if glycosidic_bond_found:
-            return True, "Contains D-glucose moiety connected via glycosidic bond"
-
-    return False, "No glycosidic linkage found at anomeric carbon"
+    return True, "Contains D-glucose moiety connected via glycosidic bond"
