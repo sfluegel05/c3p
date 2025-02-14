@@ -22,24 +22,15 @@ def is_diol(smiles: str):
         return None, None
 
     # Count hydroxyl groups
-    o_count = 0
-    h_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:
-           o_count += 1
-        elif atom.GetAtomicNum() == 1:
-           h_count +=1
-
     hydroxyl_count = 0
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 1:
-                  hydroxyl_count+=1
+        if atom.GetAtomicNum() == 8: # Check for oxygen atoms
+            for neighbor in atom.GetNeighbors(): # Check oxygen neighbors
+                if neighbor.GetAtomicNum() == 1: # Check for hydrogen neighbors
+                    hydroxyl_count += 1 # Increment if oxygen-hydrogen bond found
+                    break
     
-    if hydroxyl_count >= 2 and hydroxyl_count == o_count and hydroxyl_count ==h_count:
+    if hydroxyl_count >= 2:
         return True, f"Molecule contains at least two hydroxyl groups. It has {hydroxyl_count}."
-    elif hydroxyl_count < 2:
-       return False, f"Molecule has fewer than two hydroxyl groups, it has {hydroxyl_count}."
     else:
-       return False, f"Molecule has {hydroxyl_count} O-H but they don't all match"
+       return False, f"Molecule has fewer than two hydroxyl groups, it has {hydroxyl_count}."
