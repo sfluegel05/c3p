@@ -21,8 +21,8 @@ def is_cephalosporin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core cephalosporin substructure with a 6 membered ring fused to a beta-lactam ring (and 1 S atom)
-    core_pattern = Chem.MolFromSmarts('[S]1[C][C]2[N](C1)C(=O)C2')
+    # Define the core cephalosporin substructure with a 6 membered ring fused to a beta-lactam ring and specific arrangement of double bonds and sulfur
+    core_pattern = Chem.MolFromSmarts('S1C=C[C]2[N](C1=C)C(=O)C2')
     if not mol.HasSubstructMatch(core_pattern):
         return False, "Core 6-membered dihydrothiazine and beta-lactam ring not found"
     
