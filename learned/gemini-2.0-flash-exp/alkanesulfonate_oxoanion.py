@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_alkanesulfonate_oxoanion(smiles: str):
     """
     Determines if a molecule is an alkanesulfonate oxoanion based on its SMILES string.
-    An alkanesulfonate oxoanion is characterized by a sulfonate group (-S(=O)(=O)[O-])
+    An alkanesulfonate oxoanion is characterized by a single sulfonate group (-S(=O)(=O)[O-])
     attached to an alkane chain (carbon chain).
 
     Args:
@@ -23,12 +23,34 @@ def is_alkanesulfonate_oxoanion(smiles: str):
 
     # Check for sulfonate group (-S(=O)(=O)[O-])
     sulfonate_pattern = Chem.MolFromSmarts("[S](=[O])(=[O])[O-]")
-    if not mol.HasSubstructMatch(sulfonate_pattern):
+    sulfonate_matches = mol.GetSubstructMatches(sulfonate_pattern)
+    if not sulfonate_matches:
         return False, "No sulfonate group found"
+    
+    if len(sulfonate_matches) != 1:
+        return False, f"Molecule contains {len(sulfonate_matches)} sulfonate groups, only 1 is allowed"
+    
+    sulfur_atom_idx = sulfonate_matches[0][0]
+    sulfur_atom = mol.GetAtomWithIdx(sulfur_atom_idx)
 
     # Check for carbon directly attached to sulfonate sulfur
-    carbon_sulfur_pattern = Chem.MolFromSmarts("[CX4][S](=[O])(=[O])[O-]")
-    if not mol.HasSubstructMatch(carbon_sulfur_pattern):
-        return False, "No carbon directly attached to sulfonate sulfur"
+    carbon_found = False
+    for neighbor in sulfur_atom.GetNeighbors():
+       if neighbor.GetAtomicNum() == 6:
+           carbon_found = True
+           carbon_atom = neighbor
+           
+           # Check that the directly bound carbon only binds to H and C
+           for carbon_neighbor in carbon_atom.GetNeighbors():
+              if carbon_neighbor.GetAtomicNum() not in [1, 6]:
+                  return False, "Carbon attached to sulfonate has heteroatom neighbors"
 
-    return True, "Molecule contains a sulfonate group with at least one carbon attached to the sulfur atom"
+    if not carbon_found:
+       return False, "No carbon directly attached to sulfonate sulfur"
+    
+    #Check for other sulfonate groups directly attached to that carbon
+    for neighbor in carbon_atom.GetNeighbors():
+      if neighbor.GetAtomicNum() == 16 and neighbor.GetIdx() != sulfur_atom_idx:
+          return False, "Carbon attached to sulfonate contains another sulfonate"
+
+    return True, "Molecule contains a single sulfonate group attached to an alkane chain"
