@@ -26,7 +26,7 @@ def is_aliphatic_alcohol(smiles: str):
     if not mol.HasSubstructMatch(alcohol_pattern):
       return False, "No aliphatic alcohol group found"
 
-    #Check the matched carbon atoms to verify they are not aromatic, return true as soon as you find one
+    #Check the matched carbon atoms to verify they are not aromatic
     for match in mol.GetSubstructMatches(alcohol_pattern):
         carbon_idx = match[0]
         c_atom = mol.GetAtomWithIdx(carbon_idx)
