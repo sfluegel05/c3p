@@ -1,16 +1,18 @@
 """
 Classifies: CHEBI:33839 macromolecule
 """
-import re
+"""
+Classifies: CHEBI:24116 macromolecule
+"""
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-def is_macromolecule(smiles):
+def is_macromolecule(smiles: str):
     """
     Determines if a molecule is a macromolecule based on its SMILES string.
-    A macromolecule is defined as a molecule of high relative molecular mass,
-    with its structure comprising the multiple repetition of units derived from
-    smaller molecules.
+    A macromolecule is a molecule of high relative molecular mass, the structure
+    of which essentially comprises the multiple repetition of units derived,
+    actually or conceptually, from molecules of low relative molecular mass.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,39 +21,40 @@ def is_macromolecule(smiles):
         bool: True if molecule is a macromolecule, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-
-    # Check for common macromolecular repeat units
-    repeat_unit_patterns = ['C(NC([C@H](NC([C@H](NC([C@H](NC([C@H](NC(C(NC([C@H](NC([C@H](NC([C@H](NC([C@H](NC(C)=O)C)=O)C)CC)C(=O)N)=O)CC)=O)CCC)=O)CC)=O)CC)=O)CC)=O)CC',  # peptide
-                            '[OC@H]([C@H]([C@H]([C@H](O)O)O)O)[C@@H]1[C@@H]([C@H]([C@@H]([C@H](O1)O)O)O)O',  # polysaccharide
-                            'C(C(C(=O)OC)C)C(=O)OC',  # polyester
-                            'C(CC(C)C)C(=O)N[C@@H](CSSC[C@H](C(=O)O)NC(=O)[C@H](CCCNC(=N)N)NC(=O)[C@@H]([C@@H](C)CC)NC(=O)[C@H](CC(C)C)NC(=O)[C@@H](CO)NC(=O)[C@@H](CCC(=O)O)NC(=O)[C@@H](CC(=O)O)NC(=O)[C@H](CC(N)=O)NC(=O)[C@@H](CO)NC(=O)[C@@H](C(C)C)NC(=O)[C@H](CCC(=O)N)NC(=O)[C@@H]([C@@H](C)CC)NC(=O)[C@H](CC(N)=O)NC(=O)[C@@H](CCCCN)NC(=O)[C@@H](CO)NC(=O)[C@@H](CO)NC(=O)QC(=O)NC(=O)CCC(=O)O)C(=O)N[C@@H](CCCNC(=N)N)C(=O)N1CCCC[C@H](NC(=O)[C@@H](N)CC(C)C)C(=O)NCC(=O)N']  # non-ribosomal peptide
-
-    for pattern in repeat_unit_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return True, f"Contains repeat unit pattern: {pattern}"
-
+    
+    # Macromolecules typically have a molecular weight > 1000 Da
+    if mol_wt < 1000:
+        return False, f"Molecular weight {mol_wt:.2f} Da is too low for a macromolecule"
+    
+    # Look for polymeric repeat units (e.g., peptides, polysaccharides, polynucleotides)
+    repeat_units = ['C(=O)N', 'OCC', 'OC=O', 'NC=O', 'OP(O)(=O)OC']
+    for pattern in repeat_units:
+        patt = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(patt):
+            n_matches = len(mol.GetSubstructMatches(patt))
+            if n_matches > 10:  # Arbitrary threshold, adjust as needed
+                return True, f"Contains {n_matches} repetitive units derived from smaller molecules"
+    
     # Check for long carbon chains
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
-    if len(carbon_chain_matches) > 0:
-        return True, "Contains long carbon chains"
-
-    # Check molecular weight - macromolecules typically > 1000 Da
-    if mol_wt > 1000:
-        return True, f"Molecular weight of {mol_wt:.2f} Da suggests macromolecule"
-
-    # Check for other common macromolecular features
-    if re.search(r'(\([^\)]+\)\1\1)+', smiles):  # Repeating units in SMILES
-        return True, "SMILES string contains repeating units"
-
-    if len(smiles) > 200:  # Long SMILES strings often indicate macromolecules
-        return True, "SMILES string is very long, indicating a macromolecule"
-
-    return False, "No macromolecular features detected"
+    chain_length = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.SINGLE:
+            atoms = [bond.GetBeginAtom(), bond.GetEndAtom()]
+            if all(atom.GetAtomicNum() == 6 for atom in atoms):
+                chain_length += 1
+            else:
+                chain_length = 0
+        else:
+            chain_length = 0
+        if chain_length > 20:
+            return True, "Contains a long carbon chain characteristic of a macromolecule"
+    
+    return False, "No characteristic macromolecular features found"
