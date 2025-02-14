@@ -5,6 +5,7 @@ Classifies: CHEBI:17984 acyl-CoA
 Classifies: CHEBI:37577 acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_acyl_CoA(smiles: str):
     """
@@ -19,43 +20,49 @@ def is_acyl_CoA(smiles: str):
         bool: True if molecule is an acyl-CoA, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a simplified Coenzyme A SMARTS pattern
-    # This pattern captures key features of CoA: adenine ring, ribose, phosphates, pantetheine chain ending with thiol
-    coa_smarts = '[#7]-[#6](=O)-[#6]-[#6]-[#7]-[#6](=O)-[#6]([#8])-[#6]([#6])([#6])-[#6]-[#8]-[#6]-[#8]-[#8]-[#6]-[#8]-c1nc2c(n1)nc(nc2N)[#7]-[#6]-1-[#6]([#8])-[#6]([#8])-[#6]-[#8]-1'
-
-    coa_mol = Chem.MolFromSmarts(coa_smarts)
-    if coa_mol is None:
-        return False, "Failed to parse Coenzyme A SMARTS pattern"
-    
-    # Check for Coenzyme A moiety in the molecule, ignoring chirality
-    if not mol.HasSubstructMatch(coa_mol, useChirality=False):
+    # Define SMARTS pattern for the Coenzyme A moiety (simplified for key features)
+    coenzymeA_smarts = Chem.MolFromSmarts("""
+    O[C@H]1[C@H](O)[C@@H](OP(=O)(O)O)[C@H](O[C@@H]1COP(=O)(O)OP(=O)(O)O)N2C=NC3=C2N=CN=C3N
+    """)
+    if not mol.HasSubstructMatch(coenzymeA_smarts):
         return False, "Coenzyme A moiety not found"
-    
-    # Define SMARTS pattern for the thioester linkage connected to the CoA sulfur
-    thioester_smarts = '[#6][C](=O)[S]-[#6]'
-    thioester_mol = Chem.MolFromSmarts(thioester_smarts)
-    if thioester_mol is None:
-        return False, "Failed to parse thioester SMARTS pattern"
-    
-    # Find matches for thioester linkage
-    thioester_matches = mol.GetSubstructMatches(thioester_mol, useChirality=False)
+
+    # Define SMARTS pattern for the thioester linkage (S-C(=O)-C)
+    thioester_smarts = Chem.MolFromSmarts("SC(=O)C")
+    if not mol.HasSubstructMatch(thioester_smarts):
+        return False, "Thioester linkage not found"
+
+    # Check for the acyl group attached via thioester bond
+    # Extract the sulfur atom involved in thioester bond
+    thioester_matches = mol.GetSubstructMatches(thioester_smarts)
     if not thioester_matches:
         return False, "Thioester linkage not found"
-    
-    # Ensure the sulfur in the thioester is connected to the CoA moiety
-    for match in thioester_matches:
-        sulfur_idx = match[2]  # Index of the sulfur atom in the match
-        # Check if sulfur atom is part of the CoA moiety
-        atom_map = {}
-        if mol.HasSubstructMatch(coa_mol, uniChemistry.py.view_map(0s)), atomMap=atom_map
-                                    , useChirality=False):
-            if sulfur_idx in atom_map.values():
-                return True, "Contains Coenzyme A moiety linked via thioester bond to an acyl group"
-    
-    return False, "Thioester linkage not connected to CoA sulfur atom"
+    else:
+        # Optionally, verify that the acyl chain is attached to the sulfur via the thioester bond
+        acyl_chain_length = 0
+        sulfur_idx = thioester_matches[0][0]
+        # Perform a BFS to count carbons attached to the carbonyl carbon (excluding CoA part)
+        visited = set()
+        queue = [thioester_matches[0][2]]  # Index of the carbon next to C=O (acyl chain)
+        while queue:
+            atom_idx = queue.pop(0)
+            if atom_idx not in visited:
+                visited.add(atom_idx)
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetAtomicNum() == 6:  # Carbon atom
+                    acyl_chain_length += 1
+                    for neighbor in atom.GetNeighbors():
+                        neighbor_idx = neighbor.GetIdx()
+                        if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
+                            queue.append(neighbor_idx)
+
+        if acyl_chain_length == 0:
+            return False, "No acyl chain detected in thioester linkage"
+
+    return True, "Contains Coenzyme A moiety linked via thioester bond to an acyl group"
