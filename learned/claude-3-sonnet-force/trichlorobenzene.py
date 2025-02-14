@@ -31,15 +31,16 @@ def is_trichlorobenzene(smiles: str):
     if chlorine_count != 3:
         return False, f"Molecule contains {chlorine_count} chlorine atoms, should be 3"
     
-    # Check if there is a benzene ring
-    benzene_ring = mol.GetRingInfo().AtomRings()
-    has_benzene = any(len(ring) == 6 and all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring) for ring in benzene_ring)
+    # Check if there is an aromatic benzene ring
+    ring_info = mol.GetRingInfo()
+    aromatic_rings = [ring for ring in ring_info.AtomRings() if ring_info.IsRingAromatic(ring)]
+    has_benzene = any(len(ring) == 6 for ring in aromatic_rings)
     if not has_benzene:
         return False, "No benzene ring found"
     
     # Check if all chlorines are attached to the benzene ring
     benzene_atoms = set()
-    for ring in benzene_ring:
+    for ring in aromatic_rings:
         if len(ring) == 6:
             benzene_atoms.update(ring)
             break
