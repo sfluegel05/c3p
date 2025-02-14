@@ -5,19 +5,18 @@ Classifies: CHEBI:72588 semisynthetic derivative
 Classifies: semisynthetic derivative
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import Descriptors
 from rdkit.Chem.Scaffolds import MurckoScaffold
-from rdkit.Chem.rdMolDescriptors import CalcNumAromaticRings, CalcFractionCSP3
+from rdkit.Chem.rdMolDescriptors import CalcNumAromaticRings
 
 def is_semisynthetic_derivative(smiles: str):
     """
     Determines if a molecule is a semisynthetic derivative based on its SMILES string.
     A semisynthetic derivative is an organic molecule derived from a natural product by partial chemical synthesis.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a semisynthetic derivative, False otherwise
         str: Reason for classification
@@ -31,74 +30,60 @@ def is_semisynthetic_derivative(smiles: str):
     if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
         return False, "Molecule is not an organic compound"
 
-    # Calculate molecular weight (no lower limit)
-    mol_wt = Descriptors.ExactMolWt(mol)
+    # Generate Murcko Scaffold (core structure of molecule)
+    scaffold = MurckoScaffold.GetScaffoldForMol(mol)
+    scaffold_smiles = Chem.MolToSmiles(scaffold, isomericSmiles=True)
 
-    # Calculate the number of rings
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
+    # Define known natural product scaffolds (simplified for this example)
+    # In practice, this would be a more comprehensive list
+    natural_product_scaffolds = [
+        'C1CCC(CC1)',  # Cyclohexane ring (terpenoids)
+        'C1=CC=CC=C1',  # Benzene ring (common in alkaloids)
+        'C1CC2CC3CC1CC(C2)C3',  # Steroid nucleus
+        'C1CC[C@H]2[C@@H]3CCC(C3)CC[C@]12C',  # Steroid nucleus with stereochemistry
+        'O=C1CC[C@H]2[C@@H]3CC[C@@H](O)[C@H](O)[C@@H](CC3)CC[C@]12C',  # Example triterpene scaffold
+    ]
+    # Check if scaffold matches any known natural product scaffold
+    has_natural_product_core = False
+    for np_smiles in natural_product_scaffolds:
+        np_mol = Chem.MolFromSmiles(np_smiles)
+        if scaffold.HasSubstructMatch(np_mol):
+            has_natural_product_core = True
+            break
 
-    # Calculate fraction of sp3 carbons
-    fraction_csp3 = CalcFractionCSP3(mol)
-
-    # Check for natural product-like features
-    # Heuristic: Molecules with at least one ring and moderate-to-high fraction of sp3 carbons
-    has_natural_product_features = False
-    if num_rings >= 1 and fraction_csp3 >= 0.25:
-        has_natural_product_features = True
-
-    # Look for specific natural product-like substructures (e.g., lactone, steroid nucleus)
-    # For simplicity, we check for lactone and steroid scaffolds
-    lactone_pattern = Chem.MolFromSmarts('O=C1OC([#6])C([#6])C1')
-    steroid_pattern = Chem.MolFromSmarts('C1CCC2C3CCC4CCCC(C4)C3CCC12')
-    if mol.HasSubstructMatch(lactone_pattern) or mol.HasSubstructMatch(steroid_pattern):
-        has_natural_product_features = True
-
-    if not has_natural_product_features:
-        return False, "Molecule lacks natural product-like features"
+    if not has_natural_product_core:
+        return False, "Molecule does not contain a known natural product core"
 
     # Check for synthetic modifications
     synthetic_modifications = False
 
-    # Halogenation: Presence of halogen atoms
-    if any(atom.GetAtomicNum() in [9, 17, 35, 53, 85] for atom in mol.GetAtoms()):
-        synthetic_modifications = True  # Halogenation
+    # List of functional groups that might indicate synthetic modification
+    # Focus on modifications uncommon in natural biosynthesis
+    synthetic_patterns = {
+        'Halogenation': '[F,Cl,Br,I]',
+        'Azide': 'N=[N+]=[N-]',
+        'Alkyne': 'C#C',
+        'Nitro': '[$([NX3](=O)=O)]',
+        'Trifluoromethyl': 'C(F)(F)F',
+        'Methoxy': 'OC',
+        'Ester': 'C(=O)OC',
+        'Amide': 'C(=O)N',  # Amides can be natural, but check for unusual patterns
+        'Propargyl': 'C#CC',
+        'Protecting group': 'C(=O)O[C@H1]',  # Simplified pattern
+    }
 
-    # Acylation: Presence of acyl groups
-    acyl_pattern = Chem.MolFromSmarts('C(=O)[#6]')
-    if mol.HasSubstructMatch(acyl_pattern):
-        synthetic_modifications = True
-
-    # Etherification and Esterification: Presence of ether or ester bonds
-    ether_pattern = Chem.MolFromSmarts('C-O-C')
-    ester_pattern = Chem.MolFromSmarts('C(=O)O[#6]')
-    if mol.HasSubstructMatch(ether_pattern) or mol.HasSubstructMatch(ester_pattern):
-        synthetic_modifications = True
-
-    # Methylation and other alkylations: Presence of methyl or alkyl groups attached to heteroatoms
-    alkylation = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() in [7, 8, 16]:  # N, O, S
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and len(neighbor.GetNeighbors()) == 1:
-                    alkylation = True  # Alkyl group attached to heteroatom
-                    break
-    if alkylation:
-        synthetic_modifications = True
-
-    # Protecting groups: Common synthetic protecting groups
-    boc_pattern = Chem.MolFromSmarts('C(=O)OC(C)(C)C')
-    fmoc_pattern = Chem.MolFromSmarts('OCC(=O)O')
-    if mol.HasSubstructMatch(boc_pattern) or mol.HasSubstructMatch(fmoc_pattern):
-        synthetic_modifications = True
-
-    # Introduction of unnatural functional groups
-    azide_pattern = Chem.MolFromSmarts('N=[N+]=[N-]')
-    alkyne_pattern = Chem.MolFromSmarts('C#C')
-    if mol.HasSubstructMatch(azide_pattern) or mol.HasSubstructMatch(alkyne_pattern):
-        synthetic_modifications = True
+    for mod_name, smarts in synthetic_patterns.items():
+        pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(pattern):
+            synthetic_modifications = True
+            break  # One modification is enough to consider
 
     if not synthetic_modifications:
         return False, "No synthetic modifications detected"
 
-    return True, "Molecule has natural product-like features with evidence of synthetic modifications"
+    # Ensure that the molecule is not a known natural product (i.e., unmodified)
+    # We can compare the scaffold to the entire molecule
+    if scaffold_smiles == Chem.MolToSmiles(mol, isomericSmiles=True):
+        return False, "Molecule appears to be a natural product without modifications"
+
+    return True, "Molecule contains a natural product core with evidence of synthetic modifications"
