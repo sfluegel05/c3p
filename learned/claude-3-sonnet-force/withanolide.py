@@ -1,26 +1,63 @@
 """
 Classifies: CHEBI:74716 withanolide
 """
-Based on the previous code and the outcomes, there seem to be a few issues with the program:
+"""
+Classifies: CHEBI:51922 withanolide
+A withanolide is any steroid lactone that is a C28 steroid with a modified side chain forming a lactone ring and its substituted derivatives.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Misclassification of non-withanolides**: The program incorrectly classified the molecule "indacaterol maleate" as a withanolide. This could be due to the presence of a lactone ring and other structural features that match some of the criteria for withanolides, but the molecule does not have the specific steroid skeleton or the modified side chain forming a lactone ring.
+def is_withanolide(smiles: str):
+    """
+    Determines if a molecule is a withanolide based on its SMILES string.
 
-2. **Missed identification of true withanolides**: The program failed to identify several true withanolide examples, such as Artabotryol A, Palustrisolide E, Palustrisolide B, Dinoxin B, and others. The main reason for this seems to be the strict requirement of having exactly 28 carbon atoms. Many withanolides may have slightly different carbon counts due to additional substituents or modifications.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Overly strict carbon count requirement**: The requirement of having exactly 28 carbon atoms is likely too strict. While withanolides are defined as C28 steroids, they can have additional substituents or modifications that change the carbon count. It would be better to have a more flexible range for carbon counts or to focus on the presence of the steroid core and the modified side chain forming a lactone ring.
+    Returns:
+        bool: True if molecule is a withanolide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Potential issues with ring perception**: The program relies on the RingInfo functionality of RDKit to identify the steroid skeleton based on the presence of four fused rings with specific ring sizes. However, this approach may not be robust enough to handle all possible variations in the representation of the steroid core or the presence of additional fused rings due to modifications.
+    # Look for steroid core (4 fused rings with specific ring sizes)
+    ring_info = mol.GetRingInfo()
+    cores = ring_info.AtomRings()
+    steroid_core = False
+    for core in cores:
+        ring_sizes = [ring_info.RingSize(ring) for ring in core]
+        if len(core) == 4 and set(ring_sizes) == {5, 6, 6, 6}:
+            steroid_core = True
+            break
+    if not steroid_core:
+        return False, "No steroid core found"
 
-To improve the program, the following steps could be considered:
+    # Look for lactone ring
+    lactone_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
+    if not lactone_matches:
+        return False, "No lactone ring found"
 
-1. **Refine the structural patterns**: Instead of relying solely on the carbon count or specific ring sizes, focus on identifying the steroid core and the modified side chain forming a lactone ring using more flexible and robust substructure patterns or fingerprints.
+    # Check for modified side chain
+    side_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2][CX3](=[OX1])")
+    side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
+    if not side_chain_matches:
+        return False, "No modified side chain forming a lactone ring found"
 
-2. **Use machine learning techniques**: If a sufficient number of positive and negative examples are available, consider using machine learning techniques, such as support vector machines or random forests, to learn the structural features that differentiate withanolides from non-withanolides. This could potentially capture more nuanced structural patterns than hard-coded rules.
+    # Check carbon count (allow some flexibility)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 26 or c_count > 32:
+        return False, f"Carbon count ({c_count}) outside expected range for withanolides"
 
-3. **Incorporate additional filters**: Add additional filters or checks to reduce false positives and false negatives. For example, you could check for specific functional groups, atom environments, or other structural features that are characteristic of withanolides.
+    # Check molecular weight (typically >400 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 400:
+        return False, "Molecular weight too low for withanolide"
 
-4. **Manually review and refine the benchmark data**: Since there may be occasional and systematic mistakes in the benchmark data, it would be helpful to manually review the provided examples and refine the benchmark data if necessary. This could help improve the accuracy of the program by ensuring that the training data is as accurate as possible.
-
-5. **Consider alternative representations**: In addition to SMILES strings, you could explore using other molecular representations, such as SMARTS patterns, molecular fingerprints, or graph representations, which might be better suited for capturing the structural features of withanolides.
-
-It's important to note that while the program may not be perfect, the benchmarking process and the provided feedback can help identify areas for improvement and guide the iterative development of a more robust and accurate classification system.
+    return True, "Contains steroid core with modified side chain forming a lactone ring"
