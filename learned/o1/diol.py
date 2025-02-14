@@ -25,17 +25,17 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define hydroxy group pattern (oxygen bonded to hydrogen)
-    hydroxy_pattern = Chem.MolFromSmarts("[OH]")
-    if hydroxy_pattern is None:
-        return False, "Error in hydroxy SMARTS pattern"
+    # Define alcoholic hydroxy group pattern (OH group attached to sp3 carbon, excluding carboxylic acids)
+    alcohol_pattern = Chem.MolFromSmarts("[C;!$(C=O)][OX2H]")
+    if alcohol_pattern is None:
+        return False, "Error in alcohol SMARTS pattern"
 
-    # Find all hydroxy groups in the molecule
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    num_hydroxy = len(hydroxy_matches)
+    # Find all alcoholic hydroxy groups in the molecule
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    num_alcohol_hydroxy = len(alcohol_matches)
 
-    # Check if the molecule contains exactly two hydroxy groups
-    if num_hydroxy == 2:
-        return True, "Molecule contains exactly 2 hydroxy groups"
+    # Check if the molecule contains at least two alcoholic hydroxy groups
+    if num_alcohol_hydroxy >= 2:
+        return True, f"Molecule contains {num_alcohol_hydroxy} alcoholic hydroxy groups"
     else:
-        return False, f"Molecule contains {num_hydroxy} hydroxy group(s), not exactly 2 required for diol"
+        return False, f"Molecule contains {num_alcohol_hydroxy} alcoholic hydroxy group(s), less than 2 required for diol"
