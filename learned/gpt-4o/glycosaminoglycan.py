@@ -20,30 +20,30 @@ def is_glycosaminoglycan(smiles: str):
     # Parse SMILES into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Define a more comprehensive pattern for polysaccharides (focusing on acetal linkages)
-    polysaccharide_pattern = Chem.MolFromSmarts("O[C@@H]1CO[C@@H](O)[C@H](O)[C@@H]1")
+    # Define generalized pattern for glycosidic linkages (can be expanded as needed)
+    glycosidic_pattern = Chem.MolFromSmarts("O[C;R][C;R]O")
     
-    # Define a more precise pattern for amino sugars (aminomonosaccharides)
-    amino_sugar_pattern = Chem.MolFromSmarts("[CX4H][NX3;H2,H1][CX4H]")  # Slightly more rigorous to amino sugar context
-
-    # Check for polysaccharide-like structures using pattern matching
-    polysaccharide_match = mol.HasSubstructMatch(polysaccharide_pattern)
+    # Define pattern for amino sugars including diverse aminomonosaccharide context
+    amino_sugar_pattern = Chem.MolFromSmarts("[CX4][NX3;H2,H1]")
+    
+    # Check for glycosidic-like linkages (proxy for polysaccharide structure)
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
     
     # Check for presence of amino sugar groups
     amino_sugar_matches = mol.GetSubstructMatches(amino_sugar_pattern)
     
     # Determine classification based on matches
-    if polysaccharide_match and len(amino_sugar_matches) > 0:
-        # Check substantial proportion of amino sugars
-        total_osmol = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8])  # Potential over count, just an indicator
-        if len(amino_sugar_matches) / total_osmol > 0.1:  # Arbitrary threshold for 'substantial'
-            return True, "Contains polysaccharide-like and sufficient proportion of amino sugar-like substructures"
+    if len(glycosidic_matches) > 0 and len(amino_sugar_matches) > 0:
+        # Use a more representative metric for proportion of amino sugars
+        # Relating amino sugar count to glycosidic bonds as a proxy measure
+        if len(amino_sugar_matches) / max(1, len(glycosidic_matches)) > 0.2:  # Arbitrary threshold
+            return True, "Contains glycosidic-like and substantial proportion of amino sugar-like substructures"
         else:
-            return False, "Amino groups present but not in substantial proportion"
-    elif not polysaccharide_match:
-        return False, "Does not have polysaccharide-like substructures"
+            return False, "Insufficient proportion of amino sugar-like substructures"
+    elif len(glycosidic_matches) == 0:
+        return False, "Does not have glycosidic-like substructures"
     elif len(amino_sugar_matches) == 0:
         return False, "Does not contain amino sugar-like substructures"
 
