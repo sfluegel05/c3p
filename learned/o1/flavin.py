@@ -19,82 +19,71 @@ def is_flavin(smiles: str):
         bool: True if molecule is a flavin, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the isoalloxazine core with atom maps for positions 7, 8, and 10
-    isoalloxazine_smarts = """
-    [#6][$([#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1)]
-    -c2ncnc3nc(=O)[nH]c(=O)c23
-    """
+    # Define the isoalloxazine core with SMARTS
+    isoalloxazine_smarts = '[cH]1c(c2nc3c(nc(=O)[nH]c3=O)n(C)c2c(c1)C)=O'
     isoalloxazine_core = Chem.MolFromSmarts(isoalloxazine_smarts)
     if isoalloxazine_core is None:
-        return None, "Error in defining isoalloxazine core SMARTS pattern"
+        return False, "Error in defining isoalloxazine core SMARTS pattern"
     
     # Check for isoalloxazine core
     if not mol.HasSubstructMatch(isoalloxazine_core):
         return False, "No isoalloxazine core found"
     
-    # Get the matching substructure
-    matches = mol.GetSubstructMatch(isoalloxazine_core)
+    # Find matches for the isoalloxazine core
+    matches = mol.GetSubstructMatches(isoalloxazine_core)
     if not matches:
-        return False, "No match for the isoalloxazine core"
+        return False, "Isoalloxazine core not matched properly"
     
-    # Map indices to identify positions
-    match_atom_indices = {atom.GetIdx() for atom in mol.GetSubstructMatch(isoalloxazine_core)}
-    atom_positions = {}
-    for atom in isoalloxazine_core.GetAtoms():
-        atom_map_num = atom.GetAtomMapNum()
-        if atom_map_num:
-            atom_positions[atom_map_num] = matches[atom.GetIdx()]
+    # For each match, check for methyl groups at positions 7 and 8
+    for match in matches:
+        mol_fragment = Chem.PathToSubmol(mol, match)
+        
+        # Positions of the carbons at positions 7 and 8 in the SMARTS pattern
+        pos7_idx = match[1]  # c at index 1 in SMARTS
+        pos8_idx = match[5]  # c at index 5 in SMARTS
+        
+        pos7_atom = mol.GetAtomWithIdx(pos7_idx)
+        pos8_atom = mol.GetAtomWithIdx(pos8_idx)
+        
+        # Check for methyl groups at positions 7 and 8
+        methyl7 = False
+        methyl8 = False
+        
+        for neighbor in pos7_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() == 1:
+                methyl7 = True
+                break
+        for neighbor in pos8_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() == 1:
+                methyl8 = True
+                break
+        if not methyl7:
+            continue  # Try next match
+        if not methyl8:
+            continue  # Try next match
+        
+        # Position 10 nitrogen atom in the isoalloxazine core
+        pos10_idx = match[7]  # n at index 7 in SMARTS
+        pos10_atom = mol.GetAtomWithIdx(pos10_idx)
+        
+        # Check if position 10 nitrogen has a substituent (non-ring bond)
+        substituent = False
+        for bond in pos10_atom.GetBonds():
+            if not bond.IsInRing():
+                substituent = True
+                break
+        if not substituent:
+            continue  # Try next match
+        
+        # All criteria met
+        return True, "Contains dimethylisoalloxazine core with substituent at position 10"
     
-    # Check for methyl groups at positions 7 and 8
-    position7_idx = matches[0]  # Assuming position 7 is the first atom in pattern
-    position8_idx = matches[1]  # Assuming position 8 is the second atom in pattern
-    position7_atom = mol.GetAtomWithIdx(position7_idx)
-    position8_atom = mol.GetAtomWithIdx(position8_idx)
-    
-    # Check if atoms at positions 7 and 8 are carbons
-    if position7_atom.GetAtomicNum() != 6 or position8_atom.GetAtomicNum() != 6:
-        return False, "Positions 7 and 8 are not carbon atoms"
-    
-    # Check for methyl groups at positions 7 and 8
-    methyl7 = False
-    methyl8 = False
-    for neighbor in position7_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() == 1:
-            methyl7 = True
-            break
-    for neighbor in position8_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() == 1:
-            methyl8 = True
-            break
-    if not (methyl7 and methyl8):
-        return False, "Methyl groups at positions 7 and 8 not found"
-    
-    # Check for substituent at position 10 (nitrogen atom in central ring)
-    position10_atom = None
-    for atom in isoalloxazine_core.GetAtoms():
-        if atom.GetAtomicNum() == 7 and atom.GetDegree() == 3:
-            # Nitrogen with three bonds is likely position 10
-            position10_idx = matches[atom.GetIdx()]
-            position10_atom = mol.GetAtomWithIdx(position10_idx)
-            break
-    if position10_atom is None:
-        return False, "Nitrogen at position 10 not found"
-    
-    # Check if nitrogen at position 10 has a substituent (excluding ring bonds)
-    substituents = 0
-    for bond in position10_atom.GetBonds():
-        if not bond.IsInRing():
-            substituents += 1
-    if substituents == 0:
-        return False, "No substituent found at position 10"
-    
-    return True, "Contains dimethylisoalloxazine core with substituent at position 10"
+    return False, "Molecule does not meet all criteria for a flavin"
 
 __metadata__ = {
     'chemical_class': {
@@ -116,7 +105,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
