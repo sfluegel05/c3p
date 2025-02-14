@@ -22,19 +22,18 @@ def is_organic_sulfide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern: Match sulfur with likely organic surroundings
-    # This pattern considers more versatile scenarios including complex organic attachments
-    sulfide_patterns = [
-        "[C,c][S][C,c]",  # Basic organic paths, allows aromatic or non-aromatic
-        "[a][S][!#1]",    # Aromatic atoms connected to sulfur, not hydrogen
-        "[!#1][S][!#1]"   # More general check where sulfur is not bonded to any hydrogen
-    ]
+    # Define SMARTS pattern to identify a simple organic sulfide
+    # Avoid highly oxidized sulfur environments
+    sulfide_pattern = Chem.MolFromSmarts("[C,c][S;X2][C,c]")  # Ensures sulfur (in -2 oxidation state) is bonded to carbons
 
-    # Check molecule for organic sulfide structure using multiple patterns
-    for pattern in sulfide_patterns:
-        sulfide_match = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(sulfide_match):
-            return True, f"Contains organic sulfide group matching pattern: {pattern}"
+    # Check for the presence of the sulfide pattern
+    if mol.HasSubstructMatch(sulfide_pattern):
+        # Further exclude patterns known for false positives - like sulfones, sulfonamides
+        sulfone_sulfoxide_pattern = Chem.MolFromSmarts("[S;X4](=O)(=O)~[N,O]")
+        if mol.HasSubstructMatch(sulfone_sulfoxide_pattern):
+            return False, "Contains sulfonyl or similar group, not an organic sulfide"
+
+        return True, "Contains organic sulfide group"
 
     return False, "No organic sulfide group found"
 
