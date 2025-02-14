@@ -6,42 +6,42 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_triglyceride(smiles: str):
     """
-    Classifies a SMILES string as a triglyceride if it fulfills the structural requirements:
-    1. A glycerol backbone.
-    2. Three ester groups resulting from the condensation with fatty acids.
+    Determines if a molecule is a triglyceride based on its SMILES string.
+    A triglyceride is a glycerol backbone with three fatty acid chains attached via ester bonds.
 
     Args:
-        smiles (str): SMILES string
+        smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if it is a triglyceride, False otherwise
-        str: Explanation of the result
+        bool: True if molecule is a triglyceride, False otherwise
+        str: Reason for classification
     """
-    
-    # Parse SMILES to obtain molecular representation
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Detect glycerol-like backbone: C-C-C 3 oxygens connected (indicative of glycerol)
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
+    # Look for glycerol backbone, allow for stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Detect 3 ester linkages: -O-C(=O)-
+    # Look for 3 ester groups (-C(=O)O-)
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_count = len(mol.GetSubstructMatches(ester_pattern))
-    if ester_count != 3:
-        return False, f"Found {ester_count} ester groups, expected 3"
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 3:
+        return False, f"Found {len(ester_matches)} ester groups, expected 3"
 
-    # Calculate number of carbon atoms
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 20:
-        return False, "Insufficient carbon count for typical triglycerides"
+    # Check for long carbon chains indicative of fatty acids
+    # A simple approach is to count successive carbon connections, a more thorough computational check can be employed
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("CCCC")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain_pattern)
+    if len(fatty_acid_matches) < 3:
+        return False, f"Missing long fatty acid chains, got {len(fatty_acid_matches)}"
 
-    # Calculate molecular weight, typical triglyceride is >500 g/mol
+    # Molecular weight check remains but less strict
     mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_weight < 500:
-        return False, "Molecular weight too low for triglyceride"
+        return False, "Molecular weight too low for traditional triglyceride but could be a shorter variant"
 
     return True, "SMILES represents a triglyceride with a glycerol backbone and three ester groups"
