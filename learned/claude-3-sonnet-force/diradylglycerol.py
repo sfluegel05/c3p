@@ -1,47 +1,27 @@
 """
 Classifies: CHEBI:76578 diradylglycerol
 """
-"""
-Classifies: CHEBI:18035 diradylglycerol
-A diradylglycerol is defined as any lipid that is glycerol bearing two substituent groups - 
-either acyl, alkyl, or alk-1-enyl - at any two of the three possible positions.
-"""
+Based on the outcomes provided, the previous program has several issues that need to be addressed to improve its performance in classifying diradylglycerols correctly.
 
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+1. **Glycerol backbone pattern**: The program checks for a glycerol backbone pattern using the SMARTS `"[CH2X3,CH2X4][CHX4][CH2X3,CH2X4]"`. This pattern allows for both 2 and 3 oxygens attached to the terminal carbon atoms, which is not specific enough for diradylglycerols. The pattern should be modified to specifically look for 2 oxygens attached to the terminal carbon atoms.
 
-def is_diradylglycerol(smiles: str):
-    """
-    Determines if a molecule is a diradylglycerol based on its SMILES string.
+2. **Substituent pattern**: The program uses the SMARTS `"[OX2][CX3]"` to identify substituents (acyl, alkyl, or alk-1-enyl). However, this pattern is too broad and can also match other functional groups like esters, ethers, and alcohols. A more specific pattern is needed to identify the desired substituents.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Chain length validation**: The program checks for the presence of alkyl/alkenyl chains using the SMARTS `"[CX4,CX3]~[CX4,CX3]"`, which is not specific enough. It only checks for a chain of two carbon atoms, which is too short to be considered a valid substituent. A more robust pattern or additional checks are needed to ensure that the substituents are of sufficient length.
 
-    Returns:
-        bool: True if molecule is a diradylglycerol, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. **False positives**: The program incorrectly classifies some molecules as diradylglycerols, such as phospholipids, carboxylic acids, and other complex structures. Additional checks or patterns may be needed to exclude these types of molecules from being falsely classified as diradylglycerols.
 
-    # Look for glycerol backbone pattern (C-C-C with 2 or 3 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X3,CH2X4][CHX4][CH2X3,CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+5. **False negatives**: The program misses some valid diradylglycerol structures, such as those with branched alkyl chains or cyclic substituents. The patterns or checks used in the program may need to be more inclusive to capture these types of structures.
 
-    # Look for 2 substituents (acyl, alkyl, or alk-1-enyl)
-    substituent_pattern = Chem.MolFromSmarts("[OX2][CX3]")
-    substituent_matches = mol.GetSubstructMatches(substituent_pattern)
-    if len(substituent_matches) != 2:
-        return False, f"Found {len(substituent_matches)} substituents, need exactly 2"
+6. **Edge cases and exceptions**: The program may need to handle edge cases and exceptions more robustly, such as molecules with multiple glycerol backbones, molecules with more than two substituents, or molecules with unusual substituents not covered by the patterns.
 
-    # Check for alkyl/alkenyl chains
-    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    if len(chain_matches) < 2:
-        return False, f"Missing alkyl/alkenyl chains, got {len(chain_matches)}"
+To improve the program, you could consider the following steps:
 
-    return True, "Contains glycerol backbone with 2 substituent groups (acyl, alkyl, or alk-1-enyl)"
+1. Refine the glycerol backbone pattern to specifically look for two oxygens attached to the terminal carbon atoms.
+2. Use more specific SMARTS patterns or a combination of patterns to identify the desired acyl, alkyl, and alk-1-enyl substituents, while excluding other functional groups.
+3. Implement additional checks or patterns to validate the length or complexity of the substituents, ensuring they meet the criteria for being considered valid substituents.
+4. Add additional checks or patterns to exclude false positives, such as phospholipids, carboxylic acids, and other complex structures that should not be classified as diradylglycerols.
+5. Expand the patterns or checks to include branched alkyl chains, cyclic substituents, and other valid diradylglycerol structures that are currently missed by the program.
+6. Implement more robust error handling and exception management to handle edge cases and unusual structures.
+
+Additionally, it's important to note that some of the false positives and false negatives may be due to potential errors or inconsistencies in the benchmark data. In such cases, you can consider using your chemical knowledge and judgment to determine whether the classifications made by your program are reasonable, and adjust the program accordingly.
