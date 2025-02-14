@@ -2,7 +2,7 @@
 Classifies: CHEBI:65061 2,5-diketopiperazines
 """
 """
-Classifies: 2,5-diketopiperazine
+Classifies: 2,5-diketopiperazines
 """
 
 from rdkit import Chem
@@ -21,16 +21,18 @@ def is_2_5_diketopiperazines(smiles: str):
         bool: True if molecule is a 2,5-diketopiperazine, False otherwise
         str: Reason for classification
     """
-    # Parse the SMILES string into a RDKit molecule
+    # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the SMARTS pattern for the 2,5-diketopiperazine core
-    diketopiperazine_pattern = Chem.MolFromSmarts('O=C1NCC(=O)NC1')  # piperazine-2,5-dione skeleton
+    
+    # Define a general SMARTS pattern for the 2,5-diketopiperazine core
+    # Six-membered ring with two nitrogens at positions 1 and 4,
+    # connected by carbons, with carbonyl groups at positions 2 and 5
+    diketopiperazine_pattern = Chem.MolFromSmarts('C1(=O)NC[C@H]([#6,#7,#8])NC1=O')
     if diketopiperazine_pattern is None:
         return None, "Invalid SMARTS pattern for diketopiperazine"
-
+    
     # Check if the molecule contains the 2,5-diketopiperazine core
     if mol.HasSubstructMatch(diketopiperazine_pattern):
         return True, "Molecule contains piperazine-2,5-dione skeleton"
