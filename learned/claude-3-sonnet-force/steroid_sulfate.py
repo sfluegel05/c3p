@@ -1,20 +1,95 @@
 """
 Classifies: CHEBI:16158 steroid sulfate
 """
-After analyzing the previous program and the given outcomes, it appears that the failure to classify any molecules as steroid sulfates is likely due to the overly strict definition of the steroid backbone pattern used in the code.
+"""
+Classifies: CHEBI:38866 steroid sulfate
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The SMARTS pattern used for the steroid backbone is highly specific and only matches a particular subset of steroid structures. However, steroid sulfates can have various structural modifications and variations in the steroid core, making it challenging to capture all possible structures with a single rigid pattern.
+def is_steroid_sulfate(smiles: str):
+    """
+    Determines if a molecule is a steroid sulfate based on its SMILES string.
+    A steroid sulfate is a sulfuric ester obtained by the formal condensation of 
+    a hydroxy group of any steroid with sulfuric acid.
 
-To improve the program and increase its ability to correctly identify steroid sulfates, the following modifications can be made:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Relax the steroid backbone pattern**: Instead of using a highly specific SMARTS pattern, a more general pattern that captures the essential features of steroid structures, such as the tetracyclic ring system and the presence of specific ring junctions, can be used. This will allow the program to recognize a broader range of steroid sulfate structures.
+    Returns:
+        bool: True if molecule is a steroid sulfate, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Consider additional structural features**: In addition to the steroid backbone and the sulfate group, other structural features can be taken into account to enhance the classification accuracy. For example, checking for the presence of specific functional groups or substituents commonly found in steroid sulfates can help differentiate them from other steroid derivatives.
+    # Look for steroid backbone pattern (tetracyclic ring system with specific ring junctions)
+    steroid_pattern = Chem.MolFromSmarts(
+        "[C@]12[C@@]([C@](C[C@@]1[C@]([C@@]([C@]3([C@]([C@]([C@@]2(C)C)([H])CC3)([H])CC)([H])C)([H])[H])CC)([H])[H]")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid backbone found"
 
-3. **Use machine learning techniques**: If the rule-based approach proves too limiting, machine learning techniques like supervised learning or deep learning can be explored. These techniques can learn the patterns and features of steroid sulfates from a labeled dataset, potentially leading to better classification performance.
+    # Look for sulfate group (-O-S(=O)(=O)-O)
+    sulfate_pattern = Chem.MolFromSmarts("[OX2][SX4](=[OX1])(=[OX1])[OX2]")
+    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
+    if not sulfate_matches:
+        return False, "No sulfate group found"
 
-4. **Utilize external databases and resources**: Consulting external databases or resources that provide information on known steroid sulfate structures can aid in refining the classification rules or generating a dataset for machine learning approaches.
+    # Check for common functional groups found in steroid sulfates
+    functional_groups = ["[C@H](CC)", "[C@H](O)", "[C@H](CCC)", "[C@H](CC=O)"]
+    functional_group_present = any(mol.HasSubstructMatch(Chem.MolFromSmarts(fg)) for fg in functional_groups)
+    if not functional_group_present:
+        return False, "Missing common functional groups found in steroid sulfates"
 
-It's important to note that the classification of chemical structures is a complex task, and there may be edge cases or ambiguities that require careful consideration. Additionally, the benchmark dataset itself may contain errors or inconsistencies, which could lead to unexpected outcomes.
+    # Count rotatable bonds to verify steroid-like rigidity
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable > 10:
+        return False, "Too many rotatable bonds for a steroid-like structure"
 
-In such cases, it is advisable to rely on your understanding of chemistry and the definition of the chemical class, and document any assumptions or deviations from the benchmark data. The ultimate goal should be to create a program that accurately reflects the scientific understanding of steroid sulfates while maintaining flexibility to accommodate structural variations.
+    # Check molecular weight - steroid sulfates typically >300 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for steroid sulfate"
+
+    return True, "Contains steroid backbone and sulfate group, with common functional groups found in steroid sulfates"
+
+
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:38866',
+        'name': 'steroid sulfate',
+        'definition': 'A sulfuric ester obtained by the formal condensation of a hydroxy group of any steroid with sulfuric acid.',
+        'parents': ['CHEBI:35695', 'CHEBI:24347']
+    },
+    'config': {
+        'llm_model_name': 'claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': False,
+    'best': False,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 85,
+    'num_false_positives': 0,
+    'num_true_negatives': 182419,
+    'num_false_negatives': 80,
+    'num_negatives': None,
+    'precision': 1.0,
+    'recall': 0.515151515151515,
+    'f1': 0.6802721088435374,
+    'accuracy': 0.9995632778394829
+}
