@@ -20,11 +20,22 @@ def is_organoiodine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the carbon-iodine bond pattern: iodine directly bonded to carbon.
-    carbon_iodine_pattern = Chem.MolFromSmarts("[I]-C")
+    # Check for at least one iodine atom
+    if not any(atom.GetAtomicNum() == 53 for atom in mol.GetAtoms()):
+         return False, "Does not contain iodine"
+
+    # Define the carbon-iodine bond pattern
+    # ~ means any bond type, * is a wildcard for any atom.
+    carbon_iodine_pattern = Chem.MolFromSmarts("[I]~*") 
 
     # Check if the molecule has a carbon-iodine bond
     if mol.HasSubstructMatch(carbon_iodine_pattern):
-        return True, "Contains at least one carbon-iodine bond"
+      #now ensure that the iodine is attached to a carbon, by iterating over the iodine atoms
+        for atom in mol.GetAtoms():
+          if atom.GetAtomicNum() == 53:
+             for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:
+                  return True, "Contains at least one carbon-iodine bond"
+        return False, "Iodine not bonded to carbon"    
     else:
         return False, "Does not contain a carbon-iodine bond"
