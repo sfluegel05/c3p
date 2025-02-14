@@ -5,14 +5,14 @@ from rdkit import Chem
 
 def is_quinic_acid(smiles: str):
     """
-    Determines if a molecule is quinic acid based on its SMILES string.
-    Quinic acid is defined as a cyclitol carboxylic acid.
+    Determines if a molecule is a quinic acid or its derivative based on its SMILES string.
+    Quinic acid is a cyclitol carboxylic acid, often found in its esterified form.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is quinic acid, False otherwise
+        bool: True if molecule is a quinic acid or relevant derivative, False otherwise
         str: Reason for classification
     """
     
@@ -21,26 +21,30 @@ def is_quinic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a cyclohexane ring
+    # Look for a cyclohexane ring
     ring_info = mol.GetRingInfo()
     if not any(len(ring) == 6 for ring in ring_info.AtomRings()):
         return False, "No cyclohexane ring found"
 
-    # Look for hydroxy groups on the cyclohexane ring
-    hydroxy_pattern = Chem.MolFromSmarts("[CX4;R][OX2H]")
+    # Check hydroxy groups, focusing on stereochemistry specific to quinic acid:
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxy_matches) < 3:  # Quinic acid typically has 3 or more hydroxyls
-        return False, f"Not enough hydroxyl groups found, got {len(hydroxy_matches)}"
+    if len(hydroxy_matches) < 3:
+        return False, f"Not enough hydroxyl groups with correct stereochemistry found, got {len(hydroxy_matches)}"
 
     # Check for carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # We might want to check additional patterns for esterified quinic acid derivatives
+    # Check for ester modifications, common in quinic derivatives:
+    ester_pattern = Chem.MolFromSmarts("OC=O")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) > 0:
+        return True, "Contains features consistent with esterified quinic acid"
 
     return True, "Contains features consistent with quinic acid"
 
-# Example SMILES (quinic acid):
+# Example use case
 smiles_example = "O[C@H]1C[C@@](O)(C[C@H](O)[C@H]1O)C(O)=O"  # (+)-quinic acid
 print(is_quinic_acid(smiles_example))
