@@ -32,6 +32,11 @@ def is_long_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
     
+    # Look for long carbon chain (C13 to C22)
+    chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC,CCCCCCCCCCCCCCC,CCCCCCCCCCCCCCCC,CCCCCCCCCCCCCCCCC,CCCCCCCCCCCCCCCCCC,CCCCCCCCCCCCCCCCCCC,CCCCCCCCCCCCCCCCCCCC")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "Carbon chain length not in range C13 to C22"
+    
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
@@ -44,17 +49,13 @@ def is_long_chain_fatty_acid(smiles: str):
     if not mol_formula.startswith("C"):
         return False, "Molecular formula does not start with C"
     
-    # Check for aromatic atoms
-    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
-        return False, "Aromatic atoms not allowed"
+    # Check for unsaturation (double bonds)
+    if mol.GetRingInfo().NumAromaticRings() > 0:
+        return False, "Aromatic rings not allowed"
     
     double_bond_pattern = Chem.MolFromSmarts("=")
     n_double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
     if n_double_bonds > 4:
         return False, "Too many double bonds (>4)"
-    
-    # Check carbon chain length (C13 to C22)
-    if c_count < 13 or c_count > 22:
-        return False, f"Carbon chain length not in range C13 to C22 (found C{c_count})"
     
     return True, "Contains carboxylic acid group and long carbon chain (C13 to C22)"
