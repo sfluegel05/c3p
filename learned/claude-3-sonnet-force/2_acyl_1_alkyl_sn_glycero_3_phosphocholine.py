@@ -1,14 +1,62 @@
 """
 Classifies: CHEBI:36702 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
 """
-In the previous attempt, the program was designed to identify molecules belonging to the class 2-acyl-1-alkyl-sn-glycero-3-phosphocholine, which are defined as alkyl,acyl-sn-glycero-3-phosphocholine molecules with unspecified alkyl and acyl groups located at positions 1 and 2, respectively.
+"""
+Classifies: CHEBI:18035 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The program first checks for the presence of a glycerol backbone and a phosphocholine group attached to the glycerol backbone at position 3. It then checks for the presence of an alkyl chain at position 1 and an acyl group at position 2.
+def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
+    """
+    Determines if a molecule belongs to the class 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
+    based on its SMILES string. This class is defined as an alkyl,acyl-sn-glycero-3-phosphocholine
+    with unspecified alkyl and acyl groups located at positions 1 and 2 respectively.
 
-However, the program encountered an error when trying to find the alkyl chain using the `FindAllPathsOfLengthN` function from RDKit. This function is used to find all paths of a specified length starting from a given atom. The error occurred because the function was called with incorrect argument types.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program and correctly identify molecules belonging to this class, we need to find a different approach to check for the presence and length of the alkyl chain at position 1. One possible approach is to use the `GetMDLPatternAtomNeighborIndicesAndAtomRings` function from RDKit to find the neighboring atoms of the atom at position 1 and then recursively follow the carbon chain until a terminal atom is reached, counting the number of carbon atoms in the chain.
-
-Additionally, we can improve the program by adding more checks to ensure that the alkyl chain and acyl group meet the requirements for this class. For example, we can check that the acyl group contains a carbonyl group (C=O) and that the alkyl chain does not contain any heteroatoms or cycles.
-
-If the benchmark data contains systematic mistakes or outliers that contradict the definition of the chemical class, it may be reasonable to ignore those instances and trust the program's classifications based on the provided definition and our understanding of chemistry. However, it is important to carefully analyze and justify any such decisions.
+    Returns:
+        bool: True if molecule belongs to the class, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for glycerol backbone pattern
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+    
+    # Look for phosphocholine group
+    phosphocholine_pattern = Chem.MolFromSmarts("OP(=O)([O-])OCC[N+](C)(C)C")
+    if not mol.HasSubstructMatch(phosphocholine_pattern):
+        return False, "No phosphocholine group found"
+    
+    # Check for acyl and alkyl groups at positions 1 and 2
+    acyl_pattern = Chem.MolFromSmarts("C(=O)[CH]")
+    alkyl_pattern = Chem.MolFromSmarts("C[CH]")
+    
+    acyl_match = mol.GetSubstructMatches(acyl_pattern)
+    alkyl_match = mol.GetSubstructMatches(alkyl_pattern)
+    
+    if len(acyl_match) != 1 or len(alkyl_match) != 1:
+        return False, "Incorrect number of acyl/alkyl groups at positions 1 and 2"
+    
+    acyl_idx = acyl_match[0][1]
+    alkyl_idx = alkyl_match[0][1]
+    
+    # Check if acyl and alkyl are at positions 1 and 2
+    glycerol_atoms = mol.GetSubstructMatch(glycerol_pattern)
+    
+    if glycerol_atoms[0] != alkyl_idx and glycerol_atoms[2] != alkyl_idx:
+        return False, "Alkyl group not at position 1"
+    
+    if glycerol_atoms[1] != acyl_idx:
+        return False, "Acyl group not at position 2"
+    
+    return True, "Molecule is a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine"
