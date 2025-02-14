@@ -8,7 +8,7 @@ or its intramolecular hemiacetal.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_aldose(smiles: str):
     """
@@ -27,25 +27,11 @@ def is_aldose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for aldehyde or hemiacetal group
-    aldehyde_pattern = Chem.MolFromSmarts("[CH](=O)[OH]")
-    hemiacetal_pattern = Chem.MolFromSmarts("[CH1](O)[OH]")
-    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    hemiacetal_matches = mol.GetSubstructMatches(hemiacetal_pattern)
-    if not aldehyde_matches and not hemiacetal_matches:
-        return False, "No aldehyde or hemiacetal group found"
-
-    # Check for multiple hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    n_hydroxyls = len(hydroxyl_matches)
-    if n_hydroxyls < 2:
-        return False, "Less than 2 hydroxyl groups found"
-
-    # Count carbon atoms
-    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_carbons < 3:
-        return False, "Less than 3 carbon atoms found"
+    # Check for linear carbon chain with terminal aldehyde or hemiacetal
+    aldose_pattern = Chem.MolFromSmarts("[CH2][CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH](=O)[OH]")
+    hemiacetal_pattern = Chem.MolFromSmarts("[CH2][CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH]([OH])[CH1]([OH])[OH]")
+    if not mol.HasSubstructMatch(aldose_pattern) and not mol.HasSubstructMatch(hemiacetal_pattern):
+        return False, "Linear aldose or hemiacetal pattern not found"
 
     # Check for incompatible functional groups
     incompatible_patterns = [
@@ -53,10 +39,23 @@ def is_aldose(smiles: str):
         Chem.MolFromSmarts("N"),  # Amine
         Chem.MolFromSmarts("O=C-O-C"),  # Ester
         Chem.MolFromSmarts("C-O-C"),  # Ether
+        Chem.MolFromSmarts("C(=O)C"),  # Ketone
     ]
     for pattern in incompatible_patterns:
         if mol.HasSubstructMatch(pattern):
             return False, f"Incompatible functional group found: {pattern.GetSmarts()}"
+
+    # Count carbon atoms
+    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if n_carbons < 3:
+        return False, "Less than 3 carbon atoms found"
+
+    # Count hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    n_hydroxyls = len(hydroxyl_matches)
+    if n_hydroxyls < 2:
+        return False, "Less than 2 hydroxyl groups found"
 
     # Passed all checks
     return True, "Molecule meets structural requirements for an aldose"
