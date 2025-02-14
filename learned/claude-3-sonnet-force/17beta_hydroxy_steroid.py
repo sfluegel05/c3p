@@ -27,21 +27,24 @@ def is_17beta_hydroxy_steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C&r1,r2,r3,r4]") # Any atom in a ring system with 4 rings
+    steroid_pattern = Chem.MolFromSmarts("[C&r1,r2,r3,r4]1CCC2C3=CC=C4[C@@]5(CC[C@H](C5)C4)C[C@H]3[C@@H](C2)C1")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
     # Find the 17-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[C@@](O)[H]") # 17-hydroxy group in beta configuration
+    hydroxy_pattern = Chem.MolFromSmarts("[C@]([H])(O)[C@@]1([H])CC[C@]2([H])C3=CC=C4[C@@]5(CC[C@H](C5)C4)C[C@H]3[C@@H](C2)C1")
     matches = mol.GetSubstructMatches(hydroxy_pattern)
     if not matches:
-        return False, "No 17-hydroxy group found"
+        return False, "No 17-hydroxy group in the beta configuration found"
 
-    # Check if the 17-hydroxy group is part of the steroid backbone
-    ring_info = mol.GetRingInfo()
-    for match in matches:
-        atom = mol.GetAtomWithIdx(match[0])
-        if any(ring_info.IsBondInRingOfSize(bond.GetIdx(), 5) or ring_info.IsBondInRingOfSize(bond.GetIdx(), 6) for bond in atom.GetBonds()):
-            return True, "Molecule has a 17beta-hydroxy group on the steroid backbone"
+    # Additional checks
+    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight < 250 or mol_weight > 500:
+        return False, "Molecular weight out of typical range for 17beta-hydroxy steroids"
 
-    return False, "17-hydroxy group is not part of the steroid backbone"
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 18 or o_count < 2:
+        return False, "Incorrect number of carbon or oxygen atoms for 17beta-hydroxy steroids"
+
+    return True, "Molecule has a 17beta-hydroxy group on the steroid backbone"
