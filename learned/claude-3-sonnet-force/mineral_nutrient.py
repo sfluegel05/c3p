@@ -1,51 +1,28 @@
 """
 Classifies: CHEBI:167164 mineral nutrient
 """
-"""
-Classifies: CHEBI:33677 Mineral nutrient
-A mineral that is an inorganic nutrient which must be ingested and absorbed in adequate amounts to satisfy 
-a wide range of essential metabolic and/or structural functions in the human body.
-"""
+The previous program made a reasonable attempt at classifying mineral nutrients based on the presence of common mineral nutrient elements, molecular weight, and common counterions. However, there are a few issues that could be addressed to improve the classification accuracy:
 
-from rdkit import Chem
-from rdkit.Chem import Descriptors
+1. **Incomplete list of mineral nutrient elements**: The list of mineral nutrient elements in the code is not exhaustive, and it may be missing some important elements that are considered mineral nutrients. This could lead to false negatives for molecules containing mineral nutrient elements that are not in the list.
 
-# List of common mineral nutrient elements (not exhaustive)
-mineral_nutrient_elements = ['K', 'Ca', 'Mg', 'Na', 'Ba', 'Zn', 'Fe', 'Cs', 'Al', 'Sb', 'Pd', 'La']
+2. **Counterion consideration**: The program considers the presence of common counterions to classify a molecule as a mineral nutrient. While this is a valid approach, it may not work well for all cases. Some mineral nutrients may have uncommon counterions, leading to false negatives, while some non-mineral nutrients may have common counterions, leading to false positives.
 
-def is_mineral_nutrient(smiles: str):
-    """
-    Determines if a molecule is a mineral nutrient based on its SMILES string.
+3. **Structural considerations**: The program does not consider the structural features of the molecule, which could be important in accurately classifying mineral nutrients. For example, some mineral nutrients may have specific structural patterns or functional groups that could help in their identification.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+4. **Molecular weight cutoff**: The program uses a molecular weight cutoff of 200 Da to distinguish between inorganic and organic molecules. While this is a reasonable approximation, it may not be accurate for all cases, leading to potential misclassifications.
 
-    Returns:
-        bool: True if molecule is a mineral nutrient, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check if the molecule is inorganic
-    if Descriptors.MolWt(mol) < 200:
-        # Inorganic molecules are typically small (<200 Da)
-        
-        # Check for presence of mineral nutrient elements
-        elements = set([atom.GetSymbol() for atom in mol.GetAtoms()])
-        if any(elem in mineral_nutrient_elements for elem in elements):
-            
-            # Check for common mineral nutrient counterions
-            counterions = [item for item in smiles.split('.') if len(item) <= 3 and any(char.isalpha() for char in item)]
-            common_counterions = ['[Cl-]', '[O-]', '[OH-]', '[H+]', '[O-]S([O-])(=O)=O', '[O-]C([O-])=O', '[O-][N+]([O-])=O']
-            if any(counterion in common_counterions for counterion in counterions):
-                return True, "Contains mineral nutrient element(s) and common counterion(s)"
-            else:
-                return False, "Contains mineral nutrient element(s) but uncommon counterion(s)"
-        else:
-            return False, "Does not contain mineral nutrient element(s)"
-    else:
-        return False, "Molecular weight too high for an inorganic mineral nutrient"
+To improve the classification accuracy, you could consider the following steps:
+
+1. **Expand the list of mineral nutrient elements**: Research and include a more comprehensive list of elements that are considered mineral nutrients.
+
+2. **Incorporate structural patterns**: Analyze the structural patterns and functional groups common to mineral nutrients and incorporate them into the classification logic. This could involve the use of SMARTS patterns or substructure matching.
+
+3. **Revisit the counterion approach**: Instead of relying solely on common counterions, consider incorporating other chemical features or structural patterns that can help identify mineral nutrients more reliably.
+
+4. **Adjust the molecular weight cutoff**: Analyze the molecular weight distribution of known mineral nutrients and adjust the cutoff value accordingly, or consider using a range instead of a single cutoff value.
+
+5. **Utilize machine learning techniques**: If the rule-based approach becomes too complex or fails to capture all the nuances of mineral nutrient classification, consider using machine learning techniques. This would involve creating a labeled dataset of mineral nutrients and non-mineral nutrients, and training a classification model on the structural and chemical features of the molecules.
+
+6. **Handle exceptions and edge cases**: Identify and handle exceptions or edge cases that may not fit the general classification rules. For example, some mineral nutrients may have unusual counterions or structural features that deviate from the norm.
+
+By incorporating these improvements, the program's ability to accurately classify mineral nutrients should increase. However, it's important to note that classification tasks can be complex, and there may always be some misclassifications or edge cases that require manual review or additional rules.
