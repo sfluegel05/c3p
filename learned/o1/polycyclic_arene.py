@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_polycyclic_arene(smiles: str):
     """
     Determines if a molecule is a polycyclic arene (polycyclic aromatic hydrocarbon) based on its SMILES string.
-    A polycyclic arene contains a fused system of at least two aromatic rings.
+    A polycyclic arene is a hydrocarbon consisting of fused aromatic rings, containing only carbon and hydrogen atoms.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,18 +20,23 @@ def is_polycyclic_arene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Check that the molecule contains only carbon and hydrogen atoms
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1:
+            return False, "Molecule contains atoms other than carbon and hydrogen"
+
     # Get ring information
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
     num_rings = len(atom_rings)
     if num_rings < 2:
-        return False, "Molecule is not polycyclic (less than two rings)"
+        return False, "Molecule does not have at least two rings"
 
     # Build ring adjacency graph
     ring_graph = {}
     for i in range(num_rings):
         ring_graph[i] = set()
-    
+
     for i in range(num_rings):
         for j in range(i+1, num_rings):
             # Check if rings i and j share at least one bond
@@ -58,7 +63,7 @@ def is_polycyclic_arene(smiles: str):
                 # Rings i and j share at least one bond (fused)
                 ring_graph[i].add(j)
                 ring_graph[j].add(i)
-    
+
     # Find connected components (fused ring systems)
     visited = [False] * num_rings
     ring_systems = []
@@ -73,22 +78,25 @@ def is_polycyclic_arene(smiles: str):
                     component.append(node)
                     stack.extend(ring_graph[node])
             ring_systems.append(component)
-    
-    # For each ring system, check if it contains at least two aromatic rings
+
+    # For each ring system, check if it contains at least two aromatic rings made up of carbon atoms
     for system in ring_systems:
-        aromatic_rings = 0
+        if len(system) < 2:
+            continue  # Skip ring systems with less than two rings
+        all_rings_are_aromatic = True
         for ring_idx in system:
             atoms_in_ring = atom_rings[ring_idx]
             ring_aromatic = True
             for atom_idx in atoms_in_ring:
                 atom = mol.GetAtomWithIdx(atom_idx)
-                if not atom.GetIsAromatic():
+                if not atom.GetIsAromatic() or atom.GetAtomicNum() != 6:
                     ring_aromatic = False
                     break
-            if ring_aromatic:
-                aromatic_rings += 1
-        if aromatic_rings >= 2:
-            # Found a fused ring system with at least two aromatic rings
-            return True, "Molecule contains a fused aromatic ring system with at least two rings"
+            if not ring_aromatic:
+                all_rings_are_aromatic = False
+                break
+        if all_rings_are_aromatic:
+            # Found a fused aromatic ring system with at least two rings made up of carbon atoms
+            return True, "Molecule is a polycyclic aromatic hydrocarbon"
     
-    return False, "No fused aromatic ring system with at least two aromatic rings found"
+    return False, "No fused aromatic hydrocarbon ring system with at least two aromatic rings found"
