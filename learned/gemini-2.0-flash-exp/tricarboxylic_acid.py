@@ -20,9 +20,10 @@ def is_tricarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for carboxyl group, including possible protonation or metal forms
-    # C(=O)[OH1,OX2-,OM] - where OH1 is the protonated carboxyl group, OX2- is the deprotonated group, and OM is the metal carboxylate.
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH1,OX2-,OM]")
+    # Define SMARTS for carboxyl group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    if carboxyl_pattern is None:
+        return None, "Invalid SMARTS pattern for carboxyl group"
 
     # Find all matches of the carboxyl group
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
