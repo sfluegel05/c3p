@@ -2,7 +2,6 @@
 Classifies: CHEBI:17135 long-chain fatty alcohol
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
@@ -22,16 +21,41 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for primary alcohol group (C-O-H) at the terminal position of carbon chain
-    primary_alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    # Look for primary alcohol group (OH); must be bound to a carbon atom
+    primary_alcohol_pattern = Chem.MolFromSmarts("CO")
     if not mol.HasSubstructMatch(primary_alcohol_pattern):
-        return False, "No primary alcohol group found"
+        return False, "No primary alcohol group (C-OH) found"
     
-    # Count the longest carbon chain
-    carbon_chain_length = rdMolDescriptors.CalcMolLongestPath(mol)
-    
-    # Verify the carbon chain is between 13 and 22 carbons
-    if carbon_chain_length < 13 or carbon_chain_length > 22:
-        return False, f"Carbon chain length is {carbon_chain_length}, outside the 13-22 range"
+    # Traverse the molecule to find the longest carbon chain
+    atom_types = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
+    if not any(atom == 6 for atom in atom_types):  # ensure there are carbon atoms
+        return False, "No carbon atoms present"
 
-    return True, f"Contains a primary alcohol group and has a carbon chain length of {carbon_chain_length}."
+    # Initialize the longest carbon chain length
+    longest_chain_length = 0
+    
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Only start from carbon atoms
+            # Explore the depth of carbon chains using BFS
+            visited = {atom.GetIdx()}
+            queue = [(atom, 0)]
+            max_depth = 0
+            
+            while queue:
+                current_atom, depth = queue.pop(0)
+                max_depth = max(max_depth, depth)
+                
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6:
+                        visited.add(neighbor.GetIdx())
+                        queue.append((neighbor, depth + 1))
+
+            # If the longest chain in this path is greater than previously found, update it
+            if max_depth + 1 > longest_chain_length:
+                longest_chain_length = max_depth + 1
+
+    # Validate chain length
+    if 13 <= longest_chain_length <= 22:
+        return True, f"Contains a primary alcohol group and a suitable carbon chain length of {longest_chain_length}."
+
+    return False, f"Longest carbon chain length is {longest_chain_length}, outside the 13-22 range"
