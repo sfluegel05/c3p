@@ -6,9 +6,8 @@ from rdkit import Chem
 def is_short_chain_fatty_acid(smiles: str):
     """
     Determines if a molecule is a short-chain fatty acid based on its SMILES string.
-    A short-chain fatty acid is defined as an aliphatic monocarboxylic acid with a 
-    total carbon count in the main chain ≤ 6, with no additional functional groups
-    outside the carboxylic acid.
+    A short-chain fatty acid is defined as an aliphatic monocarboxylic acid with a
+    total carbon count excluding the carboxylic group ≤ 6, allowing some functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,24 +20,29 @@ def is_short_chain_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Check for exactly one carboxylic acid group: -C(=O)O
     carboxylic_pattern = Chem.MolFromSmarts('C(=O)[O;H1]')
     carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
     if len(carboxylic_matches) != 1:
         return False, f"Contains {len(carboxylic_matches)} carboxylic acid groups, expected exactly 1"
-
-    # Count carbon atoms in the main chain (considering possible branching)
-    c_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
-    if c_count > 6:
-        return False, f"Contains {c_count} carbons, expected 6 or fewer"
     
-    # Ensure no non-hydrocarbon substituents (excluding carboxylic group)
+    # Check the main carbon chain length
+    # Consider atoms excluding the carboxylic carbon (which is typically seen separately in aliphatic R-COOH)
+    non_oxo_carbons = 0
     for atom in mol.GetAtoms():
-        if atom.GetSymbol() not in {'H', 'C', 'O'}:
-            return False, f"Contains non-hydrocarbon substituent: {atom.GetSymbol()}"
+        if atom.GetAtomicNum() == 6:
+            if not atom.IsInRing():
+                non_oxo_carbons += 1
+                for nbr in atom.GetNeighbors():
+                    if nbr.GetAtomicNum() != 6 and nbr.GetAtomicNum() != 8:
+                        return False, f"Contains non-allowed substituent: {nbr.GetSymbol()}"
     
-    # Ensure there are no aromatic structures, i.e., aliphatic only
+    # Validate that the carbon backbone contains ≤ 5 carbons if subtracting the carboxy carbon
+    if non_oxo_carbons - 1 > 5:
+        return False, f"Main chain exceeds C5, found {non_oxo_carbons - 1} carbons excluding carboxylic carbon"
+    
+    # Ensure no aromatic structures
     if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
         return False, "Contains aromatic structures, expected aliphatic only"
     
