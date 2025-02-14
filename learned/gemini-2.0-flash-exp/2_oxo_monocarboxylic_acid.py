@@ -22,24 +22,29 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for monocarboxylic acid group (-C(=O)OH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    # 1. Check for monocarboxylic acid group (C(=O)[O,OH1])
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O,OH1]")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acid_matches) != 1:
         return False, f"Molecule must have exactly one carboxylic acid group, found {len(carboxylic_acid_matches)}"
     
-    # Get the carboxyl carbon and verify it's connected to another carbon (the alpha carbon)
+    # Get the carboxyl carbon
     carboxyl_carbon_idx = carboxylic_acid_matches[0][0]
     carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
+
+    # Identify the alpha carbon, must be a carbon that is single bonded to the carboxylic carbon
     alpha_carbon = None
-    for neighbor in carboxyl_carbon.GetNeighbors():
-        if neighbor.GetSymbol() == 'C':
+    for bond in carboxyl_carbon.GetBonds():
+      if bond.GetBondType() == Chem.BondType.SINGLE:
+          neighbor = bond.GetOtherAtom(carboxyl_carbon)
+          if neighbor.GetSymbol() == 'C':
                 alpha_carbon = neighbor
                 break
     if alpha_carbon is None:
-        return False, "Carboxylic acid group is not connected to another carbon"
+      return False, "Carboxylic acid group is not connected to another carbon"
     
-    # Check if alpha carbon has a carbonyl group
+
+    # Check if alpha carbon has a carbonyl group.
     has_carbonyl = False
     for neighbor in alpha_carbon.GetNeighbors():
         if neighbor.GetSymbol() == 'O' and mol.GetBondBetweenAtoms(alpha_carbon.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
