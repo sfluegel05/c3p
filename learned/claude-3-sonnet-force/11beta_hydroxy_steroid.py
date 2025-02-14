@@ -6,6 +6,7 @@ Classifies: CHEBI:38043 11beta-hydroxy steroid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_11beta_hydroxy_steroid(smiles: str):
     """
@@ -25,15 +26,23 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts("[#6,#8]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]" +
-                                          "~[#6]~[#6]~[#6]~[#6]~[#6]~[#6,#8]")
+    # Check for steroid backbone
+    steroid_pattern = Chem.MolFromSmarts("[C@]12CCC[C@H]3[C@@H]4CC[C@@]5(C)[C@@H](O)CC[C@]5(O)[C@H]4CC[C@]3(C)C1=O")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
-    # Look for 11-beta hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[C@@]12[C@@H]([C@H]([C@@H]3[C@H]([C@@H]([C@H](C2)C)C4=CC(=O)CC[C@]34C)C)C)C")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
+    # Check for 11beta-hydroxy group
+    hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[C@@]1")
+    hydroxy_match = mol.GetSubstructMatches(hydroxy_pattern)
+    if not hydroxy_match:
         return False, "No 11beta-hydroxy group found"
     
-    return True, "Contains steroid backbone with 11beta-hydroxy group"
+    # Check for additional features
+    n_ketones = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(bond.GetBondType() == Chem.BondType.DOUBLE for bond in atom.GetBonds()) == 1)
+    n_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    
+    if n_ketones < 1 or n_double_bonds < 1 or mol_wt < 250 or mol_wt > 600:
+        return False, "Missing essential features for 11beta-hydroxy steroid"
+    
+    return True, "Contains steroid backbone with 11beta-hydroxy group and essential features"
