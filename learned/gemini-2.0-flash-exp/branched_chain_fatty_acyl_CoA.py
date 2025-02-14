@@ -54,45 +54,52 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     if fatty_chain_carbon_index is None:
       return False, "Fatty chain carbon not found"
 
-    
-    # Perform depth-first search, keep track of visited atoms and chain atoms
+
+    # BFS to traverse the fatty acyl chain and find branching point
+    queue = [fatty_chain_carbon_index]
     visited_atoms = set()
     acyl_chain_atoms = set()
+    is_branched = False
 
-    def dfs(atom_index):
-        if atom_index in visited_atoms:
-            return False # avoid loops
-        
-        visited_atoms.add(atom_index)
+    while queue:
+        current_index = queue.pop(0)
 
-        atom = mol.GetAtomWithIdx(atom_index)
-        if atom.GetSymbol() != 'C':
-          return False
+        if current_index in visited_atoms:
+            continue
+        visited_atoms.add(current_index)
+
+        current_atom = mol.GetAtomWithIdx(current_index)
+        acyl_chain_atoms.add(current_index)
+
+        carbon_neighbors = [neighbor.GetIdx() for neighbor in current_atom.GetNeighbors() if neighbor.GetSymbol() == 'C']
         
-        acyl_chain_atoms.add(atom_index)
-        
-        
-        
-        carbon_neighbors = [neighbor.GetIdx() for neighbor in atom.GetNeighbors() if neighbor.GetSymbol() == 'C']
-        
-        #Check for branching only on the chain. Only if > 2 carbon neighbors in acyl chain
+        # Check for branching only on the chain.
         branching_neighbors = 0
         for neighbor_index in carbon_neighbors:
-           if neighbor_index in acyl_chain_atoms or neighbor_index not in visited_atoms:
+            if neighbor_index not in visited_atoms and neighbor_index not in acyl_chain_atoms:
                 branching_neighbors+=1
-        if branching_neighbors > 2:
-            return True  # Found branch on acyl chain
-        
+
+        if branching_neighbors > 1:
+             is_branched = True
+             break
 
         for neighbor_index in carbon_neighbors:
-          if dfs(neighbor_index):
-            return True
-        
-        return False  # no branch found yet
+            if neighbor_index not in visited_atoms and neighbor_index not in acyl_chain_atoms:
+                queue.append(neighbor_index)
 
-    is_branched = dfs(fatty_chain_carbon_index)
-    
-    if is_branched:
-        return True, "Molecule is a branched-chain fatty acyl-CoA"
-    else:
-      return False, "No branch found on the fatty acyl chain."
+
+    if not is_branched:
+          return False, "No branch found on the fatty acyl chain."
+
+    # Chain length check
+    if len(acyl_chain_atoms) < 4:
+      return False, "Chain too short to be a fatty acid."
+
+    #Check for rings.
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        for ring in ring_info.AtomRings():
+           if any(atom_index in acyl_chain_atoms for atom_index in ring):
+                return False, "Acyl chain is part of a ring"
+
+    return True, "Molecule is a branched-chain fatty acyl-CoA"
