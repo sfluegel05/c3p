@@ -24,11 +24,11 @@ def is_sulfonamide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define sulfonamide SMARTS pattern: sulfur atom double-bonded to two oxygens and single-bonded to nitrogen (with total valence of 3)
-    sulfonamide_pattern = Chem.MolFromSmarts("[SX4](=O)(=O)[NX3]")
+    # Define a general sulfonamide SMARTS pattern: sulfur atom double-bonded to two oxygens and single-bonded to nitrogen
+    sulfonamide_pattern = Chem.MolFromSmarts("[#16](=O)(=O)-[N]")
     if sulfonamide_pattern is None:
         return False, "Invalid SMARTS pattern for sulfonamide"
-    
+        
     # Check if the molecule contains the sulfonamide functional group
     if mol.HasSubstructMatch(sulfonamide_pattern):
         return True, "Contains sulfonamide functional group"
