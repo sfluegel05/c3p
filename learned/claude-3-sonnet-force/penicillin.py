@@ -10,8 +10,8 @@ from rdkit.Chem import AllChem, rdMolDescriptors
 def is_penicillin(smiles: str):
     """
     Determines if a molecule is a penicillin based on its SMILES string.
-    Penicillins have two methyl substituents at position 2, a carboxylate substituent
-    at position 3, and a carboxamido group at position 6 of the penam ring system.
+    Penicillins have two methyl substituents, a carboxylate substituent,
+    and a carboxamido group on the penam ring system.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,20 +30,21 @@ def is_penicillin(smiles: str):
     if not mol.HasSubstructMatch(penam_pattern):
         return False, "No penam ring system found"
     
-    # Check for two methyl groups at position 2
-    methyl_pattern = Chem.MolFromSmarts("[C&R2]([C])(C)")
-    if len(mol.GetSubstructMatches(methyl_pattern)) != 1:
-        return False, "Incorrect number of methyl groups at position 2"
+    # Check for two methyl groups
+    methyl_pattern = Chem.MolFromSmarts("[CH3]")
+    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
+    if len(methyl_matches) != 2:
+        return False, "Incorrect number of methyl groups"
     
-    # Check for carboxylate at position 3
-    carboxylate_pattern = Chem.MolFromSmarts("[C&R3](=O)[O-]")
+    # Check for carboxylate group
+    carboxylate_pattern = Chem.MolFromSmarts("[C](=O)[O-]")
     if len(mol.GetSubstructMatches(carboxylate_pattern)) != 1:
-        return False, "No carboxylate group at position 3"
+        return False, "No carboxylate group found"
     
-    # Check for carboxamido group at position 6
-    carboxamido_pattern = Chem.MolFromSmarts("[N&R4][C](=O)[O]")
+    # Check for carboxamido group
+    carboxamido_pattern = Chem.MolFromSmarts("[N][C](=O)[O]")
     if len(mol.GetSubstructMatches(carboxamido_pattern)) != 1:
-        return False, "No carboxamido group at position 6"
+        return False, "No carboxamido group found"
     
     # Additional checks (not strictly required)
     n_atoms = mol.GetNumAtoms()
@@ -54,4 +55,4 @@ def is_penicillin(smiles: str):
     if n_rings != 2:
         return False, "Incorrect number of rings for penicillins"
     
-    return True, "Contains penam ring system with two methyl groups at position 2, carboxylate at position 3, and carboxamido group at position 6"
+    return True, "Contains penam ring system with two methyl groups, a carboxylate group, and a carboxamido group"
