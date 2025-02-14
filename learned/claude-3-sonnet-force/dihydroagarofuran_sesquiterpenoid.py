@@ -25,11 +25,6 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if molecule is a sesquiterpenoid (C15H24 or C15H22)
-    formula = AllChem.CalcMolFormula(mol)
-    if formula not in ['C15H24', 'C15H22']:
-        return False, "Not a sesquiterpenoid (formula not C15H24 or C15H22)"
-
     # Look for dihydroagarofuran core
     dihydroagarofuran_core = Chem.MolFromSmarts("[C@H]1[C@]2([C@H](O)[C@@H]([C@H](O)[C@@H]1O)[C@@H]2O)O")
     if not mol.HasSubstructMatch(dihydroagarofuran_core):
@@ -45,4 +40,8 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     if dbe < 3 or dbe > 7:
         return False, "Double bond equivalents not typical for sesquiterpenoids"
 
+    # Check for common modifications/substituents (e.g., acetylation, benzoylation)
+    has_modifications = any(atom.GetSmarts() in ["[#6]-[#6]-[#8]-[#6]", "[#6]-[#6]-[#8]-[#6]-[#6]"] for atom in mol.GetAtoms())
+
+    # Sesquiterpenoid with dihydroagarofuran core, typical ring system and DBE, allowing for common modifications
     return True, "Contains the dihydroagarofuran core and other structural features typical of dihydroagarofuran sesquiterpenoids"
