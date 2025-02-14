@@ -22,7 +22,7 @@ def is_essential_fatty_acid(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Look for carboxylic acid group (COOH) at one end
+    # Look for carboxylic acid group (COOH) pattern at one end of the molecule
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
@@ -30,21 +30,15 @@ def is_essential_fatty_acid(smiles: str):
     # Check for multiple double bonds (C=C) along the chain
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bonds = mol.GetSubstructMatches(double_bond_pattern)
-    if len(double_bonds) < 2:
+    if len(double_bonds) < 3:
         return False, "Too few double bonds; polyunsaturation required"
 
     # Verify the presence of cis configuration double bonds
-    # Look for patterns of the form C/C=C/C or C\C=C\C, indicating cis double bonds
-    cis_double_bond_pattern = Chem.MolFromSmarts("C/C=C/C")
-    cis_double_bonds = mol.GetSubstructMatches(cis_double_bond_pattern)
-    if len(cis_double_bonds) < len(double_bonds):
-        # If insufficient cis double bonds detected, verify using alternative SMARTS
-        alt_cis_double_bond_pattern = Chem.MolFromSmarts(r"C\C=C\C") 
-        alt_cis_double_bonds = mol.GetSubstructMatches(alt_cis_double_bond_pattern)
-        if len(cis_double_bonds) + len(alt_cis_double_bonds) < len(double_bonds):
-            return False, "Not enough cis double bonds for essential fatty acid"
+    cis_bond_count = mol.GetSubstructMatches(Chem.MolFromSmarts('C/C=C/C')) + mol.GetSubstructMatches(Chem.MolFromSmarts('C\C=C\C'))
+    if len(cis_bond_count) < len(double_bonds):
+        return False, "Not enough cis double bonds for essential fatty acid"
 
-    # Verify the total number of carbon atoms
+    # Verify the total number of carbon atoms in the chain
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 18:
         return False, "Too few carbons for essential fatty acid"
