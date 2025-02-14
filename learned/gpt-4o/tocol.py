@@ -23,17 +23,19 @@ def is_tocol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Chromanol core pattern SMARTS: includes benzopyran-6-ol structure   
-    chromanol_pattern = Chem.MolFromSmarts("Oc1ccc(CC2CCCCO2)c(c)c1")
-    if not mol.HasSubstructMatch(chromanol_pattern):
-        return False, "No chromanol core found"
+    # Chromanol 6-ol structure is characterized typically by a 2H-1-benzopyran-6-ol structure
+    chromanol_core = Chem.MolFromSmarts("Oc1ccc2OCC(Cc2c1)C")
+    if not mol.HasSubstructMatch(chromanol_core):
+        return False, "No chromanol core (2H-benzopyran-6-ol) found"
 
-    # Isoprenoid chain characteristics using common isoprene unit structure (C5H8)
-    # Yet flexible enough to allow saturation and unsaturation as permitted
-    isoprenoid_unit = Chem.MolFromSmarts("C(C)(C)C")
+    # Isoprenoid chains are built from repeated C5 units.
+    # Here, we're simplifying by checking for broad isoprenoid patterns.
+    isoprenoid_unit = Chem.MolFromSmarts("C(C)(C)CC")
     num_isoprenoid_units = len(mol.GetSubstructMatches(isoprenoid_unit))
     
-    if num_isoprenoid_units < 3:
-        return False, f"Insufficient isoprenoid features: {num_isoprenoid_units} found, need at least 3"
+    # Assume that variations in the chain (i.e., degree of unsaturation) mean we should at least look for three chains, base
+    # This logic is flexible and some manual tuning might be needed for edge cases not covered.
+    if num_isoprenoid_units < 3 and not (mol.HasSubstructMatch(Chem.MolFromSmarts("C=C"))):
+        return False, f"Insufficient isoprenoid units: {num_isoprenoid_units} found, with minimal unsaturation"
 
-    return True, "Contains chromanol core and appropriate hydrocarbon substitution with isoprenoid units"
+    return True, "Contains chromanol core with appropriate hydrocarbon chain substitution"
