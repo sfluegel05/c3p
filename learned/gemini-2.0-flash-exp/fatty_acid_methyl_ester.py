@@ -25,42 +25,26 @@ def is_fatty_acid_methyl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the methyl ester group pattern (C(=O)OC) including methyl hydrogens
-    methyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])OC([H])([H])[H]")
-    methyl_ester_matches = mol.GetSubstructMatches(methyl_ester_pattern)
-    
-    if len(methyl_ester_matches) != 1:
-        return False, f"Found {len(methyl_ester_matches)} methyl ester groups, need exactly 1"
+    # Look for the methyl ester group pattern (C(=O)OC)
+    methyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])OC")
+    if not mol.HasSubstructMatch(methyl_ester_pattern):
+        return False, "No methyl ester group found"
 
+    # Look for fatty acid chains (long carbon chains attached to carbonyl of ester)
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain_pattern)
+    if len(fatty_acid_matches) == 0:
+        return False, "Missing fatty acid chain"
+
+    # Verify chain length using rotatable bonds, ensure at least 3 (for a chain of 4)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 3:
+        return False, "Fatty acid chain too short"
     
-    # Check for fatty acid chains (long carbon chains attached to carbonyl of ester)
-    fatty_acid_chain_found = False
-    for match in methyl_ester_matches:
-         carbonyl_idx = -1
-         for idx in match:
-              atom = mol.GetAtomWithIdx(idx)
-              if atom.GetSymbol() == 'C' and atom.GetTotalValence() == 3: # looking for carbon that is part of ester carbonyl
-                carbonyl_idx = idx
-                break
-         if carbonyl_idx != -1:
-             
-            alkyl_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-            
-            # get all neighbours for carbonyl, not including ester oxygen
-            neighbours = [neighbour for neighbour in mol.GetAtomWithIdx(carbonyl_idx).GetNeighbors() if mol.GetAtomWithIdx(neighbour.GetIdx()).GetSymbol() != 'O' ]
-           
-            for neighbour in neighbours:
-                submol = Chem.PathToSubmol(mol, [carbonyl_idx, neighbour.GetIdx()])
-                
-                if submol.HasSubstructMatch(alkyl_chain_pattern):
-                    fatty_acid_chain_found = True
-                    break
-            
-            if fatty_acid_chain_found:
-                break
-    
-    if not fatty_acid_chain_found:
-          return False, "Missing fatty acid chain"
+    # Check for glycerol backbone pattern to ensure it is not a triglyceride
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if mol.HasSubstructMatch(glycerol_pattern):
+        return False, "Glycerol backbone found. Not a fatty acid methyl ester"
 
 
     return True, "Contains a methyl ester group and a fatty acid chain"
