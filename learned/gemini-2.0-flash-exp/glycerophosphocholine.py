@@ -54,13 +54,7 @@ def is_glycerophosphocholine(smiles: str):
     if len(fatty_acid_matches) < 1:
         return False, "No fatty acid chain found"
 
-    # Check for the presence of a phosphate group:
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2])([OX1])")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) != 1:
-        return False, f"Incorrect number of phosphate groups found. Found {len(phosphate_matches)}, needed 1"
-
-    # Count carbons and oxygens
+    # Count carbons, oxygens, phosphorus and nitrogen
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
