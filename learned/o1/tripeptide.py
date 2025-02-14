@@ -25,21 +25,17 @@ def is_tripeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the peptide bond pattern (amide bond): O=C-N
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    # Define a more specific peptide bond pattern
+    # Peptide bond: O=C-N-C(alpha), where N is connected to a carbon that is not a carbonyl carbon
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)-N-C")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
     num_peptide_bonds = len(peptide_bond_matches)
 
-    if num_peptide_bonds != 2:
-        return False, f"Found {num_peptide_bonds} peptide bonds, need exactly 2 for tripeptide"
+    # Estimate the number of amino acid residues
+    # In linear peptides, Number of residues = Number of peptide bonds + 1
+    estimated_residues = num_peptide_bonds + 1
 
-    # Define the amino acid residue pattern in a peptide chain
-    # Pattern: N-C-C(=O)
-    residue_pattern = Chem.MolFromSmarts("[N][CH1][C](=O)")
-    residue_matches = mol.GetSubstructMatches(residue_pattern)
-    num_residues = len(residue_matches)
-
-    if num_residues != 3:
-        return False, f"Found {num_residues} amino acid residues, need exactly 3 for tripeptide"
+    if estimated_residues != 3:
+        return False, f"Estimated {estimated_residues} amino acid residues, need exactly 3 for tripeptide"
 
     return True, "Molecule is a tripeptide with three amino acid residues connected by peptide bonds"
