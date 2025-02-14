@@ -26,36 +26,29 @@ def is_phenylpropanoid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for phenylpropane backbone (benzene ring with alkyl chain of 1-6 carbons)
-    backbone_pattern = Chem.MolFromSmarts("[c]1ccccc1CCC[C@@](C)(CC)C")
+    backbone_pattern = Chem.MolFromSmarts("[c]1ccccc1CCC[C,#0]")
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No phenylpropane backbone found"
     
-    # Check for common substituents (hydroxy, methoxy, ester, prenyl, etc.)
+    # Look for common substituents (hydroxy, methoxy, ester, prenyl, etc.) attached to the backbone
     substituents = ['O', 'OC', 'C(=O)O', 'C(=O)OC', 'c1ccccc1', 'CC=C(C)C']
-    substituent_pattern = Chem.MolFromSmarts("|".join(["[$({})]/[#6]".format(sub) for sub in substituents]))
+    substituent_pattern = Chem.MolFromSmarts("|".join([f"[{sub}]~[#6]~[{backbone_pattern.GetSmarts()}]" for sub in substituents]))
     if not mol.HasSubstructMatch(substituent_pattern):
-        return False, "No common phenylpropanoid substituents found"
+        return False, "No common phenylpropanoid substituents found attached to the backbone"
     
-    # Look for common phenylpropanoid scaffolds (flavonoids, coumarins, lignans, etc.)
-    scaffold_patterns = [
-        Chem.MolFromSmarts("c1c(O)cc2c(c1)OC(C=3C(=O)OC(c3=O)c4ccccc4)CC2"),  # flavonoid
-        Chem.MolFromSmarts("C1=C(C(=O)OC1)c2ccccc2"),  # coumarin
-        Chem.MolFromSmarts("c1ccc(C[C@H](C)Cc2ccc(OC)cc2)cc1OC")  # lignan
-    ]
-    
-    # Check if any scaffold pattern is present
-    for pattern in scaffold_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            return True, "Contains common phenylpropanoid scaffold"
-    
-    # Look for additional phenylpropanoid patterns (e.g., chalcones, stilbenes, etc.)
+    # Look for additional structural features common to phenylpropanoids
     additional_patterns = [
-        Chem.MolFromSmarts("c1ccc(C=CC(=O)c2ccccc2)cc1"),  # chalcone
-        Chem.MolFromSmarts("c1ccc(C=Cc2ccccc2)cc1")  # stilbene
+        Chem.MolFromSmarts("[c]1ccc(cc1)C=CC(=O)c2ccccc2"),  # chalcones
+        Chem.MolFromSmarts("[c]1ccc(cc1)C=Cc2ccccc2"),  # stilbenes
+        Chem.MolFromSmarts("c1c(O)cc2c(c1)OC(C=3C(=O)OC(c3=O)c4ccccc4)CC2"),  # flavonoid scaffold
+        Chem.MolFromSmarts("C1=C(C(=O)OC1)c2ccccc2"),  # coumarin scaffold
+        Chem.MolFromSmarts("c1ccc(C[C@H](C)Cc2ccc(OC)cc2)cc1OC"),  # lignan scaffold
+        Chem.MolFromSmarts("[O-][C+](=O)[C]~[c]"),  # ester or carboxylic acid
+        Chem.MolFromSmarts("[O]C=CC=CC=C"),  # prenyl or related group
     ]
     
     for pattern in additional_patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
-            return True, "Contains additional phenylpropanoid pattern"
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains phenylpropane backbone and additional structural features common to phenylpropanoids"
     
-    return True, "Contains phenylpropane backbone with aromatic ring and common substituents"
+    return False, "Meets the basic requirements of a phenylpropanoid but lacks additional structural features"
