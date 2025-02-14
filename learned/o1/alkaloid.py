@@ -2,7 +2,6 @@
 Classifies: CHEBI:22315 alkaloid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alkaloid(smiles):
     """
@@ -35,29 +34,24 @@ def is_alkaloid(smiles):
     if not n_ring_atoms:
         return False, "No nitrogen atoms in ring (heterocycle)"
 
-    # Exclude compounds where all nitrogen atoms are exocyclic
-    if len(n_ring_atoms) == 0:
-        return False, "All nitrogen atoms are exocyclic"
-
     # Check for basic nitrogen atoms
     basic_nitrogens = []
     for atom in n_ring_atoms:
-        # Exclude quaternary nitrogen (N+)
         if atom.GetFormalCharge() != 0:
-            continue
-        # Pyrrole-like nitrogens are not basic (lone pair involved in aromaticity)
-        # Pyridine-like nitrogens are basic
-        # We'll consider sp2 nitrogens in aromatic rings not basic
-        if atom.GetIsAromatic() and atom.GetHybridization() == Chem.rdchem.HybridizationType.SP2:
-            # Count the number of pi electrons contributed by nitrogen
-            num_pi_electrons = rdMolDescriptors.CalcAtomElectronContributionToAromaticRing(atom)
-            if num_pi_electrons == 1:  # Pyrrole-like nitrogen contributes lone pair to aromaticity
-                continue  # Not basic
-            else:
-                basic_nitrogens.append(atom)
-        else:
-            # Nitrogen is not aromatic or not sp2 hybridized, considered basic
+            continue  # Exclude charged nitrogens
+
+        if not atom.GetIsAromatic():
+            # Non-aromatic nitrogen in ring, usually basic
             basic_nitrogens.append(atom)
+        else:
+            # Aromatic nitrogen
+            num_h = atom.GetTotalNumHs()
+            if num_h == 0:
+                # Pyridine-like nitrogen, basic
+                basic_nitrogens.append(atom)
+            else:
+                # Pyrrole-like nitrogen, not basic
+                continue
 
     if not basic_nitrogens:
         return False, "No basic nitrogen atoms found"
