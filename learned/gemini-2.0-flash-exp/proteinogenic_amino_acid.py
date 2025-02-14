@@ -19,11 +19,11 @@ def is_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for basic alpha-amino acid structure, with allowance for labeled H atoms
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1:1][CX4:2]([CX3](=[OX1])O)([H,2H,3H])")
+    # Check for basic alpha-amino acid structure (allowing for protonation states)
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3:1][CX4:2]([CX3](=[OX1])[OX1;H0,H1:3])[CX4]")
     match = mol.GetSubstructMatch(alpha_amino_acid_pattern)
     if not match:
-          return False, "Not an alpha-amino acid structure"
+        return False, "Not an alpha-amino acid structure"
 
     # Check L-configuration (except for glycine, which is achiral)
     alpha_carbon_idx = match[1]
@@ -32,29 +32,7 @@ def is_proteinogenic_amino_acid(smiles: str):
        stereo = alpha_carbon.GetChiralTag()
 
        if stereo == Chem.ChiralType.CHI_TETRAHEDRAL_CW:
-        return False, "Chirality is not L"
-       if stereo == Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
-          pass #Correct L configuration
-       else:
-          return False, "No specified stereochemistry, must be L or achiral"
+          return False, "Chirality is not L"
 
-
-    # Check for the 20 standard amino acid sidechains (can be done via a list of SMARTS)
-    # or allow any side chain
-    # Check for selenocysteine (Sec)
-    sec_pattern = Chem.MolFromSmarts("[NX3;H2,H1][CX4]([CX3](=[OX1])O)[CH2][SeH]")
-    if mol.HasSubstructMatch(sec_pattern):
-        return True, "Selenocysteine"
-    
-    # Check for pyrrolysine (Pyl)
-    pyl_pattern = Chem.MolFromSmarts("C(=O)([C@@H](N)CCCCNC([C@H]1[C@@H](CC=N1)C)=O)O")
-    if mol.HasSubstructMatch(pyl_pattern):
-        return True, "Pyrrolysine"
-    
-    # Check for N-formylmethionine (fMet)
-    fmet_pattern = Chem.MolFromSmarts("CNC(=O)[CH2][CH2][S][CH3]")
-    if mol.HasSubstructMatch(fmet_pattern):
-         return True, "N-Formylmethionine"
-    
-    # Passed all tests, the side chain is acceptable, and configuration is correct.
+    # If it matches the pattern and is L configuration, we classify it as proteinogenic
     return True, "Proteinogenic amino acid (side-chain check skipped)"
