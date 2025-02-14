@@ -5,7 +5,7 @@ Classifies: CHEBI:61051 lipid hydroperoxide
 Classifies: CHEBI:36164 Lipid hydroperoxide
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem, rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_lipid_hydroperoxide(smiles: str):
     """
@@ -42,8 +42,7 @@ def is_lipid_hydroperoxide(smiles: str):
         return False, "No carboxylic acid group found (lipid terminus)"
 
     # Check for unsaturated bonds (typical for lipid hydroperoxides)
-    bond_orders = mol.GetBondObvBondRingsizes()
-    n_unsaturated = sum(1 for bond_order in bond_orders if bond_order > 1)
+    n_unsaturated = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE or bond.GetBondType() == Chem.BondType.TRIPLE)
     if n_unsaturated < 2:
         return False, "Too few unsaturated bonds for a lipid hydroperoxide"
 
