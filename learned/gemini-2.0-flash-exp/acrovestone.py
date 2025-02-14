@@ -22,38 +22,42 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for a flavone or isoflavone-like core (more general)
-    # Core patterns - allow for variations and dihydro forms
-    core_pattern1 = Chem.MolFromSmarts("c1cc(cc(c1)O)C(=O)c2ccccc2O")  # flavone/isoflavone core, some flexibility
-    core_pattern2 = Chem.MolFromSmarts("c1cc(cc(c1)O)C(=O)Cc2ccccc2O")  # dihydroflavone
-    core_pattern3 = Chem.MolFromSmarts("c1cc(cc(c1)O)C=Cc2ccccc2O")  # flavone core with double bond
-    core_pattern4 = Chem.MolFromSmarts("c1cc(cc(c1))C(=O)c2ccccc2") # basic flavone/isoflavone with no OH on B-ring, other positions can have OH
-    if not any(mol.HasSubstructMatch(pattern) for pattern in [core_pattern1, core_pattern2, core_pattern3, core_pattern4]):
-        return False, "No flavone/isoflavone-like core found"
+    # 1. Check for a flavone or isoflavone-like core
+    # Define core substructures
+    # Benzene and pyrone
+    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
+    pyrone_pattern = Chem.MolFromSmarts("c1cc(=O)oc1") #or "c1cc(=O)cc1"
+    if not (mol.HasSubstructMatch(benzene_pattern) and mol.HasSubstructMatch(pyrone_pattern)):
+          return False, "No flavone/isoflavone-like core found (no benzene-pyrone combination)"
+
+    # Check if the benzene is connected directly to the pyrone, A and B ring structure
+    a_ring_pattern = Chem.MolFromSmarts("c1cc(cc(c1)O)C(=O)c2ccccc2")  # A ring with OH group.
+    b_ring_pattern = Chem.MolFromSmarts("c1ccccc1O") #B-ring with OH group, this is very simple for now.
+    if not (mol.HasSubstructMatch(a_ring_pattern)): #require at least an A ring, and one OH on this ring.
+         return False, "A ring is missing"
 
     # 2. Check for glycosylation (optional)
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[C;R]-O-[C;R][OX2]") #C-O-C, and terminal O
+    # Look for glycosidic bonds, C-O-C between a sugar and a core carbon
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C;R]-O-[C;R][OX2]")
     sugar_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
     is_glycosylated = len(sugar_matches) > 0
 
-    # 3. Check for multiple hydroxyl groups or other substitutions
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    methoxy_pattern = Chem.MolFromSmarts("OC") #methoxy group
-    methoxy_count = len(mol.GetSubstructMatches(methoxy_pattern))
-    methyl_pattern = Chem.MolFromSmarts("C[CX4]") #methyl group, non-aromatic
-    methyl_count = len(mol.GetSubstructMatches(methyl_pattern))
-    malonyl_pattern = Chem.MolFromSmarts("C(=O)CC(=O)O") #malonyl group
-    malonyl_count = len(mol.GetSubstructMatches(malonyl_pattern))
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O") #carboxyl group
-    carboxyl_count = len(mol.GetSubstructMatches(carboxyl_pattern))
+    # 3. Check for multiple hydroxyl groups on rings
+    # count hydroxyls on ring
+    hydroxyl_pattern = Chem.MolFromSmarts("c1ccccc1O")
+    ring_hydroxyls = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    
+    if ring_hydroxyls < 1: # At least one hydroxyl is required on a ring
+        return False, "Must have at least 1 hydroxyl on ring."
 
-    #Conditions for classification. Must have core and one of the following:
-    #1. at least 2 hydroxyl groups OR
-    #2. at least one glycosylation OR
-    #3. at least 1 methoxy and/or malonyl or carboxyl substituent OR
-    #4. hydroxyl groups and other substitutions (methyl)
-    if hydroxyl_count >= 2 or is_glycosylated or methoxy_count>0 or malonyl_count>0 or carboxyl_count>0 or (hydroxyl_count > 0 and methyl_count>0):
-        return True, "Matches acrovestone structural features"
+    # 4. Molecular Weight check, acrovestones tend to be heavier
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for acrovestone"
+
+    #Final check
+    if ring_hydroxyls > 0 or is_glycosylated:
+         return True, "Matches acrovestone structural features"
+
 
     return False, "Does not match acrovestone characteristics"
