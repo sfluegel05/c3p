@@ -27,8 +27,8 @@ def is_diglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached via single bonds)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4](-[OX2])-[CHX4](-[OX2])-[CH2X4](-[OX2])")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
@@ -39,19 +39,20 @@ def is_diglyceride(smiles: str):
       return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
     # Check for a remaining alcohol or ether on glycerol backbone:
-    hydroxyl_pattern = Chem.MolFromSmarts("[CH2X4,CHX4,CHX3]O")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    ether_pattern = Chem.MolFromSmarts("[CH2X4,CHX4,CHX3]O[CX4]")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    
-    if len(hydroxyl_matches) == 0 and len(ether_matches) == 0:
-        return False, "No remaining hydroxyl or ether on glycerol backbone"
+    hydroxyl_or_ether_pattern = Chem.MolFromSmarts("[CH2X4,CHX4](-[OX2]) | [CH2X4,CHX4,CHX3]-[OX2]-[CX4]")
+    hydroxyl_or_ether_matches = mol.GetSubstructMatches(hydroxyl_or_ether_pattern)
 
-    if len(hydroxyl_matches) + len(ether_matches) > 1:
-        return False, "Too many OH or OR groups on glycerol backbone"
+    glycerol_carbons_pattern = Chem.MolFromSmarts("[CH2X4](-[OX2])-[CHX4](-[OX2])-[CH2X4](-[OX2])")
+    glycerol_carbon_matches = mol.GetSubstructMatches(glycerol_carbons_pattern)
+
+    if len(glycerol_carbon_matches) != 1:
+        return False, "Incorrect number of glycerol backbones"
+
+    if len(hydroxyl_or_ether_matches) < 1:
+        return False, "No remaining hydroxyl or ether on glycerol backbone"
     
     # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3](=[OX1])-[OX2]-[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
