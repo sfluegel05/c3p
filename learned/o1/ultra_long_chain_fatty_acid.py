@@ -25,44 +25,53 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for exactly one carboxylic acid functional group [CX3](=O)[O;H1,-1]
-    # This pattern matches both protonated and deprotonated carboxylic acids
-    carboxylic_acid = Chem.MolFromSmarts("[CX3](=O)[O;H1,-1]")
+    # Look for exactly one carboxylic acid functional group [CX3](=O)[OX1H1]
+    carboxylic_acid = Chem.MolFromSmarts("[CX3](=O)[OX1H1]")
     matches = mol.GetSubstructMatches(carboxylic_acid)
     if len(matches) != 1:
         return False, f"Expected one carboxylic acid group, found {len(matches)}"
 
-    # Check for rings larger than cyclopropane (size > 3)
-    ring_info = mol.GetRingInfo()
-    has_large_ring = False
-    for ring in ring_info.AtomRings():
-        if len(ring) > 3:
-            has_large_ring = True
-            break
-    if has_large_ring:
-        return False, "Molecule contains rings larger than cyclopropane"
-
-    # Find the carboxyl carbon index
+    # Get the carboxyl carbon atom index
     carboxyl_carbon_idx = matches[0][0]
 
-    # Function to find the longest carbon chain connected to a given atom
-    def find_longest_chain(atom_idx, visited):
-        visited.add(atom_idx)
-        max_length = 1  # Include current atom
-        atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            # Only consider carbon atoms not visited yet
-            if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
-                length = 1 + find_longest_chain(neighbor_idx, visited)
-                if length > max_length:
-                    max_length = length
-        return max_length
+    # Identify all terminal carbon atoms (degree 1 carbons)
+    terminal_carbons = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and len(atom.GetNeighbors()) == 1:
+            terminal_carbons.append(atom.GetIdx())
 
-    visited = set()
-    chain_length = find_longest_chain(carboxyl_carbon_idx, visited)
+    # Check if there are terminal carbons
+    if not terminal_carbons:
+        return False, "No terminal carbon atoms found"
+
+    # Function to check if a path consists only of carbons
+    def path_is_linear_carbon_chain(path):
+        bond_types = [mol.GetBondBetweenAtoms(path[i], path[i+1]).GetBondType() for i in range(len(path)-1)]
+        atoms = [mol.GetAtomWithIdx(idx) for idx in path]
+        # Check if all atoms are carbons and all bonds are single
+        is_linear = all(atom.GetAtomicNum() == 6 for atom in atoms) and all(bond == Chem.rdchem.BondType.SINGLE for bond in bond_types)
+        return is_linear
+
+    # Find the longest linear carbon chain from carboxyl carbon to terminal carbons
+    from rdkit.Chem import rdmolops
+
+    max_chain_length = 0
+    for term_idx in terminal_carbons:
+        # Get all paths between carboxyl carbon and terminal carbon
+        paths = rdmolops.GetAllSimplePaths(mol, carboxyl_carbon_idx, term_idx)
+        for path in paths:
+            if path_is_linear_carbon_chain(path):
+                chain_length = len(path)
+                if chain_length > max_chain_length:
+                    max_chain_length = chain_length
+
+    if max_chain_length == 0:
+        return False, "No linear carbon chain found from carboxyl carbon to terminal carbon"
+
+    # Subtract 1 to get the number of bonds (chain length in carbons)
+    chain_length = max_chain_length
 
     if chain_length > 27:
-        return True, f"Longest carbon chain is {chain_length} carbons"
+        return True, f"Longest linear carbon chain is {chain_length} carbons"
     else:
-        return False, f"Longest carbon chain is {chain_length} carbons, which is not greater than 27"
+        return False, f"Longest linear carbon chain is {chain_length} carbons, which is not greater than 27"
