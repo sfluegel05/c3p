@@ -39,7 +39,6 @@ def is_methyl_branched_fatty_acid(smiles: str):
     # Check for minimum chain length of at least 4 carbons excluding the carbonyl carbon (C=O).
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     num_carbons = len(carbon_atoms)
-
     if num_carbons < 4:
        return False, "Too few carbons to be a fatty acid"
 
@@ -47,24 +46,20 @@ def is_methyl_branched_fatty_acid(smiles: str):
     chain_carbon_pattern = Chem.MolFromSmarts("CC(=O)O")
     chain_carbon_matches = mol.GetSubstructMatches(chain_carbon_pattern)
     if not chain_carbon_matches:
-         return False, "Carboxylic acid not attached to carbon chain"
-    
-    
-    #Check all carbons for non-methyl branch
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  #only look at carbon atoms
-            neighbors = atom.GetNeighbors()
-            for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 6: #only check the neighbors that are carbon atoms
-                    if len(neighbor.GetNeighbors()) > 1 and neighbor.GetDegree() > 1: #check branching carbons
-                        is_methyl = True
-                        for next_neighbor in neighbor.GetNeighbors():
-                            if next_neighbor.GetAtomicNum() == 6:
-                                if next_neighbor.GetDegree() > 1 and next_neighbor.GetIdx() != atom.GetIdx():
-                                    is_methyl = False
-                                    break
-                        if not is_methyl:
-                           return False, "Molecule contains non-methyl branches"
-                                
+        return False, "Carboxylic acid not attached to carbon chain"
+
+    # Ensure all branches are methyl branches.
+    # We look for carbon atoms with more than 2 neighbors, and make sure they are connected only to CH3s, H or C.
+    branch_pattern = Chem.MolFromSmarts("[CX4]([CH3])([CH3,H,C])([CH3,H,C])")
+    branching_carbons_with_2methyls = mol.GetSubstructMatches(branch_pattern) # these are carbons with 2 methyls.
+    branch_pattern_1methyl = Chem.MolFromSmarts("[CX4]([CH3])([CH,H])([CH,H])") # these are carbons with 1 methyl
+    branching_carbons_with_1methyl = mol.GetSubstructMatches(branch_pattern_1methyl)
+    branch_pattern_nomet = Chem.MolFromSmarts("[CX4]([CH,H])([CH,H])([CH,H])") #these are no methyl branch but it can be in the carbon chain.
+    branching_carbons_nomet = mol.GetSubstructMatches(branch_pattern_nomet)
+
+    #Check for non-methyl branches.
+    non_methyl_branch_pattern = Chem.MolFromSmarts("[CX4]([!#1,#6])([!#1,#6,#8])([!#1,#6,#8])")
+    if mol.HasSubstructMatch(non_methyl_branch_pattern):
+        return False, "Molecule contains non-methyl branches"
 
     return True, "Methyl-branched fatty acid"
