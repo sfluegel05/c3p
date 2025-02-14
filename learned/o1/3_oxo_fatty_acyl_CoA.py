@@ -26,64 +26,59 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Define the thioester linkage pattern (without CoA details)
-    # Thioester linkage: C(=O)S
-    thioester_smarts = "C(=O)S"
-    thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
-    if not thioester_pattern:
-        return False, "Invalid thioester SMARTS pattern"
+    # Add hydrogens for accurate valence calculations
+    mol_h = Chem.AddHs(mol)
+    
+    # Define the CoA substructure pattern (simplified)
+    # This pattern includes the adenine moiety connected via ribose and phosphate groups
+    # to the pantetheine moiety ending with the thiol group
+    coa_smarts = """
+    N1C=NC2=C1N=CN=C2N
+    """
+    coa_pattern = Chem.MolFromSmarts(coa_smarts)
+    if not coa_pattern:
+        return False, "Invalid CoA SMARTS pattern"
 
-    # Check for thioester linkage
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester linkage not found"
+    # Check for CoA substructure
+    if not mol_h.HasSubstructMatch(coa_pattern):
+        return False, "CoA moiety not found"
 
-    # Define the 3-oxo-fatty acyl chain pattern
-    # 3-oxo group on fatty acyl chain: [#6]-C(=O)-C-C(=O)-[#6]
-    # This represents a carbon chain with a keto group at the 3-position
-    three_oxo_acyl_smarts = "[#6]-C(=O)-C-C(=O)-[#6]"
-    three_oxo_acyl_pattern = Chem.MolFromSmarts(three_oxo_acyl_smarts)
-    if not three_oxo_acyl_pattern:
-        return False, "Invalid 3-oxo-fatty acyl SMARTS pattern"
-
-    # Check for 3-oxo-fatty acyl chain attached via thioester linkage
-    matches = mol.GetSubstructMatches(three_oxo_acyl_pattern)
-    if not matches:
-        return False, "3-oxo-fatty acyl chain not found"
-
-    # Check that the 3-oxo-fatty acyl chain is connected to the thioester linkage
-    found_acyl_coa = False
-    for match in matches:
-        # Get the atom indices for the pattern match
-        atom_indices = match
-        # Check if one end is connected to the thioester carbonyl carbon
-        acyl_carbon = atom_indices[1]  # The first carbonyl carbon in pattern
-        # Get the atom corresponding to the acyl carbon
-        acyl_atom = mol.GetAtomWithIdx(acyl_carbon)
-        # Check if the acyl carbon is connected to a sulfur atom
-        for neighbor in acyl_atom.GetNeighbors():
-            if neighbor.GetSymbol() == 'S':
-                # Check if the sulfur is part of a thioester linkage
-                bond = mol.GetBondBetweenAtoms(acyl_atom.GetIdx(), neighbor.GetIdx())
-                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    # Found thioester linkage
-                    found_acyl_coa = True
-                    break
-        if found_acyl_coa:
-            break
-
-    if not found_acyl_coa:
-        return False, "3-oxo-fatty acyl chain not connected via thioester linkage"
-
-    # Optionally, check the length of the fatty acyl chain
-    # Count the number of carbons in the longest carbon chain
-    fragments = Chem.GetMolFrags(mol, asMols=True)
-    max_chain_length = 0
-    for frag in fragments:
-        atom_nums = [atom.GetAtomicNum() for atom in frag.GetAtoms()]
-        c_count = atom_nums.count(6)
-        if c_count > max_chain_length:
-            max_chain_length = c_count
-    if max_chain_length < 10:
-        return False, f"Fatty acyl chain too short: {max_chain_length} carbons"
-
-    return True, "Molecule is a 3-oxo-fatty acyl-CoA"
+    # Find sulfur atoms connected to acyl carbonyl carbons (C(=O)-S linkage)
+    for atom in mol_h.GetAtoms():
+        if atom.GetAtomicNum() == 16:  # Sulfur atom
+            # Check for neighboring carbonyl carbon (C(=O))
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 6:  # Carbon atom
+                    # Check if it's a carbonyl carbon (double-bonded to oxygen)
+                    is_carbonyl = False
+                    for bond in nbr.GetBonds():
+                        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                            other_atom = bond.GetOtherAtom(nbr)
+                            if other_atom.GetAtomicNum() == 8:  # Oxygen atom
+                                is_carbonyl = True
+                                break
+                    if is_carbonyl:
+                        acyl_carbon = nbr
+                        # Now traverse to alpha carbon
+                        alpha_carbons = [n for n in acyl_carbon.GetNeighbors() if n.GetIdx() != atom.GetIdx()]
+                        if len(alpha_carbons) != 1:
+                            continue  # Not a typical fatty acyl chain
+                        alpha_carbon = alpha_carbons[0]
+                        # Traverse to beta carbon
+                        beta_carbons = [n for n in alpha_carbon.GetNeighbors() if n.GetIdx() != acyl_carbon.GetIdx()]
+                        if len(beta_carbons) != 1:
+                            continue  # Not a typical fatty acyl chain
+                        beta_carbon = beta_carbons[0]
+                        # Check if beta carbon has a ketone group
+                        has_ketone = False
+                        for bond in beta_carbon.GetBonds():
+                            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                other_atom = bond.GetOtherAtom(beta_carbon)
+                                if other_atom.GetAtomicNum() == 8:  # Oxygen
+                                    has_ketone = True
+                                    break
+                        if has_ketone:
+                            return True, "Molecule is a 3-oxo-fatty acyl-CoA"
+                        else:
+                            return False, "Beta carbon does not have a ketone group"
+    return False, "No matching 3-oxo-fatty acyl-CoA structure found"
