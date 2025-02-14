@@ -16,21 +16,16 @@ def is_aldehyde(smiles: str):
         bool: True if molecule is an aldehyde, False otherwise
         str: Reason for classification
     """
-    try:
-        # Parse SMILES
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return False, "Invalid SMILES string"
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-        # Create SMARTS pattern for aldehyde group (C=O-R).
-        # The R group must be a carbon.
-        aldehyde_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
+    # Create SMARTS pattern for aldehyde group (C=O-H).
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3](=O)[H]")
 
-        # Check for the presence of the aldehyde group
-        if mol.HasSubstructMatch(aldehyde_pattern):
-            return True, "Molecule contains an aldehyde group (C=O-H)"
-        else:
-            return False, "Molecule does not contain an aldehyde group (C=O-H)"
-
-    except Exception as e:
-        return None, None
+    # Check for the presence of the aldehyde group
+    if mol.HasSubstructMatch(aldehyde_pattern):
+        return True, "Molecule contains an aldehyde group (C=O-H)"
+    else:
+        return False, "Molecule does not contain an aldehyde group (C=O-H)"
