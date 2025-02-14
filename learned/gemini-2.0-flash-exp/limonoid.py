@@ -23,32 +23,37 @@ def is_limonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for furan ring with possible substituents
-    furan_pattern = Chem.MolFromSmarts("[c1cco[c,C]1]")
-    if not mol.HasSubstructMatch(furan_pattern):
-        return False, "No furan ring found."
+    # Check for furan ring attached to the core structure (more specific)
+    # The [c] is important to avoid matching furan rings outside the core
+    furan_pattern = Chem.MolFromSmarts("[c]1[c][o][c][c]1[C]")
+    if furan_pattern is None or not mol.HasSubstructMatch(furan_pattern):
+        return False, "No furan ring attached to core found."
 
-    # Check for a tetracyclic or higher core (at least 4 fused rings)
-    # We look for ring systems with at least 4 rings based on connectivity
+     # Check for a 4,4,8-trimethyl pattern
+    trimethyl_pattern = Chem.MolFromSmarts("C[C](C)([C])")
+    if trimethyl_pattern is None or not mol.HasSubstructMatch(trimethyl_pattern):
+         return False, "No 4,4,8-trimethyl pattern found."
+         
+    # Check for tetracyclic or higher core
     num_rings = Chem.GetSSSR(mol)
     if num_rings < 4:
-        return False, "No tetracyclic or higher core found."
+       return False, "Less than 4 rings found"
     
     # Check the overall number of carbons (range)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 25 or carbon_count > 40:
-        return False, f"Number of carbons is outside triterpenoid range, found {carbon_count}"
+         return False, f"Carbon count outside triterpenoid range: {carbon_count}"
 
-    # Check for high oxygenation (at least 6 oxygens)
+
+    # Check for high oxygenation (at least 4 oxygens)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 6:
-        return False, f"Too few oxygen atoms, found {oxygen_count}, need at least 6"
-    
-    # Check Molecular Weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350:
-        return False, f"Molecular weight too low for a limonoid, {mol_wt}"
+    if oxygen_count < 4:
+        return False, f"Too few oxygen atoms, found {oxygen_count}, need at least 4"
 
+    # Molecular Weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 400:
+        return False, f"Molecular weight too low: {mol_wt}"
 
     # If all criteria pass return true
     return True, "Matches limonoid criteria: triterpenoid with furan, tetracyclic core, within carbon range, and high oxygenation."
