@@ -9,6 +9,7 @@ def is_trienoic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a trienoic fatty acid based on its SMILES string.
     A trienoic fatty acid is a fatty acid containing a carboxylic acid group and exactly three double bonds.
+    The double bonds should belong to the main carbon chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,25 +22,32 @@ def is_trienoic_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
+    
     # Check for carboxylic acid group (-C(=O)O)
     acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for exactly three double bonds
+    # Count double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bond_matches) != 3:
-      return False, f"Found {len(double_bond_matches)} double bonds, need exactly 3"
-      
-    # Check for long carbon chain (fatty acid part) - at least 8 carbons outside the carboxyl group
+        return False, f"Found {len(double_bond_matches)} double bonds, need exactly 3"
     
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    carbon_matches = mol.GetSubstructMatches(carbon_chain_pattern)
-    if len(carbon_matches) < 1:
-        return False, "No long carbon chain found"
-    
+    # Check for the pattern of a fatty acid with exactly 3 double bonds
+    # This pattern looks for a carbon chain that connects to a carboxylic group, with 3 double bonds inside this chain.
+    fatty_acid_pattern = Chem.MolFromSmarts("CC(=O)O[CX4,CX3]~[CX4,CX3]=[CX4,CX3]~[CX4,CX3]=[CX4,CX3]~[CX4,CX3]=[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(fatty_acid_pattern):
+       fatty_acid_pattern = Chem.MolFromSmarts("C(=O)O[CX4,CX3]~[CX4,CX3]=[CX4,CX3]~[CX4,CX3]=[CX4,CX3]~[CX4,CX3]=[CX4,CX3]~[CX4,CX3]")
+       if not mol.HasSubstructMatch(fatty_acid_pattern):
+          return False, "Not a fatty acid with 3 double bonds"
+
+
+    # Molecular Weight Check - fatty acids typically > 150 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 150:
+        return False, "Molecular weight too low for fatty acid"
+
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
@@ -49,10 +57,4 @@ def is_trienoic_fatty_acid(smiles: str):
     if o_count < 2:
       return False, "Not enough oxygens"
 
-    # Check molecular weight - fatty acids typically > 150 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150:
-        return False, "Molecular weight too low for fatty acid"
-    
-    
     return True, "Contains carboxylic acid and exactly three double bonds and long carbon chain"
