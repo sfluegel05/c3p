@@ -24,18 +24,18 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information from the molecule
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-
-    # Iterate over all rings in the molecule
-    for ring in atom_rings:
-        # Check if the ring is 16-membered
-        if len(ring) == 16:
-            # Count the number of nitrogen atoms in the ring
-            num_nitrogen = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
-            # Check if there are exactly four nitrogen atoms
-            if num_nitrogen == 4:
-                return True, "Contains porphyrin core: 16-membered ring with 4 nitrogen atoms"
+    # Define porphyrin core SMARTS pattern
+    porphyrin_smarts = """
+    [nH]1ccc2c1ccc3c2ccc4c3ccc([nH]4)
+    """
+    # Remove whitespace and newlines from SMARTS
+    porphyrin_smarts = porphyrin_smarts.strip().replace('\n', '')
+    query_mol = Chem.MolFromSmarts(porphyrin_smarts)
+    if query_mol is None:
+        return False, "Invalid porphyrin SMARTS pattern"
     
-    return False, "Does not contain porphyrin core macrocyclic structure"
+    # Use Substructure Matching
+    if mol.HasSubstructMatch(query_mol):
+        return True, "Contains porphyrin core macrocyclic structure"
+    else:
+        return False, "Does not contain porphyrin core macrocyclic structure"
