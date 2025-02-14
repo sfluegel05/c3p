@@ -9,6 +9,7 @@ A fatty alcohol with a chain length ranging from C13 to C22.
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.Lipinski import LengthDescriptor
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
@@ -30,24 +31,32 @@ def is_long_chain_fatty_alcohol(smiles: str):
 
     # Look for an -OH group
     oh_pattern = Chem.MolFromSmarts("[OX1H]")
-    if not mol.HasSubstructMatch(oh_pattern):
+    oh_indices = mol.GetSubstructMatches(oh_pattern)
+    if not oh_indices:
         return False, "No hydroxy (-OH) group found"
 
-    # Count carbon atoms in the longest chain
-    sssr = Chem.GetSSSR(mol)
-    longest_chain_length = max(len(ring) for ring in sssr)
+    # Count length of longest aliphatic chain
+    length_descriptor = LengthDescriptor(LengthDescriptor.LMCHANGESLD)
+    longest_chain_length = length_descriptor(mol)
     if not (13 <= longest_chain_length <= 22):
-        return False, f"Longest chain length is {longest_chain_length}, not in the range C13 to C22"
+        return False, f"Longest aliphatic chain length is {longest_chain_length}, not in the range C13 to C22"
 
-    # Check if longest chain is aliphatic (no ring atoms)
-    longest_chain = max(sssr, key=len)
-    if any(mol.GetAtomWithIdx(idx).IsInRing() for idx in longest_chain):
-        return False, "Longest chain contains ring atoms"
+    # Check if -OH group is attached to the longest aliphatic chain
+    for oh_idx in oh_indices:
+        oh_atom = mol.GetAtomWithIdx(oh_idx)
+        if any(bond.GetOtherAtomIdx(oh_idx) in length_descriptor.GetAtomIndices(mol) for bond in oh_atom.GetBonds()):
+            break
+    else:
+        return False, "Hydroxy (-OH) group not attached to the longest aliphatic chain"
 
-    # Check for other functional groups (e.g. esters, ketones)
-    allowed_patterns = [Chem.MolFromSmarts("[OX1H]"), Chem.MolFromSmarts("[CX4H3]")]
-    for atom in mol.GetAtoms():
-        if not any(atom.HasMatch(pattern) for pattern in allowed_patterns):
-            return False, "Contains unexpected functional groups"
+    # Check for disallowed functional groups
+    disallowed_patterns = [
+        Chem.MolFromSmarts("[C$(C=O)O]"),  # Esters
+        Chem.MolFromSmarts("C(=O)C"),  # Ketones
+        Chem.MolFromSmarts("C(=O)O"),  # Carboxylic acids
+    ]
+    for pattern in disallowed_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Contains disallowed functional groups"
 
     return True, "Molecule contains a straight-chain aliphatic alcohol with a chain length between C13 and C22"
