@@ -26,79 +26,41 @@ def is_quinone(smiles: str):
     # Get ring information
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
-    bond_rings = ring_info.BondRings()
 
     if not atom_rings:
         return False, "Molecule does not contain any rings"
 
-    # Build ring systems (fused rings)
-    # Each ring system is a set of ring indices that are connected via shared bonds
-    def get_ring_systems(bond_rings):
-        ring_count = len(bond_rings)
-        adjacency = {i: set() for i in range(ring_count)}
-        for i in range(ring_count):
-            for j in range(i + 1, ring_count):
-                # Check if rings i and j share any bonds
-                if set(bond_rings[i]).intersection(bond_rings[j]):
-                    adjacency[i].add(j)
-                    adjacency[j].add(i)
-        # Find connected components
-        visited = set()
-        ring_systems = []
-        for i in range(ring_count):
-            if i not in visited:
-                stack = [i]
-                component = set()
-                while stack:
-                    idx = stack.pop()
-                    if idx not in visited:
-                        visited.add(idx)
-                        component.add(idx)
-                        stack.extend(adjacency[idx] - visited)
-                ring_systems.append(component)
-        return ring_systems
+    # Find all carbonyl carbons (C=O)
+    carbonyl_carbons = set()
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            begin_atom = bond.GetBeginAtom()
+            end_atom = bond.GetEndAtom()
+            if (begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 8) or \
+               (begin_atom.GetAtomicNum() == 8 and end_atom.GetAtomicNum() == 6):
+                if begin_atom.GetAtomicNum() == 6:
+                    carbon_atom = begin_atom
+                else:
+                    carbon_atom = end_atom
+                carbonyl_carbons.add(carbon_atom.GetIdx())
 
-    ring_systems_indices = get_ring_systems(bond_rings)
-
-    # For each ring system, analyze if it satisfies quinone criteria
-    for ring_sys_idxs in ring_systems_indices:
-        # Collect atoms in the ring system
-        ring_atoms = set()
-        for ring_idx in ring_sys_idxs:
-            ring_atoms.update(atom_rings[ring_idx])
-
-        # Identify carbonyl carbons in the ring system
-        carbonyl_carbons = []
-        for idx in ring_atoms:
+    # Check each ring for quinone pattern
+    for ring in atom_rings:
+        ring_set = set(ring)
+        # Check if ring is fully conjugated (all atoms are sp2 hybridized)
+        is_conjugated = True
+        for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 6:
-                # Check for C=O group
-                is_carbonyl = False
-                for nbr in atom.GetNeighbors():
-                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                    if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
-                        is_carbonyl = True
-                        break
-                if is_carbonyl:
-                    carbonyl_carbons.append(idx)
-        if len(carbonyl_carbons) >= 2 and len(carbonyl_carbons) % 2 == 0:
-            # Check if all atoms in the ring system are sp2 hybridized
-            is_conjugated = True
-            for idx in ring_atoms:
-                atom = mol.GetAtomWithIdx(idx)
-                # Consider only heavy atoms (exclude hydrogens)
-                if atom.GetAtomicNum() > 1:
-                    hyb = atom.GetHybridization()
-                    if hyb not in (Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.AROMATIC):
-                        is_conjugated = False
-                        break
-            if not is_conjugated:
-                continue  # Skip this ring system
+            if atom.GetHybridization() != Chem.HybridizationType.SP2:
+                is_conjugated = False
+                break
+        if not is_conjugated:
+            continue  # Skip this ring
 
-            # Optionally, check if the ring system is planar (not enforced here)
-            # Determine if the ring system was derived from an aromatic compound
-            # For simplicity, we can accept that it is derived from an aromatic system
-
-            return True, "Molecule contains a fully conjugated cyclic diketone ring system (quinone)"
+        # Count carbonyl carbons in ring
+        carbonyls_in_ring = ring_set.intersection(carbonyl_carbons)
+        num_carbonyls_in_ring = len(carbonyls_in_ring)
+        if num_carbonyls_in_ring >= 2:
+            return True, "Molecule contains a fully conjugated cyclic diketone characteristic of quinones"
 
     return False, "Molecule does not contain the characteristic quinone structure"
