@@ -26,88 +26,76 @@ def is_tocol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define chromanol core SMARTS pattern with atom mapping
-    chromanol_smarts = """
-    [O:1]1CC[C@:2]2(c3cc(O)ccc3OC2C1)  # Chroman-6-ol core with mapped atom at position 2
-    """
+    # Define chromanol core SMARTS pattern
+    chromanol_smarts = "c1cc(O)ccc1C2CCCO2"  # Chromanol core (chroman-6-ol skeleton)
     chromanol_pattern = Chem.MolFromSmarts(chromanol_smarts)
     if chromanol_pattern is None:
         return False, "Invalid chromanol SMARTS pattern"
 
-    # Try to find chromanol core in the molecule
-    chromanol_matches = mol.GetSubstructMatches(chromanol_pattern)
-    if not chromanol_matches:
+    # Find chromanol core matches
+    matches = mol.GetSubstructMatches(chromanol_pattern)
+    if not matches:
         return False, "No chromanol core (chroman-6-ol skeleton) found"
 
     # For each match, check substitution at position 2
-    for match in chromanol_matches:
-        # Map atom indices from SMARTS to molecule
-        atom_map = {}
-        for smarts_idx, mol_idx in enumerate(match):
-            atom = chromanol_pattern.GetAtomWithIdx(smarts_idx)
-            map_num = atom.GetAtomMapNum()
-            if map_num > 0:
-                atom_map[map_num] = mol_idx
-
-        # Get position 2 atom (mapped as :2 in SMARTS)
-        position_2_idx = atom_map.get(2)
-        if position_2_idx is None:
-            continue  # Try next match
-
-        # Get substituents at position 2
-        position_2_atom = mol.GetAtomWithIdx(position_2_idx)
-        substituents = [nbr for nbr in position_2_atom.GetNeighbors() if nbr.GetIdx() not in match]
-        if not substituents:
+    for match in matches:
+        # Get the atoms in the match
+        match_atoms = list(match)
+        # Identify the oxygen atom in the chromanol core
+        oxygen_atom_idx = None
+        for idx in match_atoms:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() == 8 and atom.IsInRing():
+                oxygen_atom_idx = idx
+                break
+        if oxygen_atom_idx is None:
+            continue  # No oxygen atom found in ring
+        # Get the carbon atom at position 2 (adjacent to oxygen in ring)
+        oxygen_atom = mol.GetAtomWithIdx(oxygen_atom_idx)
+        ring_carbon_idxs = [nbr.GetIdx() for nbr in oxygen_atom.GetNeighbors() if nbr.GetIdx() in match_atoms and nbr.GetAtomicNum()==6]
+        if len(ring_carbon_idxs) < 2:
+            continue  # Not enough ring carbons found
+        # Check for substituents on ring carbons
+        position_2_atom = None
+        for carbon_idx in ring_carbon_idxs:
+            carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+            substituents = [nbr for nbr in carbon_atom.GetNeighbors() if nbr.GetIdx() not in match_atoms]
+            if substituents:
+                position_2_atom = carbon_atom
+                break
+        if position_2_atom is None:
             continue  # No substitution at position 2
-
-        # Assume the substituent is the side chain
-        side_chain_atom = substituents[0]
-
-        # Use BFS to get all atoms in the side chain
-        visited = set()
-        to_visit = [side_chain_atom.GetIdx()]
+        # Get the side chain starting from the substituent
         side_chain_atoms = set()
+        to_visit = [nbr.GetIdx() for nbr in position_2_atom.GetNeighbors() if nbr.GetIdx() not in match_atoms]
         while to_visit:
             current_idx = to_visit.pop()
-            if current_idx not in visited:
-                visited.add(current_idx)
+            if current_idx not in side_chain_atoms:
                 side_chain_atoms.add(current_idx)
                 current_atom = mol.GetAtomWithIdx(current_idx)
                 for nbr in current_atom.GetNeighbors():
                     nbr_idx = nbr.GetIdx()
-                    if nbr_idx not in visited and nbr_idx not in match:
+                    if nbr_idx not in side_chain_atoms and nbr_idx not in match_atoms:
                         to_visit.append(nbr_idx)
-
         # Check that side chain consists of only carbon and hydrogen atoms
         side_chain_elements = set(mol.GetAtomWithIdx(idx).GetAtomicNum() for idx in side_chain_atoms)
         if not side_chain_elements.issubset({6, 1}):
             continue  # Side chain contains other atoms
-
         # Count number of carbons in side chain
         carbon_count = sum(1 for idx in side_chain_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
         if carbon_count != 15:
             continue  # Side chain does not have 15 carbons (three isoprenoid units)
-
-        # Identify isoprenoid pattern (three units of C5)
-        isoprene_smarts = "[C;D1]([C;D2]=[C;D2])[C;D2]([C;D2])"
-        isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
-        side_chain_mol = Chem.PathToSubmol(mol, list(side_chain_atoms))
-        isoprene_matches = side_chain_mol.GetSubstructMatches(isoprene_pattern)
-        if len(isoprene_matches) not in [0, 3]:
-            continue  # Side chain does not have proper isoprenoid units
-
         # Count number of double bonds in side chain
         double_bond_count = 0
-        for bond in mol.GetBonds():
-            begin_idx = bond.GetBeginAtomIdx()
-            end_idx = bond.GetEndAtomIdx()
-            if begin_idx in side_chain_atoms and end_idx in side_chain_atoms:
-                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    double_bond_count += 1
-
+        for idx in side_chain_atoms:
+            atom = mol.GetAtomWithIdx(idx)
+            for bond in atom.GetBonds():
+                neighbor_idx = bond.GetOtherAtomIdx(idx)
+                if neighbor_idx in side_chain_atoms and idx < neighbor_idx:
+                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                        double_bond_count += 1
         if double_bond_count not in [0, 3]:
-            continue  # Side chain is not saturated or triply-unsaturated
-
+            continue  # Side chain is not saturated or triply unsaturated
         return True, "Molecule is a tocol with chromanol core and appropriate side chain"
 
     # If no matches result in a tocol, return False
@@ -133,7 +121,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
