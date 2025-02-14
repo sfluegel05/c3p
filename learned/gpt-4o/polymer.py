@@ -7,12 +7,11 @@ from rdkit.Chem import rdmolops
 def is_polymer(smiles: str):
     """
     Determines if a molecule is a polymer based on its SMILES string.
-    A polymer is defined as a compound with repeated substructures (monomers), which can
-    differ by chain length, composition, or branching.
-
+    Focuses on identifying complex chains and repeating units, common in polymers.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is identified as a polymer-like structure, False otherwise
         str: Reason for classification
@@ -23,21 +22,28 @@ def is_polymer(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Search for repetitive substructures
-    # Example SMARTS for a simple aliphatic chain, common in small synthetic polymers
-    repeat_unit_pattern = Chem.MolFromSmarts("*~*~*~*")
-    repeat_unit_matches = mol.GetSubstructMatches(repeat_unit_pattern)
-    
-    if len(repeat_unit_matches) > 5:  # arbitrarily choosing an occurrence threshold
-        return True, f"Contains repeating substructural patterns: found {len(repeat_unit_matches)}"
+    # Detect typical polymer-like repeating units or diverse elements
+    patterns = [
+        Chem.MolFromSmarts("[C](=[O,N])-[C]"),  # common in polyesters, polyamides
+        Chem.MolFromSmarts("[C]([C])[C]([C])[C]"),  # common in polyethylene chains
+        Chem.MolFromSmarts("[O]-[C]-[C]-[O]"),  # polyether linkage
+    ]
 
-    # Analyze functional diversity (flexible for mixtures variation in functional groups)
-    unique_atoms = {atom.GetAtomicNum() for atom in mol.GetAtoms()}
-    if len(unique_atoms) > 5:  # diversity in elemental composition
-        return True, f"Contains diverse elemental composition: {len(unique_atoms)} different element types"
+    # Check matches for polymer-like chains
+    total_matches = 0
+    for pattern in patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        total_matches += len(matches)
 
-    # Check for large molecular size (common in polymers without known repeat units)
-    if mol.GetNumAtoms() > 50:  # arbitrary size threshold
+    if total_matches > 10:  # Aiming for a larger occurrence indicating polymer
+        return True, f"Contains repeating substructural patterns: found {total_matches}"
+
+    # Analyze molecular size indicative of polymer
+    if mol.GetNumAtoms() > 100:  # refined larger size threshold
         return True, f"Large molecular size with {mol.GetNumAtoms()} atoms, possible polymer"
+
+    # Count number of single bond chains greater than a certain length indicative of backbone
+    if max(rdmolops.GetDistanceMatrix(mol).flatten()) > 15:  # Longest path indicative of polymer chains
+        return True, "Contains long chains indicative of polymeric structure"
 
     return False, "No explicit polymer-like features detected"
