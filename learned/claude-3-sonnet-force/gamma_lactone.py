@@ -5,7 +5,8 @@ Classifies: CHEBI:37581 gamma-lactone
 Classifies: CHEBI:50829 gamma-lactone
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdchem
+from rdkit.Chem import rdchem, RingUtils
 
 def is_gamma_lactone(smiles: str):
     """
@@ -32,10 +33,11 @@ def is_gamma_lactone(smiles: str):
     if len(lactone_matches) == 0:
         return False, "No lactone ring found"
     
-    # Check if the lactone ring is a 5-membered ring (gamma-lactone)
+    # Check if any of the lactone rings are 5-membered (gamma-lactone)
     for match in lactone_matches:
-        ring_atoms = mol.GetAtomRingInfo().AtomRings()[match]
-        if len(ring_atoms) == 5:
+        ring_atoms = [mol.GetBondWithIdx(bond).GetBeginAtomIdx() for bond in rdchem.AtomRings.BondRings(mol)[match]]
+        ring_size = len(set(ring_atoms))
+        if ring_size == 5:
             return True, "Molecule contains a 5-membered lactone ring (gamma-lactone)"
     
     return False, "Lactone ring found, but not a 5-membered ring (gamma-lactone)"
