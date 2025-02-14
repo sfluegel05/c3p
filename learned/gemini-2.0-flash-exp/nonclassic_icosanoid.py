@@ -20,37 +20,32 @@ def is_nonclassic_icosanoid(smiles: str):
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-         return None, None
+        return None, None
 
-    # Check for 20 Carbons
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count != 20:
-        return False, f"Not a C20 fatty acid: {carbon_count} carbons"
-
-    # Check for at least one oxygen
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count == 0:
-        return False, "No oxygen atoms present"
-
-     # Check for carboxylic acid
+    # Check for carboxylic acid
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group"
 
-    # Check for long chain: 
-    long_chain_pattern = Chem.MolFromSmarts("C[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
+    # Check for long chain (16-20 carbons backbone)
+    long_chain_pattern = Chem.MolFromSmarts("C[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "Not a long-chain fatty acid"
+    
+    # Check for prostanoid ring system
+    prostanoid_pattern = Chem.MolFromSmarts("C1CC[C]2[C]1[C](C[C]([C]2)O)[C]=O") #simplified for a quick check
+    if mol.HasSubstructMatch(prostanoid_pattern):
+        return False, "Likely a Prostanoid (contains characteristic ring)"
 
-    # Check for conjugated triene pattern (leukotriene-like)
-    leukotriene_pattern_1 = Chem.MolFromSmarts("C=C-C=C-C=C")
-    leukotriene_pattern_2 = Chem.MolFromSmarts("C=C-C=C-C=C-C")
-    leukotriene_pattern_3 = Chem.MolFromSmarts("C=C-C=C-C=C-C=C")
 
-    if mol.HasSubstructMatch(leukotriene_pattern_1) or \
-       mol.HasSubstructMatch(leukotriene_pattern_2) or \
-       mol.HasSubstructMatch(leukotriene_pattern_3):
-       return False, "Likely a Leukotriene (conjugated triene pattern)"
+    # Check for conjugated triene pattern (leukotriene-like) with more flexibility for branching
+    # this pattern now captures C=C-C=C-C=C and C=C-C=C-C=C-C with some flexibility
+    leukotriene_pattern = Chem.MolFromSmarts("[C]=[C]-[C]=[C]-[C]=[C]") # basic triene
+
+    if mol.HasSubstructMatch(leukotriene_pattern):
+           # further check to discard molecules where the triene part is not part of the main chain
+           if mol.GetSubstructMatch(Chem.MolFromSmarts("[C]=[C]-[C]=[C]-[C]=[C]-[C]")):
+              return False, "Likely a Leukotriene (conjugated triene pattern)"
 
     # Check for lipoxin/resolvin features - multiple double bonds and OH/epoxide/carbonyl
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
@@ -58,12 +53,17 @@ def is_nonclassic_icosanoid(smiles: str):
     epoxide_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("C1OC1"))
     carbonyl_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("C=O"))
 
-    if double_bond_count < 2 and len(hydroxyl_groups) == 1 and len(epoxide_groups) == 0 and len(carbonyl_groups) == 1:
-       return False, "Too simple, likely a fatty acid."
+    # Oxygenation pattern check
+    if (double_bond_count >= 2 and (len(hydroxyl_groups) >= 2 or len(epoxide_groups) >= 1)):
+        pass #likely a non-classic icosanoid
+    elif (double_bond_count >= 3 and len(hydroxyl_groups) >= 1):
+        pass
+    else:
+      return False, "Not enough double bonds and hydroxyl/epoxide groups"
 
     # Molecular Weight check
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, "Molecular weight too low"
-
+    
     return True, "Likely a non-classic icosanoid"
