@@ -5,6 +5,7 @@ Classifies: CHEBI:25608 nucleoside phosphate
 Classifies: nucleoside phosphate
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_nucleoside_phosphate(smiles: str):
@@ -12,7 +13,6 @@ def is_nucleoside_phosphate(smiles: str):
     Determines if a molecule is a nucleoside phosphate based on its SMILES string.
     A nucleoside phosphate is a nucleobase-containing molecule where one or more of
     the sugar hydroxy groups has been converted into a mono- or poly-phosphate.
-    This includes both nucleotides and non-nucleotide nucleoside phosphates.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -27,95 +27,55 @@ def is_nucleoside_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define nucleobase patterns (common nucleobases and modifications)
-    nucleobase_smarts_list = [
-        # Purine base (adenine, guanine, hypoxanthine)
-        'n1cnc2ncnc(N)c12',    # Adenine
-        'NC1=NC2=NC=NC(N)=C2N1',  # Guanine
-        'n1cnc2nc[nH]c2n1',    # Hypoxanthine
-        # Pyrimidine base (cytosine, uracil, thymine)
-        'n1cc(N)cnc1=O',       # Cytosine
-        'O=C1C=CN(C)C=C1',     # Thymine
-        'O=C1C=CC(N)=CN1',     # Uracil
-        # Modified bases
-        'n1c(=O)[nH]c2c1ncnc2',  # Xanthine
-        'n1c(=O)c[nH]c1=O',    # Alloxazine (in flavins)
-        # General purine and pyrimidine patterns
-        'c1ncnc2c1ncn2',       # Purine skeleton
-        'c1[nH]cnc1',          # Pyrimidine skeleton
+    # Define common nucleobase patterns
+    adenine_smarts = "c1nc2c(n1)nc(nc2N)N"
+    guanine_smarts = "c1nc2c(n1)[nH]c(nc2O)N"
+    cytosine_smarts = "C1=CN=CN=C1O"
+    thymine_smarts = "C1=CN=CN=C1O"
+    uracil_smarts = "O=C1NC=CC(=O)N1"
+    nucleobase_patterns = [
+        Chem.MolFromSmarts(adenine_smarts),
+        Chem.MolFromSmarts(guanine_smarts),
+        Chem.MolFromSmarts("C1=CN=CN=C1N"),  # Cytosine simplified pattern
+        Chem.MolFromSmarts("C1=CN=CN=C1N"),  # Thymine simplified pattern
+        Chem.MolFromSmarts(uracil_smarts)
     ]
-    nucleobase_patterns = [Chem.MolFromSmarts(smarts) for smarts in nucleobase_smarts_list]
 
-    # Search for nucleobase substructure
+    # Check for presence of nucleobase
     nucleobase_found = False
-    for pattern in nucleobase_patterns:
-        if mol.HasSubstructMatch(pattern):
+    for base_pattern in nucleobase_patterns:
+        if mol.HasSubstructMatch(base_pattern):
             nucleobase_found = True
             break
     if not nucleobase_found:
         return False, "No nucleobase found"
 
-    # Define flexible sugar pattern (ribose or deoxyribose with possible modifications)
-    sugar_smarts = '[C@H1]([O])[C@@H]([O])[C@H]([O])[C@@H]([O])[CH2]'
-    sugar_pattern = Chem.MolFromSmarts(sugar_smarts)
-
-    # Search for sugar substructure
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
-        return False, "No sugar moiety found"
+    # Define sugar moiety pattern (ribose or deoxyribose)
+    sugar_pattern = Chem.MolFromSmarts("C1C(C(C(O1)CO)O)O")  # Ribose ring with hydroxyl groups
+    deoxysugar_pattern = Chem.MolFromSmarts("C1C(C(C(O1)CO)O)")  # Deoxyribose lacks one OH
+    if not mol.HasSubstructMatch(sugar_pattern) and not mol.HasSubstructMatch(deoxysugar_pattern):
+        return False, "No ribose or deoxyribose sugar moiety found"
 
     # Check for glycosidic bond between nucleobase and sugar
-    glycosidic_bond_found = False
-    for sugar_match in sugar_matches:
-        sugar_atoms = set(sugar_match)
-        for atom_idx in sugar_atoms:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for bond in atom.GetBonds():
-                neighbor = bond.GetOtherAtom(atom)
-                # Check if neighbor is part of the nucleobase
-                for pattern in nucleobase_patterns:
-                    if mol.GetSubstructMatch(pattern):
-                        if neighbor.GetIdx() in mol.GetSubstructMatch(pattern):
-                            glycosidic_bond_found = True
-                            break
-                if glycosidic_bond_found:
-                    break
-            if glycosidic_bond_found:
-                break
-        if glycosidic_bond_found:
-            break
-    if not glycosidic_bond_found:
+    glycosidic_bond_pattern = Chem.MolFromSmarts("c1ncnc1[C@H]2O[C@@H](C[C@@H](O)[C@H]2O)O")  # Simplified pattern
+    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
         return False, "No glycosidic bond between nucleobase and sugar found"
 
-    # Define phosphate group pattern (mono- or polyphosphate)
-    phosphate_smarts = 'OP(=O)(O)O'  # Phosphate group
-    phosphate_pattern = Chem.MolFromSmarts(phosphate_smarts)
+    # Define phosphate group pattern attached to sugar's hydroxyl group
+    phosphate_ester_pattern = Chem.MolFromSmarts("O[P](=O)(O)O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")  # Phosphate ester linked to sugar
+    phosphate_patterns = [
+        Chem.MolFromSmarts("OP(=O)(O)O"),  # Monophosphate
+        Chem.MolFromSmarts("OP(=O)(OP(=O)(O)O)O"),  # Diphosphate
+        Chem.MolFromSmarts("OP(=O)(OP(=O)(OP(=O)(O)O)O)O")  # Triphosphate
+    ]
 
-    # Search for phosphate groups
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if not phosphate_matches:
-        return False, "No phosphate group found"
-
-    # Check if phosphate is attached to sugar hydroxyl groups
-    phosphate_attached_to_sugar = False
-    for phosphate_match in phosphate_matches:
-        phosphate_atom_indices = set(phosphate_match)
-        for sugar_match in sugar_matches:
-            sugar_atom_indices = set(sugar_match)
-            for atom_idx in phosphate_atom_indices:
-                atom = mol.GetAtomWithIdx(atom_idx)
-                for bond in atom.GetBonds():
-                    neighbor = bond.GetOtherAtom(atom)
-                    if neighbor.GetIdx() in sugar_atom_indices:
-                        phosphate_attached_to_sugar = True
-                        break
-                if phosphate_attached_to_sugar:
-                    break
-            if phosphate_attached_to_sugar:
-                break
-        if phosphate_attached_to_sugar:
+    # Check for phosphate groups attached to sugar
+    phosphate_found = False
+    for phosphate_pattern in phosphate_patterns:
+        if mol.HasSubstructMatch(phosphate_pattern):
+            phosphate_found = True
             break
-    if not phosphate_attached_to_sugar:
-        return False, "No phosphate group attached to sugar"
+    if not phosphate_found:
+        return False, "No phosphate groups attached to the sugar"
 
     return True, "Molecule is a nucleoside phosphate with nucleobase, sugar, and phosphate group(s)"
