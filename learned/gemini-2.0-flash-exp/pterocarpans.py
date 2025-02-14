@@ -7,7 +7,7 @@ from rdkit.Chem import AllChem
 def is_pterocarpans(smiles: str):
     """
     Determines if a molecule is a pterocarpan based on its SMILES string.
-    A pterocarpan has a 6H-[1]benzofuro[3,2-c]chromene skeleton.
+    A pterocarpan has a 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton.
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -19,20 +19,23 @@ def is_pterocarpans(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the core 6H-[1]benzofuro[3,2-c]chromene skeleton
-    core_pattern = Chem.MolFromSmarts('C1[CH2]2Oc3c4ccccc4Oc4c3cc5ccccc5[CH]21')
+    # Define SMARTS pattern for the core 6H-[1]benzofuro[3,2-c]chromene skeleton, considering stereochemistry
+    core_pattern = Chem.MolFromSmarts('[C@H]12Oc3c4ccccc4Oc4c3cc5ccccc5[C@@H]21')
     if core_pattern is None:
-      return False, "Invalid SMARTS string"
-    
-    if not mol.HasSubstructMatch(core_pattern, useChirality=True):
+        return False, "Invalid SMARTS string"
+
+    if not mol.HasSubstructMatch(core_pattern):
         return False, "Core 6H-[1]benzofuro[3,2-c]chromene skeleton not found."
-    
+        
     # Verify 6a and 11a positions are dihydro
-    match = mol.GetSubstructMatch(core_pattern, useChirality=True)
+    match = mol.GetSubstructMatch(core_pattern)
     if match:
         atom_6a = mol.GetAtomWithIdx(match[0])
-        atom_11a = mol.GetAtomWithIdx(match[len(match)-1])
+        atom_11a = mol.GetAtomWithIdx(match[-1])
+
         if (atom_6a.GetTotalNumHs() != 1 or atom_11a.GetTotalNumHs() != 1):
             return False, "6a and 11a are not dihydro"
+    else:
+        return False, "Error finding the substructure for dihydro check"
 
     return True, "Molecule contains the core 6H-[1]benzofuro[3,2-c]chromene skeleton with dihydro 6a and 11a positions"
