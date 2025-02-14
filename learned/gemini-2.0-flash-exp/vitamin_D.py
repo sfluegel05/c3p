@@ -24,32 +24,34 @@ def is_vitamin_D(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for characteristic steroid skeleton with broken B-ring
-    # Note: this SMARTS pattern might be too broad, but it is a good starting point
-    seco_steroid_pattern = Chem.MolFromSmarts("[C]1[CH]([CH2])[CH2][CH]([CH2])[CH2][CH2][CH](C)[CH2][CH2]1")
-    if not mol.HasSubstructMatch(seco_steroid_pattern):
-         return False, "Not a seco-steroid structure"
+    # 1. Check for broken B-ring - Look for a 6-membered ring with a double bond connected to a single bond, and a specific connection to the other rings.
+    # The key is the presence of a C=C single bond within a 6 member ring connected to two other carbons that will continue the steroidal framework
+    # We use a complex SMARTS pattern to enforce this connectivity, while being as general as possible.
+    broken_b_ring_pattern = Chem.MolFromSmarts("[C;R6]1([C;R](=[C;R])[C;R])~[C;R]~[C;R]~[C;R]~[C;R]1")
+    if not mol.HasSubstructMatch(broken_b_ring_pattern):
+        return False, "Not a seco-steroid structure (missing broken B ring)"
 
-    # Check for triene system in the broken B-ring
-    #  /C=C/C=C/C
-    triene_pattern = Chem.MolFromSmarts("C=C-C=C-C")
+    # 2. Check for triene system in the conjugated system
+    triene_pattern = Chem.MolFromSmarts("C=C-C=C-C") # this is still /C=C/C=C/C
     if not mol.HasSubstructMatch(triene_pattern):
         return False, "No triene system found"
     
-    # Check for at least one hydroxyl group at C1, C3 or C25 (or combinations thereof)
-    hydroxyl_pattern1 = Chem.MolFromSmarts("[CH0;R][OH1]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern1)
+    # 3. Check for at least one hydroxyl group
+    hydroxyl_pattern = Chem.MolFromSmarts("[CH0;R][OH1]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     if len(hydroxyl_matches) < 1:
-        return False, "No hydroxyl group found in characteristic positions"
+        return False, "No hydroxyl group found"
 
-    # Check for a side chain of at least 3 carbons
+    # 4. Check for a side chain of at least 3 carbons
     side_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
-    if len(side_chain_matches) < 1:
+    if len(side_chain_matches) < 1 :
         return False, "No long enough side chain"
-    
+
+    # 5. Check molecular weight range - Vitamin D typically between 350 and 600 Da.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 350 or mol_wt > 600:
-         return False, f"Molecular weight out of range: {mol_wt}"
+        return False, f"Molecular weight out of range: {mol_wt}"
+
 
     return True, "Meets vitamin D structural criteria"
