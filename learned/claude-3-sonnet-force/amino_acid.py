@@ -1,75 +1,31 @@
 """
 Classifies: CHEBI:33709 amino acid
 """
-"""
-Classifies: CHEBI:33709 amino acid
-A carboxylic acid containing one or more amino groups.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Reasoning step:
 
-def is_amino_acid(smiles: str):
-    """
-    Determines if a molecule is an amino acid based on its SMILES string.
+The previous program attempted to classify amino acids based on the following criteria:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. Presence of a carboxylic acid group (-COOH)
+2. Presence of an amino group (-NH2, -NHR, or -NR2)
+3. Absence of multiple amide bonds (to exclude peptides)
+4. Presence of a single chiral center
+5. Specific arrangement of the carboxylic acid and amino groups around the chiral center
+6. Handling of potential zwitterionic forms
 
-    Returns:
-        bool: True if molecule is an amino acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for presence of carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
-    
-    # Check for amino groups (primary, secondary, tertiary)
-    amino_pattern = Chem.MolFromSmarts("[N;!H0;!H1;!H2;!H3;!$(NC=O)]")
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    if not amino_matches:
-        return False, "No amino group found"
-    
-    # Exclude peptides and other molecules with multiple amide bonds
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) > 1:
-        return False, "Contains multiple amide bonds, likely a peptide"
-    
-    # Check for single chiral center (typical of amino acids)
-    chiral_centers = AllChem.FindMolChiralCenters(mol, includeUnspecified=True)
-    if len(chiral_centers) != 1:
-        return False, "Does not have a single chiral center"
-    
-    # Check for specific arrangement of carboxylic acid and amino groups
-    chiral_center = chiral_centers[0]
-    chiral_atom = mol.GetAtomWithIdx(chiral_center)
-    neighbors = [mol.GetAtomWithIdx(n) for n in chiral_atom.GetNeighbors()]
-    
-    carboxyl_neighbor = None
-    amino_neighbor = None
-    for neighbor in neighbors:
-        if neighbor.GetSymbol() == "O" and neighbor.GetFormalCharge() == -1:
-            carboxyl_neighbor = neighbor
-        elif neighbor.GetSymbol() == "N" and neighbor.GetFormalCharge() == 0:
-            amino_neighbor = neighbor
-    
-    if carboxyl_neighbor is None or amino_neighbor is None:
-        return False, "Incorrect arrangement of carboxylic acid and amino groups"
-    
-    # Handle potential zwitterions by considering alternative resonance structures
-    zwitterion_pattern = Chem.MolFromSmarts("[N+;H2,H1;!$(NC=O)]")
-    if mol.HasSubstructMatch(zwitterion_pattern):
-        zwitterion_mol = Chem.MolFromSmiles(Chem.MolToSmiles(mol, isomericSmiles=True))
-        amino_matches = zwitterion_mol.GetSubstructMatches(amino_pattern)
-        if amino_matches:
-            return True, "Amino acid (zwitterionic form)"
-    
-    return True, "Amino acid"
+While these criteria cover many aspects of amino acids, there are a few issues and potential improvements:
+
+1. The code assumes that all amino acids have a single chiral center, which may not always be the case (e.g., glycine, sarcosine).
+2. The code does not explicitly check for the presence of a side chain, which is a characteristic feature of most amino acids (except glycine).
+3. The code does not consider cyclic amino acids (e.g., proline) or amino acids with additional functional groups (e.g., serine, threonine).
+4. The code does not handle cases where the carboxylic acid or amino group is part of a ring system (e.g., histidine).
+5. The error related to `FindMolChiralCenters()` suggests that the RDKit version being used may have changed the signature of this function, which needs to be addressed.
+
+To improve the program, we could consider the following modifications:
+
+1. Remove the requirement for a single chiral center, or handle the case of achiral amino acids separately.
+2. Check for the presence of a side chain (e.g., alkyl, aromatic, or functional group) connected to the chiral center.
+3. Account for cyclic amino acids and amino acids with additional functional groups by using more flexible substructure matching patterns.
+4. Handle cases where the carboxylic acid or amino group is part of a ring system by using appropriate SMARTS patterns.
+5. Update the code to use the correct signature for `FindMolChiralCenters()` based on the RDKit version being used.
+
+Additionally, it's worth noting that while the benchmark cases may not be perfect, they provide a good starting point for testing and refining the program. If there are clear outliers that contradict the chemical understanding of amino acids, it may be reasonable to ignore them, but with a clear explanation of the reasoning behind the decision.
