@@ -2,7 +2,6 @@
 Classifies: CHEBI:36233 disaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_disaccharide(smiles: str):
     """
@@ -22,65 +21,54 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Kekulize the molecule to ensure proper valence assignment
-    try:
-        Chem.Kekulize(mol, clearAromaticFlags=True)
-    except Chem.KekulizeException:
-        pass  # Some sugars may contain aromatic rings
+    # Initialize list to hold sugar rings
+    sugar_rings = []
 
-    # Define SMARTS patterns for monosaccharide units (pyranose and furanose rings)
-    pyranose_smarts = "[C;H1,H2,H3]1[C;H1,H2][C;H1,H2][C;H1,H2][C;H1,H2][O]1"
-    furanose_smarts = "[C;H1,H2,H3]1[C;H1,H2][C;H1,H2][O][C;H1,H2]1"
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
 
-    pyranose_pattern = Chem.MolFromSmarts(pyranose_smarts)
-    furanose_pattern = Chem.MolFromSmarts(furanose_smarts)
-
-    # Identify monosaccharide rings in the molecule
-    monosaccharide_rings = []
-    for ring in mol.GetRingInfo().AtomRings():
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        submol = Chem.PathToSubmol(mol, ring)
-        if submol.HasSubstructMatch(pyranose_pattern) or submol.HasSubstructMatch(furanose_pattern):
-            monosaccharide_rings.append(set(ring))
-
-    if len(monosaccharide_rings) != 2:
-        return False, f"Found {len(monosaccharide_rings)} monosaccharide units, need exactly 2"
-
-    # Map atom indices to monosaccharide ring indices
+    # Map atom index to ring index
     ring_atom_map = {}
-    for ring_idx, ring_atoms in enumerate(monosaccharide_rings):
-        for atom_idx in ring_atoms:
-            ring_atom_map[atom_idx] = ring_idx
 
-    # Find glycosidic bonds connecting the two monosaccharide units
-    glycosidic_bonds = []
+    for ring_idx, ring in enumerate(atom_rings):
+        ring_size = len(ring)
+        if ring_size == 5 or ring_size == 6:
+            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+            num_oxygen = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
+            num_carbon = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 6)
+            if ring_size == 5 and num_oxygen == 1 and num_carbon == 4:
+                sugar_rings.append(set(ring))
+                for idx in ring:
+                    ring_atom_map[idx] = len(sugar_rings) - 1
+            elif ring_size == 6 and num_oxygen == 1 and num_carbon == 5:
+                sugar_rings.append(set(ring))
+                for idx in ring:
+                    ring_atom_map[idx] = len(sugar_rings) - 1
+
+    if len(sugar_rings) != 2:
+        return False, f"Found {len(sugar_rings)} sugar rings, need exactly 2"
+
+    # Find glycosidic bonds connecting the two sugar rings
+    connected = False
+
     for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        idx1 = atom1.GetIdx()
-        idx2 = atom2.GetIdx()
-        atomic_nums = (atom1.GetAtomicNum(), atom2.GetAtomicNum())
+        idx1 = bond.GetBeginAtomIdx()
+        idx2 = bond.GetEndAtomIdx()
 
-        # Check for oxygen bridge between rings (C-O-C linkage)
-        if 8 in atomic_nums and idx1 in ring_atom_map and idx2 in ring_atom_map:
+        if idx1 in ring_atom_map and idx2 in ring_atom_map:
             ring_idx1 = ring_atom_map[idx1]
             ring_idx2 = ring_atom_map[idx2]
             if ring_idx1 != ring_idx2:
-                glycosidic_bonds.append(bond)
+                # Atoms in different sugar rings
+                atom1 = mol.GetAtomWithIdx(idx1)
+                atom2 = mol.GetAtomWithIdx(idx2)
+                if atom1.GetAtomicNum() == 8 or atom2.GetAtomicNum() == 8:
+                    # One of the atoms is oxygen
+                    connected = True
+                    break
 
-    if len(glycosidic_bonds) == 0:
-        return False, "No glycosidic bond connecting monosaccharide units found"
-
-    # Ensure that monosaccharide units are connected via a glycosidic bond
-    connected_units = set()
-    for bond in glycosidic_bonds:
-        idx1 = bond.GetBeginAtom().GetIdx()
-        idx2 = bond.GetEndAtom().GetIdx()
-        ring_idx1 = ring_atom_map[idx1]
-        ring_idx2 = ring_atom_map[idx2]
-        connected_units.update([ring_idx1, ring_idx2])
-
-    if len(connected_units) != 2:
-        return False, "Monosaccharide units are not properly connected via glycosidic bond"
+    if not connected:
+        return False, "No glycosidic bond connecting the sugar rings found"
 
     return True, "Contains two monosaccharide units connected via a glycosidic bond"
