@@ -5,7 +5,7 @@ Classifies: CHEBI:61905 short-chain fatty acyl-CoA
 Classifies: CHEBI:60940 short-chain fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_short_chain_fatty_acyl_CoA(smiles: str):
     """
@@ -24,73 +24,59 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define a general SMARTS pattern for Coenzyme A moiety focusing on adenine ring and phosphates
-    # This pattern matches the adenine ring attached to ribose with phosphates
-    coA_smarts_str = "n1cnc2c(ncnc12)[C@H]3O[C@H](COP(O)(=O)O)C(O)[C@@H]3OP(O)(O)=O"
-    coA_smarts = Chem.MolFromSmarts(coA_smarts_str)
-    if coA_smarts is None:
-        return False, "Invalid CoA SMARTS pattern"
-    
-    # Check for Coenzyme A substructure without considering stereochemistry
-    if not mol.HasSubstructMatch(coA_smarts, useChirality=False):
+
+    # Define a SMARTS pattern for Coenzyme A moiety
+    # Include key features: adenine ring, ribose, diphosphates, pantetheine arm
+    # Use a simplified pattern to avoid over-specification
+    coA_smarts_str = 'NC1=NC=NC2=C1N=CN2[C@H]3O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]4O[C@@H](N5C=NC=N5)[C@@H](O)[C@H]4OP(=O)(O)O)[C@H](O)[C@H]3OP(=O)(O)O'
+    coA_pattern = Chem.MolFromSmarts(coA_smarts_str)
+
+    if not mol.HasSubstructMatch(coA_pattern):
         return False, "Coenzyme A moiety not found"
-    
-    # Define SMARTS pattern for thioester linkage (C(=O)-S)
-    thioester_smarts_str = "C(=O)S"
-    thioester_smarts = Chem.MolFromSmarts(thioester_smarts_str)
-    if thioester_smarts is None:
-        return False, "Invalid thioester SMARTS pattern"
-    
-    # Find the thioester linkage
-    thioester_matches = mol.GetSubstructMatches(thioester_smarts)
+
+    # Define a SMARTS pattern for the thioester linkage
+    thioester_smarts_str = 'C(=O)SC'
+    thioester_pattern = Chem.MolFromSmarts(thioester_smarts_str)
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+
     if not thioester_matches:
         return False, "Thioester linkage not found"
-    
-    # For each thioester linkage, attempt to identify the acyl chain and CoA moiety
+
+    # For each thioester linkage, attempt to identify the acyl chain length
     for match in thioester_matches:
         carbonyl_c_idx = match[0]  # Carbon of C=O
         sulfur_idx = match[2]      # Sulfur atom index
-        
-        # Get atoms connected to the carbonyl carbon (should be O and alpha carbon of acyl chain)
-        carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
-        neighbors_c = [a.GetIdx() for a in carbonyl_c.GetNeighbors() if a.GetIdx() != sulfur_idx]
-        
-        # Get atoms connected to the sulfur atom (should be connected to CoA moiety)
-        sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
-        neighbors_s = [a.GetIdx() for a in sulfur_atom.GetNeighbors() if a.GetIdx() != carbonyl_c_idx]
-        
-        # Create fragments by breaking the C-S bond of the thioester linkage
-        bond = mol.GetBondBetweenAtoms(carbonyl_c_idx, sulfur_idx)
-        mol_frag = Chem.FragmentOnBonds(mol, [bond.GetIdx()], addDummies=False)
-        frags = Chem.GetMolFrags(mol_frag, asMols=True, sanitizeFrags=True)
-        
-        # Identify acyl chain and CoA fragments
-        acyl_chain = None
-        coa_fragment = None
-        for frag in frags:
-            # If fragment contains the carbonyl carbon, it's the acyl chain
-            if any(atom.GetAtomicNum() == 6 and atom.GetIdx() == carbonyl_c_idx for atom in frag.GetAtoms()):
-                acyl_chain = frag
-            # If fragment contains the sulfur connected to CoA, it's the CoA fragment
-            elif any(atom.GetAtomicNum() == 16 and atom.GetIdx() == sulfur_idx for atom in frag.GetAtoms()):
-                coa_fragment = frag
-        
-        if acyl_chain is None or coa_fragment is None:
-            continue
-        
-        # Check if the CoA fragment contains the CoA SMARTS pattern
-        if not coa_fragment.HasSubstructMatch(coA_smarts, useChirality=False):
-            continue  # Skip if CoA pattern not found in this fragment
-        
-        # Count the number of carbons in the acyl chain excluding the carbonyl carbon
-        acyl_carbons = [atom for atom in acyl_chain.GetAtoms() if atom.GetAtomicNum() == 6]
-        num_carbons = len(acyl_carbons) - 1  # Exclude the carbonyl carbon
-        
+
+        # Get the acyl chain starting from the carbonyl carbon
+        acyl_chain_atoms = []
+        visited = set()
+        stack = [carbonyl_c_idx]
+        while stack:
+            atom_idx = stack.pop()
+            if atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            acyl_chain_atoms.append(atom)
+            if atom_idx != carbonyl_c_idx:  # Do not include the carbonyl carbon again
+                # Only traverse through carbons (exclude sulfur to prevent crossing into CoA moiety)
+                if atom.GetAtomicNum() != 6:
+                    continue
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                # Stop at the sulfur atom to prevent crossing into CoA
+                if neighbor_idx == sulfur_idx:
+                    continue
+                if neighbor_idx not in visited:
+                    stack.append(neighbor_idx)
+
+        # Count the number of carbon atoms in the acyl chain, excluding the carbonyl carbon
+        num_carbons = sum(1 for atom in acyl_chain_atoms if atom.GetAtomicNum() == 6) - 1  # Exclude carbonyl carbon
+
         if 1 <= num_carbons <= 4:
-            return True, f"Found short-chain fatty acyl-CoA with acyl chain length {num_carbons + 1} carbons"
+            return True, f"Found short-chain fatty acyl-CoA with acyl chain length {num_carbons +1} carbons"
         else:
-            return False, f"Acyl chain length is {num_carbons + 1}, not short-chain"
+            return False, f"Acyl chain length is {num_carbons +1}, not short-chain"
 
     return False, "Acyl chain not identified or not short-chain"
 
@@ -115,7 +101,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
