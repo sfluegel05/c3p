@@ -18,36 +18,42 @@ def is_proanthocyanidin(smiles: str):
         bool: True if molecule is a proanthocyanidin, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS patterns for flavan-3-ol units (catechin and epicatechin cores)
-    catechin_smarts = "Oc1ccc(cc1)[C@@H]2O[C@H](C[C@H]2O)c3ccc(O)cc3"  # Catechin core
-    epicatechin_smarts = "Oc1ccc(cc1)[C@H]2O[C@@H](C[C@H]2O)c3ccc(O)cc3"  # Epicatechin core
-
-    catechin_mol = Chem.MolFromSmarts(catechin_smarts)
-    epicatechin_mol = Chem.MolFromSmarts(epicatechin_smarts)
-    if catechin_mol is None or epicatechin_mol is None:
-        return False, "Error in flavan-3-ol SMARTS patterns"
-
-    # Initialize count
-    num_flavan_units = 0
-
-    # Check for catechin units
-    catechin_matches = mol.GetSubstructMatches(catechin_mol, useChirality=False)
-    num_flavan_units += len(catechin_matches)
-
-    # Check for epicatechin units
-    epicatechin_matches = mol.GetSubstructMatches(epicatechin_mol, useChirality=False)
-    num_flavan_units += len(epicatechin_matches)
-
+    
+    # Define SMARTS pattern for flavan-3-ol unit (catechin/epicatechin core)
+    # This pattern captures the chroman-3-ol core with a phenyl group at position 2
+    flavan3ol_smarts = '[#6;R]1([#6])[#6;R][#8;R][#6;R]2[#6;R]1[#6]=[#6][#6]=[#6][#6]=2'
+    flavan3ol = Chem.MolFromSmarts(flavan3ol_smarts)
+    if flavan3ol is None:
+        return False, "Error in flavan-3-ol SMARTS pattern"
+    
+    # Find flavan-3-ol units in the molecule
+    flavan3ol_matches = mol.GetSubstructMatches(flavan3ol)
+    num_flavan_units = len(flavan3ol_matches)
+    
     if num_flavan_units < 2:
         return False, f"Found {num_flavan_units} flavan-3-ol units, need at least 2"
-
-    # Optional: Check for interflavan bonds (C4-C6 or C4-C8 linkages)
-    # For simplicity, we'll assume that if there are at least 2 units, they are connected via condensation
-
-    return True, f"Contains {num_flavan_units} flavan-3-ol units connected via interflavan bonds"
+    
+    # Check for interflavan linkages between flavan-3-ol units
+    # For each pair of flavan units, check if there is a bond between them
+    bonds_between_units = 0
+    for i in range(len(flavan3ol_matches)):
+        for j in range(i+1, len(flavan3ol_matches)):
+            unit_i_atoms = set(flavan3ol_matches[i])
+            unit_j_atoms = set(flavan3ol_matches[j])
+            # Check for bonds between atoms of unit_i and unit_j
+            for bond in mol.GetBonds():
+                a1 = bond.GetBeginAtomIdx()
+                a2 = bond.GetEndAtomIdx()
+                if (a1 in unit_i_atoms and a2 in unit_j_atoms) or (a2 in unit_i_atoms and a1 in unit_j_atoms):
+                    bonds_between_units += 1
+                    break  # One bond is enough to confirm linkage
+    
+    if bonds_between_units == 0:
+        return False, "No interflavan bonds found between flavan-3-ol units"
+    
+    return True, "Contains two or more flavan-3-ol units connected via interflavan bonds"
