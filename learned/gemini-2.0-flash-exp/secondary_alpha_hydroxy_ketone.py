@@ -23,11 +23,12 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Create SMARTS pattern for secondary alpha-hydroxy ketone
-    # [CX4H1]([OX2])[CX3](=[OX1])[#6X3] where the carbon with O and H is attached to a ketone.
-    # The [#6X3] part enforces a carbon that is bonded to exactly 3 other atoms, with one of them being the carbonyl carbon.
-
-    pattern = Chem.MolFromSmarts("[CX4H1]([OX2])[CX3](=[OX1])[#6X3]")
+    # [CX4H1]([OX2])[CX3](=[OX1])[#6] where the carbon with O and H is attached to a ketone via a direct bond.
+    # The [#6] part enforces a carbon as a next neighbor. The alpha-carbon is defined as a carbon bound to one H, one OH and the carbonyl.
+    # the single bond is already present, so we need only to state that a Carbon must be in that position.
+    pattern = Chem.MolFromSmarts("[CX4H1]([OX2])[CX3](=[OX1])[#6]")
     matches = mol.GetSubstructMatches(pattern)
+
 
     if len(matches) == 0:
         return False, "Molecule does not contain a secondary alpha-hydroxy ketone substructure."
