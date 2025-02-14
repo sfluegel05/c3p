@@ -26,34 +26,32 @@ def is_germacranolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for the 10-membered ring
-    # Look for a 10-membered ring.
-    ring10_pattern = Chem.MolFromSmarts("[R10]")
+    # 1. Check for the presence of a 10-membered ring
+    # Look for any 10-membered ring (not just single ring).
+    ring10_pattern = Chem.MolFromSmarts("[R;!R11,!R12,!R13,!R14,!R15,!R16]")
     ring_matches = mol.GetSubstructMatches(ring10_pattern)
     
-    if not ring_matches:
-        return False, "No 10-membered ring found"
     
-    # Ensure only one 10-membered ring exists
     num_10_member_rings = 0
     for match in mol.GetSubstructMatches(ring10_pattern):
       if len(match) == 10:
         num_10_member_rings += 1
-    if num_10_member_rings != 1:
-        return False, f"Found {num_10_member_rings} 10-membered rings; need exactly 1."
 
+    if num_10_member_rings < 1:
+      return False, "No 10-membered ring found"
+        
     # 2. Check for the presence of a lactone ring (cyclic ester)
     # The lactone ring could be fused, so we use a generalized SMARTS pattern
     lactone_pattern = Chem.MolFromSmarts("C(=O)O[C;R]") # Check for C=O-O within a ring
     lactone_matches = mol.GetSubstructMatches(lactone_pattern)
     if not lactone_matches:
         return False, "No lactone ring found"
-        
+
     # 3. Molecular weight check
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 200 or mol_wt > 350:  # Sesquiterpenes are typically ~C15
         return False, f"Molecular weight ({mol_wt:.2f}) outside typical sesquiterpene range"
-
+        
     # 4. Ring count
     num_rings = rdMolDescriptors.CalcNumRings(mol)
     if num_rings < 2:
