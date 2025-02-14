@@ -39,12 +39,18 @@ def is_O_acyl_L_carnitine(smiles: str):
         return False, f"Found {len(acyl_matches)} acyl groups, expected exactly 1"
 
     # Check for L-configuration of carnitine
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnspecified=True)
-    if not chiral_centers:
-        return False, "No chiral center found for carnitine"
+    carnitine_smarts = Chem.MolFromSmarts("[C@H](CC(=O)[O-])N")
+    carnitine_match = mol.GetSubstructMatches(carnitine_smarts)
+    if not carnitine_match:
+        return False, "Carnitine backbone not in L-configuration"
 
-    chiral_atom = mol.GetAtomWithIdx(chiral_centers[0][0])
-    if chiral_atom.GetProp("_CIPCode") != "S":
-        return False, "Carnitine is not in L-configuration"
+    # Check for correct atom mapping
+    atom_map = {}
+    for idx in carnitine_match[0]:
+        atom_map[idx] = mol.GetAtomWithIdx(idx).GetSymbol()
+    
+    expected_map = {'C': 'C', 'C': 'C', 'C': 'N', 'N': 'C', 'O': 'O'}
+    if atom_map != expected_map:
+        return False, "Incorrect atom mapping for carnitine backbone"
 
     return True, "Contains carnitine backbone with an acyl group attached to oxygen, L-configuration"
