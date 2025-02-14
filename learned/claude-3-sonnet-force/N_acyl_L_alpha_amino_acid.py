@@ -24,30 +24,25 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for alpha-amino acid backbone (C-C-C with amino and carboxyl groups)
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("[C@@H](N)([C@@H](C(=O)[O;H,-])[C@@H])")
-    if not mol.HasSubstructMatch(alpha_amino_acid_pattern):
-        return False, "No L-alpha-amino acid backbone found"
-    
-    # Look for N-acyl group (N-C(=O)-)
-    n_acyl_pattern = Chem.MolFromSmarts("N[C@@H](C(=O))")
-    if not mol.HasSubstructMatch(n_acyl_pattern):
-        return False, "No N-acyl group found"
-    
+
+    # Look for N-acyl-L-alpha-amino acid backbone
+    n_acyl_l_alpha_amino_acid_pattern = Chem.MolFromSmarts("[C@@H](N[C@@H](C(=O)))(C(=O)[O;H,-])[C@@H]")
+    if not mol.HasSubstructMatch(n_acyl_l_alpha_amino_acid_pattern):
+        return False, "No N-acyl-L-alpha-amino acid backbone found"
+
     # Check for stereochemistry (L-configuration)
     try:
         mol = AllChem.AssignAtomChiralTagsFromStructure(mol)
     except Exception as e:
         return False, f"Error in assigning stereochemistry: {str(e)}"
-    
+
     chiral_centers = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetChiralTag() != Chem.rdchem.ChiralType.CHI_UNSPECIFIED]
     if len(chiral_centers) < 2:
         return False, "Not enough chiral centers to determine L-configuration"
-    
-    chiral_atoms = [mol.GetAtomWithIdx(idx) for idx in chiral_centers]
-    for atom in chiral_atoms:
+
+    for idx in chiral_centers:
+        atom = mol.GetAtomWithIdx(idx)
         if atom.GetHybridization() == Chem.HybridizationType.SP3 and atom.GetChiralTag() != Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW:
             return False, "Stereochemistry not consistent with L-configuration"
-    
-    return True, "Contains L-alpha-amino acid backbone with N-acyl substituent"
+
+    return True, "Contains N-acyl-L-alpha-amino acid backbone"
