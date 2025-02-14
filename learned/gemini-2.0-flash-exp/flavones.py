@@ -22,7 +22,11 @@ def is_flavones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the flavone core substructure using SMARTS
-    flavone_core_smarts = "[c]1[c](-[#6])[o][c](=[O])[c][c]2[c][c][c][c]2[c]1"
+    # [c]1[c]([c])[o][c](=[O])[c][c]2[c][c][c][c]2[c]1
+    # where first [c] represents the substituted phenyl ring
+    # where next [c] represents the carbon at the 2 position, where the phenyl is attached.
+
+    flavone_core_smarts = "[c]1[c]([c])[o][c](=O)[c][c]2[c][c][c][c]2[c]1"
     flavone_core = Chem.MolFromSmarts(flavone_core_smarts)
 
     if flavone_core is None:
