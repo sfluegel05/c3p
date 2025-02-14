@@ -28,18 +28,24 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone with phosphoethanolamine head group
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    pe_pattern = Chem.MolFromSmarts("P(OCCN)(O)(=O)[OX2][CHX4][CHX4][OX2][CX3](=[OX1])")
-    if not mol.HasSubstructMatch(glycerol_pattern) or not mol.HasSubstructMatch(pe_pattern):
+    # Look for glycerophosphoethanolamine backbone
+    gpe_pattern = Chem.MolFromSmarts("[OX2][CHX4][CHX4][OX2][CX3](=[OX1])[OX2][CHX4][CHX4][OX2][P+](OCCN)(O)(O)")
+    if not mol.HasSubstructMatch(gpe_pattern):
         return False, "No glycerophosphoethanolamine backbone found"
     
-    # Look for acyl chain (long carbon chain attached to glycerol oxygen)
+    # Look for acyl chain connected to the 1-position of the glycerol fragment
     acyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2][CHX4][CHX4][OX2]")
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
+    acyl_matches = mol.GetSubstructMatches(acyl_pattern, maxMatches=1)
+    
     if not acyl_matches:
         return False, "No acyl chain found"
     
+    acyl_atom_idx = acyl_matches[0][-2]
+    acyl_atom = mol.GetAtomWithIdx(acyl_atom_idx)
+    
+    if not any(bond.GetBeginAtomIdx() == acyl_atom_idx and bond.GetEndAtomIdx() in gpe_pattern.GetAtomsAsIndices() for bond in acyl_atom.GetBonds()):
+        return False, "Acyl chain not connected to the 1-position of the glycerol fragment"
+
     # Count rotatable bonds to verify long acyl chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 5:
@@ -50,13 +56,4 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol_wt < 500:
         return False, "Molecular weight too low"
 
-    # Count atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    
-    if c_count < 20 or o_count < 6 or n_count != 1 or p_count != 1:
-        return False, "Incorrect atom counts for 1-O-acylglycerophosphoethanolamine"
-
-    return True, "Contains glycerophosphoethanolamine backbone with acyl chain attached at 1-position"
+    return True, "Contains glycerophosphoethanolamine backbone with acyl chain attached at the 1-position"
