@@ -1,28 +1,70 @@
 """
 Classifies: CHEBI:36916 cation
 """
-The previous program aimed to classify molecules as cations based on their SMILES strings. It used the formal charge calculated by RDKit to determine if a molecule had a positive formal charge. If the formal charge was greater than zero, it classified the molecule as a cation.
+"""
+Classifies: CHEBI:49808 cation
+A monoatomic or polyatomic species having one or more elementary charges of the proton.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Looking at the outcomes, the program performed reasonably well, correctly identifying many cations. However, there were some issues:
+def is_cation(smiles: str):
+    """
+    Determines if a molecule is a cation based on its SMILES string.
 
-False positives:
-The program incorrectly classified some molecules as cations even though they did not have a positive formal charge. This could be due to limitations in the formal charge calculation or the presence of charges on specific atoms that do not contribute to the overall formal charge.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-False negatives:
-The program missed some molecules that should have been classified as cations. This is likely because the formal charge calculation did not account for certain types of cations, such as zwitterionic species or resonance-stabilized cations.
+    Returns:
+        bool: True if molecule is a cation, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we can consider the following approaches:
+    # Check formal charge
+    formal_charge = AllChem.GetFormalCharge(mol)
+    if formal_charge > 0:
+        return True, f"Molecule has positive formal charge of {formal_charge}"
 
-1. **Incorporate additional structural patterns**: While the formal charge calculation is a good starting point, it may not capture all types of cations. We could define additional SMARTS patterns to identify common cationic functional groups or structural motifs, such as quaternary ammonium ions, iminium ions, oxonium ions, and others.
+    # Check for common cationic functional groups
+    cationic_patterns = (
+        "[N+]",       # Quaternary ammonium ions
+        "[N+]#N",     # Diazonium ions
+        "[NH3+]",     # Ammonium ions
+        "[O+]",       # Oxonium ions
+        "[S+]",       # Sulfonium ions
+        "[P+]",       # Phosphonium ions
+        "[Se+]",      # Selenonium ions
+        "[Te+]",      # Telluronium ions
+        "[As+]",      # Arsonium ions
+        "[Cl+]",      # Chloronium ions
+        "[I+]",       # Iodonium ions
+        "[Br+]",      # Bromonium ions
+    )
+    for pattern in cationic_patterns:
+        patt = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(patt):
+            return True, f"Molecule contains {pattern} cationic group"
 
-2. **Consider zwitterionic species**: Some molecules, like zwitterions, may have both positive and negative charges that cancel out, resulting in a zero formal charge. These molecules should still be classified as cations. We could define additional rules or patterns to identify zwitterionic species or consider the presence of both positive and negative charges on the molecule.
+    # Check for zwitterionic species
+    zwitterion_pattern = Chem.MolFromSmarts("[+,-]")
+    if mol.HasSubstructMatch(zwitterion_pattern):
+        return True, "Molecule is a zwitterionic species"
 
-3. **Incorporate aromaticity and resonance**: Some cations, such as aromatic heterocyclic cations or resonance-stabilized cations, may not be correctly captured by the formal charge calculation. We could incorporate additional checks for aromaticity and resonance structures to identify these types of cations.
+    # Check for aromatic heterocyclic cations
+    aromatic_cations_pattern = Chem.MolFromSmarts("[n+,o+,s+,se+,te+]")
+    if mol.HasSubstructMatch(aromatic_cations_pattern):
+        return True, "Molecule contains aromatic heterocyclic cation"
 
-4. **Handle exceptions and edge cases**: The current program does not handle exceptions or edge cases well. We could add additional checks and error handling to improve robustness and provide more informative error messages.
+    # Check for resonance-stabilized cations
+    resonance_cations_pattern = Chem.MolFromSmarts("[c,n,o,s,se,te][c+]")
+    if mol.HasSubstructMatch(resonance_cations_pattern):
+        return True, "Molecule contains resonance-stabilized cation"
 
-5. **Combine with other molecular descriptors**: In addition to structural patterns and formal charges, we could incorporate other molecular descriptors, such as partial charges, electronegativity differences, or quantum mechanical calculations, to improve the accuracy of the classification.
-
-6. **Consider machine learning approaches**: If the rule-based approach becomes too complex or fails to capture all possible cationic structures, we could explore machine learning techniques, such as training a classifier on a large dataset of cations and non-cations.
-
-When dealing with potential outliers or inconsistencies in the benchmark data, it is important to critically evaluate the results and use our understanding of chemistry to make informed decisions. If the classifications made by the program are consistent with our chemical knowledge, we can choose to ignore or re-evaluate the benchmark data. However, it is essential to provide clear reasoning and justification for such decisions.
+    # If no cationic features found, classify as non-cation
+    return False, "No cationic features found"
