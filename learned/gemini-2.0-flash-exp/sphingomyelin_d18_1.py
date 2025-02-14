@@ -22,46 +22,49 @@ def is_sphingomyelin_d18_1(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Relaxed Sphingosine core pattern (C-C(OH)-C-C(NH)-C=C), including correct stereochemistry
-    sphingosine_core_pattern = Chem.MolFromSmarts("[C@H]([OH])[C@H]([N])C=C")
+    # 1. Sphingosine core pattern
+    sphingosine_core_pattern = Chem.MolFromSmarts("[C]-[C]([OH])-[C]([N]-[C]=O)-[C]=[C]")
     matches = mol.GetSubstructMatches(sphingosine_core_pattern)
     if not matches:
-         return False, "Sphingosine core not found"
+        return False, "Sphingosine core not found"
     
-    # Check for long chain attached to sphingosine core
-    core_atoms = matches[0]
+    #Check for long chain on the carbons adjacent to the C=C of the sphingosine core.
     long_chain_found = False
-    for core_atom_idx in core_atoms:
-       for neighbor in mol.GetAtomWithIdx(core_atom_idx).GetNeighbors():
-           if neighbor.GetSymbol() == 'C':
-               # Trace the chain from the neighbour, until reaching a dead end. Count carbons
-               chain_carbons = [neighbor.GetIdx(),core_atom_idx]
-               last_carbon = neighbor.GetIdx()
-               while True:
-                   found_next = False
-                   for next_neighbor in mol.GetAtomWithIdx(last_carbon).GetNeighbors():
-                       if next_neighbor.GetIdx() not in chain_carbons and next_neighbor.GetSymbol() == 'C':
-                          chain_carbons.append(next_neighbor.GetIdx())
-                          last_carbon = next_neighbor.GetIdx()
-                          found_next = True
-                          break
-                   if not found_next:
-                      break
-               if len(chain_carbons) > 12:
-                    long_chain_found = True
-                    break
-
+    for match in matches:
+      carbon_1 = match[0]
+      carbon_5 = match[4]
+      if (len(mol.GetAtomWithIdx(carbon_1).GetNeighbors()) > 2) or (len(mol.GetAtomWithIdx(carbon_5).GetNeighbors()) > 2):
+            long_chain_found = True
+            break
     if not long_chain_found:
-          return False, "No long chain attached to sphingosine core"
+         return False, "No long chain attached to sphingosine core"
+    
 
     # 2. Phosphocholine head group pattern
     phosphocholine_pattern = Chem.MolFromSmarts("COP(=O)([O-])OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "Phosphocholine head group not found"
 
-    # 3. Fatty acyl chain (amide bond) pattern (C(=O)-N)
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    if not mol.HasSubstructMatch(amide_pattern):
-         return False, "Fatty acyl chain not found"
+    # 3. Fatty acyl chain (amide bond) pattern
+    amide_pattern = Chem.MolFromSmarts("[C]=O[N]-[C]")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    
+    if not amide_matches:
+        return False, "Fatty acyl chain not found"
 
+    # Verify if amide is attached to the core N
+    amide_attached_to_core = False
+    for amide_match in amide_matches:
+        amide_n_idx = amide_match[1] #amide N index
+        for core_match in matches:
+           core_n_idx = core_match[2]
+           if amide_n_idx == core_n_idx:
+              amide_attached_to_core=True
+              break
+        if amide_attached_to_core:
+           break
+    
+    if not amide_attached_to_core:
+         return False, "Fatty acyl chain is not attached to the sphingosine N"
+        
     return True, "Meets all criteria for sphingomyelin d18:1"
