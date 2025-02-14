@@ -22,39 +22,51 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid core SMARTS pattern (simplified - does not enforce stereochemistry on ring fusion)
-    # The core is based on the perhydrophenanthrene ring system, three 6 membered rings and one 5 membered ring.
-    # The carbon on which the hydroxy group is attached is C3.
-    steroid_core_pattern = Chem.MolFromSmarts("[C]12[C]([C]3[C]([C]4[C]([C]([C]1)CC[C@@H]2C)[C](CC4)CC3)C)") # This SMARTS is much simpler than the previous version
+    # Steroid core SMARTS pattern (tetracyclic ring system)
+    steroid_core_pattern = Chem.MolFromSmarts("[C]1~[C]~[C]~[C]~[C]~[C]12~[C]~[C]~[C]~[C]~[C]23~[C]~[C]~[C]~[C]34~[C]~[C]~[C]4")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core found"
     
-    # Check for a hydroxyl group at the 3-position (we have to find the 3-position and then check for an OH)
     core_match = mol.GetSubstructMatch(steroid_core_pattern)
-    if core_match:
-        c3 = core_match[0] # This is the C connected to the hydroxy group, in core_match, this is the first C defined.
-        c3_atom = mol.GetAtomWithIdx(c3)
-        has_oh = False
-        for neighbor in c3_atom.GetNeighbors():
-             if neighbor.GetSymbol() == 'O' and neighbor.GetTotalNumHs() == 1:
-                has_oh = True
-                break
-        if not has_oh:
-            return False, "No hydroxyl group at the 3-position"
-    else:
+    if not core_match:
         return False, "No match of steroid_core_pattern"
-    
-    # Check for a side chain at position 17 (simplified SMARTS for a C attached to C17).
-    # It can have carbon chain attached to it. C17 is the carbon attached to the 5 membered ring in the core.
-    c17 = core_match[5] # C17 in the simplified core pattern
-    c17_atom = mol.GetAtomWithIdx(c17)
 
+    # Find the 3-beta carbon (the one with the OH group)
+    has_3beta_oh = False
+    c17 = None
+    for atom_index in core_match:
+        atom = mol.GetAtomWithIdx(atom_index)
+        if atom.IsInRingSize(6) and atom.IsInRingSize(6) and atom.IsInRingSize(5):
+                for neighbor in atom.GetNeighbors():
+                     if neighbor.GetSymbol() == 'O' and neighbor.GetTotalNumHs() == 1:
+                        has_3beta_oh = True
+                        break
+                if has_3beta_oh:
+                    break
+
+    if not has_3beta_oh:
+        return False, "No hydroxyl group at the 3-beta position"
+
+    # Find C17 (carbon connected to the 5-membered ring, will have a side chain)
+    c17_candidates = []
+    for atom_index in core_match:
+         atom = mol.GetAtomWithIdx(atom_index)
+         if atom.IsInRingSize(5) :
+             c17_candidates.append(atom)
+    
     has_sidechain = False
-    for neighbor in c17_atom.GetNeighbors():
-         if neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() < 3:
-             has_sidechain = True
-             break
+
+    if len(c17_candidates) == 1: # This is the correct approach if one 5 membered ring carbon is involved in ring fusion.
+         c17 = c17_candidates[0]
+    else:
+      return False, "Unable to identify C17 carbon"
+
+    for neighbor in c17.GetNeighbors():
+        if neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() <= 2: # can be CH, CH2 but not CH3
+            has_sidechain = True
+            break
+            
     if not has_sidechain:
-        return False, "No side chain at C17"
-        
-    return True, "Contains a steroid core, a hydroxyl group at the 3-position, and a side chain at C17."
+      return False, "No side chain at C17"
+
+    return True, "Contains a steroid core, a hydroxyl group at the 3-beta position, and a side chain at C17."
