@@ -24,11 +24,20 @@ def is_tertiary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Create SMARTS for tertiary amine (N connected to 3 carbons)
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3]([CX4])([CX4])[CX4]")
+    # Get all N atoms
+    nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
 
-    # Check for substructure match
-    if mol.HasSubstructMatch(tertiary_amine_pattern):
-        return True, "Tertiary amine"
-    else:
-        return False, "Not a tertiary amine"
+    if not nitrogen_atoms:
+      return False, "No nitrogen atoms found"
+    
+    # check if each N is bonded to exactly three C's
+    for atom in nitrogen_atoms:
+        carbon_neighbors = 0
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:
+                carbon_neighbors += 1
+        
+        if carbon_neighbors != 3:
+          return False, "Not all nitrogen atoms are part of a tertiary amine"
+    
+    return True, "Tertiary amine"
