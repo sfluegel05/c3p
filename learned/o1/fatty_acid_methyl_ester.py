@@ -25,8 +25,8 @@ def is_fatty_acid_methyl_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the methyl ester functional group pattern
-    # Pattern: Carbonyl carbon (=O) connected to an oxygen that is connected to a methyl group
-    methyl_ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # Pattern: Carbonyl carbon (=O) connected to an oxygen that is connected to a methyl group (ester linkage)
+    methyl_ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0][CH3]")
     ester_matches = mol.GetSubstructMatches(methyl_ester_pattern)
     if not ester_matches:
         return False, "No methyl ester functional group found"
@@ -45,31 +45,39 @@ def is_fatty_acid_methyl_ester(smiles: str):
         if methyl_c.GetDegree() != 1 or methyl_c.GetAtomicNum() != 6:
             continue  # Not a methyl group
 
-        # Get the acyl chain by traversing from the carbonyl carbon excluding the ester oxygen
-        acyl_atoms = set()
+        # Traverse the chain connected to the carbonyl carbon (excluding the ester oxygen)
+        acyl_chain_atoms = set()
         atoms_to_visit = [nbr for nbr in carbonyl_c.GetNeighbors() if nbr.GetIdx() != ester_o_idx]
         while atoms_to_visit:
             atom = atoms_to_visit.pop()
             idx = atom.GetIdx()
-            if idx in acyl_atoms:
+            if idx in acyl_chain_atoms:
                 continue  # Already visited
 
-            acyl_atoms.add(idx)
+            acyl_chain_atoms.add(idx)
 
-            # Allow common elements in fatty acids: C, H, O, N, S, halogens
+            # Allow common elements in fatty acid chains
             atomic_num = atom.GetAtomicNum()
-            if atomic_num not in [1, 6, 7, 8, 9, 15, 16, 17, 35, 53]:
+            if atomic_num in [1, 6, 7, 8, 15, 16, 17, 35, 53]:
+                pass  # Allowed atoms (H, C, N, O, P, S, Cl, Br, I)
+            else:
                 return False, f"Atom {atom.GetSymbol()} not typical in fatty acid chain"
 
-            # Add neighbors to visit, excluding atoms in the ester group
-            neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() != carbonyl_c_idx]
+            # Add neighbors to visit, excluding the carbonyl carbon
+            neighbors = [
+                nbr for nbr in atom.GetNeighbors()
+                if nbr.GetIdx() != carbonyl_c_idx and nbr.GetAtomicNum() != 1
+            ]
             atoms_to_visit.extend(neighbors)
 
-        # Count the number of carbons in acyl chain
-        c_count = sum(1 for idx in acyl_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+        # Count the number of carbon atoms in the acyl chain
+        c_count = sum(
+            1 for idx in acyl_chain_atoms
+            if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6
+        )
 
-        # Set a reasonable minimum chain length (e.g., 4 carbons)
-        if c_count < 4:
+        # Set a reasonable minimum chain length (e.g., 8 carbons)
+        if c_count < 8:
             continue  # Chain too short to be a fatty acid
 
         # Passed all checks
