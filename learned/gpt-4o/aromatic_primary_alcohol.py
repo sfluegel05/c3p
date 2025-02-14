@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_aromatic_primary_alcohol(smiles: str):
     """
     Determines if a molecule is an aromatic primary alcohol based on its SMILES string.
-    An aromatic primary alcohol has a hydroxyl (-OH) group attached to a carbon that is bonded to an aromatic ring.
+    An aromatic primary alcohol has a hydroxyl (-OH) group attached to a primary carbon that is
+    directly bonded to an aromatic ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,15 +16,15 @@ def is_aromatic_primary_alcohol(smiles: str):
         bool: True if molecule is an aromatic primary alcohol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Create SMARTS query for aromatic primary alcohol
-    # Aromatic ring carbon connected to -OH (alcohol) group
-    aromatic_primary_alcohol_smarts = Chem.MolFromSmarts('[c][C](O)')
+    # Improved SMARTS query for aromatic primary alcohol
+    # Primary carbon bonded to -OH and directly connected to aromatic ring
+    aromatic_primary_alcohol_smarts = Chem.MolFromSmarts('[c]-[CH2]-[OH]')
 
     # Check if the molecule matches the aromatic primary alcohol SMARTS pattern
     if mol.HasSubstructMatch(aromatic_primary_alcohol_smarts):
