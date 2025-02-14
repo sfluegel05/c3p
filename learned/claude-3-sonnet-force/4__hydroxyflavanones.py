@@ -2,15 +2,15 @@
 Classifies: CHEBI:140331 4'-hydroxyflavanones
 """
 """
-Classifies: CHEBI:28096 4'-hydroxyflavanone
+Classifies: CHEBI:28096 4'-hydroxyflavanones
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_4__hydroxyflavanone(smiles: str):
+def is_4__hydroxyflavanones(smiles: str):
     """
     Determines if a molecule is a 4'-hydroxyflavanone based on its SMILES string.
-    A 4'-hydroxyflavanone has a flavanone core with a hydroxy substituent at position 4'.
+    A 4'-hydroxyflavanone has a flavanone core with a hydroxy substituent located at position 4'.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,25 +26,19 @@ def is_4__hydroxyflavanone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for flavanone core pattern (two fused rings with C=O in one ring)
-    flavanone_pattern = Chem.MolFromSmarts("C1=CC(=O)C2=C(C=C1)C=CC=C2")
+    flavanone_pattern = Chem.MolFromSmarts("[C&r5,r6]1=C[C@H](=O)[C@]2=C[C@H]=C[C@H]=C12")
     if not mol.HasSubstructMatch(flavanone_pattern):
         return False, "No flavanone core found"
 
-    # Look for hydroxy group at position 4'
-    hydroxy_pattern = Chem.MolFromSmarts("c1ccc(O)cc1")
-    hydroxy_match = mol.GetSubstructMatches(hydroxy_pattern)
-    if not hydroxy_match:
-        return False, "No hydroxy group at position 4'"
-
-    # Get atom indices of matched hydroxy groups
-    hydroxy_atom_indices = [match[3] for match in hydroxy_match]
-
-    # Check if at least one hydroxy group is connected to flavanone core at position 4'
+    # Get the atom at position 4' of the flavanone core
     flavor_core_ring = mol.GetRingInfo().BondRings()[0]
-    for hydroxy_idx in hydroxy_atom_indices:
-        for bond in mol.GetBonds():
-            if bond.GetBeginAtomIdx() in flavor_core_ring and bond.GetEndAtomIdx() == hydroxy_idx:
-                if bond.GetBondType() == Chem.BondType.SINGLE:
-                    return True, "Contains flavanone core with at least one hydroxy group at position 4'"
+    pos4_atom_idx = flavor_core_ring[2]
+    pos4_atom = mol.GetAtomWithIdx(pos4_atom_idx)
 
-    return False, "No hydroxy group connected to flavanone core at position 4'"
+    # Check if the atom at position 4' has a hydroxy substituent
+    if pos4_atom.GetTotalNumHs() == 1 and pos4_atom.GetAtomicNum() == 6:
+        for neighbor in pos4_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1:
+                return True, "Contains flavanone core with a hydroxy group at position 4'"
+
+    return False, "No hydroxy group found at position 4' of the flavanone core"
