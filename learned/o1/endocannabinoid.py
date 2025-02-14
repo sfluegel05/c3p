@@ -2,13 +2,14 @@
 Classifies: CHEBI:67197 endocannabinoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_endocannabinoid(smiles: str):
     """
     Determines if a molecule is an endocannabinoid based on its SMILES string.
     Endocannabinoids are endogenous ligands that activate cannabinoid receptors,
     typically consisting of long-chain polyunsaturated fatty acids connected
-    via an amide linkage to ethanolamine or an ester linkage to glycerol.
+    via an amide linkage to ethanolamine or an ester/ether linkage to glycerol.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -23,44 +24,33 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string."
 
-    # Define SMARTS patterns
+    # Count the number of carbons in the molecule
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 16:
+        return False, "Molecule does not have a long carbon chain (less than 16 carbons)."
 
-    # Long-chain fatty acid (16-22 carbons) with multiple double bonds
-    fatty_acid_pattern = Chem.MolFromSmarts("""
-        [#6]-[CH2]-[#6]-[CH2]-[#6]-[CH2]-[#6]-[CH2]-[#6]-[CH2]-[#6]-[CH2]-[#6]-[CH2]-[#6]-[CH2]-[#6]
-        """)  # Chain of at least 16 carbons
-    # Pattern for double bonds in the fatty acid chain
-    double_bond_pattern = Chem.MolFromSmarts("C=CC")  # Double bonds in chain
+    # Count the number of double bonds
+    double_bond_count = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            double_bond_count +=1
+    if double_bond_count < 2:
+        return False, "Insufficient number of double bonds for polyunsaturation (less than 2)."
 
-    # Amide linkage to ethanolamine (-C(=O)NCCO)
+    # Define SMARTS patterns for functional groups
+    # Amide linkage to ethanolamine: -C(=O)-N-CCO
     ethanolamine_amide_pattern = Chem.MolFromSmarts("C(=O)NCCO")
-
-    # Ester linkage to glycerol (-C(=O)OCC(O)CO)
+    # Ester linkage to glycerol: -C(=O)OCC(O)CO
     glycerol_ester_pattern = Chem.MolFromSmarts("C(=O)OCC(O)CO")
-
-    # Ether linkage to glycerol (-COCC(O)CO)
+    # Ether linkage to glycerol: -COCC(O)CO
     glycerol_ether_pattern = Chem.MolFromSmarts("COCC(O)CO")
-
-    # General glycerol backbone
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
-
-    # Check for long-chain fatty acid moiety
-    mol_Hs = Chem.AddHs(mol)
-    matches = mol_Hs.GetSubstructMatches(fatty_acid_pattern)
-    if not matches:
-        return False, "No long-chain fatty acid moiety found."
-
-    # Check for multiple double bonds in the fatty acid chain
-    num_double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
-    if num_double_bonds < 2:
-        return False, "No polyunsaturated fatty acid chain found."
 
     # Check for amide linkage to ethanolamine
     if mol.HasSubstructMatch(ethanolamine_amide_pattern):
         return True, "Contains amide linkage to ethanolamine and polyunsaturated fatty acid chain."
 
     # Check for ester linkage to glycerol
-    if mol.HasSubstructMatch(glycerol_ester_pattern) and mol.HasSubstructMatch(glycerol_pattern):
+    if mol.HasSubstructMatch(glycerol_ester_pattern):
         return True, "Contains ester linkage to glycerol and polyunsaturated fatty acid chain."
 
     # Check for ether linkage to glycerol
