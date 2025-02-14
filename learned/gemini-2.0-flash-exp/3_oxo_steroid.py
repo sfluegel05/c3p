@@ -19,30 +19,19 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS for the steroid core with specific ring fusion
-    # Based on the generic steroid structure:
-    #    1
-    #   / \
-    #  2---3
-    # / \ / \
-    # 4---5---6
-    # |   |   |
-    # 7---8---9
-    #  \ / \ /
-    #   10--11
-    #     \ /
-    #      12
-    # Ring A: 1-2-4-7-10-11
-    # Ring B: 2-3-5-8-10-11
-    # Ring C: 3-5-6-9-8
-    # Ring D: 6-9-12-11
-    steroid_core_pattern = Chem.MolFromSmarts("[C;R6]1[C;R6]2[C;R6]3[C;R5]4[C;R6]1[C;R6]2[C;R6]3[C;R5]4")
+    # SMARTS for steroid core (simplified, focuses on ring connectivity).
+    # The key here is to identify a pattern that contains 3 fused six membered rings and one five membered ring
+    # and at least one carbon with at least 2 neighbors
+    steroid_core_pattern = Chem.MolFromSmarts("[CH2X4,CHX3,CHX2]1[CH2X4,CHX3,CHX2]2[CH2X4,CHX3,CHX2]3[CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2]4[CH2X4,CHX3,CHX2]1[CH2X4,CHX3,CHX2]5[CH2X4,CHX3,CHX2]6[CH2X4,CHX3,CHX2]2[CH2X4,CHX3,CHX2]7[CH2X4,CHX3,CHX2]3[CH2X4,CHX3,CHX2]4[CH2X4,CHX3,CHX2]756")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "Molecule does not have a steroid core"
 
-    # SMARTS for carbonyl at position 3 (specifically, at the second carbon of ring A)
-    oxo_at_3_pattern = Chem.MolFromSmarts("[C;R6]1[C;R6](=[OX1])[C;R6]2[C;R5]3[C;R6]1[C;R6]2[C;R6]3")
-    if not mol.HasSubstructMatch(oxo_at_3_pattern):
-        return False, "Molecule does not have a carbonyl at position 3"
+    # SMARTS for carbonyl at position 3. It will be attached to a carbon of the 6 membered ring
+    # connected to the fused ring.
+    # This focuses on a carbon being part of a 6 membered ring and having a double bonded oxygen.
+    oxo_at_3_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4]([CH2X4,CHX3,CHX2])[CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2]")
 
+    if not mol.HasSubstructMatch(oxo_at_3_pattern):
+         return False, "Molecule does not have a carbonyl at position 3"
+    
     return True, "Molecule is a 3-oxo steroid"
