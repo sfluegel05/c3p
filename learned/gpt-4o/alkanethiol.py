@@ -24,18 +24,20 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for thiol group attached to an alkyl group
-    # The sulfur should be connected to exactly one hydrogen and one carbon
-    thiol_pattern = Chem.MolFromSmarts("[SX2H1][#6]")
+    # Define a SMARTS pattern for thiol group attached specifically to an alkyl chain
+    # Sulfur atom is connected to hydrogen and an sp3 carbon (carbon without multiple bonds)
+    thiol_pattern = Chem.MolFromSmarts("[SX2H1][CH2]")  # SH must be attached to sp3 carbon
+
     if not mol.HasSubstructMatch(thiol_pattern):
         return False, "No thiol group (-SH) attached to an alkyl group found"
 
-    # Confirm that the sulfur is not connected to anything beyond the alkyl group
+    # Extra exclusion for complex cases or attached functionalities that are not aliphatic
     for atom in mol.GetAtoms():
         if atom.GetSymbol() == 'S':
-            connected_atoms = [nbr.GetSymbol() for nbr in atom.GetNeighbors()]
-            # Check if sulfur only bonds with hydrogen and carbon(s)
-            if not all(x in ['H', 'C'] for x in connected_atoms):
-                return False, f"Sulfur atom bonded with non-alkyl group components: {connected_atoms}"
+            connected_atoms = [nbr.GetAtomicNum() for nbr in atom.GetNeighbors()]
+            # Check if sulfur only bonds with allowable elements for typical alkanethiols
+            # Avoid connections with typical peptide/amide forming elements like nitrogen (7)
+            if 7 in connected_atoms:
+                return False, "Sulfur atom bonded with non-alkyl group components, possibly involving peptide or amide bonds"
 
-    return True, "Contains a sulfanyl group, -SH, attached to an alkyl group"
+    return True, "Contains a sulfanyl group, -SH, attached to an alkyl chain"
