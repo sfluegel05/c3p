@@ -25,71 +25,69 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the ester functional group SMARTS pattern
-    ester_smarts = '[#6][C](=O)[O][CH2]'
+    # Define SMARTS patterns for the glycerol backbone
+    # Glycerol backbone with hydroxyls at positions 2 and 3
+    glycerol_smarts = '[C@H](O)[C@@H](O)CO'  # Represents glycerol backbone
+    glycerol_pattern = Chem.MolFromSmarts(glycerol_smarts)
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+
+    if not glycerol_matches:
+        return False, "No glycerol backbone with hydroxyls at positions 2 and 3 found"
+
+    # Define SMARTS pattern for ester group attached to primary carbon (position 1)
+    ester_smarts = 'O[C@@H](CO)COC(=O)[C;!H0]'  # Ester linked at position 1
     ester_pattern = Chem.MolFromSmarts(ester_smarts)
     ester_matches = mol.GetSubstructMatches(ester_pattern)
 
     if not ester_matches:
-        return False, "No ester group connected to a primary carbon found"
+        return False, "No ester group attached at position 1 found"
 
-    found_glycerol = False
+    # Check for only one ester group
+    ester_count = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.ESTER:
+            ester_count +=1
+    if ester_count > 1:
+        return False, f"More than one ester group found ({ester_count} esters)"
 
-    # Iterate over ester matches to find the glycerol backbone
-    for match in ester_matches:
-        acyl_chain_c = match[0]
-        carbonyl_c = match[1]
-        ester_o = match[2]
-        glycerol_c1 = match[3]  # Primary carbon (position 1)
+    # Ensure that the ester group is at position 1
+    # Find the atom indices for glycerol carbons and ester oxygen
+    for match in glycerol_matches:
+        # Indices for glycerol backbone carbons
+        c2_idx = match[0]
+        c3_idx = match[1]
+        c1_idx = match[2]
 
-        glycerol_c1_atom = mol.GetAtomWithIdx(glycerol_c1)
-        # Check if glycerol_c1 is connected to exactly one other carbon (position 2)
-        neighbors_c1 = [nbr.GetIdx() for nbr in glycerol_c1_atom.GetNeighbors() if nbr.GetIdx() != ester_o]
-        if len(neighbors_c1) != 1:
-            continue
-        c2_idx = neighbors_c1[0]
+        c1_atom = mol.GetAtomWithIdx(c1_idx)
         c2_atom = mol.GetAtomWithIdx(c2_idx)
-        if c2_atom.GetAtomicNum() != 6:
-            continue
-
-        # Check neighbors of position 2 carbon (should be connected to position 1, position 3, and a hydroxyl group)
-        neighbors_c2 = [nbr.GetIdx() for nbr in c2_atom.GetNeighbors() if nbr.GetIdx() != glycerol_c1]
-        if len(neighbors_c2) != 2:
-            continue
-
-        c3_idx = None
-        o2_idx = None
-        for idx in neighbors_c2:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 6:
-                c3_idx = idx
-            elif atom.GetAtomicNum() == 8:
-                o2_idx = idx
-        if c3_idx is None or o2_idx is None:
-            continue
-
-        # Verify that the oxygen at position 2 is a hydroxyl group
-        o2_atom = mol.GetAtomWithIdx(o2_idx)
-        if o2_atom.GetTotalDegree() != 1 or o2_atom.GetImplicitValence() != 1:
-            continue
-
-        # Check neighbors of position 3 carbon (should be connected to position 2 and a hydroxyl group)
         c3_atom = mol.GetAtomWithIdx(c3_idx)
-        neighbors_c3 = [nbr.GetIdx() for nbr in c3_atom.GetNeighbors() if nbr.GetIdx() != c2_idx]
-        if len(neighbors_c3) != 1:
-            continue
-        o3_idx = neighbors_c3[0]
-        o3_atom = mol.GetAtomWithIdx(o3_idx)
-        if o3_atom.GetAtomicNum() != 8:
-            continue
-        # Verify that the oxygen at position 3 is a hydroxyl group
-        if o3_atom.GetTotalDegree() != 1 or o3_atom.GetImplicitValence() != 1:
-            continue
 
-        found_glycerol = True
-        break
+        # Check if c1 is connected via an ester linkage
+        is_esterified = False
+        for neighbor in c1_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen
+                for nbr in neighbor.GetNeighbors():
+                    if nbr.GetIdx() != c1_idx and nbr.GetAtomicNum() == 6:
+                        # Check if it's a carbonyl carbon
+                        for bond in neighbor.GetBonds():
+                            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and bond.GetOtherAtomIdx(neighbor.GetIdx()) == nbr.GetIdx():
+                                is_esterified = True
+                                break
+        if is_esterified:
+            # Verify that c2 and c3 have hydroxyl groups
+            c2_oh = False
+            c3_oh = False
+            for neighbor in c2_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+                    c2_oh = True
+                    break
+            for neighbor in c3_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+                    c3_oh = True
+                    break
+            if c2_oh and c3_oh:
+                return True, "Contains glycerol backbone with acyl group at position 1"
+            else:
+                return False, "Positions 2 and/or 3 do not have hydroxyl groups"
 
-    if found_glycerol:
-        return True, "Contains glycerol backbone with acyl group at position 1"
-    else:
-        return False, "Does not contain glycerol backbone with acyl group at position 1"
+    return False, "No esterified glycerol backbone at position 1 found"
