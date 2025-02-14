@@ -1,22 +1,60 @@
 """
 Classifies: CHEBI:50998 trans-2-enoyl-CoA
 """
-After analyzing the previous program and the outcomes, it seems that the issue lies in the pattern used to identify the CoA backbone. The pattern `"[C;R](C)(C)(CO[P@@](=O)(O)O[P@@](=O)(O)OC[C@H]1[C@@H]([C@@H]([C@H](O1)n2cnc3c2ncnc3N)O)OP(=O)(O)O)C(=O)NCCCC(=O)NCCSC(=O)"` is too specific and may not cover all possible variations of the CoA backbone.
+"""
+Classifies: CHEBI:36356 trans-2-enoyl-CoA
+"""
+from rdkit import Chem
+from rdkit.Chem import rdFMCS
+from rdkit.Chem import rdMolDescriptors
 
-The CoA backbone is a complex structure, and using a more flexible pattern or a combination of patterns might be a better approach. Additionally, the previous pattern does not account for the possibility of different tautomers or ionization states of the CoA backbone.
+def is_trans_2_enoyl_CoA(smiles: str):
+    """
+    Determines if a molecule is a trans-2-enoyl-CoA based on its SMILES string.
+    A trans-2-enoyl-CoA is an unsaturated fatty acyl-CoA that results from the formal condensation
+    of the thiol group of coenzyme A with the carboxy group of any 2,3-trans-enoic acid.
 
-To improve the program, we can try the following strategies:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. Break down the CoA backbone pattern into smaller subpatterns and check for the presence of each subpattern individually. This way, we can account for minor variations in the CoA backbone structure.
-
-2. Use more general patterns to capture the overall structure of the CoA backbone, such as the presence of the adenine ring, the ribose sugar, and the phosphate groups.
-
-3. Consider using additional checks, such as counting the number of specific atoms (e.g., nitrogen, phosphorus) or functional groups (e.g., phosphate groups) present in the molecule, to further validate the presence of the CoA backbone.
-
-4. Investigate the use of different SMARTS patterns or alternative approaches, such as substructure matching using RDKit's built-in functionality or other cheminformatics libraries.
-
-5. Analyze the false positives and false negatives to identify any systematic errors or edge cases that need to be addressed in the pattern matching or additional checks.
-
-6. If the benchmark data is not entirely reliable, consider cross-checking the results against other sources or expert knowledge to validate the classifications.
-
-By iterating and refining the approach, we can potentially improve the accuracy of the program in classifying trans-2-enoyl-CoA molecules.
+    Returns:
+        bool: True if molecule is a trans-2-enoyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for trans-2-enoyl pattern
+    trans_enoyl_pattern = Chem.MolFromSmarts("[CX3]([H])=C(/[CH3,CH2,CH1,C])\\C(=O)")
+    if not mol.HasSubstructMatch(trans_enoyl_pattern):
+        return False, "No trans-2-enoyl pattern found"
+    
+    # Check for CoA backbone
+    coa_pattern = rdFMCS.FindMoleculeChemicalEnvironment(mol, Chem.MolFromSmiles("C(C(C(=O)NCCC(=O)NCCS))O)OP(=O)(O)OP(=O)(O)OCC1OC(n2cnc3c(N)ncnc23)C(O)C1OP(=O)(O)O"))
+    if coa_pattern is None:
+        return False, "No CoA backbone found"
+    
+    # Check for long carbon chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Carbon chain too short"
+    
+    # Additional checks
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    
+    if c_count < 20:
+        return False, "Too few carbons for trans-2-enoyl-CoA"
+    if o_count < 10:
+        return False, "Too few oxygens for trans-2-enoyl-CoA"
+    if n_count != 9:
+        return False, "Incorrect number of nitrogens for trans-2-enoyl-CoA"
+    if p_count != 3:
+        return False, "Incorrect number of phosphorus atoms for trans-2-enoyl-CoA"
+    
+    return True, "Contains trans-2-enoyl pattern and CoA backbone"
