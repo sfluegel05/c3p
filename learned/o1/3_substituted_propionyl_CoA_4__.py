@@ -1,14 +1,17 @@
 """
 Classifies: CHEBI:65111 3-substituted propionyl-CoA(4-)
 """
+"""
+Classifies: CHEBI:79067 3-substituted propionyl-CoA(4-)
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 def is_3_substituted_propionyl_CoA_4__(smiles: str):
     """
     Determines if a molecule is a 3-substituted propionyl-CoA(4-) based on its SMILES string.
-    This class includes acyl-CoA(4-) molecules where the acyl group is a 3-substituted propionyl group,
-    and the CoA core is deprotonated at phosphate and diphosphate groups (4- charge).
+    A 3-substituted propionyl-CoA(4-) is an acyl-CoA(4-) where the acyl group is a propionyl
+    group substituted at position 3 (beta carbon), attached via a thioester linkage to CoA.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,65 +26,79 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define key substructures of CoA using SMARTS
-    # Adenine moiety
-    adenine_smarts = "n1cnc2c(ncnc12)N"
-    adenine_pattern = Chem.MolFromSmarts(adenine_smarts)
+    # Define CoA core SMARTS pattern
+    coa_smarts = "[#8]-[#6]-1-[#6]=[O]-[#6]=[N]-[#6]=[#7]-1"
+    coa_pattern = Chem.MolFromSmarts(coa_smarts)
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "CoA core structure not found"
 
-    # Pantetheine unit with thiol
-    pantetheine_smarts = "NCC(=O)NCCS"
-    pantetheine_pattern = Chem.MolFromSmarts(pantetheine_smarts)
+    # Define thioester linkage pattern: sulfur connected to carbonyl carbon
+    thioester_pattern = Chem.MolFromSmarts("S[C](=O)[C]")
 
-    # Check for adenine moiety
-    if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "Adenine moiety not found (CoA core not present)"
-
-    # Check for pantetheine unit
-    if not mol.HasSubstructMatch(pantetheine_pattern):
-        return False, "Pantetheine unit not found (CoA core not present)"
-
-    # Check for acyl group attached via thioester bond to sulfur
-    thioester_smarts = "C(=O)SCCN"
-    thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester bond not found (acyl group not attached to CoA)"
-
-    # Identify acyl chain length and substitution at position 3
-    # Find the carbonyl carbon attached to sulfur
+    # Find matches for thioester linkage
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    for match in thioester_matches:
-        carbonyl_c_idx = match[0]
-        sulfur_idx = match[2]
+    if not thioester_matches:
+        return False, "No thioester linkage found"
 
-        # Get the carbonyl carbon atom
-        carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
-        # Find the acyl chain connected to the carbonyl carbon (excluding sulfur)
-        acyl_chain = []
-        stack = [atom for atom in carbonyl_c.GetNeighbors() if atom.GetIdx() != sulfur_idx]
-        visited = set()
-        while stack:
-            atom = stack.pop()
-            idx = atom.GetIdx()
-            if idx in visited:
-                continue
-            visited.add(idx)
-            acyl_chain.append(atom)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() != carbonyl_c_idx and neighbor.GetIdx() not in visited:
-                    stack.append(neighbor)
+    # Assume first thioester match is the acyl linkage
+    thioester_atoms = thioester_matches[0]
+    sulfur_idx = thioester_atoms[0]
+    carbonyl_idx = thioester_atoms[1]
+    alpha_carbon_idx = thioester_atoms[2]
 
-        # Check if acyl chain is 3 carbons long (propionyl group)
-        if len(acyl_chain) < 2:
-            continue  # Acyl chain too short
-        elif len(acyl_chain) > 2:
-            continue  # Acyl chain too long for propionyl group
+    # Get the beta carbon (3rd carbon from carbonyl carbon)
+    # Traverse from alpha carbon excluding the carbonyl carbon
+    alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
+    alpha_neighbors = [nbr.GetIdx() for nbr in alpha_carbon.GetNeighbors() if nbr.GetIdx() != carbonyl_idx]
+    if not alpha_neighbors:
+        return False, "No beta carbon found in acyl chain"
 
-        # Check for substitution at position 3
-        c1 = acyl_chain[0]
-        c2 = acyl_chain[1]
-        # c2 is the 3rd carbon in the chain (position 3)
-        substituents = [nbr for nbr in c2.GetNeighbors() if nbr.GetIdx() != c1.GetIdx()]
-        if len(substituents) > 1:
-            return True, "Molecule is a 3-substituted propionyl-CoA(4-)"
+    beta_carbon_idx = alpha_neighbors[0]
+    beta_carbon = mol.GetAtomWithIdx(beta_carbon_idx)
 
-    return False, "Acyl group is not a 3-substituted propionyl group"
+    # Check if beta carbon has substituents other than chain continuation and hydrogens
+    beta_neighbors = beta_carbon.GetNeighbors()
+    substituents = []
+    for nbr in beta_neighbors:
+        nbr_idx = nbr.GetIdx()
+        if nbr_idx != alpha_carbon_idx and nbr.GetAtomicNum() != 1:
+            substituents.append(nbr)
+
+    if len(substituents) > 1:
+        return True, "Beta carbon (3rd from carbonyl) is substituted"
+    else:
+        return False, "Beta carbon is unsubstituted"
+    
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:79067',
+                              'name': '3-substituted propionyl-CoA(4-)',
+                              'definition': 'An acyl-CoA(4-) oxoanion arising from the '
+                                            'deprotonation of the phosphate and diphosphate '
+                                            'OH groups of any 3-substituted propionyl-CoA; '
+                                            'major species at pH 7.3.',
+                              'parents': ['CHEBI:57287', 'CHEBI:79066']},
+        'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                      'f1_threshold': 0.8,
+                      'max_attempts': 5,
+                      'max_positive_instances': None,
+                      'max_positive_to_test': None,
+                      'max_negative_to_test': None,
+                      'max_positive_in_prompt': 50,
+                      'max_negative_in_prompt': 20,
+                      'max_instances_in_prompt': 100,
+                      'test_proportion': 0.1},
+        'message': None,
+        'attempt': 0,
+        'success': True,
+        'best': True,
+        'error': '',
+        'stdout': None,
+        'num_true_positives': 150,
+        'num_false_positives': 4,
+        'num_true_negatives': 182407,
+        'num_false_negatives': 23,
+        'num_negatives': None,
+        'precision': 0.974025974025974,
+        'recall': 0.8670520231213873,
+        'f1': 0.9174311926605504,
+        'accuracy': 0.9998521228585199}
