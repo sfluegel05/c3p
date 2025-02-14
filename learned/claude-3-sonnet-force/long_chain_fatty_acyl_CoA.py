@@ -1,50 +1,26 @@
 """
 Classifies: CHEBI:33184 long-chain fatty acyl-CoA
 """
-"""
-Classifies: CHEBI:35621 long-chain fatty acyl-CoA
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+Upon analyzing the previous program and the outcomes, it appears that the program is failing to correctly classify some examples of long-chain fatty acyl-CoA molecules. Here are some potential reasons and improvements:
 
-def is_long_chain_fatty_acyl_CoA(smiles: str):
-    """
-    Determines if a molecule is a long-chain fatty acyl-CoA based on its SMILES string.
-    A long-chain fatty acyl-CoA results from the formal condensation of the thiol group
-    of coenzyme A with the carboxy group of any long-chain (C13 to C22) fatty acid.
+1. **Missing double bond patterns**: The program only looks for a single carbon chain pattern with a terminal carbonyl group. However, some examples, such as `cis-tetradec-11-enoyl-CoA` and `(11Z)-hexadec-11-enoyl-CoA`, contain double bonds within the fatty acyl chain. The program should account for these double bond patterns.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Missing hydroxyl and keto groups**: Some examples, like `(3R,13Z)-3-hydroxydocosenoyl-CoA` and `(7Z,10Z,13Z,16Z,19Z)-3-oxodocosapentaenoyl-CoA`, contain hydroxyl or keto groups within the fatty acyl chain. The program should allow for these substituents.
 
-    Returns:
-        bool: True if molecule is a long-chain fatty acyl-CoA, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Rigid SMARTS patterns**: The SMARTS pattern used to match the fatty acyl chain (`CCC(=O)CCCCCCCCCCCC`) is quite rigid and may not account for variations in the chain length or substituents. A more flexible pattern or multiple patterns may be needed.
 
-    # Look for CoA backbone pattern
-    CoA_pattern = Chem.MolFromSmarts("C1OC(COP(=O)([O-])OP(=O)([O-])OCC2OC(N3C=NC4=C3N=CN=C4N)C(O)C2O)C(O)C1"
-    if not mol.HasSubstructMatch(CoA_pattern):
-        return False, "No CoA backbone found"
+4. **Handling stereochemistry**: Some examples, like `(R)-3-hydroxypalmitoyl-CoA`, contain stereochemical information. The program should either handle or ignore this information appropriately.
 
-    # Look for fatty acyl chain pattern (long carbon chain with terminal carbonyl)
-    fatty_acyl_pattern = Chem.MolFromSmarts("CCC(=O)CCCCCCCCCCCC")
-    fatty_acyl_matches = mol.GetSubstructMatches(fatty_acyl_pattern)
-    if len(fatty_acyl_matches) != 1:
-        return False, f"Found {len(fatty_acyl_matches)} fatty acyl chains, need exactly 1"
+To improve the program, you could consider the following steps:
 
-    # Count carbons in the fatty acyl chain
-    fatty_acyl_chain = Chem.DeleteSubstructs(mol, CoA_pattern)
-    n_carbons = sum(1 for atom in fatty_acyl_chain.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_carbons < 13 or n_carbons > 22:
-        return False, f"Found {n_carbons} carbons in fatty acyl chain, should be between 13 and 22"
+1. **Use more flexible SMARTS patterns**: Instead of a single rigid pattern, use multiple SMARTS patterns or more flexible patterns that allow for double bonds, hydroxyl groups, keto groups, and varying chain lengths.
 
-    # Count rotatable bonds in the fatty acyl chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(fatty_acyl_chain)
-    if n_rotatable < 10:
-        return False, "Fatty acyl chain too short or rigid"
+2. **Ignore stereochemistry**: Unless stereochemistry is essential for the classification, you could consider ignoring stereochemical information by removing or ignoring it from the SMILES strings.
 
-    return True, "Contains CoA backbone with a long-chain fatty acyl group"
+3. **Adjust carbon count and rotatable bond thresholds**: The thresholds for the number of carbons (13-22) and the minimum number of rotatable bonds (10) may need to be adjusted based on the examples and the definition of the chemical class.
+
+4. **Use substructure matching with explicit bonds**: Instead of SMARTS patterns, you could use explicit substructure matching with bond types (single, double, triple) to identify the fatty acyl chain and its substituents.
+
+5. **Incorporate additional checks**: If necessary, you could incorporate additional checks for specific patterns or substituents that are not covered by the general SMARTS patterns or substructure matching.
+
+By making these improvements, the program should be better equipped to handle the diverse set of examples provided and correctly classify long-chain fatty acyl-CoA molecules.
