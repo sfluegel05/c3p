@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
-    A polypyrrole is defined as a compound with two or more pyrrole units.
+    A polypyrrole consists of two or more pyrrole units, often manifesting in
+    complex ring structures.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,21 +21,16 @@ def is_polypyrrole(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define pyrrole pattern (5-membered aromatic ring with NH)
-    pyrrole_pattern = Chem.MolFromSmarts("[n&H1]1cccc1")  # Ensure nitrogen is part of an aromatic system
     
-    # Try multiple pyrrole-like patterns if necessary
-    pyrrole_alt_pattern = Chem.MolFromSmarts("[n]1ccc[cH0]1")  # For fused systems or aromatic checks
+    # Define pyrrole-like patterns for complex systems (fused or extended conjugated systems)
+    # More general pyrrole pattern to cover fused systems
+    general_pyrrole_pattern = Chem.MolFromSmarts('[nH1]1cccc1 | [n]1ccccc1') 
 
     # Find matches for pyrrole units
-    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
-    alt_matches = mol.GetSubstructMatches(pyrrole_alt_pattern)
+    pyrrole_matches = mol.GetSubstructMatches(general_pyrrole_pattern)
+    unique_matches = {tuple(sorted(match)) for match in pyrrole_matches}
     
-    # Calculate the total unique matches
-    unique_matches = set(pyrrole_matches) | set(alt_matches)
-
-    # Check if there are two or more pyrrole units
+    # Check if there are two or more distinct pyrrole units
     if len(unique_matches) >= 2:
         return True, f"Contains {len(unique_matches)} pyrrole units"
 
