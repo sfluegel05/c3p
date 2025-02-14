@@ -1,26 +1,54 @@
 """
 Classifies: CHEBI:33913 corrinoid
 """
-The previous program attempted to classify corrinoids based on the following criteria:
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. Presence of a corrin macrocycle, consisting of four reduced or partially reduced pyrrole rings joined by three =C- groups and one direct carbon-carbon bond linking alpha positions.
-2. At least four reduced pyrrole rings.
-3. Exactly one direct carbon-carbon bond linking alpha positions.
-4. Presence of cobalt coordination.
+def is_corrinoid(smiles: str):
+    """
+    Determines if a molecule is a corrinoid or a corrinoid precursor/derivative based on its SMILES string.
+    Corrinoids are derivatives of the corrin nucleus, which contains four reduced or partly reduced pyrrole rings
+    joined in a macrocycle by three =C- groups and one direct carbon-carbon bond linking alpha positions.
 
-However, based on the outcomes provided, it seems that the program failed to correctly classify some corrinoid structures. Let's analyze the reasons for the failures and suggest improvements:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Missed structures:**
-   - **precorrin-6X, precorrin-3B, cobalt-precorrin-5B**: These structures were missed because they do not contain the corrin macrocycle pattern. However, they are precursors or intermediates in the biosynthesis of corrinoids. To account for these structures, the program could be modified to include additional patterns or substructure searches for precorrin and cobalt-precorrin structures.
+    Returns:
+        bool: True if molecule is a corrinoid or corrinoid precursor/derivative, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Incorrect number of alpha-linked carbon atoms:**
-   - **methylcobalamin, cyanopseudocoenzyme B12, adenosylpseudocoenzyme B12, adenosylcobinamide, cob(II)inamide, cob(I)alamin, 5-hydroxybenzimidazolylcob(I)amide**: These structures were missed because they do not have exactly one direct carbon-carbon bond linking alpha positions. Instead, they have additional substituents or modifications that alter the alpha-linkage pattern. To handle these cases, the program could be modified to allow for variations in the alpha-linkage pattern or to consider the overall structural similarity to the corrin nucleus, rather than strictly enforcing the alpha-linkage rule.
+    # Look for corrin macrocycle pattern
+    corrin_pattern = Chem.MolFromSmarts("[N&R]1[C&R]=2[N&R]=3[C&R]=4[N&R]=5[C&R]=6[N&R]=1[C&R]=2[C&R]=3[C&R]=4[C&R]=5[C&R]=6")
+    corrin_matches = mol.GetSubstructMatches(corrin_pattern)
 
-3. **Other potential improvements:**
-   - Consider including additional patterns or substructure searches for common corrinoid modifications, such as the presence of specific substituents or functional groups.
-   - Incorporate molecular weight or other molecular descriptors to further refine the classification criteria.
-   - Explore the use of machine learning techniques or similarity-based methods for more robust classification of corrinoids and their derivatives.
+    # Look for precorrin and cobalt-precorrin patterns
+    precorrin_pattern = Chem.MolFromSmarts("[N&R]1[C&R]=2[N&R]=3[C&R]=4[N&R]=5[C&R]=6[N&R]=1[C&R]=2[C&R]=3[C&R]=4[C&R]=5[C&R]=6[C&R]")
+    precorrin_matches = mol.GetSubstructMatches(precorrin_pattern)
 
-It's important to note that the provided benchmark may not be perfect, and there could be occasional or systematic mistakes. If the classifications made by your program align with your understanding of the corrinoid class, you can choose to ignore outliers while providing a reasoned explanation.
+    # Look for cobalt coordination
+    cobalt_pattern = Chem.MolFromSmarts("[Co]")
+    cobalt_matches = mol.GetSubstructMatches(cobalt_pattern)
 
-Overall, the previous program took a reasonable approach by searching for key structural features of corrinoids. However, the specific patterns and criteria used may need to be adjusted or expanded to accommodate the diversity of corrinoid structures and their biosynthetic precursors or derivatives.
+    # Check for corrin macrocycle or precursor/derivative pattern
+    if corrin_matches or precorrin_matches:
+        if cobalt_matches:
+            return True, "Contains corrin macrocycle or precursor/derivative with cobalt coordination"
+        else:
+            return True, "Contains corrin macrocycle or precursor/derivative without cobalt coordination"
+
+    # Check for common corrinoid modifications
+    modifications = ["[N&R]C(=O)CC[C@@H]", "[N&R]C[C@@H](OP([O-])([O-])=O)", "[N&R]C[C@@H](OP(O)(O)=O)O[C@@H]", "[N&R]c1nc[nH]c1=O"]
+    for mod in modifications:
+        mod_pattern = Chem.MolFromSmarts(mod)
+        mod_matches = mol.GetSubstructMatches(mod_pattern)
+        if mod_matches:
+            return True, f"Contains corrinoid modification pattern: {mod}"
+
+    return False, "No corrinoid or corrinoid precursor/derivative pattern found"
