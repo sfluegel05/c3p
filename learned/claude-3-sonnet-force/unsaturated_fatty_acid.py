@@ -25,40 +25,28 @@ def is_unsaturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for unsaturation (C=C or C#C)
-    unsaturated = mol.HasSubstructMatch(Chem.MolFromSmarts('C=C')) or mol.HasSubstructMatch(Chem.MolFromSmarts('C#C'))
-    if not unsaturated:
-        return False, "No unsaturation (C=C or C#C) found"
+    # Check for unsaturation
+    num_unsaturated_bonds = rdMolDescriptors.CalcNumUnsaturatedBonds(mol)
+    if num_unsaturated_bonds == 0:
+        return False, "No unsaturation found"
     
     # Check for carboxylic acid group
     acid_pattern = Chem.MolFromSmarts('C(=O)O')
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for long carbon chain (>= 8 carbons)
+    # Check for carbon chain length
     n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_carbons < 8:
-        return False, "Carbon chain too short (< 8 carbons)"
+    if n_carbons < 8 or n_carbons > 30:
+        return False, "Carbon chain length outside typical range for fatty acids"
     
-    # Check for specific patterns of unsaturation
-    cis_pattern = Chem.MolFromSmarts('/C=C/')
-    trans_pattern = Chem.MolFromSmarts('C=C')
-    cis_matches = mol.GetSubstructMatches(cis_pattern)
-    trans_matches = mol.GetSubstructMatches(trans_pattern)
-    
-    unsaturation_type = "unknown"
-    if cis_matches:
-        unsaturation_type = "cis"
-    if trans_matches:
-        unsaturation_type = "trans" if not cis_matches else "cis and trans"
-    
-    # Check for additional functional groups
-    hydroxy_pattern = Chem.MolFromSmarts('O')
-    has_hydroxy = mol.HasSubstructMatch(hydroxy_pattern)
+    # Check for disqualifying substructures
+    disqualifying_patterns = [Chem.MolFromSmarts('c'), Chem.MolFromSmarts('N'), Chem.MolFromSmarts('O=C-O')]
+    for pattern in disqualifying_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, "Molecule contains disqualifying substructure(s)"
     
     # Construct reason string
-    reason = f"Contains {unsaturation_type} unsaturation, carboxylic acid group, and long carbon chain"
-    if has_hydroxy:
-        reason += ", and hydroxy group(s)"
+    reason = f"Contains {num_unsaturated_bonds} unsaturated bond(s), carboxylic acid group, and appropriate carbon chain length"
     
     return True, reason
