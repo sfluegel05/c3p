@@ -39,12 +39,12 @@ def is_triradylglycerol(smiles: str):
     substituents = []
     for atom in mol.GetAtoms():
         if atom.GetSymbol() == "O":
-            env = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, atom.GetIdx())
-            if env.HasSubstructMatch(ester_pattern):
+            neighbors = [mol.GetAtomWithIdx(idx).GetSmarts() for idx in atom.GetNeighbors()]
+            if "[CX3](=[OX1])" in neighbors:
                 substituents.append("acyl")
-            elif env.HasSubstructMatch(alkyl_pattern):
+            elif "[CX4]" in neighbors:
                 substituents.append("alkyl")
-            elif env.HasSubstructMatch(alkenyl_pattern):
+            elif "[CX3]=[CX3]" in neighbors:
                 substituents.append("alk-1-enyl")
 
     if len(substituents) != 3:
