@@ -5,7 +5,8 @@ Classifies: CHEBI:50126 tetrasaccharide
 Classifies: CHEBI:36299 tetrasaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors, Descriptors
+from rdkit import rdBase
 
 def is_tetrasaccharide(smiles: str):
     """
@@ -25,22 +26,15 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Count sugar rings
-    sugar_rings = AllChem.MMU.FindMolRingInfo(mol).BondRingInfo
-    num_rings = len(sugar_rings)
+    # Count rings and get ring sizes
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
     
-    # Tetrasaccharides should have 4 rings
+    # Tetrasaccharides should have 4 rings of size 5 or 6
     if num_rings != 4:
         return False, f"Found {num_rings} rings, tetrasaccharides should have 4"
-    
-    # Check ring sizes
-    invalid_rings = False
-    for ring in sugar_rings:
-        ring_size = len(ring)
-        if ring_size < 5 or ring_size > 6:
-            invalid_rings = True
-            break
-    if invalid_rings:
+    if any(size < 5 or size > 6 for size in ring_sizes):
         return False, "Found rings of invalid size (should be 5 or 6 membered)"
     
     # Check for glycosidic bonds
