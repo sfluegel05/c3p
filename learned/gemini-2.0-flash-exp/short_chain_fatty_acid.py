@@ -23,49 +23,52 @@ def is_short_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for non-hydrocarbon atoms (excluding H, C, O)
-    for atom in mol.GetAtoms():
-        atomic_num = atom.GetAtomicNum()
-        if atomic_num != 1 and atomic_num != 6 and atomic_num != 8:
-            return False, "Non-hydrocarbon substituent found"
-            
-
-    # Check for carboxylic acid group with attached alpha carbon
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[C]-[C](=O)O")
+    # Check for carboxylic acid group and extract the chain
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CH2;!$(C=O)]-[C](=O)[OH]")
     matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if not matches:
-        return False, "No carboxylic acid group with attached alpha carbon found"
+        carboxylic_acid_pattern = Chem.MolFromSmarts("[CH;!$(C=O)]-[C](=O)[OH]") # Check also for -CH- if it is not a terminal carbon
+        matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+        if not matches:
+          return False, "No carboxylic acid group found"
 
+    alpha_carbon_idx = matches[0][0]
+    
+    def get_chain_atoms(mol, start_atom_idx, visited_atoms):
+        """
+        Recursively finds the carbon atoms in the alkyl chain connected to the carboxylic acid group.
+        Only single bonds are followed.
+        """
+        visited_atoms.add(start_atom_idx)
+        chain_atoms = [start_atom_idx]
 
-    # Get the carbon index connected to the carbonyl
-    carbonyl_carbon_idx = matches[0][1] # index of the carbon in C(=O)O
-    alpha_carbon_idx = matches[0][0] #index of carbon connected to the carbonyl
-    
-    
-    def get_chain_length(mol, current_atom_idx, visited_atoms, chain_length):
-        
-        visited_atoms.add(current_atom_idx)
-        max_len = chain_length
-        
         neighbors = []
-        for neighbor in mol.GetAtomWithIdx(current_atom_idx).GetNeighbors():
-          neighbor_idx = neighbor.GetIdx()
-          bond = mol.GetBondBetweenAtoms(current_atom_idx, neighbor_idx)
-          if neighbor.GetAtomicNum() == 6 and neighbor_idx not in visited_atoms and (bond.GetBondType() == Chem.rdchem.BondType.SINGLE or bond.GetBondType() == Chem.rdchem.BondType.DOUBLE) :
+        for neighbor in mol.GetAtomWithIdx(start_atom_idx).GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            bond = mol.GetBondBetweenAtoms(start_atom_idx, neighbor_idx)
+
+            if neighbor.GetAtomicNum() == 6 and neighbor_idx not in visited_atoms and bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
               neighbors.append(neighbor_idx)
 
-        if len(neighbors) == 0:
-          return chain_length
-        
         for neighbor_idx in neighbors:
-            max_len = max(max_len, get_chain_length(mol,neighbor_idx, set(visited_atoms), chain_length+1))
+          chain_atoms.extend(get_chain_atoms(mol, neighbor_idx, set(visited_atoms)))
 
-        return max_len
-            
+
+        return chain_atoms
+
+    chain_atoms = get_chain_atoms(mol, alpha_carbon_idx,set())
     
-    chain_length = get_chain_length(mol,alpha_carbon_idx, set(), 1)
-      
-    if chain_length > 5:
-         return False, "More than 5 carbons in the alkyl chain"
-   
+    #check if there are any non-hydrocarbons in the chain atoms. Oxygen is OK if part of the -OH group
+    for atom_idx in chain_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1 and not (atom.GetAtomicNum() == 8 and atom.GetIdx() != mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O"))[0][2] ):
+              return False, "Non-hydrocarbon substituent found on the chain"
+
+    # Calculate chain length
+    chain_length = len(chain_atoms)
+    
+    if chain_length > 5 :
+        return False, "More than 5 carbons in the alkyl chain"
+    
+    
     return True, "Short-chain fatty acid criteria met"
