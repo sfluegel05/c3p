@@ -11,8 +11,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     """
     Determines if a molecule is a monoacyl-sn-glycerol 3-phosphate based on its SMILES string.
-    A monoacyl-sn-glycerol 3-phosphate is an sn-glycerol with a phosphate group at the 3-position
-    and a single acyl group attached at either position 1 or position 2.
+    A monoacyl-sn-glycerol 3-phosphate is an sn-glycerol-3-phosphate with a single acyl group
+    attached at either position 1 or position 2.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,10 +27,10 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern with phosphate at 3-position
-    backbone_pattern = Chem.MolFromSmarts("[CH2X4][CX4H][CH2X3P]")
+    # Look for glycerol-3-phosphate backbone pattern (C-C-C with 2 oxygens and 1 phosphate group)
+    backbone_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X3P]")
     if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "No glycerol backbone with phosphate at 3-position found"
+        return False, "No glycerol-3-phosphate backbone found"
     
     # Look for single ester group (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -38,14 +38,8 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
     
-    # Check if the ester group is attached to the glycerol backbone at either 1- or 2-position
-    acyl_position_pattern_1 = Chem.MolFromSmarts("[CH2X4][CX4H][CH2X3P]([OX2][CX3](=[OX1]))")
-    acyl_position_pattern_2 = Chem.MolFromSmarts("[CH2X4][CX4H]([OX2][CX3](=[OX1]))([CH2X3P])")
-    if not (mol.HasSubstructMatch(acyl_position_pattern_1) or mol.HasSubstructMatch(acyl_position_pattern_2)):
-        return False, "Acyl group not attached to glycerol backbone at 1- or 2-position"
-    
     # Check for fatty acid chain (long carbon chain attached to ester)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3,CX2]~[CX4,CX3,CX2]~[CX4,CX3,CX2]")
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
         return False, f"Missing fatty acid chain, got {len(fatty_acid_matches)}"
@@ -67,9 +61,9 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     
     if c_count < 10:
         return False, "Too few carbons for monoacyl-sn-glycerol 3-phosphate"
-    if o_count != 8:
-        return False, "Must have exactly 8 oxygens (1 ester group, 1 phosphate group, 2 hydroxyls)"
+    if o_count != 7:
+        return False, "Must have exactly 7 oxygens (1 ester group, 1 phosphate group)"
     if p_count != 1:
         return False, "Must have exactly 1 phosphorus atom"
 
-    return True, "Contains glycerol backbone with phosphate at 3-position and 1 fatty acid chain attached via ester bond"
+    return True, "Contains glycerol-3-phosphate backbone with 1 fatty acid chain attached via ester bond"
