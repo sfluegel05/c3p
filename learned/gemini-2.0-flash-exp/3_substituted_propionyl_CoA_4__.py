@@ -34,7 +34,8 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
 
     # 3. Check for propionyl group and the substituent at position 3, (and the connection to the thioester)
     #  This pattern matches a carbonyl carbon, with a connection to the sulfur, followed by 2 carbons with a substituent at the 3rd pos
-    propionyl_pattern = Chem.MolFromSmarts("C(=O)S[CH2][CH]([CH2])[CX4]")
+    # Updated pattern to match any substituent at the 3rd position.
+    propionyl_pattern = Chem.MolFromSmarts("C(=O)S[C][C]([C])[*]")
     propionyl_matches = mol.GetSubstructMatches(propionyl_pattern)
     if len(propionyl_matches) != 1:
        return False, f"Found {len(propionyl_matches)} propionyl groups, need exactly 1"
