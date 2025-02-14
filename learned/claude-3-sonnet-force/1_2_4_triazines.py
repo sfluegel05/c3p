@@ -1,28 +1,59 @@
 """
 Classifies: CHEBI:39410 1,2,4-triazines
 """
-Reasoning:
+"""
+Classifies: CHEBI:25398 1,2,4-triazines
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-The previous program correctly identifies molecules with a 1,2,4-triazine core structure and checks if the nitrogen atoms are located at positions 1, 2, and 4 of the core ring. However, the program has a few limitations and potential issues:
+def is_1_2_4_triazine(smiles: str):
+    """
+    Determines if a molecule is a 1,2,4-triazine based on its SMILES string.
+    A 1,2,4-triazine is a compound with a triazine skeleton, where nitrogen atoms
+    replace carbon at positions 1, 2, and 4 of the core benzene ring structure.
 
-1. **Limited Substructure Match**: The program only checks for the presence of the 1,2,4-triazine core ring. It does not consider the possibility of additional substituents or fused ring systems, which are common in many 1,2,4-triazine compounds.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Strict Position Check**: The program strictly checks if the nitrogen atoms are at positions 0, 1, and 3 in the canonical SMILES representation. However, some valid 1,2,4-triazine compounds may have different atom numbering due to different canonical forms or different aromaticity perception.
+    Returns:
+        bool: True if molecule is a 1,2,4-triazine, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Potential Aromaticity Issues**: The program canonicalizes and embeds the molecule before checking the nitrogen positions. However, this step may cause issues with aromaticity perception, leading to incorrect atom numbering or misidentification of the core ring.
+    # Check for triazine ring
+    triazine_pattern = Chem.MolFromSmarts("c1nncnn1")
+    if not mol.HasSubstructMatch(triazine_pattern):
+        return False, "No triazine ring found"
 
-4. **Incomplete Examples**: The list of examples provided covers a wide range of 1,2,4-triazine compounds, but it may not be exhaustive. Additional examples or edge cases could help improve the program's accuracy.
+    # Check if nitrogen atoms are at positions 1, 2, and 4
+    n_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
+    n_positions = [i for i, x in enumerate(n_atoms) if x == 7]
+    if len(n_positions) != 3:
+        return False, f"Wrong number of nitrogen atoms in the ring ({len(n_positions)})"
 
-To improve the program, we can consider the following approaches:
+    ring_info = mol.GetRingInfo()
+    triazine_ring = None
+    for ring in ring_info.AtomRings():
+        if set(ring) == set(n_positions):
+            triazine_ring = ring
+            break
 
-1. **Use a More Flexible Substructure Match**: Instead of strictly checking for the 1,2,4-triazine core, we can use a more flexible substructure match that accounts for additional substituents or fused ring systems.
+    if triazine_ring is None:
+        return False, "Nitrogen atoms not in ring positions 1, 2, and 4"
 
-2. **Implement a More Robust Nitrogen Position Check**: Rather than relying on strict atom index checks, we can develop a more robust method to identify the positions of the nitrogen atoms in the core ring, taking into account different canonical forms and aromaticity perceptions.
+    # Additional validation checks
+    n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    if n_aromatic_rings == 0:
+        return False, "No aromatic rings found"
 
-3. **Handle Aromaticity Perception**: To ensure correct aromaticity perception, we can use RDKit's built-in aromaticity perception functions or explore alternative methods for handling aromaticity.
+    n_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable_bonds == 0:
+        return False, "No rotatable bonds found (rigid structure)"
 
-4. **Incorporate Additional Examples and Edge Cases**: By including more examples and edge cases, we can further refine the program's ability to correctly classify 1,2,4-triazine compounds.
-
-5. **Consider Additional Validation Checks**: Depending on the specific requirements and constraints of the problem, we may need to incorporate additional validation checks, such as molecular weight, atom counts, or other structural features, to improve the accuracy of the classification.
-
-With these improvements, the program should be better equipped to handle a wider range of 1,2,4-triazine compounds and provide more accurate classifications.
+    return True, "Contains a 1,2,4-triazine core with nitrogen atoms at positions 1, 2, and 4"
