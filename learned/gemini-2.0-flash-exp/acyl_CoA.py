@@ -32,27 +32,22 @@ def is_acyl_CoA(smiles: str):
     if not thioester_matches:
          return False, "Thioester group not found"
 
-    # Check if the carbonyl carbon of the thioester is connected to the CoA
+    # Check if the sulfur atom of the thioester is connected to the CoA
     coa_match = mol.GetSubstructMatch(coa_pattern)
     is_connected = False
 
     for match in thioester_matches:
-       carbonyl_carbon_idx = match[0] # Get the C atom of the C=O group
        thioester_sulfur_idx = match[1] # Get the S atom of the C-S group
-       carbonyl_carbon_atom = mol.GetAtomWithIdx(carbonyl_carbon_idx)
        sulfur_atom = mol.GetAtomWithIdx(thioester_sulfur_idx)
-
-       if carbonyl_carbon_atom.GetIdx() in coa_match:
-          for neighbor in carbonyl_carbon_atom.GetNeighbors():
-              if neighbor.GetIdx() == sulfur_atom.GetIdx():
-                is_connected = True
-                break # if we found the sulfur break
+       
+       for neighbor in sulfur_atom.GetNeighbors():
+          if neighbor.GetIdx() in coa_match:
+            is_connected = True
+            break
        if is_connected:
-          break  # break out of outer loop
-
+          break # if we found a connection, exit loop
 
     if not is_connected:
         return False, "Thioester not connected to the CoA moiety"
 
-
-    return True, "Molecule contains Coenzyme A and a thioester connected to a carboxylic acid."
+    return True, "Molecule contains Coenzyme A and a thioester connected to it."
