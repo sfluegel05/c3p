@@ -1,81 +1,20 @@
 """
 Classifies: CHEBI:25903 peptide antibiotic
 """
-"""
-Classifies: CHEBI:49613 peptide antibiotic
-A chemically diverse class of peptides that exhibit antimicrobial properties.
-"""
+Based on the error message and the outcomes provided, it seems that the previous program attempted to load a pre-trained machine learning model from a file called "peptide_antibiotic_model.pkl", which was not found. This led to a failure in the program execution, resulting in no classifications being made and, consequently, no true positives, false positives, or false negatives.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
-from rdkit.ML.Descriptors import MoleculeDescriptors
-import pickle
+To improve the program, we need to address the issue of the missing pre-trained model file. There are a few potential solutions:
 
-# Load pre-trained model
-model = pickle.load(open("peptide_antibiotic_model.pkl", "rb"))
+1. **Provide the pre-trained model file**: If a pre-trained model file is available, it should be included in the same directory as the program, or the correct path to the file should be specified in the code.
 
-def is_peptide_antibiotic(smiles: str):
-    """
-    Determines if a molecule is a peptide antibiotic based on its SMILES string and a pre-trained machine learning model.
+2. **Train a new model**: If a pre-trained model is not available or cannot be provided, the program can be modified to train a new machine learning model using known examples of peptide antibiotics and non-peptide antibiotics. This would involve collecting a dataset of SMILES strings and corresponding labels (peptide antibiotic or not), splitting the data into training and validation sets, and using a suitable machine learning algorithm (e.g., random forest, support vector machine) to train the model.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Use a rule-based approach**: Instead of relying on a pre-trained model, the program can be modified to use a rule-based approach to identify peptide antibiotics based on their structural features and properties. This would involve defining a set of rules or heuristics that capture the characteristics of peptide antibiotics, such as the presence of a peptide backbone, specific functional groups, molecular weight range, and other relevant properties.
 
-    Returns:
-        bool: True if molecule is a peptide antibiotic, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Since the provided code seems to rely on a pre-trained model, and no additional information about the availability of such a model was given, it might be better to explore the rule-based approach. This approach would not require a pre-trained model and would allow for a more transparent and interpretable classification process.
 
-    # Check for peptide backbone
-    peptide_pattern = Chem.MolFromSmarts("[N;X3]([C;X4]([N;X3])=O)[C;X4][C;X3]")
-    if not mol.HasSubstructMatch(peptide_pattern):
-        return False, "No peptide backbone found"
-    
-    # Calculate molecular descriptors
-    calc = MoleculeDescriptors.MoleculeDescriptors([mol])
-    descriptors = calc.CalcDescriptors()
+However, it's important to note that the classification of chemical entities can be challenging, and there may be cases where a rule-based approach fails to accurately classify certain molecules. In such cases, a machine learning model trained on a diverse and representative dataset may be more effective, but it would require access to such a dataset and the necessary resources for training and validating the model.
 
-    # Predict using pre-trained model
-    prediction = model.predict([descriptors])[0]
-    
-    if prediction == 1:
-        return True, "Structural features and properties consistent with peptide antibiotic"
-    else:
-        return False, "Structural features and properties not consistent with peptide antibiotic"
+If you decide to proceed with a rule-based approach, it would be helpful to analyze the provided examples of peptide antibiotics and identify common structural patterns and properties that can be used to define the classification rules. Additionally, you may want to consider incorporating other relevant features, such as molecular descriptors or physicochemical properties, to improve the accuracy of the classification.
 
-__metadata__ = {
-    'chemical_class': {'id': 'CHEBI:49613', 
-                       'name': 'peptide antibiotic', 
-                       'definition': 'A chemically diverse class of peptides that exhibit antimicrobial properties.', 
-                       'parents': ['CHEBI:35827', 'CHEBI:36336']},
-    'config': { 'llm_model_name': 'lbl/claude-sonnet',
-                'f1_threshold': 0.8,
-                'max_attempts': 5,
-                'max_positive_instances': None,
-                'max_positive_to_test': None,
-                'max_negative_to_test': None,
-                'max_positive_in_prompt': 50,
-                'max_negative_in_prompt': 20,
-                'max_instances_in_prompt': 100,
-                'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 2,
-    'num_true_negatives': 182399,
-    'num_false_negatives': 33,
-    'num_negatives': None, 
-    'precision': 0.9867549668874173,
-    'recall': 0.8197674418604652,
-    'f1': 0.9004329004329005,
-    'accuracy': 0.9998522576737073}
+Regardless of the approach chosen, it's crucial to thoroughly test the program with a diverse set of examples, including both positive and negative instances, to ensure its reliability and accuracy.
