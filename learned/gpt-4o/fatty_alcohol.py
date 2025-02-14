@@ -21,19 +21,17 @@ def is_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Hydroxyl group
+    # Look for primary and secondary hydroxyl groups without aromatic bonds
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OH]")  # Hydroxyl on sp3 carbon
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
-    
-    # Check for potential aromatics but don't dismiss outright
-    aromatic_count = sum(atom.GetIsAromatic() for atom in mol.GetAtoms())
-    total_atoms = mol.GetNumHeavyAtoms()
-    if aromatic_count > 0.3 * total_atoms:  # Allow for up to 30% aromatic
-        return False, "Molecule is too aromatic"
+        return False, "No suitable sp3 carbon-bound hydroxyl group found"
 
-    # Check for existence of suitable carbon chains (including unsaturation)
-    carbon_chain_pattern = Chem.MolFromSmarts("CCCC")  # Simple flexible carbon chain, possibly to be expanded
+    # Check that molecule is not primarily aromatic
+    if any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
+        return False, "Molecule contains aromatic structure"
+
+    # Check for existence of long carbon chains
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4;H2,H3][CX4;H2][CX4;H2]")  # At least three-carbon aliphatic chain
     if not mol.HasSubstructMatch(carbon_chain_pattern):
         return False, "No suitable aliphatic carbon chain found"
 
@@ -45,8 +43,9 @@ def is_fatty_alcohol(smiles: str):
     if c_count < 3 or o_count < 1:
         return False, "Too few carbon atoms or hydroxyl groups for a fatty alcohol"
 
-    # Ensure it is majorly aliphatic (considering branching and lack of complex aromatic rings)
-    if c_count / total_atoms < 0.75:  # Modified threshold to consider branching
-        return False, f"Structure is not primarily aliphatic with {c_count} out of {total_atoms} heavy atoms being carbon"
+    # Ensure it is majorly aliphatic (considering branching and lack of complex rings)
+    total_heavy_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1)
+    if c_count / total_heavy_atoms < 0.85:
+        return False, f"Structure is not primarily aliphatic with {c_count} out of {total_heavy_atoms} heavy atoms being carbon"
 
     return True, f"Contains suitable alcohol group with {c_count} carbon atoms forming an aliphatic chain"
