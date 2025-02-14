@@ -26,33 +26,20 @@ def is_phenyl_acetates(smiles: str):
     if not mol.HasSubstructMatch(phenyl_pattern):
         return False, "No phenyl ring found"
     
-    # Check for acetate group
-    acetate_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # Check for acetate group directly attached to phenyl ring
+    acetate_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]~[cX3]")
     acetate_matches = mol.GetSubstructMatches(acetate_pattern)
-    if len(acetate_matches) == 0:
-            return False, "No acetate group found"
-    
-    #Verify attachment of acetate to phenyl
-    phenyl_matches = mol.GetSubstructMatches(phenyl_pattern)
 
-    found_attachment = False
-    for acetate_match in acetate_matches:
-        for phenyl_match in phenyl_matches:
-           # Get the oxygen of acetate (second to last)
-            oxygen_index = acetate_match[-2]
-            acetate_oxygen_atom = mol.GetAtomWithIdx(oxygen_index)
-            #Check the neighbors of the oxygen and if a neighbor is in the phenyl ring
-            for neighbor in acetate_oxygen_atom.GetNeighbors():
-                if neighbor.GetIdx() in phenyl_match:
-                    found_attachment = True
-                    break
-            if found_attachment:
-                break
-        if not found_attachment:
-            return False, "Acetate is not directly attached to the phenyl ring"
-        else:
-            found_attachment=False #reset to find another match
-            
-    
-    
-    return True, "Contains a phenyl ring with at least one acetate group directly attached"
+    if not acetate_matches:
+        return False, "No acetate group directly attached to a phenyl carbon found"
+
+    for match in acetate_matches:
+        # The oxygen is the second to last atom in the substructure match.
+        oxygen_index = match[1]
+        oxygen_atom = mol.GetAtomWithIdx(oxygen_index)
+        for neighbor in oxygen_atom.GetNeighbors():
+           for phenyl_atom_idx in mol.GetSubstructMatch(phenyl_pattern):
+               if neighbor.GetIdx() == phenyl_atom_idx:
+                   return True, "Contains a phenyl ring with at least one acetate group directly attached"
+
+    return False, "Acetate is not directly attached to the phenyl ring"
