@@ -6,7 +6,8 @@ Classifies: macromolecule
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import rdFMCS
+from rdkit.Chem import BRICS
+from rdkit.Chem import rdFingerprintGenerator
 
 def is_macromolecule(smiles: str):
     """
@@ -32,36 +33,24 @@ def is_macromolecule(smiles: str):
     if mol_wt < 1000:
         return False, f"Molecular weight is {mol_wt:.2f} Da, which is below the macromolecule threshold"
 
-    # Generate a list of fragments (attempting to find repeating units)
-    # Here we use the RDKit function to enumerate possible ring systems or substructures
-    # This is a simplistic approach and may not capture all repeating units
-    frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
-    if len(frags) <= 1:
-        # If the molecule is a single fragment, we attempt to decompose it
-        # into simpler units using BRICS decomposition
-        brics_fragments = Chem.BRICS.BRICSDecompose(mol)
-        if len(brics_fragments) <= 1:
-            return False, "No repeating units detected in the molecule"
+    # Generate molecular fingerprint
+    fp_generator = rdFingerprintGenerator.GetRDKitFPGenerator(maxPath=5)
+    fp = fp_generator.GetFingerprint(mol)
 
-        # Check for repeating fragments
-        frag_counts = {}
-        for frag_smiles in brics_fragments:
-            frag_counts[frag_smiles] = frag_counts.get(frag_smiles, 0) + 1
+    # Count subgraph frequencies
+    substructures = {}
+    for atom in mol.GetAtoms():
+        env = Chem.FindAtomEnvironmentOfRadiusN(mol, radius=1, atomIdx=atom.GetIdx())
+        submol = Chem.PathToSubmol(mol, env)
+        smi = Chem.MolToSmiles(submol, canonical=True)
+        if smi:
+            substructures[smi] = substructures.get(smi, 0) + 1
 
-        repeating_units = {smiles: count for smiles, count in frag_counts.items() if count > 1}
-        if not repeating_units:
-            return False, "No repeating units detected in the molecule"
-    else:
-        # Multiple disconnected fragments detected
-        # Check for repeating fragments
-        frag_smiles_list = [Chem.MolToSmiles(frag) for frag in frags]
-        frag_counts = {}
-        for frag_smiles in frag_smiles_list:
-            frag_counts[frag_smiles] = frag_counts.get(frag_smiles, 0) + 1
+    # Identify repeating units
+    repeating_units = {smi: count for smi, count in substructures.items() if count > 1}
 
-        repeating_units = {smiles: count for smiles, count in frag_counts.items() if count > 1}
-        if not repeating_units:
-            return False, "No repeating units detected in the molecule"
+    if not repeating_units:
+        return False, "No repeating units detected in the molecule"
 
     # If we reach here, the molecule is large and has repeating units
     return True, f"Molecule is a macromolecule with molecular weight {mol_wt:.2f} Da and repeating units detected"
