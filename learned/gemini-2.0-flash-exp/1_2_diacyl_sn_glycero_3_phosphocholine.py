@@ -24,20 +24,27 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
 
     # 1. Check for glycerol backbone with correct stereochemistry
     #   The 'sn' stereochemistry is enforced by specifying the chiral center
-    glycerol_pattern = Chem.MolFromSmarts("[C@H]([OX2])[CH2X4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    glycerol_pattern = Chem.MolFromSmarts("[C@H]([OX2])([CH2X4])[CH2X4]")
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not glycerol_matches:
          return False, "No glycerol backbone with correct stereochemistry found"
-        
-    # 2. Look for 2 ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-       return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
     
-    # 3. Look for the phosphocholine group
-    phosphocholine_pattern = Chem.MolFromSmarts("[P](=[OX1])([OX1-])OCC[N+](C)(C)C")
+    #Use the first match
+    glycerol_match = glycerol_matches[0]
+
+    # 2. Look for 2 ester groups (-O-C(=O)-) attached to glycerol carbons
+    ester_pattern1 = Chem.MolFromSmarts("[C@H]([OX2])([CH2X4])[CH2X4]~[OX2][CX3](=[OX1])")
+    ester_pattern2 = Chem.MolFromSmarts("[C@H]([OX2])([CH2X4])[CH2X4]-[CH2X4]~[OX2][CX3](=[OX1])")
+    ester_matches1 = mol.GetSubstructMatches(ester_pattern1)
+    ester_matches2 = mol.GetSubstructMatches(ester_pattern2)
+
+    if len(ester_matches1) + len(ester_matches2) != 2:
+       return False, f"Found {len(ester_matches1) + len(ester_matches2)} ester groups attached to glycerol, need exactly 2"
+
+    # 3. Look for the phosphocholine group connected to the glycerol
+    phosphocholine_pattern = Chem.MolFromSmarts("[C@H]([OX2])([CH2X4])[CH2X4]~[OX2][P](=[OX1])([OX1-])OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
-         return False, "No phosphocholine group found"
+         return False, "No phosphocholine group connected to glycerol found"
 
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
