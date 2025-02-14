@@ -20,56 +20,43 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Monosaccharide ring patterns (furanose and pyranose)
-    furanose_pattern = Chem.MolFromSmarts("C1OC(C(O)C(O)C1)O") #simplified to allow for substitutions
-    pyranose_pattern = Chem.MolFromSmarts("C1(O)OC(C(O)C(O)C1)O") #simplified to allow for substitutions
-    if not mol.HasSubstructMatch(furanose_pattern) and not mol.HasSubstructMatch(pyranose_pattern):
-        return False, "No monosaccharide ring found"
+    # Monosaccharide ring patterns (generic 5 or 6 membered ring with O and C)
+    # This allows for substitutions on the ring
+    monosaccharide_pattern = Chem.MolFromSmarts("[CX4,CX3][CX4,CX3][CX4,CX3][OX2][CX4,CX3][CX4,CX3]")
+    monosaccharide_pattern2 = Chem.MolFromSmarts("[CX4,CX3][CX4,CX3][CX4,CX3][CX4,CX3][OX2][CX4,CX3]")
 
+    if not mol.HasSubstructMatch(monosaccharide_pattern) and not mol.HasSubstructMatch(monosaccharide_pattern2):
+        return False, "No monosaccharide ring found"
+    
     # Phosphate group pattern (ester)
     phosphate_pattern = Chem.MolFromSmarts("[OX2][P](=[OX1])([OX2])([OX2])")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if not phosphate_matches:
         return False, "No phosphate group found"
-
-    # Check for direct linkage of phosphate to the monosaccharide
     
-    #get all oxygen atoms in the monosaccharide (ring atoms and alcohol oxygens)
-    monosaccharide_oxygens = []
-    
-    # Get all ring atoms
-    ring_atoms = []
-    for atom in mol.GetAtoms():
-        if atom.IsInRing():
-            ring_atoms.append(atom)
-    
-    for atom in ring_atoms:
-      if atom.GetAtomicNum() == 8: # check it's an oxygen
-        monosaccharide_oxygens.append(atom.GetIdx())
-    
-    for atom in mol.GetAtoms():
-      if atom.GetAtomicNum() == 8 and not atom.IsInRing(): #check it's an oxygen not in a ring
-        monosaccharide_oxygens.append(atom.GetIdx())
-    
-    #get all phosphate oxygens
-    phosphate_oxygens = []
+    # Check for direct linkage of phosphate to a monosaccharide oxygen
+    linked = False
     for match in phosphate_matches:
-      for idx in match:
-        atom = mol.GetAtomWithIdx(idx)
-        if atom.GetAtomicNum() == 8:
-          phosphate_oxygens.append(atom.GetIdx())
+        for p_idx in match: #iterate through atoms in the phosphate substructure
+            p_atom = mol.GetAtomWithIdx(p_idx)
+            if p_atom.GetAtomicNum() == 8: # get only the oxygens from the phosphate
+                for neighbor in p_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6: # if bonded to a carbon
+                        for n2 in neighbor.GetNeighbors():
+                           if n2.GetAtomicNum() == 8 and n2.IsInRing(): #Check if the oxygen bonded to that carbon is in a ring
+                            linked = True
+                            break
+                           elif n2.GetAtomicNum() == 8 and not n2.IsInRing() and len(n2.GetNeighbors()) == 1: #Check if the oxygen bonded to that carbon is an alcohol
+                            linked = True
+                            break
+                    if linked:
+                       break
+                if linked:
+                  break
+        if linked:
+            break
     
-    linked = False #flag for whether a direct link between a phosphate and monosaccharide exists
-    for p_oxygen in phosphate_oxygens:
-      for m_oxygen in monosaccharide_oxygens:
-        
-        if mol.GetBondBetweenAtoms(p_oxygen, m_oxygen):
-           linked = True
-           break
-      if linked:
-        break
-
     if not linked:
         return False, "Phosphate not directly linked to monosaccharide"
-    
+
     return True, "Contains a monosaccharide with a phosphate group attached via ester bond"
