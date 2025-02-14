@@ -27,15 +27,10 @@ def is_phosphatidylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-    
-    # Look for phosphate group (OP(=O)(O)O)
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+    # Look for glycerol-phosphate moiety ([CH2X4][CHX4][CH2X4]OP(=O)(O)O)
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]OP(=O)(O)O")
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+        return False, "No glycerol-phosphate moiety found"
     
     # Look for ester groups (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -68,8 +63,8 @@ def is_phosphatidylglycerol(smiles: str):
         return False, "Too few carbons for phosphatidylglycerol"
     if o_count < 8:
         return False, "Too few oxygens for phosphatidylglycerol"
-    if p_count != 1:
-        return False, "Must have exactly 1 phosphorus atom"
+    if p_count < 1:
+        return False, "No phosphorus atom found"
     
     # Rule out phosphatidylcholines (PCs) and phosphatidylethanolamines (PEs)
     pc_pattern = Chem.MolFromSmarts("[N+](C)(C)(C)")
@@ -77,4 +72,4 @@ def is_phosphatidylglycerol(smiles: str):
     if mol.HasSubstructMatch(pc_pattern) or mol.HasSubstructMatch(pe_pattern):
         return False, "Molecule appears to be a phosphatidylcholine or phosphatidylethanolamine"
     
-    return True, "Contains glycerol backbone with 2 fatty acid chains and a phosphate group"
+    return True, "Contains glycerol-phosphate moiety with 2 fatty acid chains"
