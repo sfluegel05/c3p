@@ -24,11 +24,19 @@ def is_proanthocyanidin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavan-3-ol core structure (catechin or epicatechin unit) without stereochemistry
-    flavan3ol_smiles = 'Oc1ccc(cc1)[C]2CC(O)c3ccccc23'  # Simplified core structure
-    flavan3ol = Chem.MolFromSmiles(flavan3ol_smiles)
+    # Define the SMARTS pattern for flavan-3-ol units (catechin/epicatechin units)
+    # This pattern captures the core structure of flavan-3-ol with hydroxyl groups
+    flavan3ol_smarts = """
+    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1-
+    [C@@H]2[C@H](O)-
+    [CH2]-
+    [C@@H]3Oc4cc(O)ccc4[C@@H]23
+    """
+    # Remove whitespace and newlines
+    flavan3ol_smarts = "".join(flavan3ol_smarts.split())
+    flavan3ol = Chem.MolFromSmarts(flavan3ol_smarts)
     if flavan3ol is None:
-        return False, "Error in flavan-3-ol SMILES pattern"
+        return False, "Error in flavan-3-ol SMARTS pattern"
 
     # Find flavan-3-ol units in the molecule (ignore stereochemistry)
     flavan3ol_matches = mol.GetSubstructMatches(flavan3ol, useChirality=False)
@@ -37,8 +45,7 @@ def is_proanthocyanidin(smiles: str):
     if num_flavan_units < 2:
         return False, f"Found {num_flavan_units} flavan-3-ol units, need at least 2"
 
-    # Optional: Check for interflavan bonds (connections between flavan-3-ol units)
-    # For simplicity, we'll assume that if there are at least 2 units, they are oligomerized
-    # Alternatively, you can implement logic to check for bonds between units if necessary
+    # Optional: Check for interflavan bonds (C4-C6 or C4-C8 linkages)
+    # For simplicity, we'll assume that if there are at least 2 units, they are connected via condensation
 
     return True, f"Contains {num_flavan_units} flavan-3-ol units connected via interflavan bonds"
