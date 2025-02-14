@@ -2,7 +2,6 @@
 Classifies: CHEBI:48953 cyclohexenones
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_cyclohexenones(smiles: str):
     """
@@ -21,16 +20,19 @@ def is_cyclohexenones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for cyclohexenone
-    # This pattern specifies:
-    # - A six-membered ring with one double bond (C=C)
-    # - A carbonyl group (C=O)
-    # - Both are part of the same ring.
-    cyclohexenone_pattern = Chem.MolFromSmarts("[C;R1](=[O])[C;R1]=[C;R1][C;R1][C;R1][C;R1]")
+    # Define SMARTS pattern for a 6 membered ring. Substituents are allowed
+    ring_pattern = Chem.MolFromSmarts("[C;R1;X4,X3][C;R1;X4,X3][C;R1;X4,X3][C;R1;X4,X3][C;R1;X4,X3][C;R1;X4,X3]")
+    if not mol.HasSubstructMatch(ring_pattern):
+      return False, "Molecule does not contain a six membered ring"
+        
+    # Define SMARTS pattern for carbonyl group
+    carbonyl_pattern = Chem.MolFromSmarts("[C;R1]=[O]")
     
+    # Define SMARTS pattern for double bond
+    double_bond_pattern = Chem.MolFromSmarts("[C;R1]=[C;R1]")
     
-    # Check for match
-    if not mol.HasSubstructMatch(cyclohexenone_pattern):
-        return False, "Molecule does not contain a cyclohexenone ring"
-
-    return True, "Molecule is a cyclohexenone"
+    # Check if molecule contains both a carbonyl and a double bond in the same ring
+    if mol.HasSubstructMatch(carbonyl_pattern) and mol.HasSubstructMatch(double_bond_pattern):
+      return True, "Molecule is a cyclohexenone"
+    
+    return False, "Molecule does not contain both a carbonyl and a double bond in the same ring"
