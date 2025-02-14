@@ -34,14 +34,14 @@ def is_steroid_sulfate(smiles: str):
     if not sulfate_found:
         return False, "No recognizable sulfate group found"
     
-    # Pattern for detecting a more flexible steroid core
-    # This pattern captures the four-ring steroid backbone without overly restricting it
-    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4(C3=CC=CC4)")
-
+    # Updated pattern to capture the steroid backbone
+    # This pattern captures common steroid backbone features with allowance for variations.
+    steroid_core_pattern = Chem.MolFromSmarts("C1CC2CCC3C4CCCC5=CCC(C=C3)C5C4C=C2C1")
+    
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core structure found"
 
-    # Confirm at least one sulfate group is attached correctly to the steroid backbone
+    # Confirm at least one sulfate group is attached correctly to a potential hydroxy position on the backbone
     attachment_found = False
     for pattern in sulfate_group_patterns:
         sulfur_matches = mol.GetSubstructMatches(pattern)
