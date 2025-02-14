@@ -27,7 +27,7 @@ def is_glucosinolate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for glycone group (e.g., glucose, rhamnose, arabinose)
-    glycone_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@H]([C@@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)O")
+    glycone_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@H]([C@H]([C@H]([C@H]1O)O)O)O)O")
     glycone_matches = mol.GetSubstructMatches(glycone_pattern)
     if not glycone_matches:
         return False, "No glycone group found"
