@@ -7,7 +7,7 @@ def is_fatty_acid_anion(smiles: str):
     """
     Determines if a molecule is a fatty acid anion based on its SMILES string.
     A fatty acid anion is characterized by a deprotonated carboxylic acid group 
-    and a long hydrocarbon chain, possibly with some functionalization.
+    and a significant hydrocarbon content, possibly with some functionalization.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,13 +27,12 @@ def is_fatty_acid_anion(smiles: str):
     if not mol.HasSubstructMatch(carboxylate_pattern):
         return False, "No carboxylate group found (required for fatty acid anion)"
     
-    # Check for a long hydrocarbon chain
-    def has_sufficient_hydrocarbon_content(mol):
-        carbo_chains = [len(match) for match in Chem.FindAllPathsOfLengthN(mol, 12, useBonds=False, fromAtoms=[atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])]
-        return max(carbo_chains, default=0) >= 10  # At least 10 carbons considered as part of a longer chain
+    # Check for a significant amount of carbon atoms for fatty acid chains
+    carbon_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
 
-    if not has_sufficient_hydrocarbon_content(mol):
-        return False, "Longest carbon chain is too short to be a fatty acid anion"
+    # Fatty acid anions typically have long carbon chains, we assume at least 10 carbons
+    if carbon_count < 10:
+        return False, f"Insufficient carbon content for a fatty acid anion (found {carbon_count} carbons)"
 
-    # The overall flexibility to nuance functionalization over raw chain length
-    return True, "Contains a carboxylate group and enough hydrocarbon content characteristic of a fatty acid anion"
+    # Evaluate general structural characteristics for various fatty acid anions without strict chain structure
+    return True, f"Contains a carboxylate group and {carbon_count} carbon atoms common in fatty acid anions"
