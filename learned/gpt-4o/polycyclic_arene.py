@@ -2,7 +2,6 @@
 Classifies: CHEBI:33848 polycyclic arene
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_polycyclic_arene(smiles: str):
     """
@@ -29,22 +28,27 @@ def is_polycyclic_arene(smiles: str):
 
     # Get ring information
     ring_info = mol.GetRingInfo()
+    if not ring_info.IsInitialized():
+        return False, "Ring information is not initialized"
     
-    # Identify aromatic rings using rdkit functionalities
-    aromatic_rings = [ring for ring in ring_info.BondRings() if all(mol.GetBondBetweenAtoms(a1, a2).GetIsAromatic() for a1, a2 in zip(ring, ring[1:] + ring[:1]))]
+    # Identify aromatic rings
+    aromatic_rings = [
+        ring for ring in ring_info.AtomRings() 
+        if all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring)
+    ]
 
     # Check number of rings
     if len(aromatic_rings) < 2:
-        return False, "Less than two aromatic rings, not a polycyclic arene"
+        return False, f"Less than two aromatic rings, not a polycyclic arene"
     
     # Check for fused aromatic structures (shared bonds)
     fused_aromatic_rings = set()
     for i, ring1 in enumerate(aromatic_rings):
         for ring2 in aromatic_rings[i+1:]:
-            # Check if rings share two or more atoms (indicating a fused structure)
-            shared_bonds = set(ring1).intersection(ring2)
-            if len(shared_bonds) > 0:  # Changed to bond sharing
-                fused_aromatic_rings.update(shared_bonds)
+            # Check if rings share at least one bond (a sign of being fused)
+            shared_atoms = set(ring1).intersection(ring2)
+            if len(shared_atoms) > 0:
+                fused_aromatic_rings.update(shared_atoms)
     
     if len(fused_aromatic_rings) == 0:
         return False, "No fused aromatic rings, not a polycyclic arene"
