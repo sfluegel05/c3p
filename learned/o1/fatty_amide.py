@@ -18,66 +18,64 @@ def is_fatty_amide(smiles: str):
         bool: True if molecule is a fatty amide, False otherwise
         str: Reason for classification
     """
+    # Minimum acyl chain length for fatty acids (adjusted to 4)
+    MIN_CHAIN_LENGTH = 4
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define amide group pattern where nitrogen is not in a ring
-    amide_pattern = Chem.MolFromSmarts("C(=O)N([H])[^R]")
-    
+    # Define amide functional group pattern (monocarboxylic acid amide)
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+
     # Find all amide groups in the molecule
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if not amide_matches:
-        return False, "No primary amide functional group found"
+    num_amides = len(amide_matches)
 
-    # Loop through amide groups to find fatty acyl chains
-    for amide_match in amide_matches:
-        carbonyl_c_idx = amide_match[0]
-        n_idx = amide_match[2]
+    if num_amides == 0:
+        return False, "No amide functional group found"
 
-        # Exclude amide nitrogens attached to rings
-        n_atom = mol.GetAtomWithIdx(n_idx)
-        if n_atom.IsInRing():
-            continue
+    if num_amides > 1:
+        return False, f"Found {num_amides} amide groups; molecule is not a monocarboxylic acid amide"
 
-        # Exclude molecules where nitrogen has more than one substituent (secondary or tertiary amides)
-        if n_atom.GetDegree() > 1:
-            continue
+    # Get the indices of the amide group
+    amide_match = amide_matches[0]
+    carbonyl_c_idx = amide_match[0]
+    o_idx = amide_match[1]
+    n_idx = amide_match[2]
 
-        # Function to recursively traverse the acyl chain
-        def traverse_chain(atom_idx, visited):
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom_idx in visited:
-                return 0
-            if atom.IsInRing():
-                return 0  # Exclude rings
-            visited.add(atom_idx)
-            if atom.GetAtomicNum() != 6:
-                return 0  # Only follow carbons
-            length = 1  # Count current carbon
-            neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetIdx() not in visited and nbr.GetIdx() != carbonyl_c_idx]
-            for nbr_idx in neighbors:
-                length += traverse_chain(nbr_idx, visited)
+    # Exclude carbonyl oxygen and amide nitrogen from traversal
+    exclude_atoms = set([o_idx, n_idx])
+
+    # Function to recursively traverse the acyl chain
+    def traverse_chain(atom_idx, visited):
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom_idx in visited:
+            return 0
+        if atom.IsInRing():
+            return 0  # Exclude rings
+        visited.add(atom_idx)
+        if atom.GetAtomicNum() != 6:
+            return 0  # Only follow carbons
+        if atom.GetDegree() > 3:
+            return 0  # Exclude branching
+        length = 1  # Count current carbon
+        neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetIdx() not in exclude_atoms]
+        for nbr_idx in neighbors:
+            if nbr_idx not in visited:
+                length += traverse_chain(nbr_idx, visited.copy())
                 break  # Only follow linear path (avoid branching)
-            return length
+        return length
 
-        # Find the carbon attached to the carbonyl carbon (start of acyl chain)
-        carbonyl_c_atom = mol.GetAtomWithIdx(carbonyl_c_idx)
-        acyl_chain_length = 0
-        for neighbor in carbonyl_c_atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx != n_idx and neighbor.GetAtomicNum() == 6:
-                visited_atoms = set()
-                acyl_chain_length = traverse_chain(neighbor_idx, visited_atoms)
-                break  # Only consider the chain directly attached to the carbonyl carbon
+    # Start traversal from the carbonyl carbon
+    visited_atoms = set()
+    acyl_chain_length = traverse_chain(carbonyl_c_idx, visited_atoms) - 1  # Exclude carbonyl carbon
 
-        if acyl_chain_length >= 4:
-            return True, f"Molecule is a fatty amide with acyl chain length {acyl_chain_length}"
-        else:
-            return False, f"Acyl chain too short ({acyl_chain_length} carbons); not a fatty amide"
-
-    return False, "No fatty acyl amide group found"
+    if acyl_chain_length >= MIN_CHAIN_LENGTH:
+        return True, f"Molecule is a fatty amide with acyl chain length {acyl_chain_length}"
+    else:
+        return False, f"Acyl chain too short ({acyl_chain_length} carbons); not a fatty amide"
 
 # Example usage:
 # smiles = "CCCCCCCC(=O)NCCO"  # N-decanoylglycine
