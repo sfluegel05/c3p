@@ -20,19 +20,19 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General pattern to identify amino acids: N and C connected with further chain continuity
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4H][CX3](=O)[OX2H]")
+    # Pattern to identify an amino acid: N-C-C(=O)-O
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][C]([C])[CX3](=O)[OX2H]")
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No amino acid functional group found"
-
-    # Aromatic ring pattern
-    aromatic_ring_pattern = Chem.MolFromSmarts("a")
     
-    # We look for aromatic rings attached to the alpha carbon or adjacent to it
-    aromatic_side_chain_pattern = Chem.MolFromSmarts("[NX3][CX4H]([CX3](=O)[OX2H])[CX4,CX3](a)")
+    # Aromatic side chain: aromatic group attached to the central or the side chain carbon
+    aromatic_side_chain_patterns = [
+        Chem.MolFromSmarts("[NX3][C]([C])C(=O)[O][C](a)"),  # attached directly to alpha carbon
+        Chem.MolFromSmarts("[NX3][C]([C][CX4,CX3](a))C(=O)[O]")  # aromatic one step away
+    ]
     
-    # Check if there is any aromatic side chain pattern attached to amino acids 
-    if mol.HasSubstructMatch(aromatic_side_chain_pattern):
-        return True, "Contains amino acid functional group with an aromatic ring side chain"
+    for pattern in aromatic_side_chain_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains amino acid functional group with an aromatic ring side chain"
     
     return False, "No aromatic ring attached as a side chain to an amino acid"
