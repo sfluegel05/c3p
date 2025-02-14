@@ -5,6 +5,7 @@ Classifies: CHEBI:71971 neoflavonoid
 Classifies: neoflavonoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_neoflavonoid(smiles: str):
     """
@@ -24,87 +25,42 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define benzopyran core with position 4 labeled
-    benzopyran_smiles = 'O1C=CC=CC=C1'  # SMILES for 1-benzopyran
-    benzopyran_mol = Chem.MolFromSmiles(benzopyran_smiles)
-    if benzopyran_mol is None:
-        return False, "Failed to create benzopyran core"
+    # Define SMARTS pattern for 1-benzopyran core with atom mapping
+    benzopyran_smarts = "[c:1]1[c:2][c:3][c:4]2[o:5][c:6][c:7][c:8][c:9]2[c:10]1"
+    benzopyran_mol = Chem.MolFromSmarts(benzopyran_smarts)
+    matches = mol.GetSubstructMatches(benzopyran_mol)
 
-    # Label the atom at position 4 (opposite the oxygen in the pyran ring)
-    # Atom indices in benzopyran_mol:
-    # 0: O, 1: C, 2: C, 3: C, 4: C, 5: C, 6: C
-    atom4_idx = 4  # Zero-based index for atom at position 4
-    benzopyran_mol.GetAtomWithIdx(atom4_idx).SetAtomMapNum(4)
-
-    # Generate the SMARTS pattern
-    benzopyran_smarts = Chem.MolToSmarts(benzopyran_mol)
-    benzopyran_pattern = Chem.MolFromSmarts(benzopyran_smarts)
-    if benzopyran_pattern is None:
-        return False, "Invalid benzopyran SMARTS pattern"
-
-    # Search for the benzopyran core in the molecule
-    matches = mol.GetSubstructMatches(benzopyran_pattern, useChirality=False)
     if not matches:
-        return False, "1-benzopyran core not found"
+        return False, "No 1-benzopyran core detected"
 
-    # For each match, check if atom at position 4 has an aryl substituent
+    # Iterate over matches to find if any has an aryl substituent at position 4
     for match in matches:
-        # Find the index of the atom with atom map number 4 in the pattern
-        for pat_idx, pat_atom in enumerate(benzopyran_pattern.GetAtoms()):
-            if pat_atom.GetAtomMapNum() == 4:
-                pattern_atom4_idx = pat_idx
-                break
-        else:
-            continue  # Atom map 4 not found in pattern
+        # Get the atom index of position 4
+        atom_idx_pos4 = match[3]  # Atom mapping number 4 corresponds to index 3
+        atom_pos4 = mol.GetAtomWithIdx(atom_idx_pos4)
 
-        # Map from pattern atom index to molecule atom index
-        mol_atom_idx_4 = match[pattern_atom4_idx]
-        atom4 = mol.GetAtomWithIdx(mol_atom_idx_4)
+        # Examine neighbors of position 4 atom that are not part of the benzopyran core
+        for neighbor in atom_pos4.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx not in match:
+                # Identify the substituent group attached at position 4
+                # Check if it is an aryl group (aromatic ring connected directly)
+                bond = mol.GetBondBetweenAtoms(atom_idx_pos4, neighbor_idx)
+                if bond is None:
+                    continue
 
-        # Get neighbors of atom4 not in the benzopyran core
-        benzopyran_atom_indices = set(match)
-        neighbor_atoms = [a for a in atom4.GetNeighbors() if a.GetIdx() not in benzopyran_atom_indices]
+                # Use atom index to get the fragment (substituent)
+                substituent = Chem.PathToSubmol(mol, Chem.FindAtomEnvironmentOfRadiusN(mol, 3, neighbor_idx))
 
-        # Check if any neighbor is part of an aromatic ring (aryl group)
-        for neighbor in neighbor_atoms:
-            if neighbor.GetIsAromatic():
-                # Check if neighbor is in an aromatic ring
-                ring_info = mol.GetRingInfo()
-                for ring in ring_info.AtomRings():
-                    if neighbor.GetIdx() in ring:
-                        # Check if ring is aromatic
-                        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
-                            return True, "Molecule is a neoflavonoid with aryl substituent at position 4"
-            # Alternatively, check if neighbor is connected to an aromatic ring
-            else:
-                for nbr_neighbor in neighbor.GetNeighbors():
-                    if nbr_neighbor.GetIsAromatic():
-                        ring_info = mol.GetRingInfo()
-                        for ring in ring_info.AtomRings():
-                            if nbr_neighbor.GetIdx() in ring:
-                                if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
-                                    return True, "Molecule is a neoflavonoid with aryl substituent at position 4"
+                # Define SMARTS pattern for aryl group (any aromatic ring)
+                aryl_pattern = Chem.MolFromSmarts("a1aaaaa1")  # Six-membered aromatic ring
+                if substituent.HasSubstructMatch(aryl_pattern):
+                    return True, "Molecule is a neoflavonoid with aryl substituent at position 4"
 
-    return False, "No aryl substituent at position 4 of the 1-benzopyran core"
+                # Also check for five-membered and seven-membered aromatic rings
+                aryl_pattern5 = Chem.MolFromSmarts("a1aaaa1")
+                aryl_pattern7 = Chem.MolFromSmarts("a1aaaaaa1")
+                if substituent.HasSubstructMatch(aryl_pattern5) or substituent.HasSubstructMatch(aryl_pattern7):
+                    return True, "Molecule is a neoflavonoid with aryl substituent at position 4"
 
-
-__metadata__ = {   'chemical_class': {   'id': None,
-                              'name': 'neoflavonoid',
-                              'definition': 'Any 1-benzopyran with an aryl substituent at position 4. The term was originally restricted to natural products, but is now also used to describe semi-synthetic and fully synthetic compounds.',
-                              'parents': []},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None}
+    return False, "No aryl substituent detected at position 4 of the benzopyran core"
