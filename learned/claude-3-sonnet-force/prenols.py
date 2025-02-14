@@ -1,32 +1,59 @@
 """
 Classifies: CHEBI:26244 prenols
 """
-The previous program attempts to classify prenols by checking for the presence of a hydroxyl group, isoprene units, and a linear carbon skeleton with the isoprene units being part of the skeleton. However, it seems to have missed some important aspects, leading to the failures observed in the outcomes.
+"""
+Classifies: CHEBI:36360 prenols
 
-Here are the potential issues and improvements:
+Prenols are defined as any alcohol possessing the general formula H-[CH2C(Me)=CHCH2]nOH, where the
+carbon skeleton is composed of one or more isoprene units (biogenetic precursors of the isoprenoids).
+"""
 
-1. **Handling cis/trans isomerism**: The program does not account for the possibility of cis and trans isomers of the isoprene units. Many of the false negatives appear to be due to this limitation. The isoprene pattern should be updated to handle both cis and trans configurations.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-2. **Handling branched prenols**: The program assumes that prenols have a strictly linear carbon skeleton. However, some of the false negatives seem to have branched structures. The condition for a linear carbon skeleton should be relaxed or removed.
 
-3. **Handling multiple hydroxyl groups**: Some prenols may have more than one hydroxyl group, while the program checks for only one terminal hydroxyl group. The condition for a terminal hydroxyl group should be relaxed or removed.
+def is_prenols(smiles: str):
+    """
+    Determines if a molecule is a prenol based on its SMILES string.
 
-4. **Handling ring systems**: Some prenols may contain ring systems, which the current program does not account for. Additional checks or adjustments may be needed to handle such cases.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-5. **Molecular weight and atom count checks**: The molecular weight and atom count checks seem overly restrictive, as some of the false negatives have larger structures. These checks could be relaxed or removed.
+    Returns:
+        bool: True if molecule is a prenol, False otherwise
+        str: Reason for classification
+    """
 
-6. **Handling non-standard valences**: The program assumes standard valences for atoms, but some of the false negatives may have non-standard valences (e.g., charged species). Additional checks or adjustments may be needed to handle such cases.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-7. **Considering additional structural features**: Prenols may have other structural features that are not currently being considered, such as specific functional groups or connectivity patterns. Additional checks or adjustments may be needed to capture these features.
+    # Look for isoprene units (C=CC(C)C) in both cis and trans configurations
+    isoprene_pattern = Chem.MolFromSmarts("[CH2]=[C@H][CH2][CX4]([CH3])[CH2]")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    isoprene_pattern_trans = Chem.MolFromSmarts("[CH2]=[CH][CH2][CX4]([CH3])[CH2]")
+    isoprene_matches_trans = mol.GetSubstructMatches(isoprene_pattern_trans)
+    if not isoprene_matches and not isoprene_matches_trans:
+        return False, "No isoprene units found"
 
-To improve the program, you could consider the following steps:
+    # Look for hydroxyl group
+    hydroxy_pattern = Chem.MolFromSmarts("[OX1H]")
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    if not hydroxy_matches:
+        return False, "No hydroxyl group found"
 
-1. Update the isoprene pattern to handle both cis and trans configurations.
-2. Remove or relax the condition for a strictly linear carbon skeleton.
-3. Remove or relax the condition for a single terminal hydroxyl group.
-4. Add checks or adjustments to handle ring systems, if necessary.
-5. Relax or remove the molecular weight and atom count checks.
-6. Add checks or adjustments to handle non-standard valences, if necessary.
-7. Investigate and add additional checks or adjustments for other structural features that are characteristic of prenols.
+    # Check for linear or branched carbon skeleton
+    skeleton_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]")
+    skeleton_matches = mol.GetSubstructMatches(skeleton_pattern)
+    if not skeleton_matches:
+        return False, "Carbon skeleton is not linear or branched"
 
-It's important to note that the definition of prenols provided may not be comprehensive or accurate, and there may be edge cases or exceptions that are not accounted for. Therefore, it may be necessary to adjust the approach based on a deeper understanding of the chemical class or to handle specific exceptions on a case-by-case basis.
+    # Check if isoprene units are part of the carbon skeleton
+    for match in isoprene_matches + isoprene_matches_trans:
+        isoprene_atom_ids = [mol.GetAtomWithIdx(idx).GetIdx() for idx in match]
+        if not any(set(isoprene_atom_ids).issubset(set(match)) for match in skeleton_matches):
+            return False, "Isoprene units not part of the carbon skeleton"
+
+    return True, "Contains isoprene units as part of a linear or branched carbon skeleton with a terminal hydroxyl group"
