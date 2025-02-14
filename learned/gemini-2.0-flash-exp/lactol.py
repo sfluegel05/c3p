@@ -21,9 +21,9 @@ def is_lactol(smiles: str):
         return False, "Invalid SMILES string"
 
     ring_info = mol.GetRingInfo()
-    
+
     # 1. Check for rings
-    if not any(ring_info.IsAtomInRing(atom.GetIdx()) for atom in mol.GetAtoms()):
+    if not any(atom.IsInRing() for atom in mol.GetAtoms()):
         return False, "Molecule does not contain a ring"
 
     # 2. Identify hemiacetal carbon (C-OH and C-O-C in a ring).
@@ -33,26 +33,31 @@ def is_lactol(smiles: str):
 
     if not matches:
          return False, "No hemiacetal group found in a ring system"
-    
-    # check each match to make sure the oxygens are in the same ring and the carbon has only one other ring oxygen
+
     for match in matches:
         central_carbon = mol.GetAtomWithIdx(match[0])
         hydroxyl_oxygen = mol.GetAtomWithIdx(match[1])
         ether_oxygen = mol.GetAtomWithIdx(match[2])
 
-        if not ring_info.IsAtomInRing(central_carbon.GetIdx()) or \
-           not ring_info.IsAtomInRing(hydroxyl_oxygen.GetIdx()) or \
-           not ring_info.IsAtomInRing(ether_oxygen.GetIdx()):
-            return False, "Hemiacetal is not completely within a ring."
-
+        # Check if all the atoms are in the same ring
+        rings = ring_info.AtomRings()
+        found_ring = False
+        for ring in rings:
+            if central_carbon.GetIdx() in ring and \
+               hydroxyl_oxygen.GetIdx() in ring and \
+               ether_oxygen.GetIdx() in ring:
+                found_ring = True
+                break
+        if not found_ring:
+            return False, "Hemiacetal is not completely within the same ring"
         
         # Check number of oxygen neighbours to the central carbon, should be exactly one other in the ring.
         other_ring_oxygens = 0
         for neighbor in central_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8 and ring_info.IsAtomInRing(neighbor.GetIdx()) and neighbor.GetIdx() != hydroxyl_oxygen.GetIdx():
+            if neighbor.GetAtomicNum() == 8 and neighbor.IsInRing() and neighbor.GetIdx() != hydroxyl_oxygen.GetIdx():
                 other_ring_oxygens += 1
-
+            
         if other_ring_oxygens != 1:
             return False, "Hemiacetal carbon has more than one other ring oxygen."
-    
+
     return True, "Contains a cyclic hemiacetal structure"
