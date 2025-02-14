@@ -21,11 +21,13 @@ def is_guaiacols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for guaiacols (ortho-methoxyphenol)
-    guaiacol_pattern = Chem.MolFromSmarts("COc1cc(O)ccc1")
+    # Define SMARTS pattern for ortho-methoxy group adjacent to phenol
+    # This pattern searches for a methoxy and hydroxy group on the same benzene ring
+    # where the methoxy is ortho with respect to the hydroxy
+    guaiacol_pattern = Chem.MolFromSmarts("c1cc(OC)cc(O)c1")
     
     # Check for match of guaiacol pattern
     if mol.HasSubstructMatch(guaiacol_pattern):
-        return True, "Contains ortho-methoxy group on a phenol structure"
+        return True, "Contains ortho-methoxy group adjacent to phenol on an aromatic ring"
     
     return False, "The structure does not match the guaiacol pattern"
