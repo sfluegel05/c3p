@@ -1,53 +1,20 @@
 """
 Classifies: CHEBI:37554 fatty acyl-CoA
 """
-"""
-Classifies: CHEBI:33359 fatty acyl-CoA
+After analyzing the previous code and the outcomes, it appears that the program has the following issues:
 
-A fatty acyl-CoA results from the formal condensation of the thiol group of coenzyme A 
-with the carboxy group of any fatty acid.
-"""
+1. **False Negatives**: The program is missing some valid fatty acyl-CoA structures, likely due to the stringent criteria used for identifying the fatty acid substructure. The current pattern `"[CX3](=[OX1])[CX3]"` only matches a carbonyl carbon attached to two other carbons, which may not cover all possible fatty acid substructures.
 
-from rdkit import Chem
-from rdkit.Chem import rdFMCS
+2. **False Positives**: The program is classifying some non-fatty acyl-CoA structures as positive, possibly because it does not check for the presence of a long aliphatic chain in the fatty acid portion.
 
-def is_fatty_acyl_CoA(smiles: str):
-    """
-    Determines if a molecule is a fatty acyl-CoA based on its SMILES string.
+To improve the program, we can consider the following modifications:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Relax the fatty acid substructure pattern**: Instead of using a specific pattern for the fatty acid substructure, we can look for any aliphatic chain attached to the carbonyl carbon of the ester linkage. This can be done by identifying the carbonyl carbon of the ester linkage and then recursively checking for aliphatic chains starting from that carbon.
 
-    Returns:
-        bool: True if molecule is a fatty acyl-CoA, False otherwise
-        str: Reason for classification
-    """
+2. **Add a chain length check**: After identifying the aliphatic chain in the fatty acid portion, we can check its length to ensure it is long enough to be considered a fatty acid. A minimum chain length of 6 or 8 carbon atoms could be a reasonable criterion.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Consider additional checks**: Depending on the specific requirements of the chemical class, we may need to add additional checks. For example, we could check for the presence of unsaturated bonds or specific functional groups in the fatty acid chain.
 
-    # Look for CoA substructure
-    coa_pattern = Chem.MolFromSmarts("C(C)(COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@@H](n2cnc3c(N)ncnc23)[C@H](O)[C@@H]1OP(=O)([O-])[O-])[C@@H](O)C(=O)NCCC(=O)NCCSC(=O)")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No CoA substructure found"
+4. **Review the false positives**: For the false positives reported, we should carefully review the structures to understand why they were misclassified. If necessary, we can add additional checks or exceptions to the program to handle these cases appropriately.
 
-    # Look for fatty acid substructure
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX3]")
-    fatty_acid_match = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_match) == 0:
-        return False, "No fatty acid substructure found"
-
-    # Check for ester linkage between fatty acid and CoA
-    ester_pattern = Chem.MolFromSmarts("[OX2]C(=O)[CX3]")
-    ester_match = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_match) == 0:
-        return False, "No ester linkage found between fatty acid and CoA"
-
-    # Check for long aliphatic chain in fatty acid
-    mcs = rdFMCS.FindMCS([mol, Chem.MolFromSmiles("CCCCCCCCCCCCCCC")], matchValences=True, completeRingsOnly=True)
-    if mcs.numAtoms < 8:
-        return False, "Fatty acid chain too short"
-
-    return True, "Contains a fatty acid esterified to CoA"
+It's important to note that the benchmark provided may not be 100% accurate, so we should use our best judgment and chemical knowledge to evaluate the program's performance. If we are confident in the program's classifications based on our understanding of the chemical class, we can choose to ignore the outliers in the benchmark.
