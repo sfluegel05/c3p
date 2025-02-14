@@ -28,27 +28,27 @@ def is_glycerophospholipid(smiles: str):
     
     # Define the glycerol backbone with ester linkages at positions 1 and 2
     # and a phosphate group at position 3
-    glycerophospholipid_pattern = Chem.MolFromSmarts("""
-    [$([C;H2;X4]-[O;X2]-[C](=O)-[C])]-[$([C;H;X4]-[O;X2]-[C](=O)-[C])]-[$([C;H2;X4]-[O;X2]-[P](=O)([O-])([O-]))]
-    """)
+    glycerophospholipid_pattern = Chem.MolFromSmarts(
+        '[C;H2;X4][C;H;X4][C;H2;X4]'
+        '-[O;X2]-[P](=O)([O])[O]'
+    )
     
     if glycerophospholipid_pattern is None:
         return False, "Unable to define glycerophospholipid pattern"
     
-    # Search for the glycerophospholipid pattern
-    matches = mol.HasSubstructMatch(glycerophospholipid_pattern)
+    # Search for the glycerophospholipid backbone pattern
+    matches = mol.GetSubstructMatches(glycerophospholipid_pattern)
     if not matches:
         return False, "Glycerophospholipid backbone not found"
     
-    # Additional checks (optional):
-    # Check for fatty acid chains (long hydrocarbon chains)
-    chain_pattern = Chem.MolFromSmarts("C(=O)[C;X4][C;X4][C;X4][C;X4]")
-    chains = mol.GetSubstructMatches(chain_pattern)
-    if len(chains) < 2:
-        return False, f"Found {len(chains)} fatty acid chains, need at least 2"
+    # Check for two ester linkages attached to the glycerol backbone carbons
+    ester_pattern = Chem.MolFromSmarts('[C;H2;X4]-[O;X2]-C(=O)')
+    esters = mol.GetSubstructMatches(ester_pattern)
+    if len(esters) < 2:
+        return False, f"Found {len(esters)} ester linkages, need at least 2"
     
     # Check for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
+    phosphate_pattern = Chem.MolFromSmarts('P(=O)(O)[O]')
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "Phosphate group not found"
     
