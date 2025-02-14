@@ -2,7 +2,7 @@
 Classifies: CHEBI:17478 aldehyde
 """
 """
-Classifies: CHEBI:36975 aldehyde
+Classifies: CHEBI:26718 aldehyde
 An aldehyde is a compound RC(=O)H, in which a carbonyl group is bonded to one hydrogen atom and to one R group.
 """
 from rdkit import Chem
@@ -19,57 +19,36 @@ def is_aldehyde(smiles: str):
         bool: True if molecule is an aldehyde, False otherwise
         str: Reason for classification
     """
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns to identify aldehyde groups
-    aldehyde_patterns = [
-        "[H]C=O",  # Aldehyde group with explicit hydrogen
-        "[H]/C=O", # Aldehyde group with explicit hydrogen (forward slash)
-        "[H]\\C=O", # Aldehyde group with explicit hydrogen (backward slash)
-        "C(=O)[H]", # Aldehyde group with explicit hydrogen
-    ]
+    # Look for aldehyde pattern (C(=O)H)
+    aldehyde_pattern = Chem.MolFromSmarts("C(=O)[H]")
+    if not mol.HasSubstructMatch(aldehyde_pattern):
+        return False, "No aldehyde group found"
 
-    # Check if the molecule contains any of the aldehyde patterns
-    for pattern in aldehyde_patterns:
-        aldehyde_query = Chem.MolFromSmarts(pattern)
-        matches = mol.GetSubstructMatches(aldehyde_query)
+    # Check if the aldehyde group is part of a ring
+    # Aldehydes in rings are not considered aldehydes in this definition
+    atom_ids = mol.GetSubstructMatches(aldehyde_pattern)[0]
+    aldehyde_atom = mol.GetAtomWithIdx(atom_ids[0])
+    if aldehyde_atom.IsInRing():
+        return False, "Aldehyde group is part of a ring"
 
-        # Check if any matches are valid aldehyde groups
-        for match in matches:
-            if is_valid_aldehyde_group(mol, match):
-                return True, "Molecule contains a valid aldehyde group"
+    # Check for other carbonyl groups
+    # If there are other carbonyl groups, it's not an aldehyde
+    carbonyl_pattern = Chem.MolFromSmarts("C(=O)")
+    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
+    if len(carbonyl_matches) > 1:
+        return False, "Contains multiple carbonyl groups"
 
-    return False, "No valid aldehyde group found in the molecule"
+    # Check for other heteroatoms attached to the carbonyl carbon
+    # If there are other heteroatoms, it's not an aldehyde
+    allowed_atoms = [8, 6, 1]  # O, C, H
+    for atom in aldehyde_atom.GetNeighbors():
+        if atom.GetAtomicNum() not in allowed_atoms:
+            return False, "Carbonyl carbon has other heteroatoms attached"
 
-def is_valid_aldehyde_group(mol, match):
-    """
-    Checks if a given match in the molecule corresponds to a valid aldehyde group.
-
-    Args:
-        mol (Mol): RDKit molecule object
-        match (tuple): Tuple of atom indices representing the match
-
-    Returns:
-        bool: True if the match is a valid aldehyde group, False otherwise
-    """
-    carbonyl_idx = match[0]  # Assume the first atom in the match is the carbonyl carbon
-
-    # Check if the carbonyl carbon has exactly one non-hydrogen neighbor
-    non_hydrogen_neighbors = [
-        nbr_idx for nbr_idx in mol.GetAtomWithIdx(carbonyl_idx).GetNeighbors()
-        if mol.GetAtomWithIdx(nbr_idx).GetSymbol() != "H"
-    ]
-
-    if len(non_hydrogen_neighbors) != 1:
-        return False
-
-    # Check if the non-hydrogen neighbor is not part of a ring system
-    neighbor_idx = non_hydrogen_neighbors[0]
-    if mol.GetAtomWithIdx(neighbor_idx).IsInRing():
-        return False
-
-    # Additional checks for ring systems, functional groups, etc. can be added here
-
-    return True
+    return True, "Contains an aldehyde group (C(=O)H)"
