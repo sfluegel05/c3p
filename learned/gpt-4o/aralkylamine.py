@@ -21,23 +21,21 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for aromatic, alkyl, and amine groups
-    aromatic_pattern = Chem.MolFromSmarts("a")  # Aromatic ring
-    amine_pattern = Chem.MolFromSmarts("[NX3;!H0]")  # Primary or secondary amine
-    aralkyl_linkage_pattern = Chem.MolFromSmarts("a-[CX4]-*!@[NX3]")  # Aromatic connected to alkyl to amine
-    
-    # Check for the presence of an aromatic ring
-    if not mol.HasSubstructMatch(aromatic_pattern):
+    # Check for an aromatic group
+    # Ensure the molecule contains an aromatic ring
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("a")):
         return False, "No aromatic group found"
 
-    # Check for the presence of an amine group
-    if not mol.HasSubstructMatch(amine_pattern):
+    # Ensure the molecule contains an amine group (excluding quaternary amines)
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("[NX3;!$([N+])]")):
         return False, "No amine group found"
 
-    # Verify the linkage of the aromatic group via alkyl chain to amine
-    if mol.HasSubstructMatch(aralkyl_linkage_pattern):
-        return True, "Contains an alkylamine with aromatic substitution"
-    else:
+    # Check for aralkyl-amine linkages, using SMARTS to ensure linkage specifically involves
+    # an aromatic group connected through an alkyl chain to the amine group
+    aralkylamine_pattern = Chem.MolFromSmarts("[a][CX4][NX3;!$([N+])]")
+    if not mol.HasSubstructMatch(aralkylamine_pattern):
         return False, "Aromatic group not properly attached through an alkyl to amine"
 
-    return False, "Not classified as aralkylamine"
+    return True, "Contains an alkylamine with aromatic substitution"
+
+# Testing the function with examples should follow to ensure it meets the criteria correctly.
