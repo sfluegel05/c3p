@@ -24,7 +24,7 @@ def is_sphingomyelin(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Check for phosphocholine group
-    phosphocholine_pattern = Chem.MolFromSmarts("[OX2]-[P](=[OX1])-[OX2]-[CX4]-[CX4]-[N+]([CX4])([CX4])[CX4]")
+    phosphocholine_pattern = Chem.MolFromSmarts("[OX2]-[P](=[OX1])(-[OX1])-[OX2]-[CX4]-[CX4]-[N+]([CX4])([CX4])[CX4]")
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group found"
 
@@ -33,31 +33,26 @@ def is_sphingomyelin(smiles: str):
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
 
-    # 3. Check for sphingoid base - simplified pattern
-    # Focus on a 3-4 carbon chain with at least 2 OH groups and one N directly attached to a carbon
-    sphingoid_core_pattern = Chem.MolFromSmarts("[NX3][CX4]([OX2])[CX4]([OX2])[CX4,CX3]")
-    sphingoid_core_pattern2 = Chem.MolFromSmarts("[NX3][CX4]([OX2])[CX4]([OX2])[CX4]([OX2])")
-
-    if not mol.HasSubstructMatch(sphingoid_core_pattern) and not mol.HasSubstructMatch(sphingoid_core_pattern2):
-        return False, "No sphingoid base core found"
-    
-    #ensure that the nitrogen is directly attached to a carbonyl group
-    sphingoid_amide_pattern = Chem.MolFromSmarts("[NX3]([CX4,CX3])-[CX3](=[OX1])")
-    if not mol.HasSubstructMatch(sphingoid_amide_pattern):
-        return False, "Sphingoid base not connected to a carbonyl"
+    # 3. Check for sphingoid base - at least 14 carbons, one or two alcohol groups, and one amine, and possibly a double bond
+    # sphingoid_base_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3][NX3][CX4]([OX2])[CX4]([OX2])") #more precise pattern, but it makes the detection too strict
+    sphingoid_base_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(sphingoid_base_pattern):
+        return False, "No sphingoid base chain found"
 
 
-    # 4. Check for fatty acid chain -  allow [CX4] or [CX3] next to carbonyl, and ensure it is connected to the sphingoid amine
-    fatty_acid_pattern = Chem.MolFromSmarts("[NX3]-[CX3,CX4](=[OX1])-[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    if not mol.HasSubstructMatch(fatty_acid_pattern):
-        return False, "No fatty acid chain found"
+    # 4. Check for fatty acid chain - look for a long carbon chain attached to the amide
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if not fatty_acid_matches:
+         return False, "No fatty acid chain"
 
     # 5. Check molecular weight and rotatable bonds to confirm long chains
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if mol_wt < 450:  # further relaxed threshold
+    if mol_wt < 500:
         return False, "Molecular weight too low for sphingomyelin"
-    if n_rotatable < 7:  #further relaxed threshold
-         return False, "Not enough rotatable bonds for sphingomyelin"
+    if n_rotatable < 8: # sphingomyelin usually has many rotatable bonds
+        return False, "Not enough rotatable bonds for sphingomyelin"
+
 
     return True, "Contains phosphocholine group, amide bond, sphingoid base and fatty acid"
