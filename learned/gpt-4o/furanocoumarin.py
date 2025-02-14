@@ -15,38 +15,34 @@ def is_furanocoumarin(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a furanocoumarin, False otherwise
+        bool: True if the molecule is a furanocoumarin, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Coumarin structure pattern (benzopyrone structure)
-    coumarin_pattern = Chem.MolFromSmarts("O=c1oc2ccccc2cc1")
-
-    # Furan heterocyclic ring
+    # Furan ring pattern
     furan_pattern = Chem.MolFromSmarts("c1occc1")
-    
-    # Patterns for linear and angular furanocoumarin
-    psoralen_pattern = Chem.MolFromSmarts("O=c1oc2cc3c(ccc3oc2c4ccccc4)c1")  # Linear type
-    angelicin_pattern = Chem.MolFromSmarts("O=c1c2c(ccc3oc4c(c2)ccoc4cc3)o1") # Angular type
-    
-    # Check for basic coumarin structure
+
+    # Coumarin framework (Benzopyrone), broader definition to include fusions
+    coumarin_pattern = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)cc2")
+
+    # General pattern for the furanocoumarin fusion
+    furanocoumarin_pattern = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)cc2-c3occc3")
+
+    # Check for coumarin structure
     if not mol.HasSubstructMatch(coumarin_pattern):
         return False, "No coumarin structure found"
-    
-    # Check for general furan ring
+
+    # Check for furan ring presence
     if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring found"
 
-    # Check for linear or angular furanocoumarin pattern
-    if mol.HasSubstructMatch(psoralen_pattern):
-        return True, "Contains linear furanocoumarin (psoralen) structure"
-    
-    if mol.HasSubstructMatch(angelicin_pattern):
-        return True, "Contains angular furanocoumarin (angelicin) structure"
+    # Check for the fusion of a furan ring with a coumarin structure
+    if mol.HasSubstructMatch(furanocoumarin_pattern):
+        return True, "Contains a furanocoumarin fusion structure"
 
     return False, "No recognized furanocoumarin fusion detected"
