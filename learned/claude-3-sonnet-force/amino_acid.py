@@ -1,26 +1,75 @@
 """
 Classifies: CHEBI:33709 amino acid
 """
-The previous program attempts to classify a molecule as an amino acid based on the presence of a carboxylic acid group, a primary amino group, and optionally other amino groups (secondary or tertiary). It also checks for additional functional groups like sulfides, alcohols, and ethers. However, the results show that the program has some limitations and misclassifies certain molecules.
+"""
+Classifies: CHEBI:33709 amino acid
+A carboxylic acid containing one or more amino groups.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential issues and improvements:
+def is_amino_acid(smiles: str):
+    """
+    Determines if a molecule is an amino acid based on its SMILES string.
 
-1. **False Positives**: The program classifies some peptides and other molecules containing amide bonds as amino acids. This is because the amide bond (-CO-NH-) satisfies the criteria for a carboxylic acid and an amino group. However, amino acids typically refer to individual monomers, not peptides or proteins. To address this, the program could check for the presence of multiple amide bonds or peptide bonds, and exclude such molecules.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **False Negatives**: The program misses certain amino acids that lack a primary amino group, such as N,N-dihydroxy-L-isoleucine, Anthranoside C, and trans-3-hydroxy-L-proline. This is because the program requires a primary amino group (-NH2). However, some amino acids can have modified or protected amino groups. The program could be more flexible in identifying amino groups by allowing for substitutions or protecting groups.
-
-3. **Structural Constraints**: The program does not consider structural constraints that are typical of amino acids, such as the presence of a single chiral center and a specific arrangement of the carboxylic acid and amino groups. Incorporating such constraints could improve the accuracy of the classification.
-
-4. **Handling Salts and Zwitterions**: Some amino acids may exist as salts or zwitterions, which can affect the pattern recognition. The program should handle these cases appropriately.
-
-5. **Outliers and Exceptions**: As mentioned, there may be occasional and systematic mistakes in the benchmark data. In such cases, if the program's classification is consistent with the general understanding of amino acids, it may be reasonable to ignore the outliers and provide a justification.
-
-To improve the program, you could consider the following steps:
-
-1. Exclude molecules with multiple amide or peptide bonds, as these are more likely to be peptides or proteins rather than individual amino acids.
-2. Allow for substitutions or protecting groups on the amino group, such as N-hydroxylation or N-acylation.
-3. Incorporate structural constraints typical of amino acids, such as the presence of a single chiral center and the relative positioning of the carboxylic acid and amino groups.
-4. Handle salts and zwitterions by considering alternative resonance structures or charge states.
-5. Analyze the outliers and exceptions in the benchmark data, and if the program's classification is consistent with the general understanding of amino acids, provide a justification for ignoring or accepting the outlier.
-
-By addressing these issues, the program's accuracy in classifying amino acids should improve. However, it's important to note that there may still be edge cases or exceptions that require additional consideration or manual review.
+    Returns:
+        bool: True if molecule is an amino acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for presence of carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxylic acid group found"
+    
+    # Check for amino groups (primary, secondary, tertiary)
+    amino_pattern = Chem.MolFromSmarts("[N;!H0;!H1;!H2;!H3;!$(NC=O)]")
+    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    if not amino_matches:
+        return False, "No amino group found"
+    
+    # Exclude peptides and other molecules with multiple amide bonds
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if len(amide_matches) > 1:
+        return False, "Contains multiple amide bonds, likely a peptide"
+    
+    # Check for single chiral center (typical of amino acids)
+    chiral_centers = AllChem.FindMolChiralCenters(mol, includeUnspecified=True)
+    if len(chiral_centers) != 1:
+        return False, "Does not have a single chiral center"
+    
+    # Check for specific arrangement of carboxylic acid and amino groups
+    chiral_center = chiral_centers[0]
+    chiral_atom = mol.GetAtomWithIdx(chiral_center)
+    neighbors = [mol.GetAtomWithIdx(n) for n in chiral_atom.GetNeighbors()]
+    
+    carboxyl_neighbor = None
+    amino_neighbor = None
+    for neighbor in neighbors:
+        if neighbor.GetSymbol() == "O" and neighbor.GetFormalCharge() == -1:
+            carboxyl_neighbor = neighbor
+        elif neighbor.GetSymbol() == "N" and neighbor.GetFormalCharge() == 0:
+            amino_neighbor = neighbor
+    
+    if carboxyl_neighbor is None or amino_neighbor is None:
+        return False, "Incorrect arrangement of carboxylic acid and amino groups"
+    
+    # Handle potential zwitterions by considering alternative resonance structures
+    zwitterion_pattern = Chem.MolFromSmarts("[N+;H2,H1;!$(NC=O)]")
+    if mol.HasSubstructMatch(zwitterion_pattern):
+        zwitterion_mol = Chem.MolFromSmiles(Chem.MolToSmiles(mol, isomericSmiles=True))
+        amino_matches = zwitterion_mol.GetSubstructMatches(amino_pattern)
+        if amino_matches:
+            return True, "Amino acid (zwitterionic form)"
+    
+    return True, "Amino acid"
