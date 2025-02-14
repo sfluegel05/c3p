@@ -27,28 +27,26 @@ def is_monoamine(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aromatic ring
-    aromatic_ring = mol.GetAromaticRings()
-    if not aromatic_ring:
+    # Look for aromatic atoms
+    aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
+    if not aromatic_atoms:
         return False, "No aromatic ring found"
 
-    # Look for amino group (-NH2 or -NH3+)
-    amino_pattern = Chem.MolFromSmarts("[NH2,NH3]")
+    # Look for amino group (-NH2, -NH3+, -NHR, -NR2, -NR3+)
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
     amino_matches = mol.GetSubstructMatches(amino_pattern)
     if not amino_matches:
         return False, "No amino group found"
 
-    # Look for two-carbon chain connecting amino group and aromatic ring
+    # Check if the amino group is connected to an aromatic ring via a carbon chain
     for atom_idx in amino_matches[0]:
         atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetIsAromatic():
-            return False, "Amino group is directly attached to the aromatic ring"
-        neighbor_atoms = atom.GetNeighbors()
-        for neighbor in neighbor_atoms:
+        for neighbor in atom.GetNeighbors():
             if neighbor.GetIsAromatic():
                 continue
-            path = Chem.FindAllPathsOfLengthN(mol, atom_idx, neighbor.GetIdx(), 3)
-            if len(path) > 0:
-                return True, "Monoamine structure detected"
+            path = Chem.FindAllPathsOfLengthN(mol, atom_idx, neighbor.GetIdx(), 6, useBonds=False)
+            for path in path:
+                if any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in path[1:-1]):
+                    return True, "Monoamine structure detected"
 
-    return False, "No two-carbon chain connecting amino group and aromatic ring"
+    return False, "Amino group not connected to aromatic ring via carbon chain"
