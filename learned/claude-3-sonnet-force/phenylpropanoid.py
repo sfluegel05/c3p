@@ -26,7 +26,7 @@ def is_phenylpropanoid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for phenylpropane backbone (benzene ring with alkyl chain of 1-6 carbons)
-    backbone_pattern = Chem.MolFromSmarts("[c]1ccccc1C[C@@](CC)(CC)CC")
+    backbone_pattern = Chem.MolFromSmarts("[c]1ccccc1CCC[C@@](C)(CC)C")
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No phenylpropane backbone found"
     
@@ -38,11 +38,24 @@ def is_phenylpropanoid(smiles: str):
     
     # Look for common phenylpropanoid scaffolds (flavonoids, coumarins, lignans, etc.)
     scaffold_patterns = [
-        Chem.MolFromSmarts("c1cc2c(cc1O)OC(C=3C(=O)OC(c3=O)c4ccccc4)CC2"),  # flavonoid
+        Chem.MolFromSmarts("c1c(O)cc2c(c1)OC(C=3C(=O)OC(c3=O)c4ccccc4)CC2"),  # flavonoid
         Chem.MolFromSmarts("C1=C(C(=O)OC1)c2ccccc2"),  # coumarin
         Chem.MolFromSmarts("c1ccc(C[C@H](C)Cc2ccc(OC)cc2)cc1OC")  # lignan
     ]
-    if any(mol.HasSubstructMatch(pattern) for pattern in scaffold_patterns):
-        return True, "Contains common phenylpropanoid scaffold"
+    
+    # Check if any scaffold pattern is present
+    for pattern in scaffold_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            return True, "Contains common phenylpropanoid scaffold"
+    
+    # Look for additional phenylpropanoid patterns (e.g., chalcones, stilbenes, etc.)
+    additional_patterns = [
+        Chem.MolFromSmarts("c1ccc(C=CC(=O)c2ccccc2)cc1"),  # chalcone
+        Chem.MolFromSmarts("c1ccc(C=Cc2ccccc2)cc1")  # stilbene
+    ]
+    
+    for pattern in additional_patterns:
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            return True, "Contains additional phenylpropanoid pattern"
     
     return True, "Contains phenylpropane backbone with aromatic ring and common substituents"
