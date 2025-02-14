@@ -6,6 +6,7 @@ Classifies: CHEBI:16646 D-hexose
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_D_hexose(smiles: str):
     """
@@ -31,54 +32,25 @@ def is_D_hexose(smiles: str):
     if c_count != 6 or o_count != 6:
         return False, "Not a hexose (does not contain 6 carbons and 6 oxygens)"
 
-    # Check for D-configuration at position 5 (carbon with 3 substituents)
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnspec=True)
-    has_d_config_at_5 = False
-    for chiral_center in chiral_centers:
-        atom = mol.GetAtomWithIdx(chiral_center[0])
-        if atom.GetDegree() == 4 and atom.GetTotalNumHs() == 0:  # Carbon with 3 substituents
-            chiral_tag = Chem.FindMolChiralCenterStereoTag(mol, chiral_center[0], chiral_center[1])
-            if chiral_tag == Chem.MDL_R_CHIRALITY:
-                has_d_config_at_5 = True
-                break
+    # Check for the presence of a ring structure
+    ring_info = mol.GetRingInfo()
+    if not ring_info.AtomRings():
+        return False, "Not a hexose (no ring structure found)"
 
-    if not has_d_config_at_5:
-        return False, "Does not have D-configuration at position 5"
+    # Get the stereochemistry of the molecule
+    stereo_chem = Chem.FindMolChiralCenters(mol)
 
-    return True, "Contains 6 carbons, 6 oxygens, and has D-configuration at position 5"
+    # Define a reference D-hexose (e.g., D-glucose) and its stereochemistry
+    reference_smiles = "OC[C@H]1OC(O)[C@@H](O)[C@@H](O)[C@@H]1O"
+    reference_mol = Chem.MolFromSmiles(reference_smiles)
+    reference_stereo_chem = Chem.FindMolChiralCenters(reference_mol)
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:16646',
-        'name': 'D-hexose',
-        'definition': 'A hexose that has D-configuration at position 5.',
-        'parents': ['CHEBI:18237', 'CHEBI:24051']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 184,
-    'num_false_positives': 1,
-    'num_true_negatives': 182426,
-    'num_false_negatives': 1,
-    'num_negatives': None,
-    'precision': 0.9947916666666666,
-    'recall': 0.994840694978992,
-    'f1': 0.9948161631216901,
-    'accuracy': 0.9998505063367151
-}
+    # Compare the stereochemistry of the molecule with the reference D-hexose
+    if stereo_chem == reference_stereo_chem:
+        return True, "Molecule has the same stereochemistry as a reference D-hexose"
+    else:
+        return False, "Stereochemistry does not match a reference D-hexose"
+
+# Example usage
+print(is_D_hexose("OC[C@H]1OC(O)[C@@H](O)[C@@H](O)[C@@H]1O"))  # True, 'Molecule has the same stereochemistry as a reference D-hexose'
+print(is_D_hexose("OC[C@@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O"))  # False, 'Stereochemistry does not match a reference D-hexose'
