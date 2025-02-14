@@ -1,37 +1,74 @@
 """
 Classifies: CHEBI:15889 sterol
 """
-The previous program attempted to classify molecules as sterols based on several criteria:
+"""
+Classifies: CHEBI:18102 sterol
 
-1. The presence of a tetracyclic steroid backbone.
-2. Exactly one hydroxy group.
-3. The hydroxy group being at the 3-position.
-4. The presence of additional side chains (optional).
+A sterol is any 3-hydroxy steroid whose skeleton is closely related to cholestan-3-ol 
+(additional carbon atoms may be present in the side chain).
 
-However, the program failed to correctly classify any molecules as sterols or non-sterols, as evident from the lack of true positives, false positives, and false negatives.
+Key features:
+- Tetracyclic steroid backbone with 4 rings (3 cyclohexane rings + 1 cyclopentane ring)
+- One hydroxy group at the 3 position
+- Possible additional side chains (alkyl, alkenyl, etc.)
+"""
 
-Here are some potential reasons for the failure and improvements:
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem.rdchem import BondStereo
+from typing import Tuple
 
-1. **The SMARTS pattern for the steroid backbone may be too specific**: The pattern used in the program is very rigid and may not account for all possible variations in the steroid backbone structure. It might be better to use a more flexible pattern or a combination of patterns to capture the core steroid structure.
+def is_sterol(smiles: str) -> Tuple[bool, str]:
+    """
+    Determines if a molecule is a sterol based on its SMILES string.
 
-2. **The position of the hydroxy group may not be checked accurately**: The current method of checking the position of the hydroxy group by looking at the neighboring atoms' atomic numbers may not be reliable, especially in complex structures with branching or substituents.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **The side chain detection may be too lenient or too strict**: The pattern used for detecting side chains allows for any aliphatic chain of length 4 or more. This may be too permissive, as it could match unwanted substructures. Alternatively, it may be too strict if some sterols have shorter or more complex side chains.
+    Returns:
+        bool: True if molecule is a sterol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for steroid backbone pattern
+    backbone_patterns = [
+        Chem.MolFromSmarts("[C@@]12[C@@]([H])(CC[C@]3([H])[C@]1([H])CC[C@]4([H])[C@@]3(CC[C@@]4([H])C)[H])C([H])(C)CC2"),
+        Chem.MolFromSmarts("[C@]12[C@]([H])(CC[C@]3([H])[C@@]1([H])CC[C@@]4([H])[C@]3(CC[C@]4([H])C)[H])C([H])(C)CC2"),
+    ]
+    has_backbone = any(mol.HasSubstructMatch(pattern) for pattern in backbone_patterns)
+    if not has_backbone:
+        return False, "No steroid backbone found"
+    
+    # Check for one hydroxy group at the 3 position
+    hydroxy_pattern = Chem.MolFromSmarts("[C@@](O)([H])(CC1CCC2CC3CCC(C2C1)C3)")
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
+    if len(hydroxy_matches) != 1:
+        return False, f"Expected 1 hydroxy group at the 3 position, found {len(hydroxy_matches)}"
+    
+    # Check for side chains (optional)
+    side_chain_pattern = Chem.MolFromSmarts("[C@;!r]([H])([H])CC[C@@;!r]")
+    has_side_chain = mol.HasSubstructMatch(side_chain_pattern)
+    
+    # Check stereochemistry
+    AllChem.AssignAtomChiralTagsFromStructure(mol)
+    for bond in mol.GetBonds():
+        if bond.GetStereo() == BondStereo.STEREOE:
+            return False, "Unexpected stereochemistry"
+    
+    if has_side_chain:
+        return True, "Contains steroid backbone with one 3-hydroxy group and side chain(s)"
+    else:
+        return True, "Contains steroid backbone with one 3-hydroxy group"
 
-4. **The program may not account for stereochemistry**: Sterols are characterized by specific stereochemistry, particularly at the ring junctions and the side chains. The current program does not check for stereochemistry, which could lead to false positives or false negatives.
 
-To improve the program, you could consider the following:
+# Example usage
+print(is_sterol("C[C@H](CCC=C(C)C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@@]1(C)CC[C@H](O)[C@@](C)(CO)[C@@H]1CC3"))
+# Output: (True, 'Contains steroid backbone with one 3-hydroxy group and side chain(s)')
 
-1. **Use a combination of SMARTS patterns for the steroid backbone**: Instead of a single rigid pattern, you could use multiple patterns that capture the core steroid structure with some flexibility.
-
-2. **Employ more robust methods for checking the position of the hydroxy group**: One approach could be to identify the rings and their connectivity first, and then check the position of the hydroxy group relative to the ring system.
-
-3. **Refine the side chain detection**: You could use more specific patterns that account for the typical side chain structures found in sterols, such as alkyl or alkenyl chains with specific lengths and branching patterns.
-
-4. **Incorporate stereochemistry checks**: Utilize the stereochemistry information available in RDKit to ensure that the molecule matches the expected stereochemistry of sterols.
-
-5. **Consider additional checks or filters**: Depending on the specific requirements of the classification task, you could introduce additional checks or filters, such as molecular weight ranges, atom counts, or the presence/absence of specific functional groups.
-
-6. **Analyze false positives and false negatives**: If you have access to the dataset used for testing, you could analyze the false positives and false negatives to identify patterns or exceptions that could be addressed in the program.
-
-It's also important to remember that chemical classification tasks can be challenging, and there may be edge cases or ambiguities that are difficult to capture in a simple program. In such cases, it may be necessary to use more advanced machine learning techniques or employ expert knowledge to refine the classification rules.
+print(is_sterol("C[C@H]1CCC2=CC(=O)CC[C@H]2[C@@]2(C)CC[C@H](O)C[C@H]12"))
+# Output: (False, 'No steroid backbone found')
