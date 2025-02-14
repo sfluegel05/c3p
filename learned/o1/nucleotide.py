@@ -6,7 +6,6 @@ Classifies: CHEBI:33561 nucleotide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdqueries
 
 def is_nucleotide(smiles: str):
     """
@@ -26,94 +25,86 @@ def is_nucleotide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Kekulize molecule for accurate aromaticity detection
-    try:
-        Chem.Kekulize(mol, clearAromaticFlags=True)
-    except:
-        pass
+    # Define SMARTS patterns
+    # Sugar ring: five-membered ring with one oxygen and four carbons
+    sugar_pattern = Chem.MolFromSmarts("[C;R][O;R][C;R][C;R][C;R]")  # Five-membered ring with one O
+    sugar_ring_query = Chem.MolFromSmarts("[$([C;R]1-[O;R]-[C;R]-[C;R]-[C;R]-1)]")  # Ring closure
 
-    # Identify sugar rings (ribose or deoxyribose)
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@@H](O)[C@H](O[C@H]1CO)O")
-    sugars = mol.GetSubstructMatches(sugar_pattern)
-    if not sugars:
-        # Try deoxyribose pattern
-        deoxy_sugar_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@@H](O)[C@H](O[C@H]1CO)")
-        sugars = mol.GetSubstructMatches(deoxy_sugar_pattern)
-        if not sugars:
-            return False, "No sugar ring (ribose or deoxyribose) found"
+    # Nitrogenous bases (purines and pyrimidines, including modified bases)
+    purine_pattern = Chem.MolFromSmarts("c1ncnc2ncnn12")
+    pyrimidine_pattern = Chem.MolFromSmarts("c1ccnc(=O)[nH]1")
+    base_patterns = [purine_pattern, pyrimidine_pattern]
 
-    if len(sugars) != 1:
-        return False, f"Expected one sugar ring, found {len(sugars)}"
+    # Phosphate group (allowing for various protonation states)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
+
+    # Identify sugar rings
+    sugar_rings = []
+    for ring in mol.GetRingInfo().AtomRings():
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        if len(ring_atoms) == 5:
+            o_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
+            c_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 6)
+            if o_count == 1 and c_count == 4:
+                sugar_rings.append(set(ring))
+    if not sugar_rings:
+        return False, "No sugar ring found"
+
+    # Identify nitrogenous bases
+    base_found = False
+    for base_pattern in base_patterns:
+        base_matches = mol.GetSubstructMatches(base_pattern)
+        if base_matches:
+            base_found = True
+            base_atoms = set()
+            for match in base_matches:
+                base_atoms.update(match)
+            break
+    if not base_found:
+        return False, "No nitrogenous base found"
 
     # Identify phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
-    phosphates = mol.GetSubstructMatches(phosphate_pattern)
-    if not phosphates:
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
         return False, "No phosphate group found"
+    phosphate_atoms = set()
+    for match in phosphate_matches:
+        phosphate_atoms.update(match)
 
-    # Ensure phosphate is connected to sugar's 3' or 5' oxygen
-    phosphate_connected = False
-    phosphate_atoms = [atom for match in phosphates for atom in match]
-    sugar_ring_atoms = sugars[0]
-    sugar_oxygen_atoms = [idx for idx in sugar_ring_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8]
-
-    for o_idx in sugar_oxygen_atoms:
-        atom = mol.GetAtomWithIdx(o_idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() in phosphate_atoms:
-                phosphate_connected = True
-                break
-        if phosphate_connected:
-            break
-
-    if not phosphate_connected:
-        return False, "Phosphate group not connected to sugar's 3' or 5' oxygen"
-
-    # Identify nitrogenous base connected to sugar
-    base_connected = False
-    base_atoms = []
-    for atom in mol.GetAtomWithIdx(sugar_ring_atoms[0]).GetNeighbors():
-        if atom.GetAtomicNum() == 6 and atom.GetIdx() not in sugar_ring_atoms:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 7 or neighbor.GetAtomicNum() == 6:
-                    # Check if neighbor is part of an aromatic ring (base)
-                    is_in_ring = neighbor.IsInRing()
-                    if is_in_ring:
-                        base_connected = True
-                        base_atoms.append(neighbor.GetIdx())
+    # Check connections between sugar and base
+    glycosidic_bond_found = False
+    for sugar_ring in sugar_rings:
+        for carbon_idx in sugar_ring:
+            atom = mol.GetAtomWithIdx(carbon_idx)
+            if atom.GetAtomicNum() == 6:
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 7 and neighbor.GetIdx() in base_atoms:
+                        # Found glycosidic bond
+                        glycosidic_bond_found = True
                         break
-            if base_connected:
-                break
+                if glycosidic_bond_found:
+                    break
+        if glycosidic_bond_found:
+            break
+    if not glycosidic_bond_found:
+        return False, "No glycosidic bond between sugar and base found"
 
-    if not base_connected:
-        return False, "No nitrogenous base connected to sugar via glycosidic bond"
-
-    # Check that the base is a heterocyclic aromatic ring
-    base_query = Chem.MolFromSmarts("[$([n])]:c:c:n:c")  # General pattern for nitrogenous bases
-    base_matches = mol.GetSubstructMatches(base_query)
-
-    if not base_matches:
-        return False, "Nitrogenous base not found or not aromatic"
-
-    # Ensure only one base is present
-    base_rings = [mol.GetAtomWithIdx(idx).GetRingInfo().AtomRings() for idx in base_atoms]
-    base_ring_atoms = set()
-    for rings in base_rings:
-        for ring in rings:
-            base_ring_atoms.update(ring)
-    if len(base_ring_atoms) > 15:
-        return False, "Multiple bases or extended ring systems found"
-
-    # Ensure molecule is not a polymer
-    # Count the number of sugars in the molecule
-    num_sugars = len(mol.GetSubstructMatches(sugar_pattern)) + len(mol.GetSubstructMatches(deoxy_sugar_pattern))
-    if num_sugars > 1:
-        return False, "Molecule contains multiple sugar units, possibly an oligonucleotide"
-
-    # Count the number of phosphate groups
-    num_phosphates = len(phosphates)
-    # Allow for mono-, di-, or triphosphates
-    if num_phosphates > 3:
-        return False, f"Too many phosphate groups ({num_phosphates}), possibly a polymer"
+    # Check connections between sugar and phosphate group
+    phosphate_connected_to_sugar = False
+    for sugar_ring in sugar_rings:
+        for sugar_atom_idx in sugar_ring:
+            sugar_atom = mol.GetAtomWithIdx(sugar_atom_idx)
+            if sugar_atom.GetAtomicNum() == 6 or sugar_atom.GetAtomicNum() == 8:
+                for neighbor in sugar_atom.GetNeighbors():
+                    if neighbor.GetIdx() in phosphate_atoms:
+                        # Found connection to phosphate
+                        phosphate_connected_to_sugar = True
+                        break
+                if phosphate_connected_to_sugar:
+                    break
+        if phosphate_connected_to_sugar:
+            break
+    if not phosphate_connected_to_sugar:
+        return False, "Phosphate group not connected to sugar"
 
     return True, "Molecule is a nucleotide"
