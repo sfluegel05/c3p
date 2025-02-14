@@ -1,16 +1,71 @@
 """
 Classifies: CHEBI:57643 1,2-diacyl-sn-glycero-3-phosphocholine
 """
-After analyzing the previous program and the outcomes, it appears that the main issue is related to the criteria used to identify the phosphocholine group. The program is looking for a specific SMARTS pattern, "[OX2][PX4](=[OX1])([OX2][CX4][CX4][NX4+]([CX4])([CX4])[CX4])[OX2]", which may not cover all the possible variations of the phosphocholine group present in the examples provided.
+"""
+Classifies: CHEBI:17855 1,2-diacyl-sn-glycero-3-phosphocholine
 
-To improve the classification, we can consider the following modifications:
+The conjugate base of a 1,2-diacyl-sn-glycero-3-phosphocholine compound formed by deprotonation of the phosphate OH group.
+"""
 
-1. Relax the phosphocholine group pattern: Instead of looking for a specific SMARTS pattern, we can look for the presence of a phosphorus atom, an oxygen atom, a nitrogen atom with a positive charge, and the appropriate number of carbon atoms in the vicinity. This should cover a broader range of phosphocholine group representations.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-2. Consider alternative representations of the glycerol backbone: The current program looks for a specific SMARTS pattern for the glycerol backbone, "[CH2X4][CHX4][CH2X4]". However, some examples may have different representations, such as different hydrogen counts or different bond orders. We can either expand the pattern or use a more flexible approach to identify the glycerol backbone.
+def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
+    """
+    Determines if a molecule is a 1,2-diacyl-sn-glycero-3-phosphocholine based on its SMILES string.
 
-3. Adjust the criteria for fatty acid chains: The current program uses a SMARTS pattern to identify fatty acid chains, "[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]". This pattern may not capture all possible variations of fatty acid chains, especially those with different lengths or branching patterns. We can consider adjusting the pattern or using alternative methods, such as checking for long carbon chains attached to the ester groups.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-4. Review the examples: Some of the false positives and false negatives may be due to issues with the examples themselves or the benchmark used for evaluation. It's essential to review the examples carefully and ensure that they are correctly labeled. If there are inconsistencies or errors in the benchmark, it may be necessary to adjust the program accordingly or disregard certain outliers.
+    Returns:
+        bool: True if molecule is a 1,2-diacyl-sn-glycero-3-phosphocholine, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-By addressing these issues, we can potentially improve the classification accuracy of the program. However, it's important to note that chemical structure classification can be a complex task, and there may be inherent limitations or edge cases that cannot be easily resolved.
+    # Check for phosphocholine group
+    p_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]  # Phosphorus atoms
+    if not p_atoms:
+        return False, "No phosphorus atom found"
+    
+    p_atom = p_atoms[0]
+    n_atoms = [nbr for nbr in p_atom.GetNeighbors() if nbr.GetAtomicNum() == 7 and nbr.GetFormalCharge() == 1]  # Positively charged nitrogen atoms
+    if not n_atoms:
+        return False, "No positively charged nitrogen atom found"
+    
+    o_atoms = [nbr for nbr in p_atom.GetNeighbors() if nbr.GetAtomicNum() == 8]  # Oxygen atoms
+    if len(o_atoms) != 3:
+        return False, "Incorrect number of oxygen atoms attached to phosphorus"
+    
+    c_atoms = [nbr for nbr in n_atoms[0].GetNeighbors() if nbr.GetAtomicNum() == 6]  # Carbon atoms attached to nitrogen
+    if len(c_atoms) != 3:
+        return False, "Incorrect number of carbon atoms attached to positively charged nitrogen"
+
+    # Check for glycerol backbone
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
+
+    # Check for ester groups
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+
+    # Check for fatty acid chains
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Chains too short to be fatty acids"
+
+    return True, "Contains glycerol backbone with 2 fatty acid chains attached via ester bonds and a phosphocholine group"
