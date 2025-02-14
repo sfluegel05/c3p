@@ -6,8 +6,7 @@ Classifies: CHEBI:36357 bioconjugate
 A molecular entity consisting of at least 2 biological molecules covalently linked together.
 """
 from rdkit import Chem
-from rdkit.Chem import FragmentMatcher
-from rdkit.Chem import rdFMCS
+from rdkit.Chem import rdFMCS, rdMolDescriptors
 
 def is_bioconjugate(smiles: str):
     """
@@ -28,7 +27,7 @@ def is_bioconjugate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Get fragments
-    fragments = list(Chem.GetMolFrags(mol, aromolicExpr=Chem.SmartlessMolFromSmarts('c'), sanitizeFrags=True))
+    fragments = list(Chem.GetMolFrags(mol, aromolicExpr=Chem.MolFromSmarts('c'), sanitizeFrags=True))
     
     # Count number of "biological" fragments
     biological_fragments = []
@@ -36,11 +35,11 @@ def is_bioconjugate(smiles: str):
         frag_mol = Chem.rdmolops.MolFragmentToSmiles(mol, frag, kekuleSmiles=True, isomericSmiles=True)
         frag_mol = Chem.MolFromSmiles(frag_mol)
         
-        # Check if fragment contains common biological substructures
-        biological_patterns = ['[NX3]', '[NX4+]', 'C(=O)[O,N]', 'n', 'O=C-O-P', 'S', 'C1CCCCC1', 'C1CCCCCC1', 'C1CCCCCCC1']
-        is_biological = any(frag_mol.HasSubstructMatch(Chem.MolFromSmarts(patt)) for patt in biological_patterns)
+        # Check if fragment is "biological" based on molecular weight and atom types
+        mol_wt = rdMolDescriptors.CalcExactMolWt(frag_mol)
+        atom_types = set(atom.GetSymbol() for atom in frag_mol.GetAtoms())
         
-        if is_biological:
+        if mol_wt > 100 and any(atom in ['N', 'O', 'S', 'P'] for atom in atom_types):
             biological_fragments.append(frag_mol)
     
     # Check if there are at least 2 biological fragments
