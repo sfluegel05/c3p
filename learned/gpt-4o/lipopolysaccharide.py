@@ -22,8 +22,26 @@ def is_lipopolysaccharide(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # Tentatively return None because parsing these complex structural elements programmatically
-    # is highly complex and often requires specialized databases and tools
-    return None, "Complexity beyond SMILES-based classification capability in this context"
+    # Example patterns; these would need refinement for genuine attempts
+    # Looking for sugar alcohol structures and long carbon chains
+    patterns = {
+        "sugar": Chem.MolFromSmarts("C(C(C(C(C(C=O)O)O)O)O)O"),  # Simple sugar-like pattern
+        "long_chain": Chem.MolFromSmarts("C(~C)~C~C~C~C~C~C~C~C"),  # Long chain carbon pattern
+    }
+
+    matched_patterns = []
+    for name, pattern in patterns.items():
+        if mol.HasSubstructMatch(pattern):
+            matched_patterns.append(name)
+
+    if "sugar" in matched_patterns and "long_chain" in matched_patterns:
+        # Simplistic condition to return True
+        return True, "Contains indicative sugar and long-chain motifs commonly found in lipopolysaccharides"
+
+    # Complexity likely surpassing this modality without specialized software/database access
+    if not matched_patterns:
+        return False, "No matching indicative patterns found. Complexity likely surpasses current SMILES-based method."
+
+    return False, "Insufficient pattern match certainty for classification"
