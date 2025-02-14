@@ -5,7 +5,6 @@ Classifies: CHEBI:26493 quinic acid
 Classifies: quinic acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_quinic_acid(smiles: str):
     """
@@ -36,15 +35,11 @@ def is_quinic_acid(smiles: str):
         return False, "No rings found in the molecule"
 
     # Define patterns
-    carboxylic_acid_smarts = "[C](=O)[O;H1,H2]"  # Carboxylic acid group
-    ester_smarts = "[C](=O)[O;!H]"               # Ester group
-    hydroxyl_smarts = "[OX2H]"                   # Hydroxyl group
-    ether_smarts = "[OX2H0]"                     # Ether linkage (oxygen without hydrogen)
+    carboxylic_acid_or_ester_smarts = "[CX3](=O)[OX1H0,R0]"
+    oxygen_substituent_smarts = "[#6][OX2H0,H1]"  # Carbon attached to oxygen (hydroxyl, ether, ester)
 
-    carboxylic_acid = Chem.MolFromSmarts(carboxylic_acid_smarts)
-    ester = Chem.MolFromSmarts(ester_smarts)
-    hydroxyl = Chem.MolFromSmarts(hydroxyl_smarts)
-    ether = Chem.MolFromSmarts(ether_smarts)
+    carboxylic_acid_or_ester = Chem.MolFromSmarts(carboxylic_acid_or_ester_smarts)
+    oxygen_substituent = Chem.MolFromSmarts(oxygen_substituent_smarts)
 
     # Iterate over all six-membered rings
     for ring in atom_rings:
@@ -52,48 +47,39 @@ def is_quinic_acid(smiles: str):
             continue  # Skip non-six-membered rings
 
         ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        # Check if all atoms in the ring are sp3 carbons (saturated cyclohexane)
-        if not all(atom.GetAtomicNum() == 6 and atom.GetDegree() == 4 for atom in ring_atoms):
-            continue  # Skip if ring is not a cyclohexane
 
-        substituent_count = 0
-        carboxylic_acid_found = False
+        substituent_oxygens = set()
+        carboxylic_acid_or_ester_found = False
 
         # Check substituents on ring atoms
         for atom in ring_atoms:
-            atom_idx = atom.GetIdx()
-            for bond in atom.GetBonds():
-                nbr = bond.GetOtherAtom(atom)
-                nbr_idx = nbr.GetIdx()
+            # Check for oxygen substituents attached to ring carbons
+            for neighbor in atom.GetNeighbors():
+                nbr_idx = neighbor.GetIdx()
                 if nbr_idx in ring:
-                    continue  # Skip ring atoms
+                    continue  # Skip atoms within the ring
 
-                # Check for carboxylic acid or ester group
-                bond_atoms = {atom_idx, nbr_idx}
-                bond_smarts = Chem.MolFragmentToSmiles(mol, atomsToUse=list(bond_atoms), canonical=False)
-                sub_mol = Chem.MolFromSmiles(bond_smarts)
+                # Check if the neighbor is an oxygen atom
+                if neighbor.GetAtomicNum() == 8:
+                    substituent_oxygens.add(nbr_idx)
+                else:
+                    # Check for carboxylic acid or ester group attached to the ring carbon
+                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                    if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+                        continue  # We are interested in single bonds only
+                    substructure = Chem.PathToSubmol(mol, [atom.GetIdx(), neighbor.GetIdx()])
+                    if substructure.HasSubstructMatch(carboxylic_acid_or_ester):
+                        carboxylic_acid_or_ester_found = True
 
-                if sub_mol.HasSubstructMatch(carboxylic_acid):
-                    carboxylic_acid_found = True
-                elif sub_mol.HasSubstructMatch(ester):
-                    carboxylic_acid_found = True  # Considering esters of quinic acid
-                elif nbr.GetAtomicNum() == 8:
-                    # Check for hydroxyl or ether groups
-                    if nbr.GetDegree() == 1:
-                        # Hydroxyl group
-                        substituent_count += 1
-                    elif nbr.GetDegree() == 2:
-                        # Possible ether or ester linkage
-                        substituent_count += 1
-
-        if substituent_count >= 3 and carboxylic_acid_found:
+        # Check if ring meets the criteria
+        if len(substituent_oxygens) >= 3 and carboxylic_acid_or_ester_found:
             return True, "Contains cyclitol carboxylic acid core (quinic acid or derivative)"
         else:
             reasons = []
-            if substituent_count < 3:
-                reasons.append(f"Found {substituent_count} hydroxyl or ester groups on ring, need at least 3")
-            if not carboxylic_acid_found:
-                reasons.append("No carboxylic acid or ester group attached to ring")
+            if len(substituent_oxygens) < 3:
+                reasons.append(f"Found {len(substituent_oxygens)} oxygen substituents on ring carbons, need at least 3")
+            if not carboxylic_acid_or_ester_found:
+                reasons.append("No carboxylic acid or ester group attached to ring carbons")
             return False, "; ".join(reasons)
 
     return False, "No suitable cyclohexane ring found with required substituents"
