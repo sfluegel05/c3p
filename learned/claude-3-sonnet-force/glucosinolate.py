@@ -26,15 +26,23 @@ def is_glucosinolate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycone group (e.g., glucose) pattern
+    # Look for glycone group (e.g., glucose, rhamnose, arabinose)
     glycone_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@H]([C@@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)O")
-    if not mol.HasSubstructMatch(glycone_pattern):
+    glycone_matches = mol.GetSubstructMatches(glycone_pattern)
+    if not glycone_matches:
         return False, "No glycone group found"
 
     # Look for sulfate group attached to glycone via sulfur
     sulfate_pattern = Chem.MolFromSmarts("[S]C(=N[O-,S]([O-])(=O)=O)")
-    if not mol.HasSubstructMatch(sulfate_pattern, useChirality=True):
-        return False, "Sulfate group not found or incorrect stereochemistry"
+    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern, useChirality=True)
+    if not sulfate_matches:
+        return False, "Sulfate group not found"
+
+    # Check if sulfate group and glycone group are connected via sulfur
+    sulfate_sulfur = mol.GetAtomWithIdx(sulfate_matches[0][0])
+    glycone_oxygen = mol.GetAtomWithIdx(glycone_matches[0][0])
+    if not mol.GetBondBetweenAtoms(sulfate_sulfur.GetIdx(), glycone_oxygen.GetIdx()):
+        return False, "Sulfate group not connected to glycone group"
 
     # Look for side chain attached to central carbon
     side_chain_pattern = Chem.MolFromSmarts("[C]=[N]")
