@@ -33,21 +33,41 @@ def is_D_hexose(smiles: str):
 
     # Check for the presence of a ring structure
     ring_info = mol.GetRingInfo()
-    if not ring_info.AtomRings():
-        return False, "Not a hexose (no ring structure found)"
+    rings = ring_info.AtomRings()
 
-    # Get the chiral centers of the molecule
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnspecified=True)
+    # Check if there is a single ring of size 5 or 6 (pyranose or furanose)
+    if len(rings) == 1 and (len(rings[0]) == 5 or len(rings[0]) == 6):
+        # Identify the anomeric carbon (the carbon connected to the ring oxygen)
+        anomeric_carbon = None
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 4:
+                neighbors = [mol.GetAtomWithIdx(n).GetAtomicNum() for n in atom.GetNeighbors()]
+                if 8 in neighbors:
+                    anomeric_carbon = atom.GetIdx()
+                    break
 
-    # Check if there are at least 4 chiral centers (minimum for a hexose)
-    if len(chiral_centers) < 4:
-        return False, "Not a hexose (less than 4 chiral centers)"
+        if anomeric_carbon is not None:
+            # Get the chiral centers of the molecule
+            chiral_centers = [atom.GetIdx() for atom in mol.GetAtoms() if atom.HasProp('_ChiralityPossible') and atom.GetProp('_ChiralityPossible') == 'Unk']
 
-    # Find the second-to-last chiral center (position 5 in a hexose)
-    second_to_last_chiral = chiral_centers[-2]
+            # Check if there are at least 4 chiral centers (minimum for a hexose)
+            if len(chiral_centers) >= 4:
+                # Find the chiral center corresponding to position 5
+                position_5 = None
+                for idx in chiral_centers:
+                    atom = mol.GetAtomWithIdx(idx)
+                    ring_bond_count = sum(1 for neighbor in atom.GetNeighbors() if mol.GetAtomWithIdx(neighbor).IsInRing())
+                    if ring_bond_count == 1:
+                        position_5 = idx
+                        break
 
-    # Check if the second-to-last chiral center has D-configuration
-    if second_to_last_chiral == "R":
-        return True, "Molecule has D-configuration at position 5 (second-to-last chiral center)"
-    else:
-        return False, "Molecule does not have D-configuration at position 5 (second-to-last chiral center)"
+                if position_5 is not None:
+                    # Check if the chiral center at position 5 has D-configuration
+                    atom = mol.GetAtomWithIdx(position_5)
+                    if atom.GetProp('_CIPCode') == 'R':
+                        return True, "Molecule has D-configuration at position 5"
+                    else:
+                        return False, "Molecule does not have D-configuration at position 5"
+
+    # If no ring structure or linear form
+    return False, "Not a hexose (no valid ring structure or linear form found)"
