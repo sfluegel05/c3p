@@ -7,8 +7,6 @@ Classifies: 3beta-hydroxy-Delta(5)-steroid
 Definition: 'Any 3beta-hydroxy-steroid that contains a double bond between positions 5 and 6.'
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     """
@@ -27,58 +25,44 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add hydrogens to the molecule to ensure proper matching of stereochemistry
-    mol = Chem.AddHs(mol)
-    
-    # Generate 3D coordinates to assign stereochemistry if not present
-    AllChem.EmbedMolecule(mol, maxAttempts=50, enforceChirality=True)
-    Chem.AssignAtomChiralTagsFromStructure(mol)
-    
-    # Define steroid nucleus pattern (cyclopentanophenanthrene core with correct ring fusion)
-    steroid_nucleus = Chem.MolFromSmarts("""
-    [C@H]1CC[C@H]2[C@@H]3CC=C4[C@@H]([C@]4(CC[C@@H]3CC2)C)[C@@H]1C
-    """)
+    # Define steroid nucleus pattern (four fused rings with sizes 6-6-6-5)
+    steroid_nucleus = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3=CC=C4')  # Simplified steroid nucleus
+    if steroid_nucleus is None:
+        return False, "Invalid steroid nucleus SMARTS pattern"
     if not mol.HasSubstructMatch(steroid_nucleus):
-        return False, "No steroid nucleus with correct stereochemistry found"
+        return False, "No steroid nucleus found"
     
-    # Define 3beta-hydroxy group pattern with beta orientation
-    hydroxy_3beta = Chem.MolFromSmarts("""
-    [C@@H]([C@@H]1CC[C@H]2[C@@H]3CC=C4[C@@H]([C@]4(CC[C@@H]3CC2)C)[C@@H]1C)O
-    """)
+    # Define 3beta-hydroxy group pattern
+    hydroxy_3beta = Chem.MolFromSmarts('[C@H]([C;R0][OH])')  # Chiral center connected to hydroxyl group
+    if hydroxy_3beta is None:
+        return False, "Invalid hydroxy_3beta SMARTS pattern"
     if not mol.HasSubstructMatch(hydroxy_3beta):
-        return False, "No 3beta-hydroxy group with beta orientation found"
+        return False, "No 3beta-hydroxy group found"
     
     # Define Delta(5) double bond between positions 5 and 6
-    delta5_double_bond = Chem.MolFromSmarts("""
-    [C@H]1CC=C[C@@H](C)CC1
-    """)
-    if not mol.HasSubstructMatch(delta5_double_bond):
-        return False, "No Delta(5) double bond between positions 5 and 6 found"
+    delta5_double_bond = Chem.MolFromSmarts('C=C')  # Double bond between two carbons
+    if delta5_double_bond is None:
+        return False, "Invalid delta5_double_bond SMARTS pattern"
+    matches = mol.GetSubstructMatches(delta5_double_bond)
+    if not matches:
+        return False, "No double bonds found"
+    # Check if the double bond is between positions 5 and 6 in the steroid nucleus
+    # Since atom numbering may not correspond, we approximate by checking if the double bond is in ring C
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+    found_double_bond_in_ring = False
+    for bond in mol.GetBonds():
+        if bond.IsInRing() and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            begin_atom = bond.GetBeginAtom()
+            end_atom = bond.GetEndAtom()
+            # Check if both atoms are in the same ring of size 6 (ring C)
+            for ring in atom_rings:
+                if len(ring) == 6 and begin_atom.GetIdx() in ring and end_atom.GetIdx() in ring:
+                    found_double_bond_in_ring = True
+                    break
+            if found_double_bond_in_ring:
+                break
+    if not found_double_bond_in_ring:
+        return False, "No Delta(5) double bond found between positions 5 and 6"
     
     return True, "Molecule is a 3beta-hydroxy-Delta(5)-steroid"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': None,
-        'name': '3beta-hydroxy-Delta(5)-steroid',
-        'definition': 'Any 3beta-hydroxy-steroid that contains a double bond between positions 5 and 6.'
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 1,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None
-}
