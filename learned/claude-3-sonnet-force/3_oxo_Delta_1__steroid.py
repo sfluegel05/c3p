@@ -1,32 +1,50 @@
 """
 Classifies: CHEBI:20156 3-oxo-Delta(1) steroid
 """
-The previous code attempted to classify 3-oxo-Delta(1) steroids based on several structural features:
+"""
+Classifies: CHEBI:26722 3-oxo-Delta(1) steroid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. It checked for the presence of a steroid backbone using a SMARTS pattern.
-2. It checked for the presence of a single oxo group (=O).
-3. It verified that the oxo group was part of the steroid ring system.
-4. It checked for the presence of a single double bond.
-5. It verified that the double bond was part of the steroid ring system.
+def is_3_oxo_Delta_1__steroid(smiles: str):
+    """
+    Determines if a molecule is a 3-oxo-Delta(1) steroid based on its SMILES string.
+    A 3-oxo-Delta(1) steroid is defined as any 3-oxo steroid that contains a double bond between positions 1 and 2.
 
-However, this approach has some limitations that may have caused the low performance:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Steroid backbone pattern**: The SMARTS pattern used to identify the steroid backbone is very specific and may not capture all possible variations in the steroid core structure. Steroids can have different substituents, unsaturations, and ring fusions that are not accounted for in the pattern.
+    Returns:
+        bool: True if molecule is a 3-oxo-Delta(1) steroid, False otherwise
+        str: Reason for classification
+    """
 
-2. **Oxo group position**: The code checks that the oxo group is part of the ring system, but it does not explicitly ensure that the oxo group is at the 3-position, which is a requirement for the 3-oxo-Delta(1) steroid class.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Double bond position**: While the code checks that the double bond is part of the ring system, it does not explicitly ensure that the double bond is between positions 1 and 2, which is a requirement for the Delta(1) designation.
+    # Check for steroid backbone
+    steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@]3([C@@]4([C@@]1(CC[C@@]2([H])C)[H])CCC5=CC(=O)C=C[C@]5(C)[C@@]34C)[H]")
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid backbone found"
 
-4. **Additional structural features**: The code does not account for other structural features that may be relevant for this class, such as the presence of specific substituents or the absence of certain functional groups.
+    # Check for 3-oxo group
+    oxo_pattern = Chem.MolFromSmarts("[C](=O)")
+    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
+    if len(oxo_matches) != 1:
+        return False, "Incorrect number of oxo groups"
 
-To improve the program, we can consider the following changes:
+    # Check for Delta(1) double bond
+    double_bond_pattern = Chem.MolFromSmarts("[C]=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) != 1:
+        return False, "Incorrect number of double bonds"
 
-1. **Use a more general steroid backbone pattern**: Instead of relying on a highly specific SMARTS pattern, we can use a more general pattern that captures the core steroid structure, potentially with some additional constraints to ensure specific ring fusions or unsaturations.
+    # Check if double bond is at Delta(1) position
+    delta1_pattern = Chem.MolFromSmarts("[C@H]1[C@@]2([C@H](CC2=C)[C@@H](C)[C@]1(C)C)C")
+    if not mol.HasSubstructMatch(delta1_pattern):
+        return False, "Double bond not at Delta(1) position"
 
-2. **Explicitly check the position of the oxo group and double bond**: We can use additional SMARTS patterns or atom mapping techniques to ensure that the oxo group is at the 3-position and the double bond is between positions 1 and 2.
-
-3. **Consider additional structural features**: Analyze the examples provided and identify any additional structural features that are consistently present or absent in the 3-oxo-Delta(1) steroid class. We can then incorporate checks for these features in the program.
-
-4. **Use machine learning techniques**: If the structural features are complex and difficult to encode with SMARTS patterns, we could consider using machine learning techniques to learn the patterns from the provided examples.
-
-By addressing these limitations and incorporating additional structural constraints, we may be able to improve the performance of the program in classifying 3-oxo-Delta(1) steroids.
+    return True, "Contains a 3-oxo group and a double bond at the Delta(1) position of the steroid backbone"
