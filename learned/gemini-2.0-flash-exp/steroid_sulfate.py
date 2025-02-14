@@ -24,19 +24,19 @@ def is_steroid_sulfate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define a more general SMARTS pattern for the steroid core (tetracyclic ring system)
-    # This pattern represents a fused 6-6-6-5 ring system with carbons
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]([C]1[C])[C][C]4[C]([C]2)([C][C]34)")
+    # This pattern allows for a fused 6-6-6-5 ring system with various atom types in the rings. It is a generic representation.
+    steroid_core_pattern = Chem.MolFromSmarts("[!H0;R3;R4;R5;R6]1[!H0;R3;R4;R5;R6][!H0;R3;R4;R5;R6]2[!H0;R3;R4;R5;R6]3[!H0;R3;R4;R5;R6]([!H0;R3;R4;R5;R6]1[!H0;R3;R4;R5;R6])[!H0;R3;R4;R5;R6][!H0;R3;R4;R5;R6]4[!H0;R3;R4;R5;R6]([!H0;R3;R4;R5;R6]2)([!H0;R3;R4;R5;R6][!H0;R3;R4;R5;R6]34)")
     if not mol.HasSubstructMatch(steroid_core_pattern):
          return False, "No steroid core found"
     
-    # Define SMARTS pattern for the sulfate or sulfonate group, allowing for negative charges
-    # The sulfate group is -O-S(=O)(=O)-O
-    # The sulfonate group is -O-S(=O)(=O)-[O-]
-    sulfate_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[SX4](=[OX1])(=[OX1])([OX2,O-])")
+    # Define SMARTS pattern for the sulfate or sulfonate group, allowing for negative charges. 
+    # The sulfate group is -O-S(=O)(=O)-O or -O-S(=O)(=O)-[O-]
+    # Allow the sulfate group to be connected to any atom C, N, or O
+    sulfate_pattern = Chem.MolFromSmarts("[#6,#7,#8]-[OX2]-[SX4](=[OX1])(=[OX1])([OX2,O-])")
     sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
 
     if len(sulfate_matches) == 0:
-        return False, "No sulfate group found attached to a carbon atom"
+        return False, "No sulfate group found"
 
     # Check if molecule contains at least 17 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -47,6 +47,5 @@ def is_steroid_sulfate(smiles: str):
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, "Molecular weight too low for steroid sulfate"
-    
 
     return True, "Contains steroid core with one or more sulfate groups attached"
