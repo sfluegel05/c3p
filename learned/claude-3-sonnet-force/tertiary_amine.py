@@ -39,11 +39,18 @@ def is_tertiary_amine(smiles: str):
     if not has_hydrocarbyl:
         return False, "No hydrocarbyl groups attached to tertiary nitrogen atoms"
 
-    # Check for specific tertiary amine patterns
-    tertiary_amine_smarts = ["[N;H0;X3]([C])[C]", "[N;H0;X3]([C])([C])[C]", "[N;H0;X3]([C])([c])[C]", "[N;H0;X3]([C])([c])([c])"]
-    for smarts in tertiary_amine_smarts:
-        pattern = Chem.MolFromSmarts(smarts)
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains a tertiary nitrogen atom with hydrocarbyl groups attached"
+    # Count number of hydrocarbyl groups attached to each tertiary nitrogen
+    num_hydrocarbyl_groups = [len(mol.GetAtomWithIdx(atom_idx).GetNeighbors()) for atom_idx in tertiary_n_atoms]
+    if any(n != 3 for n in num_hydrocarbyl_groups):
+        return False, "Not all tertiary nitrogen atoms have exactly three hydrocarbyl groups attached"
 
-    return True, "Matches tertiary amine criteria based on structural analysis"
+    # Check if the hydrocarbyl groups are valid (alkyl or aryl)
+    valid_hydrocarbyl_pattern = Chem.MolFromSmarts("[C;H3,H2,H1,H0]~[C;H3,H2,H1,H0]")
+    for atom_idx in tertiary_n_atoms:
+        tertiary_n = mol.GetAtomWithIdx(atom_idx)
+        neighbors = tertiary_n.GetNeighbors()
+        for neighbor in neighbors:
+            if not mol.HasSubstructMatch(valid_hydrocarbyl_pattern, atomIdxList=[neighbor.GetIdx()]):
+                return False, "At least one hydrocarbyl group attached to a tertiary nitrogen is not alkyl or aryl"
+
+    return True, "Contains a tertiary nitrogen atom with three hydrocarbyl groups attached"
