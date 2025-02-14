@@ -6,8 +6,6 @@ Classifies: CHEBI:51601 volatile organic compound
 """
 from rdkit import Chem
 from rdkit.Chem import Descriptors
-from rdkit.Chem.EState import EState_VSA
-from rdkit.Chem.GroupContribution import GCVPC
 
 def is_volatile_organic_compound(smiles: str):
     """
@@ -33,11 +31,14 @@ def is_volatile_organic_compound(smiles: str):
     if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6) == 0:
         return False, "No carbon atoms found, not an organic compound"
     
-    # Calculate boiling point using group contribution method
-    boiling_point = GCVPC.getGroupContrib(mol)
+    # Calculate molecular descriptors related to boiling point
+    mol_weight = Descriptors.MolWt(mol)
+    num_rotatable_bonds = Descriptors.NumRotatableBonds(mol)
+    topological_polar_surface_area = Descriptors.TPSA(mol)
     
-    # Check if boiling point is <= 250 °C
-    if boiling_point <= 250:
-        return True, f"Estimated boiling point of {boiling_point:.2f} °C is <= 250 °C"
+    # Define a heuristic rule for volatility based on descriptors
+    # This is a simplified example, and the rule can be improved or replaced with a machine learning model
+    if mol_weight < 150 and num_rotatable_bonds < 10 and topological_polar_surface_area < 50:
+        return True, f"Molecular descriptors suggest a volatile organic compound: MW={mol_weight:.2f}, RotB={num_rotatable_bonds}, TPSA={topological_polar_surface_area:.2f}"
     else:
-        return False, f"Estimated boiling point of {boiling_point:.2f} °C is > 250 °C"
+        return False, f"Molecular descriptors suggest a non-volatile organic compound: MW={mol_weight:.2f}, RotB={num_rotatable_bonds}, TPSA={topological_polar_surface_area:.2f}"
