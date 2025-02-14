@@ -2,8 +2,7 @@
 Classifies: CHEBI:74716 withanolide
 """
 """
-Classifies: CHEBI:51922 withanolide
-A withanolide is any steroid lactone that is a C28 steroid with a modified side chain forming a lactone ring and its substituted derivatives.
+Classifies: CHEBI:52356 withanolide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -12,6 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
+    A withanolide is a C28 steroid with a modified side chain forming a lactone ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,38 +26,26 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for steroid core (4 fused rings with specific ring sizes)
+    # Check for steroid skeleton (4 fused rings)
     ring_info = mol.GetRingInfo()
-    cores = ring_info.AtomRings()
-    steroid_core = False
-    for core in cores:
-        ring_sizes = [ring_info.RingSize(ring) for ring in core]
-        if len(core) == 4 and set(ring_sizes) == {5, 6, 6, 6}:
-            steroid_core = True
-            break
-    if not steroid_core:
-        return False, "No steroid core found"
+    if len(ring_info.AtomRings()) < 4:
+        return False, "Does not contain steroid skeleton (4 fused rings)"
 
-    # Look for lactone ring
+    # Check for lactone ring
     lactone_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
-    if not lactone_matches:
-        return False, "No lactone ring found"
+    if not mol.HasSubstructMatch(lactone_pattern):
+        return False, "Does not contain lactone ring"
 
-    # Check for modified side chain
-    side_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2][CX3](=[OX1])")
-    side_chain_matches = mol.GetSubstructMatches(side_chain_pattern)
-    if not side_chain_matches:
-        return False, "No modified side chain forming a lactone ring found"
-
-    # Check carbon count (allow some flexibility)
+    # Check for 28 carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 26 or c_count > 32:
-        return False, f"Carbon count ({c_count}) outside expected range for withanolides"
+    if c_count != 28:
+        return False, f"Does not have 28 carbon atoms, found {c_count}"
 
-    # Check molecular weight (typically >400 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, "Molecular weight too low for withanolide"
+    # Check for modified side chain (not a simple alkyl chain)
+    alkyl_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    alkyl_chain_matches = mol.GetSubstructMatches(alkyl_chain_pattern)
+    if len(alkyl_chain_matches) > 1:
+        return False, "Contains simple alkyl side chain, not modified"
 
-    return True, "Contains steroid core with modified side chain forming a lactone ring"
+    # Passed all tests, classify as withanolide
+    return True, "Contains steroid skeleton with modified side chain forming lactone ring"
