@@ -21,9 +21,8 @@ def is_N_sulfonylurea(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for the N-sulfonylurea group
-    # This pattern represents a urea (N-C(=O)-N) with one N connected to a sulfonyl group (S(=O)(=O)).
-    # The ~ means "any bond" and the nitrogen connected to the sulfonyl can have any connections.
-    n_sulfonylurea_pattern = Chem.MolFromSmarts("[NX3]([CX3](=[OX1])[NX3])~[S](=[OX2])(=[OX2])")
+    # The pattern represents: nitrogen - carbonyl - nitrogen - sulfur(=O)(=O)-.
+    n_sulfonylurea_pattern = Chem.MolFromSmarts("NC(=O)NS(=O)(=O)")
 
     # Check if the molecule contains the N-sulfonylurea group
     if mol.HasSubstructMatch(n_sulfonylurea_pattern):
