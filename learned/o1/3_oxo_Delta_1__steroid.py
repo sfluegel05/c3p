@@ -10,23 +10,55 @@ def is_3_oxo_Delta_1__steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-Delta(1) steroid based on its SMILES string.
     A 3-oxo-Delta(1) steroid is any 3-oxo steroid that contains a double bond between positions 1 and 2.
-    
-    Given the complexity of the steroid structure and difficulty mapping specific positions,
-    this function cannot reliably perform the classification.
-    
+    Due to limitations in assigning atom positions, this function checks for the steroid backbone,
+    the presence of at least one ketone group in a ring, and at least one double bond in a ring.
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
-        None, None
+        bool: True if molecule is a 3-oxo-Delta(1) steroid, False otherwise
+        str: Reason for classification
     """
-    return None, None
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Define steroid backbone pattern (four fused rings)
+    steroid_pattern = Chem.MolFromSmarts('[*]12[*]3[*]4[*]1[*]3[*]2[*]4')
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid backbone found"
+
+    # Check for ketone groups (C=O)
+    ketone_pattern = Chem.MolFromSmarts('C(=O)')
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    ketone_in_ring = False
+    for match in ketone_matches:
+        carbon_idx = match[0]  # Carbon atom in C=O
+        if mol.GetAtomWithIdx(carbon_idx).IsInRing():
+            ketone_in_ring = True
+            break
+    if not ketone_in_ring:
+        return False, "No ketone group found in ring"
+
+    # Check for double bonds in rings
+    double_bond_in_ring = False
+    for bond in mol.GetBonds():
+        if bond.IsInRing() and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            double_bond_in_ring = True
+            break
+    if not double_bond_in_ring:
+        return False, "No double bond found in ring"
+
+    return True, "Contains steroid backbone with ketone and double bond in rings"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35164',
-                                  'name': '3-oxo-Delta(1) steroid',
-                                  'definition': 'Any 3-oxo steroid that contains a '
-                                                'double bond between positions 1 and 2.'},
+                              'name': '3-oxo-Delta(1) steroid',
+                              'definition': 'Any 3-oxo steroid that contains a '
+                                            'double bond between positions 1 and 2.'},
         'config': {   'llm_model_name': 'lbl/claude-sonnet',
                       'f1_threshold': 0.8,
                       'max_attempts': 5,
@@ -38,8 +70,8 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35164',
                       'max_instances_in_prompt': 100,
                       'test_proportion': 0.1},
         'message': None,
-        'attempt': 3,
-        'success': False,
-        'best': False,
+        'attempt': 0,
+        'success': True,
+        'best': True,
         'error': '',
         'stdout': None}
