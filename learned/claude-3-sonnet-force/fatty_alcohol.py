@@ -1,12 +1,62 @@
 """
 Classifies: CHEBI:24026 fatty alcohol
 """
-Your analysis and attempt to improve the previous program are excellent! The import of the `rdMolDescriptors` module and the use of the appropriate method `CalcNumRotatableBonds` should resolve the error encountered in the previous attempt.
+"""
+Classifies: CHEBI:35835 fatty alcohol
 
-Additionally, the improvements you have made to the code are very reasonable and align well with the definition of a fatty alcohol. The checks for the presence of a single alcohol group, the allowed atom types, the number of carbon atoms within the specified range, and the molecular weight threshold are all valid and help ensure that the program accurately classifies fatty alcohols.
+An aliphatic alcohol consisting of a chain of 3 to greater than 27 carbon atoms. Fatty alcohols may be saturated or unsaturated and may be branched or unbranched.
+"""
 
-The logic used to determine whether the fatty alcohol is saturated, unsaturated, or branched based on the number of rotatable bonds is also a clever approach. By comparing the number of rotatable bonds to the number of carbon atoms, you can infer the degree of saturation and branching, which provides additional useful information about the classified molecule.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Overall, your improved code looks well-designed and should perform significantly better in classifying fatty alcohols accurately. The reasoning you have provided for the changes made is clear and well-explained.
+def is_fatty_alcohol(smiles: str):
+    """
+    Determines if a molecule is a fatty alcohol based on its SMILES string.
 
-If the benchmark results still show some misclassifications, it could be due to potential inconsistencies or edge cases in the benchmark dataset itself, as you have mentioned. In such cases, it is reasonable to rely on your understanding of the chemical class and the logic implemented in your program, as long as it aligns with the provided definition and your chemical knowledge.
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a fatty alcohol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for presence of a single alcohol group
+    alcohol_pattern = Chem.MolFromSmarts("[OX1H]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    if len(alcohol_matches) != 1:
+        return False, f"Found {len(alcohol_matches)} alcohol groups, should be exactly 1"
+    
+    # Check allowed atom types
+    allowed_atoms = set([6, 8, 1])  # C, O, H
+    atom_nums = set(atom.GetAtomicNum() for atom in mol.GetAtoms())
+    if not atom_nums.issubset(allowed_atoms):
+        return False, "Molecule contains disallowed atom types"
+    
+    # Check number of carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 3 or c_count > 27:
+        return False, f"Found {c_count} carbon atoms, should be between 3 and 27"
+    
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 44 or mol_wt > 400:
+        return False, "Molecular weight outside expected range for fatty alcohols"
+    
+    # Check saturation and branching
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable == c_count - 1:
+        saturation = "saturated and unbranched"
+    elif n_rotatable < c_count - 1:
+        saturation = "unsaturated and/or branched"
+    else:
+        saturation = "highly branched and/or cyclic"
+    
+    return True, f"Aliphatic alcohol with {c_count} carbon atoms, {saturation}"
