@@ -1,28 +1,62 @@
 """
 Classifies: CHEBI:67197 endocannabinoid
 """
-Based on the outcomes and the provided code, it appears that the current implementation has some issues in accurately classifying endocannabinoids. Here are some observations and potential improvements:
+"""
+Classifies: CHEBI:37441 endocannabinoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **False Positives**: The program is incorrectly classifying some molecules as endocannabinoids, even though they do not have the characteristic structure of a long fatty acid chain with an ethanolamine or glycerol head group. These false positives seem to be molecules with aromatic systems or peptides. To address this, we could add additional checks to filter out these types of molecules.
+def is_endocannabinoid(smiles: str):
+    """
+    Determines if a molecule is an endocannabinoid based on its SMILES string.
+    Endocannabinoids are cannabinoids present in mammalian biological fluids and tissues
+    that activate cannabinoid receptors. They typically consist of a long fatty acid chain
+    with an ethanolamine or glycerol head group.
 
-2. **False Negatives**: The program is missing some true endocannabinoids, particularly those with variations in the fatty acid chain length or the presence of additional functional groups. This could be due to the rigid pattern matching approach used for identifying the fatty acid chain and head group.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Carbon Chain Length Check**: The current check for the carbon chain length (requiring at least 12 carbons) may be too strict. Some endocannabinoids, like palmitoyl ethanolamide, have a shorter carbon chain length (16 carbons).
+    Returns:
+        bool: True if molecule is an endocannabinoid, False otherwise
+        str: Reason for classification
+    """
 
-4. **Aromatic and Epoxide Checks**: The current implementation treats the presence of aromatic systems or epoxide rings as sufficient for classifying a molecule as an endocannabinoid. However, these features alone may not be enough to classify a molecule as an endocannabinoid if it lacks the characteristic fatty acid chain and head group.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Potential improvements:
+    # Look for fatty acid chain (long carbon chain with terminal carboxyl group)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2;!$(*~[CX3,CX2]~[CX3](=O)[OX2])]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) != 1:
+        return False, "No fatty acid chain found"
 
-1. **Relax Carbon Chain Length Check**: Instead of a strict cutoff for the carbon chain length, we could use a range or consider the overall molecular weight to account for variations in chain length.
+    # Look for ethanolamine or glycerol head group
+    ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
+    glycerol_pattern = Chem.MolFromSmarts("[OX2][CX4]([CHX4])[OX2][CHX4][OX2]")
+    head_group_matches = mol.GetSubstructMatches(ethanolamine_pattern) + mol.GetSubstructMatches(glycerol_pattern)
+    if len(head_group_matches) != 1:
+        return False, "No ethanolamine or glycerol head group found"
 
-2. **Prioritize Head Group and Fatty Acid Chain Detection**: Instead of relying solely on pattern matching, we could use a more sophisticated approach to identify the head group and fatty acid chain. This could involve analyzing the connectivity and functional groups in the molecule.
+    # Check for long carbon chain (at least 16 carbons)
+    n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if n_carbons < 16:
+        return False, "Carbon chain too short for endocannabinoid"
 
-3. **Filter Out Non-Endocannabinoid Structures**: Implement additional checks to filter out molecules that clearly do not resemble endocannabinoids, such as peptides, aromatic compounds, or small molecules without long carbon chains.
+    # Count double bonds in carbon chain
+    double_bond_pattern = Chem.MolFromSmarts("=[CX3]=[CX3]")
+    n_double_bonds = len(mol.GetSubstructMatches(double_bond_pattern))
 
-4. **Refine Aromatic and Epoxide Checks**: Instead of treating the presence of aromatic systems or epoxide rings as sufficient for classification, we could require these features to be present in combination with the fatty acid chain and head group.
+    # Classify based on double bond count
+    if n_double_bonds == 0:
+        return True, "Saturated endocannabinoid"
+    elif n_double_bonds == 1:
+        return True, "Monounsaturated endocannabinoid"
+    elif n_double_bonds > 1:
+        return True, "Polyunsaturated endocannabinoid"
 
-5. **Consider Additional Structural Features**: Endocannabinoids may have other characteristic structural features that could be used for classification, such as hydroxy groups, double bonds, or specific functional group arrangements.
-
-6. **Utilize Machine Learning Approaches**: If the rule-based approach becomes too complex or fails to capture all the nuances of endocannabinoid structures, we could explore machine learning techniques for classification, using a diverse set of positive and negative examples for training.
-
-It's important to note that the benchmark used for evaluation may not be perfect, and some discrepancies might be due to errors or edge cases in the benchmark itself. In such cases, it's reasonable to trust your understanding of the chemical class and make informed decisions regarding the classification criteria.
+    # If none of the above conditions match, return False
+    return False, "Not an endocannabinoid"
