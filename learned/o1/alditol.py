@@ -25,23 +25,21 @@ def is_alditol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the alditol pattern using SMARTS
-    # The pattern matches an acyclic chain of carbons where each carbon is sp3 hybridized,
-    # connected to exactly one hydroxyl group, and terminal carbons are CH2OH groups.
-    # We consider chains of varying lengths (n ≥ 1).
-
-    # Generate patterns for chain lengths from 2 to 10 (adjustable range)
-    min_chain_length = 2  # Minimum number of carbons in the chain (excluding terminal CH2OH)
+    # Terminal CH2OH group: [C;H2;!R][O;H1]
+    # Internal carbons: [C;H1,H2;!R]([O;H1]?)([O;H1]?)
+    # Build patterns for chain lengths from 2 to 10 (adjustable range)
+    min_chain_length = 2  # Minimum number of carbons in the chain
     max_chain_length = 10  # Maximum number of carbons in the chain
 
     alditol_found = False
     for chain_length in range(min_chain_length, max_chain_length + 1):
-        # Build SMARTS pattern
         # Start with terminal CH2OH group
-        pattern = '[C;H2;X4;!R]-[O;X2;H1]'
-        # Add internal CH(OH) groups
-        pattern += ''.join(['-[C;H1;X4;!R]-[O;X2;H1]' for _ in range(chain_length - 2)])
-        # Add ending CH2OH group
-        pattern += '-[C;H2;X4;!R]-[O;X2;H1]'
+        pattern = '[C;H2;!R]-[O;H1]'
+        # Add internal carbons: allow for optional hydroxyl groups to account for deoxy sugars
+        for _ in range(chain_length - 2):
+            pattern += '-[C;H1,H2;!R]([O;H1]?)-[H]'
+        # End with terminal CH2OH group
+        pattern += '-[C;H2;!R]-[O;H1]'
 
         # Create the RDKit molecule from SMARTS
         alditol_pattern = Chem.MolFromSmarts(pattern)
@@ -49,11 +47,10 @@ def is_alditol(smiles: str):
             continue  # Skip invalid patterns
 
         # Search for the pattern in the molecule
-        if mol.HasSubstructMatch(alditol_pattern):
+        matches = mol.GetSubstructMatches(alditol_pattern)
+        if matches:
             alditol_found = True
-            break  # Alditol substructure found
+            return True, f"Molecule contains an alditol substructure of chain length {chain_length}"
 
-    if alditol_found:
-        return True, f"Molecule contains an alditol substructure of chain length {chain_length}"
-    else:
+    if not alditol_found:
         return False, "No alditol substructure found"
