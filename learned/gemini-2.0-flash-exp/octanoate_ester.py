@@ -20,15 +20,16 @@ def is_octanoate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern to match octanoyl connected to an ester bond (C(=O)O)
-    # Pattern matches a chain of 7 carbons followed by a carbonyl carbon connected to an oxygen via a single bond and that oxygen connected to any other atom.
-    octanoyl_ester_pattern = Chem.MolFromSmarts("CCCCCCC[CX3](=O)[OX2][#6]")
+    # Pattern matches a chain of 7 carbons followed by a carbonyl carbon connected to an oxygen via a single bond, 
+    # that oxygen connected to any other atom, and not another C=O.
+    octanoyl_ester_pattern = Chem.MolFromSmarts("C([H])([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])C(=O)O[#6!$(C=O)]")
     octanoyl_ester_matches = mol.GetSubstructMatches(octanoyl_ester_pattern)
 
-     # SMARTS pattern to match ionized octanoyl connected to an ester bond
-    octanoyl_ester_pattern_ion = Chem.MolFromSmarts("CCCCCCC[CX3](=O)[O-][#6]")
+    # SMARTS pattern to match ionized octanoyl connected to an ester bond
+    octanoyl_ester_pattern_ion = Chem.MolFromSmarts("C([H])([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])C([H])([H])C(=O)[O-][#6!$(C=O)]")
     octanoyl_ester_matches_ion = mol.GetSubstructMatches(octanoyl_ester_pattern_ion)
-
+    
     if len(octanoyl_ester_matches) > 0 or len(octanoyl_ester_matches_ion) > 0 :
-          return True, "Contains at least one octanoyl group connected to an ester"
+        return True, "Contains at least one octanoyl group connected to an ester"
     
     return False, "No octanoyl ester group found"
