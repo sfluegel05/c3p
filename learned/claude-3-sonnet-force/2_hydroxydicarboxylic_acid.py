@@ -6,12 +6,11 @@ Classifies: CHEBI:51139 2-hydroxydicarboxylic acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_2_hydroxydicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-hydroxydicarboxylic acid based on its SMILES string.
-    A 2-hydroxydicarboxylic acid is any dicarboxylic acid carrying a hydroxy group on the
+    A 2-hydroxydicarboxylic acid is a dicarboxylic acid carrying a hydroxy group on the
     carbon atom at position alpha to the carboxy group.
 
     Args:
@@ -27,24 +26,34 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find carboxylic acid groups
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[$(C(=O)O)]")
+    # Look for dicarboxylic acid pattern (two -C(=O)O groups)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acid_matches) != 2:
         return False, "Not a dicarboxylic acid"
     
-    # Find hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if not hydroxyl_matches:
-        return False, "No hydroxyl group found"
+    # Find alpha carbon (between two carboxylic acids)
+    alpha_carbon_idx = None
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        if atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 6:
+            neighbors1 = [n.GetAtomicNum() for n in atom1.GetNeighbors()]
+            neighbors2 = [n.GetAtomicNum() for n in atom2.GetNeighbors()]
+            if 8 in neighbors1 and 8 in neighbors2:
+                alpha_carbon_idx = atom1.GetIdx() if 8 in neighbors1 else atom2.GetIdx()
+                break
     
-    # Check if any hydroxyl group is alpha to a carboxylic acid group
-    for hydroxyl_idx in hydroxyl_matches:
-        for acid_idx in carboxylic_acid_matches:
-            path = Chem.FindShortestPath(mol, hydroxyl_idx[0], acid_idx[0])
-            if len(path) == 3:  # Alpha carbon is in the middle
-                alpha_carbon_idx = path[1]
-                return True, "2-hydroxydicarboxylic acid"
+    if alpha_carbon_idx is None:
+        return False, "No alpha carbon found between two carboxylic acids"
     
-    return False, "No hydroxyl group found alpha to a carboxylic acid group"
+    # Check for hydroxy group on alpha carbon
+    alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
+    has_hydroxyl = any(neighbor.GetAtomicNum() == 8 and
+                       neighbor.GetTotalNumHs() == 1
+                       for neighbor in alpha_carbon.GetNeighbors())
+    
+    if not has_hydroxyl:
+        return False, "No hydroxyl group on alpha carbon"
+    
+    return True, "Dicarboxylic acid with hydroxyl group on alpha carbon"
