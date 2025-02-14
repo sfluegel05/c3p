@@ -22,12 +22,12 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for alkanethiol (-SH group attached to a sp3 carbon that is attached to at least one carbon)
-    # Handles cases with double bonds: [SH][C]([#6])[#6] or [SH][CX4]([#6])[#6] which covers the case C(S)C
-    #  and [SH][C]=[C]
-    alkanethiol_pattern1 = Chem.MolFromSmarts("[SH][C]([#6])[#6]")
-    alkanethiol_pattern2 = Chem.MolFromSmarts("[SH][CX4]([#6])")
-    alkanethiol_pattern3 = Chem.MolFromSmarts("[SH][C]=[C]")
+    # Define SMARTS pattern for alkanethiol.
+    # This pattern looks for a sulfur atom bonded to a carbon atom. The carbon atom should have
+    # 3 other connections, to C or H
+    alkanethiol_pattern1 = Chem.MolFromSmarts("[SH][CX4]([#6,#1])([#6,#1])[#6,#1]") # covers the normal case of SH attached to CH2 or CH
+    alkanethiol_pattern2 = Chem.MolFromSmarts("[SH][CH3]") # covers the case of a methyl group
+    alkanethiol_pattern3 = Chem.MolFromSmarts("[SH][CX3]([#6,#1])=[#6]") # handles SH on a carbon adjacent to a C=C
 
     # Check if the molecule matches the pattern
     if mol.HasSubstructMatch(alkanethiol_pattern1) or mol.HasSubstructMatch(alkanethiol_pattern2) or mol.HasSubstructMatch(alkanethiol_pattern3):
@@ -39,15 +39,9 @@ def is_alkanethiol(smiles: str):
             matches.extend(mol.GetSubstructMatches(alkanethiol_pattern2))
         if mol.HasSubstructMatch(alkanethiol_pattern3):
             matches.extend(mol.GetSubstructMatches(alkanethiol_pattern3))
-        
-        for match in matches:
-            sulfur_atom = mol.GetAtomWithIdx(match[0])
-            carbon_atom = mol.GetAtomWithIdx(match[1])
+
+
+        if matches:
+           return True, "Contains a sulfanyl group (-SH) attached to an alkyl group."
             
-            if carbon_atom.IsInRing():
-                continue;
-
-            return True, "Contains a sulfanyl group (-SH) attached to an alkyl group."
-    
-
     return False, "Does not contain a sulfanyl group (-SH) attached to an alkyl group."
