@@ -8,7 +8,6 @@ Any member of the sub-set of polyunsaturated fatty acid for which there is an ab
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_essential_fatty_acid(smiles: str):
@@ -35,8 +34,8 @@ def is_essential_fatty_acid(smiles: str):
         return False, "No carboxylic acid group found"
     
     # Check for carbon chain
-    longest_chain = AllChem.FindLongestChain(mol)
-    if len(longest_chain) < 12:
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:
         return False, "Carbon chain too short for fatty acid"
     
     # Check for multiple double bonds (polyunsaturated)
