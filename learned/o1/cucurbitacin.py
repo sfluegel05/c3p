@@ -20,10 +20,8 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the cucurbitane core skeleton SMARTS (simplified tetracyclic structure)
-    cucurbitane_smarts = """
-    [#6]12CC3CC(C1)CC4CCC(C2)C34
-    """  # A simplified representation of the tetracyclic core
+    # Define the cucurbitane core skeleton SMARTS (tetracyclic triterpenoid structure)
+    cucurbitane_smarts = '[#6]12CC3CC(C1)CC4CCC(C2)C34'  # Corrected pattern without line breaks
     cucurbitane_pattern = Chem.MolFromSmarts(cucurbitane_smarts)
     if cucurbitane_pattern is None:
         return None, "Unable to create cucurbitane SMARTS pattern"
