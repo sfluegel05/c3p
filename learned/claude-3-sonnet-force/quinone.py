@@ -1,28 +1,72 @@
 """
 Classifies: CHEBI:36141 quinone
 """
-The previous attempt at classifying quinones has a good overall approach, but there are a few potential issues that could lead to the observed low F1 score and the error encountered.
+"""
+Classifies: CHEBI:38170 quinone
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Error in `HasSubstructMatch`**: The error "Python argument types in `Mol.HasSubstructMatch(Mol, NoneType)` did not match C++ signature" suggests that the `quinone_pattern` variable is `None`, likely due to an invalid SMARTS pattern. Double-check the SMARTS pattern for correctness and consider using a more specific pattern to match the quinone structure.
+def is_quinone(smiles: str):
+    """
+    Determines if a molecule is a quinone based on its SMILES string.
+    A quinone is defined as a compound having a fully conjugated cyclic dione structure,
+    such as that of benzoquinones, derived from aromatic compounds by conversion of an 
+    even number of -CH= groups into -C(=O)- groups with any necessary rearrangement of 
+    double bonds (polycyclic and heterocyclic analogues are included).
 
-2. **Overspecificity of the pattern**: The current SMARTS pattern `"[$(C=C)$(C(=O)C=C),$(C=C)$(C=C(=O))&$(RingMembership)]"` may be too specific, potentially missing some valid quinone structures. Consider a more general pattern that captures the essence of a quinone structure (a conjugated cyclic dione).
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Aromaticity check**: The current code checks for aromaticity using the `IsAromaticRing` method from `AllChem.GetSSSR`. However, not all quinone structures are necessarily aromatic. Consider removing this check or modifying it to accommodate non-aromatic quinone structures as well.
+    Returns:
+        bool: True if molecule is a quinone, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define quinone pattern
+    quinone_pattern = Chem.MolFromSmarts("[#6]1([#6]=[#6])([#8])=[#6][#6]=[#6][#6]1=[#8]")
+    
+    # Check for quinone pattern
+    if not mol.HasSubstructMatch(quinone_pattern):
+        return False, "No quinone substructure found"
+    
+    # Check for conjugated cyclic dione
+    diones = [m for m in mol.GetSubstructMatches(quinone_pattern)]
+    is_conjugated = all(check_conjugation(mol, dione) for dione in diones)
+    
+    if not is_conjugated:
+        return False, "Quinone substructure is not fully conjugated"
+    
+    # Check for ring membership
+    ring_info = mol.GetRingInfo()
+    is_cyclic = all(ring_info.IsAtomInRingOfSize(atom_idx, 6) for atom_idx in diones[0])
+    
+    if not is_cyclic:
+        return False, "Quinone substructure is not cyclic"
+    
+    return True, "Molecule contains a fully conjugated cyclic dione structure (quinone)"
 
-4. **Additional checks**: The additional checks for the number of oxygens and carbonyl groups may be too strict or too lenient, depending on the actual distribution of these features in the dataset. Consider adjusting these checks based on the observed patterns in the data.
-
-To improve the program, here are some suggestions:
-
-1. **Refine the SMARTS pattern**: Try a more general pattern that captures the essence of a quinone structure, such as `"[#6]1([#6]=[#6])([#8])=[#6][#6]=[#6][#6]1=[#8]"`. This pattern matches a six-membered ring with two conjugated carbonyl groups and four carbon atoms.
-
-2. **Remove or modify the aromaticity check**: If non-aromatic quinone structures are expected in the dataset, consider removing the aromaticity check or modifying it to accommodate both aromatic and non-aromatic cases.
-
-3. **Adjust additional checks**: Analyze the distribution of features like the number of oxygens and carbonyl groups in the dataset, and adjust the corresponding checks accordingly.
-
-4. **Consider additional structural features**: Depending on the complexity of the dataset, you may need to incorporate additional structural features or constraints to improve the classification accuracy.
-
-5. **Analyze false positives and false negatives**: Carefully examine the false positives and false negatives to identify any systematic errors or edge cases that the program may be missing. Use this information to refine the rules and patterns accordingly.
-
-6. **Leverage more advanced techniques**: If the structural patterns alone are not sufficient, consider incorporating machine learning techniques or more advanced cheminformatics tools for better classification performance.
-
-It's important to note that the definition of a quinone structure can be complex, and there may be ambiguities or edge cases that require careful consideration. If you encounter cases where your understanding of the chemical class differs from the benchmark, it's reasonable to prioritize your chemical intuition and explain your reasoning accordingly.
+def check_conjugation(mol, dione):
+    """
+    Checks if a given dione substructure is fully conjugated in a molecule.
+    
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule object
+        dione (list): List of atom indices representing the dione substructure
+        
+    Returns:
+        bool: True if the dione substructure is fully conjugated, False otherwise
+    """
+    for i in range(len(dione)):
+        atom1 = mol.GetAtomWithIdx(dione[i])
+        atom2 = mol.GetAtomWithIdx(dione[(i+1) % len(dione)])
+        bond = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
+        if bond is None or bond.GetBondType() != Chem.BondType.DOUBLE:
+            return False
+    return True
