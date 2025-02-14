@@ -23,16 +23,22 @@ def is_N_acylsphingosine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS for sphingosine backbone, relaxing the original pattern
-    # Looking for a chain of carbons with a double bond, two hydroxyl groups, a nitrogen attached to one of the carbons and a terminal CH2OH
-    sphingosine_pattern = Chem.MolFromSmarts("[CX4,CX3]-[CX4,CX3](O)-[CX4,CX3](N)-[CX4,CX3](O)-[CX4,CX3]=[CX4,CX3]-[CX4,CX3](O)")
+    # Looking for a chain of carbons with a double bond, two hydroxyl groups, and a nitrogen and CH2OH at the end
+    sphingosine_pattern = Chem.MolFromSmarts("[CX4,CX3]-[CX4,CX3](O)-[CX4,CX3](N)-[CX4,CX3](O)-[CX4,CX3]=[CX4,CX3]")
     if not mol.HasSubstructMatch(sphingosine_pattern):
-       return False, "No sphingosine backbone found"
+        return False, "No sphingosine backbone found"
+    
+    # Define a SMARTS for a CH2OH group attached to the sphingosine carbon chain
+    ch2oh_pattern = Chem.MolFromSmarts("[CX4,CX3]([OX2])")
+    ch2oh_matches = mol.GetSubstructMatches(ch2oh_pattern)
+    if len(ch2oh_matches) < 1:
+        return False, "No CH2OH group found in the sphingosine chain"
 
     # Define SMARTS for the amide bond
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
 
-    if len(amide_matches) !=1:
+    if len(amide_matches) != 1:
         return False, f"Found {len(amide_matches)} amide bonds, need exactly 1"
 
     # Define a SMARTS for fatty acid (long carbon chain) attached to the amide bond
@@ -54,12 +60,12 @@ def is_N_acylsphingosine(smiles: str):
     if not found_acyl_chain:
         return False, "No fatty acyl chain attached to the amide group"
     
-    #Check that there are at least 16 Carbons
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons < 16:
-       return False, "Too few carbons for N-acylsphingosine"
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 4:
+        return False, "Fatty acid chain too short"
 
-    # Check for at least one hydroxyl group
+    # Check for at least two hydroxyl groups
     oh_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and len(atom.GetNeighbors()) == 1)
     if oh_count < 2:
         return False, "Must have at least two hydroxyl groups"
@@ -68,5 +74,5 @@ def is_N_acylsphingosine(smiles: str):
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
       return False, "Molecular weight too low for N-acylsphingosine"
-    
+
     return True, "Contains a sphingosine backbone with a fatty acyl group attached via an amide bond"
