@@ -26,31 +26,25 @@ def is_phenyl_acetates(smiles: str):
         if mol is None:
             return False, "Invalid SMILES string"
 
-        # Look for aromatic ring with hydroxy group
-        phenol_pattern = Chem.MolFromSmarts("c1ccc(cc1)O")
-        phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-        if not phenol_matches:
-            return False, "No phenol substructure found"
+        # Look for aromatic ring(s)
+        aromatic_rings = mol.GetRingInfo().AromaticRings()
+        if not aromatic_rings:
+            return False, "No aromatic rings found"
 
-        # Look for acetate group (-O-C(=O)-C)
-        acetate_pattern = Chem.MolFromSmarts("OC(=O)C")
-        acetate_matches = mol.GetSubstructMatches(acetate_pattern)
-        if not acetate_matches:
-            return False, "No acetate group found"
+        # Look for acetate group(s) derived from acetic acid
+        acetic_acid_pattern = Chem.MolFromSmarts("CC(=O)O")
+        acetic_acid_matches = mol.GetSubstructMatches(acetic_acid_pattern)
+        if not acetic_acid_matches:
+            return False, "No acetate groups derived from acetic acid"
 
-        # Check if acetate group is attached to phenol ring
-        for acetate_match in acetate_matches:
-            acetate_oxygen = mol.GetAtomWithIdx(acetate_match[0])
+        # Check if any acetate group is attached to an aromatic ring
+        for acetate_match in acetic_acid_matches:
+            acetate_oxygen = mol.GetAtomWithIdx(acetate_match[1])
             for neighbor in acetate_oxygen.GetNeighbors():
-                if neighbor.IsInRing() and neighbor.IsAromatic():
-                    # Additional checks for phenyl acetate definition
-                    acetic_acid_pattern = Chem.MolFromSmarts("CC(=O)O")
-                    if mol.HasSubstructMatch(acetic_acid_pattern):
-                        return True, "Contains a phenol ring with an acetate group attached"
-                    else:
-                        return False, "Acetate group not derived from acetic acid"
+                if neighbor.IsInRing() and any(neighbor.IsInRingOfSize(ring_size) for ring_size in aromatic_rings):
+                    return True, "Contains a phenol ring with an acetate group derived from acetic acid attached"
 
-        return False, "Acetate group not attached to phenol ring"
+        return False, "Acetate group not attached to an aromatic ring"
 
     except Exception as e:
         return False, f"Error occurred: {str(e)}"
