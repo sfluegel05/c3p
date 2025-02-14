@@ -24,19 +24,19 @@ def is_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find carboxylic acid group using SMARTS pattern
-    carboxylic_acid_smarts = '[CX3](=O)[OX1H]'
+    # Define SMARTS patterns for carboxylic acid and carboxylate groups
+    carboxylic_acid_smarts = '[CX3](=O)[OX1H0-,OX2H1]'
     carboxylic_acid = Chem.MolFromSmarts(carboxylic_acid_smarts)
     matches = mol.GetSubstructMatches(carboxylic_acid)
 
     if not matches:
         return False, "No carboxylic acid group found"
 
-    # Check that there is exactly one carboxylic acid group
-    if len(matches) != 1:
-        return False, f"Found {len(matches)} carboxylic acid groups, expected 1"
+    # Check that there is at least one carboxylic acid group
+    if len(matches) < 1:
+        return False, f"Found {len(matches)} carboxylic acid groups, expected at least 1"
 
-    # Get the index of the carboxyl carbon atom
+    # Assume the first carboxylic acid group is the main functional group
     carboxyl_carbon_idx = matches[0][0]
 
     # Get the longest carbon chain length starting from the carboxyl carbon
@@ -72,6 +72,8 @@ def get_longest_chain_length(mol, start_atom_idx):
         """
         atom = mol.GetAtomWithIdx(current_atom_idx)
         visited.add(current_atom_idx)
+
+        # Get unvisited neighboring carbon atoms
         neighbors = [
             neighbor for neighbor in atom.GetNeighbors()
             if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited
@@ -84,7 +86,7 @@ def get_longest_chain_length(mol, start_atom_idx):
         else:
             for neighbor in neighbors:
                 dfs(neighbor.GetIdx(), visited, length + 1)
-        
+
         visited.remove(current_atom_idx)
 
     # Start DFS from the carboxyl carbon
