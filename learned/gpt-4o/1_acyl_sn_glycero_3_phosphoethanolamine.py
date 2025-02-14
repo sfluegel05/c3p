@@ -15,28 +15,30 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
         str: Reason for classification.
     """
 
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for glycerol backbone with proper chiral center
-    glycerol_pattern = Chem.MolFromSmarts("O[C@@H](COC(=O)[C,H])COP(=O)(O)OCCN")
+    # Check for a glycerol backbone with the correct chiral center and phosphate-ethanolamine linkage
+    glycerol_pattern = Chem.MolFromSmarts("[C@](O)(COP(=O)(O)OCCN)COC(=O)[C,H]")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone with chiral center and phosphate-ethanolamine linkage not found"
+        return False, "Glycerol backbone with (R)-configuration and phosphate-ethanolamine linkage not found"
 
-    # Exclude common motifs of similar but non-matching phospholipids
+    # Ensure the 1-O-acyl group is linked in the correct position
+    # This checks for an ester bond between acyl chain and glycerol
+    acyl_pattern = Chem.MolFromSmarts("OC(=O)[C,H]")
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "No 1-O-acyl ester linkage found"
+    
+    # Exclude structural elements common to phospholipids like PC or PS
+    # This should help differentiate PE from other phosphate-containing lipids
     wrong_substructs = [
-        Chem.MolFromSmarts("O=C(OCC[N+](C)(C)C)P(=O)(O)OCC"),
-        Chem.MolFromSmarts("OC[C@H](NP(=O)(OC)O)CO")
+        Chem.MolFromSmarts("O=C(OCC[N+](C)(C)C)P(=O)(O)O"), # Common pattern in PC
+        Chem.MolFromSmarts("OC[C@H](NP(=O)(O)O)CO") # Pattern typical of PS
     ]
     for sub in wrong_substructs:
         if mol.HasSubstructMatch(sub):
             return False, "Found structural elements common to other phospholipids like PC or PS"
-    
-    # Ensure 1-O-acyl group is linked in correct position
-    acyl_pattern = Chem.MolFromSmarts("OC(=O)[C,H]")
-    if not mol.HasSubstructMatch(acyl_pattern):
-        return False, "No 1-O-acyl ester linkage found"
     
     return True, "Molecule fits all structural criteria for 1-acyl-sn-glycero-3-phosphoethanolamine"
