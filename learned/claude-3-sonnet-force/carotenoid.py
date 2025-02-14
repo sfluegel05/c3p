@@ -1,30 +1,63 @@
 """
 Classifies: CHEBI:23044 carotenoid
 """
-Based on the outcomes, it seems that the previous program has some limitations in accurately classifying carotenoids. Here are some observations and potential improvements:
+"""
+Classifies: CHEBI:27687 Carotenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **False Positives**: The program classified several non-carotenoid molecules as carotenoids, such as lipids and other natural products. This issue arises because the program checks for the presence of a linear carbon backbone and certain functional groups, which can be present in other classes of molecules as well.
+def is_carotenoid(smiles: str):
+    """
+    Determines if a molecule is a carotenoid based on its SMILES string.
+    A carotenoid is a tetraterpenoid (C40) derived from the acyclic parent psi,psi-carotene
+    by hydrogenation, dehydrogenation, cyclization, oxidation, or a combination of these processes.
+    This class includes carotenes, xanthophylls, and certain compounds arising from
+    rearrangement or loss of part of the psi,psi-carotene structure.
 
-   Potential Improvement: Introduce additional filters or substructure checks to distinguish carotenoids from other molecules with similar features. For example, considering the presence of specific ring systems or stereochemistry unique to carotenoids.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **False Negatives**: The program missed several carotenoid molecules, mostly due to the strict requirement of having exactly 40 carbon atoms. Many carotenoid derivatives or glycosides may have additional carbon atoms from attached functional groups or sugar moieties.
+    Returns:
+        bool: True if molecule is a carotenoid, False otherwise
+        str: Reason for classification
+    """
 
-   Potential Improvement: Relax the strict requirement of having exactly 40 carbon atoms, and instead, check for a minimum number of carbon atoms (e.g., 35 or more) in the base carotenoid skeleton, allowing for additional carbon atoms in functional groups or substituents.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Handling Exceptions**: Some carotenoid molecules, such as apocarotenoids or truncated carotenoids, may not strictly follow the typical patterns or rules used in the current program.
+    # Count carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 35:
+        return False, "Too few carbon atoms for a carotenoid"
 
-   Potential Improvement: Introduce additional checks or exceptions to handle these special cases, such as allowing for shorter carbon backbones or specific structural patterns for apocarotenoids.
+    # Check for linear carbon backbone (at least 10 contiguous C=C bonds)
+    backbone_pattern = Chem.MolFromSmarts("[C]=[C]=[C]=[C]=[C]=[C]=[C]=[C]=[C]=[C]")
+    backbone_matches = mol.GetSubstructMatches(backbone_pattern)
+    if not backbone_matches:
+        return False, "No linear carbon backbone found"
 
-4. **Functional Group Recognition**: The program uses a limited set of functional group patterns to identify carotenoids. While these are common functional groups, there may be other less frequent or more complex functional groups present in carotenoid derivatives.
+    # Check for common functional groups (hydroxyl, keto, epoxy, glycosidic)
+    functional_group_patterns = [
+        Chem.MolFromSmarts("O"),  # Hydroxyl
+        Chem.MolFromSmarts("O=C"),  # Keto
+        Chem.MolFromSmarts("C1OC1"),  # Epoxy
+        Chem.MolFromSmarts("O[C@H]1[C@H]([C@@H]([C@H](O[C@@H]2[C@@H]([C@H]([C@@H]([C@@H]2O)O)O)O)O1)O"),  # Glycosidic
+    ]
+    has_functional_groups = any(mol.HasSubstructMatch(pattern) for pattern in functional_group_patterns)
 
-   Potential Improvement: Expand the list of functional group patterns or use more generalized patterns to account for a wider range of carotenoid derivatives.
+    # Check for common ring systems (cyclohexene, cyclohexadiene)
+    ring_patterns = [
+        Chem.MolFromSmarts("C1=CCCCC1"),  # Cyclohexene
+        Chem.MolFromSmarts("C1=CC=CCC1"),  # Cyclohexadiene
+    ]
+    has_ring_systems = any(mol.HasSubstructMatch(pattern) for pattern in ring_patterns)
 
-5. **Stereochemistry Considerations**: Stereochemistry plays a crucial role in the structural diversity of carotenoids, and the current program does not explicitly consider stereochemical information.
-
-   Potential Improvement: Incorporate stereochemical checks or patterns to better distinguish isomers and stereoisomers of carotenoids, which can have different biological activities or properties.
-
-6. **Confidence Scoring**: Instead of a binary classification, the program could provide a confidence score or probability of a molecule being a carotenoid, which could be useful in borderline cases or for prioritizing further analysis.
-
-   Potential Improvement: Implement a scoring system that combines the results of various checks or substructure matches, assigning different weights or contributions to each factor, and providing a overall confidence score for the classification.
-
-It's important to note that while the benchmark data may not be 100% accurate, it can still provide valuable insights and guidance for improving the program. In cases where the classifications seem questionable, it's reasonable to rely on your chemical intuition and understanding of the carotenoid class to make informed decisions about how to handle those cases or whether to ignore them as outliers.
+    # Classify as carotenoid if it has a linear backbone, functional groups, and/or ring systems
+    if has_functional_groups or has_ring_systems:
+        return True, "Contains linear carbon backbone and carotenoid-like features"
+    else:
+        return False, "No carotenoid-like features found"
