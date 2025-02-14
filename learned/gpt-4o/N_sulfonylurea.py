@@ -22,12 +22,12 @@ def is_N_sulfonylurea(smiles: str):
         return False, "Invalid SMILES string"
 
     # Updated pattern for N-sulfonylurea moiety
-    # Consider more flexible arrangements of the urea and sulfonyl linkage
+    # More flexible arrangement to account for common variations
     # N-sulfonylureas have a general form comprising an N-sulfonyl group (N-S(=O)(=O)) attached to a urea (N-C(=O)-N)
-    nsulfonylurea_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]S(=O)(=O)[#6]")
-    alternative_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3][S](=O)(=O)")  # Alternative possible patterns
+    nsulfonylurea_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3][S](=O)(=O)[#6]")
+    alternative_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[SX4](=O)(=O)[NX3]")  # Consider reversal in structures
 
-    # Check if the molecule has this pattern
+    # Check if the molecule has these patterns
     match1 = mol.HasSubstructMatch(nsulfonylurea_pattern)
     match2 = mol.HasSubstructMatch(alternative_pattern)
 
