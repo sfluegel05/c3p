@@ -37,27 +37,30 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     alpha_hydroxyl_found = False
     for carboxyl_match in carboxyl_matches:
       carboxyl_carbon_idx = carboxyl_match[0] # Get index of the carboxyl carbon
-      # Define a pattern to capture alpha carbon relative to the carboxylic carbon
-      # This carbon may be bound to any other atom.
-      alpha_carbon_pattern = Chem.MolFromSmarts(f"[CX4]~[CX4](=O)O") # ~ means single or double bond.
-      alpha_carbon_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
 
+      carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
 
-      for alpha_match in alpha_carbon_matches:
+      for neighbor in carboxyl_carbon.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
 
-          alpha_carbon_idx = alpha_match[0]
-          # Check if there's a hydroxyl group connected to the identified alpha carbon
-          for hydroxyl_match in hydroxyl_matches:
+            # Check if neighbor is a carbon
+            if neighbor.GetAtomicNum() != 6:
+                continue
 
-            hydroxyl_oxygen_idx = hydroxyl_match[0]
+            # Check if any of the hydroxyl groups are attached to the neighbor carbon
+            for hydroxyl_match in hydroxyl_matches:
+                  hydroxyl_oxygen_idx = hydroxyl_match[0]
+                  hydroxyl_oxygen = mol.GetAtomWithIdx(hydroxyl_oxygen_idx)
 
-            hydroxyl_carbon_neighbors = [atom.GetIdx() for atom in mol.GetAtomWithIdx(hydroxyl_oxygen_idx).GetNeighbors()]
-            if alpha_carbon_idx in hydroxyl_carbon_neighbors:
-                alpha_hydroxyl_found = True
-                break  # Found one match, no need to check further
+                  hydroxyl_carbon_neighbors = [atom.GetIdx() for atom in hydroxyl_oxygen.GetNeighbors()]
+                  if neighbor_idx in hydroxyl_carbon_neighbors:
+                        alpha_hydroxyl_found = True
+                        break
+            if alpha_hydroxyl_found:
+                  break
 
       if alpha_hydroxyl_found:
-            break
+          break
     
     if not alpha_hydroxyl_found:
       return False, "Hydroxyl group is not on the alpha carbon relative to any carboxylic group."
