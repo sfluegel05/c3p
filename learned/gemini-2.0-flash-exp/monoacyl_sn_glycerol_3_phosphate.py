@@ -24,20 +24,30 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for sn-glycerol-3-phosphate core with correct stereochemistry
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("OC[C@H](O)(COP(=O)(O)O)") # C1-C2(S)-C3, we use GetSubstructMatch which finds the unique match
+    # Using multiple SMARTS to cover different representations
+    glycerol_phosphate_patterns = [
+        Chem.MolFromSmarts("[CH2][C@H](O)COP(=O)(O)(O)"), # C1-C2(R)-C3-O-P
+        Chem.MolFromSmarts("[CH2][C@H](O)C[O]P(=O)(O)(O)"), # C1-C2(R)-C3-[O]-P
+        Chem.MolFromSmarts("[CH2][C@H](O)C[OP](=O)(O)O"),  #C1-C2(R)-C3-O-P
+        Chem.MolFromSmarts("[CH2][C@H](O)C[O][P](O)(O)=O"), # C1-C2(R)-C3-[O]-P
+        Chem.MolFromSmarts("[CH2][C@H](O)COP([O-])([O-])=O"), # C1-C2(R)-C3-O-P (charged form)
+        Chem.MolFromSmarts("[CH2][C@H](O)C[O][P]([O-])([O-])=O"),  #C1-C2(R)-C3-[O]-P (charged form)
+        Chem.MolFromSmarts("[CH2]C[C@@H](O)OP(=O)(O)(O)"), # C3-C2(S)-C1-O-P (enantiomer - not sn)
+        Chem.MolFromSmarts("C[C@@H](O)C[O]P(=O)(O)(O)") # C2(S)-C3-[O]-P (enantiomer - not sn)
+    ]
     
-    glycerol_phosphate_match = mol.GetSubstructMatch(glycerol_phosphate_pattern)
-    
-    if not glycerol_phosphate_match:
-      return False, "No sn-glycerol-3-phosphate core found"
-    
-    # Verify there is only one such match
-    all_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-    if len(all_matches) != 1:
-         return False, "Multiple sn-glycerol-3-phosphate cores found"
-        
+    glycerol_phosphate_matches = []
+    for pattern in glycerol_phosphate_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        if matches:
+           glycerol_phosphate_matches = matches
+           break # Stop on the first match
+
+    if not glycerol_phosphate_matches:
+        return False, "No sn-glycerol-3-phosphate core found"
+
     # Verify the chirality of the central carbon is S (CCW)
-    glycerol_carbon_index = glycerol_phosphate_match[1]
+    glycerol_carbon_index = glycerol_phosphate_matches[0][1]
     chiral_center = mol.GetAtomWithIdx(glycerol_carbon_index)
     if chiral_center.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
         return False, "Central carbon is not S chiral"
@@ -52,7 +62,7 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     ester_match = ester_matches[0]
     carbonyl_carbon_index = ester_match[1]
     
-    glycerol_phosphate_match = glycerol_phosphate_match
+    glycerol_phosphate_match = glycerol_phosphate_matches[0]
     
     glycerol_carbon1_index = glycerol_phosphate_match[0] #C1
     glycerol_carbon2_index = glycerol_phosphate_match[1] #C2
