@@ -21,30 +21,20 @@ def is_alpha_amino_acid(smiles: str):
     """
 
     # Parse SMILES
-    try:
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return False, "Invalid SMILES string"
-    except Exception as e:
-        return False, f"Error parsing SMILES: {e}"
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for alpha-amino acid
-    # The pattern matches a carbon atom (alpha carbon) attached to:
-    # - A carboxyl group [C(=O)[O-] or C(=O)O]
-    # - An amino group [NH2 or NH3+]
-    # - Any other substituent [*]
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("""
-        [NX3+0;H2,H1;!$(N-C=O)]        # Amino nitrogen (not amide), with 1 or 2 hydrogens
-        [CX4H]                          # Alpha carbon (tetrahedral carbon with one hydrogen)
-        ([#6,#1,#8,#7,#16,#15])         # Any substituent (R group)
-        [CX3](=O)[O-,$(O),$(O[H])]      # Carboxy group (acid or carboxylate)
-    """)
+    # Amino group connected to alpha carbon, which is connected to a carboxyl group
+    alpha_amino_acid_smarts = '[NX3;H2,H1;+0]-[CX4H]-[*]-[CX3](=O)[O;H1,-1]'
 
-    if alpha_amino_acid_pattern is None:
+    pattern = Chem.MolFromSmarts(alpha_amino_acid_smarts)
+    if pattern is None:
         return False, "Invalid SMARTS pattern"
 
     # Check if the molecule matches the alpha-amino acid pattern
-    matches = mol.GetSubstructMatches(alpha_amino_acid_pattern)
+    matches = mol.GetSubstructMatches(pattern)
     if matches:
         return True, "Contains alpha-amino acid structure"
     else:
