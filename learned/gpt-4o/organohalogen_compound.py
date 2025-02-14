@@ -15,13 +15,15 @@ def is_organohalogen_compound(smiles: str):
         bool: True if molecule is an organohalogen compound, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES string
+    # Parse SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for carbon-halogen bond
-    carbon_halogen_pattern = Chem.MolFromSmarts("[CX4H0;!$(C#[!#6])]~[F,Cl,Br,I]")
+    # Define general SMARTS pattern for carbon-halogen bond
+    carbon_halogen_pattern = Chem.MolFromSmarts("[C]~[F,Cl,Br,I]")
+    
+    # Check if there is a substructure match for the carbon-halogen bond
     if mol.HasSubstructMatch(carbon_halogen_pattern):
         return True, "Contains carbon-halogen bond(s)"
     else:
