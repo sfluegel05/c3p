@@ -30,11 +30,9 @@ def is_hemiaminal(smiles: str):
             # Check the neighbors for -OH and -NHx
             for neighbor in atom.GetNeighbors():
                 neighbor_atomic_num = neighbor.GetAtomicNum()
-                if neighbor_atomic_num == 8 and any(x.GetAtomicNum() == 1 for x in neighbor.GetNeighbors()):
+                if neighbor_atomic_num == 8: #check if it is oxygen
                     has_oh = True
-                elif neighbor_atomic_num == 7 and any(x.GetAtomicNum() == 1 for x in neighbor.GetNeighbors()) :
-                    has_nhx = True
-                elif neighbor_atomic_num == 7 :
+                elif neighbor_atomic_num == 7: #check if it is nitrogen
                     has_nhx = True
 
             if has_oh and has_nhx:
