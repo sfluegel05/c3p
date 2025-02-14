@@ -39,22 +39,29 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
          return False, "No 3-hydroxy group found."
     
     # Check for four negatively charged phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-
-    if len(phosphate_matches) != 4:
-         return False, f"Found {len(phosphate_matches)} negatively charged phosphates, need exactly 4."
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    if p_count != 3:
+        return False, "Must have 3 phosphorus atoms"
     
+    total_negative_charge = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 15:  # Check if the atom is phosphorus
+           for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetFormalCharge() == -1:
+                    total_negative_charge +=1
+    
+    if total_negative_charge != 4:
+        return False, f"Found {total_negative_charge} negatively charged oxygens on phosphates, need exactly 4."
+
     # Check for one sulfur atom
     s_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
     if s_count != 1:
         return False, "Must have 1 sulfur atom"
-    
 
     # Additional check:
     # Counting the specific atoms - check they are within the expected ranges.
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
+    if c_count < 10:
        return False, "Too few carbon atoms to be a fatty acyl CoA"
-    
+
     return True, "Molecule matches the criteria for a 3-hydroxy fatty acyl-CoA(4-)."
