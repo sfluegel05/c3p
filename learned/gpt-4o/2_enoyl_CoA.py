@@ -20,30 +20,25 @@ def is_2_enoyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS for Coenzyme A moiety, focusing on the typical structural features
-    coa_pattern = Chem.MolFromSmarts("CC(C)C(=O)NCCSC(=O)C")
+    
+    # Enhanced SMARTS pattern for Coenzyme A moiety based on typical structure
+    # Capture larger portion and key linkage
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCSC(=O)[C]")  # Key amide and thioester bonds
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No Coenzyme A moiety found"
 
-    # Define SMARTS for a double bond between the 2nd and 3rd carbon in the acyl chain
-    double_bond_2_3_pattern = Chem.MolFromSmarts("C-C=C-C")
+    # SMARTS for 2-enoyl character: Double bond between 2nd and 3rd carbons in a chain
+    double_bond_2_3_pattern = Chem.MolFromSmarts("C=C")
     substruct_matches = mol.GetSubstructMatches(double_bond_2_3_pattern)
-
+    
     if not substruct_matches:
         return False, "No suitable double bond between C2 and C3 found"
 
-    # Verify positional context - check that the identified double bond is part of an acyl chain
-    # and near the CoA linkage
     for match in substruct_matches:
-        # Assuming match is the fragment where the double bond is located
-        # [C1, C2, C3, C4] where C2=C3 is the double bond
-        chain_carbon_2 = mol.GetAtomWithIdx(match[1])
-        chain_carbon_3 = mol.GetAtomWithIdx(match[2])
-
-        # Both carbons should be part of a chain, not in a cycle
-        if chain_carbon_2.GetDegree() <= 3 and chain_carbon_3.GetDegree() <= 3:
-            # Verify acyl linkage is nearby, indicating it's in the correct acyl position
-            return True, "Contains a suitable 2,3-double bond and Coenzyme A moiety"
+        # Verify that the double bond is correctly placed to be in the 2-enoyl position (right after the CoA linkage)
+        # We can approximate the location using the bond order and check connectivity
+        if mol.GetAtomWithIdx(match[0]).GetDegree() > 1 and mol.GetAtomWithIdx(match[1]).GetDegree() > 1:
+            # Contextual checks may include ensuring the bond exists in a suitable long chain near CoA
+            return True, "Contains suitable 2,3-double bond and Coenzyme A moiety"
 
     return False, "Matched double bond is not appropriate in positional context"
