@@ -25,7 +25,7 @@ def is_1_2_4_triazines(smiles: str):
 
     # Define the 1,2,4-triazine substructure using SMARTS
     # The SMARTS pattern represents a six-membered aromatic ring with nitrogens at positions 1, 2, and 4
-    triazine_smarts = "c1ncncn1"  # Positions 1,2,4 have nitrogen atoms
+    triazine_smarts = "c1cnncn1"  # Positions 1,2,4 have nitrogen atoms
     triazine_mol = Chem.MolFromSmarts(triazine_smarts)
     if triazine_mol is None:
         return False, "Error in defining 1,2,4-triazine substructure"
