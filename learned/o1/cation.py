@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_cation(smiles: str):
     """
     Determines if a molecule is a cation based on its SMILES string.
-    A cation is a monoatomic or polyatomic species having one or more elementary charges of the proton,
-    resulting in a net positive charge.
+    A cation is a monoatomic or polyatomic species having one or more elementary charges of the proton.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,10 +21,10 @@ def is_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Calculate the net formal charge of the molecule
-    net_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    # Check if any atom has a positive formal charge
+    has_positive_charge = any(atom.GetFormalCharge() > 0 for atom in mol.GetAtoms())
 
-    if net_charge > 0:
-        return True, f"Molecule has net positive charge ({net_charge}); it is a cation"
+    if has_positive_charge:
+        return True, "Contains atoms with positive formal charges; it is a cation"
     else:
-        return False, f"Molecule has net charge ({net_charge}); it is not a cation"
+        return False, "No atoms with positive formal charges; it is not a cation"
