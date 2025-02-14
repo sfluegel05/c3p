@@ -25,16 +25,20 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for amino acid substructure
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)[OX2H0-]")
-    amino_acid_match = mol.GetSubstructMatches(amino_acid_pattern)
-    if not amino_acid_match:
-        return False, "No amino acid substructure found"
+    # Check for amino acid pattern
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3H2][CX4H]([CX3](=O)[OX1-,OX2H1])[CX4H]")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "No amino acid pattern found"
     
-    # Check for aromatic ring
-    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")
-    aromatic_ring_match = mol.GetSubstructMatches(aromatic_ring_pattern)
-    if not aromatic_ring_match:
-        return False, "No aromatic ring found"
+    # Check for aromatic rings
+    aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() if mol.GetRingAtoms(ring).IsAromatic()]
+    if not aromatic_rings:
+        return False, "No aromatic rings found"
     
-    return True, "Contains both an amino acid substructure and an aromatic ring"
+    # Check if aromatic ring is part of the molecule backbone
+    aromatic_ring_atoms = set.union(*[set(mol.GetRingAtoms(ring)) for ring in aromatic_rings])
+    amino_acid_atoms = set(mol.GetSubstructMatches(amino_acid_pattern)[0])
+    if not aromatic_ring_atoms.intersection(amino_acid_atoms):
+        return False, "Aromatic ring not part of backbone"
+    
+    return True, "Contains an aromatic ring and an amino acid backbone"
