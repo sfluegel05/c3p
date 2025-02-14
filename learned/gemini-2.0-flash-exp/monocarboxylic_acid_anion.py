@@ -2,7 +2,6 @@
 Classifies: CHEBI:35757 monocarboxylic acid anion
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monocarboxylic_acid_anion(smiles: str) -> tuple[bool, str]:
     """
@@ -36,9 +35,11 @@ def is_monocarboxylic_acid_anion(smiles: str) -> tuple[bool, str]:
     if len(carboxylic_acid_matches) > 0:
       return False, "Molecule has protonated carboxylic acid groups"
     
-    charge = rdMolDescriptors.CalcFormalCharge(mol)
+    charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
 
-    if charge != -1:
+    if charge < -1:
+        return True, "Molecule is a monocarboxylic acid anion, but has extra negative charges"
+    elif charge == -1:
+         return True, "Molecule is a monocarboxylic acid anion"
+    else:
         return False, f"Molecule has a charge of {charge}, should have a charge of -1"
-
-    return True, "Molecule is a monocarboxylic acid anion"
