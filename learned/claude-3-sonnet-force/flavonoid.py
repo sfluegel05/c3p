@@ -32,11 +32,8 @@ def is_flavonoid(smiles: str):
         # Define flavonoid scaffold pattern
         scaffold_pattern = Chem.MolFromSmarts("[c&r1]1[c&r2]c2c(cc1)oc(c2)-[c&r3]")
 
-        # Find maximum common substructure with flavonoid scaffold
-        mcs = mol.GetMaxMatchingSubstructure(scaffold_pattern, matchValencePermit=True)
-
         # Check if scaffold is present
-        if mcs.GetNumAtoms() == scaffold_pattern.GetNumAtoms():
+        if mol.HasSubstructMatch(scaffold_pattern):
             return True, "Contains flavonoid scaffold"
         else:
             return False, "Flavonoid scaffold not present"
