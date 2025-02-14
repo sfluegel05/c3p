@@ -8,6 +8,8 @@ An N-glycosyl compound that has both a nucleobase, normally adenine, guanine, xa
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem.Descriptors import MolFromSmiles
+from rdkit.Chem.rdchem import GetSSSR
 
 def is_nucleoside(smiles: str):
     """
@@ -30,23 +32,24 @@ def is_nucleoside(smiles: str):
     sugar_pattern = Chem.MolFromSmarts("[OX2][CX4]([CX4][CX4][CX4][CH2][OX2])")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if not sugar_matches:
-        return False, "No ribose or deoxyribose sugar found"
+        sugar_pattern = Chem.MolFromSmarts("[OX2][CX4]([CX4][CX4][CX4][CH1][OX2])")
+        sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+        if not sugar_matches:
+            return False, "No ribose or deoxyribose sugar found"
 
     # Look for nucleobase
-    nucleobase_patterns = [
-        Chem.MolFromSmarts("[*r3,r4,r5,r6]~[*r3,r4,r5,r6]~[*r3,r4,r5,r6]~[*r3,r4,r5,r6]~[NX3]"),  # Fused ring system with nitrogen
-        Chem.MolFromSmarts("[NX3][CX3]([NX3])[NX3]"),  # Cytosine-like
-        Chem.MolFromSmarts("[NX3][CX3]([NX3])[OX2]"),  # Uracil-like
-        # Add more patterns for other nucleobases
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns):
+    nucleobase_atoms = []
+    for ring in GetSSSR(mol):
+        if any(atom.GetAtomicNum() == 7 for atom in ring):
+            nucleobase_atoms.extend(ring)
+    if not nucleobase_atoms:
         return False, "No nucleobase found"
 
     # Check for N-glycosidic bond between sugar and nucleobase
     for sugar_match in sugar_matches:
         sugar_atom = mol.GetAtomWithIdx(sugar_match[-1])
         for neighbor_atom in sugar_atom.GetNeighbors():
-            if neighbor_atom.GetAtomicNum() == 7 and neighbor_atom.IsInRing():  # Nitrogen atom in a ring (nucleobase)
+            if neighbor_atom.GetIdx() in [atom.GetIdx() for atom in nucleobase_atoms]:
                 return True, "Contains a nucleobase N-glycosidically linked to a ribose or deoxyribose sugar"
 
     return False, "No N-glycosidic bond found between sugar and nucleobase"
