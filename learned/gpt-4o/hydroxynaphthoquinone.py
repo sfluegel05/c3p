@@ -22,9 +22,9 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more comprehensive SMARTS pattern for the naphthoquinone core
-    # This aims to capture the two-ring system of 1,4-naphthoquinone
-    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=C2C=C(C(=O)C2=O)C=C1")
+    # Define a more generalized SMARTS pattern for naphthoquinone core
+    # Naphthoquinone structure with flexibility for additional aromatic substitutions
+    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=C2C(=C1)C=CC(=O)C2=O")
     if not mol.HasSubstructMatch(naphthoquinone_pattern):
         return False, "No naphthoquinone core structure found"
     
@@ -37,6 +37,6 @@ def is_hydroxynaphthoquinone(smiles: str):
     return True, "Contains naphthoquinone core with at least one hydroxy group attached"
 
 # Example Usage:
-# smiles_example = "O=C1C=CC(=O)c2cc(O)ccc12"  # Juglone, an example of a hydroxynaphthoquinone
+# smiles_example = "O=C1C=CC(=O)c2cc(O)ccc12"  # Example of a hydroxynaphthoquinone
 # result, reason = is_hydroxynaphthoquinone(smiles_example)
 # print(result, reason)
