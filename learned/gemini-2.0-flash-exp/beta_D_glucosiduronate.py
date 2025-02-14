@@ -21,8 +21,8 @@ def is_beta_D_glucosiduronate(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define a SMARTS pattern for the beta-D-glucuronic acid core, with beta anomeric carbon and deprotonated carboxy.
-    # Note: the [O-] is for the deprotonated oxygen, [C@H] is the correct stereochem at each carbon
-    glucuronic_acid_smarts = "[OX2][C@H]1([C@@H]([C@H]([C@@H]([C@H](O1)C([O-])=O)O)O)O)"
+    # explicitly match the ring, also specify that the oxygen is OX2, and that it links to another atom.
+    glucuronic_acid_smarts = "[OX2;H0][C@H]1([C@@H]([C@H]([C@@H]([C@H](O1)C([O-])=O)O)O)O)-[O;H0]"
 
     pattern = Chem.MolFromSmarts(glucuronic_acid_smarts)
 
@@ -34,7 +34,17 @@ def is_beta_D_glucosiduronate(smiles: str):
     if match:
       anomeric_carbon_index = match[1] #index of the anomeric carbon
       anomeric_carbon = mol.GetAtomWithIdx(anomeric_carbon_index)
-      if anomeric_carbon.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CW:
+      if anomeric_carbon.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
           return False, "Anomeric carbon not in beta configuration"
+      # Check that the anomeric oxygen is connected with a single bond
+      anomeric_oxygen_index = match[0]
+      anomeric_oxygen = mol.GetAtomWithIdx(anomeric_oxygen_index)
+      if anomeric_oxygen.GetDegree() != 2:
+         return False, "Anomeric oxygen not linked via glycosidic bond"
+
+      # check that it is not a sulfate
+      for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 16 and atom.GetNeighbors() and any(neighbor.GetAtomicNum() == 8 for neighbor in atom.GetNeighbors()):
+          return False, "Molecule contains a sulfate group"
 
     return True, "Molecule is a beta-D-glucosiduronate"
