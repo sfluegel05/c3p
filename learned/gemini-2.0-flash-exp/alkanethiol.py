@@ -22,19 +22,32 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core SMARTS pattern for alkanethiol (-SH group attached to an alkyl C atom)
-    alkanethiol_pattern = Chem.MolFromSmarts("[SH][CX4]")
+    # Define SMARTS pattern for alkanethiol (-SH group attached to a sp3 carbon that is attached to at least one carbon)
+    # Handles cases with double bonds: [SH][C]([#6])[#6] or [SH][CX4]([#6])[#6] which covers the case C(S)C
+    #  and [SH][C]=[C]
+    alkanethiol_pattern1 = Chem.MolFromSmarts("[SH][C]([#6])[#6]")
+    alkanethiol_pattern2 = Chem.MolFromSmarts("[SH][CX4]([#6])")
+    alkanethiol_pattern3 = Chem.MolFromSmarts("[SH][C]=[C]")
 
     # Check if the molecule matches the pattern
-    if mol.HasSubstructMatch(alkanethiol_pattern):
-       
-        # Check if one the carbons attached to the S is part of an alkane group
-        match = mol.GetSubstructMatches(alkanethiol_pattern)
-        for item in match:
-            sulfur_atom = mol.GetAtomWithIdx(item[0])
-            carbon_atom = mol.GetAtomWithIdx(item[1])
-           
+    if mol.HasSubstructMatch(alkanethiol_pattern1) or mol.HasSubstructMatch(alkanethiol_pattern2) or mol.HasSubstructMatch(alkanethiol_pattern3):
+        
+        matches = []
+        if mol.HasSubstructMatch(alkanethiol_pattern1):
+            matches.extend(mol.GetSubstructMatches(alkanethiol_pattern1))
+        if mol.HasSubstructMatch(alkanethiol_pattern2):
+            matches.extend(mol.GetSubstructMatches(alkanethiol_pattern2))
+        if mol.HasSubstructMatch(alkanethiol_pattern3):
+            matches.extend(mol.GetSubstructMatches(alkanethiol_pattern3))
+        
+        for match in matches:
+            sulfur_atom = mol.GetAtomWithIdx(match[0])
+            carbon_atom = mol.GetAtomWithIdx(match[1])
             
-        return True, "Contains a sulfanyl group (-SH) attached to an alkyl group."
+            if carbon_atom.IsInRing():
+                continue;
+
+            return True, "Contains a sulfanyl group (-SH) attached to an alkyl group."
+    
 
     return False, "Does not contain a sulfanyl group (-SH) attached to an alkyl group."
