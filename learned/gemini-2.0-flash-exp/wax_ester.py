@@ -22,30 +22,41 @@ def is_wax_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for exactly one ester group (-O-C(=O)-)
+    # Look for ester group (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, must have exactly one"
-    
-    # Check for glycerol backbone (C-C-C with 3 oxygens attached). If present, its not a wax ester
+
+    # Look for glycerol backbone (C-C-C with 3 oxygens attached). If present, its not a wax ester
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone detected; not a wax ester"
+      return False, "Glycerol backbone detected; not a wax ester"
+
+    # Check for fatty acid chains (long carbon chains attached to esters)
+    # We need at least 3 carbons on each side of the ester
+    fatty_acid_pattern1 = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[OX2]") 
+    fatty_acid_pattern2 = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX3](=[OX1])")
+    fatty_acid_matches1 = mol.GetSubstructMatches(fatty_acid_pattern1)
+    fatty_acid_matches2 = mol.GetSubstructMatches(fatty_acid_pattern2)
+
+    if len(fatty_acid_matches1) == 0 or len(fatty_acid_matches2) == 0 :
+        return False, f"Missing long carbon chains"
+
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8: # Reduced requirement for short chains such as octyl palmitate
-        return False, "Chains too short to be fatty acid and fatty alcohol"
-
+    if n_rotatable < 8: # min of 8 to account for 3 carbons on each side plus one ester
+      return False, "Chains too short to be fatty acid and fatty alcohol"
+    
     # Check molecular weight - wax esters typically >300 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, "Molecular weight too low for wax ester"
-
+    
     # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10: # Reduced number of carbons
+    if c_count < 16:
       return False, "Too few carbons for a wax ester"
     
     # Count oxygens
