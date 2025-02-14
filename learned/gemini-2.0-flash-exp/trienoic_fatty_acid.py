@@ -8,8 +8,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_trienoic_fatty_acid(smiles: str):
     """
     Determines if a molecule is a trienoic fatty acid based on its SMILES string.
-    A trienoic fatty acid is a fatty acid containing a carboxylic acid group and exactly three double bonds.
-    The double bonds should belong to the main carbon chain.
+    A trienoic fatty acid is a fatty acid containing a carboxylic acid group and exactly three double bonds
+    in the main carbon chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -35,9 +35,9 @@ def is_trienoic_fatty_acid(smiles: str):
         return False, f"Found {len(double_bond_matches)} double bonds, need exactly 3"
     
     # Check for fatty acid chain (carboxylic acid with a connected carbon chain)
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)O[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)O[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     if not mol.HasSubstructMatch(fatty_acid_chain_pattern):
-        return False, "Not a fatty acid - no chain connected to carboxylic group."
+          return False, "Not a fatty acid - no long chain connected to carboxylic group."
 
     # Molecular Weight Check - fatty acids typically > 150 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -53,5 +53,9 @@ def is_trienoic_fatty_acid(smiles: str):
     if o_count < 2:
         return False, "Not enough oxygens"
 
+    # Check number of rings
+    ring_count = Chem.rdMolDescriptors.CalcNumRings(mol)
+    if ring_count > 0:
+        return False, "Molecule contains rings - unlikely to be a fatty acid."
 
     return True, "Contains carboxylic acid and exactly three double bonds and long carbon chain"
