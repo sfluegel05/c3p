@@ -20,8 +20,9 @@ def is_organobromine_compound(smiles: str) -> tuple[bool | None, str | None]:
     if mol is None:
          return None, None
 
-    # Check for the presence of a C-Br bond using SMARTS
-    carbon_bromine_pattern = Chem.MolFromSmarts("[C]~[Br]")
+    # Check for the presence of a C-Br bond using SMARTS.
+    # Match any Bromine atom that's not attached to Hydrogen or another halogen
+    carbon_bromine_pattern = Chem.MolFromSmarts("[Br][!H,F,Cl,I,At]")
     if mol.HasSubstructMatch(carbon_bromine_pattern):
         return True, "Contains at least one carbon-bromine bond"
     else:
