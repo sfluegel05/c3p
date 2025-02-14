@@ -33,32 +33,15 @@ def is_sulfolipid(smiles: str):
     if not sulfonic_acid_matches:
         return False, "No sulfonic acid group found"
     
-    # Look for carbon-sulfur bond (C-S)
-    c_s_bond_pattern = Chem.MolFromSmarts("[C]-[S]")
-    c_s_bond_matches = mol.GetSubstructMatches(c_s_bond_pattern)
-    if not c_s_bond_matches:
-        return False, "No carbon-sulfur bond found"
-    
     # Check if sulfonic acid group is attached to lipid chain
-    lipid_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]")
-    lipid_chain_matches = mol.GetSubstructMatches(lipid_chain_pattern)
-    if not lipid_chain_matches:
-        return False, "No lipid chain found"
-    
-    # Check if sulfonic acid and lipid chain are connected via carbon-sulfur bond
     for s_idx in sulfonic_acid_matches:
-        for c_idx in c_s_bond_matches:
-            if s_idx in c_idx:
-                sulfur_atom = mol.GetAtomWithIdx(s_idx)
-                for bond in sulfur_atom.GetBonds():
-                    if bond.GetOtherAtom(sulfur_atom).GetAtomicNum() == 6:  # Carbon
-                        carbon_atom = bond.GetOtherAtom(sulfur_atom)
-                        is_lipid_connected = False
-                        for lipid_match in lipid_chain_matches:
-                            if carbon_atom.GetIdx() in lipid_match:
-                                is_lipid_connected = True
-                                break
-                        if is_lipid_connected:
-                            return True, "Contains sulfonic acid group joined by a carbon-sulfur bond to a lipid chain"
+        sulfur_atom = mol.GetAtomWithIdx(s_idx)
+        for bond in sulfur_atom.GetBonds():
+            if bond.GetOtherAtom(sulfur_atom).GetAtomicNum() == 6:  # Carbon
+                carbon_atom = bond.GetOtherAtom(sulfur_atom)
+                lipid_chain_pattern = Chem.MolFromSmarts(f"[CX4]~[CX4]~[CX4]~[CX4]~{[carbon_atom.GetIdx()]}")
+                lipid_chain_matches = mol.GetSubstructMatches(lipid_chain_pattern)
+                if lipid_chain_matches:
+                    return True, "Contains sulfonic acid group joined by a carbon-sulfur bond to a lipid chain"
     
     return False, "Sulfonic acid group not connected to lipid chain via carbon-sulfur bond"
