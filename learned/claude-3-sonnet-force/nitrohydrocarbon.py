@@ -9,7 +9,6 @@ hydrogens has been replaced by nitro groups.
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_nitrohydrocarbon(smiles: str):
     """
@@ -28,25 +27,20 @@ def is_nitrohydrocarbon(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check if molecule contains any nitro groups
-    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
-    if not mol.HasSubstructMatch(nitro_pattern):
-        return False, "No nitro groups present"
-    
-    # Check if molecule is a hydrocarbon (contains only C, H, N, O)
+    # Check if molecule contains only C, H, N, O
     allowed_atoms = [6, 1, 7, 8]  # C, H, N, O
     atom_nums = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
     if any(num not in allowed_atoms for num in atom_nums):
         return False, "Contains atoms other than C, H, N, O"
     
-    # Check if nitro groups are attached to carbons
-    nitro_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
-    for idx in nitro_atoms:
-        atom = mol.GetAtomWithIdx(idx)
-        if atom.GetTotalNumHs() > 0:
-            return False, "Nitro group attached to hydrogen"
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() != 6:
-                return False, "Nitro group not attached to carbon"
+    # Check if molecule contains at least one nitro group
+    nitro_pattern = Chem.MolFromSmarts("[N+](=O)[O-]")
+    if not mol.HasSubstructMatch(nitro_pattern):
+        return False, "No nitro groups present"
+    
+    # Check if molecule contains at least one carbon-hydrogen bond
+    ch_bond_pattern = Chem.MolFromSmarts("[C-H]")
+    if not mol.HasSubstructMatch(ch_bond_pattern):
+        return False, "No carbon-hydrogen bonds present"
     
     return True, "Molecule is a nitrohydrocarbon"
