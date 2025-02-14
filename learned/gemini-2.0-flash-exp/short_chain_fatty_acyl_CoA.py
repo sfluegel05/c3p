@@ -21,11 +21,15 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core CoA substructure (pantetheine part)
-    coa_core_smarts = "[SX2][CH2X4][CH2X4][NX3][CX3](=[OX1])[NX3][CH2X4][CH2X4][CX3](=[OX1])[C@H]([OX2])[CX4]([CH3X4])([CH3X4])[CX4][OX2][PX4]"
+    # Simplified CoA core SMARTS:
+    # Look for a substructure containing a pyrophosphate, ribose and part of the pantetheine
+    # P-O-P, a ribose (C1-O-C-C-C-O-C1) linked to phosphate and a thioester moiety:
+    coa_core_smarts = "[P](=O)(O)-O-[P](=O)(O)-O-C1[CH](O)[CH]([CH](O)[CH](O)C1)-O-[CX4]-C(C)(C)-[CX4]-[NX3]-[CX3](=[OX1])-[NX3]-[CX2]-[CX2]-S"
     coa_core_pattern = Chem.MolFromSmarts(coa_core_smarts)
+
     if not mol.HasSubstructMatch(coa_core_pattern):
          return False, "CoA core not found"
+
 
     # Define the thioester bond
     thioester_smarts = "[CX3](=[OX1])[SX2]"
@@ -33,25 +37,28 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester bond found"
-    
-    # Check if thioester is attached to CoA
+
+    # Check if thioester is attached to CoA. Get a match to CoA, check if the S is connected to that match.
     coa_match = mol.GetSubstructMatch(coa_core_pattern)
-    attached_to_coa = False
-    for thioester_match in thioester_matches:
-        for atom_index in thioester_match:
-            atom = mol.GetAtomWithIdx(atom_index)
-            if atom.GetSymbol() == "S":
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetIdx() in coa_match:
-                       attached_to_coa = True
-                       break
-                if attached_to_coa:
-                    break
-        if attached_to_coa:
-            break
-    
-    if not attached_to_coa:
-        return False, "Thioester not attached to CoA core"
+    if coa_match: #we only run this if there is a CoA match
+        attached_to_coa = False
+        for thioester_match in thioester_matches:
+            for atom_index in thioester_match:
+                atom = mol.GetAtomWithIdx(atom_index)
+                if atom.GetSymbol() == "S":
+                    for neighbor in atom.GetNeighbors():
+                       if neighbor.GetIdx() in coa_match:
+                           attached_to_coa = True
+                           break
+            if attached_to_coa:
+                break
+
+        if not attached_to_coa:
+           return False, "Thioester not attached to CoA core"
+    else: # should not get here, as we checked already for the core
+        return False, "CoA core not found"
+
+
 
     # Find the acyl chain and count carbons.  We do this by looking at neighbors of the carbonyl carbon
     # Note that this does not guarantee that it is a single chain, just a chain
