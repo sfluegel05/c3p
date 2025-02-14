@@ -2,7 +2,7 @@
 Classifies: CHEBI:134179 volatile organic compound
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import Descriptors, Crippen
 
 def is_volatile_organic_compound(smiles: str):
     """
@@ -21,31 +21,36 @@ def is_volatile_organic_compound(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Calculate molecular weight
     mol_wt = Descriptors.MolWt(mol)
 
+    # Calculate logP as an indicator of potential volatility
+    logp = Crippen.MolLogP(mol)
+
     # Check the length of the carbon chain
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Check for specific functional groups that significantly affect volatility
-    # More relaxed carbon count filter, adjusted by molecular weight for longer chains
+
+    # Check for specific functional groups
     alcohol_pattern = Chem.MolFromSmarts("O")
     ether_pattern = Chem.MolFromSmarts("O-C")
     alkene_pattern = Chem.MolFromSmarts("C=C")
     alkyne_pattern = Chem.MolFromSmarts("C#C")
     halogen_pattern = Chem.MolFromSmarts("[Cl,Br,I,F]")
 
-    # If there's at least one known VOC functional group and the molecular weight isn't too high
+    # Adjusted logic based on molecular weight, logP, and functional groups
     if (mol.HasSubstructMatch(alcohol_pattern) or 
         mol.HasSubstructMatch(ether_pattern) or 
         mol.HasSubstructMatch(alkene_pattern) or 
         mol.HasSubstructMatch(alkyne_pattern) or 
-        mol.HasSubstructMatch(halogen_pattern)) and mol_wt <= 350:
-        return True, "Contains VOC functional group and has acceptable molecular weight"
+        mol.HasSubstructMatch(halogen_pattern)):
+        
+        # Check molecular weight and logP as heuristics for volatility
+        if mol_wt <= 400 and logp < 5:
+            return True, "Contains VOC functional group and has acceptable molecular weight and logP"
 
-    # Apply different carbon chain logic depending on structure
-    if carbon_count <= 15:
-        return True, "Carbon chain length and structure suggest volatility"
+    # Use carbon chain length criteria with a more lenient range for potential VOCs
+    if carbon_count <= 22:  # Increased carbon limit to accommodate larger VOCs
+        return True, "Carbon chain length and structure suggest potential volatility"
 
     return False, "Structure does not indicate VOC features"
