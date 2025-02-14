@@ -1,28 +1,76 @@
 """
 Classifies: CHEBI:17984 acyl-CoA
 """
-The previous program attempted to classify molecules as acyl-CoAs by checking for the presence of the coenzyme A moiety and a thioester group (-C(=O)-S-), and whether the thioester group is connected to the coenzyme A moiety. However, based on the outcomes provided, it seems that the program has some limitations and needs improvement.
+"""
+Classifies: CHEBI:35621 acyl-CoA
+An acyl-CoA is a thioester that results from the formal condensation of the thiol group of coenzyme A with the carboxy group of any carboxylic acid.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential issues and suggestions for improvement:
+def is_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is an acyl-CoA based on its SMILES string.
 
-1. **Missed positive cases**: The program missed several positive examples of acyl-CoAs, such as `ascr#10-CoA`, `1,4-dihydroxy-2-naphthoyl-CoA`, and `phenoxyacetyl-CoA`. The reason given for these false negatives is "Thioester group not connected to coenzyme A moiety", which suggests that the program failed to recognize the connection between the thioester group and the coenzyme A moiety in these cases.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Overly strict SMARTS patterns**: The SMARTS pattern used for the coenzyme A moiety (`C1OC(COP(=O)(O)OP(=O)(O)OCC(C(O)C(=O)NCCC(=O)NCCS)O)C(O)C1O`) may be too specific and might not match all possible variations of the coenzyme A structure. It would be better to use a more general SMARTS pattern or a combination of patterns to account for different valid representations of the coenzyme A moiety.
+    Returns:
+        bool: True if molecule is an acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Missing consideration of stereochemistry**: Some of the examples, such as `(2S,6R,10R)-Trimethyl-hendecanoyl-CoA`, contain stereochemical information, which the current program does not consider. Incorporating stereochemical information could be important for accurately classifying acyl-CoAs.
+    # Check for disconnected components
+    if len(Chem.GetMolFrags(mol)) > 1:
+        components = Chem.GetMolFrags(mol)
+        fragments = Chem.FragmentOnBRICSBonds(mol)
+        coenzyme_a_fragment = None
+        thioester_fragment = None
 
-4. **Limited handling of edge cases**: The program may not handle edge cases or uncommon representations of acyl-CoAs effectively. For example, some examples have multiple disconnected components (`Acetyl coenzyme A (Acetyl-CoA)`) or unusual structural features (`8,9-epoxy-(5Z,11Z,14Z)-icosatrienoyl-CoA`).
+        for frag in fragments:
+            if frag.GetNumAtoms() > 20:
+                coenzyme_a_fragment = frag
+            else:
+                thioester_fragment = frag
 
-To improve the program, you could consider the following steps:
+        if coenzyme_a_fragment is None or thioester_fragment is None:
+            return False, "Cannot identify CoA and thioester components"
 
-1. **Refine SMARTS patterns**: Analyze the false negatives and refine the SMARTS patterns used for detecting the coenzyme A moiety and the thioester group. You may need to use multiple patterns or more general patterns to cover a wider range of valid representations.
+        mol = coenzyme_a_fragment
 
-2. **Incorporate stereochemistry**: Extend the program to handle stereochemical information by considering atom maps and stereochemical descriptors provided in the SMILES strings.
+    # Look for coenzyme A moiety
+    coenzyme_a_pattern = Chem.MolFromSmarts("[N&R]1C=NC2=C1N=CN=C2N[C@H]3[C@@H]([C@H]([C@@H](O3)COP(=O)(O)O)O)O[C@H]([C@@H]([C@H](OP(=O)(O)O)O)O)COP(=O)(O)O")
+    if not mol.HasSubstructMatch(coenzyme_a_pattern):
+        return False, "No coenzyme A moiety found"
 
-3. **Handle edge cases and disconnected components**: Implement additional checks and logic to handle edge cases, such as molecules with disconnected components or unusual structural features.
+    # Look for thioester group (-C(=O)-S-)
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if not thioester_matches:
+        return False, "No thioester group found"
 
-4. **Utilize additional RDKit functionality**: Explore other RDKit functionalities, such as substructure matching with different parameters, handling aromaticity, or using alternative methods for pattern recognition, to improve the accuracy and robustness of the program.
+    # Check if thioester is connected to coenzyme A
+    for match in thioester_matches:
+        thioester_atom = mol.GetAtomWithIdx(match[1])
+        neighbors = [mol.GetAtomWithIdx(nbr).GetSymbol() for nbr in thioester_atom.GetNeighbors()]
+        if "N" in neighbors:
+            break
+    else:
+        return False, "Thioester group not connected to coenzyme A moiety"
 
-5. **Consider machine learning approaches**: If the rule-based approach proves too challenging, you could explore machine learning techniques, such as training a model on a curated dataset of acyl-CoAs and non-acyl-CoAs, to learn the patterns and features that distinguish this chemical class.
+    # Consider stereochemistry
+    Chem.AssignStereochemistryFrom3D(mol)
+    Chem.WedgeMolBonds(mol, mol.GetConformer())
+    
+    # Check molecular weight - acyl-CoAs typically >700 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 700:
+        return False, "Molecular weight too low for acyl-CoA"
 
-Keep in mind that the provided benchmark may not be perfect, and there could be occasional and systematic mistakes. If you strongly believe that your program's classifications are consistent with your understanding of the chemical class, you can justify your reasoning and potentially ignore outliers or adjust the program accordingly.
+    return True, "Contains coenzyme A moiety with a thioester group attached"
