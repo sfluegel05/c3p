@@ -1,26 +1,65 @@
 """
 Classifies: CHEBI:35915 sterol ester
 """
-The previous program attempted to classify sterol esters by looking for a steroid backbone, an ester group, and a fatty acid chain connected to the ester group. However, the program failed to accurately classify sterol esters, resulting in an F1 score of 0.
+"""
+Classifies: CHEBI:36976 sterol ester
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdmolfiles
+from rdkit.Chem import rdMolDescriptors
 
-After analyzing the program and the provided examples, I can identify a few potential issues:
+def is_sterol_ester(smiles: str):
+    """
+    Determines if a molecule is a sterol ester based on its SMILES string.
+    A sterol ester is a steroid ester obtained by formal condensation of the
+    carboxy group of any carboxylic acid with the 3-hydroxy group of a sterol.
 
-1. **Steroid backbone patterns**: The program uses a limited set of SMARTS patterns to identify the steroid backbone, which may not cover all possible variations of steroid backbones present in sterol esters.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Connectivity checks**: The program checks if the fatty acid chain is connected to the steroid backbone, but it does not explicitly check if the ester group is directly connected to the 3-hydroxy group of the steroid backbone, which is a defining characteristic of sterol esters.
+    Returns:
+        bool: True if molecule is a sterol ester, False otherwise
+        str: Reason for classification
+    """
 
-3. **Molecular weight and rotatable bond counts**: The thresholds used for molecular weight and rotatable bond counts may be too restrictive or not specific enough to accurately distinguish sterol esters from other classes of compounds.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we can consider the following modifications:
+    # Look for steroid backbone pattern
+    steroid_pattern = Chem.MolFromSmarts("[C@]1(CC[C@]2([H])C3=C(CC[C@]12C)[C@@]1([H])CC[C@H](C(C)(C)[C@]1([H])CC3)C")
+    steroid_match = mol.GetSubstructMatches(steroid_pattern)
+    if not steroid_match:
+        return False, "No steroid backbone found"
 
-1. **Expand steroid backbone patterns**: Instead of using a few predefined SMARTS patterns, we can generate more generic patterns that capture the core steroid backbone structure while allowing for variations in substituents and ring systems.
+    # Look for ester group (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if not ester_matches:
+        return False, "No ester group found"
 
-2. **Check for direct connection of ester to 3-hydroxy group**: Implement a specific check to ensure that the ester group is directly connected to the 3-hydroxy group of the steroid backbone, as per the definition of sterol esters.
+    # Check that ester is attached to steroid at 3-position
+    ester_atom_idx = list(ester_matches[0])[0]
+    ester_atom = mol.GetAtomWithIdx(ester_atom_idx)
+    if ester_atom.GetTotalNumHs() != 0:
+        return False, "Ester not attached at 3-position of steroid"
 
-3. **Refine molecular weight and rotatable bond count thresholds**: Analyze the provided examples and other known sterol esters to determine more appropriate thresholds for molecular weight and rotatable bond counts, or consider using other molecular descriptors that better differentiate sterol esters from other classes.
+    # Check for long aliphatic chain attached to ester (fatty acid)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if not fatty_acid_matches:
+        return False, "No fatty acid chain found"
 
-4. **Consider additional structural features**: Incorporate additional structural features specific to sterol esters, such as the presence of a cyclopentanoperhydrophenanthrene ring system or the presence of specific substituents or functional groups commonly found in sterol esters.
+    # Count rotatable bonds to verify long chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Fatty acid chain too short"
 
-5. **Evaluate the benchmark data**: While the benchmark data provided should be reliable, it's possible that there may be systematic errors or outliers. Review the examples carefully and, if necessary, adjust the classification criteria based on your understanding of the chemical class.
+    # Check molecular weight - sterol esters typically >500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for sterol ester"
 
-By implementing these improvements, the program should be better equipped to accurately classify sterol esters based on their SMILES strings.
+    return True, "Contains steroid backbone with ester group at 3-position and fatty acid chain attached"
