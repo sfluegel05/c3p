@@ -8,7 +8,6 @@ with the hydroxy group of any phenol.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_phenyl_acetates(smiles: str):
     """
@@ -21,27 +20,37 @@ def is_phenyl_acetates(smiles: str):
         bool: True if molecule is a phenyl acetate, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+    try:
+        # Parse SMILES
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return False, "Invalid SMILES string"
 
-    # Look for phenol substructure
-    phenol_pattern = Chem.MolFromSmarts("c1ccc(cc1)O")
-    if not mol.HasSubstructMatch(phenol_pattern):
-        return False, "No phenol substructure found"
+        # Look for aromatic ring with hydroxy group
+        phenol_pattern = Chem.MolFromSmarts("c1ccc(cc1)O")
+        phenol_matches = mol.GetSubstructMatches(phenol_pattern)
+        if not phenol_matches:
+            return False, "No phenol substructure found"
 
-    # Look for acetate group (-O-C(=O)-C)
-    acetate_pattern = Chem.MolFromSmarts("OC(=O)C")
-    acetate_matches = mol.GetSubstructMatches(acetate_pattern)
-    if not acetate_matches:
-        return False, "No acetate group found"
+        # Look for acetate group (-O-C(=O)-C)
+        acetate_pattern = Chem.MolFromSmarts("OC(=O)C")
+        acetate_matches = mol.GetSubstructMatches(acetate_pattern)
+        if not acetate_matches:
+            return False, "No acetate group found"
 
-    # Check if acetate group is attached to phenol ring
-    for match in acetate_matches:
-        acetate_oxygen = mol.GetAtomWithIdx(match[0])
-        if acetate_oxygen.GetNeighbors()[1].IsInRing():
-            return True, "Contains a phenol ring with an acetate group attached"
+        # Check if acetate group is attached to phenol ring
+        for acetate_match in acetate_matches:
+            acetate_oxygen = mol.GetAtomWithIdx(acetate_match[0])
+            for neighbor in acetate_oxygen.GetNeighbors():
+                if neighbor.IsInRing() and neighbor.IsAromatic():
+                    # Additional checks for phenyl acetate definition
+                    acetic_acid_pattern = Chem.MolFromSmarts("CC(=O)O")
+                    if mol.HasSubstructMatch(acetic_acid_pattern):
+                        return True, "Contains a phenol ring with an acetate group attached"
+                    else:
+                        return False, "Acetate group not derived from acetic acid"
 
-    return False, "Acetate group not attached to phenol ring"
+        return False, "Acetate group not attached to phenol ring"
+
+    except Exception as e:
+        return False, f"Error occurred: {str(e)}"
