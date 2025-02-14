@@ -22,33 +22,26 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for S-C bond (any carbon)
-    sc_pattern = Chem.MolFromSmarts("[SH][C]")
+    # Define SMARTS pattern for alkanethiol.
+    # This pattern looks for a sulfur atom bonded to a carbon atom. The carbon atom should have
+    # 3 other connections, to C or H
+    alkanethiol_pattern1 = Chem.MolFromSmarts("[SH][CX4]([#6,#1])([#6,#1])[#6,#1]") # covers the normal case of SH attached to CH2 or CH
+    alkanethiol_pattern2 = Chem.MolFromSmarts("[SH][CH3]") # covers the case of a methyl group
+    alkanethiol_pattern3 = Chem.MolFromSmarts("[SH][CX3]([#6,#1])=[#6]") # handles SH on a carbon adjacent to a C=C
 
-    # Define SMARTS pattern for alkyl carbon. This considers all sp3 hybridized carbons.
-    alkyl_carbon_pattern = Chem.MolFromSmarts("[CX4]")
+    # Check if the molecule matches the pattern
+    if mol.HasSubstructMatch(alkanethiol_pattern1) or mol.HasSubstructMatch(alkanethiol_pattern2) or mol.HasSubstructMatch(alkanethiol_pattern3):
+        
+        matches = []
+        if mol.HasSubstructMatch(alkanethiol_pattern1):
+            matches.extend(mol.GetSubstructMatches(alkanethiol_pattern1))
+        if mol.HasSubstructMatch(alkanethiol_pattern2):
+            matches.extend(mol.GetSubstructMatches(alkanethiol_pattern2))
+        if mol.HasSubstructMatch(alkanethiol_pattern3):
+            matches.extend(mol.GetSubstructMatches(alkanethiol_pattern3))
 
 
-    # Check if the molecule has a S-C bond
-    if not mol.HasSubstructMatch(sc_pattern):
-        return False, "Does not contain a sulfanyl group (-SH) attached to a carbon."
-    
-    # Get all matches of S-C
-    sc_matches = mol.GetSubstructMatches(sc_pattern)
-    
-    # Verify that at least one carbon bound to S is part of alkyl group
-    for match in sc_matches:
-        sulfur_atom = mol.GetAtomWithIdx(match[0])
-        carbon_atom = mol.GetAtomWithIdx(match[1])
-
-        if carbon_atom.HasSubstructMatch(alkyl_carbon_pattern): # carbon is sp3 hybridized
-             
-             is_alkyl_chain = False
-             for neighbor in carbon_atom.GetNeighbors(): #check that this carbon is attached to other carbons or hydrogens
-                 if neighbor.GetAtomicNum() == 6 or neighbor.GetAtomicNum() == 1:
-                     is_alkyl_chain = True
-                     break
-             if is_alkyl_chain:
-                return True, "Contains a sulfanyl group (-SH) attached to an alkyl group."
-    
+        if matches:
+           return True, "Contains a sulfanyl group (-SH) attached to an alkyl group."
+            
     return False, "Does not contain a sulfanyl group (-SH) attached to an alkyl group."
