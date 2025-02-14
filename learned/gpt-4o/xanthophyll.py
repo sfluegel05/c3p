@@ -2,14 +2,13 @@
 Classifies: CHEBI:27325 xanthophyll
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_xanthophyll(smiles: str):
     """
     Determines if a molecule is a xanthophyll based on its SMILES string.
     A xanthophyll is an oxygenated carotenoid, characterized by a long chain
     of conjugated double bonds and one or more oxygen-containing functional groups.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,27 +20,23 @@ def is_xanthophyll(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define a pattern for long conjugated double bonds chain (e.g., C=C-C=C-C=C)
+    conjugated_pattern = Chem.MolFromSmarts("C=C.C=C.C=C.C=C")
+    match_conjugated = mol.HasSubstructMatch(conjugated_pattern)
 
-    # Check for an extensive conjugated polyene chain
-    # Adjust pattern for detecting longer conjugated systems
-    polyene_pattern = Chem.MolFromSmarts("([#6]=[#6])-c1ccccc1")
-    if not mol.HasSubstructMatch(polyene_pattern):
-        return False, "No extensive conjugated system characteristic of carotenoids found"
+    # Check for oxygen atoms presence (common in hydroxyl, carbonyl, or ether groups in xanthophylls)
+    # Basic check for presence of oxygen-containing groups
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    # Check for common oxygen-containing groups in xanthophylls
-    oxygen_patterns = [
-        Chem.MolFromSmarts("[OX2H]"),  # Hydroxyl
-        Chem.MolFromSmarts("[CX3]=[OX1]"),  # Carbonyl
-        Chem.MolFromSmarts("O([CX4])[CX3]"),
-        Chem.MolFromSmarts("[OX2]([#6])[#6]"),  # Ethers and more bonds
-    ]
-    if not any(mol.HasSubstructMatch(oxygen_pattern) for oxygen_pattern in oxygen_patterns):
-        return False, "No matching oxygen-containing functional groups found"
+    if not match_conjugated:
+        return False, "Lacks the extensive conjugated system typical for carotenoids"
+    if oxygen_count < 1:
+        return False, "No oxygen atoms found, required for xanthophyll classification"
 
-    # Ensure sufficient number of double bonds
+    # Check for a reasonable number of double bonds term (xanthophyll typically > 9)
     double_bond_count = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
-    atom_count = mol.GetNumAtoms()
-    if double_bond_count < atom_count / 3:  # Proportional criterion for xanthophylls
-        return False, f"Insufficient number of double bonds for carotenoid-like structure; found {double_bond_count}"
-
-    return True, "Matches the structure of a xanthophyll with conjugated polyene and oxygen functionality"
+    if double_bond_count < 9:
+        return False, f"Insufficient number of conjugated double bonds; found {double_bond_count}"
+    
+    return True, "Chemical structure fits the typical xanthophyll characteristics of conjugated double bonds and oxygen functionality"
