@@ -22,17 +22,19 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define bile acid core pattern (simplified, may need more complex patterns for edge cases)
-    # This pattern captures a 4 ring steroidal core with specified stereochemistry.
-    bile_acid_core_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]2[C@H]([C@H]([C@@H]([C@@H]3[C@H]1CC[C@@]4([C@@H]3CC[C@@H](C4)C)C)C)C)C")
+    # Define a more general bile acid core pattern (4 fused rings)
+    bile_acid_core_pattern = Chem.MolFromSmarts("C1C2C3C(C)(C1)CCC2C4(C)CCC3C4")
     if not mol.HasSubstructMatch(bile_acid_core_pattern):
          return False, "No bile acid core structure detected."
      
     # Define common conjugation groups using SMARTS patterns
 
-    # Amino acids (glycine, taurine, alanine, serine, etc.)
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4]([CX4,OX2])[CX3](=[OX1])")
-
+    # Glycine, taurine, other aminoacids
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4]([CX4,OX2])[CX3](=[OX1])") # Very broad, needs improvement
+    
+    # Taurine specifically (amino sulfonic acid):
+    taurine_pattern = Chem.MolFromSmarts("NCCS(=O)(=O)[O,H]")
+    
     # Sulfates
     sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)[O,H]")
 
@@ -41,12 +43,17 @@ def is_bile_acid_conjugate(smiles: str):
     
     # Sugars
     sugar_pattern = Chem.MolFromSmarts("OC[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](CO)O1")
-
-    # Check for the presence of at least one conjugation group
+    
+    # Coenzyme A
+    coenzymeA_pattern = Chem.MolFromSmarts("C(CC(=O)NCC(CC(C)O)C(O)P(=O)(O)OP(=O)(O)OCC1C(C(C(O1)N2C=NC3=C(N=CN=C32)N)OP(=O)(O)O)C(O)(C)C)S")
+   
+   # Check for the presence of at least one conjugation group
     if not (mol.HasSubstructMatch(amino_acid_pattern) or \
+            mol.HasSubstructMatch(taurine_pattern) or \
             mol.HasSubstructMatch(sulfate_pattern) or \
             mol.HasSubstructMatch(glucuronide_pattern) or \
-            mol.HasSubstructMatch(sugar_pattern)):
+            mol.HasSubstructMatch(sugar_pattern) or \
+            mol.HasSubstructMatch(coenzymeA_pattern)):
         return False, "No common conjugation group detected."
     
     # Count the number of carbons and oxygens as a sanity check
