@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_butenolide(smiles: str):
     """
     Determines if a molecule is a butenolide based on its SMILES string.
-    A butenolide is defined as a gamma-lactone that consists of a 2-furanone skeleton
-    and its substituted derivatives.
+    A butenolide is defined as a gamma-lactone that consists of a 2-furanone skeleton and its substituted derivatives.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,26 +21,19 @@ def is_butenolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a broader gamma-lactone pattern for 2-furanone which allows for substituents
-    # This SMARTS pattern can capture a 5-membered lactone with variations at positions 3 and 4.
-    gamma_lactone_pattern = Chem.MolFromSmarts("O=C1C=COC1")  # Gamma-lactone core
-    
-    # Check if the structure contains the gamma-lactone pattern
-    if not mol.HasSubstructMatch(gamma_lactone_pattern):
-        return False, "No gamma-lactone (lactone) structure found or wrong substitutions"
-
-    # Validate the detected substructure with examples
-    example_substructures = [
-        "O=C1OC=C(C1)",
-        "O=C1O/C=C/C1"
+    # Define a versatile gamma-lactone pattern for 2-furanone which allows for substituents
+    gamma_lactone_patterns = [
+        Chem.MolFromSmarts("O=C1OCC=C1"),  # Basic 2-furanone core
+        Chem.MolFromSmarts("O=C1O/C=C/C1"),  # Tolerates other bond changes
+        Chem.MolFromSmarts("O=C1[C;R1]=[C;R1]OC1"),  # Tolerate substitution variations
     ]
     
-    for example in example_substructures:
-        example_pattern = Chem.MolFromSmarts(example)
-        if mol.HasSubstructMatch(example_pattern):
-            return True, f"Structure matches butenolide subpattern: {example}"
+    # Check if the structure matches any of the gamma-lactone patterns
+    for pattern in gamma_lactone_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Structure matches gamma-lactone (2-furanone) backbone pattern"
     
-    return False, "Pattern does not fully match any known butenolide subpattern"
+    return False, "No gamma-lactone (2-furanone) pattern found"
 
 # Example usage
 smiles = "O=C1OCC=C1"  # Example of butenolide (but-2-en-4-olide)
