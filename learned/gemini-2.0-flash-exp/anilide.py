@@ -2,8 +2,6 @@
 Classifies: CHEBI:13248 anilide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-
 
 def is_anilide(smiles: str):
     """
@@ -22,41 +20,13 @@ def is_anilide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    #  Find an amide bond
-    amide_pattern = Chem.MolFromSmarts("[N]-[CX3](=[OX1])")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if not amide_matches:
-        return False, "No amide bond found"
-
-    # Find an aromatic ring
-    aromatic_pattern = Chem.MolFromSmarts("[c]")
-    aromatic_matches = mol.GetSubstructMatches(aromatic_pattern)
-    if not aromatic_matches:
-        return False, "No aromatic ring found"
-
-
-    # Check if the aromatic ring is directly or indirectly connected to the amide nitrogen
-    connected = False
-    for amide_match in amide_matches:
-         for aromatic_match in aromatic_matches:
-            for atom_idx in amide_match:
-                amide_atom = mol.GetAtomWithIdx(atom_idx)
-                if amide_atom.GetSymbol() == 'N':
-                    for neighbor in amide_atom.GetNeighbors():
-                         if neighbor.GetIdx() in aromatic_match:
-                              connected = True
-                              break
-                         for n_neighbor in neighbor.GetNeighbors():
-                             if n_neighbor.GetIdx() in aromatic_match:
-                                  connected = True
-                                  break
-                    if connected:
-                        break
-            if connected:
-                break
-
-
-    if not connected:
-         return False, "No direct or indirect connection between aromatic ring and amide nitrogen"
-
-    return True, "Correct Anilide core detected"
+    # Define the SMARTS pattern for the anilide core. 
+    #   - [c:1] is a carbon in an aromatic ring
+    #   - [N:2] is the nitrogen connected to the ring
+    #   - [C:3](=[O:4]) is the carbonyl carbon of the amide and the O
+    anilide_pattern = Chem.MolFromSmarts("[c:1][N:2][C:3](=[O:4])")
+    
+    if mol.HasSubstructMatch(anilide_pattern):
+         return True, "Correct Anilide core detected"
+    
+    return False, "Anilide core not found"
