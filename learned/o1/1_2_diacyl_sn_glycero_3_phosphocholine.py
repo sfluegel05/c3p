@@ -36,11 +36,13 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
         return False, "Unable to sanitize molecule"
 
     # Define SMARTS patterns
-    
-    # Pattern for glycerol backbone with sn-2 stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[C@@H](OC(=O)[C,c])[C@H](OC(=O)[C,c])COP(=O)([O-])OCC[N+](C)(C)C")
+
+    # Pattern for glycerol backbone with two esterified positions and one phosphate ester
+    glycerol_pattern = Chem.MolFromSmarts("C(O[CX3](=O)[C,c])(O[CX3](=O)[C,c])CO")
+
+    # Match the glycerol backbone
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone with sn-2 stereochemistry not found"
+        return False, "Glycerol backbone with two ester groups not found"
 
     # Pattern for phosphocholine group with deprotonated phosphate
     phosphocholine_pattern = Chem.MolFromSmarts("COP(=O)([O-])OCC[N+](C)(C)C")
