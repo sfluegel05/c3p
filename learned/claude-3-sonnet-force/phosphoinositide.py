@@ -25,10 +25,16 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for phosphatidylinositol backbone
-    pi_pattern = Chem.MolFromSmarts("C(OC[C@@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O)OC)=O")
+    # Look for phosphatidylinositol backbone with correct stereochemistry
+    pi_pattern = Chem.MolFromSmarts("C(OC[C@@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@@H](O)[C@@H](O)[C@@H]1O)OC)=O")
     if not mol.HasSubstructMatch(pi_pattern):
         return False, "No phosphatidylinositol backbone found"
+    
+    # Check for exactly two fatty acid chains
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) != 2:
+        return False, f"Found {len(fatty_acid_matches)} fatty acid chains, expected 2"
     
     # Check for at least one phosphate group on the inositol ring
     inositol_pattern = Chem.MolFromSmarts("[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1OP(O)(O)=O")
