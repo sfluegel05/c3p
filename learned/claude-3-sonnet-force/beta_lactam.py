@@ -1,42 +1,26 @@
 """
 Classifies: CHEBI:35627 beta-lactam
 """
-"""
-Classifies: CHEBI:35460 beta-lactam
-A lactam in which the amide bond is contained within a four-membered ring,
-which includes the amide nitrogen and the carbonyl carbon.
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+The previous code attempts to identify beta-lactams by searching for a 4-membered ring containing a nitrogen atom and a non-aromatic carbonyl carbon (C=O). While this is a reasonable approach, there are a few issues that could be causing the false negatives and missing true positives:
 
-def is_beta_lactam(smiles: str):
-    """
-    Determines if a molecule is a beta-lactam based on its SMILES string.
+1. **Handling of stereochemistry**: The SMARTS pattern `"[NR2][CR2]1[CR2][CR2]1=O"` does not account for stereochemistry around the ring atoms. Many beta-lactams have specific stereochemistry, and the pattern may fail to match if the stereochemistry is not correctly specified.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Exocyclic substituents**: The code checks for the presence of a 4-membered ring with N and C=O, but it does not validate the presence of any exocyclic substituents, which are common in many beta-lactam antibiotics (e.g., side chains, fused rings).
 
-    Returns:
-        bool: True if molecule is a beta-lactam, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Ring strain**: While a 4-membered ring is a defining feature of beta-lactams, the code does not check for the characteristic ring strain present in these molecules, which contributes to their reactivity and biological activity.
 
-    # Look for 4-membered ring with N and C=O groups
-    beta_lactam_pattern = Chem.MolFromSmarts("[NR2][CR2]1[CR2][CR2]1=O")
-    if not mol.HasSubstructMatch(beta_lactam_pattern):
-        return False, "No beta-lactam ring found"
+4. **Tautomerism**: Some beta-lactams can exist in tautomeric forms, where the carbonyl group is replaced by a hydroxy group. The current code may not correctly identify these tautomers.
 
-    # Ensure the N and C=O are part of the same ring
-    rings = mol.GetRingInfo().AtomRings()
-    for ring in rings:
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        n_atom = next((atom for atom in ring_atoms if atom.GetAtomicNum() == 7), None)
-        c_atom = next((atom for atom in ring_atoms if atom.GetFormalCharge() == 0 and atom.GetAtomicNum() == 6 and atom.GetIsAromatic() == False), None)
-        if n_atom and c_atom and any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in c_atom.GetBonds()):
-            return True, "Contains a 4-membered ring with N and C=O groups"
+To improve the classification, we could incorporate the following modifications:
 
-    return False, "No valid beta-lactam ring found"
+1. **Use a more flexible SMARTS pattern**: Instead of a strict 4-membered ring pattern, we could use a more flexible pattern that allows for substituents and different stereochemical configurations around the ring atoms.
+
+2. **Check for common substituents and fused rings**: Identify common structural features of beta-lactams, such as side chains, fused rings, or specific substituent patterns, and incorporate them into the pattern matching.
+
+3. **Analyze ring strain**: Calculate the ring strain energy or other geometric parameters to identify the characteristic strained 4-membered ring.
+
+4. **Handle tautomers**: Consider enumerating possible tautomers and checking if any of them match the beta-lactam pattern.
+
+5. **Use machine learning models**: As an alternative approach, we could train a machine learning model (e.g., random forest, neural network) on a large dataset of beta-lactams and non-beta-lactams to learn the characteristic structural features automatically.
+
+It's important to note that some of the false negatives in the outcomes may be due to limitations in the benchmark or ambiguities in the definition of the chemical class. If the program's classifications align with your understanding of the chemical class, you can justify ignoring these outliers while explaining your reasoning.
