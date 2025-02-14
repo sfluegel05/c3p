@@ -2,6 +2,7 @@
 Classifies: CHEBI:26888 tetrachlorobenzene
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_tetrachlorobenzene(smiles: str):
     """
@@ -22,22 +23,16 @@ def is_tetrachlorobenzene(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define the SMARTS pattern for a benzene ring with any four chlorines
-    # The revised pattern checks for any aryl ring structure with exactly four chlorines
-    tetrachloro_pattern = Chem.MolFromSmarts("c1cc(Cl)c(Cl)cc1")
+    tetrachloro_pattern = Chem.MolFromSmarts("c1(c(cccc1)Cl)Cl.Cl.Cl.Cl")
     
-    # Count chlorine atoms linked to a benzene ring
-    cl_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 17 and atom.GetNeighbors():
-            adjacency = atom.GetNeighbors()[0]
-            if adjacency.GetIsAromatic() and adjacency.GetSymbol() == 'C':
-                cl_count += 1
-    
-    # Check if exactly four chlorines are bonded to the aromatic carbons of one ring
-    if cl_count == 4 and mol.HasSubstructMatch(tetrachloro_pattern):
-        return True, "Contains a benzene ring with four chlorine atoms"
+    # Check for substructure match with SMARTS pattern
+    if mol.HasSubstructMatch(tetrachloro_pattern):
+        # Verify the existence of a benzene ring fulfilling the criteria
+        for ring in mol.GetRingInfo().AtomRings():
+            if len(ring) == 6:  # Ensure it's a benzene ring
+                chloro_count = sum(1 for atom_idx in ring 
+                                   if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 17)
+                if chloro_count == 4:
+                    return True, "Contains a benzene ring with four chlorine atoms"
     
     return False, "Does not match the tetrachlorobenzene pattern"
-
-# Example of possible test usage
-# print(is_tetrachlorobenzene("Clc1cc(Cl)c(Cl)cc1Cl")) # True
