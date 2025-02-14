@@ -7,6 +7,7 @@ Classifies: CHEBI:37563 nucleoside 5'-phosphate
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.rdqueries import QueriesOr
 
 def is_nucleoside_5__phosphate(smiles: str):
     """
@@ -28,14 +29,15 @@ def is_nucleoside_5__phosphate(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for pyrimidine or purine base
-    base_pattern = Chem.MolFromSmarts("[*]1[*]c2[nH]c[nH]c2[*]c1[*]") # Purine
-    base_pattern = base_pattern.Union(Chem.MolFromSmarts("[*]1[*]c[nH]c([nH]c1[*])[*]")) # Pyrimidine
+    purine_pattern = Chem.MolFromSmarts("[*]1[*]c2[nH]c[nH]c2[*]c1[*]")  # Purine
+    pyrimidine_pattern = Chem.MolFromSmarts("[*]1[*]c[nH]c([nH]c1[*])[*]")  # Pyrimidine
+    base_pattern = QueriesOr(purine_pattern, pyrimidine_pattern)
     if not mol.HasSubstructMatch(base_pattern):
         return False, "No purine or pyrimidine base found"
     
     # Look for ribose/deoxyribose ring
-    ribose_pattern = Chem.MolFromSmarts("[OX2]C1C(C(C(O[CX4H2]([OX2H0P](=O)(O)O)O1)O)O)O") # Ribose with phosphate
-    deoxyribose_pattern = Chem.MolFromSmarts("[OX2]C1C(C(C(O[CX4H2]([OX2H0P](=O)(O)O)O1)O)N)") # Deoxyribose with phosphate
+    ribose_pattern = Chem.MolFromSmarts("[OX2]C1C(C(C(O[CX4H2]([OX2H0P](=O)(O)O)O1)O)O)O")  # Ribose with phosphate
+    deoxyribose_pattern = Chem.MolFromSmarts("[OX2]C1C(C(C(O[CX4H2]([OX2H0P](=O)(O)O)O1)O)N)")  # Deoxyribose with phosphate
     if not (mol.HasSubstructMatch(ribose_pattern) or mol.HasSubstructMatch(deoxyribose_pattern)):
         return False, "No ribose or deoxyribose ring with phosphate found"
     
