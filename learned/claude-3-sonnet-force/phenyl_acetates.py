@@ -27,7 +27,7 @@ def is_phenyl_acetates(smiles: str):
             return False, "Invalid SMILES string"
 
         # Look for aromatic ring(s)
-        aromatic_rings = mol.GetRingInfo().AromaticRings()
+        aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() if mol.GetRingInfo().IsAromaticRing(ring)]
         if not aromatic_rings:
             return False, "No aromatic rings found"
 
@@ -37,11 +37,11 @@ def is_phenyl_acetates(smiles: str):
         if not acetic_acid_matches:
             return False, "No acetate groups derived from acetic acid"
 
-        # Check if any acetate group is attached to an aromatic ring
+        # Check if any acetate group is attached to an aromatic ring (directly or through a linker)
         for acetate_match in acetic_acid_matches:
             acetate_oxygen = mol.GetAtomWithIdx(acetate_match[1])
             for neighbor in acetate_oxygen.GetNeighbors():
-                if neighbor.IsInRing() and any(neighbor.IsInRingOfSize(ring_size) for ring_size in aromatic_rings):
+                if any(neighbor.IsInRing() for ring in aromatic_rings):
                     return True, "Contains a phenol ring with an acetate group derived from acetic acid attached"
 
         return False, "Acetate group not attached to an aromatic ring"
