@@ -19,20 +19,23 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for glycerol backbone with stereo center
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](O)COC(=O)")  # Adjusted stereo recognition
+    
+    # Check for glycerol backbone with proper chiral center
+    glycerol_pattern = Chem.MolFromSmarts("O[C@@H](COC(=O)[C,H])COP(=O)(O)OCCN")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No correctly configured glycerol backbone found"
+        return False, "Glycerol backbone with chiral center and phosphate-ethanolamine linkage not found"
+
+    # Exclude common motifs of similar but non-matching phospholipids
+    wrong_substructs = [
+        Chem.MolFromSmarts("O=C(OCC[N+](C)(C)C)P(=O)(O)OCC"),
+        Chem.MolFromSmarts("OC[C@H](NP(=O)(OC)O)CO")
+    ]
+    for sub in wrong_substructs:
+        if mol.HasSubstructMatch(sub):
+            return False, "Found structural elements common to other phospholipids like PC or PS"
     
-    # Check for presence of a phosphate group with potential ethanolamine
-    phosphate_variants = ["COP(=O)(O)OCCN", "COP(=O)(O)OCC[NH3+]"]  # Added protonated variant
-    phosphate_found = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in phosphate_variants)
-    if not phosphate_found:
-        return False, "No phosphate group with ethanolamine found"
-    
-    # Check for 1-O-acyl group (ester linkage)
-    acyl_pattern = Chem.MolFromSmarts("COC(=O)")
+    # Ensure 1-O-acyl group is linked in correct position
+    acyl_pattern = Chem.MolFromSmarts("OC(=O)[C,H]")
     if not mol.HasSubstructMatch(acyl_pattern):
         return False, "No 1-O-acyl ester linkage found"
     
