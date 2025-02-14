@@ -1,55 +1,26 @@
 """
 Classifies: CHEBI:60245 inositol phosphoceramide
 """
-"""
-Classifies: CHEBI:39179 inositol phosphoceramide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and the outcomes, I can identify a few potential issues:
 
-def is_inositol_phosphoceramide(smiles: str):
-    """
-    Determines if a molecule is an inositol phosphoceramide based on its SMILES string.
-    An inositol phosphoceramide is a phosphosphingolipid with an inositol residue
-    linked to a ceramide moiety via a phosphodiester bridge.
+1. **Inositol Pattern**: The SMARTS pattern used to identify the inositol residue is too specific and may not account for all possible stereochemical configurations or ring conformations. Inositol is a cyclic polyol with multiple chiral centers, and the pattern used assumes a specific stereochemistry and ring conformation.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Phosphodiester Pattern**: The SMARTS pattern used to identify the phosphodiester group is too specific and may not account for different connectivities or stereochemistries around the phosphate group.
 
-    Returns:
-        bool: True if molecule is an inositol phosphoceramide, False otherwise
-        str: Reason for classification
-    """
+3. **Ceramide Pattern**: The SMARTS pattern used to identify the ceramide moiety is too restrictive and may not account for different chain lengths, substitutions, or stereochemistries of the sphingoid base and fatty acid components.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. **Molecular Weight Range**: The molecular weight range used as a filter may be too narrow or not representative of the entire class of inositol phosphoceramides.
 
-    # Look for inositol residue
-    inositol_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]([C@H]([C@@H]([C@@H]([C@H]1O)O)O)O)O")
-    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
-    if len(inositol_matches) != 1:
-        return False, "Exactly one inositol residue required"
+To improve the program, we can consider the following modifications:
 
-    # Look for phosphodiester group
-    phosphodiester_pattern = Chem.MolFromSmarts("O=P(OCC)(OC)")
-    phosphodiester_matches = mol.GetSubstructMatches(phosphodiester_pattern)
-    if len(phosphodiester_matches) != 1:
-        return False, "Exactly one phosphodiester group required"
+1. **Inositol Pattern**: Use a more general SMARTS pattern for the inositol residue, such as `[C@H]1[C@@H]([C@H]([C@@H]([C@@H]([C@@H]1O)O)O)O)O`, which does not specify the stereochemistry of the hydroxyl groups.
 
-    # Look for ceramide moiety
-    sphingoid_base_pattern = Chem.MolFromSmarts("[N;H2,H1]CCC[C@@H]([C@@H](C)CC)")
-    fatty_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)")
-    ceramide_pattern = sphingoid_base_pattern.GetMol().GetBonds() + fatty_acid_pattern.GetMol().GetBonds()
-    ceramide_matches = mol.GetSubstructMatches(ceramide_pattern)
-    if len(ceramide_matches) != 1:
-        return False, "Exactly one ceramide moiety required"
+2. **Phosphodiester Pattern**: Use a more general SMARTS pattern for the phosphodiester group, such as `O=P(O[C@@H])O[C@@H]`, which captures the connectivity without specifying the stereochemistry or substituents.
 
-    # Check molecular weight range for inositol phosphoceramides
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600 or mol_wt > 1200:
-        return False, "Molecular weight outside typical range for inositol phosphoceramides"
+3. **Ceramide Pattern**: Use a more flexible SMARTS pattern for the ceramide moiety, such as `[N;H2,H1]CCC[C@@H]([C@@H](C)CC).CCCCCCCCCC(=O)`, which allows for different chain lengths and substituents on the sphingoid base and fatty acid components.
 
-    return True, "Contains inositol residue linked to ceramide moiety via phosphodiester bridge"
+4. **Molecular Weight Range**: Expand or remove the molecular weight range filter, as it may not be a reliable criterion for classifying inositol phosphoceramides.
+
+5. **Additional Checks**: Consider adding additional checks or filters based on the chemical properties or substructures that are essential for inositol phosphoceramides, such as the presence of a long aliphatic chain, the presence of a primary amide group, or the presence of multiple hydroxyl groups.
+
+It's important to note that the benchmark data may contain errors or inconsistencies, and it's reasonable to question or ignore outliers if they contradict our chemical understanding of the class. However, it's also essential to ensure that our program is not overly narrow or specific, as it may fail to capture the diversity of structures within the class.
