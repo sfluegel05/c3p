@@ -19,63 +19,21 @@ def is_indole_alkaloid(smiles: str):
         bool: True if the molecule is an indole alkaloid, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of nitrogen atoms (since alkaloids contain nitrogen)
-    atom_nums = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
-    if 7 not in atom_nums:
-        return False, "No nitrogen atoms found (not an alkaloid)"
+    # Define SMARTS pattern for indole skeleton
+    indole_smarts = 'c1cc2c([nH]c2cc1)'
 
-    # Get ring information
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    if not atom_rings:
-        return False, "No rings found in molecule"
+    indole_pattern = Chem.MolFromSmarts(indole_smarts)
 
-    # Store ring properties
-    rings = []
-    for ring_atoms in atom_rings:
-        ring = {
-            'atoms': ring_atoms,
-            'size': len(ring_atoms),
-            'aromatic': all([mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring_atoms]),
-            'has_nitrogen': any([mol.GetAtomWithIdx(idx).GetAtomicNum() == 7 for idx in ring_atoms])
-        }
-        rings.append(ring)
+    if indole_pattern is None:
+        return False, "Invalid indole SMARTS pattern"
 
-    # Search for fused rings
-    found_indole = False
-    num_rings = len(rings)
-    for i in range(num_rings):
-        for j in range(i+1, num_rings):
-            # Check if rings are fused (share at least two atoms)
-            set_i = set(rings[i]['atoms'])
-            set_j = set(rings[j]['atoms'])
-            shared_atoms = set_i.intersection(set_j)
-            if len(shared_atoms) >= 2:
-                # Check for indole core:
-                # One ring is a five-membered aromatic ring with nitrogen
-                # The other is a six-membered aromatic ring
-                ring_i = rings[i]
-                ring_j = rings[j]
-
-                conditions = [
-                    (ring_i['size'] == 5 and ring_i['aromatic'] and ring_i['has_nitrogen']
-                     and ring_j['size'] == 6 and ring_j['aromatic']),
-                    (ring_j['size'] == 5 and ring_j['aromatic'] and ring_j['has_nitrogen']
-                     and ring_i['size'] == 6 and ring_i['aromatic'])
-                ]
-                if any(conditions):
-                    found_indole = True
-                    break
-        if found_indole:
-            break
-
-    if found_indole:
-        return True, "Contains indole skeleton and nitrogen atoms (indole alkaloid)"
+    # Check if molecule contains indole skeleton
+    if mol.HasSubstructMatch(indole_pattern):
+        return True, "Contains indole skeleton (indole alkaloid)"
     else:
         return False, "No indole skeleton found"
