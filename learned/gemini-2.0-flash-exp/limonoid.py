@@ -23,21 +23,20 @@ def is_limonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for furan ring
-    furan_pattern = Chem.MolFromSmarts("c1ccoc1")
+    # Check for furan ring with possible substituents
+    furan_pattern = Chem.MolFromSmarts("[c1cco[c,C]1]")
     if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring found."
 
-     # Check for a triterpenoid core (4 fused rings) with some flexibility.
-    # This pattern is not perfect, but it captures the basic tetracyclic skeleton
-    core_pattern = Chem.MolFromSmarts("[C]1[C]([C])[C]2[C]([C])[C]([C])[C]3[C]([C])([C])([C])[C]([C])([C])[C]([C])([C])([C])C([C])([C])C3C2C1")
-    if not mol.HasSubstructMatch(core_pattern):
-         return False, "No tetracyclic triterpenoid core found."
-
-
+    # Check for a tetracyclic or higher core (at least 4 fused rings)
+    # We look for ring systems with at least 4 rings based on connectivity
+    num_rings = Chem.GetSSSR(mol)
+    if num_rings < 4:
+        return False, "No tetracyclic or higher core found."
+    
     # Check the overall number of carbons (range)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 20 or carbon_count > 40:
+    if carbon_count < 25 or carbon_count > 40:
         return False, f"Number of carbons is outside triterpenoid range, found {carbon_count}"
 
     # Check for high oxygenation (at least 6 oxygens)
