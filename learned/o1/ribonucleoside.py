@@ -12,7 +12,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_ribonucleoside(smiles: str):
     """
     Determines if a molecule is a ribonucleoside based on its SMILES string.
-    A ribonucleoside is a nucleoside where the sugar component is D-ribose.
+    A ribonucleoside is a nucleoside where the sugar component is D-ribose (usually beta-D-ribofuranose).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,13 +27,11 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure molecule has explicit hydrogens
+    # Ensure molecule has explicit hydrogens (for stereochemistry)
     mol = Chem.AddHs(mol)
 
-    # Define ribose sugar pattern (β-D-ribofuranose with correct stereochemistry)
-    ribose_smarts = """
-    [C@H]1(O)[O][C@@H]([C@H](O)[C@@H]1O)CO
-    """
+    # Define ribose sugar pattern (beta-D-ribofuranose with correct stereochemistry)
+    ribose_smarts = '[C@H]1O[C@@H]([C@H](O)[C@@H]1O)CO'
     ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
     if ribose_pattern is None:
         return False, "Error in ribose pattern"
@@ -41,32 +39,37 @@ def is_ribonucleoside(smiles: str):
     # Find matches for ribose sugar
     ribose_matches = mol.GetSubstructMatches(ribose_pattern, useChirality=True)
     if not ribose_matches:
-        return False, "No D-ribose sugar moiety found"
+        # Try less strict pattern (allowing for modifications on the sugar)
+        ribose_smarts = '[C@H]1O[C@@H]([C@H](O)[C@H]1O)CO'
+        ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
+        ribose_matches = mol.GetSubstructMatches(ribose_pattern, useChirality=True)
+        if not ribose_matches:
+            return False, "No D-ribose sugar moiety found"
 
-    # Define nucleobase patterns
+    # Define nucleobase patterns (allowing for common modifications)
     nucleobase_patterns = []
 
-    # Adenine pattern
-    adenine_smarts = 'n1c[nH]c2c1ncnc2N'
+    # Adenine-like pattern
+    adenine_smarts = 'n1c[nH]c2n(c1)[nH]cn2'
     adenine_pattern = Chem.MolFromSmarts(adenine_smarts)
     nucleobase_patterns.append(adenine_pattern)
 
-    # Guanine pattern
-    guanine_smarts = 'n1c(=O)[nH]c2c1ncnc2N'
+    # Guanine-like pattern
+    guanine_smarts = 'n1c(=O)[nH]c2c1ncnc2[NH2]'
     guanine_pattern = Chem.MolFromSmarts(guanine_smarts)
     nucleobase_patterns.append(guanine_pattern)
 
-    # Cytosine pattern
+    # Cytosine-like pattern
     cytosine_smarts = 'n1c(N)nc(=O)cc1'
     cytosine_pattern = Chem.MolFromSmarts(cytosine_smarts)
     nucleobase_patterns.append(cytosine_pattern)
 
-    # Uracil pattern
+    # Uracil-like pattern
     uracil_smarts = 'O=C1NC(=O)C=C1'
     uracil_pattern = Chem.MolFromSmarts(uracil_smarts)
     nucleobase_patterns.append(uracil_pattern)
 
-    # Hypoxanthine pattern (found in inosine)
+    # Hypoxanthine-like pattern (found in inosine)
     hypoxanthine_smarts = 'n1c(=O)[nH]c2c1ncnc2'
     hypoxanthine_pattern = Chem.MolFromSmarts(hypoxanthine_smarts)
     nucleobase_patterns.append(hypoxanthine_pattern)
@@ -88,10 +91,10 @@ def is_ribonucleoside(smiles: str):
                 # Find bonds between ribose and base
                 for atom_idx in ribose_atoms:
                     atom = mol.GetAtomWithIdx(atom_idx)
-                    for nbr in atom.GetNeighbors():
-                        if nbr.GetIdx() in base_atoms:
-                            # Check if the bond is between anomeric carbon (C1') and nitrogen of the base
-                            if atom.GetAtomicNum() == 6 and nbr.GetAtomicNum() == 7:
+                    if atom.GetAtomicNum() == 6 and atom.GetIdx() in ribose_match:
+                        # Anomeric carbon (C1') is connected to base
+                        for nbr in atom.GetNeighbors():
+                            if nbr.GetIdx() in base_atoms and nbr.GetAtomicNum() == 7:
                                 nucleobase_found = True
                                 break
                     if nucleobase_found:
