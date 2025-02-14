@@ -22,19 +22,21 @@ def is_isoflavonoid(smiles: str):
 
     # 1. Define a flexible 1-benzopyran core
     # [O;X2] is oxygen with exactly two bonds,
-    # [C;X4,X3] is a carbon with either 3 or 4 bonds, allowing for C=O or CH2 in position 4
+    # [C] is a carbon with any number of bonds (allowing for =O, -OH, etc)
     # c1ccccc2 is the benzene ring in the benzopyran system
-    benzopyran_pattern = Chem.MolFromSmarts("c1ccccc2[O;X2][C;X4,X3]([*:1])[c]21")
-    if not mol.HasSubstructMatch(benzopyran_pattern):
+    # The core pattern:
+    core_pattern = Chem.MolFromSmarts("c1ccccc2[O;X2][C]([*:1])[c]21")
+    if not mol.HasSubstructMatch(core_pattern):
         return False, "Not a 1-benzopyran"
 
-    # 2. Define an aryl group, allowing any aryl substituent
-    aryl_pattern = Chem.MolFromSmarts("[cX3]1[cX3][cX3][cX3][cX3][cX3]1")
+   # 2. Define a flexible aryl group using a more general pattern
+    aryl_pattern = Chem.MolFromSmarts("[c;!$(c(:[c]):[c])]1[c][c][c][c][c]1")
 
-    # 3. Check for direct attachment at position 3
-    # Create SMARTS pattern that explicitly connects the aryl to the C3 position
-    # The C atom at position 3 is connected to any aryl via a single bond "-"
-    combined_pattern = Chem.MolFromSmarts("c1ccccc2[O;X2][C;X4,X3](-[cX3]1[cX3][cX3][cX3][cX3][cX3]1)[c]21")
+
+    # 3. Create a combined SMARTS pattern that enforces the connection between the benzopyran and the aryl
+    # and that this aryl is directly bound to the 3 position of the benzopyran,
+    # allowing for a single or double bond
+    combined_pattern = Chem.MolFromSmarts("c1ccccc2[O;X2][C](~[c;!$(c(:[c]):[c])]1[c][c][c][c][c]1)[c]21")
     
     if not mol.HasSubstructMatch(combined_pattern):
         return False, "No aryl group at position 3"
