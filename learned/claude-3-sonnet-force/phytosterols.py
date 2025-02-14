@@ -42,6 +42,12 @@ def is_phytosterol(smiles: str):
     if n_rotatable < 2:
         return False, "Side chain too rigid for phytosterol"
     
+    # Check for double bonds in side chain or sterol backbone
+    double_bond_pattern = Chem.MolFromSmarts("[C=C]")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if not double_bond_matches:
+        return False, "No double bonds found in side chain or sterol backbone"
+    
     # Check molecular weight - phytosterols typically ~400-500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 350 or mol_wt > 550:
@@ -56,4 +62,13 @@ def is_phytosterol(smiles: str):
     if o_count != 1:
         return False, "Must have exactly 1 oxygen (hydroxyl group)"
     
-    return True, "Contains sterol backbone with hydroxyl at position 3 and flexible side chain"
+    # Check for specific structural patterns
+    cyclopropane_pattern = Chem.MolFromSmarts("[C@]1([C@@H]([C@@H]2[C@@]1([C@]([C@@H](C2)C)(C)C)C)C")
+    if mol.HasSubstructMatch(cyclopropane_pattern):
+        return True, "Contains cyclopropane ring, characteristic of cycloartenol"
+    
+    additional_hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[C@H]1[C@@]2([C@H](C[C@@H]3[C@]([C@@](CC3)(C)[H])(C)[H])C2)O")
+    if mol.HasSubstructMatch(additional_hydroxy_pattern):
+        return True, "Contains additional hydroxyl group, characteristic of brassicasterol"
+    
+    return True, "Contains sterol backbone with hydroxyl at position 3, flexible side chain, and double bonds"
