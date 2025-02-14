@@ -29,23 +29,20 @@ def is_organometalloidal_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flag to check for metalloid-carbon bond
-    has_metalloid_carbon_bond = False
-
     # Iterate over metalloid atoms in the molecule
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() in metalloid_atomic_nums:
             metalloid_atom = atom
+            has_carbon_neighbor = False
+            has_oxygen_neighbor = False
             # Check neighbors of metalloid atom
             for neighbor in metalloid_atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                    # Check if carbon is sp3-hybridized (non-aromatic, single bonds)
-                    if (not neighbor.IsInRing() and 
-                        neighbor.GetHybridization() == Chem.rdchem.HybridizationType.SP3 and
-                        not neighbor.GetIsAromatic()):
-                        return True, f"Metalloid atom ({metalloid_atom.GetSymbol()}) bonded to sp3-hybridized carbon atom of organyl group"
-                    else:
-                        # Continue checking other neighbors
-                        continue
-    # If no suitable metalloid-carbon bonds found
-    return False, "No metalloid-carbon bonds to sp3-hybridized carbon atoms of organyl groups found"
+                atomic_num = neighbor.GetAtomicNum()
+                if atomic_num == 6:  # Carbon atom
+                    has_carbon_neighbor = True
+                elif atomic_num == 8:  # Oxygen atom
+                    has_oxygen_neighbor = True
+            if has_carbon_neighbor and has_oxygen_neighbor:
+                return True, f"Metalloid atom ({metalloid_atom.GetSymbol()}) bonded to carbon and oxygen atoms"
+    # If no metalloid-carbon bonds found
+    return False, "No metalloid atom bonded to both carbon and oxygen atoms of organyl groups found"
