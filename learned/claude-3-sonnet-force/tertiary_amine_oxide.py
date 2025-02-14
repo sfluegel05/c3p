@@ -26,9 +26,11 @@ def is_tertiary_amine_oxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for N-oxide pattern ([N+](=O)[!O;!H])
-    n_oxide_pattern = Chem.MolFromSmarts("[N+](=O)[!O;!H]")
-    n_oxide_matches = mol.GetSubstructMatches(n_oxide_pattern)
+    # Look for N-oxide patterns ([N+](=O)[!O;!H] or [N+](=[O-])[C])
+    n_oxide_patterns = [Chem.MolFromSmarts("[N+](=O)[!O;!H]"), Chem.MolFromSmarts("[N+](=[O-])[C]")]
+    n_oxide_matches = []
+    for pattern in n_oxide_patterns:
+        n_oxide_matches.extend(mol.GetSubstructMatches(pattern))
     if len(n_oxide_matches) != 1:
         return False, f"Found {len(n_oxide_matches)} N-oxide groups, need exactly one"
 
@@ -45,44 +47,22 @@ def is_tertiary_amine_oxide(smiles: str):
         if not mol.GetAtomWithIdx(nbr.GetIdx()).HasSubstructMatch(alkyl_aryl_pattern):
             return False, "One of the organic groups is not alkyl or aryl"
 
-    # Additional checks (e.g., connectivity, rings, etc.)
+    # Check if N-oxide is part of a ring system
+    ring_info = mol.GetRingInfo()
+    is_ring_atom = ring_info.IsAtomRingBond(n_oxide_idx)
+    if is_ring_atom:
+        # Implement additional checks for ring systems, e.g., ring size, aromaticity, etc.
+        pass
+
+    # Check for additional substituents/functional groups on organic groups
+    for nbr in organic_neighbors:
+        nbr_atom = mol.GetAtomWithIdx(nbr.GetIdx())
+        for atom in nbr_atom.GetNeighbors():
+            if atom.GetAtomicNum() not in [1, 6, 7, 8, 9, 15, 16, 17, 35]:
+                # Implement additional checks for specific substituents/functional groups
+                pass
+
+    # Check stereochemistry and connectivity
     # ...
 
     return True, "Molecule is a tertiary amine oxide"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:50786',
-        'name': 'tertiary amine oxide',
-        'definition': 'An N-oxide where there are three organic groups bonded to the nitrogen atom.',
-        'parents': ['CHEBI:35428', 'CHEBI:50781']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 442,
-    'num_false_positives': 10,
-    'num_true_negatives': 182458,
-    'num_false_negatives': 3,
-    'num_negatives': None,
-    'precision': 0.9782608695652174,
-    'recall': 0.9932038834951456,
-    'f1': 0.9856380457521599,
-    'accuracy': 0.9998479811417816
-}
