@@ -32,25 +32,19 @@ def is_fatty_alcohol(smiles: str):
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     num_carbons = len(carbon_atoms)
 
-    # Count other atoms to determine the "fatty" nature
-    other_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 8]]
-    num_other = len(other_atoms)
-    if num_other > 0:
-      return False, "Contains atoms other than C, H, O"
-
     # Check if number of carbon is within the range
-    if num_carbons < 3 :
+    if num_carbons < 3:
         return False, f"Too few carbon atoms ({num_carbons}), must be at least 3"
-    if num_carbons > 27 :
-        #Check that it has a long carbon chain
-         carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-         if not mol.HasSubstructMatch(carbon_chain_pattern):
-              return False, "Has >27 carbons, but no long chain"
 
-    
-    if num_carbons >= 3 and num_carbons <=27:
-         carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-         if not mol.HasSubstructMatch(carbon_chain_pattern):
-              return False, "Must contain at least 3 carbons in an aliphatic chain"
+    # Check if has long linear carbon chain
+    #The following considers linear, branched and cyclic chains that may not be part of a fatty chain
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+       return False, "Must contain at least 3 carbons in a chain"
+
+    #Count rotatable bonds to enforce the presence of a long linear carbon chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 2:
+        return False, f"Too few rotatable bonds {n_rotatable}, cannot be a fatty alcohol"
 
     return True, "Meets criteria for a fatty alcohol (3 to >27 C, at least one OH)"
