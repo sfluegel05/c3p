@@ -24,28 +24,16 @@ def is_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for primary alcohol carbons
-    primary_alcohol_carbon_pattern1 = Chem.MolFromSmarts("[CH3][OH]")  # -CH2-OH
-    primary_alcohol_carbon_pattern2 = Chem.MolFromSmarts("[CH2]([CX4])[OH]")  # -CH2-R-OH
+    # Define SMARTS pattern for primary alcohol carbons, matching a -CH2-OH group 
+    # with the carbon being saturated, not bonded to any other non-hydrogen, non-oxygen
+    # atom by a double or triple bond
+    primary_alcohol_pattern = Chem.MolFromSmarts("[CH2;!$(C=[C,N,O,S]);!$(C#[C,N])][OH]")
 
-    # Find matches for both patterns
-    match1 = mol.GetSubstructMatches(primary_alcohol_carbon_pattern1)
-    match2 = mol.GetSubstructMatches(primary_alcohol_carbon_pattern2)
+    # Find matches for the pattern
+    matches = mol.GetSubstructMatches(primary_alcohol_pattern)
     
     # Check if any of the patterns are present
-    if not match1 and not match2:
-      return False, "No primary alcohol group found"
-      
-    # Verify saturation of all carbon matches found
-    for match in match1 + match2:
-        # The carbon is the atom connected to oxygen, which is at index 0 or 1 depending on the pattern.
-        if len(match) == 2:
-           carbon_index = match[0]
-        elif len(match) == 3:
-           carbon_index = match[0]
-
-        carbon_atom = mol.GetAtomWithIdx(carbon_index)
-        if not carbon_atom.GetHybridization() == Chem.HybridizationType.SP3:
-            return False, f"Carbon atom not saturated: atom {carbon_atom.GetIdx()}"
+    if not matches:
+        return False, "No primary alcohol group found"
 
     return True, "Primary alcohol group found"
