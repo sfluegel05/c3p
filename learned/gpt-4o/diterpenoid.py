@@ -7,8 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_diterpenoid(smiles: str):
     """
     Determines if a molecule is a diterpenoid based on its SMILES string.
-    A diterpenoid typical core has 20 carbons derived from a C20 skeleton,
-    modified with rearranged or functional groups.
+    Diterpenoids are characterized by a core derived from 20 carbon atoms of a diterpene, often modified or rearranged.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,23 +22,23 @@ def is_diterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count number of carbon atoms
+    # Count number of carbon atoms; allow flexibility due to potential rearrangements
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    # Allow more flexibility in carbon count due to modifications
-    if c_count < 15 or c_count > 25:
-        return False, "Carbon count not within typical diterpenoid range (15-25)"
+    if c_count < 15 or c_count > 30:
+        return False, "Carbon count not within extended diterpenoid range (15-30)"
 
-    # Check for presence of carbon rings
+    # Retrieve ring information to check for potential diterpenoid structures
     ring_info = mol.GetRingInfo()
     if not ring_info.IsInitialized():
         return False, "No ring data available"
-    ring_sizes = [len(ring) for ring in ring_info.AtomRings() if 5 <= len(ring) <= 7]
+    ring_sizes = [len(ring) for ring in ring_info.AtomRings() if 5 <= len(ring) <= 8]
     if len(ring_sizes) < 1:
-        return False, "Lacks typical ring structures of diterpenoids"
+        return False, "Lacks typical ring structures of diterpenoids, expected 5-8 members"
 
-    # Broaden detection for functional groups or modifications (hydroxyl, oxo, epoxide)
-    functional_group_pattern = Chem.MolFromSmarts("[!#6][OH0,O]")
-    if not mol.HasSubstructMatch(functional_group_pattern):
-        return False, "Missing functional groups typical in diterpenoids"
+    # Check for presence of relevant functional groups (hydroxyl, carbonyl, ether, epoxide)
+    functional_group_pattern_1 = Chem.MolFromSmarts("[OX2H,C]=[OX1,O]")
+    functional_group_pattern_2 = Chem.MolFromSmarts("[O,N]")
+    if not mol.HasSubstructMatch(functional_group_pattern_1) and not mol.HasSubstructMatch(functional_group_pattern_2):
+        return False, "Missing expected functional groups (e.g., hydroxyl, carbonyl, ether, epoxide)"
 
-    return True, "Exhibits typical characteristics of diterpenoids (rings and functional groups)"
+    return True, "Exhibits typical characteristics of diterpenoids (ring structure and functional modifications)"
