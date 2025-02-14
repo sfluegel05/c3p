@@ -5,7 +5,6 @@ Classifies: CHEBI:23824 diol
 Classifies: CHEBI:23824 diol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_diol(smiles: str):
     """
@@ -26,8 +25,8 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define hydroxy group pattern (Oxygen with single bonds and one attached hydrogen)
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    # Define hydroxy group pattern (oxygen bonded to hydrogen)
+    hydroxy_pattern = Chem.MolFromSmarts("[OH]")
     if hydroxy_pattern is None:
         return False, "Error in hydroxy SMARTS pattern"
 
@@ -35,8 +34,8 @@ def is_diol(smiles: str):
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     num_hydroxy = len(hydroxy_matches)
 
-    # Check if the molecule contains at least two hydroxy groups
-    if num_hydroxy >= 2:
-        return True, f"Molecule contains {num_hydroxy} hydroxy groups"
+    # Check if the molecule contains exactly two hydroxy groups
+    if num_hydroxy == 2:
+        return True, "Molecule contains exactly 2 hydroxy groups"
     else:
-        return False, f"Molecule contains {num_hydroxy} hydroxy group(s), less than required for diol"
+        return False, f"Molecule contains {num_hydroxy} hydroxy group(s), not exactly 2 required for diol"
