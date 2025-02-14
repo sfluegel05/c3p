@@ -2,11 +2,13 @@
 Classifies: CHEBI:17522 alditol
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_alditol(smiles: str):
     """
     Determines if a molecule is an alditol based on its SMILES string.
-    An alditol is a sugar alcohol with a linear polyol structure derivable from the reduction of an aldose.
+    An alditol is an acyclic polyol with the general formula HOCH2-[CH(OH)]n-CH2OH, 
+    derived from an aldose by reduction of the carbonyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,23 +23,19 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for alditol structure: [CH2OH][CHOH]*[CH2OH]
-    alditol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4](O)[CH2X4]")
+    # Define the SMARTS pattern for an alditol structure
+    # The pattern should match [CH2OH][CH(OH)]n[CH2OH] with n >= 2
+    alditol_pattern = Chem.MolFromSmarts("OCC(O)C(O)*CO")
+    if alditol_pattern is None:
+        return (None, "Invalid SMARTS pattern")
 
-    # Check if the molecule matches the alditol pattern
-    if not mol.HasSubstructMatch(alditol_pattern):
-        return False, "No continuous chain matching alditol structure found"
-    
-    # Count the number of hydroxyl (OH) groups
-    num_oh_groups = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
-    
-    # Ensure the count of OH groups is consistent with an alditol
-    if num_oh_groups < 3:
-        return False, f"Insufficient number of hydroxyl groups: {num_oh_groups} found"
+    # Check if the molecule contains cycles
+    if rdmolops.GetSSSR(mol) > 0:
+        return False, "Molecule contains a ring structure, not an acyclic alditol"
 
-    # Optionally, check if the molecule forms a continuous acyclic polyol
-    is_cyclic = Chem.rdMolOps.FindMolChiralCenters(mol, includeUnassigned=True)
-    if is_cyclic:
-        return False, "Molecule contains a ring structure, not consistent with an acyclic alditol"
+    # Check if the molecule matches the alditol SMARTS pattern
+    match = mol.HasSubstructMatch(alditol_pattern)
+    if not match:
+        return False, "No continuous acyclic polyol chain matching alditol found"
 
-    return True, "Matches structure of an alditol with necessary OH groups"
+    return True, "SMILES string matches the structural pattern of an alditol"
