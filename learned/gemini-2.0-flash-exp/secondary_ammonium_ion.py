@@ -2,7 +2,6 @@
 Classifies: CHEBI:137419 secondary ammonium ion
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_secondary_ammonium_ion(smiles: str):
     """
@@ -23,13 +22,15 @@ def is_secondary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for positively charged nitrogen with 2 directly attached carbon groups
-    # Using SMARTS pattern: [NX3+] ([NX3+] = positively charged nitrogen, X3 = 3 bonds).
-    # And we need to specify that these bonds are only to carbon atoms using [CX4,CX3], 
-    # where C = carbon, X4 = 4 bonds (sp3 hybridized) or X3 = 3 bonds (sp2 hybridized).
-    ammonium_pattern = Chem.MolFromSmarts("[NX3+]([CX4,CX3])[CX4,CX3]")
+    # Iterate through all nitrogen atoms
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7 and atom.GetFormalCharge() == 1: # Check for nitrogen and positive charge
+            carbon_neighbors = 0
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6: #Check if neighbour is a carbon
+                    carbon_neighbors += 1
+            if carbon_neighbors == 2:
+                return True, "Contains at least one positively charged nitrogen with two directly attached carbon groups."
 
-    if mol.HasSubstructMatch(ammonium_pattern):
-            return True, "Contains a positively charged nitrogen with 2 directly attached carbon groups."
-    else:
-        return False, "Does not contain a positively charged nitrogen with 2 directly attached carbon groups."
+
+    return False, "Does not contain a positively charged nitrogen with two directly attached carbon groups."
