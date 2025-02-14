@@ -22,8 +22,9 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for sphingosine backbone, including stereochemistry
-    sphingosine_pattern = Chem.MolFromSmarts("[C@H]([C@@H](O)[H])([H])(NC)[C@@H](O)[C@@H]([H])\C=C\CCCCCCCCCCCCC")
+    # Define SMARTS for sphingosine backbone (more generic, ignoring stereochemistry)
+    # [CX4,CX3]-[CX4,CX3](O)-[CX4,CX3](N)-[CX4,CX3](O)-[CX4,CX3]=[CX4,CX3]
+    sphingosine_pattern = Chem.MolFromSmarts("[CX4,CX3][CX4,CX3](O)[CX4,CX3](N)[CX4,CX3](O)[CX4,CX3]=[CX4,CX3]")
     if not mol.HasSubstructMatch(sphingosine_pattern):
        return False, "No sphingosine backbone found"
 
@@ -34,25 +35,19 @@ def is_N_acylsphingosine(smiles: str):
     if len(amide_matches) !=1:
         return False, f"Found {len(amide_matches)} amide bonds, need exactly 1"
 
-    # Check for long carbon chain on the acyl side
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) == 0:
-        return False, f"Missing fatty acid chain"
-
-    # Check molecular weight - N-acylsphingosines typically >400 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-      return False, "Molecular weight too low for N-acylsphingosine"
-
-    # Check for a long carbon chain in sphingosine (12 carbon in the pattern) and also acyl chain
+    # Check for long carbon chain by checking the number of carbons
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 18:
        return False, "Too few carbons for N-acylsphingosine"
 
-    # Verify there are 2 OH groups
+    # Check for at least one hydroxyl group
     oh_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and len(atom.GetNeighbors()) == 1)
-    if oh_count < 2:
-        return False, "Must have at least 2 hydroxyl groups"
+    if oh_count < 1:
+        return False, "Must have at least one hydroxyl group"
+    
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+      return False, "Molecular weight too low for N-acylsphingosine"
     
     return True, "Contains a sphingosine backbone with a fatty acyl group attached via an amide bond"
