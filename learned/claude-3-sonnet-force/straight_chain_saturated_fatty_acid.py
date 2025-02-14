@@ -5,7 +5,7 @@ Classifies: CHEBI:39418 straight-chain saturated fatty acid
 Classifies: CHEBI:35838 straight-chain saturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors, SanitizeMol
 
 def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
@@ -25,6 +25,14 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
+    # Remove explicit hydrogens and parentheses for normalization
+    SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_PROPERTIES |
+                             Chem.SanitizeFlags.SANITIZE_FINDRADICALS |
+                             Chem.SanitizeFlags.SANITIZE_KEKULIZE |
+                             Chem.SanitizeFlags.SANITIZE_SETAROMATICITY)
+    Chem.RemoveHs(mol)
+    Chem.RemoveParentheses(mol)
+    
     # Check for carboxylic acid group (-C(=O)O)
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
@@ -38,7 +46,8 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     # Check for saturation (no double or triple bonds)
     for bond in mol.GetBonds():
         if bond.GetBondType() not in (Chem.BondType.SINGLE, Chem.BondType.AROMATIC):
-            return False, "Unsaturated bond found"
+            if bond.GetIsotopeSum() == 0:  # Ignore isotopic labeling
+                return False, "Unsaturated bond found"
     
     # Check for hydroxy groups (optional, but no other substituents)
     hydroxy_pattern = Chem.MolFromSmarts("O[H]")
@@ -48,5 +57,10 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
             other_substituents.append(atom.GetSymbol())
     if other_substituents:
         return False, f"Found other substituents: {', '.join(other_substituents)}"
+    
+    # Additional check for typical molecular weight or chain length
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100 or mol_wt > 600:
+        return False, "Molecular weight outside typical range for fatty acids"
     
     return True, "Straight-chain saturated fatty acid"
