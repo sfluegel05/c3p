@@ -26,15 +26,11 @@ def is_nitrile(smiles: str):
 
     # Look for nitrile group (-C#N)
     nitrile_pattern = Chem.MolFromSmarts("[C#N]")
-    if not mol.HasSubstructMatch(nitrile_pattern):
-        return False, "No nitrile group (-C#N) found"
-
-    # Count number of nitrile groups
     nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
-    n_nitriles = len(nitrile_matches)
 
     # Nitriles should have one or more nitrile groups
-    if n_nitriles == 0:
-        return False, "No nitrile groups found"
+    if not nitrile_matches:
+        return False, "No nitrile group (-C#N) found"
 
+    n_nitriles = len(nitrile_matches)
     return True, f"Molecule contains {n_nitriles} nitrile group(s)"
