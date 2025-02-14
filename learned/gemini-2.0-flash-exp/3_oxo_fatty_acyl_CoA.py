@@ -23,57 +23,67 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the CoA moiety SMARTS (simplified, focusing on key linkage)
-    # The core part is the phospho-pantetheine moiety linked to the adenosine 5'-phosphate part
-    # Note that this might still need refinement for better specificity
     coa_smarts = "[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12"
     coa_pattern = Chem.MolFromSmarts(coa_smarts)
     
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not found"
 
-    # Define the 3-oxo group SMARTS
+    # Define the 3-oxo group SMARTS, and also the carbonyl of the thioester.
     oxo_smarts = "[CX3](=[OX1])[CH2][CX3](=[OX1])"
     oxo_pattern = Chem.MolFromSmarts(oxo_smarts)
     oxo_matches = mol.GetSubstructMatches(oxo_pattern)
 
-    if len(oxo_matches) == 0:
-       return False, "No 3-oxo group found"
-    elif len(oxo_matches) > 1:
-      return False, "More than one 3-oxo group found"
+    if len(oxo_matches) != 1:
+       return False, "Incorrect number of 3-oxo groups found, should be 1"
 
-    # Check for thioester group linked to CoA
+    # Check for thioester group connected to CoA
     thioester_smarts = "C(=O)S"
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
 
-    if len(thioester_matches) == 0:
-         return False, "No thioester group found"
+    if len(thioester_matches) != 1:
+         return False, "Incorrect number of thioester groups, should be 1"
 
-    # Verify that the thioester is close to the coA part
-    # We get the indices of the S and C of the thioester, then we search for the indices of the P in the CoA part
-    # If these are far away from each other in the graph, then they might not be close
-    for thioester_match in thioester_matches:
-       thioester_S_idx = thioester_match[1]
-       thioester_C_idx = thioester_match[0]
-       
+    # Check the connection between 3-oxo, thioester, and CoA
+    oxo_c1_idx = oxo_matches[0][0]
+    oxo_c2_idx = oxo_matches[0][2]
+    thioester_c_idx = thioester_matches[0][0]
+    thioester_s_idx = thioester_matches[0][1]
+    
+    if thioester_c_idx != oxo_c2_idx:
+      return False, "Thioester not connected to the 3-oxo group"
+
+    # Check if a long carbon chain is attached to oxo_c1_idx
+    
+    found_chain = False
+    for neighbor in mol.GetAtomWithIdx(oxo_c1_idx).GetNeighbors():
+        if neighbor.GetSymbol() == 'C':
+          found_chain = True
+          break
+    if not found_chain:
+        return False, "No carbon chain attached to 3-oxo group"
+    
+
+    # Verify that the sulfur of the thioester is connected to the pantethiene of the CoA
+    found_coa_connection = False
     for coa_match in mol.GetSubstructMatches(coa_pattern):
-       coa_P_indices = [idx for idx in coa_match if mol.GetAtomWithIdx(idx).GetSymbol() == 'P']
-       found_close = False
-       for coa_P_idx in coa_P_indices:
-           # Check if any of them is within a given distance
-           path = Chem.GetShortestPath(mol, thioester_S_idx, coa_P_idx)
-           if path is not None and len(path) < 15:
-             found_close = True
-             break
-       if not found_close:
-         return False, "Thioester and CoA not connected"
+        for atom_idx in coa_match:
+          if mol.GetAtomWithIdx(atom_idx).GetSymbol() == 'S':
+                # Check for direct connection to the thioester S
+                for neighbor_idx in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
+                    if neighbor_idx == thioester_s_idx:
+                        found_coa_connection = True
+                        break
+                if found_coa_connection:
+                    break #no need to check the other atoms of the CoA moiety
+
+        if found_coa_connection:
+            break #no need to check the other matches to CoA
 
 
-    # Check for a long carbon chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) == 0:
-        return False, "No fatty acyl chain found"
+    if not found_coa_connection:
+      return False, "Thioester and CoA not connected"
     
     # Count rotatable bonds to verify long chains, this time is more relaxed
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
