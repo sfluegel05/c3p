@@ -8,8 +8,6 @@ An N-glycosyl compound that has both a nucleobase, normally adenine, guanine, xa
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem.Descriptors import MolFromSmiles
-from rdkit.Chem.rdchem import GetSSSR
 
 def is_nucleoside(smiles: str):
     """
@@ -29,27 +27,27 @@ def is_nucleoside(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for ribose or deoxyribose sugar
-    sugar_pattern = Chem.MolFromSmarts("[OX2][CX4]([CX4][CX4][CX4][CH2][OX2])")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
-        sugar_pattern = Chem.MolFromSmarts("[OX2][CX4]([CX4][CX4][CX4][CH1][OX2])")
-        sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-        if not sugar_matches:
-            return False, "No ribose or deoxyribose sugar found"
+    sugar_pattern = Chem.MolFromSmarts("[OX2]C[CX4]([OX2])[CX4]([CX4]([OX2])[CX4][OX2])[CH2][OX2]")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No ribose or deoxyribose sugar found"
 
-    # Look for nucleobase
-    nucleobase_atoms = []
-    for ring in GetSSSR(mol):
-        if any(atom.GetAtomicNum() == 7 for atom in ring):
-            nucleobase_atoms.extend(ring)
-    if not nucleobase_atoms:
-        return False, "No nucleobase found"
+    # Look for common nucleobases
+    nucleobase_patterns = [
+        Chem.MolFromSmarts("[$(nc1ncnc1N)]"),  # Adenine
+        Chem.MolFromSmarts("[$(nc1nc(=O)nc(N)n1)]"),  # Guanine
+        Chem.MolFromSmarts("[$(nc1nc(=O)c2ncn(n2)c1=O)]"),  # Xanthine
+        Chem.MolFromSmarts("[$(Cc1c(N)nc(=O)[nH]c1=O)]"),  # Thymine
+        Chem.MolFromSmarts("[$(NC(=O)nc1nc(N)ccn1)]"),  # Cytosine
+        Chem.MolFromSmarts("[$(Oc1ccnc(=O)[nH]1)]")  # Uracil
+    ]
+
+    nucleobase_match = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
+    if not nucleobase_match:
+        return False, "No common nucleobase found"
 
     # Check for N-glycosidic bond between sugar and nucleobase
-    for sugar_match in sugar_matches:
-        sugar_atom = mol.GetAtomWithIdx(sugar_match[-1])
-        for neighbor_atom in sugar_atom.GetNeighbors():
-            if neighbor_atom.GetIdx() in [atom.GetIdx() for atom in nucleobase_atoms]:
-                return True, "Contains a nucleobase N-glycosidically linked to a ribose or deoxyribose sugar"
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][CX4][CX4][NX3]")
+    if not AllChem.FindMolChiralCenters(mol, glycosidic_bond_pattern):
+        return False, "No N-glycosidic bond found between sugar and nucleobase"
 
-    return False, "No N-glycosidic bond found between sugar and nucleobase"
+    return True, "Contains a nucleobase (adenine, guanine, xanthine, thymine, cytosine or uracil) N-glycosidically linked to a ribose or deoxyribose sugar"
