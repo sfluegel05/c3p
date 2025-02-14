@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_3_hydroxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acid based on its SMILES string.
-    A 3-hydroxy fatty acid has a hydroxyl group at the beta- or 3-position relative to
-    the carboxyl group and is part of a long hydrocarbon chain.
+    A 3-hydroxy fatty acid has a hydroxyl group at the beta- or 3-position relative to the carboxyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,24 +15,27 @@ def is_3_hydroxy_fatty_acid(smiles: str):
         bool: True if molecule is a 3-hydroxy fatty acid, False otherwise
         str: Reason for classification
     """
-
-    # Parse the SMILES string
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for 3-hydroxy fatty acids
-    # Carboxylic acid group at one end: C(=O)O
-    # Hydroxyl group at the 3rd position from the carboxyl group: [C@H](O) or [C@@H](O) indicates potential stereochemistry
-    pattern = Chem.MolFromSmarts("C(=O)O-[CH2]-[CH](O)-[CH2]-[CH3]")
+    # Identify carboxylic acid group (COOH)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not carboxylic_acid_matches:
+        return False, "No carboxylic acid group found"
 
-    # Check for the pattern match
-    if mol.HasSubstructMatch(pattern):
-        return True, "Contains hydroxyl group at the 3-position and carboxylic acid group"
+    # Position of carboxylic acid's carbon
+    carb_ketone_pos = carboxylic_acid_matches[0][0]
 
-    # Additional check for carbon chain length > 10 to ensure fatty acid characteristic
-    carbon_chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_chain_length <= 10:
-        return False, f"Carbon chain too short for fatty acid, got length: {carbon_chain_length}"
-
-    return False, "Does not exhibit necessary hydroxyl and carboxyl pattern at the correct position"
+    # Identify hydroxyl group attached to third carbon from carboxyl carbon
+    for atom in mol.GetAtoms():
+        if atom.GetIdx() == carb_ketone_pos + 2:  # Check the third carbon
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:  # Check if oxygen (OH group)
+                    if any(nbr.GetAtomicNum() == 1 for nbr in neighbor.GetNeighbors()):  # Ensure it's an OH group
+                        return True, "Contains hydroxyl group at the 3-position and carboxylic acid group"
+    
+    return False, "Hydroxyl group not found at the 3-position"
