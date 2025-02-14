@@ -24,31 +24,23 @@ def is_sesterterpenoid(smiles: str):
 
     # Count the number of carbon atoms
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 20 or carbon_count > 30 :
+    if carbon_count < 20 or carbon_count > 35 : # Increased carbon range
         return False, f"Number of carbons is {carbon_count}, expected around 25 for a sesterterpenoid"
 
-    # Count methyl groups (CH3) attached to a non-hydrogen
-    methyl_pattern = Chem.MolFromSmarts("[CX4H3]")
-    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
-    methyl_count = len(methyl_matches)
-    if methyl_count < 4:
-       return False, f"Too few methyl groups ({methyl_count}), expected at least 4."
-    
-    # Count double bonds
-    double_bond_pattern = Chem.MolFromSmarts("[*]=[*]")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    double_bond_count = len(double_bond_matches)
-    if double_bond_count < 3:
-       return False, f"Too few double bonds ({double_bond_count}), expected at least 3"
+    # Check for isoprene units (C5H8)
+    isoprene_pattern = Chem.MolFromSmarts("CC(C)=CC")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    isoprene_count = len(isoprene_matches)
 
-    # Check number of rotatable bonds
-    num_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if num_rotatable < 5:
-        return False, f"Too few rotatable bonds, expected at least 5."
+    # Score the presence of isoprene units.
+    # Ideally, a sesterterpenoid will have 5 isoprene units (25 carbons)
+    if isoprene_count < 2 : # at least 2 isoprene units
+         return False, f"Too few isoprene units ({isoprene_count}). Expected at least 2."
     
-     # Check molecular weight
+
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 500 :
-        return False, f"Molecular weight is {mol_wt}, expected between 300 and 500 for a sesterterpenoid"
-
-    return True, "Matches criteria for a sesterterpenoid based on number of carbons, methyl groups, unsaturation, rotatable bonds and molecular weight."
+    if mol_wt < 300 or mol_wt > 600: # Broader range
+        return False, f"Molecular weight is {mol_wt}, expected between 300 and 600 for a sesterterpenoid"
+    
+    return True, "Matches criteria for a sesterterpenoid based on number of carbons, isoprene units, and molecular weight."
