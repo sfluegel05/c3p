@@ -26,68 +26,90 @@ def is_lysophosphatidic_acids(smiles: str):
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
-
-    # Look for phosphate group (-P(=O)(O)-OH or -P(=O)(O)2
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([OX1])([OX1])[OX2]") #Modified to include a potentially missing oxygen
+    
+    # Look for phosphate group (-P(=O)(O)-OH or -P(=O)(O)2 or -P(=O)([O-])(O)) or -P(=O)([O-])([O-])
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([OX1,O-])([OX1,O-])[OX2]")
     if not mol.HasSubstructMatch(phosphate_pattern):
        return False, "No phosphate group found"
     
-    # Check that the glycerol backbone is linked to the phosphate group
+    # Check that the glycerol backbone is linked to the phosphate group and to one ester group
     glycerol_match = mol.GetSubstructMatch(glycerol_pattern)
     phosphate_match = mol.GetSubstructMatch(phosphate_pattern)
-
+    
     if not glycerol_match or not phosphate_match:
         return False, "Could not find both glycerol and phosphate"
-
-
+    
     #Look for a bond between the glycerol and the phosphate
-    found_link = False
+    found_phosphate_link = False
+    glycerol_phosphate_atom = None
     for g_atom_idx in glycerol_match:
         g_atom = mol.GetAtomWithIdx(g_atom_idx)
         for p_atom_idx in phosphate_match:
             p_atom = mol.GetAtomWithIdx(p_atom_idx)
             for neighbor in g_atom.GetNeighbors():
                  if neighbor.GetIdx() == p_atom_idx:
-                      found_link = True
-                      break
-        if found_link:
+                    found_phosphate_link = True
+                    glycerol_phosphate_atom = g_atom_idx
+                    break
+        if found_phosphate_link:
             break
-    if not found_link:
-       return False, "Phosphate group not connected to glycerol backbone"
+    if not found_phosphate_link:
+        return False, "Phosphate group not connected to glycerol backbone"
+
 
     # Look for 1 ester group (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
-
-    # Look for a fatty acid chain (long carbon chain attached to the ester)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if not fatty_acid_matches:
-         return False, f"No fatty acid chain found"
     
-    #Check that fatty acid chain is connected to the ester group
+    #Check that the glycerol backbone is linked to the ester group
     found_ester_link = False
+    glycerol_ester_atom = None
     for e_match in ester_matches:
          ester_atom_idx = e_match[0]
          ester_atom = mol.GetAtomWithIdx(ester_atom_idx)
-         for fa_match in fatty_acid_matches:
-              for fa_atom_idx in fa_match:
-                  fa_atom = mol.GetAtomWithIdx(fa_atom_idx)
-                  for neighbor in ester_atom.GetNeighbors():
-                      if neighbor.GetIdx() == fa_atom_idx:
-                          found_ester_link = True
-                          break
-              if found_ester_link:
-                  break
-
-         if found_ester_link:
-             break
+         for g_atom_idx in glycerol_match:
+            g_atom = mol.GetAtomWithIdx(g_atom_idx)
+            for neighbor in g_atom.GetNeighbors():
+                if neighbor.GetIdx() == ester_atom_idx:
+                    found_ester_link = True
+                    glycerol_ester_atom = g_atom_idx
+                    break
+            if found_ester_link:
+                break
     
     if not found_ester_link:
+         return False, "Ester group not connected to glycerol backbone"
+    
+    # Check that the phosphate and the ester are attached to different carbons on the glycerol backbone
+    if glycerol_phosphate_atom == glycerol_ester_atom:
+        return False, "Phosphate and ester groups connected to the same carbon of the glycerol backbone."
+    
+    # Look for a fatty acid chain (long carbon chain attached to the ester)
+    # Modified fatty acid pattern to be attached to the ester C=O group explicitly
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    
+    found_fatty_acid_link = False
+    for e_match in ester_matches:
+        ester_c_atom_idx = e_match[1] # The C atom in the C=O group
+        ester_c_atom = mol.GetAtomWithIdx(ester_c_atom_idx)
+        fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+        for fa_match in fatty_acid_matches:
+                for fa_atom_idx in fa_match:
+                    fa_atom = mol.GetAtomWithIdx(fa_atom_idx)
+                    for neighbor in ester_c_atom.GetNeighbors():
+                        if neighbor.GetIdx() == fa_atom_idx:
+                            found_fatty_acid_link = True
+                            break
+                if found_fatty_acid_link:
+                    break
+        if found_fatty_acid_link:
+            break
+    
+    if not found_fatty_acid_link:
          return False, "Fatty acid chain not connected to ester group"
-
+    
     # Check the number of phosphorus atoms - must be 1.
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     if p_count != 1:
@@ -95,21 +117,21 @@ def is_lysophosphatidic_acids(smiles: str):
     
     # Count rotatable bonds to verify long chains.
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 4:
+    if n_rotatable < 3:
        return False, "Chain too short to be a fatty acid"
     
     # Check molecular weight - LPA typically > 300 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, "Molecular weight too low for a lysophosphatidic acid"
-
+    
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    if c_count < 8:
+    if c_count < 6:
          return False, "Too few carbons for a lysophosphatidic acid"
-    if o_count < 6:
-         return False, "Must have at least 6 oxygens"
+    if o_count < 5:
+         return False, "Must have at least 5 oxygens"
 
     return True, "Contains a glycerol backbone with a single fatty acid chain and a phosphate group"
