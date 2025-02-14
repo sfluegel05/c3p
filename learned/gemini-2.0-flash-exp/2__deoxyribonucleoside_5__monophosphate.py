@@ -21,20 +21,29 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the 2'-deoxyribose pattern (5-membered ring with specific substitution)
-    # Look for a 5 membered ring where the 2' carbon is attached to 2 other atoms.
-    deoxyribose_pattern = Chem.MolFromSmarts("[C]1[CH2][C][C@H](O)[C@H](O)O1")
-    if not mol.HasSubstructMatch(deoxyribose_pattern):
-        return False, "No 2'-deoxyribose sugar found"
-
-    # Define the phosphate group pattern, connected via oxygen to the 5' carbon of the deoxyribose
-    # This pattern combines the phosphate and the 5' connection
-    phosphate_connection_pattern = Chem.MolFromSmarts("[C][C][C@H](O)[C@H]([CH2][O][P](=O)([O])([O]))O")
-    if not mol.HasSubstructMatch(phosphate_connection_pattern):
-       return False, "Phosphate not at 5' position"
+    # Define the 2'-deoxyribose pattern (5-membered ring with specific substitutions)
+    # Using SMARTS to find the ring and check for substitution pattern of H in C2 and C1
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1[CH2][C@H]([CH2])[C@@H](O)[O1]")
     
-   # Check for nucleobase connected to the deoxyribose C1.
-    nucleobase_connection_pattern = Chem.MolFromSmarts("[N][C]1[CH2][C][C@H](O)[C@H](O)O1")
+    if not mol.HasSubstructMatch(deoxyribose_pattern):
+         return False, "No 2'-deoxyribose sugar found"
+
+    # Define the phosphate group pattern
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found"
+
+
+    # Check that the phosphate is attached to C5
+    phosphate_connection_pattern = Chem.MolFromSmarts("[CX4][OX2][PX4](=[OX1])([OX2][HX1])[OX2][HX1]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_connection_pattern)
+
+    if not phosphate_matches:
+         return False, "Phosphate not at 5' position"
+
+    # Check for nucleobase connected to the deoxyribose C1
+    nucleobase_connection_pattern = Chem.MolFromSmarts("[NX3;!H0][CX4]1[CH2][C@H]([CH2])[C@@H](O)[O1]")
+
     if not mol.HasSubstructMatch(nucleobase_connection_pattern):
         return False, "No nucleobase connected to 1' position"
 
