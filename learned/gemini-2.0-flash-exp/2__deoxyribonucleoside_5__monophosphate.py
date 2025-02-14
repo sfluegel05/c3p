@@ -23,27 +23,28 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
 
     # Define the 2'-deoxyribose pattern (5-membered ring with specific substitutions)
     # Using SMARTS to find the ring and check for substitution pattern of H in C2 and C1
-    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1[CH2][C@H]([CH2])[C@@H](O)[O1]")
-    
+    # Note: The 5' carbon is also included, and its connection to oxygen
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1[CH2][C@H]([CH2])[C@@H](O)[C@@H]([OX2])O1")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
-         return False, "No 2'-deoxyribose sugar found"
+        return False, "No 2'-deoxyribose sugar found"
 
-    # Define the phosphate group pattern
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    # Check for the 2' hydrogen
+    deoxy_2_hydrogen = Chem.MolFromSmarts("[C@H]1[CH2][C@H]([H])[C@@H](O)[C@@H]([OX2])O1")
+    if not mol.HasSubstructMatch(deoxy_2_hydrogen):
+        return False, "No hydrogen found on the 2' carbon"
+
+    # Define the phosphate group pattern, connected via oxygen to a carbon
+    phosphate_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2])([OX2])")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
-
-
-    # Check that the phosphate is attached to C5
-    phosphate_connection_pattern = Chem.MolFromSmarts("[CX4][OX2][PX4](=[OX1])([OX2][HX1])[OX2][HX1]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_connection_pattern)
-
-    if not phosphate_matches:
-         return False, "Phosphate not at 5' position"
-
-    # Check for nucleobase connected to the deoxyribose C1
-    nucleobase_connection_pattern = Chem.MolFromSmarts("[NX3;!H0][CX4]1[CH2][C@H]([CH2])[C@@H](O)[O1]")
-
+    
+    # Check that the phosphate is attached to C5 of the deoxyribose
+    phosphate_connection_pattern = Chem.MolFromSmarts("[C@H]1[CH2][C@H]([CH2])[C@@H](O)[C@@H]([OX2][PX4](=[OX1])([OX2])([OX2]))O1")
+    if not mol.HasSubstructMatch(phosphate_connection_pattern):
+        return False, "Phosphate not at 5' position"
+    
+   # Check for nucleobase connected to the deoxyribose C1.
+    nucleobase_connection_pattern = Chem.MolFromSmarts("[NX3;!H0][C@H]1[CH2][C@H]([CH2])[C@@H](O)[C@@H]([OX2])O1")
     if not mol.HasSubstructMatch(nucleobase_connection_pattern):
         return False, "No nucleobase connected to 1' position"
 
