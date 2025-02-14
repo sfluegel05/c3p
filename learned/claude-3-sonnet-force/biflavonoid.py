@@ -1,51 +1,26 @@
 """
 Classifies: CHEBI:50128 biflavonoid
 """
-"""
-Classifies: CHEBI:33136 biflavonoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program attempted to classify biflavonoids by checking for the presence of at least two flavonoid subunits and ensuring that they are joined by a single atom or bond. However, the approach has several limitations:
 
-def is_biflavonoid(smiles: str):
-    """
-    Determines if a molecule is a biflavonoid based on its SMILES string.
-    A biflavonoid is a flavonoid oligomer obtained by the oxidative coupling of at least two units
-    of aryl-substituted benzopyran rings or its substituted derivatives, resulting in the two ring
-    systems being joined together by a single atom or bond.
+1. **Rigid flavonoid subunit definition**: The SMARTS pattern used to identify flavonoid subunits is very specific and may not capture all possible variations of flavonoid structures. Biflavonoids can be formed from various flavonoid monomers, including flavones, flavanones, and flavan-3-ols, among others.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Lack of stereochemistry consideration**: The SMARTS pattern does not account for stereochemistry, which is crucial in many biflavonoid structures. Many of the false negatives in the provided examples have different stereochemistries that are not recognized by the current pattern.
 
-    Returns:
-        bool: True if molecule is a biflavonoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for flavonoid subunits
-    flavonoid_pattern = Chem.MolFromSmarts("c1c(O)cc2c(c1)C(=O)c3ccccc3O2")
-    flavonoid_matches = mol.GetSubstructMatches(flavonoid_pattern)
-    
-    # Check for at least 2 unique flavonoid subunits
-    unique_subunits = set(map(tuple, flavonoid_matches))
-    if len(unique_subunits) < 2:
-        return False, "Molecule does not contain at least 2 unique flavonoid subunits"
-    
-    # Check if flavonoid subunits are joined by a single atom or bond
-    fragments = Chem.GetAtomJoinedMolecules(mol)
-    if len(fragments) == 2:
-        fragment1_atoms = set(fragments[0].GetAtoms())
-        fragment2_atoms = set(fragments[1].GetAtoms())
-        
-        # Check if fragments correspond to flavonoid subunits
-        if any(set(match).issubset(fragment1_atoms) for match in unique_subunits) and \
-           any(set(match).issubset(fragment2_atoms) for match in unique_subunits):
-            return True, "Contains at least 2 flavonoid subunits joined by a single atom or bond"
-    
-    return False, "Flavonoid subunits not joined by a single atom or bond"
+3. **Oversimplified joining criteria**: The program checks if the flavonoid subunits are joined by a single atom or bond, but this condition may be too restrictive. Some biflavonoids can have more complex linkers or bridging groups between the flavonoid units.
+
+4. **Lack of additional structural checks**: The program does not perform any additional checks on the molecule, such as molecular weight, ring counts, or other structural features that could help differentiate biflavonoids from other compounds.
+
+To improve the program, we can consider the following approaches:
+
+1. **Use more flexible subunit patterns**: Instead of using a single rigid SMARTS pattern, we can define multiple patterns to capture various flavonoid monomers, including accounting for stereochemistry when necessary.
+
+2. **Employ iterative substructure matching**: Rather than looking for complete flavonoid subunits, we can iteratively match smaller fragments (e.g., benzopyran rings, aromatic rings with specific substitution patterns) and then combine them to identify potential flavonoid monomers.
+
+3. **Consider linker groups**: Analyze the atoms or bonds connecting the identified flavonoid subunits to ensure they are consistent with known biflavonoid linker groups, such as carbon-carbon bonds, ether bridges, or other common linkers.
+
+4. **Incorporate additional structural filters**: Implement additional checks on molecular properties like molecular weight, ring counts, and elemental composition to further refine the classification criteria.
+
+5. **Use machine learning models**: As an alternative approach, you could consider training a machine learning model on a large dataset of biflavonoid and non-biflavonoid structures to learn the structural patterns and features that distinguish this class.
+
+While these improvements may increase the complexity of the program, they could lead to a more robust and accurate classification of biflavonoids, accounting for the structural diversity within this class.
