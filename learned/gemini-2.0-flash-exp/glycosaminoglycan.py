@@ -21,33 +21,39 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for presence of aminomonosaccharide rings using SMARTS patterns that include rings and nitrogens
-    amino_sugar_pattern1 = Chem.MolFromSmarts("[C1][O][C]([C])[C][C][C]1[NX3]") # 6-membered ring with N
-    amino_sugar_pattern2 = Chem.MolFromSmarts("[C1][O][C]([C])[C][C]1[NX3]")  # 5-membered ring with N
-    amino_sugar_pattern3 = Chem.MolFromSmarts("[C1][O][C]([C])[C][C][C]1[NX3][CX3](=[OX1])") # 6-membered ring with N-acetyl
-    amino_sugar_pattern4 = Chem.MolFromSmarts("[C1][O][C]([C])[C][C]1[NX3][CX3](=[OX1])")  # 5-membered ring with N-acetyl
+    # 1. Check for presence of aminomonosaccharide rings using a more general SMARTS pattern.
+    # This pattern looks for a ring with a nitrogen atom directly bonded to a carbon of the ring
+    # The nitrogen can be part of an amide (acetylated) or a free amine
+    amino_sugar_pattern = Chem.MolFromSmarts("[NX3;!H0][CX4;R]")
+    if amino_sugar_pattern is None:
+         return False, "Invalid SMARTS pattern for aminosugar."
+    amino_sugar_matches = mol.GetSubstructMatches(amino_sugar_pattern)
 
-    amino_sugar_matches1 = mol.GetSubstructMatches(amino_sugar_pattern1)
-    amino_sugar_matches2 = mol.GetSubstructMatches(amino_sugar_pattern2)
-    amino_sugar_matches3 = mol.GetSubstructMatches(amino_sugar_pattern3)
-    amino_sugar_matches4 = mol.GetSubstructMatches(amino_sugar_pattern4)
-
-    if not (amino_sugar_matches1 or amino_sugar_matches2 or amino_sugar_matches3 or amino_sugar_matches4):
+    if not amino_sugar_matches:
         return False, "No aminomonosaccharide unit detected."
 
     # 2. Check for glycosidic linkages between two ring carbons.
-    glycosidic_link_pattern = Chem.MolFromSmarts("[CX4;R]-[OX2]-[CX4;R]") # Carbon of ring linked to oxygen linked to another carbon ring
-
+    # This pattern looks for a carbon of ring linked to an oxygen, which in turn is linked to another carbon
+    glycosidic_link_pattern = Chem.MolFromSmarts("[CX4;R]~[OX2]~[CX4;R]")
+    if glycosidic_link_pattern is None:
+          return False, "Invalid SMARTS pattern for glycosidic linkage."
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_link_pattern)
-    
+
     if len(glycosidic_matches) == 0:
          return False, "No glycosidic linkage between rings detected."
 
-
     # 3. Minimal molecular weight check - GAGs are polysaccharides
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
+    if mol_wt < 500:
         return False, "Molecular weight too low for a polysaccharide"
+
+    # 4. Check for more than one ring
+    ring_pattern = Chem.MolFromSmarts("[R]")
+    if ring_pattern is None:
+         return False, "Invalid SMARTS pattern for ring."
+    ring_matches = mol.GetSubstructMatches(ring_pattern)
+    if len(ring_matches) <= 1:
+         return False, "Need at least two rings for a polysaccharide."
 
 
     return True, "Contains aminomonosaccharide units linked by glycosidic bonds."
