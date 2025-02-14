@@ -5,13 +5,14 @@ Classifies: CHEBI:36498 galactosylceramide
 Classifies: CHEBI:34219 galactosylceramide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_galactosylceramide(smiles: str):
     """
     Determines if a molecule is a galactosylceramide based on its SMILES string.
     A galactosylceramide is a ceramide with a galactose monosaccharide head group.
+    It consists of a sphingoid base amide-linked to a fatty acid, with a galactose
+    connected via a glycosidic bond to the primary hydroxyl of the sphingoid base.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,70 +26,43 @@ def is_galactosylceramide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define sphingoid base pattern (sphingosine, sphinganine, phytosphingosine)
+    sphingoid_smarts = """
+    [#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#8]  # long chain with terminal hydroxyl
+    """
+    sphingoid_pattern = Chem.MolFromSmarts("""
+    [#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#7]-[#6]-[#8]
+    """)
 
-    # Look for ceramide backbone: sphingosine base linked via amide bond to fatty acid
-    # Sphingosine backbone pattern: long-chain amino alcohol with trans double bond
-    sphingosine_pattern = Chem.MolFromSmarts("C(O)[C@@H](NC(=O))C=C")
-    if not mol.HasSubstructMatch(sphingosine_pattern):
-        return False, "No sphingosine base found"
+    # Generalized sphingoid base pattern: long-chain amino alcohol (allowing variable chain lengths and unsaturation)
+    sphingoid_pattern = Chem.MolFromSmarts("""
+    [#6](-[#6]){12,}(-[#6])-[#6]-[#6]-[#7]-[#6]-[#8]
+    """)
 
-    # Look for amide bond to fatty acid
-    amide_pattern = Chem.MolFromSmarts("NC(=O)C")
+    # Identify sphingoid base
+    if not mol.HasSubstructMatch(sphingoid_pattern):
+        return False, "No sphingoid base found"
+
+    # Identify amide bond to fatty acid
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide bond to fatty acid found"
 
-    # Check for galactose head group attached via glycosidic bond
-    # Galactose pattern (pyranose form)
-    galactose_pattern = Chem.MolFromSmarts("CO[C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")
-    if not mol.HasSubstructMatch(galactose_pattern):
+    # Identify galactose head group (both alpha and beta forms)
+    galactose_pattern = Chem.MolFromSmarts("""
+    [C@@H]1([C@@H]([C@H]([C@@H](CO1)O)O)O)O  # beta-D-galactose
+    """)
+    galactose_pattern_alpha = Chem.MolFromSmarts("""
+    [C@H]1([C@@H]([C@H]([C@H](CO1)O)O)O)O  # alpha-D-galactose
+    """)
+    has_galactose = mol.HasSubstructMatch(galactose_pattern) or mol.HasSubstructMatch(galactose_pattern_alpha)
+    if not has_galactose:
         return False, "No galactose head group found"
 
-    # Check for glycosidic bond between sphingosine and galactose
-    glycosidic_bond_pattern = Chem.MolFromSmarts("C[NH]C(=O)[C@@H](CO[C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O)")
+    # Check for glycosidic bond between sphingoid base and galactose
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C@H,@@H](CO[C@H,@@H]1O[C@H,@@H]([C@H,@@H]([C@H,@@H](C1)O)O)O)[NH]")
     if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No glycosidic bond between sphingosine and galactose found"
+        return False, "No glycosidic bond between sphingoid base and galactose found"
 
-    # Count carbon atoms to verify long-chain fatty acid
-    c_chain = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(c_chain) < 20:
-        return False, "Too few carbons for ceramide with long-chain fatty acid"
-
-    # Verify the presence of hydroxyl groups
-    oh_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalDegree() == 1)
-    if oh_count < 4:
-        return False, "Insufficient hydroxyl groups for galactosylceramide"
-
-    return True, "Contains ceramide backbone with galactose head group attached via glycosidic bond"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:34219',
-                              'name': 'galactosylceramide',
-                              'definition': 'Any of the cerebrosides in which '
-                                            'the monosaccharide head group is '
-                                            'galactose.',
-                              'parents': ['CHEBI:33563', 'CHEBI:75771']},
-        'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                      'f1_threshold': 0.8,
-                      'max_attempts': 5,
-                      'max_positive_instances': None,
-                      'max_positive_to_test': None,
-                      'max_negative_to_test': None,
-                      'max_positive_in_prompt': 50,
-                      'max_negative_in_prompt': 20,
-                      'max_instances_in_prompt': 100,
-                      'test_proportion': 0.1},
-        'message': None,
-        'attempt': 0,
-        'success': True,
-        'best': True,
-        'error': '',
-        'stdout': None,
-        'num_true_positives': 150,
-        'num_false_positives': 4,
-        'num_true_negatives': 182407,
-        'num_false_negatives': 23,
-        'num_negatives': None,
-        'precision': 0.974025974025974,
-        'recall': 0.8670520231213873,
-        'f1': 0.9174311926605504,
-        'accuracy': 0.9998521228585199}
+    return True, "Molecule is a galactosylceramide with sphingoid base amide-linked to fatty acid and galactose head group"
