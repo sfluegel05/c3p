@@ -46,16 +46,5 @@ def is_isoflavonoid(smiles: str):
     if 2 not in neighbors:
         return False, "Aryl substituent not attached at position 3"
 
-    # Check for additional substituents on the benzopyran core or aryl ring
-    allowed_substituents = ["C", "O", "N", "S", "Cl", "Br", "F", "I"]
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() in [6, 7, 8, 9, 16, 17, 35, 53] and atom.GetTotalNumHs() > 0:
-            if atom.GetSymbol() not in allowed_substituents:
-                return False, f"Unexpected substituent: {atom.GetSymbol()}"
-
-    # Check for typical molecular weight range
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 800:
-        return False, "Molecular weight outside typical range for isoflavonoids"
-
+    # Allow for a wide range of substituents on the 1-benzopyran core and aryl substituent
     return True, "Meets structural criteria for isoflavonoids"
