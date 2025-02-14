@@ -26,60 +26,78 @@ def is_octadecadienoic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group
-    carboxylic_acid = Chem.MolFromSmarts("C(=O)[O;H1]")
-    if not mol.HasSubstructMatch(carboxylic_acid):
+    # Check for carboxylic acid group and get the carboxyl carbon atom
+    carboxylic_acid = Chem.MolFromSmarts("C(=O)[O;H1,H0-]")
+    matches = mol.GetSubstructMatch(carboxylic_acid)
+    if not matches:
         return False, "No carboxylic acid group found"
+    carboxyl_c_idx = matches[0]  # Index of the carboxyl carbon atom
+    carboxyl_c = mol.GetAtomWithIdx(carboxyl_c_idx)
 
     # Ensure the molecule is acyclic (no rings)
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains rings; not a straight-chain fatty acid"
 
-    # Build adjacency list for carbon atoms
-    adjacency = {}
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:
-            idx = atom.GetIdx()
-            adjacency[idx] = []
-    for bond in mol.GetBonds():
-        begin_atom = bond.GetBeginAtom()
-        end_atom = bond.GetEndAtom()
-        if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
-            adjacency[begin_atom.GetIdx()].append((end_atom.GetIdx(), bond))
-            adjacency[end_atom.GetIdx()].append((begin_atom.GetIdx(), bond))
+    # Start traversal from the carbon next to the carboxyl carbon
+    neighbors = [nbr for nbr in carboxyl_c.GetNeighbors() if nbr.GetAtomicNum() == 6]
+    if len(neighbors) != 1:
+        return False, "Carboxyl carbon should be connected to exactly one carbon atom"
+    current_atom = neighbors[0]
+    previous_atom = carboxyl_c
 
-    # Function to perform depth-first search to find the longest carbon chain
-    def dfs(node, visited, length, double_bonds):
-        visited.add(node)
-        max_length = length
-        max_double_bonds = double_bonds
-        for neighbor_idx, bond in adjacency.get(node, []):
-            if neighbor_idx not in visited:
-                bond_order = bond.GetBondType()
-                bond_is_double = (bond_order == Chem.rdchem.BondType.DOUBLE)
-                new_double_bonds = double_bonds + (1 if bond_is_double else 0)
-                l, d = dfs(neighbor_idx, visited.copy(), length + 1, new_double_bonds)
-                if l > max_length:
-                    max_length = l
-                    max_double_bonds = d
-                elif l == max_length and d > max_double_bonds:
-                    max_double_bonds = d
-        return max_length, max_double_bonds
+    chain_length = 2  # Starts from carboxyl carbon and next carbon
+    double_bonds = 0
+    is_branched = False
 
-    max_chain_length = 0
-    max_chain_double_bonds = 0
-    # Iterate over all carbon atoms to find the longest chain
-    for node in adjacency:
-        length, double_bonds = dfs(node, set(), 1, 0)
-        if length > max_chain_length:
-            max_chain_length = length
-            max_chain_double_bonds = double_bonds
-        elif length == max_chain_length and double_bonds > max_chain_double_bonds:
-            max_chain_double_bonds = double_bonds
+    # Check bond order between carboxyl carbon and first carbon
+    bond = mol.GetBondBetweenAtoms(carboxyl_c_idx, current_atom.GetIdx())
+    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+        double_bonds += 1
 
-    if max_chain_length < 18:
-        return False, f"Longest carbon chain is {max_chain_length}, expected at least 18"
-    if max_chain_double_bonds != 2:
-        return False, f"Number of C=C double bonds along the chain is {max_chain_double_bonds}, expected 2"
+    visited_atoms = set()
+    visited_atoms.add(carboxyl_c_idx)
+    visited_atoms.add(current_atom.GetIdx())
+
+    while True:
+        # Get carbon neighbors excluding the previous atom
+        neighbors = [nbr for nbr in current_atom.GetNeighbors()
+                     if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != previous_atom.GetIdx()]
+        if len(neighbors) == 0:
+            # Reached the end of the chain
+            break
+        if len(neighbors) > 1:
+            # Branching detected
+            is_branched = True
+            break  # Not a straight-chain fatty acid
+
+        next_atom = neighbors[0]
+
+        # Check for branching at the next atom
+        next_neighbors = [nbr for nbr in next_atom.GetNeighbors()
+                          if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != current_atom.GetIdx()]
+        if len(next_neighbors) > 1:
+            # Branching detected at the next atom
+            is_branched = True
+            break
+
+        # Check bond order between current atom and next atom
+        bond = mol.GetBondBetweenAtoms(current_atom.GetIdx(), next_atom.GetIdx())
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            double_bonds += 1
+
+        # Update traversal
+        previous_atom = current_atom
+        current_atom = next_atom
+        visited_atoms.add(current_atom.GetIdx())
+        chain_length += 1
+
+    if is_branched:
+        return False, "Molecule is branched; not a straight-chain fatty acid"
+
+    if chain_length != 18:
+        return False, f"Chain length is {chain_length}, expected 18 carbons"
+
+    if double_bonds != 2:
+        return False, f"Number of C=C double bonds along the chain is {double_bonds}, expected 2"
 
     return True, "Molecule has a straight-chain C18 fatty acid backbone with two C=C double bonds"
