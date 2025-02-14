@@ -1,48 +1,24 @@
 """
 Classifies: CHEBI:15341 beta-D-glucosiduronic acid
 """
-"""
-Classifies: CHEBI:27732 beta-D-glucosiduronic acid
-A glucosiduronic acid resulting from the formal condensation of any substance 
-with beta-D-glucuronic acid to form a glycosidic bond.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the outcomes provided, the previous program seems to have some issues in correctly identifying beta-D-glucosiduronic acids. Here are my observations and suggestions for improvement:
 
-def is_beta_D_glucosiduronic_acid(smiles: str):
-    """
-    Determines if a molecule is a beta-D-glucosiduronic acid based on its SMILES string.
+1. **Missed positive cases**: Several examples provided, such as "4-androsten-17beta-ol-3-one glucosiduronate" and "16-epiestriol 3-O-(beta-D-glucuronide)," were not identified as beta-D-glucosiduronic acids despite containing the beta-D-glucuronic acid substructure and a glycosidic bond. This suggests that the current implementation may be too restrictive in its checks.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Incorrect glycosidic bond check**: The current implementation checks for the presence of a glycosidic bond (O-C) but does not verify if this bond connects the beta-D-glucuronic acid substructure to the rest of the molecule. This may lead to false positives or false negatives.
 
-    Returns:
-        bool: True if molecule is a beta-D-glucosiduronic acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for beta-D-glucuronic acid substructure
-    glucuronic_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H](O)[C@H](O)[C@@H](O)[C@H](O1)O)[C@H](O)C(O)=O")
-    if not mol.HasSubstructMatch(glucuronic_pattern):
-        return False, "No beta-D-glucuronic acid substructure found"
-    
-    # Look for glycosidic bond (O-C)
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    if not glycosidic_matches:
-        return False, "No glycosidic bond found"
-    
-    # Check for carbon skeleton attached to glycosidic oxygen
-    for match in glycosidic_matches:
-        o_atom = mol.GetAtomWithIdx(match[0])
-        c_atom = mol.GetAtomWithIdx(match[1])
-        if c_atom.GetAtomicNum() == 6 and c_atom.GetTotalNumHs() <= 1:
-            return True, "Contains beta-D-glucuronic acid substructure linked via glycosidic bond"
-    
-    return False, "No carbon skeleton attached to glycosidic oxygen"
+3. **Lack of additional checks**: The program seems to rely solely on the presence of the beta-D-glucuronic acid substructure and a glycosidic bond. However, additional checks for the overall molecular structure and properties may be necessary to accurately identify beta-D-glucosiduronic acids.
+
+To improve the program, you could consider the following steps:
+
+1. **Refine the beta-D-glucuronic acid substructure search**: Instead of using a strict SMARTS pattern, you could try a more flexible approach that accounts for different conformations and substitutions. For example, you could use a series of SMARTS patterns or a larger substructure search with additional checks for stereochemistry and connectivity.
+
+2. **Verify the glycosidic bond connection**: Modify the glycosidic bond check to ensure that the identified bond connects the beta-D-glucuronic acid substructure to the rest of the molecule. This could involve checking the neighboring atoms and their connectivity.
+
+3. **Incorporate additional checks**: Depending on the chemical class definition, you could add additional checks for molecular properties, such as molecular weight, atom counts, ring systems, or specific functional groups. These checks could help filter out false positives and false negatives.
+
+4. **Handle exceptional cases**: Some examples provided may be outliers or edge cases that do not strictly follow the class definition. If you are confident in your understanding of the chemical class, you could consider handling these exceptions separately or providing a more nuanced explanation for the classification.
+
+5. **Consider using machine learning techniques**: If the rule-based approach becomes too complex or fails to achieve satisfactory results, you could explore machine learning techniques, such as training a classifier on a curated dataset of beta-D-glucosiduronic acids and non-beta-D-glucosiduronic acids.
+
+It's important to note that the benchmark you are using may not be perfect, and there could be systematic mistakes or edge cases that require human judgment. If you believe your program's classifications are consistent with your understanding of the chemical class, you can explain your reasoning for ignoring certain outliers or edge cases.
