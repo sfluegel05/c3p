@@ -21,11 +21,18 @@ def is_polychlorobiphenyl(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for biphenyl structure (two connected benzene rings)
-    # Use a simple SMARTS for two phenyl rings connected by a single bond
-    biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
+    # Use a more restrictive SMARTS to define a biphenyl core where all atoms in the biphenyl
+    # are either C or H. This will avoid matching substructures that are not biphenyls.
+    biphenyl_pattern = Chem.MolFromSmarts("[cH]1[cH][cH][cH][cH][cH]1-[cH]2[cH][cH][cH][cH][cH]2")
     if not mol.HasSubstructMatch(biphenyl_pattern):
         return False, "Not a biphenyl structure"
-    
+
+    # Make sure that there are no rings connected to the biphenyl
+    # using a single bond
+    ring_pattern = Chem.MolFromSmarts("[cH]1[cH][cH][cH][cH][cH]1-[!#6,#1!]")
+    if mol.HasSubstructMatch(ring_pattern):
+        return False, "Other rings directly connected to biphenyl core"
+
     # Count chlorine atoms
     chlorine_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17)
 
