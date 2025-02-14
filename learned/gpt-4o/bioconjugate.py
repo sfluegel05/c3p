@@ -21,15 +21,15 @@ def is_bioconjugate(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Define a range of known biological moiety patterns for identification
+    # Define more precise substructure patterns
     patterns = {
-        "amino_acid": Chem.MolFromSmarts("N[C@@H](C)C(=O)O"),                    # Simplified amino acid backbones
-        "fatty_acid": Chem.MolFromSmarts("C(=O)[CX4]C"),                         # General fatty acid residue
-        "nucleotide": Chem.MolFromSmarts("n1cnc2c1ncnc2"),                       # DNA/RNA bases
-        "sugar": Chem.MolFromSmarts("C(O)C(O)C(O)C(O)"),                         # Simple sugar backbone
-        "peptide_bond": Chem.MolFromSmarts("C(=O)N"),                            # Peptide linkage
-        "thiol": Chem.MolFromSmarts("CSC(C)"),                                   # Cysteine related
-        "phosphate": Chem.MolFromSmarts("P(=O)(O)O")                             # Phosphate group
+        "amino_acid": Chem.MolFromSmarts("N[C@@H](C)C(=O)O"),  # Simplified amino acid backbone
+        "fatty_acid": Chem.MolFromSmarts("C(=O)[CX4][CX4]C"),  # Longer carbon chain for fatty acids
+        "nucleotide": Chem.MolFromSmarts("n1cnc2c1ncnc2"),     # DNA/RNA base
+        "sugar": Chem.MolFromSmarts("C(O)C(O)C(O)C(O)"),       # Simple sugar backbone
+        "peptide_bond": Chem.MolFromSmarts("C(=O)N(C)"),       # More specific peptide bond
+        "thiol": Chem.MolFromSmarts("CSC(C)"),                 # Thiol group with context
+        "phosphate": Chem.MolFromSmarts("P(=O)(O)O")           # Phosphate group
     }
 
     # Track identified biological moieties
