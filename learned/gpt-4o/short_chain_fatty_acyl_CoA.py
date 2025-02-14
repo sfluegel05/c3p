@@ -23,39 +23,39 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more comprehensive pattern for Coenzyme A
-    coenzymeA_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)CCSCCC(=O)NCCSC(=S)CC(O)CN1C=NC2=C1N=CN=C2N")
+    # Redefine Coenzyme A with a more comprehensive and flexible pattern
+    coenzymeA_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)C[S]CCNC(=O)C[C@H](O)COP(O)(=O)OP(O)(O)=OOC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(ncnc12)N")
     if not mol.HasSubstructMatch(coenzymeA_pattern):
         return False, "No Coenzyme A moiety found"
     
-    # Define the thioester linkage pattern
-    thioester_pattern = Chem.MolFromSmarts("C(=O)S")
+    # Detect thioester linkage
+    thioester_pattern = Chem.MolFromSmarts("C(=O)S[C]")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
     # Ensure short-chain fatty acid component (2-6 carbons)
-    fatty_acid_found = False
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE and bond.GetBeginAtom().GetSymbol() == 'S' and bond.GetEndAtom().GetSymbol() == 'C':
-            # Get the carbon chain from the sulfur atom
-            carbon_atom = bond.GetEndAtom() if bond.GetBeginAtom().GetSymbol() == 'S' else bond.GetBeginAtom()
-            visited = set()
-            carbon_count = 0
-            to_visit = [carbon_atom]
-            while to_visit:
-                atom = to_visit.pop()
-                if atom.GetIdx() not in visited and atom.GetSymbol() == 'C':
-                    visited.add(atom.GetIdx())
+    # More flexible carbon counting logic
+    for match in mol.GetSubstructMatches(thioester_pattern):
+        sulfur_connected_c = [atom.GetIdx() for atom in mol.GetAtomWithIdx(match[1]).GetNeighbors() if atom.GetSymbol() == 'C']
+        if not sulfur_connected_c:
+            continue
+        start_atom_idx = sulfur_connected_c[0]
+        
+        visited = set()
+        carbon_count = 0
+        to_visit = [start_atom_idx]
+        while to_visit:
+            current_atom_idx = to_visit.pop()
+            if current_atom_idx not in visited:
+                current_atom = mol.GetAtomWithIdx(current_atom_idx)
+                if current_atom.GetSymbol() == 'C':
                     carbon_count += 1
-                    for neighbor in atom.GetNeighbors():
-                        if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() not in visited:
-                            to_visit.append(neighbor)
-            if 2 <= carbon_count <= 6:
-                fatty_acid_found = True
-                break
-
-    if not fatty_acid_found:
-        return False, "No proper short-chain fatty acyl component found"
+                    visited.add(current_atom_idx)
+                    for neighbor in current_atom.GetNeighbors():
+                        if neighbor.GetIdx() not in visited and neighbor.GetSymbol() == 'C':
+                            to_visit.append(neighbor.GetIdx())
+        
+        if 2 <= carbon_count <= 6:
+            return True, "Contains a CoA moiety joined by thioester bond to a short-chain fatty acid"
     
-    # If all checks pass, classify as short-chain fatty acyl-CoA
-    return True, "Contains a CoA moiety joined by thioester bond to a short-chain fatty acid"
+    return False, "No proper short-chain fatty acyl component found"
