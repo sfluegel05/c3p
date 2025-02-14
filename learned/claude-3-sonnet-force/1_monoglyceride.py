@@ -27,8 +27,8 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern (C-C-C with at least 2 hydroxy groups)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X2,CH3X1][CX3,CX4][CH2X2,CH3X1]")
+    # Look for glycerol backbone pattern (C-C-C with a secondary alcohol group)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2][C]([OH])[CH2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
         
@@ -38,11 +38,17 @@ def is_1_monoglyceride(smiles: str):
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
-    # Check for fatty acid chain (long carbon chain attached to ester)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    # Check that the ester group is attached at position 1 of the glycerol backbone
+    ester_atom_idx = ester_matches[0][0]
+    ester_atom = mol.GetAtomWithIdx(ester_atom_idx)
+    if ester_atom.GetAtomMapNum() != 1:
+        return False, "Ester group not attached at position 1"
+
+    # Check for fatty acid chain (long aliphatic chain with no other functional groups)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
-        return False, f"Missing fatty acid chain, got {len(fatty_acid_matches)}"
+        return False, "Missing fatty acid chain"
 
     # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
@@ -62,27 +68,5 @@ def is_1_monoglyceride(smiles: str):
         return False, "Too few carbons for 1-monoglyceride"
     if o_count != 4:
         return False, "Must have exactly 4 oxygens (1 ester group, 2 hydroxy groups)"
-
-    # Check that ester is at position 1
-    ester_atom_idx = ester_matches[0][0]
-    ester_atom = mol.GetAtomWithIdx(ester_atom_idx)
-    ester_neighbors = [mol.GetAtomWithIdx(n).GetSymbol() for n in ester_atom.GetNeighbors()]
-    if "C" not in ester_neighbors or "O" not in ester_neighbors:
-        return False, "Invalid ester group"
-    
-    # Check that the carbon of the ester is connected to the glycerol backbone
-    ester_c_idx = [n for n in ester_atom.GetNeighbors() if mol.GetAtomWithIdx(n).GetSymbol() == "C"][0]
-    ester_c_atom = mol.GetAtomWithIdx(ester_c_idx)
-    ester_c_neighbors = [mol.GetAtomWithIdx(n).GetSymbol() for n in ester_c_atom.GetNeighbors()]
-    if "O" not in ester_c_neighbors or "C" not in ester_c_neighbors or "C" not in ester_c_neighbors:
-        return False, "Ester not attached to glycerol backbone"
-    
-    # Check for specific cases where the glycerol backbone is part of a larger ring system
-    ring_pattern = Chem.MolFromSmarts("[C,O;R2][C,O;R2][C,O;R2]")
-    ring_matches = mol.GetSubstructMatches(ring_pattern)
-    if len(ring_matches) > 0:
-        ring_atoms = [mol.GetAtomWithIdx(idx) for match in ring_matches for idx in match]
-        if ester_atom in ring_atoms:
-            return True, "Contains glycerol backbone as part of a ring system with single fatty acid chain attached via ester bond at position 1"
 
     return True, "Contains glycerol backbone with single fatty acid chain attached via ester bond at position 1"
