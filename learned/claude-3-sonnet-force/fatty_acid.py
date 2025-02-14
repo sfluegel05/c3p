@@ -1,32 +1,68 @@
 """
 Classifies: CHEBI:35366 fatty acid
 """
-After analyzing the previous program and the outcomes, it seems that the main issue is related to handling specific patterns and corner cases in fatty acid structures. While the program covers most of the key aspects of fatty acids, such as the carboxylic acid group, aliphatic chain length, and common functional groups, it may not be capturing all the nuances and variations present in the benchmark dataset.
+"""
+Classifies: CHEBI:36976 fatty acid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here's a breakdown of the potential issues and improvements:
+def is_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is a fatty acid based on its SMILES string.
+    A fatty acid is an aliphatic monocarboxylic acid derived from or contained in esterified form
+    in an animal or vegetable fat, oil or wax. Natural fatty acids commonly have a chain of 4 to 28
+    carbons (usually unbranched and even-numbered), which may be saturated or unsaturated.
 
-1. **Handling Complex Aliphatic Chains**: The program correctly identifies aliphatic segments using the `[C;H3,H2,H1]` SMARTS pattern. However, some fatty acid structures may have more complex aliphatic chains with branching or cyclic components. To address this, we could modify the `aliphatic_pattern` to include branched and cyclic aliphatic patterns, or explore alternative methods to identify the aliphatic backbone more robustly.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Considering Stereochemistry**: Fatty acids can have specific stereochemistry, which is not explicitly considered in the current program. We could incorporate SMARTS patterns or other methods to account for stereochemical configurations, especially for cases where stereochemistry is crucial for accurate classification.
-
-3. **Handling Unusual Functional Groups**: While the program checks for common functional groups like hydroxy, epoxide, and halogens, there may be other less common functional groups present in some fatty acid structures. We could expand the list of functional group patterns or explore more generalized methods to identify functional groups.
-
-4. **Addressing Edge Cases**: There might be edge cases or outliers in the benchmark dataset that do not strictly follow the typical fatty acid definition. In such cases, we could either refine the program to handle these edge cases or, if the classifications are consistent with our understanding of fatty acids, we can justify and document the reasons for ignoring these outliers.
-
-5. **Improving Molecular Weight and Size Checks**: The current molecular weight and size checks may not be optimal for all fatty acid structures. We could refine these ranges based on a more comprehensive analysis of the benchmark dataset or explore alternative methods for size and weight validation.
-
-To improve the program, we could consider the following steps:
-
-1. Analyze the false positives and false negatives from the benchmark dataset to identify patterns or structural features that the program is not handling correctly.
-
-2. Explore alternative approaches to identify the aliphatic backbone, such as using more sophisticated SMARTS patterns, substructure matching, or graph-based algorithms.
-
-3. Incorporate stereochemistry handling by using appropriate SMARTS patterns or other techniques.
-
-4. Expand the list of functional group patterns or develop a more generalized approach to identify functional groups.
-
-5. Refine the molecular weight and size checks based on a thorough analysis of the benchmark dataset or explore alternative methods for size and weight validation.
-
-6. Document and justify any edge cases or outliers that the program cannot handle, based on our understanding of the fatty acid class and the benchmark dataset.
-
-By addressing these potential issues and improving the program iteratively, we can enhance its accuracy and robustness in classifying fatty acid structures.
+    Returns:
+        bool: True if molecule is a fatty acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for carboxylic acid group
+    acid_pattern = Chem.MolFromSmarts("[C;$(C(=O)(O))]")
+    if not mol.HasSubstructMatch(acid_pattern):
+        return False, "No carboxylic acid group found"
+    
+    # Look for aliphatic chain (linear, branched, or cyclic)
+    aliphatic_pattern = Chem.MolFromSmarts("[C;H3,H2,H1]~[C;H3,H2,H1]~[C;H3,H2,H1]")
+    aliphatic_matches = mol.GetSubstructMatches(aliphatic_pattern)
+    if not aliphatic_matches:
+        return False, "No aliphatic chain found"
+    
+    # Check chain length (4 to 28 carbons)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 4 or carbon_count > 28:
+        return False, "Chain length outside the typical range for fatty acids"
+    
+    # Check for common functional groups
+    functional_groups = ['[OX1]', '[OX2H]', '[OX2]', '[OX3H]', '[OX3]', '[Br]', '[Cl]', '[F]', '[I]', '[N]', '[S]', '[P]']
+    functional_group_patterns = [Chem.MolFromSmarts(pattern) for pattern in functional_groups]
+    has_functional_group = any(mol.HasSubstructMatch(pattern) for pattern in functional_group_patterns)
+    
+    # Check molecular weight (typically between 100 and 400 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100 or mol_wt > 400:
+        return False, "Molecular weight outside the typical range for fatty acids"
+    
+    # Check for stereochemistry
+    stereochem_pattern = Chem.MolFromSmarts("[C@@]")
+    has_stereochem = mol.HasSubstructMatch(stereochem_pattern)
+    
+    # Classify as fatty acid
+    reason = "Contains a carboxylic acid group and an aliphatic chain"
+    if has_functional_group:
+        reason += " with functional groups"
+    if has_stereochem:
+        reason += " and stereochemistry"
+    
+    return True, reason
