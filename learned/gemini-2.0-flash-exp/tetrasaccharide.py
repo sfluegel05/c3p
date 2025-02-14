@@ -6,6 +6,7 @@ Classifies: tetrasaccharide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_tetrasaccharide(smiles: str):
     """
@@ -24,29 +25,34 @@ def is_tetrasaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for monosaccharide rings (both 5 and 6 membered rings)
-    # The carbon with two oxygens is explicit, as it is part of the cycle of monosaccharides
-    # Include all possible ring configurations with explicit CH, CH2 and oxygen atoms
-    monosaccharide_pattern_6 = Chem.MolFromSmarts("[CX4H]([OX2])[CX4H][CX4H][CX4H][CX4H]([OX2])1")
-    monosaccharide_pattern_5 = Chem.MolFromSmarts("[CX4H]([OX2])[CX4H][CX4H][CX4H]([OX2])1")
-    if monosaccharide_pattern_6 is None or monosaccharide_pattern_5 is None:
-        return None, "Error in SMARTS pattern"
+    # Count number of rings in molecule
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
 
-    # Find all matching monosaccharide units
-    monosaccharide_matches_6 = mol.GetSubstructMatches(monosaccharide_pattern_6)
-    monosaccharide_matches_5 = mol.GetSubstructMatches(monosaccharide_pattern_5)
-    monosaccharide_matches = monosaccharide_matches_6 + monosaccharide_matches_5
-
-    # Check for exactly 4 units
-    if len(monosaccharide_matches) != 4:
-        return False, f"Found {len(monosaccharide_matches)} monosaccharide units, requires 4 for tetrasaccharide"
+    # Check each ring for carbons and oxygens, count monosaccharide units
+    monosaccharide_count = 0
+    for ring in ring_info.AtomRings():
+        carbon_count = 0
+        oxygen_count = 0
+        for atom_index in ring:
+           atom = mol.GetAtomWithIdx(atom_index)
+           if atom.GetAtomicNum() == 6:
+               carbon_count += 1
+           elif atom.GetAtomicNum() == 8:
+               oxygen_count += 1
+        if carbon_count >= 4 and oxygen_count > 0:
+            monosaccharide_count += 1
+    
+    # Check for exactly 4 monosaccharide units
+    if monosaccharide_count != 4:
+        return False, f"Found {monosaccharide_count} monosaccharide units, requires 4 for tetrasaccharide"
     
     # Count glycosidic bonds (C-O-C connecting rings)
     glycosidic_bond_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
     glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
 
-    # A tetrasaccharide will have 3 glycosidic bonds
+    # A tetrasaccharide will have at least 3 glycosidic bonds
     if len(glycosidic_bond_matches) < 3 :
-         return False, f"Found {len(glycosidic_bond_matches)} glycosidic bonds, requires 3 for tetrasaccharide"
+         return False, f"Found {len(glycosidic_bond_matches)} glycosidic bonds, requires at least 3 for tetrasaccharide"
 
     return True, "Contains 4 monosaccharide units connected via glycosidic bonds"
