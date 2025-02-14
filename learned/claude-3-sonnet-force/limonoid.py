@@ -1,61 +1,29 @@
 """
 Classifies: CHEBI:39434 limonoid
 """
-"""
-Classifies: CHEBI:39572 limonoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the error message and the fact that all outcomes show no true positives, false positives, or false negatives, it seems that the program is not correctly identifying any molecules as limonoids.
 
-def is_limonoid(smiles: str):
-    """
-    Determines if a molecule is a limonoid based on its SMILES string.
-    A limonoid is a highly oxygenated natural product derived from the tetracyclic triterpenoid skeleton,
-    often containing a furan ring and specific methyl groups or other characteristic substituents.
+Here are some potential issues and improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Methyl group pattern**: The SMARTS pattern used to identify characteristic methyl groups on the tetracyclic skeleton appears to be too specific. Limonoids can have various substitution patterns, and this pattern may be excluding many valid structures. It would be better to check for the presence of methyl groups in a more general way or to look for other common structural features instead.
 
-    Returns:
-        bool: True if molecule is a limonoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for furan ring
-    furan_pattern = Chem.MolFromSmarts("c1ccoc1")
-    has_furan = mol.HasSubstructMatch(furan_pattern)
-    
-    # Check for high oxygenation (at least 6 oxygens)
-    n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if n_oxygens < 6:
-        return False, "Not enough oxygens for limonoid (need at least 6)"
-    
-    # Check for tetracyclic or rearranged tetracyclic skeleton
-    n_rings = rdMolDescriptors.CalcNumRings(mol)
-    if n_rings < 4:
-        return False, "Too few rings for limonoid (need at least 4)"
-    
-    # Check molecular weight - limonoids typically >400 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, "Molecular weight too low for limonoid"
-    
-    # Look for specific methyl groups or other characteristic substituents
-    methyl_pattern = Chem.MolFromSmarts("[C]1(CCC2CCCC3CCCC(C2)C3C)C")
-    has_methyl_groups = mol.HasSubstructMatch(methyl_pattern)
-    
-    # Classify based on the presence of key features
-    if has_furan and has_methyl_groups:
-        return True, "Contains furan ring, tetracyclic skeleton, high oxygenation, and characteristic methyl groups"
-    elif has_furan:
-        return True, "Contains furan ring, tetracyclic skeleton, and high oxygenation"
-    elif has_methyl_groups:
-        return True, "Contains tetracyclic skeleton, high oxygenation, and characteristic methyl groups"
-    else:
-        return True, "Contains tetracyclic skeleton and high oxygenation consistent with limonoid structure"
+2. **Tetracyclic skeleton**: The program assumes that limonoids have a tetracyclic skeleton, but some limonoids may have rearranged or modified skeletons with a different ring count. It might be better to look for specific substructures or ring systems that are characteristic of limonoids, rather than relying solely on the ring count.
+
+3. **Furan ring**: While the presence of a furan ring is a common feature of limonoids, it is not an absolute requirement. Some limonoids may lack a furan ring or have it replaced by another heterocycle. The program should not rely too heavily on the presence of a furan ring for classification.
+
+4. **Oxygenation level**: The threshold of 6 oxygens for high oxygenation may be too strict or too lenient, depending on the specific structures being considered. It might be better to use a relative measure of oxygenation based on the molecular weight or carbon count.
+
+5. **Molecular weight**: The molecular weight cutoff of 400 Da may be excluding some smaller limonoids or including some larger non-limonoids. It might be better to use a range or to consider other structural features along with molecular weight.
+
+6. **Benchmark quality**: As mentioned, there may be systematic mistakes or inconsistencies in the benchmark data. If the program's classifications seem reasonable based on your understanding of limonoids, it may be appropriate to adjust the thresholds or rules to better align with your chemical knowledge, rather than strictly relying on the benchmark.
+
+Here's a potential approach to improve the program:
+
+1. Identify common substructures or ring systems that are characteristic of limonoids, such as the tetracyclic or rearranged tetracyclic skeleton with specific substitution patterns.
+2. Look for the presence of these substructures using SMARTS patterns or other substructure matching techniques.
+3. Use a relative measure of oxygenation, such as the number of oxygens divided by the number of carbon atoms or the molecular weight.
+4. Consider the presence of furan rings or other heterocycles as a supporting feature, but not an absolute requirement.
+5. Use a range or a more flexible cutoff for molecular weight, rather than a strict threshold.
+6. Adjust the thresholds and rules based on your chemical knowledge and the performance of the program on known limonoid structures, while being mindful of potential issues with the benchmark data.
+
+By taking a more flexible and holistic approach, considering multiple structural features and using relative measures, the program should be better able to identify a wide range of limonoid structures accurately.
