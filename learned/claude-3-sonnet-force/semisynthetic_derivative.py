@@ -31,8 +31,8 @@ def is_semisynthetic_derivative(smiles: str):
     # Calculate fingerprint and look for natural product substructures
     fp = AllChem.GetMorganFingerprint(mol, 3)
     natural_product_bits = [
-        fp.GetBitInfo(bit).PathFromAtom(mol.GetAtomWithIdx(0), atomCounts=mol.GetNumAtoms(), strict=False, atomMapNumbers=True) 
-        for bit in fp.GetNonzeroPositions()
+        fp.GetBitInfo(bit).PathFromAtom(mol.GetAtomWithIdx(0), atomCounts=mol.GetNumAtoms(), strict=False, atomMapNumbers=True)
+        for bit in fp.GetOnBits()
     ]
     natural_product_substructs = [Chem.MolFromSmarts(bit) for bit in natural_product_bits]
 
