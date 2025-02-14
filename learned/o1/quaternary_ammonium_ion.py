@@ -10,7 +10,8 @@ from rdkit.Chem import rdchem
 def is_quaternary_ammonium_ion(smiles: str):
     """
     Determines if a molecule is a quaternary ammonium ion based on its SMILES string.
-    A quaternary ammonium ion is a nitrogen atom with a +1 charge, bonded to four substituents.
+    A quaternary ammonium ion is a nitrogen atom with a +1 charge, bonded to four univalent
+    (usually organyl) groups (carbon atoms), and not part of any ring system.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,24 +26,23 @@ def is_quaternary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flag to check if quaternary ammonium ion is found
-    qa_found = False
-
-    # Iterate over all atoms in the molecule
+    # Iterate over all nitrogen atoms in the molecule
     for atom in mol.GetAtoms():
-        # Check if atom is nitrogen
-        if atom.GetAtomicNum() == 7:
-            # Check if nitrogen has a formal charge of +1
-            if atom.GetFormalCharge() == 1:
-                # Check if nitrogen is bonded to four substituents
-                if atom.GetDegree() == 4:
-                    # Check if all bonds are single bonds
-                    bond_types = [bond.GetBondType() for bond in atom.GetBonds()]
-                    if all(bond_type == rdchem.BondType.SINGLE for bond_type in bond_types):
-                        qa_found = True
-                        break
-
-    if qa_found:
-        return True, "Contains a nitrogen atom with +1 charge bonded to four substituents (quaternary ammonium ion)"
-    else:
-        return False, "No quaternary ammonium ion found in the molecule"
+        if atom.GetAtomicNum() == 7:  # Nitrogen atom
+            if atom.GetFormalCharge() == 1:  # Formal charge +1
+                if atom.GetDegree() == 4:  # Bonded to four atoms
+                    if not atom.IsInRing():  # Not in a ring
+                        neighbors = atom.GetNeighbors()
+                        all_single_bonds = True
+                        all_carbon_neighbors = True
+                        for bond in atom.GetBonds():
+                            if bond.GetBondType() != rdchem.BondType.SINGLE:
+                                all_single_bonds = False
+                                break
+                        for neighbor in neighbors:
+                            if neighbor.GetAtomicNum() != 6:  # Carbon atom
+                                all_carbon_neighbors = False
+                                break
+                        if all_single_bonds and all_carbon_neighbors:
+                            return True, "Contains a quaternary ammonium ion (nitrogen with +1 charge bonded to four carbon atoms via single bonds)"
+    return False, "No quaternary ammonium ion found in the molecule"
