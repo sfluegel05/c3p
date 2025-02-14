@@ -2,37 +2,45 @@
 Classifies: CHEBI:50699 oligosaccharide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, AllChem
 
 def is_oligosaccharide(smiles: str):
     """
     Determines if a molecule is an oligosaccharide based on its SMILES string.
 
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if molecule is an oligosaccharide, False otherwise
-        str: Reason for classification
+        bool: True if molecule is an oligosaccharide, False otherwise.
+        str: Reason for classification.
     """
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Define SMARTS patterns for common hexose sugar rings (like glucose, galactose, mannose)
+    sugar_patterns = [
+        Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O"), # Hexopyranose pattern
+        Chem.MolFromSmarts("[C@@H]1(O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O")  # Mirror stereochemistry
+    ]
     
-    # Define SMILES patterns for monosaccharide rings and glycosidic linkages
-    monosaccharide_pattern = Chem.MolFromSmarts("[C@H]1(O)O[C@@H](O)[C@H](O)[C@H](O)[C@@H]1")
-    glycosidic_bond_pattern = Chem.MolFromSmarts("O[C@H]")
+    # Define SMARTS pattern for glycosidic linkages (ether links between sugars)
+    glycosidic_bond_pattern = Chem.MolFromSmarts("O[C@]")  # Example ether linkage pattern
+
+    # Check for at least two sugar units
+    sugar_count = 0
+    for pattern in sugar_patterns:
+        sugar_count += len(mol.GetSubstructMatches(pattern))
     
-    # Check for at least two monosaccharide units
-    if len(mol.GetSubstructMatches(monosaccharide_pattern)) < 2:
+    if sugar_count < 2:
         return False, "Insufficient monosaccharide units"
 
-    # Check for glycosidic linkages connecting monosaccharides
-    if len(mol.GetSubstructMatches(glycosidic_bond_pattern)) < 1:
+    # Check for glycosidic linkages connecting sugars
+    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
         return False, "No glycosidic linkages found"
-    
+
     return True, "Contains sufficient monosaccharide units and glycosidic linkages indicative of an oligosaccharide"
 
-# This function aims to recognize the defining patterns of oligosaccharides; it is a basic implementation and might need further refinement for edge cases.
+# This method improves on exact matches for oligosaccharides by using common sugar ring structures and checking for glycosidic linkages.
