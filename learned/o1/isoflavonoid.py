@@ -10,8 +10,8 @@ from rdkit import Chem
 def is_isoflavonoid(smiles: str):
     """
     Determines if a molecule is an isoflavonoid based on its SMILES string.
-    An isoflavonoid is any molecule containing the isoflavone core structure,
-    which is a 3-phenylchromen-4-one.
+    An isoflavonoid is any molecule containing the isoflavonoid core structure,
+    which is a 1-benzopyran with an aryl substituent at position 3.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,22 +20,33 @@ def is_isoflavonoid(smiles: str):
         bool: True if molecule is an isoflavonoid, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the isoflavone core SMARTS pattern
-    # The isoflavone core: 3-phenylchromen-4-one
-    isoflavone_smarts = 'O=C1C=CC2=CC=CC=C2O1-c3ccccc3'
+    # Define a list of SMARTS patterns for isoflavonoid cores
+    isoflavonoid_smarts_list = [
+        # Isoflavone core (3-phenylchromen-4-one)
+        'O=C1C=CC2=CC=CC=C2O1-c3ccccc3',
+        # Isoflavanone core
+        'O=C1CCC2=CC=CC=C2O1-c3ccccc3',
+        # Isoflavene core
+        'C1=CC=C2C(=C1)C=CC(O2)=C3C=CC=CC3',
+        # Isoflavan core
+        'O1CCC2=CC=CC=C2C1-c3ccccc3',
+        # Pterocarpan core
+        'O1CC[C@H]2Oc3c(OC2c1ccccc1)c(OC)c(OC)cc3C1=CC=CC=C1',
+        # General benzopyran with aryl at position 3
+        '[O]1C=CC=C2C=CC=CC12-c3cccc(c3)',
+    ]
 
-    isoflavone_pattern = Chem.MolFromSmarts(isoflavone_smarts)
-    if isoflavone_pattern is None:
-        return False, "Invalid SMARTS pattern for isoflavone core"
-
-    # Search for the isoflavone core
-    if mol.HasSubstructMatch(isoflavone_pattern):
-        return True, "Contains isoflavone core structure"
-    else:
-        return False, "Does not contain isoflavone core structure"
+    # Search for isoflavonoid core structures
+    for smarts in isoflavonoid_smarts_list:
+        pattern = Chem.MolFromSmarts(smarts)
+        if pattern is None:
+            continue  # Skip invalid patterns
+        if mol.HasSubstructMatch(pattern):
+            return True, f"Contains isoflavonoid core structure matching pattern: {smarts}"
+    
+    return False, "Does not contain isoflavonoid core structure"
