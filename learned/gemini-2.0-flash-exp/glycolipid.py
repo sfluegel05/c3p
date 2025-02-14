@@ -2,7 +2,6 @@
 Classifies: CHEBI:33563 glycolipid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_glycolipid(smiles: str):
@@ -19,12 +18,11 @@ def is_glycolipid(smiles: str):
         str: Reason for classification
     """
 
-    # 1. Basic Checks
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 2. Sugar Ring Detection
+    # 1. Sugar Ring Detection
     sugar_ring_patterns = [
         Chem.MolFromSmarts("[OX2]([CX4])[CX4][CX4][CX4][CX4]"), # 6-membered ring
         Chem.MolFromSmarts("[OX2]([CX4])[CX4][CX4][CX4]"),    # 5-membered ring
@@ -37,98 +35,101 @@ def is_glycolipid(smiles: str):
     if not sugar_matches:
         return False, "No sugar ring found"
 
-    # 3. Glycosidic Linkage Detection and Verification
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2]([CX4])-[CX4]")
-    
-    glycosidic_matches = []
-    for match in mol.GetSubstructMatches(glycosidic_pattern):
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 8:
-                # Check if this oxygen is part of the glycosidic bond and if one of its carbons is in the sugar ring.
-                
-                connected_carbons = []
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6:
-                        connected_carbons.append(neighbor.GetIdx())
+    # 2. Helper functions to check for lipid components
+    def is_fatty_acid_chain(mol, start_atom_idx):
+        chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+        
+        # Get the neighbors of the start atom
+        neighbors = mol.GetAtomWithIdx(start_atom_idx).GetNeighbors()
 
-                if len(connected_carbons) != 2:
-                    continue  # Ensure exactly 2 carbons are connected
+        # Check if a carbon atom is attached.
+        for neighbor in neighbors:
+            if neighbor.GetAtomicNum() == 6:
+              
+                submol = Chem.PathToSubmol(mol, [start_atom_idx, neighbor.GetIdx()] )
+                if submol.HasSubstructMatch(chain_pattern):
+                    return True
+        return False
 
-                is_sugar_carbon = False
-                for sugar_match in sugar_matches:
-                  if connected_carbons[0] in sugar_match or connected_carbons[1] in sugar_match:
-                    is_sugar_carbon = True
-                    break
-                
-                if not is_sugar_carbon:
-                   continue # If not, move to the next candidate
-                
-                # Now check if the *other* carbon attached to the glycosidic oxygen is *not* a sugar
-                other_carbon = None
-                for carbon_idx in connected_carbons:
-                    if not any(carbon_idx in sugar_match for sugar_match in sugar_matches):
-                        other_carbon = carbon_idx
-                        break
-                
-                if other_carbon is None:
-                  continue
-                
-                is_lipid_carbon = False
-                
-                #check if lipid components are present
-                
-                fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-                fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    def is_glycerol(mol, start_atom_idx):
+      glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+      
+      neighbors = mol.GetAtomWithIdx(start_atom_idx).GetNeighbors()
+      for neighbor in neighbors:
+        if neighbor.GetAtomicNum() == 6:
+          submol = Chem.PathToSubmol(mol, [start_atom_idx, neighbor.GetIdx()] )
+          if submol.HasSubstructMatch(glycerol_pattern):
+            return True
+      
+      return False
 
-                glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-                has_glycerol = mol.HasSubstructMatch(glycerol_pattern)
+    def is_ceramide(mol, start_atom_idx):
+      ceramide_pattern = Chem.MolFromSmarts("[CX4][NX3][CX4]~[CX4]")
+      neighbors = mol.GetAtomWithIdx(start_atom_idx).GetNeighbors()
+      for neighbor in neighbors:
+          if neighbor.GetAtomicNum() == 6:
+            submol = Chem.PathToSubmol(mol, [start_atom_idx, neighbor.GetIdx()] )
+            if submol.HasSubstructMatch(ceramide_pattern):
+              return True
+      return False
 
-                ceramide_pattern = Chem.MolFromSmarts("[CX4][NX3][CX4]~[CX4]")
-                has_ceramide = mol.HasSubstructMatch(ceramide_pattern)
+
+    # 3. Glycosidic Linkage Detection
+    glycosidic_matches = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:  # Check for oxygen
+          
+            connected_carbons = [neighbor.GetIdx() for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+            if len(connected_carbons) != 2:
+                continue  # Glycosidic oxygen must have exactly two carbon neighbors
+            
+            is_sugar_carbon = False
+            sugar_carbon_idx = -1
+            for carbon_idx in connected_carbons:
+              for sugar_match in sugar_matches:
+                if carbon_idx in sugar_match:
+                  is_sugar_carbon = True
+                  sugar_carbon_idx = carbon_idx
+                  break
+              if is_sugar_carbon:
+                break
+
+            if not is_sugar_carbon:
+                continue # One must be from the sugar
                 
-                if fatty_acid_matches or has_glycerol or has_ceramide:
-                  
-                  for neighbor in mol.GetAtomWithIdx(other_carbon).GetNeighbors():
-                     if neighbor.GetAtomicNum() == 6:
-                      is_lipid_carbon = True
-                      break
-                
-                if is_lipid_carbon:
-                    glycosidic_matches.append(match)
-    
+            lipid_carbon_idx = -1
+            for carbon_idx in connected_carbons:
+              if carbon_idx != sugar_carbon_idx:
+                lipid_carbon_idx = carbon_idx
+                break
+              
+            is_lipid_carbon = False
+
+            if lipid_carbon_idx != -1:
+              if is_fatty_acid_chain(mol, lipid_carbon_idx) or is_glycerol(mol, lipid_carbon_idx) or is_ceramide(mol, lipid_carbon_idx):
+                is_lipid_carbon = True
+
+
+            if is_lipid_carbon:
+                glycosidic_matches = True
+                break
 
     if not glycosidic_matches:
         return False, "No glycosidic linkage from sugar ring to a lipid found"
 
-    # 4. Lipid Component Detection (Fatty acids, Glycerol, Ceramides)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    has_glycerol = mol.HasSubstructMatch(glycerol_pattern)
-
-    ceramide_pattern = Chem.MolFromSmarts("[CX4][NX3][CX4]~[CX4]")
-    has_ceramide = mol.HasSubstructMatch(ceramide_pattern)
-
-    if not fatty_acid_matches and not has_glycerol and not has_ceramide:
-         return False, "No lipid component detected"
+    # 4. Check if molecule contains a phosphate or a sulphate. These will be ignored in the check below.
+    has_phosphate = any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms())
+    has_sulphate = any(atom.GetAtomicNum() == 16 for atom in mol.GetAtoms() if any(n.GetAtomicNum() == 8 for n in atom.GetNeighbors() ))
     
-    # 5. Check for rotatable bonds for fatty chains
-    if fatty_acid_matches:
-      n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-      if n_rotatable < 3:
-            return False, "Chains too short to be fatty acids"
+    # 5. Check for molecular weight and number of atoms (if not phosphate or sulphate)
+    if not has_phosphate and not has_sulphate:
+        mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+        if mol_wt < 300:
+            return False, "Molecular weight too low for glycolipid"
+        
+        c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+        if c_count < 8:
+             return False, "Too few carbons for glycolipid"
 
-    # 6. Molecular Weight Check
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-         return False, "Molecular weight too low for glycolipid"
-    
-    # 7. Atom count
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8:
-         return False, "Too few carbons for glycolipid"
-    
 
     return True, "Glycosidic linkage between a carbohydrate and lipid chains is present."
