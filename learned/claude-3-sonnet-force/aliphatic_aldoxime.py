@@ -30,19 +30,19 @@ def is_aliphatic_aldoxime(smiles: str):
     if not mol.HasSubstructMatch(oxime_pattern):
         return False, "No oxime group found"
     
-    # Check for aliphatic carbon chains
-    aliphatic_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]")
+    # Check for aliphatic carbon chains (at least 2 aliphatic carbon atoms)
+    aliphatic_pattern = Chem.MolFromSmarts("[CX4,CX3][CX4,CX3]")
     if not mol.HasSubstructMatch(aliphatic_pattern):
         return False, "No aliphatic carbon chains found"
     
-    # Check for aromatic rings or cyclic structures
+    # Check for aromatic rings or cyclic structures (excluding the oxime ring)
     aromatic_pattern = Chem.MolFromSmarts("c")
-    ring_pattern = Chem.MolFromSmarts("R")
+    ring_pattern = Chem.MolFromSmarts("[R2]")  # Exclude the oxime ring
     if mol.HasSubstructMatch(aromatic_pattern) or mol.HasSubstructMatch(ring_pattern):
-        return False, "Contains aromatic rings or cyclic structures, not aliphatic"
+        return False, "Contains aromatic rings or non-oxime cyclic structures, not aliphatic"
     
-    # Check for aldehyde functional group (-CHO)
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
+    # Check for aldehyde functional group (-CHO) or aldehyde-like carbon (C=N-O)
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]|[CX3]=[NX2][OX2]")
     if not mol.HasSubstructMatch(aldehyde_pattern):
         return False, "Not derived from an aliphatic aldehyde"
     
@@ -50,9 +50,3 @@ def is_aliphatic_aldoxime(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
     return True, "Contains an oxime (C=N-O) group derived from an aliphatic aldehyde"
-
-# Example usage
-example_smiles = "[H]\C(=N/O)C(C)CC"
-is_aliphatic, reason = is_aliphatic_aldoxime(example_smiles)
-print(f"Is {example_smiles} an aliphatic aldoxime? {is_aliphatic}")
-print(f"Reason: {reason}")
