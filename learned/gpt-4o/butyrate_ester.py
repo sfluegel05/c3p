@@ -20,10 +20,12 @@ def is_butyrate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define comprehensive butyrate ester pattern (butyric acid as ester)
+    # Define improved butyrate ester pattern
     butyrate_patterns = [
-        Chem.MolFromSmarts("CCCC(=O)O[*]"),  # Butanoate ester group
-        Chem.MolFromSmarts("CCC(C)C(=O)O[*]"),  # Variants with branching
+        Chem.MolFromSmarts("C1CCC(C(=O)O[*])C1"),  # Linear butanoate ester
+        Chem.MolFromSmarts("CC(C)C(=O)O[*]"),  # Recognize branched butyrate
+        Chem.MolFromSmarts("C[2H]CC(=O)O[*]"),  # Include isotopic modifications
+        Chem.MolFromSmarts("C[13C]CC(=O)O[*]"),  # Include carbon isotopic labeling
     ]
 
     matches = any(mol.HasSubstructMatch(p) for p in butyrate_patterns)
