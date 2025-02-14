@@ -16,23 +16,45 @@ def is_flavones(smiles: str):
         bool: True if molecule is a flavone, False otherwise
         str: Reason for classification
     """
-
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the flavone core
-    # Flavone core: chromone (1-benzopyran-4-one) with an aryl group at position 2
-    # Using aromatic atoms (lowercase 'c') and allowing for substitutions
-    flavone_smarts = 'c1cc2c(c1)oc(=O)c(c2)-c3cccc[cH]3'
+    # Define the chromone core (1-benzopyran-4-one)
+    chromone_smarts = 'c1cc2oc(=O)cc2cc1'  # Chromone core pattern
+    chromone_mol = Chem.MolFromSmarts(chromone_smarts)
 
-    flavone_pattern = Chem.MolFromSmarts(flavone_smarts)
-    if flavone_pattern is None:
-        return False, "Invalid SMARTS pattern for flavone core"
+    if chromone_mol is None:
+        return False, "Invalid SMARTS pattern for chromone core"
 
-    # Check if the molecule matches the flavone pattern
-    if mol.HasSubstructMatch(flavone_pattern):
-        return True, "Contains flavone core structure (2-arylchromen-4-one skeleton)"
-    else:
-        return False, "Does not contain flavone core structure"
+    # Find matches for the chromone core
+    matches = mol.GetSubstructMatches(chromone_mol)
+    if not matches:
+        return False, "Does not contain chromone core"
+
+    # For each match, check if carbon at position 2 is attached to an aryl group
+    for match in matches:
+        chromone_atoms = match
+        # Atom at position 2 is the third atom in the chromone core pattern
+        position2_atom_idx = chromone_atoms[2]
+        position2_atom = mol.GetAtomWithIdx(position2_atom_idx)
+
+        # Get neighbors of position 2 atom not in chromone core
+        neighbors = [nbr for nbr in position2_atom.GetNeighbors() if nbr.GetIdx() not in chromone_atoms]
+
+        # Check if any neighbor is part of an aromatic ring (aryl group)
+        for nbr in neighbors:
+            if nbr.GetIsAromatic():
+                # Check if neighbor is part of an aromatic ring
+                ring_info = mol.GetRingInfo()
+                atom_rings = ring_info.AtomRings()
+                is_aryl = False
+                for ring in atom_rings:
+                    if nbr.GetIdx() in ring and len(ring) >= 5:
+                        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
+                            is_aryl = True
+                            break
+                if is_aryl:
+                    return True, "Contains flavone core structure with 2-aryl group"
+
+    return False, "Does not contain flavone core structure with 2-aryl group"
