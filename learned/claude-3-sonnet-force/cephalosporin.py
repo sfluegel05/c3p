@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_cephalosporin(smiles: str):
     """
     Determines if a molecule is a cephalosporin based on its SMILES string.
-    Cephalosporins are a class of beta-lactam antibiotics with a 6-membered side ring.
+    Cephalosporins are a class of beta-lactam antibiotics with a 6-membered dihydrothiazine side ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -31,32 +31,26 @@ def is_cephalosporin(smiles: str):
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
-    # Look for fused 6-membered ring (cephalosporin pattern)
-    ceph_pattern = Chem.MolFromSmarts("[C&!R]1[N,O]C2C(=O)N2C(=O)C1")
-    if not mol.HasSubstructMatch(ceph_pattern):
-        return False, "No 6-membered cephalosporin ring found"
+    # Look for dihydrothiazine ring pattern (6-membered ring with N, S, and C=C)
+    dihydrothiazine_pattern = Chem.MolFromSmarts("C1NC(=O)C(=C)S1")
+    if not mol.HasSubstructMatch(dihydrothiazine_pattern):
+        return False, "No dihydrothiazine ring found"
 
-    # Check for common cephalosporin substituents
-    diazine_pattern = Chem.MolFromSmarts("c1nncn1")
-    pyridine_pattern = Chem.MolFromSmarts("c1ccncc1")
-    methoxyimino_pattern = Chem.MolFromSmarts("CON=C")
-    vinyl_pattern = Chem.MolFromSmarts("C=C")
+    # Check for common structural features
+    has_amino_acid_side_chain = mol.HasSubstructMatch(Chem.MolFromSmarts("[NH2]C(=O)[CH2]"))
+    has_heteroaromatic_ring = any(mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)) for pattern in ["c1ncnc1", "c1ccncc1", "c1cncnc1"])
+    has_oxyimino_group = mol.HasSubstructMatch(Chem.MolFromSmarts("[O-]N=C"))
 
-    has_diazine = mol.HasSubstructMatch(diazine_pattern)
-    has_pyridine = mol.HasSubstructMatch(pyridine_pattern)
-    has_methoxyimino = mol.HasSubstructMatch(methoxyimino_pattern)
-    has_vinyl = mol.HasSubstructMatch(vinyl_pattern)
-
-    if has_diazine or has_pyridine or has_methoxyimino or has_vinyl:
-        return True, "Contains beta-lactam and 6-membered cephalosporin ring, with common substituents"
-
-    # Additional checks based on molecular properties
+    # Check molecular properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 1200:
+    if mol_wt < 300 or mol_wt > 1000:
         return False, "Molecular weight outside typical cephalosporin range"
 
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 3:
+    if n_rotatable < 5:
         return False, "Insufficient rotatable bonds for cephalosporin"
 
-    return True, "Contains beta-lactam and 6-membered cephalosporin ring with appropriate molecular properties"
+    if has_amino_acid_side_chain and (has_heteroaromatic_ring or has_oxyimino_group):
+        return True, "Contains beta-lactam, dihydrothiazine ring, amino acid side chain, and common substituents"
+
+    return True, "Contains beta-lactam and dihydrothiazine ring with appropriate molecular properties"
