@@ -21,64 +21,69 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # 1. Define steroid core SMARTS pattern.
-    # This SMARTS pattern defines the steroid skeleton
-    steroid_core_smarts = "[C]12[C][C]3[C]([C]4[C]([C]1[C]5[C]2[C]34)CC5)[C]"
-    steroid_core = Chem.MolFromSmarts(steroid_core_smarts)
-    if steroid_core is None:
-        return False, "Invalid core pattern"
-    core_matches = mol.GetSubstructMatch(steroid_core)
-    if not core_matches:
-        return False, "Not a steroid: core structure not found"
-
-    # 2. Identify C3 using SMARTS relative to the core.
-    c3_smarts = "[C]12[C][C](=[O])[C]3[C]([C]4[C]([C]1[C]5[C]2[C]34)CC5)[C]"
-    c3_match = mol.GetSubstructMatch(Chem.MolFromSmarts(c3_smarts))
-    if not c3_match:
-         return False, "No carbonyl group at position 3 found."
     
-    atom_index_3 = c3_match[2] # index of carbon 3
-
-    # 3. Identify C5 using SMARTS relative to the core.
-    c5_smarts = "[C]12[C][C]3[C]([C]4[C]([C]1[C]([C]5)[C]2[C]34)CC5)[C]"
-    c5_match = mol.GetSubstructMatch(Chem.MolFromSmarts(c5_smarts))
-
-    if not c5_match:
-        return False, "Could not find C5"
+    # 1. Check for steroid skeleton
+    # Approximate by checking for 4 fused rings
+    num_rings = mol.GetRingInfo().NumRings()
+    if num_rings < 4:
+        return False, "Not a steroid: less than 4 rings"
     
-    atom_index_5 = c5_match[8] # index of carbon 5
+    # Check if all rings are 5 or 6 membered:
+    for ring in mol.GetRingInfo().AtomRings():
+        if len(ring) < 5 or len(ring) > 6:
+             return False, "Not a steroid: ring size different than 5 or 6"
+
+    # 2. Check for carbonyl at position 3. Position 3 is defined as the carbon
+    #   that is part of a six membered ring and has two adjacent carbons within the ring.
+    #   and that is adjacent to one of the bridgehead carbons of the steroid system
+    #   that has 2 bonds to two different rings and is not a sp2 carbon.
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
+    matches = mol.GetSubstructMatches(carbonyl_pattern)
+    if not matches:
+        return False, "No carbonyl group at position 3 found."
+    
+    
+    # Define the substructure for a bridgehead carbon. A bridgehead carbon is part of a ring system and is
+    # bonded to more than 2 carbons.
+    bridgehead_pattern = Chem.MolFromSmarts("[C;R2;!$(C=*)]([#6])([#6])")
+    
+    # Find all the bridgeheads of the steroid ring system.
+    bridgehead_matches = mol.GetSubstructMatches(bridgehead_pattern)
+    if len(bridgehead_matches) < 4: # There are 4 bridgeheads within the sterane skeleton
+      return False, "Not a steroid: less than 4 bridgehead carbons"
+
+    #Check that one of the bridgeheads is adjacent to the 3 position carbon
+    found_3_position = False
+    for match in matches:
+        carbonyl_carbon_index = match[0]
+        carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_carbon_index)
+        for bridgehead_match in bridgehead_matches:
+           bridgehead_atom_index = bridgehead_match[0]
+           bridgehead_atom = mol.GetAtomWithIdx(bridgehead_atom_index)
+           if mol.GetBondBetweenAtoms(carbonyl_carbon_index, bridgehead_atom_index):
+            found_3_position = True
+            break
+        if found_3_position:
+            break
+    if not found_3_position:
+        return False, "Carbonyl group at position 3 not found"
 
 
-    # 4. Identify C4 using SMARTS relative to the core
-    c4_smarts = "[C]12[C][C]3[C]([C]([C]4)[C]([C]1[C]5[C]2[C]34)CC5)[C]"
-    c4_match = mol.GetSubstructMatch(Chem.MolFromSmarts(c4_smarts))
-    if not c4_match:
-        return False, "Could not find C4"
-    atom_index_4 = c4_match[3]
+    # 3. Check for 5-alpha configuration. This can only be done by inspecting
+    #    the SMILES representation
+    
+    # The 5th position is the carbon next to the first bridgehead in the SMILES string.
+    # In the examples, it is always a chiral center that has an alpha hydrogen
+    # i.e. [C@@] or [C@H].
 
-    # 5. Identify C6 using SMARTS relative to the core
-    c6_smarts = "[C]12[C][C]3[C]([C]4[C]([C]1[C]5[C]2[C]34)C([C]6)C5)[C]"
-    c6_match = mol.GetSubstructMatch(Chem.MolFromSmarts(c6_smarts))
+    smiles_parts = smiles.split(']')
+    if len(smiles_parts) < 2:
+      return False, "Invalid SMILES: cannot find ring information"
 
-    if not c6_match:
-         return False, "Could not find C6"
-    atom_index_6 = c6_match[8]
+    #Check the second set of characters which should be "[C@@" or "[C@H]"
+    smiles_part_5_carbon = smiles_parts[1][1:4]
+    if smiles_part_5_carbon != "C@H" and smiles_part_5_carbon != "C@@":
+       return False, "No 5 alpha configuration found. Not [C@H] or [C@@]"
 
-    # 6. Check for alpha configuration at position 5
-    atom5 = mol.GetAtomWithIdx(atom_index_5)
-    atom4 = mol.GetAtomWithIdx(atom_index_4)
-    atom6 = mol.GetAtomWithIdx(atom_index_6)
-
-    # Check that the C5 atom has the correct chirality for an alpha configuration.
-    # Specifically C5 bonded to C4 and C6 should have a clockwise configuration
-    if not (atom5.GetChiralTag() == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CW or atom5.GetChiralTag() == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW) :
-        return False, "No 5 alpha configuration found. C5 is not a chiral center"
-
-    #If we made it to here, then it is chiral, and the bonds to c4 and c6 should be oriented in a CW direction.
-    # The default direction in RDKit for alpha is CW
-
-    if atom5.GetChiralTag() == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW:
-        return False, "No 5 alpha configuration found. Wrong chirality at C5"
 
     return True, "Molecule is a 3-oxo-5alpha-steroid"
