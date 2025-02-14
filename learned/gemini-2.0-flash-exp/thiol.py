@@ -20,14 +20,15 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for thiol group (-SH)
-    thiol_pattern = Chem.MolFromSmarts("[SH1]")
-    if not mol.HasSubstructMatch(thiol_pattern):
-       return False, "No thiol (-SH) group found"
+    # Look for a sulfur atom with one single bond.
+    thiol_pattern = Chem.MolFromSmarts("[S]")
+    sulfur_atoms = mol.GetSubstructMatches(thiol_pattern)
+    if not sulfur_atoms:
+        return False, "No sulfur atom found"
 
-    # Check if -SH is attached to a carbon
-    carbon_thiol_pattern = Chem.MolFromSmarts("[CX4,cx3][SH1]")
+    # Check if the sulfur atom is bonded to a carbon atom
+    carbon_thiol_pattern = Chem.MolFromSmarts("[S][C]")
     if not mol.HasSubstructMatch(carbon_thiol_pattern):
-        return False, "Thiol group not directly attached to a carbon"
+        return False, "Thiol group not attached to a carbon atom"
 
     return True, "Molecule contains a thiol group attached to a carbon"
