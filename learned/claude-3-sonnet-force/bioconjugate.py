@@ -28,16 +28,16 @@ def is_bioconjugate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Get fragments
-    fragments = list(Chem.rdmolops.GetMolFrags(mol, aromatics=Chem.rdchem.AromaticityType.SIMPLE))
+    fragments = list(Chem.GetMolFrags(mol, aromolicExpr=Chem.SmartlessMolFromSmarts('c'), sanitizeFrags=True))
     
     # Count number of "biological" fragments
     biological_fragments = []
     for frag in fragments:
-        frag_mol = Chem.rdmolops.MolFragmentToSmiles(mol, frag, kekuleSmiles=True)
+        frag_mol = Chem.rdmolops.MolFragmentToSmiles(mol, frag, kekuleSmiles=True, isomericSmiles=True)
         frag_mol = Chem.MolFromSmiles(frag_mol)
         
         # Check if fragment contains common biological substructures
-        biological_patterns = ['[NX3]', '[NX4+]', 'C(=O)[O,N]', 'n', 'O=C-O-P', 'S']
+        biological_patterns = ['[NX3]', '[NX4+]', 'C(=O)[O,N]', 'n', 'O=C-O-P', 'S', 'C1CCCCC1', 'C1CCCCCC1', 'C1CCCCCCC1']
         is_biological = any(frag_mol.HasSubstructMatch(Chem.MolFromSmarts(patt)) for patt in biological_patterns)
         
         if is_biological:
