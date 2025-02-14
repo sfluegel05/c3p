@@ -22,48 +22,93 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for glycerol backbone with correct stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts("[C@H]([OX2])[CH2X4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-         return False, "No glycerol backbone with correct stereochemistry found"
-
-    # 2. Look for 2 ester groups (-O-C(=O)-) attached to glycerol carbons
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    # 1. Check for glycerol backbone 
+    glycerol_pattern = Chem.MolFromSmarts("[C]([OX2])[CH2X4][CH2X4]")
     glycerol_match = mol.GetSubstructMatch(glycerol_pattern)
-    if not glycerol_match: return False, "No glycerol backbone match"
-
-    #Find the atoms connected to glycerol
+    if not glycerol_match:
+         return False, "No glycerol backbone found"
     glycerol_atoms = [mol.GetAtomWithIdx(i) for i in glycerol_match]
 
-    ester_count = 0
-    for atom in glycerol_atoms:
-       for neighbor in atom.GetNeighbors():
-          if mol.HasSubstructMatch(ester_pattern,rootAtom=neighbor.GetIdx()):
-                ester_count +=1
 
+    # 2. Look for 2 ester groups (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+
+    ester_count = 0
+    for match in ester_matches:
+        ester_atom = mol.GetAtomWithIdx(match[0])
+        for neighbor in ester_atom.GetNeighbors():
+            if neighbor in glycerol_atoms:
+                ester_count+=1
+    
     if ester_count != 2:
         return False, f"Found {ester_count} ester groups attached to glycerol, need exactly 2"
 
 
+    # 3. Look for the phosphocholine group 
+    phosphate_pattern = Chem.MolFromSmarts("[OX2][P](=[OX1])([OX1-])")
+    choline_pattern = Chem.MolFromSmarts("OCC[N+](C)(C)C")
 
-    # 3. Look for the phosphocholine group connected to the glycerol
-    phosphocholine_pattern = Chem.MolFromSmarts("[C@H]([OX2])[CH2X4][CH2X4]~[OX2][P](=[OX1])([OX1-])OCC[N+](C)(C)C")
-    if not mol.HasSubstructMatch(phosphocholine_pattern):
-         return False, "No phosphocholine group connected to glycerol found"
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    choline_matches = mol.GetSubstructMatches(choline_pattern)
+    if not phosphate_matches:
+         return False, "No phosphate group found"
+    if not choline_matches:
+         return False, "No choline group found"
+
+    # Check if phosphate group is linked to glycerol
+    phosphate_linked = False
+    for match in phosphate_matches:
+        phosphate_atom = mol.GetAtomWithIdx(match[0])
+        for neighbor in phosphate_atom.GetNeighbors():
+            if neighbor.GetIdx() in [a.GetIdx() for a in glycerol_atoms]:
+               phosphate_linked = True
+               break
+        if phosphate_linked:
+             break
+    if not phosphate_linked:
+          return False, "Phosphate not linked to glycerol"
+
+    # Check if phosphate is linked to choline
+    phosphate_choline_linked = False
+    for pmatch in phosphate_matches:
+        phosphate_atom = mol.GetAtomWithIdx(pmatch[1]) # Index of P in SMARTS
+        for cmatch in choline_matches:
+           choline_atom = mol.GetAtomWithIdx(cmatch[0]) # Index of O in SMARTS
+           for neighbor in phosphate_atom.GetNeighbors():
+             if neighbor == choline_atom:
+               phosphate_choline_linked=True
+               break
+           if phosphate_choline_linked: break
+        if phosphate_choline_linked: break
+
+    if not phosphate_choline_linked:
+        return False, "Phosphate not linked to choline"
 
 
-    # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    # 4. Check for fatty acid chains (long carbon chains attached to esters)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4][CX4]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+    
+    fatty_acid_count = 0
+    for match in fatty_acid_matches:
+       fa_atom1 = mol.GetAtomWithIdx(match[0])
+       for ester_match in ester_matches:
+            ester_atom = mol.GetAtomWithIdx(ester_match[0])
+            if ester_atom in fa_atom1.GetNeighbors():
+                fatty_acid_count +=1
+                break
 
-    #4. Count rotatable bonds to verify long chains
+
+    if fatty_acid_count < 2:
+        return False, f"Missing fatty acid chains, got {fatty_acid_count} attached to esters"
+
+    #5. Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8:
+    if n_rotatable < 6:
         return False, "Chains too short to be fatty acids"
     
-    # 5. Count key atoms P, N, O.
+    # 6. Count key atoms P, N, O.
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
@@ -76,7 +121,7 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
         return False, f"Must have at least 7 oxygens, found {o_count}"
     
     
-    # 6. Check for negative charge on the phosphate group
+    # 7. Check for negative charge on the phosphate group
     has_neg_charge = False
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1:
