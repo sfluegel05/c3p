@@ -28,7 +28,7 @@ def is_rotenoid(smiles: str):
     # the 'c' means aromatic, and 'C' means any carbon. ~,- means single or double bonds
     # This is a more relaxed version than previous one. It looks for the 3 fused 6 membered rings, two
     # of them have a bridge oxygen and the carbonyl is always present.
-    core_pattern = Chem.MolFromSmarts("[C]1~[C]~[C]~[C](=[O])~[C]2~[c]~[c]~[O]~[c]3~[C]~[C]~[O]~[C]1~[C]3~2")
+    core_pattern = Chem.MolFromSmarts("[C]1~[C]~[C]~[C](=[O])~[C]2~[C]~[C]~[O]~[C]3~[C]~[C]~[O]~[C]1~[C]3~2")
     
     if core_pattern is None:
         return False, "Invalid SMARTS pattern"
