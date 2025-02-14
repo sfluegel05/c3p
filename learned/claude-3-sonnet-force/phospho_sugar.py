@@ -1,63 +1,34 @@
 """
 Classifies: CHEBI:33447 phospho sugar
 """
-"""
-Classifies: CHEBI:27600 phospho sugar
-Any monosaccharide containing an alcoholic hydroxy group esterified with phosphoric acid.
-"""
+The previous program attempted to classify phospho sugars by looking for a monosaccharide backbone and a phosphate group connected via an ester bond. It also included some additional checks for the carbon-to-oxygen ratio and the number of phosphate groups.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+However, the results show that the program missed many true positives, suggesting that the rules and patterns used were too restrictive or not comprehensive enough.
 
-def is_phospho_sugar(smiles: str):
-    """
-    Determines if a molecule is a phospho sugar based on its SMILES string.
+Here are some potential issues and improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Monosaccharide backbone pattern**: The program used a set of three SMARTS patterns to identify the monosaccharide backbone. While these patterns cover some common ring structures, they may not be capturing all possible variations and modifications of monosaccharides. Additional patterns or a more general approach may be needed.
 
-    Returns:
-        bool: True if molecule is a phospho sugar, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for monosaccharide backbone using multiple patterns
-    monosaccharide_patterns = [
-        Chem.MolFromSmarts("[OX2]([CX4]([CX4]([OX2])[CX3](=[OX1])[OX2])[CX3](=[OX1])[CX4]([CX4]([OX2])[OX2])[OX2])[H]"),
-        Chem.MolFromSmarts("[OX2]([CX4]([CX4]([OX2])[CX3](=[OX1])[OX2])[CX3](=[OX1])[CX4]([CX3]([OX2])[OX2])[OX2])[H]"),
-        Chem.MolFromSmarts("[OX2]([CX4]([CX4]([OX2])[CX3](=[OX1])[OX2])[CX3](=[OX1])[CX4]([CX4]([OX2])[OX2])[OX2])[OX2]")
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in monosaccharide_patterns):
-        return False, "No monosaccharide backbone found"
-    
-    # Check for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
-    
-    # Check for ester bond between phosphate and alcohol group
-    ester_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2])[OX2]")
-    if not AllChem.FindMolChemismatch(mol, ester_pattern):
-        return False, "No ester bond between phosphate and alcohol group"
-    
-    # Additional checks
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    c_to_o_ratio = c_count / o_count if o_count != 0 else float('inf')
-    
-    if c_to_o_ratio < 0.8 or c_to_o_ratio > 1.2:
-        return False, "Carbon-to-oxygen ratio outside typical range for monosaccharides"
-    
-    phosphate_groups = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_groups) > 1:
-        return False, "More than one phosphate group found"
-    
-    # Additional checks for specific functional groups or substructures can be added here
-    
-    return True, "Contains a monosaccharide backbone with a phosphate group esterified to an alcoholic hydroxy group"
+2. **Phosphate group pattern**: The program only looked for a single phosphate group pattern (`OP(O)(O)=O`). However, some examples in the true negatives seem to have more complex phosphate groups or multiple phosphate groups connected in different ways.
+
+3. **Ester bond check**: The program checked for the presence of an ester bond between a phosphate group and an alcohol group using a specific SMARTS pattern. However, this may not account for all possible ways the phosphate group can be connected to the monosaccharide backbone.
+
+4. **Carbon-to-oxygen ratio check**: While the carbon-to-oxygen ratio check is a good heuristic, it may not be necessary or reliable for all cases, especially when dealing with modified or substituted monosaccharides.
+
+5. **Functional group and substructure checks**: The program did not include any specific checks for common functional groups or substructures found in phospho sugars, such as amino groups, nucleobases, or other modifications.
+
+To improve the program, we can consider the following approaches:
+
+1. Use a more general or flexible pattern-matching approach to identify monosaccharide backbones, possibly by combining multiple patterns or using recursive SMARTS patterns.
+
+2. Expand the phosphate group pattern to include more complex phosphate groups and handle cases with multiple phosphate groups.
+
+3. Instead of looking for a specific ester bond pattern, consider checking for the presence of a phosphate group directly connected to any oxygen atom in the monosaccharide backbone.
+
+4. Remove or adjust the carbon-to-oxygen ratio check, as it may not be a reliable indicator for all cases.
+
+5. Incorporate additional checks for common functional groups, substructures, or modifications found in phospho sugars, such as amino groups, nucleobases, or other substituents.
+
+6. Consider using machine learning techniques or more sophisticated fingerprint-based approaches to learn the patterns and features of phospho sugars from a larger dataset.
+
+It's important to note that while these suggestions may improve the program's performance, there may still be edge cases or exceptions that are difficult to capture with a rule-based approach. Additionally, the quality of the benchmark dataset and the presence of any systematic errors or inconsistencies should also be considered.
