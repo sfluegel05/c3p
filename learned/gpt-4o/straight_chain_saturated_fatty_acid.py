@@ -19,59 +19,51 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carboxylic acid group (must be terminal)
+    # Look for carboxylic acid group (C(=O)O)
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     carboxylic_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     
     if len(carboxylic_matches) != 1:
-        return False, "No terminal carboxylic acid group found or multiple groups detected"
+        return False, "No carboxylic acid group found or multiple groups present"
 
-    # Ensure carbon chain saturation (apart from carboxylic)
-    # Saturation refers to carbon-carbon bonds only
+    # Ensure the terminal carbon is part of the carboxylic acid
+    terminal_carbon = carboxylic_matches[0][0]
+    # Ensure it's the end of the chain
+    neighbors = mol.GetAtomWithIdx(terminal_carbon).GetNeighbors()
+    if any(neighbor.GetAtomicNum() == 6 for neighbor in neighbors if neighbor.GetIdx() != terminal_carbon + 1):
+        return False, "Carboxylic acid group not at the end of a chain"
+
+    # Ensure no double or triple bonds in carbon chain
     for bond in mol.GetBonds():
         if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
             if bond.GetBondType() != Chem.BondType.SINGLE:
                 return False, "Presence of non-single C-C bonds indicates unsaturation"
 
-    # Determine if molecule is a straight chain
-    # Count carbon atoms; ensure they are forming a continuous chain
-    c_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(c_atoms) < 3:
-        return False, "Too few carbon atoms for a fatty acid"
-
-    # We require a linear alignment with carboxylic acid
-    terminal_carbon_index = carboxylic_matches[0][0]
-    carbon_chain = [terminal_carbon_index]
-    current_index = terminal_carbon_index
-    
-    while True:
-        # Extend the chain forward
-        next_carbon = None
-        for neighbor in mol.GetAtomWithIdx(current_index).GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in carbon_chain:
-                next_carbon = neighbor.GetIdx()
-                break
-        
-        if next_carbon is None:
-            break
-        
-        carbon_chain.append(next_carbon)
-        current_index = next_carbon
-
-    if len(carbon_chain) != len(c_atoms):
-        return False, "Not a continuous straight chain; branches or side chains detected"
-
-    # Hydroxy group allowance: count OH groups apart from in carboxylic acid
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    # Check for hydroxy groups, allow at most one (apart from carboxylic acid O)
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]C")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
 
-    if any(oxyg_match[0] in chain for chain in hydroxy_matches):
-        if len(hydroxy_matches) > 1:
-            return False, f"Too many hydroxy groups: found {len(hydroxy_matches)}, need at most 1"
+    allowed_hydroxy_count = 1
+    if len(hydroxy_matches) > allowed_hydroxy_count:
+        return False, f"Too many hydroxy groups: found {len(hydroxy_matches)}, allowed at most {allowed_hydroxy_count}"
+
+    # Ensure it's a straight chain
+    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+
+    # Create a linear chain from terminal carbon and check connectivity
+    current = terminal_carbon
+    chain_atoms = set()
+    for _ in range(len(carbon_atoms)):
+        chain_atoms.add(current)
+        neighbors = [
+            neighbor.GetIdx() for neighbor in mol.GetAtomWithIdx(current).GetNeighbors()
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in chain_atoms
+        ]
+        if len(neighbors) != 1:
+            return False, "Branches or side chains detected; not a straight chain"
+        current = neighbors[0]
+
+    if len(chain_atoms) != len(carbon_atoms):
+        return False, "Not a continuous straight chain; branches or side chains detected"
 
     return True, "Molecule is a straight-chain saturated fatty acid"
-
-# Example use:
-# smiles = "CCCCCCCC(O)=O"  # Octanoic acid
-# result, reason = is_straight_chain_saturated_fatty_acid(smiles)
-# print(result, reason)
