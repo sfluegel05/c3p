@@ -1,29 +1,55 @@
 """
 Classifies: CHEBI:60245 inositol phosphoceramide
 """
-The previous program performs reasonably well in classifying inositol phosphoceramides, as evidenced by the high number of true positives (150) and true negatives (182407). However, there are still some false positives (23) and false negatives (4), indicating areas for improvement.
+"""
+Classifies: CHEBI:39179 inositol phosphoceramide
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Analysis of False Positives:
-Most of the false positives seem to be related to molecules containing inositol and phosphodiester groups, but not necessarily linked to a ceramide moiety. Some examples include:
+def is_inositol_phosphoceramide(smiles: str):
+    """
+    Determines if a molecule is an inositol phosphoceramide based on its SMILES string.
+    An inositol phosphoceramide is a phosphosphingolipid with an inositol residue
+    linked to a ceramide moiety via a phosphodiester bridge.
 
-- Ins-1-P-6-Man-beta1-6-Ins-1-P-Cer(t18:0/2,3-OH-24:0)
-- MIPC(t18:0/18:0(2OH))
-- Ins-1-P-Cer(d18:0/30:0)(1-)
+    Args:
+        smiles (str): SMILES string of the molecule
 
-These molecules contain additional inositol or mannose residues, or have modified ceramide moieties (e.g., longer or shorter chains, additional hydroxyl groups).
+    Returns:
+        bool: True if molecule is an inositol phosphoceramide, False otherwise
+        str: Reason for classification
+    """
 
-To address these false positives, the program could be made more specific in its identification of the ceramide moiety. For example, the ceramide pattern could be made more stringent by requiring specific chain lengths or functional groups.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Analysis of False Negatives:
-There are only 4 false negatives, which is relatively low. These false negatives seem to be valid inositol phosphoceramides based on their SMILES strings. It's possible that the patterns used in the program are too strict and failing to match some valid structures.
+    # Look for inositol residue
+    inositol_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]([C@H]([C@@H]([C@@H]([C@H]1O)O)O)O)O")
+    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
+    if len(inositol_matches) != 1:
+        return False, "Exactly one inositol residue required"
 
-Potential Improvements:
-1. Refine the ceramide pattern: Instead of a broad pattern for long carbon chains, the ceramide pattern could be made more specific to require a sphingoid base (e.g., C18 or C20 chain with an amine group) and a fatty acid chain (e.g., C16 to C26).
+    # Look for phosphodiester group
+    phosphodiester_pattern = Chem.MolFromSmarts("O=P(OCC)(OC)")
+    phosphodiester_matches = mol.GetSubstructMatches(phosphodiester_pattern)
+    if len(phosphodiester_matches) != 1:
+        return False, "Exactly one phosphodiester group required"
 
-2. Consider additional constraints: While the program checks for molecular weight and rotatable bond count, additional constraints could be added, such as the presence of specific functional groups (e.g., hydroxyl groups) or the absence of certain moieties (e.g., additional sugar residues).
+    # Look for ceramide moiety
+    sphingoid_base_pattern = Chem.MolFromSmarts("[N;H2,H1]CCC[C@@H]([C@@H](C)CC)")
+    fatty_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)")
+    ceramide_pattern = sphingoid_base_pattern.GetMol().GetBonds() + fatty_acid_pattern.GetMol().GetBonds()
+    ceramide_matches = mol.GetSubstructMatches(ceramide_pattern)
+    if len(ceramide_matches) != 1:
+        return False, "Exactly one ceramide moiety required"
 
-3. Explore alternative SMARTS patterns: The SMARTS patterns used in the program may not be capturing all valid inositol phosphoceramide structures. Alternative patterns could be explored, or a combination of patterns could be used.
+    # Check molecular weight range for inositol phosphoceramides
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 600 or mol_wt > 1200:
+        return False, "Molecular weight outside typical range for inositol phosphoceramides"
 
-4. Incorporate machine learning: While the current approach is based on rule-based pattern matching, machine learning techniques (e.g., fingerprint-based classifiers) could potentially improve the classification accuracy, especially for more complex or diverse structures.
-
-Overall, the program appears to be reasonably effective in classifying inositol phosphoceramides, with a high F1 score of 0.9174. With some additional refinements to the patterns and constraints, the false positives and false negatives could potentially be further reduced.
+    return True, "Contains inositol residue linked to ceramide moiety via phosphodiester bridge"
