@@ -3,7 +3,7 @@ Classifies: CHEBI:27300 vitamin D
 """
 """
 Classifies: CHEBI:27279 vitamin D
-Any member of a group of fat-soluble hydroxy seco-steroids that exhibit biological activity against vitamin D deficiency. 
+Any member of a group of fat-soluble hydroxy seco-steroids that exhibit biological activity against vitamin D deficiency.
 Vitamin D can be obtained from sun exposure, food and supplements and is biologically inactive and converted into the biologically active calcitriol via double hydroxylation in the body.
 """
 
@@ -30,13 +30,19 @@ def is_vitamin_D(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for cholesterol-like steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C@@]12[C@@]([C@H]([C@@H]3[C@H]([C@@H](C[C@@H]4[C@@]3(CC[C@@]4(O)[C@@H](O)[C@H]3[C@@]4([C@]2(C[C@@H](CC1)C)(CC[C@]34C)C)C)C)C)C)CC=C)C"
-    if not mol.HasSubstructMatch(steroid_pattern):
+    steroid_patterns = [
+        Chem.MolFromSmarts("[C@@]12[C@@]([C@H]([C@@H]3[C@H]([C@@H](C[C@@H]4[C@@]3(CC[C@@]4(O)[C@@H](O)[C@H]3[C@@]4([C@]2(C[C@@H](CC1)C)(CC[C@]34C)C)C)C)C)CC=C)C"),
+        Chem.MolFromSmarts("[C@@]12[C@@]([C@H]([C@@H]3[C@H]([C@@H](C[C@@H]4[C@@]3(CC[C@@]4(O)[C@@H](O)[C@H]3[C@@]4([C@]2(C[C@@H](CC1)C)(CC[C@]34C)C)C)C)C)C[C@H]=C)C")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
         return False, "No cholesterol-like steroid backbone found"
 
     # Look for characteristic vitamin D side chain
-    vit_d_pattern = Chem.MolFromSmarts("[C@@]12[C@H](C[C@H](C=C)C1)C[C@@H](O)[C@]2(O)CCC=C"
-    if not mol.HasSubstructMatch(vit_d_pattern):
+    vit_d_patterns = [
+        Chem.MolFromSmarts("[C@@]12[C@H](C[C@H](C=C)C1)C[C@@H](O)[C@]2(O)CCC=C"),
+        Chem.MolFromSmarts("[C@@]12[C@H](C[C@H](C=C)C1)C[C@@H](O)[C@]2(O)CC[C@@H]=C")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in vit_d_patterns):
         return False, "Missing characteristic vitamin D side chain"
 
     # Check for hydroxylation pattern
@@ -46,7 +52,12 @@ def is_vitamin_D(smiles: str):
     elif hydroxy_count == 1:
         return True, "Contains cholesterol-like steroid backbone with characteristic vitamin D side chain and one hydroxyl group"
     elif hydroxy_count == 2:
-        return True, "Contains cholesterol-like steroid backbone with characteristic vitamin D side chain and two hydroxyl groups (calcitriol)"
+        # Calcitriol has specific hydroxylation positions
+        calcitriol_pattern = Chem.MolFromSmarts("[C@@]12[C@@]([C@H]([C@@H]3[C@H]([C@@H](C[C@@H]4[C@@]3(CC[C@@]4(O)[C@@H](O)[C@H]3[C@@]4([C@]2(C[C@@H](CC1)C)(CC[C@]34C)C)C)C)C)C[C@H]=C)C(O)[C@]1(O)CCC=C")
+        if mol.HasSubstructMatch(calcitriol_pattern):
+            return True, "Contains characteristic calcitriol structure"
+        else:
+            return True, "Contains cholesterol-like steroid backbone with characteristic vitamin D side chain and two hydroxyl groups"
     else:
         return True, f"Contains cholesterol-like steroid backbone with characteristic vitamin D side chain and {hydroxy_count} hydroxyl groups"
 
