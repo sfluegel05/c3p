@@ -18,22 +18,34 @@ def is_azole(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    # Sanitize SMILES string
+    try:
+      mol = Chem.MolFromSmiles(smiles, sanitize=True)
+    except:
+      return False, "Invalid SMILES string"
+
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find 5-membered rings with at least 1 Nitrogen
-    azole_pattern = Chem.MolFromSmarts("[n;R5][n,o,s;R5][*;R5][*;R5][*;R5]")
-    
-    ring_matches = mol.GetSubstructMatches(azole_pattern)
-
-    if not ring_matches:
-          return False, "No azole ring found"
-    
-    # Check the ring is monocyclic (exactly 1 ring)
+    # Check if it's monocyclic
     if Chem.GetSSSR(mol) != 1:
-       return False, "Found fused ring or no ring"
+        return False, "Molecule is not monocyclic"
+    
+    # Find 5-membered rings, each atom in the ring
+    azole_pattern = Chem.MolFromSmarts("[R5][R5][R5][R5][R5]")
+    if not mol.HasSubstructMatch(azole_pattern):
+          return False, "No 5-membered ring found"
 
+    #check for at least one nitrogen atom
+    nitrogen_pattern = Chem.MolFromSmarts("[n;R5]")
+    if not mol.HasSubstructMatch(nitrogen_pattern):
+        return False, "No nitrogen atom in the 5-membered ring"
 
-    return True, "Contains a monocyclic 5-membered heterocycle with at least one nitrogen."
+    #Check for no more than 2 other heteroatoms (N, O, S). Max 3 heteroatoms, min 1 nitrogen.
+    other_hetero_pattern = Chem.MolFromSmarts("[o,s;R5]")
+    other_hetero_matches = mol.GetSubstructMatches(other_hetero_pattern)
+    if len(other_hetero_matches) > 2:
+        return False, "Too many heteroatoms in the ring"
+        
+
+    return True, "Contains a monocyclic 5-membered heterocycle with at least one nitrogen and no more than 2 other heteroatoms."
