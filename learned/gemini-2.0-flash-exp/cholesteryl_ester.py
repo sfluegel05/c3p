@@ -3,6 +3,7 @@ Classifies: CHEBI:17002 cholesteryl ester
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_cholesteryl_ester(smiles: str):
     """
@@ -22,11 +23,13 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the cholesterol core substructure using SMARTS - generalized
-    # The ring structure and connectivity is essential. Specific chirality or position of double bond are not.
-    cholesterol_core = Chem.MolFromSmarts("[C]1[C]2[C]=[C]3[C]([C]1[C])CC[C]4[C]3[C]C[C]([C]2)[C]4[OX2]")
+    # Define a more precise SMARTS pattern for the cholesterol core
+    # This pattern captures the tetracyclic ring system and the key carbon atoms
+    # It's crucial to get the ring fusions right.
+    cholesterol_core = Chem.MolFromSmarts("[C]1[C]2[C]([C]([C]3[C]([C]2CC[C]4[C]3[C]CC([C]5[C]4[C])[C]5[C])C)([C])C)[O]")
     
-
+    if cholesterol_core is None:
+          return False, "Invalid cholesterol SMARTS"
     # Find matches for the core structure
     matches = mol.GetSubstructMatches(cholesterol_core)
 
@@ -42,11 +45,23 @@ def is_cholesteryl_ester(smiles: str):
 
     # Verify that the ester group is attached to the position 3 oxygen of the cholesterol.
     # Find the oxygen from the core and check if its connected to the ester.
+    ester_linked_correctly = False
     for core_match in matches:
         oxygen_index_on_core = core_match[-1]
         for ester_match in ester_matches:
             ester_oxygen_index = ester_match[0]
             if mol.GetBondBetweenAtoms(oxygen_index_on_core, ester_oxygen_index) is not None:
-                 return True, "Cholesterol core with ester group at position 3."
+                 ester_linked_correctly = True
+                 break
+        if ester_linked_correctly:
+          break
     
-    return False, "Ester group not attached to position 3 of cholesterol."
+    if not ester_linked_correctly:
+      return False, "Ester group not attached to position 3 of cholesterol."
+    
+    # Check for the fatty acid chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "No long fatty acid chain attached"
+    
+    return True, "Cholesterol core with ester group at position 3 and fatty acid chain."
