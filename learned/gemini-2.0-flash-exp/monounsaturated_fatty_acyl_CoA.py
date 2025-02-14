@@ -2,7 +2,6 @@
 Classifies: CHEBI:139575 monounsaturated fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_monounsaturated_fatty_acyl_CoA(smiles: str):
@@ -22,27 +21,31 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for the simplified CoA moiety with thioester bond (S-C=O).
-    # Simplified SMARTS focusing on the key parts of CoA
-    coa_pattern = Chem.MolFromSmarts('COP(=O)(O)OP(=O)(O)OCC1C(C(C(O1)N2C=NC3=C2N=CN=C3N)O)COP(=O)(O)O.C(=O)S') #
+    # 1. Check for the CoA moiety using a simplified SMARTS focusing on the core.
+    coa_pattern = Chem.MolFromSmarts("[P](=O)([O])O[C@H]1[C@@H]([C@@H]([C@H](O1)C2=CN=C3N=CN=C(N)C3=C2)O)COP(=O)([O])O") #Simplified CoA pattern
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety with thioester bond not found"
+        return False, "CoA moiety not found"
 
-    # 2. Check for exactly one carbon-carbon double bond
+    # 2. Check for the thioester bond (S-C=O) - this should be connected to the acyl chain
+    thioester_pattern = Chem.MolFromSmarts("SC(=O)")
+    if not mol.HasSubstructMatch(thioester_pattern):
+        return False, "Thioester bond not found"
+
+    # 3. Check for exactly one carbon-carbon double bond
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bond_matches) != 1:
         return False, f"Molecule has {len(double_bond_matches)} carbon-carbon double bonds, expected 1"
     
-    # 3. Check for a long carbon chain
+    # 4. Check for a long carbon chain
     fatty_acid_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain_pattern)
     if len(fatty_acid_matches) < 1:
         return False, "Missing a fatty acid chain"
 
-    # 4. Check for number of rotatable bonds - should be relatively long
+    # 5. Check for number of rotatable bonds - should be relatively long
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
+    if n_rotatable < 8:
         return False, "Fatty acid chain too short"
 
 
