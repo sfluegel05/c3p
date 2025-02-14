@@ -2,7 +2,7 @@
 Classifies: CHEBI:33857 aromatic primary alcohol
 """
 """
-Classifies: CHEBI:51831 aromatic primary alcohol
+Classifies: CHEBI:50828 aromatic primary alcohol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -26,26 +26,21 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Remove explicit hydrogens without sanitizing (to handle tautomers)
-    mol = Chem.RemoveHs(mol, sanitizeRemoving=False)
-    
-    # Get aromatic atoms
-    aromatic_atoms = Chem.GetAromaticAtoms(mol)
-    if not aromatic_atoms:
-        return False, "No aromatic rings found"
-    
-    # Get primary alcohol groups
-    primary_alcohol_pattern = Chem.MolFromSmarts("[CH2][OX2H]")
+    # Look for primary alcohol (-CH2OH) group
+    primary_alcohol_pattern = Chem.MolFromSmarts("[CH2;X3][OX2H]")
     primary_alcohol_matches = mol.GetSubstructMatches(primary_alcohol_pattern)
+    if not primary_alcohol_matches:
+        return False, "No primary alcohol group found"
     
-    # Check if any primary alcohol group is attached to an aromatic ring
+    # Check if any primary alcohol carbon is attached to an aromatic ring
     for match in primary_alcohol_matches:
-        alcohol_carbon_idx = match[0]
-        alcohol_oxygen_idx = match[1]
-        alcohol_carbon = mol.GetAtomWithIdx(alcohol_carbon_idx)
-        for neighbor_idx in alcohol_carbon.GetNeighbors():
-            neighbor_atom = mol.GetAtomWithIdx(neighbor_idx)
-            if neighbor_atom.GetIdx() in aromatic_atoms:
-                return True, "Primary alcohol group attached to an aromatic ring"
+        atom_idx = match[0]  # Index of primary alcohol carbon
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if any(mol.GetAtomWithIdx(nbr_idx).GetIsAromatic() for nbr_idx in atom.GetNeighbors()):
+            return True, "Contains a primary alcohol attached to an aromatic ring"
     
-    return False, "No primary alcohol group attached to an aromatic ring"
+    return False, "Primary alcohol not attached to an aromatic ring"
+
+# Example usage:
+print(is_aromatic_primary_alcohol("Nc1nc(=O)[nH]cc1CO"))  # True, "Contains a primary alcohol attached to an aromatic ring"
+print(is_aromatic_primary_alcohol("CCCCCC"))  # False, "No primary alcohol group found"
