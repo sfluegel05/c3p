@@ -5,7 +5,7 @@ Classifies: CHEBI:16389 ubiquinones
 Classifies: ubiquinones
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_ubiquinones(smiles: str):
     """
@@ -26,79 +26,55 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the ubiquinone core SMARTS pattern
-    # Core quinone ring with methoxy groups at positions 2 and 3, methyl at 5, and side chain at 6
-    core_smarts = """
-    [#6]1=,:[#6]([OCH3])=,:[#6](=,:[#6]([OCH3])=,:[#6](=,:[#6]1=O)[CH3])[CH3]
-    """
-
-    core_pattern = Chem.MolFromSmarts(core_smarts)
-    if core_pattern is None:
+    # Define the ubiquinone core SMARTS pattern (corrected)
+    # Core quinone ring with methoxy groups at positions 2 and 3, methyl at 5, and attachment at position 6
+    core_smarts = "COc1cc(C)c(=O)c(OC)c1=O"
+    core_mol = Chem.MolFromSmarts(core_smarts)
+    if core_mol is None:
         return False, "Unable to create core pattern"
 
     # Find matches for the core pattern
-    matches = mol.GetSubstructMatches(core_pattern)
+    matches = mol.GetSubstructMatches(core_mol)
     if not matches:
         return False, "Core ubiquinone structure not found"
 
-    # Check for polyprenoid side chain at position 6
-    # Define the attachment atom (position 6) in the core pattern
-    attachment_atom_idx = 5  # Index of the atom in core_pattern where side chain attaches
+    # Identify the atom in the core pattern corresponding to position 6
+    # In the core_smarts, the ring atoms are numbered as follows (based on SMILES parsing):
+    # Atom indices in core_mol: 0 to 11 (including substituents)
+    # Ring atoms indices: 2 (C1), 3, 4, 5, 6, 7
+    # Position 6 corresponds to atom index 7 in core_mol
 
+    position6_idx_in_core = 7  # Index of the ring atom at position 6
+
+    # Check for substituent (side chain) at position 6 in the molecule
     for match in matches:
-        # Get the atom in the molecule where the side chain should be attached
-        side_chain_atom_idx = match[attachment_atom_idx]
-        side_chain_atom = mol.GetAtomWithIdx(side_chain_atom_idx)
+        position6_idx_in_mol = match[position6_idx_in_core]
+        position6_atom = mol.GetAtomWithIdx(position6_idx_in_mol)
 
-        # Get neighbors not part of the core
+        # Check if the atom at position 6 has substituents outside the core structure
         core_atom_indices = set(match)
-        side_chain_atoms = []
+        substituents = [
+            neighbor for neighbor in position6_atom.GetNeighbors()
+            if neighbor.GetIdx() not in core_atom_indices
+        ]
 
-        for neighbor in side_chain_atom.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx not in core_atom_indices:
-                # Perform BFS to get the side chain atoms
-                side_chain_frag = Chem.GetMolFrags(Chem.PathToSubmol(mol, [side_chain_atom_idx, neighbor_idx]), asMols=True)
-                if side_chain_frag:
-                    side_chain_mol = side_chain_frag[0]
-                    # Check if the side chain is a polyprenoid
-                    is_polyprenoid, reason = check_polyprenoid_side_chain(side_chain_mol)
-                    if is_polyprenoid:
-                        return True, "Contains ubiquinone core with polyprenoid side chain at position 6"
-                    else:
-                        continue
+        if substituents:
+            # Side chain exists; check if it is a polyprenoid chain
+            side_chain_atom = substituents[0]
+            side_chain_fragment = Chem.FragmentOnBonds(
+                mol, [mol.GetBondBetweenAtoms(position6_idx_in_mol, side_chain_atom.GetIdx()).GetIdx()],
+                addDummies=False
+            )
+            side_chain = Chem.GetMolFrags(side_chain_fragment, asMols=True, sanitizeFrags=True)[1]
+            
+            # Check if side chain is long enough (polyprenoid chains are typically long hydrocarbon chains)
+            num_carbons = sum(1 for atom in side_chain.GetAtoms() if atom.GetAtomicNum() == 6)
+            if num_carbons >= 5:
+                return True, "Contains ubiquinone core with polyprenoid side chain at position 6"
+            else:
+                continue  # Side chain too short to be polyprenoid
 
     return False, "Core ubiquinone structure found but no suitable polyprenoid side chain at position 6"
-
-def check_polyprenoid_side_chain(side_chain_mol):
-    """
-    Checks if the side chain is a polyprenoid (contains isoprene units).
-
-    Args:
-        side_chain_mol (Mol): RDKit molecule of the side chain
-
-    Returns:
-        bool: True if side chain is polyprenoid, False otherwise
-        str: Reason for classification
-    """
-
-    # Count the number of carbons
-    num_carbons = sum(1 for atom in side_chain_mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons < 5:
-        return False, "Side chain too short to be polyprenoid"
-
-    # Define isoprene unit SMARTS pattern
-    isoprene_smarts = "C(=C)C-C=C"
-    isoprene_pattern = Chem.MolFromSmarts(isoprene_smarts)
-    if isoprene_pattern is None:
-        return False, "Unable to create isoprene pattern"
-
-    # Check for isoprene units
-    isoprene_matches = side_chain_mol.GetSubstructMatches(isoprene_pattern)
-    if not isoprene_matches:
-        return False, "Side chain does not contain isoprene units"
-
-    return True, "Side chain is polyprenoid"
 
 __metadata__ = {   
     'chemical_class': {   
