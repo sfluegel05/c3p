@@ -22,22 +22,17 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for carboxyl group
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-         return False, "No carboxyl group found"
+    # Pattern for the alpha amino acid core: a carboxyl group and an alpha carbon bonded to a nitrogen
+    alpha_amino_acid_core = Chem.MolFromSmarts("[NX3]-[CX4]-[CX3](=[OX1])-[OX2]")
+    if not mol.HasSubstructMatch(alpha_amino_acid_core):
+        return False, "No alpha amino acid core found"
 
-    # Pattern for alpha carbon attached to a nitrogen and carboxyl group
-    alpha_carbon_pattern = Chem.MolFromSmarts("[CH]([NX3])[C](=O)O")
-    if not mol.HasSubstructMatch(alpha_carbon_pattern):
-        return False, "No alpha carbon attached to a nitrogen and carboxyl group found"
-
-    # Pattern for N-hydroxy group
-    n_hydroxy_pattern_1 = Chem.MolFromSmarts("[NX3][OH1]")  # -NH-OH or -N-OH
-    n_hydroxy_pattern_2 = Chem.MolFromSmarts("[NX3]([OH1])[OH1]") # -N(OH)2
+    # Pattern for N-hydroxy group attached to the amino nitrogen: -N(OH)-C-C(=O)O or  -N(OH)(OH)-C-C(=O)O
+    n_hydroxy_pattern_1 = Chem.MolFromSmarts("[NX3]([OX2])-[CX4]-[CX3](=[OX1])-[OX2]")  # -N(OH)-C-C(=O)O
+    n_hydroxy_pattern_2 = Chem.MolFromSmarts("[NX3]([OX2])([OX2])-[CX4]-[CX3](=[OX1])-[OX2]")  # -N(OH)(OH)-C-C(=O)O
+    n_hydroxy_pattern_3 = Chem.MolFromSmarts("[NX2]=[CX3]-[OX2]") # -N=C-OH amidoxime
     
-    
-    if mol.HasSubstructMatch(n_hydroxy_pattern_1) or mol.HasSubstructMatch(n_hydroxy_pattern_2) :
-      return True, "Contains an alpha amino acid structure with at least one hydroxy group on the amino nitrogen"
+    if mol.HasSubstructMatch(n_hydroxy_pattern_1) or mol.HasSubstructMatch(n_hydroxy_pattern_2) or mol.HasSubstructMatch(n_hydroxy_pattern_3):
+        return True, "Contains an alpha amino acid structure with at least one hydroxy group on the amino nitrogen"
     
     return False, "No N-hydroxy group attached to the alpha amino group found"
