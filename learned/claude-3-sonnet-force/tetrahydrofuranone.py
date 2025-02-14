@@ -26,10 +26,10 @@ def is_tetrahydrofuranone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for oxolane (tetrahydrofuran) ring with specific stereochemistry
-    oxolane_pattern = Chem.MolFromSmarts("[O;R]1[C@@H]([C@@H](C)C)[C@@H](C)CC1")
+    # Look for oxolane (tetrahydrofuran) ring
+    oxolane_pattern = Chem.MolFromSmarts("[O;R]1CCCC1")
     if not mol.HasSubstructMatch(oxolane_pattern):
-        return False, "No oxolane (tetrahydrofuran) ring with correct stereochemistry found"
+        return False, "No oxolane (tetrahydrofuran) ring found"
     
     # Look for oxo- substituent on the ring
     oxo_pattern = Chem.MolFromSmarts("[O;X1]=[C;R]")
@@ -45,12 +45,7 @@ def is_tetrahydrofuranone(smiles: str):
                 ring_atom_idx = bond.GetBeginAtomIdx()
             
             ring_atom = mol.GetAtomWithIdx(ring_atom_idx)
-            if ring_atom.IsInRingSize(5) and ring_atom.HasProp("_ChiralityPossible"):
+            if ring_atom.IsInRingSize(5):
                 return True, "Contains oxolane (tetrahydrofuran) ring with oxo- substituent"
-    
-    # Additional filter: molecular weight should be between 100 and 500 Da
-    mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100 or mol_wt > 500:
-        return False, "Molecular weight outside the expected range for tetrahydrofuranones"
     
     return False, "No oxo- substituent attached to the oxolane (tetrahydrofuran) ring"
