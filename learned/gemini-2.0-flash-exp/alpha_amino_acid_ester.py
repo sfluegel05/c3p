@@ -21,26 +21,20 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for alpha carbon with amino group (allowing for any other attached groups)
-    alpha_amino_pattern = Chem.MolFromSmarts("[CX4H0-2]([NX3H0-2])([CX4,CX3])") 
-    # SMARTS pattern for any ester group
-    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][#6]")
-    #SMARTS pattern for carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
+    # SMARTS pattern for alpha-amino acid ester core.
+    # [C@H](N)([CX3](=O)[OX2][CX4]) matches a chiral carbon (alpha carbon) attached to:
+    #    - an amine (N)
+    #    - a carbonyl (C=O), that connects to
+    #    - an ester (OX2[CX4])
+    # This is more specific than before because it is looking for connectivity.
+    alpha_amino_ester_pattern = Chem.MolFromSmarts("[C@H]([NX3H0-2])([CX3](=[OX1])[OX2][#6])")
 
-    #check that the patterns are matched
-    alpha_amino_matches = mol.GetSubstructMatches(alpha_amino_pattern)
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+
+    #check that the pattern is matched
+    alpha_amino_matches = mol.GetSubstructMatches(alpha_amino_ester_pattern)
+
 
     if not alpha_amino_matches:
-        return False, "Molecule does not contain an alpha-amino acid core"
-    
-    if not ester_matches:
-         return False, "Molecule does not contain an ester group"
-
-    
-    if carboxylic_acid_matches:
-        return False, "Molecule contains a free carboxylic acid, not an ester"
+        return False, "Molecule does not contain an alpha-amino acid ester core"
 
     return True, "Molecule contains an alpha-amino acid with an ester group."
