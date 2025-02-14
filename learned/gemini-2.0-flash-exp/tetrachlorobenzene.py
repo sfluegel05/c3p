@@ -2,12 +2,11 @@
 Classifies: CHEBI:26888 tetrachlorobenzene
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_tetrachlorobenzene(smiles: str):
     """
     Determines if a molecule is a tetrachlorobenzene based on its SMILES string.
-    A tetrachlorobenzene is defined as a molecule containing a benzene ring with four chlorine substituents (directly or via one atom).
+    A tetrachlorobenzene is defined as a molecule containing a benzene ring with four chlorine substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,33 +20,37 @@ def is_tetrachlorobenzene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a benzene ring with four chlorine substituents
-    # This SMARTS pattern looks for a benzene ring with at least four chlorine atoms attached directly or via one atom,
-    # the X means any atom.
+    # 1. Check for a benzene ring
+    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
+    if not mol.HasSubstructMatch(benzene_pattern):
+        return False, "Molecule does not contain a benzene ring"
     
-    tetrachloro_benzene_pattern = Chem.MolFromSmarts("c1([X,Cl])([X,Cl])([X,Cl])([X,Cl])cc1")
-    if not mol.HasSubstructMatch(tetrachloro_benzene_pattern):
-      
-        # If the above fails check a similar pattern in which the chlorines are attached to the ring
-        tetrachloro_benzene_pattern_direct = Chem.MolFromSmarts("c1(Cl)(Cl)(Cl)(Cl)cc1")
-        if not mol.HasSubstructMatch(tetrachloro_benzene_pattern_direct):
-          
-            # If the above fails, return that it does not contain a tetrachlorobenzene
-            return False, "Molecule does not contain a benzene ring with four chlorine substituents"
-
-    #Count the atoms to make sure only 4 are found in total, this is an extra safety check
+    # 2. Check for exactly four chlorine atoms
     chlorine_count = 0
+    chlorine_atoms = []
     for atom in mol.GetAtoms():
-      if atom.GetAtomicNum() == 17:
-        if atom.HasSubstructMatch(Chem.MolFromSmarts("[c]")):
-          chlorine_count += 1
-        else:
-          for neighbor in atom.GetNeighbors():
-            if neighbor.HasSubstructMatch(Chem.MolFromSmarts("[c]")):
-              chlorine_count += 1
-
-
+        if atom.GetAtomicNum() == 17:
+            chlorine_count += 1
+            chlorine_atoms.append(atom)
     if chlorine_count != 4:
-        return False, f"Found {chlorine_count} chlorine atoms on the benzene ring, need exactly 4"
+        return False, f"Molecule does not have exactly 4 chlorine atoms, found {chlorine_count}"
+    
+    # 3. Check if all four chlorines are linked (directly or via one atom) to benzene ring
+    for chlorine in chlorine_atoms:
+        is_linked_to_benzene = False
+        for neighbor in chlorine.GetNeighbors():
+            if neighbor.HasSubstructMatch(Chem.MolFromSmarts("[c]")):
+                 is_linked_to_benzene = True
+                 break
+            else:
+                for neighbor2 in neighbor.GetNeighbors():
+                    if neighbor2.HasSubstructMatch(Chem.MolFromSmarts("[c]")):
+                       is_linked_to_benzene = True
+                       break
+                if is_linked_to_benzene:
+                  break
+        if not is_linked_to_benzene:
+            return False, "Not all chlorine atoms are directly or indirectly linked to benzene ring"
+
 
     return True, "Molecule contains a benzene ring with exactly four chlorine substituents"
