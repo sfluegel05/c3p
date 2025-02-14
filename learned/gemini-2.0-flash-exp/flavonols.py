@@ -20,15 +20,21 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavonol core pattern using SMARTS. It specifies:
-    # - Aromatic ring with substitutions, connected to
-    # - The heterocyclic ring with oxygen and a carbonyl group
-    # - A hydroxyl group directly connected to position 3 of the heterocyclic ring
-    flavonol_pattern = Chem.MolFromSmarts('[c]1[c]([OH])[c]([c])[o][c]2[c]([c]([c]1)C(=O)[c]3[c]2[c][c][c][c]3)')
+    # Define the flavone core pattern using SMARTS.
+    # The core structure: C1=CC=C(C=C1)-C2=C(C(=O)C3=CC=CC=C3O2)-O is a good starting point.
+    # But we will be more specific with query.
+    # It's crucial to define the aromaticity of the rings in this pattern and include the O in position 1 (or 4) of the pyran ring.
+    # We also specify the correct atom connectivities
+    flavone_core = Chem.MolFromSmarts('c1ccccc1-c2oc(c3ccccc3)c(=O)c2-O') # 1-2-3
+    if not mol.HasSubstructMatch(flavone_core):
+        return False, "Not a flavone core structure"
 
-    if not mol.HasSubstructMatch(flavonol_pattern):
-        return False, "Not a flavonol structure"
+    # Check for the hydroxyl group at position 3 of the pyran ring (C ring).
+    # This is the carbon directly attached to the carbonyl group in the flavone core
+    # We will try to identify the C next to the carbonyl C, and check it has -OH group.
+    hydroxyl_at_3 = Chem.MolFromSmarts('c1ccccc1-c2oc(-[C;H1]([O;H1])c(=O)c3ccccc3)c2') #1-2-3-OH
+    if not mol.HasSubstructMatch(hydroxyl_at_3):
+      return False, "No hydroxyl group at position 3 of the flavone core"
 
-
-    # If the flavonol pattern matches, it's a flavonol
-    return True, "Flavonol structure found"
+    # If both the flavone core and 3-OH are found, it's a flavonol
+    return True, "Flavonol: Flavone core with hydroxyl at position 3"
