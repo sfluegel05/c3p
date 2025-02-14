@@ -6,7 +6,6 @@ Classifies: CHEBI:15955 monosaccharide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monosaccharide(smiles: str):
     """
@@ -54,10 +53,11 @@ def is_monosaccharide(smiles: str):
     if mol.HasSubstructMatch(glycosidic_pattern):
         return False, "Contains glycosidic bonds, not a monosaccharide"
 
-    # Check hydrogen deficiency (for ring structures)
-    hd = rdMolDescriptors.CalcHydrogenDeficiency(mol)
-    if hd > 2:
-        return False, "Hydrogen deficiency too high, likely polycyclic"
+    # Check for aldose or ketose pattern
+    aldose_pattern = Chem.MolFromSmarts("[CH2](C(=O))[CH](O)[CH](O)[CH](O)[CH](O)[CH](O)*")
+    ketose_pattern = Chem.MolFromSmarts("[CH2]([CH](O)[CH](O))[CH](O)[CH](=O)[CH](O)[CH](O)*")
+    if not (mol.HasSubstructMatch(aldose_pattern) or mol.HasSubstructMatch(ketose_pattern)):
+        return False, "Does not match aldose or ketose pattern"
 
     # Additional checks based on counts
     if h_count < 2 * o_count:
@@ -65,4 +65,4 @@ def is_monosaccharide(smiles: str):
     if c_count > 8:
         return False, "Carbon chain too long for monosaccharide"
 
-    return True, "Contains carbonyl group and at least 3 hydroxyls without glycosidic bonds"
+    return True, "Contains carbonyl group and at least 3 hydroxyls without glycosidic bonds, matches aldose or ketose pattern"
