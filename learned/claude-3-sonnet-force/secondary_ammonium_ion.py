@@ -1,16 +1,56 @@
 """
 Classifies: CHEBI:137419 secondary ammonium ion
 """
-The previous program seems to have a good approach to identifying secondary ammonium ions. It looks for the SMARTS pattern "[NH2+][CX4,CX3]([#6])[CX4,CX3]([#6])[#6]" to find an NH2+ group attached to two carbon atoms. It also checks for the presence of other heteroatoms connected to the nitrogen and whether the nitrogen is part of a ring or not. The program also confirms that the nitrogen has a formal charge of +1.
+"""
+Classifies: CHEBI:35881 secondary ammonium ion
+An organic cation obtained by protonation of any secondary amino compound; major species at pH 7.3.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-However, the program failed with an error when executing one of the provided examples, "C1C[C@]2([C@@](CC[C@@]3([C@@]2(CC[C@@H](C3)O)C)[H])([C@]4([C@]1([C@@]5([C@](C4)(O[C@@]6([C@H]5C)[NH2+]C[C@@H](C)CC6)[H])[H])C)[H])[H])[H]". This error occurred because the program was attempting to access an atom index that did not exist in the molecule.
+def is_secondary_ammonium_ion(smiles: str):
+    """
+    Determines if a molecule is a secondary ammonium ion based on its SMILES string.
 
-The error message suggests that the program encountered an issue when trying to access an atom using the `GetAtomWithIdx` method. This could happen if the atom index provided is out of range for the given molecule. It's possible that the SMILES string contained invalid or unexpected atom specifications, causing the program to fail while trying to access specific atoms.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To fix this issue, we need to add error handling to ensure that the program can gracefully handle invalid or unexpected input. One approach could be to add a try-except block around the code that accesses the atoms using `GetAtomWithIdx`. If an exception is raised, the program can return False and an appropriate error message.
+    Returns:
+        bool: True if molecule is a secondary ammonium ion, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Additionally, we could consider adding more checks or constraints to the SMARTS pattern to ensure that it matches only valid secondary ammonium ions. For example, we could explicitly exclude certain atom specifications or structural features that might lead to unexpected behavior.
+    # Look for secondary ammonium ion pattern
+    secondary_ammonium_pattern = Chem.MolFromSmarts("[NH2+][CX4,CX3]([#6])[CX4,CX3]([#6])[#6]")
+    matches = mol.GetSubstructMatches(secondary_ammonium_pattern)
 
-It's worth noting that the program's performance could also be improved by optimizing the SMARTS pattern or the overall logic. However, without a larger set of examples and a more reliable benchmark, it's difficult to assess the program's accuracy and identify areas for improvement.
+    if not matches:
+        return False, "No secondary ammonium ion pattern found"
 
-If the provided examples are indeed valid secondary ammonium ions, and the issue lies solely with the error encountered in one specific case, we could consider ignoring that outlier and proceed with the existing program, as long as it correctly classifies the remaining examples.
+    # Check for other heteroatoms connected to nitrogen
+    for match in matches:
+        try:
+            n_atom = mol.GetAtomWithIdx(match[0])
+            if sum(1 for atom in n_atom.GetNeighbors() if atom.GetAtomicNum() not in [1, 6, 7]) > 0:
+                return False, "Secondary ammonium ion nitrogen connected to non-C/N/O atoms"
+        except IndexError:
+            return False, "Invalid atom index encountered"
+
+    # Check if nitrogen is part of a ring
+    is_in_ring = any(mol.GetAtomWithIdx(idx).IsInRing() for idx in matches[0])
+
+    # Check formal charge of nitrogen
+    n_charge = sum(mol.GetAtomWithIdx(idx).GetFormalCharge() for idx in matches[0])
+    if n_charge != 1:
+        return False, "Nitrogen does not have a formal charge of +1"
+
+    # Classify as secondary ammonium ion
+    reason = "Contains a secondary ammonium ion group"
+    if is_in_ring:
+        reason += " as part of a ring"
+    return True, reason
