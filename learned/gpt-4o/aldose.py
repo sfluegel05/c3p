@@ -2,7 +2,6 @@
 Classifies: CHEBI:15693 aldose
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_aldose(smiles: str) -> (bool, str):
     """
@@ -21,27 +20,19 @@ def is_aldose(smiles: str) -> (bool, str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the substructure patterns
-    aldehyde_pattern = Chem.MolFromSmarts("[CH1](=O)[CH2]")
-    hemiacetal_pattern = Chem.MolFromSmarts("O[C@]1([C@@H](O)[C@H](O)[C@H](O)C1)")
+    # Aldehyde pattern with at least two adjacent hydroxyl groups
+    open_chain_pattern = Chem.MolFromSmarts("C(=O)[CX4H1][CX4H1](O)[CX4H1](O)")
 
-    # Check for open-chain aldose
-    if mol.HasSubstructMatch(aldehyde_pattern):
-        # Expected polyhydroxy structure (-OH groups)
-        hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-        hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-        if len(hydroxyl_matches) < 2:
-            return False, f"Not enough hydroxyl groups found, got {len(hydroxyl_matches)}"
+    # Patterns for five- and six-membered cyclic hemiacetals
+    furanose_pattern = Chem.MolFromSmarts("O1[C@@H]([CX4H1](O)[CX4H1](O)C1)")
+    pyranose_pattern = Chem.MolFromSmarts("O1[C@@H]([CX4H1](O)[C@H](O)[C@H](O)[C@H]1O)")
 
-        carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-        if carbon_count < 3:
-            return False, f"Insufficient carbon backbone, found {carbon_count}"
-
+    # Check open-chain form
+    if mol.HasSubstructMatch(open_chain_pattern):
         return True, "Structure is consistent with open-chain form of an aldose"
 
-    # Check for cyclic (hemiacetal) form
-    if mol.HasSubstructMatch(hemiacetal_pattern):
+    # Check five- or six-membered cyclic hemiacetal forms
+    if mol.HasSubstructMatch(furanose_pattern) or mol.HasSubstructMatch(pyranose_pattern):
         return True, "Structure is consistent with cyclic hemiacetal form of an aldose"
 
-    # In the loop above, even if other criteria appeared valid, failure to match either pattern returns False.
     return False, "Structure does not fit criteria for an aldose"
