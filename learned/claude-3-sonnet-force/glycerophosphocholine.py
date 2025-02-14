@@ -32,14 +32,14 @@ def is_glycerophosphocholine(smiles: str):
         return False, "No glycerol backbone found"
         
     # Look for phosphate group (-O-P(=O)(-O)-O-)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P([OX1])([OX2])[OX2]")
+    phosphate_pattern = Chem.MolFromSmarts("[OX2]P([OX1-,OX2-])([OX1-,OX2-])[OX2-]")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
         
-    # Look for phosphocholine group (-O-P(=O)(-O)-O-CC[N+](C)(C)C)
-    phosphocholine_pattern = Chem.MolFromSmarts("[OX2]P([OX1])([OX2])[OX2]CC[N+](C)(C)C")
-    if not mol.HasSubstructMatch(phosphocholine_pattern):
-        return False, "No phosphocholine group found"
+    # Look for choline group (-CC[N+](C)(C)C)
+    choline_pattern = Chem.MolFromSmarts("CC[N+](C)(C)C")
+    if not mol.HasSubstructMatch(choline_pattern):
+        return False, "No choline group found"
         
     # Check for ester group (-O-C(=O)-) to connect glycerol and fatty acid chains
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
