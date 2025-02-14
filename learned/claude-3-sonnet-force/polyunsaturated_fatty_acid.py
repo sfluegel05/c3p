@@ -1,17 +1,13 @@
 """
 Classifies: CHEBI:26208 polyunsaturated fatty acid
 """
-"""
-Classifies: CHEBI:36344 polyunsaturated fatty acid
-Any fatty acid containing more than one double bond. Acids in this group are reported to have cardioprotective effects; and levels are lowered in chronic fatigue syndrome.
-"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_polyunsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a polyunsaturated fatty acid based on its SMILES string.
+    A polyunsaturated fatty acid contains more than one double bond and a carboxylic acid group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,28 +23,23 @@ def is_polyunsaturated_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for carboxylic acid group
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    carboxylic_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxylic_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for long aliphatic chain with multiple double bonds
-    pufa_pattern = Chem.MolFromSmarts("C(=O)OCCCC(/C=C/C)C(/C=C/C)C")
-    if not mol.HasSubstructMatch(pufa_pattern):
-        return False, "Does not match the pattern of a polyunsaturated fatty acid"
-    
-    # Count number of double bonds
+    # Check for double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    num_double_bonds = len(double_bond_matches)
-    if num_double_bonds < 2:
+    if len(double_bond_matches) < 2:
         return False, "Less than two double bonds found"
     
-    # Check for cis/trans configuration of double bonds
-    cis_trans_pattern = Chem.MolFromSmarts("/C=C/C")
-    cis_trans_matches = mol.GetSubstructMatches(cis_trans_pattern)
-    if len(cis_trans_matches) == 0:
-        return False, "No cis or trans double bonds found"
+    # Check if double bonds are separated by at least one methylene group
+    chain = Chem.MolToSmiles(mol)
+    double_bond_indices = [match[0] for match in double_bond_matches]
+    for i in range(len(double_bond_indices) - 1):
+        start = double_bond_indices[i] + 2  # Skip double bond atoms
+        end = double_bond_indices[i+1]
+        if "C=C" in chain[start:end]:
+            return False, "Double bonds are not separated by methylene groups"
     
-    # Additional checks or constraints can be added here, if needed
-    
-    return True, f"Contains {num_double_bonds} double bonds in a long aliphatic chain with a carboxylic acid group"
+    return True, "Contains more than one double bond and a carboxylic acid group"
