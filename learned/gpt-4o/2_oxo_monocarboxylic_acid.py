@@ -8,9 +8,9 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     Determines if a molecule is a 2-oxo monocarboxylic acid based on its SMILES string.
 
     A 2-oxo monocarboxylic acid has:
-    - A carbonyl group (C=O) at the alpha position.
+    - A carbonyl group (C=O) at the alpha (2nd) position.
     - A carboxylic acid functional group (C(=O)O).
-    - Any R-group can be attached to the carbon bearing the oxo group.
+    - Any R-group can be attached to the remaining positions, given the 2-oxo position is met.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,20 +25,12 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for 2-oxo monocarboxylic acids
-    patterns = [
-        Chem.MolFromSmarts("C(=O)[C][C](=O)O"),  # General form
-        Chem.MolFromSmarts("C(=O)[CH2][C](=O)O"),  # CH2 next to C=O
-        Chem.MolFromSmarts("[#6](=O)[C][C](=O)O")  # More generalized form with R
-    ]
+    # Define SMARTS pattern for 2-oxo monocarboxylic acids
+    # (The central [C] allows for any non-hydrogen atom attached)
+    pattern = Chem.MolFromSmarts("[#6][CX3](=O)[CX3](=O)[OX1H]")
 
-    # Check if any of the patterns match
-    for pattern in patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains a 2-oxo monocarboxylic acid substructure"
+    # Check if the pattern matches
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains a 2-oxo monocarboxylic acid substructure"
 
     return False, "Does not contain a 2-oxo monocarboxylic acid substructure"
-
-# Example usage
-# smiles = "CCC(=O)C(O)=O"  # 2-oxobutanoic acid
-# print(is_2_oxo_monocarboxylic_acid(smiles))
