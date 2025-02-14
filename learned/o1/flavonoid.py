@@ -10,7 +10,7 @@ from rdkit import Chem
 def is_flavonoid(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-    A flavonoid is based on 1-benzopyran with an aryl substituent at position 2.
+    A flavonoid is based on 1-benzopyran (chromene) with an aryl substituent at position 2.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,28 +19,42 @@ def is_flavonoid(smiles: str):
         bool: True if molecule is a flavonoid, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define the flavonoid core SMARTS pattern
-    # This pattern represents a benzopyran fused ring system with a phenyl ring attached at position 2
-    flavonoid_smarts = """
-    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1            # A-ring: benzene ring
-    -[#6]2:[#8]:[#6]:[#6]:[#6]:[#6]:2           # C-ring: pyran ring fused to A-ring
-    -[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3           # B-ring: phenyl ring attached at position 2
-    """
-    # Remove whitespace and newlines from the SMARTS string
-    flavonoid_smarts = "".join(flavonoid_smarts.split())
-    
-    # Create the SMARTS pattern
-    flavonoid_pattern = Chem.MolFromSmarts(flavonoid_smarts)
-    if flavonoid_pattern is None:
-        return False, "Failed to construct flavonoid SMARTS pattern"
-    
-    # Check if the molecule matches the flavonoid core
-    if mol.HasSubstructMatch(flavonoid_pattern):
-        return True, "Molecule contains flavonoid core structure"
-    else:
-        return False, "Molecule does not contain flavonoid core structure"
+
+    # Define chromene core SMARTS pattern (1-benzopyran)
+    chromene_smarts = 'c1ccc2occ(c2c1)'  # Chromene core
+    chromene_pattern = Chem.MolFromSmarts(chromene_smarts)
+    if chromene_pattern is None:
+        return False, "Failed to construct chromene SMARTS pattern"
+
+    # Find matches of chromene core in molecule
+    chromene_matches = mol.GetSubstructMatches(chromene_pattern)
+    if not chromene_matches:
+        return False, "Molecule does not contain chromene core"
+
+    # For each match of chromene core, check for aryl substituent at position 2
+    # In the chromene SMARTS, the atom at index 3 corresponds to position 2
+    for match in chromene_matches:
+        pos2_atom_idx = match[3]  # Atom index at position 2 of chromene
+        pos2_atom = mol.GetAtomWithIdx(pos2_atom_idx)
+
+        # Check if the atom at position 2 has a neighbor not in the chromene core
+        for neighbor in pos2_atom.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
+            if neighbor_idx in match:
+                continue  # Skip atoms that are part of the chromene core
+
+            # Check if the neighbor is part of an aromatic ring (aryl group)
+            is_aryl = False
+            for ring in neighbor.GetOwningMol().GetRingInfo().AtomRings():
+                if neighbor_idx in ring:
+                    # Check if the ring is aromatic and six-membered
+                    if len(ring) == 6 and all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
+                        is_aryl = True
+                        break
+            if is_aryl:
+                return True, "Molecule contains flavonoid core with aryl substituent at position 2"
+
+    return False, "Molecule does not contain aryl substituent at position 2 of chromene core"
