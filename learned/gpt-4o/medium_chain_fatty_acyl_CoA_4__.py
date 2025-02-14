@@ -20,21 +20,29 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for CoA moiety
-    # Updated pattern to better capture CoA structure
-    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC")
+    # Updated CoA pattern to capture key structural motifs more robustly
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc23)[C@H](O)[C@@H]1OP([O-])([O-])=O")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
     
     # Check for the presence of thioester linkage
-    thioester_pattern = Chem.MolFromSmarts("C(=O)SCC")
+    # Expanded pattern to ensure coverage
+    thioester_pattern = Chem.MolFromSmarts("C(=O)SCCC")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
-    # Identify and examine the carbon chain length using a pattern
-    chain_pattern = Chem.MolFromSmarts("C(=O)SCCCCCCCC")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    chain_lengths = [len(match) for match in chain_matches]
+    # Check for carbon chain length: look for C(=O)S followed by the carbon chain
+    chains = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)SCC"))
+    chain_lengths = []
+    
+    for match in chains:
+        chain_length = 0
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetSymbol() == 'C':
+                chain_length += 1
+        # Account the carbon atoms in the backbone after the thioester
+        chain_lengths.append(chain_length)
 
     if not any(chain_length >= 8 and chain_length <= 12 for chain_length in chain_lengths):
         return False, f"Chain lengths {chain_lengths} do not include a medium-chain length (8-12 carbons)"
