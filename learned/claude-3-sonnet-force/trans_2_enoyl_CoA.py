@@ -2,10 +2,10 @@
 Classifies: CHEBI:50998 trans-2-enoyl-CoA
 """
 """
-Classifies: CHEBI:36356 trans-2-enoyl-CoA
+Classifies: CHEBI:57926 trans-2-enoyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_trans_2_enoyl_CoA(smiles: str):
@@ -26,35 +26,31 @@ def is_trans_2_enoyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for trans-2-enoyl pattern
-    trans_enoyl_pattern = Chem.MolFromSmarts("[CX3]([H])=C(/[CH3,CH2,CH1,C])\\C(=O)")
-    if not mol.HasSubstructMatch(trans_enoyl_pattern):
-        return False, "No trans-2-enoyl pattern found"
-    
-    # Check for CoA backbone
-    coa_pattern = rdFMCS.FindMoleculeChemicalEnvironment(mol, Chem.MolFromSmiles("C(C(C(=O)NCCC(=O)NCCS))O)OP(=O)(O)OP(=O)(O)OCC1OC(n2cnc3c(N)ncnc23)C(O)C1OP(=O)(O)O"))
-    if coa_pattern is None:
+
+    # Look for CoA backbone pattern
+    coa_pattern = Chem.MolFromSmarts("C1OC(COP(O)(=O)OP(O)(=O)OCC(C)(C)C(O)C(=O)NCCCC(=O)NCCSC(=O)C=CC)")
+    if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA backbone found"
-    
-    # Check for long carbon chain
+
+    # Look for trans double bond at position 2
+    trans_pattern = Chem.MolFromSmarts("C\C=C/C(=O)")
+    if not mol.HasSubstructMatch(trans_pattern):
+        return False, "No trans double bond at position 2 found"
+
+    # Look for fatty acid chain (long carbon chain attached to the carbonyl)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) == 0:
+        return False, "No fatty acid chain found"
+
+    # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Carbon chain too short"
-    
-    # Additional checks
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    
-    if c_count < 20:
-        return False, "Too few carbons for trans-2-enoyl-CoA"
-    if o_count < 10:
-        return False, "Too few oxygens for trans-2-enoyl-CoA"
-    if n_count != 9:
-        return False, "Incorrect number of nitrogens for trans-2-enoyl-CoA"
-    if p_count != 3:
-        return False, "Incorrect number of phosphorus atoms for trans-2-enoyl-CoA"
-    
-    return True, "Contains trans-2-enoyl pattern and CoA backbone"
+    if n_rotatable < 10:
+        return False, "Fatty acid chain too short"
+
+    # Check molecular weight - CoA derivatives typically >700 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 700:
+        return False, "Molecular weight too low for CoA derivative"
+
+    return True, "Contains CoA backbone and trans double bond at position 2, with fatty acid chain attached"
