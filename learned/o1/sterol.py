@@ -26,10 +26,10 @@ def is_sterol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for the steroid nucleus (cyclopentanoperhydrophenanthrene)
-    steroid_nucleus_smarts = Chem.MolFromSmarts('''
-    [#6]1~[#6]~[#6]~[#6]~[#6]~[#6]1
-    ~[#6]2~[#6]~[#6]~[#6]~[#6]~1~[#6]3~[#6]~[#6]~[#6]~[#6]~[#6]3~[#6]~2
-    ''')
+    steroid_nucleus_smarts = Chem.MolFromSmarts('C1CCC2(CC1)CCC3C2CCC4C3CCCC4')
+
+    if steroid_nucleus_smarts is None:
+        return False, "Invalid SMARTS pattern for steroid nucleus"
 
     # Check for steroid nucleus
     nucleus_match = mol.HasSubstructMatch(steroid_nucleus_smarts)
@@ -37,9 +37,11 @@ def is_sterol(smiles: str):
         return False, "No steroid nucleus (cyclopentanoperhydrophenanthrene) found"
 
     # Define SMARTS pattern for 3β-hydroxyl group attached to the steroid nucleus
-    hydroxyl_smarts = Chem.MolFromSmarts('''
-    [#6]-1(-[O;H1])-[#6]=[#6]-[#6]-[#6]-[#6]-1
-    ''')
+    # The 3β-hydroxy group is attached to the third carbon in ring A
+    hydroxyl_smarts = Chem.MolFromSmarts('[C@@H]([C;R0])[O;H1]')
+
+    if hydroxyl_smarts is None:
+        return False, "Invalid SMARTS pattern for 3β-hydroxyl group"
 
     # Check for 3β-hydroxyl group
     hydroxyl_match = mol.HasSubstructMatch(hydroxyl_smarts)
