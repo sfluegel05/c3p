@@ -22,13 +22,13 @@ def is_N_acylphytosphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a more flexible pattern for the phytosphingosine backbone
-    # This pattern covers the generic structure with three hydroxyl groups and an amine
-    phytosphingosine_pattern = Chem.MolFromSmarts("O[C@H]([C@H](O)[C@H](CN)O)CCCCCCCCCCCCCC")
+    # Check for phytosphingosine backbone (C18 chain with multiple hydroxyl groups and an amine)
+    # SMILES pattern: A long-chain with three hydroxyls (-OH) and an amino group (-NH2)
+    phytosphingosine_pattern = Chem.MolFromSmarts("[C@H]([C@H](O)[C@H](O)CCCCCCCCCCCCCC)[C@H](O)CO")
     if not mol.HasSubstructMatch(phytosphingosine_pattern):
         return False, "No phytosphingosine backbone found"
     
-    # Define a flexible pattern for an N-acyl linkage: presence of C(=O)-N
+    # Check for N-acyl linkage: presence of C(=O)-N
     nacyl_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(nacyl_pattern):
         return False, "No N-acyl linkage found"
