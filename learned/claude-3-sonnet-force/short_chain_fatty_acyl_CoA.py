@@ -31,14 +31,14 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No coenzyme A (CoA) moiety found"
     
-    # Look for fatty acid chain attached via thioester
+    # Look for thioester bond connecting fatty acid chain
     thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])SCC")
     thioester_match = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_match:
         return False, "No thioester bond found to connect fatty acid chain"
     
-    # Count carbons in fatty acid chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4][CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Find fatty acid chain
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     chain_lengths = [len(match) for match in fatty_acid_matches]
     if not chain_lengths:
@@ -46,11 +46,11 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if max(chain_lengths) > 6:
         return False, "Fatty acid chain is too long (>6 carbons)"
     
-    # Check for additional functional groups on fatty acid chain
-    func_group_pattern = Chem.MolFromSmarts("[NX3,OX2,SX2,PX3]~[CX4,CX3]")
-    func_group_match = mol.GetSubstructMatches(func_group_pattern)
-    if func_group_match:
-        return False, "Fatty acid chain contains additional functional groups"
+    # Check for disallowed functional groups on fatty acid chain
+    disallowed_pattern = Chem.MolFromSmarts("[SX2,PX3,OX1]~[CX4,CX3]")
+    disallowed_match = mol.GetSubstructMatches(disallowed_pattern)
+    if disallowed_match:
+        return False, "Fatty acid chain contains disallowed functional groups (S, P, O=O)"
     
     # Check for cyclic fatty acid chains
     cyclic_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
