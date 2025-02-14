@@ -20,10 +20,10 @@ def is_tetrahydrofuranone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Get information about the rings in the molecule
+    found = False  # Flag to indicate if tetrahydrofuranone ring is found
+
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
-    found = False  # Flag to indicate if tetrahydrofuranone ring is found
     
     # Iterate over all rings in the molecule
     for ring in rings:
@@ -32,29 +32,29 @@ def is_tetrahydrofuranone(smiles: str):
             continue
         
         # Count the number of oxygen atoms in the ring
-        o_atoms_in_ring = [atom_idx for atom_idx in ring if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 8]
-        if len(o_atoms_in_ring) != 1:
-            continue  # Skip if the ring doesn't have exactly one oxygen atom (not oxolane)
+        oxygen_in_ring = [idx for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8]
+        if len(oxygen_in_ring) != 1:
+            continue  # Not an oxolane ring
         
-        # Check if any ring atom has a double-bonded oxygen attached (oxo substituent)
-        has_oxo = False
+        # Identify ring carbons that are double-bonded to oxygen (carbonyls)
+        carbonyl_carbons = []
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() != 6:  # Only carbon atoms
+                continue
             for bond in atom.GetBonds():
+                if bond.GetBondType() != Chem.BondType.DOUBLE:
+                    continue
                 neighbor = bond.GetOtherAtom(atom)
-                # Check for double bond to oxygen outside the ring
-                if (bond.GetBondType() == Chem.BondType.DOUBLE and
-                    neighbor.GetAtomicNum() == 8 and
-                    neighbor.GetIdx() not in ring):
-                    has_oxo = True
-                    break
-            if has_oxo:
-                break
-        if has_oxo:
+                if neighbor.GetAtomicNum() == 8:  # Oxygen
+                    carbonyl_carbons.append(atom_idx)
+                    break  # Found a carbonyl, move to next atom
+        if len(carbonyl_carbons) == 1:
+            # Exactly one carbonyl in the ring, classify as tetrahydrofuranone
             found = True
-            break  # Tetrahydrofuranone ring found
-    
+            break
+
     if found:
-        return True, "Contains an oxolane ring with an oxo substituent"
+        return True, "Contains an oxolane ring with a carbonyl group (tetrahydrofuranone)"
     else:
-        return False, "Does not contain an oxolane ring with an oxo substituent"
+        return False, "Does not contain an oxolane ring with a carbonyl group"
