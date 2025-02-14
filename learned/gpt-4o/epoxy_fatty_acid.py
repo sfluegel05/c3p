@@ -22,19 +22,18 @@ def is_epoxy_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for the presence of an epoxide group (cyclic ether C1OC1)
-    epoxide_pattern = Chem.MolFromSmarts("[C@1]1OC1")  # Improved with stereochemistry consideration
+    epoxide_pattern = Chem.MolFromSmarts("C1OC1")  # General cyclic ether for epoxides
     if not mol.HasSubstructMatch(epoxide_pattern):
         return False, "No epoxide group found"
     
-    # Check for the carboxylic acid group at the end of a long aliphatic chain
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OX]")  # Allow for variations in attachment
-    carboxylic_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_matches:
+    # Check for the carboxylic acid group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for a reasonable length of aliphatic chain (at least 10 carbons, straight or branched)
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons < 10:
+    # Check for a sufficient aliphatic chain length (at least 10 carbons)
+    aliphatic_carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetDegree() <= 4)
+    if aliphatic_carbon_count < 10:
         return False, "Aliphatic chain too short to be a fatty acid"
 
     return True, "Contains epoxide ring as part of a long aliphatic chain ending in a carboxyl group"
