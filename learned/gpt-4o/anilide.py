@@ -16,18 +16,24 @@ def is_anilide(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Anilide feature: Phenyl group directly attached to a nitrogen forming an amide (expanded for substitution on the phenyl)
+    # Anilide feature patterns: Phenyl group directly bonded to a nitrogen in an amide linkage
     anilide_patterns = [
-        Chem.MolFromSmarts("c1ccccc1NC(=O)"),  # Unsubstituted phenylamide
-        Chem.MolFromSmarts("c1cc(c(cc1)*)NC(=O)")  # Substituted phenyl containing amide
+        # Direct phenyl linkage to amide nitrogen
+        Chem.MolFromSmarts("c1ccccc1N(C(=O)[#6])"),
+        # Allowing for substitutions on the phenyl ring
+        Chem.MolFromSmarts("c1ccc(cc1)N(C(=O)[#6])"),
+        # Allowing for substitutions on the amine nitrogen
+        Chem.MolFromSmarts("c1ccccc1N([#0,#6,#7,#8])C(=O)[#6]"),
+        # More generalized pattern to cover diverse anilide configurations
+        Chem.MolFromSmarts("c1ccc(cc1)N([#0,#6,#7,#8])C(=O)[#6]")
     ]
     
-    # Check for any pattern match that will qualify it as an anilide
+    # Check if any of the patterns match, indicating an anilide structure
     for pattern in anilide_patterns:
         if mol.HasSubstructMatch(pattern):
             return True, "Contains an aniline-like aromatic amide structure"
