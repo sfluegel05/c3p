@@ -25,18 +25,17 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     # 2. Core Skeleton Matching using relaxed SMARTS
     # This SMARTS matches the dihydroagarofuran core focusing on the ring connectivity and ether linkage,
     # allowing for substitutions on carbon positions.
-    # Modified to match the core skeleton atoms, not the substituents:
-    core_pattern = Chem.MolFromSmarts('[C]1[C]([C][O]1)[C]2[C]([C])[C][C]2')
+    core_pattern = Chem.MolFromSmarts('[C]12[C]([C])[C]([C])[C]([C])([O]1)[C][C]2')
     match = mol.GetSubstructMatch(core_pattern)
     if not match:
         return False, "No dihydroagarofuran core skeleton found."
     
     
-    # 3. At least 2 ester groups
+    # 3. At least 1 ester group
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-         return False, f"Less than 2 ester groups. Found {len(ester_matches)}"
+    if len(ester_matches) < 1:
+         return False, f"Less than 1 ester groups. Found {len(ester_matches)}"
     
     # 4. Additional checks: At least 4 oxygens, at least 14 carbons
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
@@ -48,4 +47,4 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
         return False, f"Too few carbons. Found {carbon_count}"
 
     # 5. If all checks pass, it's classified as a dihydroagarofuran sesquiterpenoid.
-    return True, "Contains a dihydroagarofuran core, at least two ester groups, four oxygens and 14 carbons"
+    return True, "Contains a dihydroagarofuran core, at least one ester group, four oxygens and 14 carbons"
