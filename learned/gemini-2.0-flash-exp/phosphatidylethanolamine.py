@@ -38,29 +38,25 @@ def is_phosphatidylethanolamine(smiles: str):
     if len(ester_matches) != 2:
          return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
-    # Check for the phosphate group connected to glycerol and ethanolamine/methylated versions
-    # Modified to specifically find a glycerol linked phosphate and ethanolamine
-    # Glycerol-Phosphate-Ethanolamine (GPE) substructure, including methylated versions
-    gpe_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2][P](=[OX1])([OX2])[OX2][CX4][CX4][NX3])([OX2][CX3](=[OX1]))[CH2X4][OX2][CX3](=[OX1])")
-    gpe_matches = mol.GetSubstructMatches(gpe_pattern)
+    # Check for the phosphate group (P(=O)(O)-O)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([OX1])([OX2])[OX2]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) != 1:
+        return False, f"Found {len(phosphate_matches)} phosphate groups, need exactly 1"
 
-    if len(gpe_matches) == 0:
-       gpe_pattern_nme1 = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2][P](=[OX1])([OX2])[OX2][CX4][CX4][NX3]([CX4])[CX4])([OX2][CX3](=[OX1]))[CH2X4][OX2][CX3](=[OX1])")
-       gpe_matches = mol.GetSubstructMatches(gpe_pattern_nme1)
-       if len(gpe_matches) == 0:
-           gpe_pattern_nme2 = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2][P](=[OX1])([OX2])[OX2][CX4][CX4][NX3]([CX4])([CX4]))([OX2][CX3](=[OX1]))[CH2X4][OX2][CX3](=[OX1])")
-           gpe_matches = mol.GetSubstructMatches(gpe_pattern_nme2)
-           if len(gpe_matches) == 0:
-              return False, "Missing phosphate group connected to glycerol and ethanolamine or methylated version"
+    # Check for ethanolamine head group (O-C-C-N)
+    ethanolamine_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][NX3]")
+    ethanolamine_matches = mol.GetSubstructMatches(ethanolamine_pattern)
 
-    
+    if len(ethanolamine_matches) != 1:
+        return False, "Missing ethanolamine head group"
+
     # Check for fatty acid chains (long carbon chains attached to esters)
-    # Improved pattern to capture direct connection to ester carbonyls.
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) != 2:
-       return False, f"Incorrect number of fatty acid chains {len(fatty_acid_matches)}"
-    
+    if len(fatty_acid_matches) < 2:
+        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+
     # Check number of rotatable bonds - they should be higher than 8
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 8:
@@ -82,5 +78,5 @@ def is_phosphatidylethanolamine(smiles: str):
        return False, "Must have at least 1 nitrogen atom"
     if o_count < 7:
        return False, "Must have at least 7 oxygen atoms"
-       
+
     return True, "Contains glycerol backbone with 2 fatty acid chains and a phosphate group linked to an ethanolamine"
