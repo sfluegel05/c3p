@@ -25,40 +25,14 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavone core SMARTS pattern (benzopyran-4-one structure)
-    flavone_smarts = 'c1cc2oc(=O)cc2c1'  # Flavone core structure
-    flavone_pattern = Chem.MolFromSmarts(flavone_smarts)
-    if flavone_pattern is None:
-        return False, "Invalid SMARTS pattern for flavone core"
+    # Define the flavonol core SMARTS pattern with 3-hydroxy group
+    flavonol_smarts = '[#6]1:[#6]:[#6](-c2ccc(O)cc2):[#8]c3cc(O)ccc13'  # Flavonol core with 3-OH
+    flavonol_pattern = Chem.MolFromSmarts(flavonol_smarts)
+    if flavonol_pattern is None:
+        return False, "Invalid SMARTS pattern for flavonol core"
 
-    # Find matches for the flavone core
-    matches = mol.GetSubstructMatches(flavone_pattern)
-    if not matches:
-        return False, "Does not contain the flavone core structure"
-
-    # For each match, check for hydroxyl at position 3 of the heterocyclic ring
-    for match in matches:
-        # Atom indices in the flavone pattern:
-        # match[0] to match[6] corresponding to atoms in the SMARTS pattern
-
-        # Position of the carbon at position 3 in the heterocyclic ring (pyran ring)
-        # which is the 6th atom in the SMARTS pattern (0-based index)
-        position3_atom_idx = match[5]
-        position3_atom = mol.GetAtomWithIdx(position3_atom_idx)
-
-        # Check if the position 3 carbon has a hydroxyl group attached
-        has_OH = False
-        for neighbor in position3_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8:  # Oxygen atom
-                bond = mol.GetBondBetweenAtoms(position3_atom_idx, neighbor.GetIdx())
-                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    # Check if the oxygen is a hydroxyl group (i.e., has one hydrogen)
-                    if neighbor.GetTotalNumHs() == 1:
-                        has_OH = True
-                        break
-        if has_OH:
-            return True, "Contains flavonol core with hydroxyl at position 3 characteristic of flavonols"
-        else:
-            continue
-
-    return False, "Does not have hydroxyl group at position 3 of the flavone core"
+    # Check if molecule contains the flavonol core
+    if mol.HasSubstructMatch(flavonol_pattern):
+        return True, "Contains flavonol core with hydroxyl at position 3 characteristic of flavonols"
+    else:
+        return False, "Does not contain the flavonol core structure with 3-hydroxyl group"
