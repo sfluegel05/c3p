@@ -2,7 +2,6 @@
 Classifies: CHEBI:83139 long-chain fatty acyl-CoA(4-)
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
@@ -24,18 +23,16 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     #  Adenosine diphosphate part (minus one phosphate): [C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP([O-])(=O)OP([O-])=O)[C@H]([C@H]1O)
     #  Pantetheine part: NCC(=O)CCNC(=O)[C@H](O)C(C)(C)
     #  mercaptoethylamine: -S-C-C-N 
-    coa_core_pattern = Chem.MolFromSmarts("[C@H]1([NX2]c2nc(N)nc[n+]2)[C@H]([CH2X4]OP([O-])([O-])=O[OP]([O-])([O-])=O)[C@@H]([CH](O)[CH]1O)[#6]")
+    # relaxed core substructure, with ring carbon substitution on ribose
+    coa_core_pattern = Chem.MolFromSmarts("[NX2]c1nc(N)nc[n]1[C@H]1[C@@H]([C@@H]([C@H]([CH]1)OP([O-])(=O)[OP]([O-])([O-])=O)O)O")
     if not mol.HasSubstructMatch(coa_core_pattern):
         return False, "CoA core structure not found"
-        
-    pantetheine_pattern = Chem.MolFromSmarts("[#6][CX3](=[OX1])[NX3][CX4][CX3](=[OX1])[NX3][CX4][CX3](=[OX1])[C@H](O)C(C)(C)")
-    if not mol.HasSubstructMatch(pantetheine_pattern):
-        return False, "Pantetheine substructure not found"
 
     #  Check for thioester bond (-S-C(=O)-)
     thioester_pattern = Chem.MolFromSmarts("[#16][CX3](=[OX1])")
     if not mol.HasSubstructMatch(thioester_pattern):
       return False, "Thioester bond not found"
+
 
     # 2. Check for long-chain fatty acid part (more than 10 carbons, could be branched or not)
     # This is more complex because the chain can be variable. We need at least 10 carbons.
@@ -89,24 +86,16 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
         return False, f"Fatty acid chain is too short {fatty_acid_carbon_count} carbons."
 
 
-
     # 3. Check for 4- charge (three deprotonated phosphates)
     # Count number of deprotonated O atoms (charge -1) in phosphates
-    charge_count = 0
-    for atom in mol.GetAtoms():
-       if atom.GetAtomicNum() == 8: #check for Oxygen
-          if atom.GetFormalCharge() == -1:
-            charge_count += 1
-    
-    if charge_count < 6:
-      return False, f"Not enough deprotonated phosphates. Charge is {charge_count}."
-    
-    # Note, for these molecules we need to check if there are 3 phosphate groups deprotonated
+   # Note, for these molecules we need to check if there are 3 phosphate groups deprotonated
     phosphate_pattern = Chem.MolFromSmarts("[P]([O-])(=O)([O-])")
     num_phosphates = len(mol.GetSubstructMatches(phosphate_pattern))
     if num_phosphates < 2:
         return False, "Not enough deprotonated phosphates"
-
-
+    
+    mol_charge = rdMolDescriptors.CalcMolCharge(mol)
+    if mol_charge != -4:
+        return False, f"Molecule does not have -4 charge, found {mol_charge}"
 
     return True, "Molecule is a long-chain fatty acyl-CoA(4-)."
