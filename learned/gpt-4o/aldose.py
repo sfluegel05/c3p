@@ -21,9 +21,11 @@ def is_aldose(smiles: str) -> (bool, str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check to determine if the structure is an open-chain aldose:
-    # Look for an aldehyde group -C(=O)H
-    aldehyde_pattern = Chem.MolFromSmarts("[C;H1](=O)[CH2,CH0]")
+    # Define the substructure patterns
+    aldehyde_pattern = Chem.MolFromSmarts("[CH1](=O)[CH2]")
+    hemiacetal_pattern = Chem.MolFromSmarts("O[C@]1([C@@H](O)[C@H](O)[C@H](O)C1)")
+
+    # Check for open-chain aldose
     if mol.HasSubstructMatch(aldehyde_pattern):
         # Expected polyhydroxy structure (-OH groups)
         hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
@@ -37,16 +39,9 @@ def is_aldose(smiles: str) -> (bool, str):
 
         return True, "Structure is consistent with open-chain form of an aldose"
 
-    # Determine if it is a cyclic form with hemiacetal/ketal form:
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0:
-        # Look for ether linkage with adjacent hydroxyl (O-C-O-H) which indicates hemiacetal
-        ether_pattern = Chem.MolFromSmarts("[C](O)([CH2,CH0])O")
-        if mol.HasSubstructMatch(ether_pattern):
-            # Check for adequate carbon and hydroxyl groups in the cyclic form
-            carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-            hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-            if carbon_count >= 3 and len(hydroxyl_matches) >= 2:
-                return True, "Structure is consistent with cyclic hemiacetal form of an aldose"
+    # Check for cyclic (hemiacetal) form
+    if mol.HasSubstructMatch(hemiacetal_pattern):
+        return True, "Structure is consistent with cyclic hemiacetal form of an aldose"
 
+    # In the loop above, even if other criteria appeared valid, failure to match either pattern returns False.
     return False, "Structure does not fit criteria for an aldose"
