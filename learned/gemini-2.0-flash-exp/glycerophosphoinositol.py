@@ -2,7 +2,6 @@
 Classifies: CHEBI:36315 glycerophosphoinositol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_glycerophosphoinositol(smiles: str):
@@ -28,22 +27,14 @@ def is_glycerophosphoinositol(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # 2. Check for phosphate group attached to glycerol
-    phosphate_pattern = Chem.MolFromSmarts("[CH2X4][OX2][P](=[OX1])([OX2])")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if not phosphate_matches:
-          return False, "No phosphate group directly attached to glycerol"
+    # 2. Check for the presence of a phosphorylated inositol attached to the glycerol
+    # The key here is to search for the phosphate group *linking* the glycerol and inositol
+    # The phosphate should be attached to the glycerol (through an oxygen), and also to the inositol
+    phosphorylated_inositol_glycerol_pattern = Chem.MolFromSmarts("[CH2X4][OX2][P](=[OX1])([OX2])-[C]1[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1")
+    if not mol.HasSubstructMatch(phosphorylated_inositol_glycerol_pattern):
+          return False, "No phosphorylated inositol group linked to glycerol found"
 
-    # 3. Check for inositol ring attached to phosphate
-    inositol_pattern = Chem.MolFromSmarts("[C]1[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1")
-    
-    phosphorylated_inositol_pattern = Chem.MolFromSmarts("[OP](=[OX1])([OX2])-[C]1[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1")
-    
-    if not mol.HasSubstructMatch(phosphorylated_inositol_pattern):
-        return False, "No phosphorylated inositol group found"
-
-
-    # 4. Check for two fatty acid chains (long carbon chains attached to the glycerol via ester bonds)
+    # 3. Check for two fatty acid chains (long carbon chains attached to the glycerol via ester bonds)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
@@ -56,7 +47,7 @@ def is_glycerophosphoinositol(smiles: str):
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
 
-    # 5. Check rotatable bonds for fatty acid chains
+    # 4. Check rotatable bonds for fatty acid chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 6:
         return False, "Fatty acid chains are too short"
