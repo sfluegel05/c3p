@@ -20,5 +20,38 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Due to complexity in defining cucurbitacin structure, unable to classify
-    return None, None
+    # Define the cucurbitane core skeleton SMARTS (simplified tetracyclic structure)
+    cucurbitane_smarts = """
+    [#6]12CC3CC(C1)CC4CCC(C2)C34
+    """  # A simplified representation of the tetracyclic core
+    cucurbitane_pattern = Chem.MolFromSmarts(cucurbitane_smarts)
+    if cucurbitane_pattern is None:
+        return None, "Unable to create cucurbitane SMARTS pattern"
+
+    # Check for cucurbitane skeleton
+    if not mol.HasSubstructMatch(cucurbitane_pattern):
+        return False, "Cucurbitane skeleton not found"
+
+    # Check for ketone groups (C=O)
+    ketone_pattern = Chem.MolFromSmarts("C=O")
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    if len(ketone_matches) == 0:
+        return False, "No ketone groups found"
+
+    # Check for hydroxyl groups (-OH)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) == 0:
+        return False, "No hydroxyl groups found"
+
+    # Check for double bonds in rings (unsaturation)
+    double_bond_in_ring = False
+    for bond in mol.GetBonds():
+        if bond.IsInRing() and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            double_bond_in_ring = True
+            break
+    if not double_bond_in_ring:
+        return False, "No double bonds found in rings"
+
+    # If all checks pass, classify as cucurbitacin
+    return True, "Contains cucurbitane skeleton with characteristic functional groups"
