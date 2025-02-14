@@ -7,6 +7,7 @@ Classifies: 3-hydroxy fatty acyl-CoA
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     """
@@ -26,56 +27,60 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for the CoA moiety (simplified)
-    coa_smarts = Chem.MolFromSmarts("""
-        [#16X2]-[#6]-[#6]-[#7]-[#6](=O)-[#6]-[#7]-[#6](=O)-[#6H]-[#8]-[#6]([#6])([#6])-[#6]-[#8]-[P](=O)([O-])-[O]-[P](=O)([O-])-
-        [O]-[#6]-[#8]-[#6H]-1-[#8]-[#6H]-[#6H]-1-[O]-[P](=O)([O-])[O-]-c1nc2c(n1)[nH]cnc2N
-    """)
-    
-    if not mol.HasSubstructMatch(coa_smarts):
+    # Define a simplified SMARTS pattern for the CoA moiety
+    # Looking for the adenine ring connected to ribose and diphosphate
+    coa_smarts = 'NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(O)(=O)OP(O)(=O)[O-])C(O)C3O'
+    coa_pattern = Chem.MolFromSmarts(coa_smarts)
+    if coa_pattern is None:
+        return False, "Error parsing CoA SMARTS pattern"
+
+    if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not found"
 
     # Define a SMARTS pattern for the thioester linkage connecting CoA to acyl chain
-    thioester_smarts = Chem.MolFromSmarts('C(=O)S[#16X2]-[#6]-[#6]-[#7]-[#6](=O)-[#6]')
-    thioester_matches = mol.GetSubstructMatches(thioester_smarts)
-    if not thioester_matches:
+    thioester_smarts = 'C(=O)SCCNC(=O)CCNC(=O)'
+    thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
+    if thioester_pattern is None:
+        return False, "Error parsing thioester SMARTS pattern"
+
+    if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage connecting CoA to acyl chain found"
 
-    # Iterate over thioester matches to find the acyl chain
-    for match in thioester_matches:
-        carbonyl_c_idx = match[0]  # Carbonyl carbon
-        sulfur_idx = match[2]      # Sulfur atom (S in thioester linkage)
+    # Define a SMARTS pattern for 3-hydroxy fatty acyl chain
+    # Looking for a chain with a hydroxy group on the third carbon from the carbonyl carbon
+    hydroxy_acyl_smarts = 'C(=O)C[C@H](O)C'
+    hydroxy_acyl_pattern = Chem.MolFromSmarts(hydroxy_acyl_smarts)
+    if hydroxy_acyl_pattern is None:
+        return False, "Error parsing hydroxy acyl SMARTS pattern"
 
-        # From carbonyl carbon, identify the acyl chain
-        carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
+    if not mol.HasSubstructMatch(hydroxy_acyl_pattern):
+        return False, "No 3-hydroxy group on acyl chain found"
 
-        # Identify the C2 carbon (attached to carbonyl carbon, not sulfur)
-        c2_atom = None
-        for neighbor in carbonyl_c.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != sulfur_idx:
-                c2_atom = neighbor
-                break
-        if c2_atom is None:
-            continue  # No acyl chain found
+    # Optional: Check that the acyl chain is a fatty acid (long chain)
+    # Count the number of carbons in the acyl chain
+    # Here, we arbitrarily define a fatty acid as having at least 4 carbons in the chain
+    carbonyl_c = mol.GetSubstructMatch(Chem.MolFromSmarts('C(=O)S'))[0]
+    chain_lengths = []
+    for bond in mol.GetBonds():
+        if bond.GetBeginAtomIdx() == carbonyl_c or bond.GetEndAtomIdx() == carbonyl_c:
+            neighbor_atom_idx = bond.GetOtherAtomIdx(carbonyl_c)
+            chain_length = 0
+            visited = set()
+            stack = [neighbor_atom_idx]
+            while stack:
+                atom_idx = stack.pop()
+                if atom_idx in visited:
+                    continue
+                visited.add(atom_idx)
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetAtomicNum() == 6:
+                    chain_length += 1
+                    for nbr in atom.GetNeighbors():
+                        nbr_idx = nbr.GetIdx()
+                        if nbr_idx != carbonyl_c and nbr_idx not in visited:
+                            stack.append(nbr_idx)
+            chain_lengths.append(chain_length)
+    if not any(length >= 4 for length in chain_lengths):
+        return False, "Acyl chain is too short to be a fatty acid"
 
-        # Identify C3 atom (next carbon in the chain)
-        c3_atom = None
-        for neighbor in c2_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != carbonyl_c_idx:
-                c3_atom = neighbor
-                break
-        if c3_atom is None:
-            continue  # Acyl chain too short
-
-        # Check for hydroxy group on C3 atom
-        has_hydroxy = False
-        for neighbor in c3_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8:
-                # Ensure it's a hydroxy group (oxygen with only one bond)
-                if neighbor.GetDegree() == 1:
-                    has_hydroxy = True
-                    break
-        if has_hydroxy:
-            return True, "Contains 3-hydroxy group on acyl chain attached to CoA via thioester linkage"
-
-    return False, "Does not contain 3-hydroxy group on acyl chain attached to CoA via thioester linkage"
+    return True, "Contains 3-hydroxy fatty acyl-CoA structure"
