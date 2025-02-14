@@ -2,13 +2,12 @@
 Classifies: CHEBI:143084 organometalloidal compound
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_organometalloidal_compound(smiles: str):
     """
     Determines if a molecule is an organometalloidal compound based on its SMILES string.
     An organometalloidal compound has bonds between one or more metalloid atoms (B, Si, Ge, As, Sb, Te) 
-    and one or more carbon atoms of an organyl group. The metalloid atom must be bound to an organic carbon.
+    and one or more carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -34,16 +33,11 @@ def is_organometalloidal_compound(smiles: str):
     if not has_metalloid:
         return False, "No metalloid atoms found"
     
-    # Check for metalloid-carbon bonds where the carbon is also part of an organic group (sp3 hybridization check)
+    # Check for metalloid-carbon bonds
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() in metalloid_atoms:
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetAtomicNum() == 6:  # Check if neighbor is carbon
-                    
-                    # Get carbon hybridization
-                    hybridization = neighbor.GetHybridization()
-                   
-                    if hybridization == Chem.rdchem.HybridizationType.SP3:
-                        return True, "Contains at least one metalloid-carbon bond in an organic group"
+                    return True, "Contains at least one metalloid-carbon bond in an organic group"
 
     return False, "No metalloid-carbon bond to an organic group found"
