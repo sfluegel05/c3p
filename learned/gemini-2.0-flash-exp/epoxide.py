@@ -21,7 +21,8 @@ def is_epoxide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for epoxide (three-membered ring with one oxygen)
-    epoxide_pattern = Chem.MolFromSmarts("[C]1[C][O]1")
+    # The pattern [CX2]1[CX2][OX1]1 is more flexible, finding the basic three-membered ring structure with oxygen
+    epoxide_pattern = Chem.MolFromSmarts("[CX2]1[CX2][OX1]1")
 
     # Check for a match of the pattern
     if mol.HasSubstructMatch(epoxide_pattern):
