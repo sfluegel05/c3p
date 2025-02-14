@@ -2,6 +2,7 @@
 Classifies: CHEBI:16460 polyprenol phosphate
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_polyprenol_phosphate(smiles: str):
@@ -19,31 +20,42 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for phosphate group (allowing for mono and di-phosphate)
-    phosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O])([O,H])[O,H]")
-    diphosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O])([O,H])[O][P](=[O])([O])([O,H])[O,H]")
-    if not mol.HasSubstructMatch(phosphate_pattern) and not mol.HasSubstructMatch(diphosphate_pattern):
-       return False, "No phosphate group found"
-
-    # Define SMARTS for a repeating isoprene unit, with a minimum chain length
-    isoprene_pattern = Chem.MolFromSmarts("C(C)=[C]C[C]")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 2: #minimum of two isoprene units
-        return False, "Not enough repeating isoprene units in chain"
-
-    #Check connectivity, look for -O-P. At least one connection.
-    connectivity_pattern = Chem.MolFromSmarts("[OX2][P]")
-    connectivity_matches = mol.GetSubstructMatches(connectivity_pattern)
-    if len(connectivity_matches) < 1:
-       return False, "Phosphate group is not connected to chain via oxygen"
+    # Define SMARTS patterns for phosphate groups
+    phosphate_patterns = [
+        Chem.MolFromSmarts("O[P](=O)(O)O"),  # monophosphate
+        Chem.MolFromSmarts("O[P](=O)(O)O[P](=O)(O)O"), #diphosphate
+        Chem.MolFromSmarts("O[P](=O)(O)O[P](=O)(O)O[P](=O)(O)O")  # triphosphate
+    ]
     
+    #Check for the presense of at least one of those patterns.
+    found_phosphate = False
+    phosphate_match = None
+    for pattern in phosphate_patterns:
+      if mol.HasSubstructMatch(pattern):
+         found_phosphate = True
+         phosphate_match = pattern
+         break
 
-    # Check number of oxygen atoms - should not be a carbohydrate
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count > 10:
-        # Check for simple carbohydrate, e.g., [C][C]([O])[C]([O])[C]([O])[C]([O])[C][O]
-        carb_pattern = Chem.MolFromSmarts("[CX4][CX4]([OX2])[CX4]([OX2])[CX4]([OX2])[CX4]([OX2])[CX4][OX2]")
-        if mol.HasSubstructMatch(carb_pattern):
-           return False, "Too many oxygen atoms, likely a carbohydrate"
+    if not found_phosphate:
+         return False, "No phosphate group found"
+
+    #Find the polyprenol chain via the isoprenoid pattern
+    isoprenoid_pattern = Chem.MolFromSmarts("CC(=C)CC")
+    isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_pattern)
+    if len(isoprenoid_matches) < 3:
+          return False, "Not enough isoprenoid units in chain"
+    
+    #Check for connectivity between the phosphate group and the polyprenol
+    #We look for the substructure C-O-P
+    connectivity_pattern = Chem.MolFromSmarts("[CX4,CX3]O[P]")
+    connectivity_matches = mol.GetSubstructMatches(connectivity_pattern)
+    
+    if len(connectivity_matches) < 1:
+         return False, "Phosphate group is not connected to the chain via an oxygen"
+         
+    # Check the length of the polyprenol chain by looking at the number of rotatable bonds
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+      return False, "Chain too short for polyprenol"
 
     return True, "Contains a polyprenol chain esterified with a phosphate group"
