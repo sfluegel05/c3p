@@ -38,60 +38,63 @@ def is_ceramide(smiles: str):
     carbonyl_c_idx = amide_match[0]
     nitrogen_idx = amide_match[2]
 
-    # Break the molecule at the amide bond to separate fatty acid and sphingoid base
-    amide_bond = mol.GetBondBetweenAtoms(carbonyl_c_idx, nitrogen_idx)
-    bond_idx = amide_bond.GetIdx()
-    fragmented_mol = Chem.FragmentOnBonds(mol, [bond_idx])
+    # Retrieve atoms
+    carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
+    nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
 
-    # Get the fragments
-    frags = Chem.GetMolFrags(fragmented_mol, asMols=True, sanitizeFrags=True)
-    if len(frags) != 2:
-        return False, "Could not separate fatty acid and sphingoid base"
+    # Get fatty acid chain starting from carbonyl carbon
+    fatty_acid_atoms = set()
+    atoms_to_visit = [carbonyl_c]
+    while atoms_to_visit:
+        atom = atoms_to_visit.pop()
+        if atom.GetAtomicNum() == 6:  # Carbon
+            fatty_acid_atoms.add(atom.GetIdx())
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() not in fatty_acid_atoms and neighbor.GetAtomicNum() in [6,1]:
+                    atoms_to_visit.append(neighbor)
 
-    # Identify fatty acid and sphingoid base fragments
-    fatty_acid = None
-    sphingoid_base = None
-    for frag in frags:
-        atom_nums = [atom.GetAtomicNum() for atom in frag.GetAtoms()]
-        num_carbons = atom_nums.count(6)
-        num_nitrogens = atom_nums.count(7)
-        num_oxygens = atom_nums.count(8)
-        num_hydroxyls = len(frag.GetSubstructMatches(Chem.MolFromSmarts("[OX2H]")))
+    fatty_acid = Chem.PathToSubmol(mol, list(fatty_acid_atoms))
 
-        if num_nitrogens == 0 and num_carbons >= 14:
-            fatty_acid = frag
-            fatty_acid_carbons = num_carbons
-        elif num_nitrogens >= 1:
-            sphingoid_base = frag
-            sphingoid_base_carbons = num_carbons
-            sphingoid_base_hydroxyls = num_hydroxyls
+    # Get sphingoid base starting from nitrogen
+    sphingoid_atoms = set()
+    atoms_to_visit = [nitrogen]
+    while atoms_to_visit:
+        atom = atoms_to_visit.pop()
+        sphingoid_atoms.add(atom.GetIdx())
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in sphingoid_atoms and neighbor.GetAtomicNum() != 1:
+                atoms_to_visit.append(neighbor)
 
-    if fatty_acid is None or sphingoid_base is None:
-        return False, "Could not identify fatty acid and sphingoid base fragments"
+    sphingoid_base = Chem.PathToSubmol(mol, list(sphingoid_atoms))
 
-    # Check fatty acid chain length
+    # Analyze fatty acid fragment
+    fatty_acid_carbons = sum(1 for atom in fatty_acid.GetAtoms() if atom.GetAtomicNum() == 6)
     if fatty_acid_carbons < 14 or fatty_acid_carbons > 26:
         return False, f"Fatty acid chain length is {fatty_acid_carbons}, which is outside 14-26 carbons"
 
-    # Check if fatty acid is saturated or monounsaturated
-    fatty_acid_unsaturations = rdMolDescriptors.CalcNumDoubleBonds(fatty_acid)
+    # Count double bonds in fatty acid
+    fatty_acid_unsaturations = sum(1 for bond in fatty_acid.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
     if fatty_acid_unsaturations > 1:
         return False, f"Fatty acid has {fatty_acid_unsaturations} double bonds, should be saturated or monounsaturated"
 
-    # Check sphingoid base chain length
+    # Analyze sphingoid base fragment
+    sphingoid_base_carbons = sum(1 for atom in sphingoid_base.GetAtoms() if atom.GetAtomicNum() == 6)
+    sphingoid_base_nitrogens = sum(1 for atom in sphingoid_base.GetAtoms() if atom.GetAtomicNum() == 7)
+    sphingoid_base_oxygens = sum(1 for atom in sphingoid_base.GetAtoms() if atom.GetAtomicNum() == 8)
+
     if sphingoid_base_carbons < 12:
         return False, f"Sphingoid base chain length is {sphingoid_base_carbons}, which is too short"
 
-    # Check for hydroxyl groups in sphingoid base
-    if sphingoid_base_hydroxyls < 1:
-        return False, "No hydroxyl groups found on sphingoid base"
-    else:
-        hydroxyl_positions = sphingoid_base.GetSubstructMatches(Chem.MolFromSmarts("[C][O][H]"))
-        if not hydroxyl_positions:
-            return False, "Hydroxyl groups not attached to carbon in sphingoid base"
+    if sphingoid_base_nitrogens < 1:
+        return False, "No nitrogen atom found in sphingoid base"
 
-    # Optional: Check for hydroxyl group on carbon 2 (common but not mandatory)
-    # This would require mapping atom indices which can be complex
-    # Skipping for simplicity
+    if sphingoid_base_oxygens < 1:
+        return False, "No hydroxyl groups found on sphingoid base"
+
+    # Check for hydroxyl groups on sphingoid base carbons
+    hydroxyl_smarts = Chem.MolFromSmarts("[CX4][$([OX2H])]")
+    hydroxyls = sphingoid_base.GetSubstructMatches(hydroxyl_smarts)
+    if not hydroxyls:
+        return False, "Hydroxyl groups not attached to carbon in sphingoid base"
 
     return True, "Molecule is a ceramide with appropriate chain lengths and functional groups"
