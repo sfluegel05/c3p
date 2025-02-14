@@ -24,42 +24,25 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general SMARTS pattern for the steroid core with the 3-beta hydroxyl.
-    # Here we look for 4 fused rings with a carbon atom at position 3 connected with a beta-bond to an oxygen.
-    # We use an atom map so we can verify that we have the correct connectivity.
-    steroid_pattern = Chem.MolFromSmarts("[C]12~[C]~[C]~[C]1~[C]~[C]3~[C]2~[C]~[C]4~[C]3~[C]([O;H1]@[H])@[C]4")
+    # Define SMARTS pattern for the steroid core (4 fused rings)
+    # This pattern looks for the typical steroid ring system
+    steroid_core_pattern = Chem.MolFromSmarts("C12[C]3[C]4[C]([C]1)[C][C]2[C]3[C]4")
+    if not mol.HasSubstructMatch(steroid_core_pattern):
+        return False, "Molecule does not have a steroid core structure"
 
-    if steroid_pattern is None:
-      return False, "Invalid SMARTS pattern"
+    # Define the SMARTS pattern for the beta-hydroxy group at position 3
+    # The [C@H] specifies that the hydrogen is below the plane (beta position)
+    beta_hydroxy_pattern = Chem.MolFromSmarts("[C]12[C]3[C]4[C]([C@H](O)[C]1)[C][C]2[C]3[C]4")
 
-    # Check if the molecule matches the pattern
-    matches = mol.GetSubstructMatches(steroid_pattern)
 
-    if not matches:
-        return False, "Molecule does not match the steroid core with beta-hydroxyl at position 3"
+    if beta_hydroxy_pattern is None:
+        return False, "Invalid beta-hydroxy SMARTS pattern"
+
+
+    # Check if the molecule matches the combined pattern
+    matches = mol.GetSubstructMatches(beta_hydroxy_pattern)
     
-    for match in matches:
-        # Get atom indices
-        atom_indices = list(match)
-        
-        # Extract the atom mapped to the beta-hydroxyl substituent
-        oxy_atom_index = atom_indices[-1]
-        oxy_atom = mol.GetAtomWithIdx(oxy_atom_index)
-
-        # Check that the oxygen is connected to the carbon atom specified by the substructure match
-        # and check that is indeed has beta stereochemistry
-        carbon_atom_index = atom_indices[-2]
-        carbon_atom = mol.GetAtomWithIdx(carbon_atom_index)
-        is_beta = False
-        for bond in carbon_atom.GetBonds():
-            if bond.GetOtherAtomIdx(carbon_atom.GetIdx()) == oxy_atom.GetIdx():
-                if bond.GetBondDir() == Chem.rdchem.BondDir.BEGINWEDGE:
-                  is_beta = True
-                  break
-        if not is_beta:
-           continue # Check other matches
-
-        # If we've reached here, the molecule matches the criteria
+    if matches:
         return True, "Molecule matches the criteria for a 3beta-hydroxy steroid"
-
-    return False, "Molecule does not match the steroid core with beta-hydroxyl at position 3"
+    else:
+        return False, "Molecule does not match the steroid core with beta-hydroxyl at position 3"
