@@ -5,6 +5,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
+
 def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acyl-CoA based on its SMILES string.
@@ -21,106 +22,101 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     #  CoA pattern including the terminal phosphate
     coa_pattern = Chem.MolFromSmarts("COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "Coenzyme A substructure not found."
 
-    # Combined pattern for thioester and 3-hydroxy fatty acid chain
-    # This pattern includes the thioester, the alpha carbon, the beta carbon, and the 3-hydroxy group.
-    hydroxy_fatty_acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])S[CX4][CX4]([OX2])[CX3](=[OX1])")
-    
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_fatty_acyl_pattern)
+
+    # Combined pattern for thioester and 3-hydroxy carbon (C=O-S-C-C(O))
+    hydroxy_thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])S[CX4][CX4]([OX2])")
+    hydroxy_matches = mol.GetSubstructMatches(hydroxy_thioester_pattern)
     if len(hydroxy_matches) == 0:
-        return False, "No 3-hydroxy fatty acyl thioester group found"
-    
-    # Fatty acid chain pattern attached to the 3-hydroxy group. This pattern will match carbon chains, including double bonds
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    
-    
+       return False, "No thioester with a 3-hydroxy group found"
+
     found_chain = False
     for match in hydroxy_matches:
-        # Get the atom indices that match the pattern
-        thioester_carbon_idx = match[0]  # C=O of thioester
+       
+        thioester_carbonyl_idx = match[0]  # C=O of thioester
         alpha_carbon_idx = match[2]      # carbon attached to S
-        hydroxy_carbon_idx = match[3] # the carbon with OH
-        carbonyl_carbon_idx = match[4] # the carbon of the carbonyl
+        hydroxy_carbon_idx = match[3]  # The carbon with the OH group
 
-        # Check that there is a long chain linked to the hydroxy carbon
-        # Build a new molecule without the CoA moiety
-        
-        
-        
-        
-        
-        temp_mol = Chem.RWMol(mol)
-        
-        # Get the atoms of the CoA
+        # Check that the carbon attached to the hydroxyl is not part of the CoA molecule
         match_coa = mol.GetSubstructMatch(coa_pattern)
+        if match_coa is not None and hydroxy_carbon_idx in match_coa:
+             continue
+         
+        #Validate that the hydroxyl group is in position 3 of the chain
+        neighbors_alpha_carbon = [neighbor.GetIdx() for neighbor in mol.GetAtomWithIdx(alpha_carbon_idx).GetNeighbors()]
+        if not thioester_carbonyl_idx in neighbors_alpha_carbon:
+            continue # the chain does not connect correctly.
+
+        neighbors_hydroxy_carbon = [neighbor.GetIdx() for neighbor in mol.GetAtomWithIdx(hydroxy_carbon_idx).GetNeighbors()]
         
-        # Remove atoms of CoA to have better counting
+        if  len([neighbor for neighbor in mol.GetAtomWithIdx(hydroxy_carbon_idx).GetNeighbors() if neighbor.GetAtomicNum() == 6]) < 2:
+             continue #the hydroxy carbon should be connected to at least 2 other carbons
+        if not alpha_carbon_idx in neighbors_hydroxy_carbon:
+           continue # check that it is a beta hydroxy, not alpha or gamma
+
+        # Check for a fatty acid chain (at least 3 C) attached to the carbonyl carbon of the thioester
+        
+        
+        fatty_acid_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+        
+        temp_mol = Chem.Mol(mol)
+        # Remove the CoA to check the fatty acid chain
+        match_coa = temp_mol.GetSubstructMatch(coa_pattern)
         if match_coa is not None:
-          for atom_idx in reversed(match_coa):
-           temp_mol.RemoveAtom(atom_idx)
+             
+             
+             temp_mol = Chem.RWMol(temp_mol)
+             for atom_idx in reversed(match_coa):
+                  temp_mol.RemoveAtom(atom_idx)
+             temp_mol = Chem.Mol(temp_mol)
 
         
-        #Now remove the thioester and 3-hydroxy group
-        for atom_idx in reversed([thioester_carbon_idx, temp_mol.GetAtomWithIdx(alpha_carbon_idx).GetIdx(), temp_mol.GetAtomWithIdx(hydroxy_carbon_idx).GetIdx(), temp_mol.GetAtomWithIdx(carbonyl_carbon_idx).GetIdx()]):
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        # Remove the thioester and the 3-hydroxy group, as well as the alpha carbon of the fatty acid
+        
+        temp_mol_2 = Chem.RWMol(mol)
+        
+        
+        for atom_idx in reversed([thioester_carbonyl_idx,alpha_carbon_idx, hydroxy_carbon_idx ]):
              try:
-                temp_mol.RemoveAtom(atom_idx)
+                temp_mol_2.RemoveAtom(atom_idx)
              except:
-                pass
+                 pass
+
+        temp_mol_2 = Chem.Mol(temp_mol_2)
         
         
-        #Search for fatty acid chains on the remaining mol
         
-        if temp_mol.GetNumAtoms() > 0:
-             
-             fatty_matches = temp_mol.GetSubstructMatches(fatty_acid_chain_pattern)
-             
-             if len(fatty_matches) >= 1:
-                 
-                 found_chain = True
-                 break # No need to check other matches
+        fatty_matches = temp_mol_2.GetSubstructMatches(fatty_acid_chain_pattern)
+
+
+        if len(fatty_matches) > 0:
+             found_chain = True
+             break # Found chain, can skip other matches
     
     if not found_chain:
-         return False, "Missing or short fatty acid chain."
+        return False, "Missing fatty acid chain or chain too short"
 
-    #Check for carbons on the fatty acid. Needs to be done on the fatty acid without the CoA
-    c_count = 0
-    if found_chain:
-        
-      
-      
-        temp_mol = Chem.RWMol(mol)
-        
-        # Get the atoms of the CoA
-        match_coa = mol.GetSubstructMatch(coa_pattern)
-        
-        # Remove atoms of CoA to have better counting
-        if match_coa is not None:
-          for atom_idx in reversed(match_coa):
-           temp_mol.RemoveAtom(atom_idx)
-        
-        
-        #Now remove the thioester and 3-hydroxy group
-        for match in hydroxy_matches:
-            thioester_carbon_idx = match[0]  # C=O of thioester
-            alpha_carbon_idx = match[2]      # carbon attached to S
-            hydroxy_carbon_idx = match[3] # the carbon with OH
-            carbonyl_carbon_idx = match[4] # the carbon of the carbonyl
-            
-            for atom_idx in reversed([thioester_carbon_idx, temp_mol.GetAtomWithIdx(alpha_carbon_idx).GetIdx(), temp_mol.GetAtomWithIdx(hydroxy_carbon_idx).GetIdx(), temp_mol.GetAtomWithIdx(carbonyl_carbon_idx).GetIdx()]):
-               try:
-                temp_mol.RemoveAtom(atom_idx)
-               except:
-                   pass
-           
-        c_count = sum(1 for atom in temp_mol.GetAtoms() if atom.GetAtomicNum() == 6)
-
-
-    if c_count < 3:
-       return False, "Too few carbons in the fatty acid chain."
-
-    return True, "Contains CoA, thioester, and a 3-hydroxy fatty acid chain"
+    
+    
+    # Final validation
+    return True, "Contains CoA, thioester, and a 3-hydroxy fatty acid chain."
