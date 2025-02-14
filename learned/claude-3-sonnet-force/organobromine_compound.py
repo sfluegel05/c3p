@@ -5,12 +5,11 @@ Classifies: CHEBI:37141 organobromine compound
 Classifies: CHEBI:38241 organobromine compound
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_organobromine_compound(smiles: str):
     """
     Determines if a molecule is an organobromine compound based on its SMILES string.
-    An organobromine compound is a compound containing at least one bromine atom within a certain distance from a carbon atom.
+    An organobromine compound is a compound containing at least one carbon-bromine bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,35 +24,10 @@ def is_organobromine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if molecule contains bromine atoms
-    has_br = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 35:  # Bromine
-            has_br = True
-            break
+    # Count the number of carbon-bromine bonds
+    num_c_br_bonds = sum(bond.GetIsAromatic() and atom.GetAtomicNum() == 35 for bond in mol.GetBonds() for atom in [bond.GetBeginAtom(), bond.GetEndAtom()] if atom.GetAtomicNum() == 6)
 
-    if not has_br:
-        return False, "Does not contain any bromine atoms"
-
-    # Check if bromine atoms are within a certain distance from carbon atoms
-    max_distance = 2  # Adjust this value as needed
-    has_organo_br = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 35:  # Bromine
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6:  # Carbon
-                    has_organo_br = True
-                    break
-                else:
-                    conformer = mol.GetConformer()
-                    dist = AllChem.GetBondLength(conformer, atom.GetIdx(), neighbor.GetIdx())
-                    if dist <= max_distance:
-                        has_organo_br = True
-                        break
-            if has_organo_br:
-                break
-
-    if has_organo_br:
-        return True, "Contains at least one bromine atom within a certain distance from a carbon atom"
+    if num_c_br_bonds > 0:
+        return True, f"Contains {num_c_br_bonds} carbon-bromine bond(s)"
     else:
-        return False, "Does not contain any bromine atoms within a certain distance from carbon atoms"
+        return False, "Does not contain any carbon-bromine bonds"
