@@ -15,26 +15,31 @@ def is_nitrohydrocarbon(smiles: str):
         bool: True if molecule is a nitrohydrocarbon, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Ensure the molecule contains only C, H, N, O atoms
-    # Verify that nitro groups are attached to carbon atoms
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in {6, 1, 7, 8}:  # Carbon, Hydrogen, Nitrogen, Oxygen
-            return False, f"Contains atom other than C, H, N, O: {atom.GetSymbol()}"
-
     # Define the nitro group pattern
     nitro_group = Chem.MolFromSmarts("[NX3](=O)[O-]")
-
-    # Find nitro groups in the molecule
+    
+    # Check for nitro groups attached to carbon
+    found_nitro_on_carbon = False
     for match in mol.GetSubstructMatches(nitro_group):
-        # Check if the first atom in the match (nitrogen in nitro) is connected to a carbon atom
+        # Check if the nitro N is connected to a carbon atom
         nitro_nitrogen = mol.GetAtomWithIdx(match[0])
         if any(neighbor.GetAtomicNum() == 6 for neighbor in nitro_nitrogen.GetNeighbors()):
-            return True, "Contains hydrocarbon structure with one or more nitro groups replacing hydrogen"
+            found_nitro_on_carbon = True
+            break
     
-    return False, "No nitro group replacing hydrogen found"
+    if not found_nitro_on_carbon:
+        return False, "No nitro group replacing hydrogen on a carbon atom found"
+    
+    # Ensure the molecule is primarily a hydrocarbon backbone
+    permissible_atoms = {6, 1, 7, 8}  # C, H, N (in nitro), O (in nitro)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in permissible_atoms:
+            return False, f"Contains non-hydrocarbon atoms: {atom.GetSymbol()}"
+   
+    return True, "Contains hydrocarbon structure with one or more nitro groups replacing hydrogen"
