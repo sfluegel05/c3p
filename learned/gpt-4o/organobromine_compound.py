@@ -7,7 +7,7 @@ def is_organobromine_compound(smiles: str):
     """
     Determines if a molecule is an organobromine compound based on its SMILES string.
     An organobromine compound has at least one carbon-bromine (C–Br) bond.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
