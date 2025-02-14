@@ -28,62 +28,37 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for CoA backbone pattern
-    coa_pattern = Chem.MolFromSmarts("[C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC([C@H](C(NCCC(NCCSC(=O)[C])=O)=O)O)C)(=O)[O-])(=O)[O-])[C@H]([C@H]1O)OP([O-])([O-])=O")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No CoA backbone found"
+    # Look for CoA backbone substructures
+    coa_ribose = mol.GetSubstructMatches(Chem.MolFromSmarts("[C@@H]1[C@H]([C@@H]([C@H](O1)OP([O-])([O-])=O)O)OP([O-])([O-])=O"))
+    coa_phosphates = mol.GetSubstructMatches(Chem.MolFromSmarts("OP([O-])([O-])=O"))
+    coa_adenine = mol.GetSubstructMatches(Chem.MolFromSmarts("N1C2=C(C(=NC=N2)N)N=C1"))
+    coa_pantothenate = mol.GetSubstructMatches(Chem.MolFromSmarts("[C@H](C(=O)NCCC(=O)NCCSC(=O)[C])[C@@H](O)[C@](C)(C)COP([O-])(=O)OP([O-])(=O)O[C@@H]1[C@@H]([C@H]([C@@H](O1)OP([O-])([O-])=O)O)OP([O-])([O-])=O"))
+    
+    if not (coa_ribose and coa_phosphates and coa_adenine and coa_pantothenate):
+        return False, "No valid CoA backbone found"
     
     # Look for acyl chain (typically between 6-12 carbons)
     acyl_chain_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3]~[CX3]~[CX3]~[CX3]~[CX3]")
     acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
     if not acyl_chain_matches:
         return False, "No acyl chain found"
+    
+    valid_chain_lengths = []
     for match in acyl_chain_matches:
         chain_length = sum(1 for atom in mol.GetAtomWithIdx(idx).GetNeighbors() if atom.GetAtomicNum() == 6 for idx in match)
         if 6 <= chain_length <= 12:
-            break
-    else:
+            valid_chain_lengths.append(chain_length)
+    
+    if not valid_chain_lengths:
         return False, "Acyl chain length not in medium-chain range (6-12 carbons)"
     
     # Check for deprotonated phosphate groups
     if sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() == -1 and atom.GetAtomicNum() == 8) != 4:
         return False, "Incorrect number of deprotonated phosphate groups"
     
-    return True, "Contains CoA backbone with medium-chain acyl group and deprotonated phosphate groups"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:63128',
-        'name': 'medium-chain fatty acyl-CoA(4-)',
-        'definition': 'An acyl-CoA oxoanion that results from deprotonation of the phosphate and diphosphate groups of any medium-chain fatty acyl-CoA; major species at pH 7.3.',
-        'parents': ['CHEBI:63143', 'CHEBI:49206']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 404,
-    'num_false_positives': 15,
-    'num_true_negatives': 182392,
-    'num_false_negatives': 9,
-    'num_negatives': None,
-    'precision': 0.9643284379085504,
-    'recall': 0.9781420765027322,
-    'f1': 0.971154522292994,
-    'accuracy': 0.9992458720942091
-}
+    # Additional checks (e.g., molecular weight, functional groups)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 800 or mol_wt > 1200:
+        return False, "Molecular weight outside typical range for medium-chain fatty acyl-CoA(4-)"
+    
+    return True, f"Contains CoA backbone with acyl chain(s) of length(s) {', '.join(str(length) for length in valid_chain_lengths)} and deprotonated phosphate groups"
