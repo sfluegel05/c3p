@@ -20,7 +20,7 @@ def is_cephalosporin(smiles: str):
         bool: True if molecule is a cephalosporin, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -30,29 +30,33 @@ def is_cephalosporin(smiles: str):
     beta_lactam_pattern = Chem.MolFromSmarts("[N,O]=[C-]1[N,O]C(=O)C1")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
-    
+
     # Look for fused 6-membered ring (cephalosporin pattern)
-    ceph_pattern = Chem.MolFromSmarts("C1[N,O]C2C(=O)N2C(=O)C1C")
+    ceph_pattern = Chem.MolFromSmarts("[C&!R]1[N,O]C2C(=O)N2C(=O)C1")
     if not mol.HasSubstructMatch(ceph_pattern):
         return False, "No 6-membered cephalosporin ring found"
 
-    # Check for other common cephalosporin features
-    thiazole_pattern = Chem.MolFromSmarts("c1nccs1")
-    tetrazole_pattern = Chem.MolFromSmarts("c1cn[nH]n1")
-    
-    has_thiazole = mol.HasSubstructMatch(thiazole_pattern)
-    has_tetrazole = mol.HasSubstructMatch(tetrazole_pattern)
-    
-    if has_thiazole or has_tetrazole:
-        return True, "Contains beta-lactam and 6-membered cephalosporin ring, with thiazole or tetrazole group"
+    # Check for common cephalosporin substituents
+    diazine_pattern = Chem.MolFromSmarts("c1nncn1")
+    pyridine_pattern = Chem.MolFromSmarts("c1ccncc1")
+    methoxyimino_pattern = Chem.MolFromSmarts("CON=C")
+    vinyl_pattern = Chem.MolFromSmarts("C=C")
+
+    has_diazine = mol.HasSubstructMatch(diazine_pattern)
+    has_pyridine = mol.HasSubstructMatch(pyridine_pattern)
+    has_methoxyimino = mol.HasSubstructMatch(methoxyimino_pattern)
+    has_vinyl = mol.HasSubstructMatch(vinyl_pattern)
+
+    if has_diazine or has_pyridine or has_methoxyimino or has_vinyl:
+        return True, "Contains beta-lactam and 6-membered cephalosporin ring, with common substituents"
 
     # Additional checks based on molecular properties
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 1000:
+    if mol_wt < 250 or mol_wt > 1200:
         return False, "Molecular weight outside typical cephalosporin range"
-    
+
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
+    if n_rotatable < 3:
         return False, "Insufficient rotatable bonds for cephalosporin"
 
     return True, "Contains beta-lactam and 6-membered cephalosporin ring with appropriate molecular properties"
