@@ -2,7 +2,6 @@
 Classifies: CHEBI:36141 quinone
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_quinone(smiles: str):
     """
@@ -21,46 +20,15 @@ def is_quinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get all rings
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
+    # Define SMARTS pattern for a quinone substructure WITHIN a ring
+    # This pattern looks for a 6-membered aromatic ring with at least two carbonyl groups (=O)
+    # separated by a conjugated system. We are also explicitly requiring that the atoms are aromatic (lowercase c).
+    # The two carbonyl carbons are explicitly required to be within the same ring.
+    quinone_pattern = Chem.MolFromSmarts("[c:1]1[c:2][c:3][c:4](=[O])[c:5][c:6](=[O])1")
+    quinone_pattern_5ring = Chem.MolFromSmarts("[c:1]1[c:2][c:3](=[O])[c:4][c:5](=[O])1")
 
-    if not rings:
-       return False, "No rings found"
-
-    # Check if molecule has any aromatic rings
-    has_aromatic = any(ring_info.IsRingAromatic(ring_idx) for ring_idx in range(len(rings)))
-    if not has_aromatic:
-       return False, "No aromatic rings found"
-
-    # Define SMARTS pattern for quinone substructure
-    # This pattern looks for a ring with at least two carbonyl groups (=O) separated by a conjugated double bond
-    quinone_pattern1 = Chem.MolFromSmarts("[C:1](=[O:2])[C:3]=[C:4][C:5](=[O:6])")
-    quinone_pattern2 = Chem.MolFromSmarts("[C:1](=[O:2])[C:3]=[C:4]~[C:5]=[C:6][C:7](=[O:8])")
-
-
-    # Check each aromatic ring for the quinone pattern
-    for ring in rings:
-      if not ring_info.IsRingAromatic(ring):
-        continue
-
-      ring_atoms = [mol.GetAtomWithIdx(atom) for atom in ring]
-
-      #create a submolecule only from the atoms of the current ring
-      ring_mol = Chem.RWMol()
-      for atom in ring_atoms:
-          new_atom = Chem.Atom(atom.GetAtomicNum())
-          ring_mol.AddAtom(new_atom)
-      
-      for i in range(len(ring_atoms)):
-        for j in range(i + 1, len(ring_atoms)):
-            if mol.GetBondBetweenAtoms(ring_atoms[i].GetIdx(), ring_atoms[j].GetIdx()):
-               ring_mol.AddBond(i, j, mol.GetBondBetweenAtoms(ring_atoms[i].GetIdx(), ring_atoms[j].GetIdx()).GetBondType())
-
-      ring_mol = ring_mol.GetMol()
-
-
-      if ring_mol.HasSubstructMatch(quinone_pattern1) or ring_mol.HasSubstructMatch(quinone_pattern2):
-          return True, "Aromatic ring with dione substructure detected"
+    # Check for the presence of the quinone pattern
+    if mol.HasSubstructMatch(quinone_pattern) or mol.HasSubstructMatch(quinone_pattern_5ring):
+        return True, "Aromatic ring with dione substructure detected"
 
     return False, "No quinone structure detected"
