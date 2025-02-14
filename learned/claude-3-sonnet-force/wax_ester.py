@@ -55,9 +55,15 @@ def is_wax_ester(smiles: str):
     if c_count < 20:
         return False, "Too few carbons for wax ester"
 
-    # Check for exactly two oxygen atoms
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count != 2:
-        return False, "Must have exactly 2 oxygens (1 ester group)"
+    # Check for exactly one alcohol group (-OH)
+    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    if len(alcohol_matches) != 1:
+        return False, "Must have exactly one alcohol group"
+
+    # Exclude molecules with free carboxylic acid groups (-COOH)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H]")
+    if mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "Cannot contain free carboxylic acid groups"
 
     return True, "Contains fatty acid ester with a fatty acid chain and a fatty alcohol chain"
