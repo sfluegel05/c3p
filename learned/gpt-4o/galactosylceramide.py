@@ -2,6 +2,7 @@
 Classifies: CHEBI:36498 galactosylceramide
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_galactosylceramide(smiles: str):
     """
@@ -21,33 +22,29 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Correct the galactose portion detection
-    galactose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1O")
-    if galactose_pattern is None:
-        return None, "Invalid SMARTS for galactose detection"
+    # Galactose head group pattern: a hexose ring with multiple hydroxyls
+    galactose_pattern = Chem.MolFromSmarts("OC[C@@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O")
     if not mol.HasSubstructMatch(galactose_pattern):
-        return False, "No recognizable galactose head group found"
-
-    # Amide link pattern (C(=O)N)
+        return False, "No galactose head group found"
+    
+    # Amide linkage pattern: -C(=O)N-
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
     
-    # Sphingolipid backbone detection
-    # General pattern for sphingolipids includes [C@H](O)[C@H](COX), where X indicates the linkage to the galactose
-    sphingolipid_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](CO)C=C")
-    if sphingolipid_pattern is None:
-        return None, "Invalid SMARTS for sphingolipid detection"
+    # Long-chain sphingolipid backbone pattern: -C=C-C-C-C- (with potential long aliphatic chains)
+    # It's more relaxed since the sphingolipid can vary widely with chain length and saturation
+    sphingolipid_pattern = Chem.MolFromSmarts("[CHX4][CHX3]([CH2])[CH2][CH2][CH2]")
     if not mol.HasSubstructMatch(sphingolipid_pattern):
         return False, "No sphingolipid backbone found"
-    
-    # Checking elemental composition for validity of carbohydrates and lipid chain
+  
+    # Optional: Count oxygen and carbon atoms to ensure they align with cerebroside structures
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
     if o_count < 6:
-        return False, "Insufficient oxygen atoms for necessary sugar and amide functionalities"
+        return False, "Not enough oxygen atoms for galactose and amide functionality"
     if c_count < 30:
-        return False, "Insufficient carbon atoms for long lipid and sugar chains"
+        return False, "Not enough carbon atoms for long sphingolipid and sugar chains"
 
-    return True, "Contains galactose head group, sphingolipid backbone, and necessary structural features"
+    return True, "Contains galactose head group, amide linkage and sphingolipid backbone"
