@@ -2,6 +2,7 @@
 Classifies: CHEBI:59238 cyclic fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import Descriptors
 
 def is_cyclic_fatty_acid(smiles: str):
     """
@@ -21,23 +22,19 @@ def is_cyclic_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxyl group (-COOH or COO)
-    carboxyl_pattern = Chem.MolFromSmarts("[C](=O)[O;H1,-]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group found, not a fatty acid"
+    # Check for carboxyl group (-COOH) or ester-like (-COO) patterns, allowing fatty acid derivatives
+    carboxyl_or_ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0,OX2H1]")
+    if not mol.HasSubstructMatch(carboxyl_or_ester_pattern):
+        return False, "No carboxyl or ester group found, not a recognized fatty acid derivative"
 
-    # Calculate the number of carbons
+    # Calculate the number of carbon atoms to ensure a fatty acid characteristic
     c_count = sum(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms())
+    # Ensure there's a reasonable length for what could be a fatty acid (usually > 6-8 carbons)
     if c_count < 8:
-        return False, f"Too few carbon atoms ({c_count}), not a fatty acid"
+        return False, f"Too few carbon atoms ({c_count}), not a characteristic fatty acid or derivative"
 
     # Detect any cyclic structure
     if not mol.GetRingInfo().NumRings():
         return False, "No cyclic structure found"
 
-    # Check for density of non-fatty-acid related heteroatoms
-    possible_impurities = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 8]) / (c_count + 1)
-    if possible_impurities > 0.2:  # arbitrary threshold for significant 'non-fatty' impurities
-        return False, "Excessive non-fatty-acid related heteroatoms"
-
-    return True, "Contains cyclic structure with characteristic fatty acid components"
+    return True, "Contains cyclic structure with characteristics of a fatty acid or its derivative"
