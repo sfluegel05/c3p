@@ -6,6 +6,7 @@ from rdkit import Chem
 def is_oligosaccharide(smiles: str):
     """
     Determines if a molecule is an oligosaccharide based on its SMILES string.
+    An oligosaccharide consists of at least two monosaccharide units joined by glycosidic linkages.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -22,34 +23,27 @@ def is_oligosaccharide(smiles: str):
     
     # Define SMARTS patterns for common sugar rings (hexose and pentose sugars, different stereochemistries)
     sugar_patterns = [
-        Chem.MolFromSmarts("[C@@H]1(O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O"), # Pyranose form
-        Chem.MolFromSmarts("[C@H]1(O)[C@@H](O)[C@@H](O)O[C@@H]1[C@H](O)"), # Different stereo pattern
-        Chem.MolFromSmarts("[C@@H]1([O])[C@H](O)[C@H](O)[C@@H](O)[C@H]1(O)"), # Another stereo variant
+        "[C@H]1(O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O",    # Alpha-D-glucopyranose (simplified)
+        "[C@@H]1(O)[C@H](O)[C@H](O)[C@H](O)[C@@H]1O",   # Beta-D-glucopyranose (simplified)
+        "[C@H](O)CC(O)[C@H]1O[C@H]([C@@H](O)[C@H]1O)C", # Another common sugar pattern
     ]
+    
+    # Compile patterns into Mol objects
+    sugar_mols = [Chem.MolFromSmarts(pat) for pat in sugar_patterns if Chem.MolFromSmarts(pat)]
     
     # Define SMARTS pattern for glycosidic linkages
-    glycosidic_bond_patterns = [
-        Chem.MolFromSmarts("C-O-C1[C@H](O)"), # glycosidic linkage
-        Chem.MolFromSmarts("C1OC(O)"), # another example pattern
-    ]
+    glycosidic_bond_pattern = Chem.MolFromSmarts("C1OC1")  # Simplified cyclic ether
     
-    # Check for at least two monosaccharide units
+    # Check for at least two sugar units
     sugar_count = 0
-    for pattern in sugar_patterns:
-        sugar_count += len(mol.GetSubstructMatches(pattern))
+    for sugar_mol in sugar_mols:
+        sugar_count += len(mol.GetSubstructMatches(sugar_mol))
     
-    if sugar_count < 2: # Oligosaccharides must have at least two sugar units
+    if sugar_count < 2:  # Oligosaccharides must have at least two sugar units
         return False, "Insufficient monosaccharide units"
     
     # Check for glycosidic linkages
-    glycosidic_count = 0
-    for pattern in glycosidic_bond_patterns:
-        if mol.HasSubstructMatch(pattern):
-            glycosidic_count += 1
-    
-    if glycosidic_count < 1:
+    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
         return False, "No glycosidic linkages found"
     
     return True, "Contains sufficient monosaccharide units and glycosidic linkages indicative of an oligosaccharide"
-
-# This revised version broadens the detection of sugar units and glycosidic linkages to improve identification accuracy for oligosaccharides.
