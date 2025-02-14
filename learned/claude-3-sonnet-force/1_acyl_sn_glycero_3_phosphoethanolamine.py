@@ -1,27 +1,46 @@
 """
 Classifies: CHEBI:29017 1-acyl-sn-glycero-3-phosphoethanolamine
 """
-Reasoning:
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The previous program was designed to classify 1-acyl-sn-glycero-3-phosphoethanolamine compounds by looking for specific structural features:
+def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
+    """
+    Determines if a molecule belongs to the 1-acyl-sn-glycero-3-phosphoethanolamine class based on its SMILES string.
 
-1. A glycerophosphate backbone with a specific SMARTS pattern: `[C@@H](OP(O)(=O)OCC[NH3+])(CO)CO`
-2. Exactly one ester group (-O-C(=O)-) connected to the glycerol backbone
-3. A fatty acid chain (long carbon chain) attached to the ester group
-4. Molecular weight, atom count, and rotatable bond count constraints
+    Args:
+        smiles (str): SMILES string of the molecule
 
-However, the outcomes show that this program failed to identify any true positives and missed all the examples provided. This suggests that the structural constraints defined in the program may be too strict or not accurately capturing the defining features of this chemical class.
+    Returns:
+        bool: True if the molecule belongs to the class, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we can consider the following:
+    # Check for the (R)-configuration of the glycerol backbone
+    glycerol_pattern = Chem.MolFromSmarts("[C@@H](OP(O)([O-,+0])OCC[NH3+])([CH2][OH])[CH2][OH]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No (R)-glycerophosphate backbone found"
 
-1. The glycerophosphate backbone pattern used in the previous program is very specific and may not account for all possible variations in the backbone structure. We can try a more general pattern or combine multiple patterns to cover a broader range of structures.
+    # Check for the presence of at least one ester group (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if not ester_matches:
+        return False, "No ester groups found"
 
-2. The program assumes that there is exactly one ester group and one fatty acid chain. However, some examples like `PE(18:1(11Z)/0:0)` and `PE(13:0/0:0)` do not seem to have a clear ester group or fatty acid chain attached. We may need to relax or modify these constraints.
+    # Check for the presence of carbon chains (not necessarily fatty acids)
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
+    if not carbon_chain_matches:
+        return False, "No carbon chains found"
 
-3. The molecular weight and atom count constraints may be too strict or not appropriate for this chemical class. We should reevaluate these constraints based on the examples provided.
+    # Check for the presence of an aminoethyl group
+    aminoethyl_pattern = Chem.MolFromSmarts("[NH2][CX4][CX4][OX2]")
+    if not mol.HasSubstructMatch(aminoethyl_pattern):
+        return False, "No aminoethyl group found"
 
-4. The program does not explicitly check for the (R)-configuration of the glycerol backbone, which is a defining feature of this chemical class. We may need to add a check for this configuration.
-
-5. Some examples like `LPE(17:1/0:0)` and `PE(22:4(7Z,10Z,13Z,16Z)/0:0)` have slightly different SMILES representations compared to the others. We may need to handle these variations in the program.
-
-By addressing these issues and refining the structural constraints based on the examples, we can potentially improve the program's accuracy in classifying 1-acyl-sn-glycero-3-phosphoethanolamine compounds.
+    return True, "Molecule belongs to the 1-acyl-sn-glycero-3-phosphoethanolamine class"
