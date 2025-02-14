@@ -22,19 +22,18 @@ def is_thiosugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General pattern for sugar backbone: flexible enough to cover various pyranoses and furanoses
-    sugar_backbone_pattern = Chem.MolFromSmarts("[C@H]([C@H](O)*)[C@H](O)[C@H](O)[C@H](O)[C@@H]1O")  # More general template
-
+    # General pattern for sugar backbones (generic C-O-C-O patterns typical in sugars)
+    sugar_backbone_pattern = Chem.MolFromSmarts("C1O[C@@H]([C@H](O)C)C(CO1)O")
     if not mol.HasSubstructMatch(sugar_backbone_pattern):
-        return False, "No sugar backbone found"
+        return False, "No conceivable sugar backbone found"
 
     # Define sulfur substitution patterns
     sulfur_patterns = [
         Chem.MolFromSmarts("[#16]"),                   # Match sulfur
         Chem.MolFromSmarts("[C@H]S"),                  # S connected to a chiral center
-        Chem.MolFromSmarts("O[SX4]"),                  # Sulfur replacing oxygen in pattern
-        Chem.MolFromSmarts("C-S(=O)"),                 # Sulfur bonded to carbon, like sulfoxides
-        Chem.MolFromSmarts("[SX2][C]"),                # Thioether configurations
+        Chem.MolFromSmarts("[C]-S-[C]"),               # Thioether configurations
+        Chem.MolFromSmarts("C-S(=O)"),                 # Sulfoxide: Sulfur bonded to carbon with double-bonded O
+        Chem.MolFromSmarts("[O;H0]S"),                 # Sulfur replacing non-hydroxy oxygen
     ]
 
     # Check for any sulfur substituting traditionally oxygen positions
