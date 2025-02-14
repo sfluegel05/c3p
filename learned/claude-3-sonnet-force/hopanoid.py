@@ -1,22 +1,88 @@
 """
 Classifies: CHEBI:51963 hopanoid
 """
-The previous code seems to be a good starting point for classifying hopanoids, as it checks for the presence of the core hopane skeleton and also performs some additional checks on the number of rings and the carbon count. However, it appears that the program failed to classify some positive examples correctly, resulting in a low F1 score.
+"""
+Classifies: CHEBI:35482 hopanoid
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential reasons for the failure and suggestions for improvement:
+def is_hopanoid(smiles: str):
+    """
+    Determines if a molecule is a hopanoid based on its SMILES string.
+    A hopanoid is a triterpenoid based on a hopane skeleton.
 
-1. **Handling different SMARTS patterns**: The code currently only checks for one specific SMARTS pattern for the hopane skeleton. However, there could be different ways to represent the same skeleton pattern, or slight variations in the pattern due to different stereochemistry or substituents. To address this, you could try using multiple SMARTS patterns or a more general pattern that captures the core structure while allowing for variations.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Additional structural constraints**: The program checks for the number of rings and the carbon count, but it may be necessary to add more structural constraints to better define the hopanoid class. For example, you could check for the presence of specific functional groups, the arrangement of rings, or the stereochemistry of certain atoms or bonds.
+    Returns:
+        bool: True if molecule is a hopanoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Handling exceptions or edge cases**: There may be some edge cases or exceptions that the current program is not handling correctly. For example, there could be molecules with the hopane skeleton but with additional substituents or structural modifications that should be excluded from the class. You could try analyzing the false positives and false negatives to identify such cases and incorporate additional checks or rules to handle them.
+    # Check for hopane skeleton pattern
+    hopane_pattern = Chem.MolFromSmarts("[C@H]1CC[C@@]2([C@H]1CC[C@]1([C@@H]2CC[C@@H]2[C@@]3(C)CC[C@H](C)[C@](C)(C)[C@@H]3CC[C@@]12C)C)C")
+    if not mol.HasSubstructMatch(hopane_pattern):
+        return False, "No hopane skeleton found"
 
-4. **Refining the chemical class definition**: It's also possible that the definition of the hopanoid class itself may need to be refined or clarified. If there are any ambiguities or edge cases in the definition, it could lead to inconsistencies in the classification. You could revisit the definition and ensure that it is clear and unambiguous, especially in terms of what should or should not be included in the class.
+    # Check molecular weight - hopanoids typically >400 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 400:
+        return False, "Molecular weight too low for hopanoid"
+    
+    # Check for presence of rings
+    n_rings = Chem.rdMolDescriptors.CalcNumRings(mol)
+    if n_rings < 4:
+        return False, "Too few rings for hopanoid"
 
-5. **Utilizing additional chemical knowledge**: While the program incorporates some basic chemical knowledge, such as the typical carbon count range, you could potentially leverage more in-depth chemical knowledge about the structure, reactivity, or properties of hopanoids to further refine the classification criteria.
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 25:
+        return False, "Too few carbons for hopanoid"
+    if o_count > 5:
+        return False, "Too many oxygens for hopanoid"
 
-6. **Handling stereochemistry**: The current SMARTS pattern includes some stereochemical specifications, but it may be necessary to handle stereochemistry more explicitly or comprehensively. This could involve incorporating additional stereochemical checks or considering alternative representations of stereochemistry.
+    return True, "Contains hopane skeleton with appropriate molecular weight and ring structure"
 
-7. **Exploring machine learning approaches**: If the rule-based approach proves challenging or insufficient, you could explore machine learning-based approaches for classifying hopanoids. This would involve curating a high-quality training dataset and training a model to learn the patterns and features that distinguish hopanoids from other molecules.
-
-In summary, while the previous code provides a solid foundation, further refinements and additional checks or rules may be necessary to improve the classification accuracy for hopanoids. Analyzing the false positives and false negatives, considering edge cases, and incorporating more chemical knowledge could help identify areas for improvement.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:35482',
+        'name': 'hopanoid',
+        'definition': 'A triterpenoid based on a  hopane skeleton.',
+        'parents': ['CHEBI:35481', 'CHEBI:38258']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 237,
+    'num_false_positives': 6,
+    'num_true_negatives': 177417,
+    'num_false_negatives': 5,
+    'num_negatives': None,
+    'precision': 0.9751031210907041,
+    'recall': 0.9794891183278957,
+    'f1': 0.9772929936305732,
+    'accuracy': 0.9998750141729957
+}
