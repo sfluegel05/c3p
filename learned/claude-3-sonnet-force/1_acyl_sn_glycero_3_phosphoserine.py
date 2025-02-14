@@ -33,8 +33,8 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Look for phosphate group attached to the middle carbon of the glycerol backbone
-    phosphate_pattern = Chem.MolFromSmarts("[CH2][CH1X4][CH2][OX2][PX4]([OX2])([OX2])[OX2]")
+    # Look for phosphate group attached to the glycerol backbone
+    phosphate_pattern = Chem.MolFromSmarts("[OX2][PX4]([OX2])([OX2])[OX2]~[CH2X4,CHX4,CH2X4]")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found on the glycerol backbone"
     
@@ -43,8 +43,8 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if not mol.HasSubstructMatch(serine_pattern):
         return False, "No serine head group found"
     
-    # Look for acyl chain attached to the first carbon of the glycerol backbone
-    acyl_pattern = Chem.MolFromSmarts("[CH2][OX2]C(=[OX1])[CX3]")
+    # Look for acyl chain attached to the glycerol backbone
+    acyl_pattern = Chem.MolFromSmarts("[CH2X4,CHX4,CH2X4][OX2]C(=[OX1])[CX3]")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
         return False, "Incorrect number of acyl chains found"
