@@ -28,43 +28,51 @@ def is_fatty_amide(smiles: str):
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     if not amide_matches:
         return False, "No amide group found"
-    
-    # Check if the chain attached to the carbonyl carbon is not a carboxyl
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])N")
-    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
 
-    for match in carbonyl_matches:
-      carbonyl_atom_index = match[0]
-      carbonyl_atom = mol.GetAtomWithIdx(carbonyl_atom_index)
-    
-      # find all the carbon neighbours
-      carbon_neighbors = [neighbor.GetIdx() for neighbor in carbonyl_atom.GetNeighbors() if mol.GetAtomWithIdx(neighbor).GetAtomicNum() == 6]
-    
-      if not carbon_neighbors:
-         return False, "No carbon attached to carbonyl"
-      
-      found_long_chain = False
-      for neighbor_idx in carbon_neighbors:
-          neighbor = mol.GetAtomWithIdx(neighbor_idx)
-          
-          #If the neighbor is part of a carbonyl, then it is not part of a fatty acid chain
-          if neighbor.GetSymbol() == 'C' and neighbor.GetTotalValence() == 3 and any(n.GetSymbol() == 'O' for n in neighbor.GetNeighbors()):
-              continue
+    # Check if the chain attached to the carbonyl carbon is not part of other carbonyl
+    for match in amide_matches:
+        carbonyl_atom_index = match[0]
+        carbonyl_atom = mol.GetAtomWithIdx(carbonyl_atom_index)
+
+        # Get neighbors of the carbonyl carbon
+        neighbors = carbonyl_atom.GetNeighbors()
+        
+        has_carbonyl_neighbor = False
+        for neighbor in neighbors:
+            if neighbor.GetSymbol() == 'C' and neighbor.GetTotalValence() == 3 and any(n.GetSymbol() == 'O' for n in neighbor.GetNeighbors()):
+                has_carbonyl_neighbor = True
+                break
+
+        if has_carbonyl_neighbor:
+            return False, "Carbonyl carbon is attached to another carbonyl"
+
+    # Check for fatty chain (at least 4 carbons) attached to the carbonyl carbon
+    found_long_chain = False
+    for match in amide_matches:
+        carbonyl_atom_index = match[0]
+        carbonyl_atom = mol.GetAtomWithIdx(carbonyl_atom_index)
+
+        # find all the carbon neighbours
+        carbon_neighbors = [neighbor.GetIdx() for neighbor in carbonyl_atom.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+
+        if not carbon_neighbors:
+            return False, "No carbon attached to carbonyl"
+        
+        for neighbor_idx in carbon_neighbors:
+            path = Chem.GetShortestPath(mol, carbonyl_atom_index, neighbor_idx)
+            if len(path) < 2 :
+               continue
             
-          # Check for long carbon chain (at least 4 carbons)
-          path = Chem.GetShortestPath(mol, carbonyl_atom_index, neighbor_idx)
-          
-          if len(path) >= 4:
-              # Count carbons in the attached chain.
-              chain_carbon_count = 0
-              for idx in path:
+            chain_carbon_count = 0
+            for idx in path:
                 if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 :
                    chain_carbon_count += 1
-              if chain_carbon_count >= 4:
-                  found_long_chain = True
-                  break
-      
-      if not found_long_chain:
-          return False, "No long carbon chain (>=4) attached to the amide carbonyl"
+            
+            if chain_carbon_count >= 4:
+                found_long_chain = True
+                break
     
+    if not found_long_chain:
+        return False, "No long carbon chain (>=4) attached to the amide carbonyl"
+
     return True, "Molecule is a fatty amide"
