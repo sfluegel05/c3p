@@ -6,6 +6,7 @@ Classifies: CHEBI:26680 phytosterols
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_phytosterols(smiles: str):
     """
@@ -24,19 +25,25 @@ def is_phytosterols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the core steroid substructure (tetracyclic ring system) with a hydroxyl group at the 3 position, this is very important
-    # Also the two methyl groups at positions 10 and 13 should be present
-    steroid_pattern = Chem.MolFromSmarts("[C]1[C]([C])([H])[C]([H])([C]([H])([H])[C]2([C]([H])([H])[C]3([C]([H])([H])[C]([H])([C]([H])([H])[C]4([C]([H])([H])[C]([H])([C]([H])(O)[C]([H])([H])[C]14)[C]([H])([H])[H])[C]23)[H])([H])[H])")
-
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "Does not have the core steroid structure"
     
-    # Check for a hydroxyl group (-OH) on the core structure and confirm a single OH
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) != 1:
-        return False, f"Must have exactly 1 hydroxyl group, found {len(hydroxyl_matches)}"
+    # Simplified steroid core pattern (tetracyclic ring system) - allows for double bonds and chirality
+    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C][C]3[C]([C]4[C]([C]1[C]2)CC[C]34)[C]")
+    if not mol.HasSubstructMatch(steroid_core_pattern):
+            return False, "Does not have the core steroid structure"
 
-    # If all checks pass, it's likely a phytosterol
-    return True, "Has core steroid structure with a single hydroxyl group"
+    # Check for side chain at C17, and check for a C attached to C17 of the core
+    sidechain_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C][C]3[C]([C]4[C]([C]1[C]2)CC[C]34)[C]-[C]")
+    if not mol.HasSubstructMatch(sidechain_pattern):
+        return False, "Does not have the side chain at C17"
+    
+    # Check for hydroxyl at position 3
+    hydroxyl_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C][C]3[C]([C]4[C]([C]1[C]2)CC[C]34)[C][OH]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "Does not have hydroxyl at C3"
+
+    # Optional check for double bonds
+    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
+    if mol.HasSubstructMatch(double_bond_pattern):
+        return True, "Has core steroid structure with side chain, hydroxyl group and at least one double bond"
+    
+    return True, "Has core steroid structure with side chain and hydroxyl group"
