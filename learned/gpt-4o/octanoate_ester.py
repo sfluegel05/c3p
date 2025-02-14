@@ -30,32 +30,25 @@ def is_octanoate_ester(smiles: str):
     
     # For each ester match, check for 8-carbon chain attached to the carbonyl
     for match in ester_matches:
-        # Identify the atom indices
-        carbonyl_c, o_ester = match[0], match[2]
-        
-        # Traverse the chain from the ester oxygen (should lead back to carbonyl carbon)
-        # Check the length and linearity of the carbon chain attached to the carbonyl
-        chain_length = 0
-        visited = set()
-        to_visit = [o_ester]
-        
-        while to_visit:
-            atom_idx = to_visit.pop()
-            if atom_idx in visited:
-                continue
-            visited.add(atom_idx)
-            
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:  # Carbon
-                chain_length += 1
-                # Add connected atoms excluding those already visited or back to carbonyl C
-                for neighbor in atom.GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    if neighbor_idx not in visited and neighbor_idx != carbonyl_c:
-                        to_visit.append(neighbor_idx)
-        
-        # For octanoic acid, we should find exactly 8 carbons in a linear chain
-        if chain_length == 8:
+        # Identify the carbonyl carbon
+        carbonyl_c = match[0]
+
+        # Check if there is a linear chain of exactly 8 carbons stemming from the carbonyl carbon
+        chain_carbons = set([carbonyl_c])  # Initialize with carbonyl carbon
+        queue = [carbonyl_c]
+
+        while queue and len(chain_carbons) <= 8:
+            current_carbon = queue.pop(0)
+
+            for neighbor in mol.GetAtomWithIdx(current_carbon).GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                
+                if neighbor_idx not in chain_carbons and neighbor.GetAtomicNum() == 6:
+                    chain_carbons.add(neighbor_idx)
+                    queue.append(neighbor_idx)
+
+        # Check if the chain has exactly 8 carbons (including carbonyl carbon)
+        if len(chain_carbons) == 8:
             return True, "Contains octanoate ester group"
     
-    return False, "Ester group found, but not octanoate (8-carbon chain)"
+    return False, "Ester group found, but no octanoate (8-carbon chain)"
