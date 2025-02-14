@@ -24,7 +24,8 @@ def is_flavonoid(smiles: str):
     
     # Define SMARTS for the 1-benzopyran core with aryl substituent at position 2
     # Modified pattern to be more general:
-    flavonoid_smarts = '[c]1~[c](-[c])~[c][c]2[o][c]1[c][c]2'
+    flavonoid_smarts = '[c]1~[c](-[c]2[c]~[c]~[c]~[c]~[c]2)~[c]~[o]~[c]3~[c]~[c](=[O])~[c]~[c]13'
+
 
     # Convert SMARTS to Mol object
     flavonoid_mol = Chem.MolFromSmarts(flavonoid_smarts)
