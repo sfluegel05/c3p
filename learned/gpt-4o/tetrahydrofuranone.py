@@ -15,28 +15,20 @@ def is_tetrahydrofuranone(smiles: str):
         bool: True if molecule is a tetrahydrofuranone, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES to molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Define flexible patterns for tetrahydrofuranone
-    # Generic five-membered ring with one oxygen and one oxo group (anywhere on the ring)
-    thf_patterns = [
-        Chem.MolFromSmarts("C1C(=O)COC1"),    # Oxo on 2nd position
-        Chem.MolFromSmarts("C1CC(=O)OC1"),    # Oxo on 3rd position
-        Chem.MolFromSmarts("C1CCOC(=O)1"),    # Oxo on 4th position
-        Chem.MolFromSmarts("C1(C=O)CCOC1"),   # Oxo on 5th position
-    ]
+    # Define a SMARTS pattern for a five-membered ring with an oxygen and an oxo group at any position
+    thf_with_oxo = Chem.MolFromSmarts("O1[C;R][C;R][C;R](=O)[C;R]1 |or1:O1[C;R](=O)[C;R][C;R][C;R]1|")
 
-    # Ensure patterns are valid
-    if not all(p for p in thf_patterns):
+    if thf_with_oxo is None:
         return None, "Error in generating SMARTS pattern"
 
-    # Check against each pattern
-    for thf_pattern in thf_patterns:
-        if mol.HasSubstructMatch(thf_pattern):
-            return True, "Contains a tetrahydrofuran ring with an oxo group"
+    # Check against the pattern
+    if mol.HasSubstructMatch(thf_with_oxo):
+        return True, "Contains a tetrahydrofuran ring with an oxo group"
 
     return False, "Does not contain a tetrahydrofuran ring with an oxo group"
