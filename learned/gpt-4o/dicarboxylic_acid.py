@@ -20,16 +20,16 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for carboxylic acid (including both protonated and deprotonated forms)
+    # Define SMARTS pattern for carboxylic acid (include both protonated and deprotonated forms)
     carboxylic_acid_pattern_protonated = Chem.MolFromSmarts("C(=O)O")
     carboxylic_acid_pattern_deprotonated = Chem.MolFromSmarts("C(=O)[O-]")
 
     # Search for matches in the molecule
-    protonated_matches = mol.GetSubstructMatches(carboxylic_acid_pattern_protonated)
-    deprotonated_matches = mol.GetSubstructMatches(carboxylic_acid_pattern_deprotonated)
+    protonated_matches = set(mol.GetSubstructMatches(carboxylic_acid_pattern_protonated))
+    deprotonated_matches = set(mol.GetSubstructMatches(carboxylic_acid_pattern_deprotonated))
 
-    # Calculate total distinct carboxylic acid groups
-    total_matches = len(protonated_matches) + len(deprotonated_matches)
+    # Combine matches of both, paying attention to possible overlapping oxygen bindings
+    total_matches = len(protonated_matches.union(deprotonated_matches))
 
     # Check the number of carboxylic acid groups
     if total_matches == 2:
