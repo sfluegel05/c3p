@@ -26,24 +26,25 @@ def is_flavin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for isoalloxazine backbone pattern
-    backbone_pattern = Chem.MolFromSmarts("c1nc2c(nc3c(=O)[nH]c(=O)nc23)cc1")
+    # Look for isoalloxazine backbone pattern with potential substituents on the benzene ring
+    backbone_pattern = Chem.MolFromSmarts("c1nc2c(nc3c(=O)[nH]c(=O)nc23)c(c1)C")
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "Missing isoalloxazine backbone"
     
     # Look for substituent at the 10 position
-    # Use a more permissive pattern to allow for different substituents
-    substituent_pattern = Chem.MolFromSmarts("[C][N]1C=2C(=NC3=C1C=CC=C3)C(NC(N2)=O)=O")
+    # Use a more specific pattern to match common flavin substituents
+    substituent_pattern = Chem.MolFromSmarts("[C][N]1C=2C(=NC3=C1C=CC=C3)C(NC(N2)=O)=O[C@@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@@H](O)[C@@H](O)[C@H](O)CO")
     if not mol.HasSubstructMatch(substituent_pattern):
-        return False, "No substituent at the 10 position"
+        return False, "No suitable substituent at the 10 position"
     
     # Check for atoms and rings characteristic of flavins
     n_atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
-    if 6 not in n_atoms or 7 not in n_atoms or 8 not in n_atoms:
-        return False, "Missing required atoms (C, N, O)"
+    if 6 not in n_atoms or 7 not in n_atoms or 8 not in n_atoms or 15 not in n_atoms:
+        return False, "Missing required atoms (C, N, O, P)"
     
     ring_info = mol.GetRingInfo()
-    if len(ring_info.AtomRings()) < 3:
-        return False, "Fewer than 3 rings found"
+    ring_sizes = [len(x) for x in ring_info.AtomRings()]
+    if 5 not in ring_sizes or 6 not in ring_sizes:
+        return False, "Missing required 5-membered and 6-membered rings"
     
     return True, "Contains isoalloxazine backbone with substituent on the 10 position"
