@@ -36,16 +36,13 @@ def is_gas_molecular_entity(smiles: str):
     
     # Check for small gaseous organic compounds
     if all(elem_num in [1, 5, 6, 7, 8, 9, 17] for elem_num in element_nums):
-        if mol_wt < 100 and len(mol.GetAtoms()) <= 10:
+        if mol_wt < 80 and len(mol.GetAtoms()) <= 8:
             return True, "Small organic compound, likely gaseous at STP"
     
-    # Check for larger gaseous organic compounds
-    if element_nums.issubset(set([1, 5, 6, 7, 8, 9, 17])):
-        if mol_wt < 150 and Descriptors.NumRotatableBonds(mol) >= 3:
-            return True, "Larger organic compound with multiple rotatable bonds, likely gaseous at STP"
-    
     # Check for inorganic compounds known to be gases
-    inorganic_gases = ["[O-][O+]=O", "O=C=O", "[C-]#[O+]", "ClCl", "FF", "Cl[H]", "I[H]", "[N-][N+]#[N]"]
+    inorganic_gases = ["[O-][O+]=O", "O=C=O", "[C-]#[O+]", "ClCl", "FF", "Cl[H]", "I[H]", "[N-][N+]#[N]",
+                       "BrBr", "BrF", "BrF3", "BrF5", "ClF", "ClF3", "ClF5", "ClO2", "F2O", "FNO2", "N2O4", "NOF",
+                       "O3", "OF2", "SF6", "SO2F2", "SO3"]
     if Chem.MolToSmiles(mol) in inorganic_gases:
         return True, "Inorganic compound known to be gaseous at STP"
     
@@ -55,8 +52,10 @@ def is_gas_molecular_entity(smiles: str):
         return True, "Noble gas or its isotope, known to be gaseous at STP"
     
     # Check for compounds with small molecular weight and containing only gas elements
-    if element_nums.issubset(set(gas_elements)) and mol_wt < 150:
-        return True, "Molecule contains only elements known to be gases at STP, and has low molecular weight"
+    if element_nums.issubset(set(gas_elements)) and mol_wt < 100:
+        # Check for specific functional groups or substructures
+        if not Chem.MolFromSmarts("[OD1]"):  # Exclude compounds with hydroxyl groups
+            return True, "Molecule contains only elements known to be gases at STP, and has low molecular weight"
     
     # If none of the above conditions are met, assume not a gas
     return False, "Not recognized as a gas molecular entity"
