@@ -21,14 +21,13 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the D-ribose SMARTS pattern with specific stereochemistry.
-    #  C1(O)[C@H](O)[C@@H](CO)[C@H](O)O1
-    ribose_pattern = Chem.MolFromSmarts("[C@H]1([O])[C@@H]([O])[C@@H](CO)[C@H]([O])O1")
+    # Define the D-ribose SMARTS pattern with specific stereochemistry of the ring
+    ribose_pattern = Chem.MolFromSmarts("[C]1[C@H]([C@H]([C@@H]([C@H](O1)CO)O)O)")
     if not mol.HasSubstructMatch(ribose_pattern):
-         return False, "Molecule does not contain the correct D-ribose sugar"
+        return False, "Molecule does not contain the correct D-ribose sugar"
     
-    # check for nitrogen attachment to ribose carbon, meaning nucleobase attached. 
-    base_attach_pattern = Chem.MolFromSmarts("[NX3][CX4]1[C@H]([O])[C@@H]([O])[C@@H](CO)[C@H]([O])O1")
+     # check for nitrogen attachment to ribose carbon, meaning nucleobase attached. 
+    base_attach_pattern = Chem.MolFromSmarts("[NX3][CX4]1[C@H]([C@H]([C@@H]([C@H](O1)CO)O)O)")
     if not mol.HasSubstructMatch(base_attach_pattern):
         return False, "Molecule does not contain a nucleobase attached to the ribose sugar"
 
