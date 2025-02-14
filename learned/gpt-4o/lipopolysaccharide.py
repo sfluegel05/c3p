@@ -18,7 +18,6 @@ def is_lipopolysaccharide(smiles: str):
         bool or None: True if molecule is a lipopolysaccharide, False otherwise or None if classification is not possible
         str or None: Reason for classification or None if not classified
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -26,21 +25,36 @@ def is_lipopolysaccharide(smiles: str):
     
     # Define SMARTS patterns for key structures
     patterns = {
-        "heptose": Chem.MolFromSmarts("CC(O)C(C(C(C=O)O)O)O"), # Simplified heptose pattern
-        "octulosonic_acid": Chem.MolFromSmarts("O=C(O)C(C(C(C=O)O)O)CO"), # Simplified octulosonic acid pattern
-        "fatty_acid": Chem.MolFromSmarts("CCCCCCCCCCCC[CH](O)C(=O)O"), # Simplified pattern for 3-hydroxytetradecanoic acid
+        "heptose": Chem.MolFromSmarts("[C@@H]([C@H](O)[C@H](CO)O)[C@@H]([C@H](O)[C=O])O"),  # Possible refined heptose pattern
+        "octulosonic_acid": Chem.MolFromSmarts("O=C(O)C([C@H](C(=O)O)O)CO"),  # Refined octulosonic acid pattern
+        "fatty_acid": Chem.MolFromSmarts("CCCCCCCCCCCCCCOCCC(=O)O"),  # Extended and refined 3-hydroxytetradecanoic acid pattern
     }
-
-    matched_patterns = []
+    
+    # Initialize pattern check counts
+    heptose_count = 0
+    octulosonic_acid_count = 0
+    fatty_acid_count = 0
+    
+    # Check for each pattern
     for name, pattern in patterns.items():
         if mol.HasSubstructMatch(pattern):
-            matched_patterns.append(name)
-
-    # Check for minimal criteria satisfaction
-    if "heptose" in matched_patterns and "octulosonic_acid" in matched_patterns and "fatty_acid" in matched_patterns:
-        return True, "Matches indicative motifs of a lipopolysaccharide"
-
-    if not matched_patterns:
-        return False, "No matching indicative patterns found. Complexity likely surpasses current SMILES-based method."
-
-    return False, "Insufficient pattern match certainty for classification"
+            if name == "heptose":
+                heptose_count += 1
+            elif name == "octulosonic_acid":
+                octulosonic_acid_count += 1
+            elif name == "fatty_acid":
+                fatty_acid_count += 1
+    
+    # Verify presence and structure
+    if heptose_count >= 2 and octulosonic_acid_count >= 1 and fatty_acid_count >= 1:
+        return True, "Matches key motifs of a lipopolysaccharide (heptose, octulosonic acid, and fatty acid components detected)"
+    
+    # Determine issues with matches
+    if heptose_count < 2:
+        return False, f"Insufficient heptose units, found {heptose_count}"
+    if octulosonic_acid_count < 1:
+        return False, "Missing octulosonic acid component"
+    if fatty_acid_count < 1:
+        return False, "Missing fatty acid component"
+    
+    return False, "Complexity likely surpasses current SMILES-based method"
