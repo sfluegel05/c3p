@@ -1,26 +1,53 @@
 """
 Classifies: CHEBI:38131 lactol
 """
-After analyzing the previous code and the outcomes, I can identify a few potential issues and areas for improvement:
+"""
+Classifies: CHEBI:46661 lactol
 
-1. **False Negatives**: The program missed several known lactol structures, such as alpha-D-fructopyranose, latrunculin B, and soraphen A. This suggests that the current SMARTS pattern for detecting the intramolecular hemiacetal group may be too specific or not comprehensive enough.
+A lactol is a cyclic hemiacetal formed by intramolecular addition of a hydroxy group to an aldehydic
+or ketonic carbonyl group. They are thus 1-oxacycloalkan-2-ols or unsaturated analogues.
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-2. **False Positives**: The program incorrectly classified several structures as lactols, which do not seem to contain the required intramolecular hemiacetal group. This could be due to the SMARTS pattern being too broad or the program not checking for other necessary conditions.
+def is_lactol(smiles: str):
+    """
+    Determines if a molecule is a lactol based on its SMILES string.
 
-3. **Ring Size Constraint**: The program checks for ring sizes between 4 and 8, which may be too restrictive. Some lactol structures, like those containing fused ring systems, may have larger ring sizes.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-4. **Rotatable Bond Constraint**: The program assumes that lactols have few rotatable bonds (< 6), but some larger or more flexible lactol structures may have more rotatable bonds.
+    Returns:
+        bool: True if molecule is a lactol, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, I would suggest the following steps:
+    # Look for intramolecular hemiacetal pattern
+    hemiacetal_pattern = Chem.MolFromSmarts("[OX2]1[CX4][CX3](=[OX1])[CX4][CX4][CX4][CX4]1")
+    if not mol.HasSubstructMatch(hemiacetal_pattern):
+        return False, "No intramolecular hemiacetal group found"
 
-1. **Refine the SMARTS Pattern**: Analyze the false negatives and false positives to identify any missing or incorrect aspects of the current SMARTS pattern for detecting the intramolecular hemiacetal group. Consider using a combination of SMARTS patterns or other substructure matching techniques to ensure a more comprehensive and accurate identification of lactols.
+    # Look for lactone pattern (to exclude lactones)
+    lactone_pattern = Chem.MolFromSmarts("[OX2]=[CX3]1[OX2][CX4][CX4][CX4][CX4]1")
+    if mol.HasSubstructMatch(lactone_pattern):
+        return False, "Lactone structure detected, not a lactol"
 
-2. **Remove or Relax the Ring Size Constraint**: Since lactols can exist in larger fused ring systems, it may be better to remove the ring size constraint or make it more flexible. Alternatively, you could check for specific ring patterns or fused ring systems that are known to contain lactols.
+    # Check for common structural features of lactols
+    unsaturated = mol.GetBondBetweenAtoms(*list(hemiacetal_pattern.GetBondWithStereo(-1).GetBeginAtomIdx())[:-1]).GetBondType() == Chem.BondType.DOUBLE
+    has_hydroxy = any(atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 1 for atom in mol.GetAtoms())
+    ring_size = len(list(hemiacetal_pattern.GetRingInfo().AtomRings()[0]))
 
-3. **Remove or Relax the Rotatable Bond Constraint**: While lactols are typically rigid structures, there may be exceptions, especially for larger or more complex molecules. Consider removing or increasing the rotatable bond limit to avoid excluding potential lactols.
+    if unsaturated or not has_hydroxy or ring_size < 4 or ring_size > 10:
+        return False, "Structure does not match typical lactol features"
 
-4. **Check for Additional Structural Features**: Lactols may have other structural features or patterns that could be used for identification. For example, you could check for the presence of specific functional groups or substructures that are commonly associated with lactols.
+    # Check for reasonable molecular properties
+    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
 
-5. **Analyze Outliers and Use Expert Judgment**: As mentioned, there may be systematic or occasional mistakes in the benchmark data. If you encounter cases where your program's classification seems consistent with your understanding of lactols, but contradicts the benchmark, consider ignoring those outliers and providing a reasoned explanation.
+    if mol_weight < 100 or mol_weight > 800 or n_rotatable > 15:
+        return False, "Molecular properties outside expected range for lactols"
 
-By implementing these improvements, the program should be able to more accurately identify lactol structures while minimizing false positives and false negatives.
+    return True, "Contains intramolecular hemiacetal group and matches expected structural features of lactols"
