@@ -21,10 +21,10 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for CoA core (Adenine-Ribose-Phosphate) - Relaxed pattern
-    core_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12[C@H]1[C@@H]([C@@H]([C@H](O[PX3])O)O)[C@H]1COP([OX1])(=[OX1])OP([OX1])(=[OX1])O")
+    # 1. Check for CoA core (Adenine-Ribose-Phosphate) - More specific pattern
+    core_pattern = Chem.MolFromSmarts("n1cnc2c(N)ncnc12[C@H]1[C@@H]([C@@H]([C@H](O[P]([OX1])(=[OX1])O)O)O)[C@H]1COP([OX1])(=[OX1])OP([OX1])(=[OX1])O")
     if not mol.HasSubstructMatch(core_pattern):
-         return False, "CoA core (Adenine-Ribose-Phosphate) not found"
+        return False, "CoA core (Adenine-Ribose-Phosphate) not found"
 
     # 2. Check for pantetheine-like moiety
     pantetheine_pattern = Chem.MolFromSmarts("NCCSC(=O)CCNC(=O)")
@@ -41,38 +41,49 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     for match in thioester_matches:
         carbonyl_c_index = match[0]
         thio_s_index = match[1]
-    
+        
         carbonyl_c_atom = mol.GetAtomWithIdx(carbonyl_c_index)
         
+        # Find the carbon directly attached to the carbonyl carbon of the thioester (start of fatty acid chain)
         connected_carbon_indices = [neighbor.GetIdx() for neighbor in carbonyl_c_atom.GetNeighbors() if neighbor.GetIdx() != thio_s_index and neighbor.GetAtomicNum() == 6]
+
         if len(connected_carbon_indices) != 1:
-             return False, "Could not identify the connecting carbon to the carbonyl in thioester."
+            return False, "Could not identify the connecting carbon to the carbonyl in thioester."
 
         start_carbon_index = connected_carbon_indices[0]
-        
-        
+
+        # Traverse the fatty acid chain and count heavy atoms
         chain_length = 0
         visited_atoms = set()
         current_atom_index = start_carbon_index
         prev_atom_index = carbonyl_c_index
-
+        
         while True:
-            chain_length += 1
             visited_atoms.add(current_atom_index)
             current_atom = mol.GetAtomWithIdx(current_atom_index)
-            next_carbon_index = None
+            is_terminal = True
+            next_atom_index = None
             for neighbor in current_atom.GetNeighbors():
                 neighbor_index = neighbor.GetIdx()
-                if neighbor.GetAtomicNum() == 6 and neighbor_index != prev_atom_index and neighbor_index not in visited_atoms:
-                    next_carbon_index = neighbor_index
+                if neighbor.GetAtomicNum() != 1 and neighbor_index != prev_atom_index and neighbor_index not in visited_atoms:
+                    next_atom_index = neighbor_index
+                    is_terminal = False
                     break
-            if next_carbon_index is None:
-                break
+            if is_terminal:
+                 break
+            if not current_atom.GetAtomicNum()==6 and current_atom.GetAtomicNum() != 1:
+                chain_length += 1 #Count only heavy atoms
+            
             prev_atom_index = current_atom_index
-            current_atom_index = next_carbon_index
+            current_atom_index = next_atom_index
 
+        # Count last atom if heavy atom
+        last_atom = mol.GetAtomWithIdx(current_atom_index)
+        if last_atom.GetAtomicNum() != 1:
+          chain_length +=1
+            
         if not 6 <= chain_length <= 12:
-            return False, f"Fatty acid chain has {chain_length} carbons, should be 6-12."
+            return False, f"Fatty acid chain has {chain_length} heavy atoms, should be 6-12."
 
 
     return True, "Medium-chain fatty acyl-CoA identified"
