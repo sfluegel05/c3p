@@ -1,22 +1,81 @@
 """
 Classifies: CHEBI:25903 peptide antibiotic
 """
-After analyzing the previous program and the outcomes, it appears that the main issue is that the program is overly specific in its criteria for identifying peptide antibiotics. The current approach of checking for a peptide backbone and a set of predefined antimicrobial motifs is too restrictive and fails to capture the diverse chemical structures found in this class of compounds.
+"""
+Classifies: CHEBI:49613 peptide antibiotic
+A chemically diverse class of peptides that exhibit antimicrobial properties.
+"""
 
-The false negatives provided in the outcomes are all valid examples of peptide antibiotics, but they are being missed by the program due to the strict criteria. For instance, the program is failing to identify compounds with alternative antimicrobial motifs or structural features not covered by the predefined SMARTS patterns.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.ML.Descriptors import MoleculeDescriptors
+import pickle
 
-To improve the program, we need to adopt a more flexible and comprehensive approach that takes into account the diverse chemical space of peptide antibiotics. Here are some potential improvements:
+# Load pre-trained model
+model = pickle.load(open("peptide_antibiotic_model.pkl", "rb"))
 
-1. **Expand the set of antimicrobial motifs**: While the current set of motifs covers some common structural features found in peptide antibiotics, it is not exhaustive. We can expand the list of motifs to include other patterns associated with antimicrobial activity, such as specific amino acid sequences, cyclic structures, or the presence of certain functional groups.
+def is_peptide_antibiotic(smiles: str):
+    """
+    Determines if a molecule is a peptide antibiotic based on its SMILES string and a pre-trained machine learning model.
 
-2. **Use machine learning techniques**: Instead of relying solely on predefined structural patterns, we could explore the use of machine learning techniques to learn the structural features associated with peptide antibiotics from a larger dataset of known examples. This would allow the program to generalize better and potentially identify novel structures that exhibit antimicrobial properties.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Incorporate physicochemical properties**: In addition to structural features, we could consider incorporating physicochemical properties, such as hydrophobicity, charge distribution, or hydrogen bonding potential, as these properties are often relevant for the antimicrobial activity of peptides.
+    Returns:
+        bool: True if molecule is a peptide antibiotic, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Utilize external databases and annotations**: There are several databases and resources that contain curated information about peptide antibiotics and their structures. We could leverage these external sources to improve the classification process, either by incorporating additional rules or by using the data for training machine learning models.
+    # Check for peptide backbone
+    peptide_pattern = Chem.MolFromSmarts("[N;X3]([C;X4]([N;X3])=O)[C;X4][C;X3]")
+    if not mol.HasSubstructMatch(peptide_pattern):
+        return False, "No peptide backbone found"
+    
+    # Calculate molecular descriptors
+    calc = MoleculeDescriptors.MoleculeDescriptors([mol])
+    descriptors = calc.CalcDescriptors()
 
-5. **Relax the criteria for peptide backbone**: While the presence of a peptide backbone is a reasonable criterion for identifying peptide antibiotics, the current SMARTS pattern might be too strict. We could consider relaxing or modifying this pattern to accommodate a broader range of peptide-like structures.
+    # Predict using pre-trained model
+    prediction = model.predict([descriptors])[0]
+    
+    if prediction == 1:
+        return True, "Structural features and properties consistent with peptide antibiotic"
+    else:
+        return False, "Structural features and properties not consistent with peptide antibiotic"
 
-By incorporating one or more of these improvements, we can potentially enhance the program's ability to accurately classify peptide antibiotics while maintaining a high level of recall (i.e., minimizing false negatives).
-
-It's important to note that while the program's performance can be improved, there may still be some inherent limitations or ambiguities in the classification task itself. The chemical class of peptide antibiotics is diverse and not always well-defined, leading to potential disagreements or inconsistencies in the benchmark data. In such cases, it is advisable to use your best judgment, relying on your understanding of chemistry and the intended definition of the chemical class.
+__metadata__ = {
+    'chemical_class': {'id': 'CHEBI:49613', 
+                       'name': 'peptide antibiotic', 
+                       'definition': 'A chemically diverse class of peptides that exhibit antimicrobial properties.', 
+                       'parents': ['CHEBI:35827', 'CHEBI:36336']},
+    'config': { 'llm_model_name': 'lbl/claude-sonnet',
+                'f1_threshold': 0.8,
+                'max_attempts': 5,
+                'max_positive_instances': None,
+                'max_positive_to_test': None,
+                'max_negative_to_test': None,
+                'max_positive_in_prompt': 50,
+                'max_negative_in_prompt': 20,
+                'max_instances_in_prompt': 100,
+                'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 2,
+    'num_true_negatives': 182399,
+    'num_false_negatives': 33,
+    'num_negatives': None, 
+    'precision': 0.9867549668874173,
+    'recall': 0.8197674418604652,
+    'f1': 0.9004329004329005,
+    'accuracy': 0.9998522576737073}
