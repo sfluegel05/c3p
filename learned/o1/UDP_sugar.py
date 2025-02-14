@@ -5,6 +5,7 @@ Classifies: CHEBI:17297 UDP-sugar
 Classifies: UDP-sugar
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_UDP_sugar(smiles: str):
     """
@@ -18,91 +19,79 @@ def is_UDP_sugar(smiles: str):
         bool: True if molecule is a UDP-sugar, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for the components of UDP-sugar
-
-    # Uracil base (without stereochemistry)
-    uracil_smarts = "O=C1NC=CC(=O)N1"
-    uracil_pattern = Chem.MolFromSmarts(uracil_smarts)
-
-    # Ribose sugar attached to uracil (without stereochemistry)
-    ribose_smarts = "C1OC(CO)C(O)C1O"
-    ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
-
-    # Uridine (uracil base attached to ribose)
-    uridine_smarts = "O=C1NC=CC(=O)N1C2OC(CO)C(O)C2O"
-    uridine_pattern = Chem.MolFromSmarts(uridine_smarts)
-
-    # Diphosphate group
-    diphosphate_smarts = "OP(=O)(O)OP(=O)(O)O"
-    diphosphate_pattern = Chem.MolFromSmarts(diphosphate_smarts)
-
-    # Sugar moiety (any monosaccharide without stereochemistry)
-    sugar_smarts = "C1OC(O)C(O)C(O)C1O"
-    sugar_pattern = Chem.MolFromSmarts(sugar_smarts)
+    # Define SMARTS pattern for uridine monophosphate (UMP) moiety
+    ump_smarts = "n1(c(=O)[nH]c(=O)c1)[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O"  # Uridine with ribose
+    ump_pattern = Chem.MolFromSmarts(ump_smarts)
+    if ump_pattern is None:
+        return False, "Unable to create uridine pattern"
 
     # Check for uridine moiety
-    if not mol.HasSubstructMatch(uridine_pattern):
+    if not mol.HasSubstructMatch(ump_pattern):
         return False, "Uridine moiety not found"
 
-    # Get the uridine match atoms
-    uridine_match = mol.GetSubstructMatch(uridine_pattern)
-    uridine_atoms = set(uridine_match)
+    # Define SMARTS pattern for diphosphate linkage
+    diphosphate_smarts = "OP(=O)(O)OP(=O)(O)O"  # Diphosphate group
+    diphosphate_pattern = Chem.MolFromSmarts(diphosphate_smarts)
+    if diphosphate_pattern is None:
+        return False, "Unable to create diphosphate pattern"
 
-    # Check for diphosphate group
+    # Check for diphosphate linkage connected to uridine
+    ump_matches = mol.GetSubstructMatches(ump_pattern)
     diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
-    if not diphosphate_matches:
-        return False, "Diphosphate group not found"
-
-    # For each diphosphate match, check if it's connected to uridine
-    diphosphate_connected = False
-    for diphosphate_match in diphosphate_matches:
-        diphosphate_atoms = set(diphosphate_match)
-        # Check for connection between uridine and diphosphate
-        for atom_idx in uridine_atoms:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() in diphosphate_atoms:
-                    diphosphate_connected = True
-                    break
-            if diphosphate_connected:
+    found_uridine_diphosphate = False
+    for ump_match in ump_matches:
+        for dp_match in diphosphate_matches:
+            # Get the atom indices of the ribose 5' oxygen and diphosphate oxygen
+            ribose_O5_prime = ump_match[5]  # Adjust index based on pattern
+            diphosphate_O = dp_match[0]  # First oxygen in diphosphate
+            # Check if ribose O5' is connected to diphosphate
+            bond = mol.GetBondBetweenAtoms(ribose_O5_prime, diphosphate_O)
+            if bond:
+                found_uridine_diphosphate = True
                 break
-        if diphosphate_connected:
+        if found_uridine_diphosphate:
             break
+    if not found_uridine_diphosphate:
+        return False, "Diphosphate linkage not connected to uridine"
 
-    if not diphosphate_connected:
-        return False, "Diphosphate group not attached to uridine"
+    # Define SMARTS pattern for sugar moiety (pyranose ring with multiple hydroxyls)
+    sugar_smarts = "[C@H]1([O])[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O"  # Simplified sugar ring
+    sugar_pattern = Chem.MolFromSmarts(sugar_smarts)
+    if sugar_pattern is None:
+        return False, "Unable to create sugar pattern"
 
-    # Check for sugar moiety attached via diphosphate
-    sugar_connected = False
-    for diphosphate_match in diphosphate_matches:
-        diphosphate_atoms = set(diphosphate_match)
-        # Find atoms connected to diphosphate but not part of uridine
-        for atom_idx in diphosphate_atoms:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-                nbr_idx = neighbor.GetIdx()
-                if nbr_idx not in diphosphate_atoms and nbr_idx not in uridine_atoms:
-                    # Potential sugar attachment
-                    if mol.HasSubstructMatch(sugar_pattern, useChirality=False, atomIdxs=[nbr_idx]):
-                        sugar_connected = True
-                        break
-            if sugar_connected:
+    # Check for sugar moiety
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
+        return False, "Sugar moiety not found"
+
+    # Check if sugar is connected to diphosphate
+    found_sugar_linkage = False
+    for dp_match in diphosphate_matches:
+        for sugar_match in sugar_matches:
+            # Get the atom indices of diphosphate oxygen and sugar anomeric carbon
+            diphosphate_O = dp_match[-1]  # Last oxygen in diphosphate
+            anomeric_C = sugar_match[0]  # First carbon in sugar ring
+            # Check if diphosphate O is connected to sugar anomeric carbon
+            bond = mol.GetBondBetweenAtoms(diphosphate_O, anomeric_C)
+            if bond:
+                found_sugar_linkage = True
                 break
-        if sugar_connected:
+        if found_sugar_linkage:
             break
+    if not found_sugar_linkage:
+        return False, "Sugar moiety not connected via diphosphate linkage"
 
-    if not sugar_connected:
-        return False, "Sugar moiety not attached via diphosphate linkage"
+    return True, "UDP-sugar found with UDP moiety linked via diphosphate to sugar"
 
-    return True, "UDP-sugar identified with uridine diphosphate linked to sugar via anomeric diphosphate"
-
-__metadata__ = {
-    'chemical_class': {
+__metadata__ = {   
+    'chemical_class': {   
         'id': 'CHEBI:46211',
         'name': 'UDP-sugar',
         'definition': 'A pyrimidine nucleotide-sugar having UDP as the nucleotide component attached to an unspecified sugar via an anomeric diphosphate linkage.',
