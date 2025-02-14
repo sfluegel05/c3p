@@ -20,33 +20,38 @@ def is_metal_atom(smiles: str):
         # Parse SMILES
         mol = Chem.MolFromSmiles(smiles)
         if mol is None:
-            return False, "Invalid SMILES string"
+            return None, None
 
         # Check if the molecule is a single atom
         if mol.GetNumAtoms() != 1:
             return False, "Not a single atom."
 
         atom = mol.GetAtomWithIdx(0)
-        symbol = atom.GetSymbol()
+        atomic_num = atom.GetAtomicNum()
 
-        # Remove isotopic number (if present) from the symbol to extract the element's symbol
-        element_symbol = ''.join(filter(str.isalpha, symbol))
-
-
+        # Check if the atom is a metal using RDKit's PeriodicTable
         pt = PeriodicTable.GetPeriodicTable()
-        atomic_num = pt.GetAtomicNumber(element_symbol)
-        if atomic_num == 0:
-          return False, f"Invalid atom: {element_symbol}"
-
-        element_symbol = pt.GetElementSymbol(atomic_num)
-       
-
-        # Check if the atom is a metal
-        if atom.IsMetal():
-             return True, "Single metal atom"
+        if pt.GetElementSymbol(atomic_num) in ["Li","Na","K","Rb","Cs","Fr", "Be","Mg","Ca","Sr","Ba","Ra",
+                    "Sc","Y","La","Ac",
+                    "Ti","Zr","Hf","Rf",
+                    "V","Nb","Ta","Db",
+                    "Cr","Mo","W","Sg",
+                    "Mn","Tc","Re","Bh",
+                    "Fe","Ru","Os","Hs",
+                    "Co","Rh","Ir","Mt",
+                    "Ni","Pd","Pt","Ds",
+                    "Cu","Ag","Au","Rg",
+                    "Zn","Cd","Hg","Cn",
+                    "Al","Ga","In","Tl",
+                    "Ge","Sn","Pb",
+                    "Sb","Bi",
+                    "Po"]:
+                return True, "Single metal atom"
+        elif atomic_num > 0:
+            return False, f"Single atom, but not a metal: {pt.GetElementSymbol(atomic_num)}"
         else:
-            return False, f"Single atom, but not a metal: {element_symbol}"
+            return False, "Invalid atom"
 
 
     except Exception as e:
-        return None, None
+         return None, None
