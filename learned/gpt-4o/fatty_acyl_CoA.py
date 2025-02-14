@@ -2,7 +2,6 @@
 Classifies: CHEBI:37554 fatty acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_fatty_acyl_CoA(smiles: str):
     """
@@ -28,13 +27,13 @@ def is_fatty_acyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
-    # Enhanced SMARTS pattern for a fatty acyl chain, allowing for unsaturations
-    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)[C;!R][C;!R][C;!R][C;!R][C;!R]")  # At least a few carbons beyond the carbonyl
+    # Adjusted pattern for a fatty acyl chain, accounting for flexible chain length and unsaturations
+    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)[C,c;!R][C,c;!R][C,c;!R]")  # Allow more flexibility and unsaturation
     if not mol.HasSubstructMatch(fatty_acyl_pattern):
         return False, "No suitable fatty acyl chain found"
 
-    # Simplified SMARTS pattern for coenzyme A structure, focusing on essential features
-    coa_pattern = Chem.MolFromSmarts("C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n2cnc3c(N)ncnc23")
+    # Improved coenzyme A structure SMARTS pattern, focusing on specific features
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)([O-])=O)n2cnc3nc(N)nc2-3")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA structure found"
 
