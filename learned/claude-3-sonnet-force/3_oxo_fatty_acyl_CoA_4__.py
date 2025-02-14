@@ -23,10 +23,22 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for 3-oxo-fatty acid pattern
-    oxo_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3](=O)[C]")
-    if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "No 3-oxo-fatty acid moiety found"
+    # Look for 3-oxo group (-CO-CO-)
+    oxo_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3](=O)")
+    oxo_match = mol.GetSubstructMatches(oxo_pattern)
+    if not oxo_match:
+        return False, "No 3-oxo group found"
+
+    # Check for a fatty acid chain
+    fatty_acid_chain = False
+    for atom_idx in oxo_match[0]:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        neighbor_atoms = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in atom.GetNeighbors()]
+        if any(neighbor.GetAtomicNum() == 6 and neighbor.GetTotalNumHs() + len(neighbor.GetNeighbors()) > 2 for neighbor in neighbor_atoms):
+            fatty_acid_chain = True
+            break
+    if not fatty_acid_chain:
+        return False, "No fatty acid chain found"
 
     # Look for CoA(4-) pattern
     coa_pattern = Chem.MolFromSmarts("C(C)(C)OP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)([O-])[O-])n1cnc2c(N)ncnc12")
