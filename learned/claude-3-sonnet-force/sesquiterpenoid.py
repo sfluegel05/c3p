@@ -1,28 +1,75 @@
 """
 Classifies: CHEBI:26658 sesquiterpenoid
 """
-The previous code attempts to classify a molecule as a sesquiterpenoid based on several criteria, including molecular weight, carbon count, presence of functional groups, and presence of rings or unsaturated bonds. However, there are a few issues with the current implementation:
+"""
+Classifies: CHEBI:36198 Sesquiterpenoid
 
-1. **Error**: The error message indicates that the `rdkit.Chem` module does not have an attribute called `HybridizationAtomType`. This attribute is likely from an older version of RDKit or has been renamed or moved to a different module.
+A sesquiterpenoid is any terpenoid derived from a sesquiterpene.
+The term includes compounds in which the C15 skeleton of the parent sesquiterpene 
+has been rearranged or modified by the removal of one or more skeletal atoms 
+(generally methyl groups).
+"""
 
-2. **Molecular Weight Range**: The molecular weight range of 200-300 Da may be too narrow for sesquiterpenoids. While this range covers many sesquiterpenoids, some modifications or additions of functional groups could push the molecular weight beyond this range.
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-3. **Functional Group Check**: The current implementation checks for the presence of any alcohol or carbonyl group, but it does not account for the possibility of other common functional groups in sesquiterpenoids, such as esters, ethers, or epoxides.
+def is_sesquiterpenoid(smiles: str):
+    """
+    Determines if a molecule is a sesquiterpenoid based on its SMILES string.
 
-4. **Ring and Unsaturation Check**: The current implementation assumes that all sesquiterpenoids must have either rings or unsaturated bonds. While this is true for many sesquiterpenoids, there may be exceptions where the skeleton has been rearranged or modified to eliminate all rings and unsaturated bonds.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program, we can make the following changes:
-
-1. **Update RDKit Imports**: Update the imports to use the correct attribute names from the current version of RDKit.
-
-2. **Expand Molecular Weight Range**: Expand the molecular weight range to account for potential modifications or additions of functional groups.
-
-3. **Improve Functional Group Check**: Check for a broader range of common functional groups found in sesquiterpenoids, such as esters, ethers, and epoxides, in addition to alcohols and carbonyls.
-
-4. **Relax Ring and Unsaturation Check**: Instead of requiring the presence of rings or unsaturated bonds, consider them as additional supporting evidence for a sesquiterpenoid but not a strict requirement.
-
-5. **Consider Additional Structural Features**: Explore other structural features or patterns that are characteristic of sesquiterpenoids, such as specific substructures or ring systems.
-
-6. **Adjust Thresholds and Criteria**: Fine-tune the thresholds and criteria based on a broader set of examples and counterexamples, as the current benchmark may have limitations or biases.
-
-By addressing these issues and making appropriate adjustments, the program should be able to classify sesquiterpenoids more accurately.
+    Returns:
+        bool: True if molecule is a sesquiterpenoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for C15 skeleton
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count != 15:
+        return False, "Not a C15 skeleton"
+    
+    # Check for terpene-like structure
+    ring_info = mol.GetRingInfo()
+    if not any(len(ring) >= 6 for ring in ring_info.AtomRings()):
+        return False, "No cyclohexane-like ring found (typical of terpenes)"
+    
+    # Check for common sesquiterpene scaffolds
+    scaffolds = ["C[C@@H]1CCC2=CC(=O)CC[C@]12C", # germacrane
+                 "CC1=CCC2C(C1)C1=C(CC[C@@]3(C)C[C@@H](OC3=O)C1)C2", # eudesmane
+                 "CC1=C2C(C=C(C)C)C1=CCC1C2CCC2=CC(=O)CC12", # guaiane
+                 "CC1=CCC2C(C1)C1=C3CC[C@@H](C)C(C1)C3CCC2=O", # cadinane
+                 "CC1=CCC2C(CCC3CC2=CC(=O)C23C)C1", # muurolane
+                 "CC1=CCC2C3(C)CCC(C)(C3CCC2C1=O)C", # longibornane
+                 "CC1=C2CCC3C(=CCC4CC(CC(C4)C3=C)C2=C)C1", # himachalane
+                 "CC(C)C1=CCC=C2C=CC(C)(CCC3CC2=CC(C31)C)C", # spiroaxane
+                 "CC1CCC2=C3CCC4=CC(=O)C=CC4=C3CCC12C", # africane
+                 "CC1=C2CC[C@@H](C)C(=O)C2=CC2=C1CC[C@@H](O)C2" # cedrane
+                ]
+    
+    for scaffold in scaffolds:
+        scaffold_mol = Chem.MolFromSmarts(scaffold)
+        if mol.HasSubstructMatch(scaffold_mol):
+            return True, f"Contains {scaffold_mol.GetProp('_Name')} sesquiterpene scaffold"
+    
+    # Check for structural rearrangements
+    rearrangements = ["[C@@H]1CC=C(C)C(=O)C1", # cyclobutanone
+                      "[CH2]C(=O)C", # ketone
+                      "C=CC(=O)O", # carboxylic acid
+                      "OC" # ether/alcohol
+                     ]
+    mod_count = 0
+    for rearrange in rearrangements:
+        rearrange_mol = Chem.MolFromSmarts(rearrange)
+        mod_count += len(mol.GetSubstructMatches(rearrange_mol))
+    
+    if mod_count > 2:
+        return True, "C15 scaffold modified by rearrangements/functional groups"
+    
+    return False, "Could not confidently classify as a sesquiterpenoid"
