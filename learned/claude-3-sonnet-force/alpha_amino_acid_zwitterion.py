@@ -26,42 +26,35 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
 
     # Look for NH3+ group
     nh3_pattern = Chem.MolFromSmarts("[NH3+]")
-    nh3_matches = mol.GetSubstructMatches(nh3_pattern)
-    if not nh3_matches:
+    nh3_match = mol.GetSubstructMatch(nh3_pattern)
+    if not nh3_match:
         return False, "No NH3+ group found"
 
     # Look for COO- group
     coo_pattern = Chem.MolFromSmarts("[O-]C=O")
-    coo_matches = mol.GetSubstructMatches(coo_pattern)
-    if not coo_matches:
+    coo_match = mol.GetSubstructMatch(coo_pattern)
+    if not coo_match:
         return False, "No COO- group found"
 
     # Check connectivity between NH3+ and COO- groups via alpha carbon
-    for nh3_idx in nh3_matches:
-        nh3_atom = mol.GetAtomWithIdx(nh3_idx)
-        for coo_idx in coo_matches:
-            coo_atom = mol.GetAtomWithIdx(coo_idx[0])
-            bonds = mol.GetBonds()
-            for bond in bonds:
-                if bond.GetBeginAtomIdx() == nh3_idx and bond.GetEndAtomIdx() == coo_idx[1]:
-                    alpha_carbon_idx = bond.GetEndAtomIdx()
-                elif bond.GetEndAtomIdx() == nh3_idx and bond.GetBeginAtomIdx() == coo_idx[1]:
-                    alpha_carbon_idx = bond.GetBeginAtomIdx()
-                else:
-                    continue
+    nh3_atom = mol.GetAtomWithIdx(nh3_match[0])
+    coo_atom = mol.GetAtomWithIdx(coo_match[1])  # Index 1 is the carbon atom
+    alpha_carbon_neighbors = [n.GetIdx() for n in coo_atom.GetNeighbors()]
+    if nh3_match[0] in alpha_carbon_neighbors:
+        alpha_carbon_idx = coo_match[1]
+    else:
+        return False, "NH3+ and COO- groups not connected via alpha carbon"
 
-                # Check for additional substituents on alpha carbon
-                alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
-                if alpha_carbon.GetTotalNumHs() + len(alpha_carbon.GetNeighbors()) > 3:
-                    continue  # Skip if more than two substituents on alpha carbon
+    # Check for additional substituents on alpha carbon
+    alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
+    if alpha_carbon.GetTotalNumHs() + len(alpha_carbon.GetNeighbors()) > 3:
+        return False, "More than two substituents on alpha carbon"
 
-                # Check for ring structures
-                if mol.GetAtomWithIdx(alpha_carbon_idx).IsInRing():
-                    continue  # Skip ring structures for now (can be added later)
+    # Check for ring structures (optional, can be removed if not required)
+    if alpha_carbon.IsInRing():
+        return False, "Ring structures not considered for this class"
 
-                # Check chirality (optional)
-                # ...
+    # Check chirality (optional)
+    # ...
 
-                return True, "Molecule contains an alpha-amino-acid zwitterion"
-
-    return False, "No alpha-amino-acid zwitterion pattern found"
+    return True, "Molecule contains an alpha-amino-acid zwitterion"
