@@ -6,13 +6,12 @@ Classifies: ribonucleoside
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_ribonucleoside(smiles: str):
     """
     Determines if a molecule is a ribonucleoside based on its SMILES string.
-    A ribonucleoside is a nucleoside where the sugar component is D-ribose (usually beta-D-ribofuranose).
+    A ribonucleoside is a nucleoside where the sugar component is D-ribose.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,86 +26,68 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure molecule has explicit hydrogens (for stereochemistry)
-    mol = Chem.AddHs(mol)
-
-    # Define ribose sugar pattern (beta-D-ribofuranose with correct stereochemistry)
-    ribose_smarts = '[C@H]1O[C@@H]([C@H](O)[C@@H]1O)CO'
+    # Define a general SMARTS pattern for the ribose sugar (allowing for common modifications)
+    # Ribose ring pattern (five-membered ring with oxygen and four carbons)
+    ribose_smarts = '[C@H]1([O])[C@@H]([O])[C@H]([O])[C@@H]1[O]'
     ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
     if ribose_pattern is None:
         return False, "Error in ribose pattern"
 
-    # Find matches for ribose sugar
+    # Find matches for the ribose sugar
     ribose_matches = mol.GetSubstructMatches(ribose_pattern, useChirality=True)
     if not ribose_matches:
-        # Try less strict pattern (allowing for modifications on the sugar)
-        ribose_smarts = '[C@H]1O[C@@H]([C@H](O)[C@H]1O)CO'
-        ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
-        ribose_matches = mol.GetSubstructMatches(ribose_pattern, useChirality=True)
-        if not ribose_matches:
-            return False, "No D-ribose sugar moiety found"
+        return False, "No D-ribose sugar moiety found"
 
     # Define nucleobase patterns (allowing for common modifications)
     nucleobase_patterns = []
 
-    # Adenine-like pattern
-    adenine_smarts = 'n1c[nH]c2n(c1)[nH]cn2'
-    adenine_pattern = Chem.MolFromSmarts(adenine_smarts)
-    nucleobase_patterns.append(adenine_pattern)
+    # Purine base pattern (adenine, guanine, and modified purines)
+    purine_smarts = 'n1c([nH])cnc1n'
+    purine_pattern = Chem.MolFromSmarts(purine_smarts)
+    nucleobase_patterns.append(purine_pattern)
 
-    # Guanine-like pattern
-    guanine_smarts = 'n1c(=O)[nH]c2c1ncnc2[NH2]'
-    guanine_pattern = Chem.MolFromSmarts(guanine_smarts)
-    nucleobase_patterns.append(guanine_pattern)
+    # Pyrimidine base pattern (cytosine, uracil, thymine, and modified pyrimidines)
+    pyrimidine_smarts = 'c1cnc([nH])c1=O'
+    pyrimidine_pattern = Chem.MolFromSmarts(pyrimidine_smarts)
+    nucleobase_patterns.append(pyrimidine_pattern)
 
-    # Cytosine-like pattern
-    cytosine_smarts = 'n1c(N)nc(=O)cc1'
-    cytosine_pattern = Chem.MolFromSmarts(cytosine_smarts)
-    nucleobase_patterns.append(cytosine_pattern)
-
-    # Uracil-like pattern
-    uracil_smarts = 'O=C1NC(=O)C=C1'
-    uracil_pattern = Chem.MolFromSmarts(uracil_smarts)
-    nucleobase_patterns.append(uracil_pattern)
-
-    # Hypoxanthine-like pattern (found in inosine)
-    hypoxanthine_smarts = 'n1c(=O)[nH]c2c1ncnc2'
-    hypoxanthine_pattern = Chem.MolFromSmarts(hypoxanthine_smarts)
-    nucleobase_patterns.append(hypoxanthine_pattern)
-
-    # Check for nucleobase attached to sugar
+    # Check for nucleobase attached to sugar via N-glycosidic bond
     nucleobase_found = False
-    for pattern in nucleobase_patterns:
-        if pattern is None:
+    for ribose_match in ribose_matches:
+        ribose_atoms = set(ribose_match)
+        anomeric_c = None
+        for idx in ribose_atoms:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetDegree() == 3 and atom.GetSymbol() == 'C':
+                anomeric_c = atom
+                break
+        if anomeric_c is None:
             continue
-        # Check for the nucleobase pattern in the molecule
-        base_matches = mol.GetSubstructMatches(pattern)
-        if not base_matches:
-            continue
-        # Check for connectivity between sugar and base (N-glycosidic bond)
-        for base_match in base_matches:
-            base_atoms = set(base_match)
-            for ribose_match in ribose_matches:
-                ribose_atoms = set(ribose_match)
-                # Find bonds between ribose and base
-                for atom_idx in ribose_atoms:
-                    atom = mol.GetAtomWithIdx(atom_idx)
-                    if atom.GetAtomicNum() == 6 and atom.GetIdx() in ribose_match:
-                        # Anomeric carbon (C1') is connected to base
-                        for nbr in atom.GetNeighbors():
-                            if nbr.GetIdx() in base_atoms and nbr.GetAtomicNum() == 7:
-                                nucleobase_found = True
-                                break
-                    if nucleobase_found:
+
+        # Check connections from anomeric carbon to nucleobase nitrogen
+        connected = False
+        for nbr in anomeric_c.GetNeighbors():
+            if nbr.GetSymbol() == 'N':
+                # Check if the nitrogen is part of a nucleobase
+                for pattern in nucleobase_patterns:
+                    if mol.HasSubstructMatch(pattern):
+                        nucleobase_found = True
+                        connected = True
                         break
-                if nucleobase_found:
-                    break
-            if nucleobase_found:
+            if connected:
                 break
         if nucleobase_found:
             break
 
     if not nucleobase_found:
         return False, "No nucleobase moiety attached to D-ribose sugar via N-glycosidic bond"
+
+    # Verify stereochemistry of D-ribose
+    stereocenters = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    d_ribose_centers = [
+        (idx, 'R') for idx, config in stereocenters if idx in ribose_atoms and config == 'R'
+    ]
+    if len(d_ribose_centers) < 3:
+        return False, "Insufficient stereochemistry to confirm D-ribose"
 
     return True, "Contains D-ribose sugar moiety attached to nucleobase via N-glycosidic bond"
