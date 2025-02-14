@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_glycosphingolipid(smiles: str):
     """
     Determines if a molecule is a glycosphingolipid based on its SMILES string.
-    A glycosphingolipid must contain both a sphingoid/ceramide backbone
-    and a carbohydrate residue attached via a glycosidic linkage to O-1 of the sphingoid.
+    A glycosphingolipid must contain both a sphingoid/ceramide backbone and a carbohydrate residue
+    attached via a glycosidic linkage to O-1 of the sphingoid.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,13 +22,13 @@ def is_glycosphingolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined general glycosidic linkage pattern
-    glycosidic_pattern = Chem.MolFromSmarts("CO[C;R]")  # Oxygen linking two carbons, C in a ring
+    # General glycosidic linkage (CHO linkages)
+    glycosidic_pattern = Chem.MolFromSmarts("[C][O][*R]") # C linked to an O part of a ring
     if not mol.HasSubstructMatch(glycosidic_pattern):
         return False, "No glycosidic linkage found"
 
-    # Refined sphingoid base, which includes long chain and amide link
-    sphingoid_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](CO[C])C(O)[C;!R][C;!R]")  
+    # General sphingoid base (e.g., base structures of ceramide)
+    sphingoid_pattern = Chem.MolFromSmarts("N[C@@H](CO)[C@@H](O)CCCCCCCCCCC")
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid/ceramide backbone found"
 
