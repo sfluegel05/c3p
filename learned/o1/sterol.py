@@ -25,27 +25,81 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the steroid nucleus (cyclopentanoperhydrophenanthrene)
-    steroid_nucleus_smarts = Chem.MolFromSmarts('C1CCC2(CC1)CCC3C2CCC4C3CCCC4')
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+    bond_rings = ring_info.BondRings()
+    number_of_rings = len(atom_rings)
 
-    if steroid_nucleus_smarts is None:
-        return False, "Invalid SMARTS pattern for steroid nucleus"
+    if number_of_rings < 4:
+        return False, "Molecule has fewer than 4 rings"
 
-    # Check for steroid nucleus
-    nucleus_match = mol.HasSubstructMatch(steroid_nucleus_smarts)
-    if not nucleus_match:
-        return False, "No steroid nucleus (cyclopentanoperhydrophenanthrene) found"
+    # Build list of rings with their sizes and atom indices
+    rings = []
+    for idx, atom_ring in enumerate(atom_rings):
+        rings.append({'index': idx, 'size': len(atom_ring), 'atoms': set(atom_ring)})
 
-    # Define SMARTS pattern for 3β-hydroxyl group attached to the steroid nucleus
-    # The 3β-hydroxy group is attached to the third carbon in ring A
-    hydroxyl_smarts = Chem.MolFromSmarts('[C@@H]([C;R0])[O;H1]')
+    # Build ring adjacency (fusion) information
+    ring_adjacency = {i: [] for i in range(number_of_rings)}
+    for i in range(number_of_rings):
+        for j in range(i+1, number_of_rings):
+            # Rings are fused if they share two or more atoms (a bond)
+            shared_atoms = rings[i]['atoms'] & rings[j]['atoms']
+            if len(shared_atoms) >= 2:
+                ring_adjacency[i].append(j)
+                ring_adjacency[j].append(i)
 
-    if hydroxyl_smarts is None:
-        return False, "Invalid SMARTS pattern for 3β-hydroxyl group"
+    # Search for sterol skeleton: fused rings of sizes 6-6-6-5
+    steroid_found = False
+    for i in range(number_of_rings):
+        if rings[i]['size'] != 6:
+            continue
+        for j in ring_adjacency[i]:
+            if rings[j]['size'] != 6:
+                continue
+            for k in ring_adjacency[j]:
+                if rings[k]['size'] != 6:
+                    continue
+                if k == i or k not in ring_adjacency[j]:
+                    continue
+                for l in ring_adjacency[k]:
+                    if rings[l]['size'] != 5:
+                        continue
+                    if l == i or l == j or l == k or l not in ring_adjacency[k]:
+                        continue
+                    # Confirm that rings are fused in order i-j, j-k, k-l
+                    if j in ring_adjacency[i] and k in ring_adjacency[j] and l in ring_adjacency[k]:
+                        steroid_found = True
+                        ringA_atoms = rings[i]['atoms']
+                        ringB_atoms = rings[j]['atoms']
+                        ringC_atoms = rings[k]['atoms']
+                        ringD_atoms = rings[l]['atoms']
+                        break
+                if steroid_found:
+                    break
+            if steroid_found:
+                break
+        if steroid_found:
+            break
 
-    # Check for 3β-hydroxyl group
-    hydroxyl_match = mol.HasSubstructMatch(hydroxyl_smarts)
-    if not hydroxyl_match:
+    if not steroid_found:
+        return False, "No steroid backbone found (cyclopentanoperhydrophenanthrene)"
+
+    # Check for 3β-hydroxyl group on ring A
+    # Assuming ring A is the first six-membered ring (rings[i])
+    has_3beta_hydroxyl = False
+    for atom_idx in ringA_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+                    # Found an oxygen atom (hydroxyl group) attached to carbon
+                    has_3beta_hydroxyl = True
+                    break
+            if has_3beta_hydroxyl:
+                break
+
+    if not has_3beta_hydroxyl:
         return False, "No 3β-hydroxyl group found on the steroid backbone"
 
-    return True, "Contains steroid nucleus with 3β-hydroxyl group"
+    return True, "Contains steroid backbone with 3β-hydroxyl group"
