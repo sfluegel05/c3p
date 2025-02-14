@@ -6,7 +6,6 @@ Classifies: monounsaturated fatty acids
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monounsaturated_fatty_acid(smiles: str):
     """
@@ -36,8 +35,8 @@ def is_monounsaturated_fatty_acid(smiles: str):
         return False, "No carboxylic acid group found"
 
     # Check for one double or triple bond
-    num_double_bonds = rdMolDescriptors.CalcNumDoubleBonds(mol)
-    num_triple_bonds = rdMolDescriptors.CalcNumTripleBonds(mol)
+    num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    num_triple_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.TRIPLE)
     if num_double_bonds + num_triple_bonds != 1:
         return False, "Not exactly one double or triple bond"
 
