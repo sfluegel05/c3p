@@ -20,21 +20,25 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for coenzyme A adenine component
-    # Adjusted SMARTS pattern to more specifically reflect adenine as found in CoA
-    coa_pattern = Chem.MolFromSmarts("n1cnc2ncnc2n1")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "Not a CoA molecule (possible mismatch in adenine base detection)"
+    # Use a broader SMARTS pattern for the adenine component of CoA
+    coa_adenine_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)N")  # Improved adenine pattern
+    if not mol.HasSubstructMatch(coa_adenine_pattern):
+        return False, "Not a CoA molecule, adenine not found"
 
-    # Check for thiol ester linkage to CoA: -C(=O)SCCNC(=O)
-    thiol_ester_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)")
+    # Identify the linkage of coenzyme A from a fatty acyl chain through a thioester linkage
+    thiol_ester_pattern = Chem.MolFromSmarts("C(=O)SC")  # Simplified to allow variable length
     if not mol.HasSubstructMatch(thiol_ester_pattern):
-        return False, "Missing thiol ester linkage"
+        return False, "Missing thioester linkage"
 
-    # Check for trans double bond at the 2,3 position: C/C=C/
-    # Adjusted trans bond pattern to focus on unsaturation, allows flexibility in atom types
-    trans_double_bond_pattern = Chem.MolFromSmarts("C/C=C")
-    if len(mol.GetSubstructMatches(trans_double_bond_pattern)) == 0:
-        return False, "No 2,3-trans double bond found at the correct position"
+    # Specifically identify the trans double bond at the second position, more specific to trans geometry
+    trans_double_bond_pattern = Chem.MolFromSmarts("C/C=C/C")
+    double_bond_matches = mol.GetSubstructMatches(trans_double_bond_pattern)
+    if len(double_bond_matches) == 0:
+        return False, "No 2,3-trans double bond found"
+
+    # Ensure all key CoA features are present
+    coa_full_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)C1O[C@@H](COP(O)=O)C[C@H](O1)n2cnc3c(ncnc23)N")
+    if not mol.HasSubstructMatch(coa_full_pattern):
+        return False, "Full CoA structure not confirmed"
 
     return True, "Molecule fits the trans-2-enoyl-CoA structure criteria"
