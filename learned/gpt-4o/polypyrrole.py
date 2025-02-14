@@ -21,14 +21,21 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define pyrrole pattern (5-membered ring with NH)
-    pyrrole_pattern = Chem.MolFromSmarts("n1cccc1")
+    # Define pyrrole pattern (5-membered aromatic ring with NH)
+    pyrrole_pattern = Chem.MolFromSmarts("[n&H1]1cccc1")  # Ensure nitrogen is part of an aromatic system
+    
+    # Try multiple pyrrole-like patterns if necessary
+    pyrrole_alt_pattern = Chem.MolFromSmarts("[n]1ccc[cH0]1")  # For fused systems or aromatic checks
 
     # Find matches for pyrrole units
     pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
+    alt_matches = mol.GetSubstructMatches(pyrrole_alt_pattern)
     
+    # Calculate the total unique matches
+    unique_matches = set(pyrrole_matches) | set(alt_matches)
+
     # Check if there are two or more pyrrole units
-    if len(pyrrole_matches) >= 2:
-        return True, f"Contains {len(pyrrole_matches)} pyrrole units"
-    
+    if len(unique_matches) >= 2:
+        return True, f"Contains {len(unique_matches)} pyrrole units"
+
     return False, "Less than 2 pyrrole units found"
