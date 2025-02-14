@@ -23,27 +23,75 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS for the glycerol backbone with phosphate and ethanolamine substitution
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4]([OX2][CX3](=[OX1])[#6])[CHX4](O)[CH2X4]OP(=O)(O)OCCN")
+    # SMARTS for the glycerol backbone with phosphate and ethanolamine at 3-position
+    # The key difference with the previous approach is that the ester substituent is not defined
+    # using [CX3](=[OX1])[#6], instead it's defined as a single oxygen
+    # and the fatty acid chain will be checked in the next step.
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4](O)[CH2X4]OP(=O)(O)OCCN")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone with phosphate, ethanolamine and ester at position 1 not found"
+        return False, "Glycerol backbone with phosphate and ethanolamine at 3-position not found"
     
-    # Check for fatty acid chain (long carbon chain) at the 1-position
-    # Looking for at least 4 carbons attached to the ester at position 1 - now included in the glycerol pattern
-    # Count rotatable bonds (for fatty acid chain check)
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Fatty acid chain too short"
+    # Find the attachment point on glycerol (oxygen attached to C1 of glycerol)
+    matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not matches:
+        return False, "Could not identify attachment point of fatty acid"
     
+    glycerol_match = matches[0]
+    c1_glycerol = glycerol_match[0] #The first carbon of glycerol, it's the C connected to the ester oxygen
+    
+    #Find the ester oxygen connected to C1 of glycerol
+    ester_oxygen = None
+    for neighbor in mol.GetAtomWithIdx(c1_glycerol).GetNeighbors():
+      if neighbor.GetSymbol() == 'O':
+         ester_oxygen = neighbor
+         break
+    if ester_oxygen is None:
+        return False, "Could not find ester oxygen at C1 of glycerol"
+
+    # Find the fatty acid chain connected to the ester oxygen.
+    # We use a SMARTS to find an acyl group which is C(=O)- chain
+    acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[#6]")
+    acyl_matches = []
+    for neighbor in ester_oxygen.GetNeighbors():
+      if mol.HasSubstructMatch(acyl_pattern, [neighbor.GetIdx()]):
+         acyl_matches.append(neighbor.GetIdx())
+    if len(acyl_matches) != 1:
+        return False, "Could not find an acyl group connected to the ester oxygen"
+
+    acyl_carbon = acyl_matches[0]
+
+    # Check that this carbon is connected to the ester oxygen
+    if not mol.GetAtomWithIdx(acyl_carbon).HasBondWith(ester_oxygen):
+        return False, "Acyl carbon not connected to the ester oxygen"
+
+    # Get the indices of atoms of the acyl chain
+    acyl_chain_atoms = [acyl_carbon]
+    queue = [acyl_carbon]
+    visited = {acyl_carbon}
+
+    while queue:
+      current_atom_idx = queue.pop(0)
+      current_atom = mol.GetAtomWithIdx(current_atom_idx)
+      for neighbor in current_atom.GetNeighbors():
+        neighbor_idx = neighbor.GetIdx()
+        if neighbor_idx not in visited and neighbor.GetSymbol() != 'O': #only follow C chain, not other O
+          visited.add(neighbor_idx)
+          acyl_chain_atoms.append(neighbor_idx)
+          queue.append(neighbor_idx)
+          
+    # Count rotatable bonds within the fatty acid chain
+    n_rotatable = 0
+    for bond in mol.GetBonds():
+       if bond.GetBeginAtomIdx() in acyl_chain_atoms and bond.GetEndAtomIdx() in acyl_chain_atoms and bond.IsRotatable():
+        n_rotatable +=1
+        
+    if n_rotatable < 4:
+      return False, "Fatty acid chain at the 1-position too short"
+
     #Check for at least one phosphorus
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     if p_count != 1:
        return False, "Must have exactly one phosphorus"
 
-    # Count oxygens - now we expect at least 6, potentially more if the fatty acid contains more
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 6:
-       return False, "Must have at least 6 oxygens, includes oxygens in glycerol, ester, phosphate and ethanolamine"
 
-
-    return True, "Contains glycerol backbone with phosphate and ethanolamine and a fatty acid chain at the 1-position"
+    return True, "Contains glycerol backbone with phosphate and ethanolamine at the 3-position and a fatty acid chain at the 1-position"
