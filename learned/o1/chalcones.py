@@ -12,7 +12,8 @@ def is_chalcones(smiles: str):
     """
     Determines if a molecule is a chalcone based on its SMILES string.
     A chalcone is an aromatic ketone that consists of two aromatic rings
-    joined by a three-carbon α,β-unsaturated carbonyl system (Ar-CH=CH-C(=O)-Ar).
+    joined by a three-carbon α,β-unsaturated carbonyl system (Ar-CH=CH-C(=O)-Ar),
+    and its derivatives formed by substitution.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,11 +27,10 @@ def is_chalcones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the chalcone core SMARTS pattern
+    # Define the chalcone core SMARTS pattern with acyclic constraint
     # Pattern represents:
-    # Aromatic ring - C=C - C=O - Aromatic ring
-    # where the C=C is an alpha,beta-unsaturated ketone
-    chalcone_pattern = Chem.MolFromSmarts("[a]-[#6]=[#6]-C(=O)-[a]")
+    # Aromatic ring connected to acyclic C=C-C=O connected to aromatic ring
+    chalcone_pattern = Chem.MolFromSmarts("[a][C;R0]=[C;R0]-C(=O;R0)[C;R0][a]")
     if chalcone_pattern is None:
         return False, "Invalid SMARTS pattern"
 
