@@ -31,15 +31,20 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if not mol.HasSubstructMatch(indole_pattern):
         return False, "No indole substructure found"
     
+    # Look for tryptophan substructure
+    tryptophan_pattern = Chem.MolFromSmarts("Nc1c(C(=O)O)c2c(cc1)cccc2")
+    if not mol.HasSubstructMatch(tryptophan_pattern):
+        return False, "No tryptophan substructure found"
+    
     # Look for monoterpenoid substructure
-    monoterpenoid_pattern = Chem.MolFromSmarts("[C;!$(C=C)]1CC[C;!$(C=C)]C1")
+    monoterpenoid_pattern = Chem.MolFromSmarts("C(C)=CCCC")
     if not mol.HasSubstructMatch(monoterpenoid_pattern):
         return False, "No monoterpenoid substructure found"
     
-    # Check for connectivity between indole and monoterpenoid
+    # Check for connectivity between indole, tryptophan, and monoterpenoid
     connected = any(atom.GetAtomicNum() == 7 and atom.GetDegree() > 3 for atom in mol.GetAtoms())
     if not connected:
-        return False, "Indole and monoterpenoid not connected"
+        return False, "Indole, tryptophan, and monoterpenoid not connected"
     
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -51,4 +56,4 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if n_count < 2 or n_count > 3:
         return False, f"Unexpected number of nitrogen atoms ({n_count})"
     
-    return True, "Contains indole and monoterpenoid substructures connected"
+    return True, "Contains indole, tryptophan, and monoterpenoid substructures connected"
