@@ -22,17 +22,13 @@ def is_flavones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for a flavone core structure
-    # [cH]1[cH][cH][cH][cH]2COc3cc(=O)ccc3c12 represents a 2-aryl-1-benzopyran-4-one structure
-    flavone_pattern = Chem.MolFromSmarts("c1cc(O)c2c(c1)oc(=O)cc2")
+    # Pattern aims to be more comprehensive and specific
+    flavone_pattern = Chem.MolFromSmarts("c1c(=O)oc2cc(c(-c3ccccc3)o2)c1")
 
     # Check if the molecule matches the flavone pattern
     if not mol.HasSubstructMatch(flavone_pattern):
         return False, "No 2-aryl-1-benzopyran-4-one skeleton found"
 
-    # Additional verification logic (e.g., ensure substitution correctness) could be added here
+    # Additional verification steps can be added here
 
     return True, "Contains 2-aryl-1-benzopyran-4-one skeleton"
-
-# Example usage
-# result, reason = is_flavones("COc1cc(O)c2c(c1)oc1c(O)cc(c(O)c1c2=O)-c1c(O)c([C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)c(O)c2c1oc(cc2=O)-c1ccc(O)c(O)c1")
-# print(result, reason)
