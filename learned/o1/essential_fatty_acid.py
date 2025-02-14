@@ -21,75 +21,80 @@ def is_essential_fatty_acid(smiles: str):
         bool: True if molecule is an essential fatty acid, False otherwise
         str: Reason for classification
     """
-    
     # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the carboxylic acid group (-C(=O)O)
-    carboxylic_acid = Chem.MolFromSmarts('C(=O)[O;H1,-]')
-    if not mol.HasSubstructMatch(carboxylic_acid):
-        return False, "No carboxylic acid group found"
+    # Define a SMARTS pattern for fatty acyl chains (aliphatic chain with optional ester linkage)
+    fatty_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[O,Z][C;!$(C=O);!$(C=O[O,N])].[CX4;R0][CX4;R0]')
+    # The pattern matches acyl groups connected via ester or amide linkages to aliphatic chains
 
-    # Get the carbon chain attached to the carboxylic acid group
-    # First, find the carboxylic acid carbon
-    matches = mol.GetSubstructMatches(carboxylic_acid)
-    carboxylic_carbons = [match[0] for match in matches]
-    if not carboxylic_carbons:
-        return False, "No carboxylic acid carbon found"
+    # Find all matches of the fatty acid pattern
+    matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if not matches:
+        return False, "No fatty acid chains found"
 
-    carboxylic_carbon = carboxylic_carbons[0]
-    
-    # Perform a BFS to find the hydrocarbon chain
-    visited = set()
-    chain_atoms = []
-    queue = [carboxylic_carbon]
-    
-    while queue:
-        atom_idx = queue.pop(0)
-        if atom_idx in visited:
-            continue
-        visited.add(atom_idx)
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            chain_atoms.append(atom_idx)
-            # Add neighbors to queue
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx not in visited and neighbor.GetAtomicNum() in (1, 6):  # Hydrogen or Carbon
-                    queue.append(neighbor_idx)
-                    
-    # Count the number of carbons in the chain
-    num_carbons = len(chain_atoms)
-    if num_carbons < 10:
-        return False, f"Carbon chain too short ({num_carbons} carbons), not a fatty acid"
+    essential = False
+    reasons = []
+    # Process each fatty acid chain
+    for match in matches:
+        carbon_chain = set()
+        double_bond_positions = []
+        visited = set()
+        queue = []
 
-    # Identify double bonds in the chain
-    double_bond_positions = []
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == rdchem.BondType.DOUBLE:
-            begin_atom = bond.GetBeginAtom()
-            end_atom = bond.GetEndAtom()
-            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
-                # Calculate position relative to carboxyl carbon
-                try:
-                    path_length = Chem.GetShortestPath(mol, carboxylic_carbon, begin_atom.GetIdx())
-                    pos = len(path_length) - 1  # Position from carboxyl carbon
-                    double_bond_positions.append(pos)
-                except:
-                    continue
+        # Get the atom index of the carbonyl carbon
+        carbonyl_carbon_idx = match[0]
+        # Get the atom index of the alpha carbon (next carbon in the chain)
+        alpha_carbon_idx = match[2]
 
-    num_double_bonds = len(set(double_bond_positions))
-    if num_double_bonds < 2:
-        return False, f"Only {num_double_bonds} double bond(s) found, not polyunsaturated"
+        # Start traversal from the alpha carbon
+        queue.append((alpha_carbon_idx, 1))  # (atom_idx, position in chain)
 
-    # Check if any double bonds are beyond delta-9 position
-    essential = any(pos > 9 for pos in double_bond_positions)
-    if not essential:
-        return False, "No double bonds beyond delta-9 position, not essential"
+        while queue:
+            atom_idx, position = queue.pop(0)
+            if atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
 
-    return True, (
-        f"Molecule is a fatty acid with {num_carbons} carbons, "
-        f"{num_double_bonds} double bonds beyond delta-9 position"
-    )
+            if atom.GetAtomicNum() == 6 and not atom.IsInRing():
+                carbon_chain.add(atom_idx)
+                # Check for double bonds
+                for bond in atom.GetBonds():
+                    neighbor = bond.GetOtherAtom(atom)
+                    neighbor_idx = neighbor.GetIdx()
+                    if neighbor_idx not in visited:
+                        if bond.GetBondType() == rdchem.BondType.DOUBLE and neighbor.GetAtomicNum() == 6:
+                            # Record position of the double bond relative to alpha carbon
+                            double_bond_positions.append(position)
+                        if neighbor.GetAtomicNum() == 6 and not neighbor.IsInRing():
+                            queue.append((neighbor_idx, position + 1))
+
+        num_carbons = len(carbon_chain) + 1  # Include the carbonyl carbon
+        num_double_bonds = len(set(double_bond_positions))
+
+        # Check for essential fatty acid criteria
+        if num_carbons >= 16 and num_double_bonds >= 2:
+            # Check if any double bonds are beyond delta-9 position
+            beyond_delta_9 = any(pos > 9 for pos in double_bond_positions)
+            if beyond_delta_9:
+                essential = True
+                reasons.append(
+                    f"Found fatty acid chain with {num_carbons} carbons and "
+                    f"{num_double_bonds} double bonds beyond delta-9 position"
+                )
+            else:
+                reasons.append(
+                    f"Fatty acid chain with {num_carbons} carbons but no double bonds beyond delta-9"
+                )
+        else:
+            reasons.append(
+                f"Fatty acid chain with {num_carbons} carbons and {num_double_bonds} double bonds does not meet criteria"
+            )
+
+    if essential:
+        return True, "Molecule contains essential fatty acid chain(s): " + "; ".join(reasons)
+    else:
+        return False, "No essential fatty acid chains found: " + "; ".join(reasons)
