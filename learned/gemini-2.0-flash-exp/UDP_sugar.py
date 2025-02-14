@@ -26,7 +26,7 @@ def is_UDP_sugar(smiles: str):
 
     # 1. Identify the UDP core (relaxed stereochemistry)
     # Define a SMARTS pattern for the UDP core, without explicit Hs or charges.
-    udp_core_pattern = Chem.MolFromSmarts('O=C1NC(=O)C=CN1C2C(O)C(O)C(COP(=O)(O)OP(=O)(O)O)C2O')
+    udp_core_pattern = Chem.MolFromSmarts('O=C1NC(=O)C=CN1[C]2[C](O)[C](O)[C](COP(=O)(O)OP(=O)(O)O)[C]2O')
     udp_matches = mol.GetSubstructMatches(udp_core_pattern)
     if not udp_matches:
        return False, "No UDP core found"
