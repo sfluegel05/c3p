@@ -3,7 +3,6 @@ Classifies: CHEBI:17002 cholesteryl ester
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_cholesteryl_ester(smiles: str):
     """
@@ -23,20 +22,17 @@ def is_cholesteryl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more precise SMARTS pattern for the cholesterol core
-    # This pattern captures the tetracyclic ring system and the key carbon atoms
-    # It's crucial to get the ring fusions right.
-    cholesterol_core = Chem.MolFromSmarts("[C]1[C]2[C]([C]([C]3[C]([C]2CC[C]4[C]3[C]CC([C]5[C]4[C])[C]5[C])C)([C])C)[O]")
-    
-    if cholesterol_core is None:
-          return False, "Invalid cholesterol SMARTS"
+    # Define the cholesterol core substructure using SMARTS - simplified to match a few common versions of cholesterol
+    # This is made more general to match most of the examples provided.
+    cholesterol_core = Chem.MolFromSmarts("[C]12[C@@H]([C@H]([C@@H]3[C@@H](CC=C4[C@H]3CC[C@@]([C@@H]4CC[C@H]1(C)C)C)C)C[C@@H]2[OX2])")
+
     # Find matches for the core structure
     matches = mol.GetSubstructMatches(cholesterol_core)
 
     if not matches:
         return False, "No cholesterol core structure found."
     
-    # Check for the ester group (-O-C(=O)-)
+    # Check for the ester group linked to the core structure
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
 
@@ -44,24 +40,13 @@ def is_cholesteryl_ester(smiles: str):
         return False, "No ester group found"
 
     # Verify that the ester group is attached to the position 3 oxygen of the cholesterol.
-    # Find the oxygen from the core and check if its connected to the ester.
-    ester_linked_correctly = False
+    # This requires iterating through the matches and checking the atom indices.
+    
     for core_match in matches:
-        oxygen_index_on_core = core_match[-1]
-        for ester_match in ester_matches:
-            ester_oxygen_index = ester_match[0]
+         oxygen_index_on_core = core_match[-1] # The last index is the O on the 3 position of cholesterol from the SMARTS
+         for ester_match in ester_matches:
+            ester_oxygen_index = ester_match[0] # First atom is the oxygen of the ester bond
             if mol.GetBondBetweenAtoms(oxygen_index_on_core, ester_oxygen_index) is not None:
-                 ester_linked_correctly = True
-                 break
-        if ester_linked_correctly:
-          break
-    
-    if not ester_linked_correctly:
-      return False, "Ester group not attached to position 3 of cholesterol."
-    
-    # Check for the fatty acid chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "No long fatty acid chain attached"
-    
-    return True, "Cholesterol core with ester group at position 3 and fatty acid chain."
+                return True, "Cholesterol core with ester group at position 3."
+
+    return False, "Ester group not attached to position 3 of cholesterol."
