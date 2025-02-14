@@ -5,13 +5,12 @@ Classifies: CHEBI:36092 clavulone
 Classifies: clavulone
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_clavulone(smiles: str):
     """
     Determines if a molecule is a clavulone based on its SMILES string.
-    A clavulone is an esterified prostanoid obtained from marine corals, generally characterized by a cyclopentenone ring with conjugated double bonds, ester groups, long aliphatic chains, and often halogen substitutions.
+    A clavulone is an esterified prostanoid obtained from marine corals, generally characterized by a cyclopentenone ring, ester groups, long aliphatic chains, and often halogen substitutions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,35 +25,29 @@ def is_clavulone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for cyclopentenone ring (five-membered ring with ketone and conjugated double bonds)
-    cyclopentenone_pattern = Chem.MolFromSmarts('O=C1C=CC=C1')  # Simplified pattern for cyclopentenone
+    # Check for cyclopentenone ring (five-membered ring with ketone)
+    # Allow substitutions on ring carbons
+    cyclopentenone_pattern = Chem.MolFromSmarts('O=C1CCCC1')  # Five-membered ring with ketone
     if not mol.HasSubstructMatch(cyclopentenone_pattern):
         return False, "No cyclopentenone ring found"
 
-    # Check for ester groups (-C(=O)O-)
-    ester_pattern = Chem.MolFromSmarts('C(=O)O')
+    # Check for ester groups (-C(=O)O- or -OC(=O)-)
+    ester_pattern = Chem.MolFromSmarts('[$([CX3](=O)[OX2H0]),$([OX2H0][CX3]=O)]')  # Ester groups
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) == 0:
         return False, "No ester groups found"
 
-    # Check for long aliphatic chains attached via conjugated double bonds
-    # Simplified as chain of at least 6 carbons with double bonds
-    long_chain_pattern = Chem.MolFromSmarts('C=CC=CC=CC')  # Pattern for conjugated chain
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long conjugated aliphatic chain found"
+    # Check for long aliphatic chains (chain of at least 6 carbons)
+    chain_pattern = Chem.MolFromSmarts('C' + ('C' * 5) + '[C,C+]')  # Chain of at least 6 carbons
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No long aliphatic chain found"
 
-    # Check for halogen substituents on the ring (Cl, Br, I)
-    halogen_pattern = Chem.MolFromSmarts('[#6;r5][F,Cl,Br,I]')
+    # Check for halogen substituents (F, Cl, Br, I) anywhere in the molecule
+    halogen_pattern = Chem.MolFromSmarts('[F,Cl,Br,I]')
     if not mol.HasSubstructMatch(halogen_pattern):
-        return False, "No halogen substituent on the ring found"
+        return False, "No halogen substituents found"
 
-    # Check if molecule is an esterified prostanoid
-    # Prostanoids generally have specific molecular features
-    # For simplification, we can check for molecular weight and number of rings
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, "Molecular weight too low for a clavulone"
-
+    # Check if molecule has at least one ring (prostanoid core)
     num_rings = rdMolDescriptors.CalcNumRings(mol)
     if num_rings < 1:
         return False, "Too few rings for a clavulone"
