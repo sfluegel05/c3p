@@ -32,22 +32,27 @@ def is_galactosylceramide(smiles: str):
     if not (mol.HasSubstructMatch(alpha_galactose_pattern) or mol.HasSubstructMatch(beta_galactose_pattern)):
             return False, "No alpha or beta galactose moiety found"
 
-    # Relaxed SMARTS for sphingosine/phytosphingosine backbone core
-    # Includes the characteristic 2-amino-1,3-diol, allowing for more variations
-    sphingosine_core = Chem.MolFromSmarts("[*][C@H]([C@H](O)[C@H]([C])O)N")
+    # More flexible SMARTS for sphingosine/phytosphingosine backbone core
+    # Includes the characteristic 2-amino-1,3-diol, and allows for double bond
+    sphingosine_core_smarts1 = "[C]([C@H](O)[C@H]([C])N)[C,c]([C,c])=[C,c]" # sphinganine/sphingosine core
+    sphingosine_core_smarts2 = "[C]([C@H](O)[C@@H]([C])N)[C@H](O)"  # phytosphingosine core
+    
+    sphingosine_core1 = Chem.MolFromSmarts(sphingosine_core_smarts1)
+    sphingosine_core2 = Chem.MolFromSmarts(sphingosine_core_smarts2)
 
-    if not mol.HasSubstructMatch(sphingosine_core):
+
+    if not (mol.HasSubstructMatch(sphingosine_core1) or mol.HasSubstructMatch(sphingosine_core2)):
         return False, "No sphingosine/phytosphingosine backbone found"
 
-    # Simplified glycosidic bond check: look for -C-O-C- where the two Cs are in galactose and sphingosine respectively
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[C]([OH1])([C@H]([C@H]([C@H]([C@H](O[*])CO)O)O)O)[O][C]([C@H](O)[C@H]([C])O)[N]")
+    # Simplified glycosidic bond check
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)[O][C]")
     if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No glycosidic bond present between galactose and ceramide"
+            return False, "No glycosidic bond present between galactose and ceramide"
         
     # Improved fatty acid chain check (include C=O)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX3](=[OX1])")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if not fatty_acid_matches:
         return False, "Missing fatty acid chain"
-
+    
     return True, "Contains a galactose moiety linked to a ceramide backbone."
