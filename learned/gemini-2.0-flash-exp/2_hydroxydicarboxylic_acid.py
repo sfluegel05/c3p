@@ -19,7 +19,7 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, None  # Indicate invalid SMILES
+        return None, "Invalid SMILES string"
 
     # 1. Check for two carboxylic acid groups
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
@@ -33,11 +33,35 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if len(hydroxyl_matches) == 0:
         return False, "Molecule does not contain any hydroxyl group."
 
-    #3 Check for Alpha position of Hydroxyl
-    alpha_hydroxyl_pattern = Chem.MolFromSmarts("[CX4]([OH])([CX4](=O)O)")
-    alpha_hydroxyl_matches = mol.GetSubstructMatches(alpha_hydroxyl_pattern)
-    if len(alpha_hydroxyl_matches) == 0:
-        return False, "Hydroxyl group is not on the alpha carbon relative to any carboxylic group."
+    # 3. Check for at least one hydroxyl on an alpha carbon relative to *any* carboxyl
+    alpha_hydroxyl_found = False
+    for carboxyl_match in carboxyl_matches:
+      carboxyl_carbon_idx = carboxyl_match[0] # Get index of the carboxyl carbon
+      # Define a pattern to capture alpha carbon relative to the carboxylic carbon
+      # This carbon may be bound to any other atom.
+      alpha_carbon_pattern = Chem.MolFromSmarts(f"[CX4]~[CX4](=O)O") # ~ means single or double bond.
+      alpha_carbon_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
+
+
+      for alpha_match in alpha_carbon_matches:
+
+          alpha_carbon_idx = alpha_match[0]
+          # Check if there's a hydroxyl group connected to the identified alpha carbon
+          for hydroxyl_match in hydroxyl_matches:
+
+            hydroxyl_oxygen_idx = hydroxyl_match[0]
+
+            hydroxyl_carbon_neighbors = [atom.GetIdx() for atom in mol.GetAtomWithIdx(hydroxyl_oxygen_idx).GetNeighbors()]
+            if alpha_carbon_idx in hydroxyl_carbon_neighbors:
+                alpha_hydroxyl_found = True
+                break  # Found one match, no need to check further
+
+      if alpha_hydroxyl_found:
+            break
+    
+    if not alpha_hydroxyl_found:
+      return False, "Hydroxyl group is not on the alpha carbon relative to any carboxylic group."
+
 
     #4 Success
     return True, "Molecule is a 2-hydroxydicarboxylic acid"
