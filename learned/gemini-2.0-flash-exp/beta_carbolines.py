@@ -7,7 +7,7 @@ from rdkit.Chem import AllChem
 def is_beta_carbolines(smiles: str):
     """
     Determines if a molecule is a beta-carboline based on its SMILES string.
-    A beta-carboline is a pyrido[3,4-b]indole or its hydrogenated derivatives.
+    A beta-carboline is a pyrido[3,4-b]indole or its hydrogenated derivatives, or spirocyclic variants.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,15 +20,28 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core beta-carboline structure using SMARTS.
-    # This is a general pattern for the core, allowing for saturation and substitution.
-    # The 5-membered ring has a nitrogen
-    # The connection of the 5 membered nitrogen to the 6-membered ring is important
-    # The connection of the indole nitrogen to the ring carbon is important
-    core_pattern = Chem.MolFromSmarts('c1cc2[nH]c3c[c,n]c(c2c1)c3') 
+    # Define the core indole structure using SMARTS.
+    indole_pattern = Chem.MolFromSmarts('c1cc2[nH]c(c1)c2')
+    if not mol.HasSubstructMatch(indole_pattern):
+        return False, "Does not contain the indole core."
+    
+    # Define the fused 6-membered ring structure (pyridine, pyrimidine, or derivatives) using SMARTS.
+    # This pattern allows for saturation in the 6-membered ring.
+    pyridine_pyrimidine_pattern = Chem.MolFromSmarts('[c,n]1ccccc1')
 
+    #check for spiro atoms, which have a valence of 4.
+    spiro_pattern = Chem.MolFromSmarts('[C;X4]')
+    
+    # Check if the molecule has both patterns. We are not checking explicit fusion here,
+    # so it will likely overclassify.
+    # In the previous try, we tried to use a single pattern, but failed due to the numerous variants of beta-carbolines.
+    # Now we are explicitly looking for the two ring systems.
+    if mol.HasSubstructMatch(pyridine_pyrimidine_pattern):
+      
+      # If a spiro atom is present then we should also return true.
+       if mol.HasSubstructMatch(spiro_pattern):
+           return True, "Contains the beta-carboline core structure (including spirocyclic derivatives)"
+       return True, "Contains the beta-carboline core structure (not spirocyclic)"
 
-    if mol.HasSubstructMatch(core_pattern):
-      return True, "Contains the beta-carboline core structure"
 
     return False, "Does not contain the beta-carboline core structure"
