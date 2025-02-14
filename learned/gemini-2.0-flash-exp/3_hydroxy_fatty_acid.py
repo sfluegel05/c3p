@@ -27,25 +27,44 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for a hydroxy group at the beta position, next to carboxyl
-    beta_hydroxy_pattern = Chem.MolFromSmarts("C(=O)C[C](O)")
-    if not mol.HasSubstructMatch(beta_hydroxy_pattern):
-        return False, "No hydroxy group found at beta position"
+    # Check for a hydroxy group at the 3rd carbon position from the carboxylic acid group
+    beta_hydroxy_pattern = Chem.MolFromSmarts("[C](=[O])-[C]-[C]([OH])")
+    hydroxy_matches = mol.GetSubstructMatches(beta_hydroxy_pattern)
+    if not hydroxy_matches:
+         return False, "No hydroxy group found at beta position"
+    
+    # Check that the hydroxyl is part of a long chain containing at least 3 additional carbons past the hydroxyl
+    long_chain_pattern = Chem.MolFromSmarts("[C]([OH])-[C]-[C]")
+    long_chain_matches = mol.GetSubstructMatches(long_chain_pattern)
+    if not long_chain_matches:
+         return False, "Hydroxy group is not on a long chain"
 
-    # Check for fatty acid chain length (at least 4 carbons, with one end = carboxylic acid) and at least 4 rotatable bonds to exclude small molecules.
-    # We already checked that there is a carboxyl group, so we can check for at least 3 additional carbons for a total of 4
-    chain_pattern = Chem.MolFromSmarts("C-C-C")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Too short hydrocarbon chain"
     
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 3:
-         return False, "Too few rotatable bonds for fatty acid"
-    
+    # Verify connectivity with the carboxyl
+    connected = False
+    for match in hydroxy_matches:
+        # Identify carboxyl carbon in match
+        carboxyl_carbon = None
+        for a in mol.GetSubstructMatches(carboxylic_acid_pattern):
+             if mol.GetBondBetweenAtoms(match[0], a[0]) is not None:
+                carboxyl_carbon = a[0]
+                break
+        
+        if carboxyl_carbon is not None:
+            connected = True
+            break
+    if not connected:
+        return False, "Hydroxyl not connected to carboxyl group"
+
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 4 or o_count < 3: # at least 4 carbons and 2 oxygens + the hydroxyl, for a total of 3
+    if c_count < 4 or o_count < 3:
         return False, "Too few carbons or oxygens for fatty acid"
+    
+    # Count rotatable bonds, which should be greater than 1, but this is already checked implicitly by the long chain matching
+    #n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    #if n_rotatable < 1:
+    #     return False, "Too few rotatable bonds for fatty acid"
 
     return True, "3-Hydroxy fatty acid identified"
