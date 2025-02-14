@@ -1,6 +1,9 @@
 """
 Classifies: CHEBI:37143 organofluorine compound
 """
+"""
+Classifies: organofluorine compound
+"""
 from rdkit import Chem
 
 def is_organofluorine_compound(smiles: str):
@@ -21,22 +24,13 @@ def is_organofluorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Initialize flag
-    has_c_f_bond = False
+    # Define SMARTS pattern for carbon-fluorine bond
+    c_f_bond_pattern = Chem.MolFromSmarts("[#6]-[#9]")
+    if c_f_bond_pattern is None:
+        return False, "Invalid SMARTS pattern"
     
-    # Iterate over all bonds in the molecule
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        
-        atomic_nums = {atom1.GetAtomicNum(), atom2.GetAtomicNum()}
-        
-        # Check if bond is between carbon (6) and fluorine (9)
-        if atomic_nums == {6, 9}:
-            has_c_f_bond = True
-            break  # No need to check further
-    
-    if has_c_f_bond:
+    # Check if molecule has carbon-fluorine bond
+    if mol.HasSubstructMatch(c_f_bond_pattern):
         return True, "Contains at least one carbon-fluorine bond"
     else:
         return False, "Does not contain any carbon-fluorine bonds"
