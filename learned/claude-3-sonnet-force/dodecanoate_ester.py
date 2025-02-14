@@ -27,16 +27,15 @@ def is_dodecanoate_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for lauric acid substructure (CCCCCCCCCCCCC(=O)O-)
-    lauric_acid = Chem.MolFromSmarts("CCCCCCCCCCCCC(=O)[O-]")
+    lauric_acid = Chem.MolFromSmarts("CCCCCCCCCCCCC(=O)[O;X1]")
     lauric_matches = mol.GetSubstructMatches(lauric_acid)
-    if not lauric_matches:
-        return False, "No lauric acid substructure found"
 
     # Look for ester group (-C(=O)O-)
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if not ester_matches:
-        return False, "No ester group found"
+
+    if not lauric_matches or not ester_matches:
+        return False, "No dodecanoate ester functionality found"
 
     # Check if ester is connected to lauric acid
     for ester_match in ester_matches:
@@ -44,6 +43,16 @@ def is_dodecanoate_ester(smiles: str):
         for lauric_atom_idx in lauric_matches[0]:
             lauric_atom = mol.GetAtomWithIdx(lauric_atom_idx)
             if mol.GetBondBetweenAtoms(ester_oxygen.GetIdx(), lauric_atom.GetIdx()):
+                # Additional checks
+                mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+                if mol_wt < 200 or mol_wt > 500:
+                    return False, "Molecular weight outside expected range for dodecanoate esters"
+
+                c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+                o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+                if c_count < 12 or o_count < 2:
+                    return False, "Insufficient carbon or oxygen atoms for dodecanoate esters"
+
                 return True, "Contains lauric acid ester group"
 
     return False, "Lauric acid not connected to ester group"
