@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_dicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a dicarboxylic acid based on its SMILES string.
-    A dicarboxylic acid contains exactly two carboxylic acid (COOH) groups.
+    A dicarboxylic acid contains exactly two carboxylic acid function groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,20 +20,21 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the carboxylic acid pattern including extra constraints to avoid matches due to errors
-    # Note: '?' allows for zero or one hydrogen in SMARTS to match OH/O/varied typo forms accurately.
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX1H1]")
+    # Define SMARTS pattern for carboxylic acid (including both protonated and deprotonated forms)
+    carboxylic_acid_pattern_protonated = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_pattern_deprotonated = Chem.MolFromSmarts("C(=O)[O-]")
 
-    # Get matches for the carboxylic acid pattern
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    # Search for matches in the molecule
+    protonated_matches = mol.GetSubstructMatches(carboxylic_acid_pattern_protonated)
+    deprotonated_matches = mol.GetSubstructMatches(carboxylic_acid_pattern_deprotonated)
 
-    # Count distinct groups, filtering to prevent gluings or internal errors/misidentifications in larger constructs
-    distinct_matches = len(set(carboxylic_acid_matches))
-    
+    # Calculate total distinct carboxylic acid groups
+    total_matches = len(protonated_matches) + len(deprotonated_matches)
+
     # Check the number of carboxylic acid groups
-    if distinct_matches == 2:
+    if total_matches == 2:
         return True, "Contains exactly two carboxylic acid groups"
-    elif distinct_matches > 2:
-        return False, f"Contains {distinct_matches} carboxylic acid groups, which is more than 2"
+    elif total_matches > 2:
+        return False, f"Contains {total_matches} carboxylic acid groups, which is more than 2"
     else:
-        return False, f"Contains only {distinct_matches} carboxylic acid groups, less than or greater than needed"
+        return False, f"Contains only {total_matches} carboxylic acid groups, fewer than needed"
