@@ -1,58 +1,20 @@
 """
 Classifies: CHEBI:46895 lipopeptide
 """
-"""
-Classifies: CHEBI:51359 lipopeptide
-A lipopeptide is a compound consisting of a peptide with attached lipid.
-"""
+Based on the outcomes and the previous code, it seems that the main issue is the inability of the program to accurately identify lipopeptides. Here are some potential reasons and suggestions for improvement:
 
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+1. **Peptide Backbone Identification**: The SMARTS pattern used for identifying the peptide backbone might be too restrictive or not comprehensive enough. Some of the false negatives, such as Ac-Asp-N(6)-{(2E)-3-[3-(trifluoromethyl)phenyl]prop-2-enoyl}-KATIGFEVQEE, clearly contain a peptide backbone. The pattern should be revised or expanded to cover a wider range of peptide structures, including those with non-standard amino acids or modifications.
 
-def is_lipopeptide(smiles: str):
-    """
-    Determines if a molecule is a lipopeptide based on its SMILES string.
+2. **Lipid Chain Identification**: The SMARTS pattern used for identifying lipid chains might be too simplistic. While a simple aliphatic chain is a good starting point, lipid chains can have varying degrees of saturation, branching, and functional groups. The pattern should be expanded to account for these variations, or multiple patterns should be used to cover a broader range of lipid structures.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Ester or Amide Bond Identification**: The SMARTS pattern used for identifying the ester or amide bond between the peptide and lipid portions might be too specific. Some lipopeptides might have different types of linkages, such as ether or thioester bonds. The pattern should be expanded or additional patterns should be used to cover these alternative linkages.
 
-    Returns:
-        bool: True if molecule is a lipopeptide, False otherwise
-        str: Reason for classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. **Molecular Weight Threshold**: While the molecular weight threshold of 500 Da is a reasonable starting point, there might be lipopeptides that fall outside this range. The threshold could be adjusted or removed, and more emphasis could be placed on the presence of both peptide and lipid components, as well as their linkage.
 
-    # Check for peptide backbone
-    peptide_pattern = Chem.MolFromSmarts("[$([NX3H2,NX4H3+]),$([NX3H1,NX4H2+]([NX3H2,NX4H3+])([NX3H1,NX4H2+]))][CX3](=[OX1])[NX3H2,NX4H3+]")
-    peptide_matches = mol.GetSubstructMatches(peptide_pattern)
-    if not peptide_matches:
-        return False, "No peptide backbone found"
+5. **Atom Count Thresholds**: The thresholds used for carbon, oxygen, and nitrogen atom counts might be too restrictive. Some lipopeptides might have different compositions or ratios of these atoms. These thresholds could be adjusted or removed, and more emphasis could be placed on the presence of both peptide and lipid components, as well as their linkage.
 
-    # Check for lipid chains
-    lipid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    lipid_matches = mol.GetSubstructMatches(lipid_pattern)
-    if not lipid_matches:
-        return False, "No lipid chain found"
+6. **Additional Structural Features**: Lipopeptides might have additional structural features or motifs that could be used for identification. These could include specific functional groups, ring systems, or other substructures that are characteristic of lipopeptides.
 
-    # Check for ester or amide bonds between peptide and lipid
-    bond_pattern = Chem.MolFromSmarts("[NX3H1,NX4H2+](-[CX3](=[OX1])-[OX2]-[CX4])")
-    bond_matches = mol.GetSubstructMatches(bond_pattern)
-    if not bond_matches:
-        return False, "No ester or amide bond between peptide and lipid"
+7. **Machine Learning Approach**: If the rule-based approach proves to be too challenging or prone to errors, a machine learning approach could be explored. By training a model on a large dataset of known lipopeptides and non-lipopeptides, it might be possible to develop a more robust and accurate classification system.
 
-    # Check molecular weight - lipopeptides typically >500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for lipopeptide"
-
-    # Count carbons, oxygens, and nitrogens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-
-    if c_count < 10 or o_count < 3 or n_count < 3:
-        return False, "Insufficient atoms for lipopeptide"
-
-    return True, "Contains both peptide backbone and lipid chain linked by ester or amide bond"
+Overall, it is essential to carefully analyze the structures of the false negatives and false positives to identify patterns or features that could be incorporated into the classification algorithm. Additionally, consulting literature or databases on lipopeptide structures could provide valuable insights and help refine the classification criteria.
