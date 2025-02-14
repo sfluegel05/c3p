@@ -30,30 +30,44 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define core structure patterns with more flexible matching
-    # Allow for substituted carbons in the aromatic rings
-    dibenzodioxin_pattern = Chem.MolFromSmarts('c1c(*)c(*)c2Oc3c(*)c(*)c(*)c(*)c3Oc2c1')  
-    dibenzofuran_pattern = Chem.MolFromSmarts('c1c(*)c(*)c2oc3c(*)c(*)c(*)c(*)c3c2c1')    
-    biphenyl_pattern = Chem.MolFromSmarts('c1c(*)c(*)c(*)c(c1)-c1c(*)c(*)c(*)c(*)c1')     
+    # Define simpler core structure patterns
+    dibenzodioxin_pattern = Chem.MolFromSmarts('c1ccc2Oc3ccccc3Oc2c1')  # Basic dibenzodioxin
+    dibenzofuran_pattern = Chem.MolFromSmarts('c1ccc2oc3ccccc3c2c1')    # Basic dibenzofuran
+    biphenyl_pattern = Chem.MolFromSmarts('c1ccccc1-c1ccccc1')          # Basic biphenyl
     
-    # Check if SMARTS patterns were created successfully
-    if None in (dibenzodioxin_pattern, dibenzofuran_pattern, biphenyl_pattern):
-        return False, "Error in SMARTS patterns"
-
     # Count halogens
-    num_cl = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[Cl]')))
-    num_br = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[Br]')))
-    total_halogens = num_cl + num_br
+    halogen_pattern = Chem.MolFromSmarts('[Cl,Br]')
+    if halogen_pattern is None:
+        return False, "Error in halogen SMARTS pattern"
     
-    if total_halogens == 0:
+    halogen_matches = mol.GetSubstructMatches(halogen_pattern)
+    num_halogens = len(halogen_matches)
+    
+    if num_halogens == 0:
         return False, "No halogens present"
 
+    # Count chlorines and bromines separately
+    num_cl = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[Cl]')))
+    num_br = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[Br]')))
+
     # Check for core structures
-    is_dibenzodioxin = mol.HasSubstructMatch(dibenzodioxin_pattern)
-    is_dibenzofuran = mol.HasSubstructMatch(dibenzofuran_pattern)
-    is_biphenyl = mol.HasSubstructMatch(biphenyl_pattern)
+    core_found = False
+    core_type = ""
     
-    # Count rings and check aromaticity
+    if dibenzodioxin_pattern is not None and mol.HasSubstructMatch(dibenzodioxin_pattern):
+        core_found = True
+        core_type = "dibenzodioxin"
+    elif dibenzofuran_pattern is not None and mol.HasSubstructMatch(dibenzofuran_pattern):
+        core_found = True
+        core_type = "dibenzofuran"
+    elif biphenyl_pattern is not None and mol.HasSubstructMatch(biphenyl_pattern):
+        core_found = True
+        core_type = "biphenyl"
+
+    if not core_found:
+        return False, "No characteristic core structure found"
+
+    # Count aromatic rings
     ring_info = mol.GetRingInfo()
     aromatic_rings = sum(1 for ring in ring_info.AtomRings() 
                         if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
@@ -61,40 +75,38 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if aromatic_rings < 2:
         return False, "Insufficient aromatic rings"
 
-    # Count other substituents that might indicate natural products
-    oh_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OH]')))
-    ome_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OMe]')))
-    other_subst = oh_count + ome_count
+    # Check for natural product characteristics
+    # Count oxygen-containing substituents (excluding core oxygens)
+    oh_pattern = Chem.MolFromSmarts('[OH]')
+    ome_pattern = Chem.MolFromSmarts('[OC]')  # Matches any O-C bond
+    
+    oh_count = len(mol.GetSubstructMatches(oh_pattern)) if oh_pattern else 0
+    ome_count = len(mol.GetSubstructMatches(ome_pattern)) if ome_pattern else 0
+    
+    # Adjust for core oxygens in dioxins/furans
+    if core_type in ["dibenzodioxin", "dibenzofuran"]:
+        ome_count = max(0, ome_count - (2 if core_type == "dibenzodioxin" else 1))
 
-    # Natural product check - more permissive to allow some substitution
-    # but still exclude highly functionalized molecules
-    if other_subst > 4 and aromatic_rings > 3:
-        return False, "Too many substituents and rings - likely a complex natural product"
+    # Natural product filter - allow some substitution but not excessive
+    if oh_count + ome_count > 6:
+        return False, "Too many oxygen substituents - likely a complex natural product"
 
-    # Determine core type and check requirements
-    if is_dibenzodioxin:
-        if num_cl < 1 and num_br < 1:
-            return False, "Insufficient halogenation for dibenzodioxin"
-        core_type = "dibenzodioxin"
-    elif is_dibenzofuran:
-        if num_cl < 1 and num_br < 1:
-            return False, "Insufficient halogenation for dibenzofuran"
-        core_type = "dibenzofuran"
-    elif is_biphenyl:
-        if total_halogens < 2:
-            return False, "Insufficient halogenation for biphenyl"
-        core_type = "biphenyl"
-    else:
-        return False, "No characteristic core structure found"
+    # Minimum halogen requirements
+    if core_type == "dibenzodioxin" and num_halogens < 4:
+        return False, "Insufficient halogenation for dibenzodioxin"
+    elif core_type == "dibenzofuran" and num_halogens < 4:
+        return False, "Insufficient halogenation for dibenzofuran"
+    elif core_type == "biphenyl" and num_halogens < 2:
+        return False, "Insufficient halogenation for biphenyl"
 
     # Build classification reason
     halogen_desc = []
     if num_cl > 0:
-        halogen_desc.append(f"{num_cl} chlorine")
+        halogen_desc.append(f"{num_cl} chlorine{'s' if num_cl > 1 else ''}")
     if num_br > 0:
-        halogen_desc.append(f"{num_br} bromine")
+        halogen_desc.append(f"{num_br} bromine{'s' if num_br > 1 else ''}")
     halogen_str = " and ".join(halogen_desc)
     
-    reason = f"Contains {core_type} core with {halogen_str} substituents"
+    reason = f"Contains {core_type} core with {halogen_str}"
     
     return True, reason
