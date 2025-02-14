@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_monoacylglycerol(smiles: str):
     """
     Determines if a molecule is a monoacylglycerol based on its SMILES string.
-    This class contains a glycerol backbone with one acyl group (ester bond) attached,
-    while the other hydroxyl groups can be free or substituted.
+    A monoacylglycerol comprises a glycerol backbone with one acyl group
+    (ester bond) and potentially other substituents on the two remaining hydroxyls.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,23 +22,21 @@ def is_monoacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Recognize glycerol backbone: three carbon chain with three hydroxyl groups
-    glycerol_pattern = Chem.MolFromSmarts("[CH2][CH][CH2](O)")
+    # Recognize glycerol-like backbone: three carbon chain with potential substitutes
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4](O)[CH2X4](O) |$(*,A1)&&(*,A2)|")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+        return False, "No glycerol-like backbone found"
     
-    # Check for ester linkage with a long carbon chain (acyl group)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[CH2]")
+    # Check for ester linkage with only one acyl group attached
+    ester_pattern = Chem.MolFromSmarts("O=C(O)C")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
-        return False, "Need exactly one ester linkage for a monoacylglycerol"
+        return False, f"Found {len(ester_matches)} ester linkages, need exactly 1 for a monoacylglycerol"
 
-    # Verify molecular structure according to typical monoacylglycerol structure
-    # Count carbons to ensure there is a valid acyl chain
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    if carbon_count < 10:  # Simple check for acyl chain length
-        return False, f"Too few carbons ({carbon_count}) for a typical acyl chain, expected a longer chain"
-    
-    # Success
+    # Ensure verified ester is with a long chain typical for acyl groups
+    for atom in mol.GetAtoms():
+        if atom.GetIdx() == ester_matches[0][2] and atom.GetDegree() > 1:
+            if sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6) < 10:
+                return False, "Acyl group carbon chain seems too short"
+
     return True, "Contains glycerol backbone with one acyl group attached via ester bond"
