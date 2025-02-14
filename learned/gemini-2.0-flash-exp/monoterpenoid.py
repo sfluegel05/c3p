@@ -20,42 +20,50 @@ def is_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic carbon skeleton: Try to match isoprene-like units.
-    isoprene_pattern = Chem.MolFromSmarts("[CX4]([CX4])([CX4])([CX4])~[CX4]")
-    matches_isoprene = mol.GetSubstructMatches(isoprene_pattern)
-
-    # Check molecular weight: A monoterpene (C10H16) has a MW around 136
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 350: # Adjust upper bound, but keep the maximum molecular weight under 350
-       return False, "Molecular weight too high for a monoterpenoid."
+    if mol_wt < 130 or mol_wt > 350: # Adjusted range
+        return False, f"Molecular weight {mol_wt} is not within the typical range of monoterpenoids (130-350)."
 
     # Check carbon count
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8 or c_count > 12 : #Allow for loss of some methyl groups
+    if c_count < 8 or c_count > 15: # Adjusted range to account for some modifications
         return False, f"Too few or too many carbons: {c_count}. Monoterpenoids typically have around 10 carbons."
+    
+    # Check O:C ratio
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count > 0 and (o_count / c_count) > 0.5:
+        return False, "Monoterpenoids usually have a low ratio of oxygen to carbon atoms."
 
-    # Check for presence of oxygen containing functional groups (alcohol, ketone, ether or ester)
-    oxygen_pattern = Chem.MolFromSmarts("[OX2,OX1]")
-    oxygen_matches = mol.GetSubstructMatches(oxygen_pattern)
-    if len(oxygen_matches) == 0:
-        return False, "Monoterpenoids typically contain oxygen functional groups."
+    # Common monoterpenoid substructures
+    menthane_pattern = Chem.MolFromSmarts("[C]1([C])[C]([C])([C])[C]([C])[C]1")
+    pinane_pattern = Chem.MolFromSmarts("C1[C]2[C]([C]1([C])C)[C]([C])([C])CC2")
+    bornane_pattern = Chem.MolFromSmarts("C1[C]2[C]([C]1([C])C)[C]([C])([C])CC2")
+    thujane_pattern = Chem.MolFromSmarts("C1[C]2[C]([C]1([C])C)[C]([C])([C])CC2")
+    p_menthene_pattern1 = Chem.MolFromSmarts("C[C]1([C])[C]([C])([C])[C]([C])=[C]1")
+    p_menthene_pattern2 = Chem.MolFromSmarts("C[C]1([C])=[C]([C])[C]([C])[C]([C])[C]1")
 
+    if (mol.HasSubstructMatch(menthane_pattern) or
+            mol.HasSubstructMatch(pinane_pattern) or
+            mol.HasSubstructMatch(bornane_pattern) or
+            mol.HasSubstructMatch(thujane_pattern) or
+            mol.HasSubstructMatch(p_menthene_pattern1) or
+            mol.HasSubstructMatch(p_menthene_pattern2)):
+        return True, "Matches monoterpenoid criteria"
 
-    #Check ring counts: monoterpenoids can be acyclic, monocyclic, or bicyclic. We use the ring size information too.
+    # Additional check for rings
     ring_info = mol.GetRingInfo()
     num_rings = ring_info.NumRings()
-    if num_rings > 3:
-        return False, "Monoterpenoids rarely contain more than 2-3 rings"
-
-    # Check for 6-membered rings
     found_6_member = False
+    found_5_member = False
     for ring in ring_info.AtomRings():
       if len(ring) == 6:
         found_6_member = True
-        break
+      if len(ring) == 5:
+         found_5_member = True
 
-    # If there is no isoprene match but there are one or more rings, then a 6-membered ring is required.
-    if (len(matches_isoprene) == 0 and num_rings > 0 and not found_6_member):
-        return False, "Monocyclic and bicyclic monoterpenoids usually include at least one six membered ring"
+    if num_rings > 0 and not (found_6_member or found_5_member) :
+         return False, "Monocyclic monoterpenoids usually contain a 5 or 6-membered ring"
+
     
-    return True, "Matches monoterpenoid criteria"
+    return False, "Does not match common monoterpenoid substructures or characteristics"
