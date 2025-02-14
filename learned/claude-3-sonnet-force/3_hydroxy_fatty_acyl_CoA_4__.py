@@ -1,23 +1,63 @@
 """
 Classifies: CHEBI:65102 3-hydroxy fatty acyl-CoA(4-)
 """
-The previous program seems to be on the right track, but there are a few issues that likely caused the low F1 score.
+"""
+Classifies: CHEBI:36056 3-hydroxy fatty acyl-CoA(4-)
+An acyl-CoA(4-) oxoanion arising from deprotonation of the phosphate and diphosphate OH groups of any 3-hydroxy fatty acyl-CoA; major species at pH 7.3.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Fatty acid chain length**: The program only checks for a minimum of 4 carbon atoms in the fatty acid chain, but it does not enforce a maximum length. Some of the false negatives have very long chains (>20 carbons), which are unlikely to be classified as "fatty acids" in the strict sense. It would be better to check for a reasonable range of carbon chain lengths, e.g., between 4 and 24 carbons.
+def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
+    """
+    Determines if a molecule is a 3-hydroxy fatty acyl-CoA(4-) based on its SMILES string.
 
-2. **Double bonds in fatty acid chain**: The program does not account for the presence of double bonds in the fatty acid chain, which many of the false negatives have. It should check for the presence and position of double bonds to ensure they conform to the expected pattern for fatty acids.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Stereochemistry**: The program does not consider the stereochemistry of the hydroxyl group at the 3-position. Some of the false negatives have the opposite stereochemistry (S instead of R or vice versa), which should be accounted for.
+    Returns:
+        bool: True if molecule is a 3-hydroxy fatty acyl-CoA(4-), False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Charge calculation**: The program assumes a charge of -4, but this may not always be the case. It would be better to calculate the charge based on the presence of deprotonated phosphate and diphosphate groups, rather than hardcoding the expected charge.
+    # Check for CoA substructure
+    coa_pattern = Chem.MolFromSmarts("CCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(OP(=O)(OC[C@@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12)O)O")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Missing CoA substructure"
 
-To improve the program, you could:
+    # Find the 3-hydroxy fatty acid chain
+    chain_pattern = Chem.MolFromSmarts("[C;H3]([C;H2])[C@H](O)[C@@](C)(C)C(=O)C[C@@H]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if len(chain_matches) == 0:
+        return False, "No 3-hydroxy fatty acid chain found"
 
-1. **Fatty acid chain length**: Check for a carbon chain length between 4 and 24 atoms, inclusive.
-2. **Double bonds**: Allow for double bonds in the fatty acid chain, but ensure they follow a specific pattern (e.g., separated by at least one methylene group, no cumulated double bonds, etc.).
-3. **Stereochemistry**: Check for both R and S stereochemistry at the 3-position.
-4. **Charge calculation**: Calculate the charge based on the number of deprotonated phosphate and diphosphate groups, instead of hardcoding the expected charge.
+    # Check fatty acid chain length
+    chain_length = sum(1 for atom in mol.GetAtomWithIdx(chain_matches[0][3]).GetNeighbors() if atom.GetAtomicNum() == 6)
+    if chain_length < 4 or chain_length > 24:
+        return False, f"Fatty acid chain length ({chain_length}) not within expected range (4-24)"
 
-Additionally, you could consider handling some of the false positives by checking for specific substructures or patterns that should not be present in a 3-hydroxy fatty acyl-CoA(4-).
+    # Check for double bonds in the fatty acid chain
+    double_bond_pattern = Chem.MolFromSmarts("[C@H]=C[C@H]")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if double_bond_matches:
+        # Ensure double bonds follow expected pattern
+        allowed_double_bonds = [4, 7, 10, 13, 16, 19, 22]
+        double_bond_positions = [match[1] for match in double_bond_matches]
+        for pos in double_bond_positions:
+            if pos not in allowed_double_bonds:
+                return False, f"Double bond at position {pos} not allowed"
 
-It's worth noting that some of the false negatives may be edge cases or exceptions to the general rule, and it's up to your judgment whether to accommodate them or not, based on your understanding of the chemical class definition.
+    # Calculate charge based on deprotonated phosphate and diphosphate groups
+    deprotonated_groups = sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() == -1 and atom.GetAtomicNum() == 8)
+    charge = -deprotonated_groups
+
+    if charge != -4:
+        return False, f"Expected charge of -4, found {charge}"
+
+    return True, "Contains 3-hydroxy fatty acid chain with CoA group and expected charge"
