@@ -7,9 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_catechin(smiles: str):
     """
     Determines if a molecule is a catechin based on its SMILES string.
-    Catechins typically have a flavan-3-ol skeleton which consists of two phenolic rings
-    connected by a chiral three-carbon unit forming a pyran ring, often with hydroxyl and
-    methyl ether groups.
+    Aiming to capture the flavan-3-ol skeleton with additional common substitutions,
+    which includes two phenolic rings connected by a pyran ring with hydroxyl groups.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,20 +23,19 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for a core flavan-3-ol. Consider some substitution variations.
-    flavan3ol_pattern = Chem.MolFromSmarts("c1cc(O)ccc1-C2C[C@H](O)Oc3c(O)cc(O)cc23")
+    # Broad SMARTS pattern for a flavan-3-ol core with possible variations
+    flavan3ol_pattern = Chem.MolFromSmarts("C1=C(C=C(C=C1)O)C2(O)C3=C(C=C(C=C3)O)OC(CC2)C")
     if not mol.HasSubstructMatch(flavan3ol_pattern):
         return False, "No flavan-3-ol skeleton found"
     
-    # Check for multiple hydroxyl groups beyond the core requirement
-    # Catechins often have additional -OH groups or their equivalents (e.g., methoxy).
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
-    if hydroxyl_count < 4:  # Adjust based on expected range
-        return False, f"Too few hydroxyl or equivalent groups, found {hydroxyl_count}"
+    # Verify presence of hydroxyl or methoxy like groups  
+    hydroxyl_or_methoxy = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O')
+    if hydroxyl_or_methoxy < 4:  # Typically a catechin has at least 4 oxygens, either in -OH or -OCH3
+        return False, f"Insufficient -OH/-OCH3 groups, found {hydroxyl_or_methoxy}"
     
-    # Check for stereo configurations typically present in catechins
+    # Ensure there are chiral centers as catechins are chiral molecules
     stereo_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     if not stereo_centers:
-        return False, "No chiral centers found for a catechin structure"
+        return False, "No stereochemistry observed, unlikely to be a catechin"
     
-    return True, "Molecule matches flavan-3-ol skeleton with appropriate substitutions"
+    return True, "Molecule matches flavan-3-ol skeleton with common hydroxyl/methoxy groups"
