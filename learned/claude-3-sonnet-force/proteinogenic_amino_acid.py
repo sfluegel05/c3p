@@ -5,6 +5,34 @@ Classifies: CHEBI:83813 proteinogenic amino acid
 Classifies: CHEBI:33709 proteinogenic amino acid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+
+# SMARTS patterns for proteinogenic amino acids
+amino_acid_patterns = {
+    'glycine': '[N@H][C@@H](C(=O)O)=O',
+    'alanine': '[N@H][C@@H](C)C(=O)O',
+    'valine': '[N@H][C@@H](C(C)C)C(=O)O',
+    'leucine': '[N@H][C@@H](CC(C)C)C(=O)O',
+    'isoleucine': '[N@H][C@@H](C(C)CC)C(=O)O',
+    'serine': '[N@H][C@@H](CO)C(=O)O',
+    'threonine': '[N@H][C@@H](C(O)C)C(=O)O',
+    'cysteine': '[N@H][C@@H](CS)C(=O)O',
+    'proline': '[N@H]1C[C@@H](CC1)C(=O)O',
+    'aspartic acid': '[N@H][C@@H](CC(=O)O)C(=O)O',
+    'asparagine': '[N@H][C@@H](CC(N)=O)C(=O)O',
+    'glutamic acid': '[N@H][C@@H](CCC(=O)O)C(=O)O',
+    'glutamine': '[N@H][C@@H](CCC(N)=O)C(=O)O',
+    'arginine': '[N@H][C@@H](CCCNC(N)=N)C(=O)O',
+    'histidine': '[N@H][C@@H](Cc1cnc[nH]1)C(=O)O',
+    'lysine': '[N@H][C@@H](CCCCN)C(=O)O',
+    'phenylalanine': '[N@H][C@@H](Cc1ccccc1)C(=O)O',
+    'tyrosine': '[N@H][C@@H](Cc1ccc(O)cc1)C(=O)O',
+    'tryptophan': '[N@H][C@@H](Cc1c[nH]c2c1cccc2)C(=O)O',
+    'methionine': '[N@H][C@@H](CCSC)C(=O)O',
+    'selenocysteine': '[N@H][C@@H](C[Se]C)C(=O)O',
+    'pyrrolysine': '[N@H][C@@H](CCCCNC(=O)[C@H]1CCCN1)C(=O)O',
+    'N-formylmethionine': 'C[N@H]C(=O)[C@@H](CCSC)C(=O)O'
+}
 
 def is_proteinogenic_amino_acid(smiles: str):
     """
@@ -21,31 +49,10 @@ def is_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for amino and carboxyl groups
-    has_amino_group = any(atom.GetSymbol() == 'N' and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 3 for atom in mol.GetAtoms())
-    has_carboxyl_group = any(atom.GetSymbol() == 'C' and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 3 and sum(1 for nbr in atom.GetNeighbors() if nbr.GetSymbol() == 'O') == 2 for atom in mol.GetAtoms())
-    if not (has_amino_group and has_carboxyl_group):
-        return False, "Missing amino and/or carboxyl group"
+    # Check if the molecule matches any of the proteinogenic amino acid patterns
+    for amino_acid, pattern in amino_acid_patterns.items():
+        patt = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(patt):
+            return True, f"Molecule matches the SMARTS pattern for {amino_acid}"
 
-    # Check for a single chiral center with L configuration
-    chiral_centers = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED and atom.GetHybridization() == Chem.HybridizationType.SP3]
-    if len(chiral_centers) != 1:
-        return False, "More than one chiral center or no chiral center found"
-
-    chiral_center_idx = chiral_centers[0]
-    chiral_center = mol.GetAtomWithIdx(chiral_center_idx)
-    if chiral_center.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CCW:
-        return False, "Chiral center is not L configuration"
-
-    # Check if the chiral center is attached to both amino and carboxyl groups
-    amino_attached = False
-    carboxyl_attached = False
-    for neighbor in chiral_center.GetNeighbors():
-        if neighbor.GetSymbol() == 'N' and sum(bond.GetBondTypeAsDouble() for bond in neighbor.GetBonds()) == 3:
-            amino_attached = True
-        elif neighbor.GetSymbol() == 'C' and sum(bond.GetBondTypeAsDouble() for bond in neighbor.GetBonds()) == 3 and sum(1 for nbr in neighbor.GetNeighbors() if nbr.GetSymbol() == 'O') == 2:
-            carboxyl_attached = True
-    if not (amino_attached and carboxyl_attached):
-        return False, "Amino and carboxyl groups not attached to the chiral center"
-
-    return True, "Molecule is a proteinogenic amino acid with L configuration"
+    return False, "Molecule does not match any of the proteinogenic amino acid patterns"
