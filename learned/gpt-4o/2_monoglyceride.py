@@ -21,22 +21,16 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a glycerol backbone with an acyl linked at the 2nd position
-    # Glycerol backbone pattern: OCC(O)CO with additional ester:
-    monoglyceride_pattern = Chem.MolFromSmarts("C(CO)OC(=O)[C,C][C,C]")  # Partial ester group patterns around glycerol
+    # Check for a precise glycerol backbone with an acyl ester link at position 2
+    # This pattern focuses specifically on the central glycerol C and an ester link:
+    glycerol_2_monoester_pattern = Chem.MolFromSmarts("O[C@H](CO)C(O[C,C](=O)[C,C])=O")
+
+    if mol.HasSubstructMatch(glycerol_2_monoester_pattern):
+        # Count ester groups, must be exactly one
+        ester_pattern = Chem.MolFromSmarts("O=C([O,C])[C,C]")
+        ester_matches = mol.GetSubstructMatches(ester_pattern)
+        if len(ester_matches) != 1:
+            return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+        return True, "Contains a glycerol backbone with an acyl substituent at position 2"
     
-    if not mol.HasSubstructMatch(monoglyceride_pattern):
-        return False, "Does not match the 2-monoglyceride pattern"
-
-    # Find ester linkages explicitly at central glycerol position and ensure exclusivity
-    ester_connectivity = Chem.MolFromSmarts("C(CO)OC(=O)[C,C][C,C]")  # stricter account for ester configuration
-    if not mol.HasSubstructMatch(ester_connectivity):
-        return False, "Ester linkage not precisely at the 2-position"
-
-    # Verify only one esterification (one acyl chain)
-    general_ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(general_ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
-
-    return True, "Contains a glycerol backbone with an acyl substituent at position 2"
+    return False, "Does not match the 2-monoglyceride pattern"
