@@ -22,8 +22,14 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for monocarboxylic acid group (C(=O)[O,OH1])
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O,OH1]")
+    # Neutralize the molecule to avoid issues with charged carboxylates
+    Chem.SanitizeMol(mol)
+    for atom in mol.GetAtoms():
+        if atom.GetFormalCharge() != 0:
+            return False, "Molecule is not neutral"
+            
+    # 1. Check for monocarboxylic acid group (C(=O)O[H])
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O[H]")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acid_matches) != 1:
         return False, f"Molecule must have exactly one carboxylic acid group, found {len(carboxylic_acid_matches)}"
@@ -35,24 +41,27 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     # Identify the alpha carbon, must be a carbon that is single bonded to the carboxylic carbon
     alpha_carbon = None
     for bond in carboxyl_carbon.GetBonds():
-      if bond.GetBondType() == Chem.BondType.SINGLE:
-          neighbor = bond.GetOtherAtom(carboxyl_carbon)
-          if neighbor.GetSymbol() == 'C':
+        if bond.GetBondType() == Chem.BondType.SINGLE:
+            neighbor = bond.GetOtherAtom(carboxyl_carbon)
+            if neighbor.GetSymbol() == 'C':
                 alpha_carbon = neighbor
                 break
     if alpha_carbon is None:
       return False, "Carboxylic acid group is not connected to another carbon"
     
+    # Check if alpha carbon has a carbonyl group
+    oxo_group_pattern = Chem.MolFromSmarts("[C][C](=[O])[#6]") # check if the alpha carbon has =O and a carbon neighbor
+    matches = mol.GetSubstructMatches(oxo_group_pattern)
 
-    # Check if alpha carbon has a carbonyl group.
-    has_carbonyl = False
-    for neighbor in alpha_carbon.GetNeighbors():
-        if neighbor.GetSymbol() == 'O' and mol.GetBondBetweenAtoms(alpha_carbon.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
-            has_carbonyl = True
-            break
+    # Search for the pattern based on alpha carbon and carboxyl carbon
+    oxo_group_found = False
+    for match in matches:
+         if match[1] == alpha_carbon.GetIdx() and match[0] == carboxyl_carbon.GetIdx():
+              oxo_group_found = True
+              break
     
-    if not has_carbonyl:
+    if not oxo_group_found:
        return False, "No 2-oxo group found on the alpha carbon"
-
-
+       
+    
     return True, "Molecule has a 2-oxo substituent and one carboxylic acid group"
