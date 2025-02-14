@@ -6,6 +6,7 @@ Classifies: thiosugar
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdqueries
 
 def is_thiosugar(smiles: str):
     """
@@ -32,52 +33,51 @@ def is_thiosugar(smiles: str):
     if not sulfur_atoms:
         return False, "No sulfur atoms found in molecule"
 
-    # Define SMARTS patterns for sugar rings (allowing for sulfur in ring)
-    pyranose_pattern = Chem.MolFromSmarts("[C@H]1([O,S])[C@@H]([O,S])[C@H]([O,S])[C@@H]([O,S])[C@H]1")
-    furanose_pattern = Chem.MolFromSmarts("[C@H]1([O,S])[C@@H]([O,S])[C@H]([O,S])[C@H]1")
+    # Define a general SMARTS pattern for monosaccharide units (pyranose and furanose rings)
+    sugar_pattern = Chem.MolFromSmarts("""
+    [
+        # Six-membered ring sugars (pyranose)
+        [$([C;H1,H2,H3][O;H0])]1[C,O;R][C,O;R][C,O;R][C,O;R][C,O;R]1,
+        # Five-membered ring sugars (furanose)
+        [$([C;H1,H2,H3][O;H0])]1[C,O;R][C,O;R][C,O;R][C,O;R]1
+    ]
+    """)
 
-    # Check if molecule contains sugar rings
-    sugar_ring_found = False
+    # Find sugar units in the molecule
+    matches = mol.GetSubstructMatches(sugar_pattern)
+    if not matches:
+        return False, "No sugar units found in molecule"
+
+    # For each sugar unit, check if any oxygen or hydroxyl group is replaced by sulfur or -SR
     thio_substitution_found = False
-
-    ring_matches = mol.GetSubstructMatches(pyranose_pattern) + mol.GetSubstructMatches(furanose_pattern)
-    if ring_matches:
-        sugar_ring_found = True
-        # For each ring, check for sulfur substitutions
-        for match in ring_matches:
-            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in match]
-
-            # Check for sulfur in ring positions
-            for atom in ring_atoms:
-                if atom.GetAtomicNum() == 16:  # Sulfur atom
-                    thio_substitution_found = True
-                    break  # No need to check further
-
-            if thio_substitution_found:
-                break  # Found at least one thiosugar ring
-
-            # Check for sulfur substituents attached to ring carbons
-            for atom in ring_atoms:
-                if atom.GetAtomicNum() == 6:  # Carbon atom
-                    for neighbor in atom.GetNeighbors():
-                        if neighbor.GetAtomicNum() == 16:  # Sulfur atom
-                            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
-                            if bond.GetBondType() == Chem.BondType.SINGLE:
-                                # Sulfur attached to ring carbon, replacing hydroxyl group
-                                thio_substitution_found = True
-                                break
-                    if thio_substitution_found:
-                        break
-            if thio_substitution_found:
+    for match in matches:
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+        for atom in ring_atoms:
+            atom_num = atom.GetAtomicNum()
+            # Check for sulfur atoms in place of oxygen in ring
+            if atom_num == 16:
+                thio_substitution_found = True
                 break
-
-    if not sugar_ring_found:
-        return False, "No sugar ring (pyranose or furanose) found in molecule"
+            # Check for sulfur substituents replacing hydroxyl groups
+            elif atom_num == 6:  # Carbon atom
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() in match:
+                        continue  # Skip atoms in the ring
+                    if neighbor.GetAtomicNum() == 16:  # Sulfur atom
+                        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                        if bond.GetBondType() == Chem.BondType.SINGLE:
+                            # Sulfur attached to ring carbon, possibly replacing hydroxyl
+                            thio_substitution_found = True
+                            break
+                if thio_substitution_found:
+                    break
+        if thio_substitution_found:
+            break
 
     if thio_substitution_found:
-        return True, "Contains sugar ring with sulfur substitution"
+        return True, "Contains sugar unit with sulfur substitution of oxygen or hydroxyl group"
 
-    return False, "No sulfur substitutions found in sugar ring"
+    return False, "No sulfur substitutions found in sugar units"
 
 __metadata__ = {
     'chemical_class': {
