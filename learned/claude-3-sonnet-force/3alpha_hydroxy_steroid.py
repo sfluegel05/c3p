@@ -6,6 +6,7 @@ Classifies: CHEBI:77834 3alpha-hydroxy steroid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_3alpha_hydroxy_steroid(smiles: str):
     """
@@ -26,13 +27,22 @@ def is_3alpha_hydroxy_steroid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C@]12CCC[C@H]3[C@@H]([C@@]1(CC[C@@H]2O)C)CCC4=CC(=O)CC[C@]34C")
+    steroid_pattern = Chem.MolFromSmarts("[C@]1(CCC[C@H]2[C@@H]3[C@H](CC[C@]12C)CCC(=O)C3)")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
     
     # Check for 3alpha-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[C@]([H])(O)([H])[C@@]12CCC[C@@H]3[C@@H]([C@@]1(CC[C@@H]2O)C)CCC(=O)C[C@]13C")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
+    hydroxy_pattern = Chem.MolFromSmarts("[C@]([H])(O)([H])")
+    if not any(mol.GetAtomWithIdx(idx).HasProp("_3alphaHydroxyPos") for idx in mol.GetSubstructMatches(hydroxy_pattern)):
         return False, "No 3alpha-hydroxy group found"
+    
+    # Additional checks
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 250 or mol_wt > 600:
+        return False, "Molecular weight outside typical range for steroids"
+    
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    if n_rings < 3 or n_rings > 5:
+        return False, "Number of rings outside typical range for steroids"
     
     return True, "Contains a steroid backbone with a hydroxy group at the 3-position in the alpha configuration"
