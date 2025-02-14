@@ -6,7 +6,6 @@ Classifies: CHEBI:24842 indole alkaloid
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_indole_alkaloid(smiles: str):
     """
@@ -20,48 +19,23 @@ def is_indole_alkaloid(smiles: str):
         bool: True if the molecule is an indole alkaloid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define indole SMARTS pattern
-    indole_pattern = Chem.MolFromSmarts('c1c[cH]c2c1cccc2')  # Indole ring
-    if not mol.HasSubstructMatch(indole_pattern):
+    # Define a more general indole SMARTS pattern
+    # This pattern matches indole rings, including substituted and fused ones
+    indole_pattern = Chem.MolFromSmarts('n1c2cccc2cc1')  # Indole ring
+
+    # Check for indole skeleton
+    if mol.HasSubstructMatch(indole_pattern):
+        # Check for presence of nitrogen atoms (since alkaloids contain nitrogen)
+        atom_nums = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
+        if 7 in atom_nums:
+            return True, "Contains indole skeleton with nitrogen atoms (alkaloid)"
+        else:
+            return False, "Contains indole skeleton but no nitrogen atoms (not an alkaloid)"
+    else:
         return False, "No indole skeleton found"
-
-    # Identify basic nitrogen atoms (exclude aromatic nitrogens)
-    basic_nitrogen_found = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Nitrogen atom
-            if not atom.GetIsAromatic():
-                # Exclude amide nitrogens (N-C=O)
-                is_amide = False
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6:  # Carbon neighbor
-                        for bond in mol.GetBonds():
-                            if bond.GetBeginAtomIdx() == atom.GetIdx() and bond.GetEndAtomIdx() == neighbor.GetIdx():
-                                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                                    # Check if carbon is double-bonded to oxygen
-                                    for nei_of_nei in neighbor.GetNeighbors():
-                                        if nei_of_nei.GetAtomicNum() == 8:  # Oxygen
-                                            for bond2 in mol.GetBonds():
-                                                if bond2.GetBeginAtomIdx() == neighbor.GetIdx() and bond2.GetEndAtomIdx() == nei_of_nei.GetIdx():
-                                                    if bond2.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                                                        is_amide = True
-                                                        break
-                                        if is_amide:
-                                            break
-                            if is_amide:
-                                break
-                    if is_amide:
-                        break
-                if not is_amide:
-                    basic_nitrogen_found = True
-                    break  # Found at least one basic nitrogen atom
-
-    if not basic_nitrogen_found:
-        return False, "No basic nitrogen atoms found"
-
-    return True, "Contains indole skeleton with at least one basic nitrogen atom (alkaloid)"
