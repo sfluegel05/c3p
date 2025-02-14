@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_polyprenol(smiles: str):
     """
     Determines if a molecule is a polyprenol based on its SMILES string.
-    A polyprenol is composed of more than one isoprene unit (H-[CH2C(Me)=CHCH2]nOH),
+    A polyprenol consists of more than one isoprene unit (H-[CH2C(Me)=CHCH2]nOH),
     with a terminal hydroxyl group.
 
     Args:
@@ -16,31 +16,35 @@ def is_polyprenol(smiles: str):
         bool: True if the molecule is a polyprenol, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse SMILES into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced isoprene unit detection: CH2=C(Me)CH2
-    isoprene_pattern = Chem.MolFromSmarts("C(=C)C")
+    # Define the isoprene unit pattern, representing H-[CH2C(Me)=CH-CH2]nOH
+    isoprene_pattern = Chem.MolFromSmarts("C(=C)C-C")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) <= 1:
+    if len(isoprene_matches) < 2:
         return False, f"Found {len(isoprene_matches)} isoprene units, need more than one"
 
-    # Check for primary hydroxyl group connectivity
-    oxygens = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8]
-    hydroxyl_connected_carbon = None
-    for oxygen in oxygens:
-        if oxygen.GetDegree() == 1:  # Primary alcohol
-            connected_atom = oxygen.GetNeighbors()[0]
-            if connected_atom.GetAtomicNum() == 6:  # Check if connected to carbon
-                hydroxyl_connected_carbon = connected_atom
+    # Check for terminal hydroxyl group by iterating through oxygen atoms
+    hydroxyl_found = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:  # Identifying oxygen atoms
+            neighbors = atom.GetNeighbors()
+            # Ensure it's a terminal hydroxyl group connected to a carbon
+            if len(neighbors) == 1 and neighbors[0].GetAtomicNum() == 6:
+                hydroxyl_found = True
                 break
-    if hydroxyl_connected_carbon is None:
-        return False, "No terminal hydroxyl group found"
 
-    # Ensure it's part of a valid isoprene chain
-    if not hydroxyl_connected_carbon.HasSubstructMatch(isoprene_pattern):
-        return False, "Hydroxyl group not connected to an isoprene unit"
+    if not hydroxyl_found:
+        return False, "No terminal hydroxyl group (OH) was found in the structure"
 
-    return True, "Contains more than one isoprene unit with a terminal hydroxyl group"
+    # Verify the hydroxyl group is directly linked to an isoprene unit
+    connected_to_isoprene = any(mol.HasSubstructMatch(Chem.MolFromSmarts(f"{Chem.MolToSmarts(neighbors[0])}C(=C)C-C")) 
+                                for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 for neighbors in [atom.GetNeighbors()])
+
+    if not connected_to_isoprene:
+        return False, "Hydroxyl group not correctly connected to terminal isoprene unit"
+
+    return True, "Contains more than one isoprene unit with a terminal hydroxyl group, typical of polyprenols"
