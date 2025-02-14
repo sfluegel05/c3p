@@ -22,22 +22,36 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for benzoquinone core (1,4 or 1,2)
-    benzoquinone_14_pattern = Chem.MolFromSmarts("C1(=O)C=CC(=O)C=C1")
-    benzoquinone_12_pattern = Chem.MolFromSmarts("C1(=O)C(=O)C=CC=C1")
-    #Check for naphthoquinone core (1,4 or 1,2)
-    naphthoquinone_14_pattern = Chem.MolFromSmarts("C1(=O)C=CC2=CC=CC=C2C1=O")
-    naphthoquinone_12_pattern = Chem.MolFromSmarts("C1(=O)C2=CC=CC=C2C(=O)C=C1")
-    
-    if not (mol.HasSubstructMatch(benzoquinone_14_pattern) or mol.HasSubstructMatch(benzoquinone_12_pattern) or
-            mol.HasSubstructMatch(naphthoquinone_14_pattern) or mol.HasSubstructMatch(naphthoquinone_12_pattern)):
+    # Check for a generalized quinone core with at least 2 double bonds and 2 =O groups (allowing for substitutions)
+    quinone_pattern = Chem.MolFromSmarts("[C;$(C=O)]1=[C,c][C,c](=[C,c][C,c](=[C,c]1)[C;$(C=O)])=[C,c]") #General six membered ring with 2 carbonyls, and 2 double bonds
+    if not mol.HasSubstructMatch(quinone_pattern):
         return False, "No quinone core found"
-        
-    # Check for isoprenyl chain (at least two isoprene units)
-    isoprenyl_pattern = Chem.MolFromSmarts("CC=CC")  # Basic isoprene unit
-    isoprenyl_matches = mol.GetSubstructMatches(isoprenyl_pattern)
-    if len(isoprenyl_matches) < 2:
-        return False, "Less than two isoprenyl units found"
 
+    # Define a pattern for a prenyl chain attached to the quinone core
+    #The chain can have at least two isoprene units connected by a single bond
+    # We'll use multiple SMARTS patterns to capture different variations
+    prenyl_patterns = [
+      Chem.MolFromSmarts("[C;$(C=O)]~[C,c]!@[CH2]C(=C)C~[CH2]C=C[CX4]"), #Quinone core - C - C=C -C -C=C-
+      Chem.MolFromSmarts("[C;$(C=O)]~[C,c]!@[CH2]C(=C)C~[CH2]C(=C)C~[CH2]C=C[CX4]"),#Quinone core - C - C=C -C -C=C -C-C=C-
+      Chem.MolFromSmarts("[C;$(C=O)]~[C,c]!@[CH2]C(=C)C~[CH2]C(=C)C~[CH2]C(=C)C~[CH2]C=C[CX4]"), #Quinone core - C - C=C -C -C=C -C -C=C -C-C=C-
+      Chem.MolFromSmarts("[C;$(C=O)]~[C,c]!@[CH2]C(=C)C~[CH2]C=C[CX4]~[CH2]C(=C)C~[CH2]C=C[CX4]"), #Quinone core - C - C=C -C -C=C-C-C=C -C-C=C-
+      Chem.MolFromSmarts("[C;$(C=O)]~[C,c]!@[CH2]C(=C)C~[CH2]C(=C)C~[CH2]C(=C)C~[CH2]C(=C)C~[CH2]C=C[CX4]")#Quinone core - C - C=C -C -C=C -C -C=C -C -C=C-C-C=C-
+
+      ]
+      
+    found_prenyl = False
+    for pattern in prenyl_patterns:
+        if mol.HasSubstructMatch(pattern):
+            found_prenyl = True
+            break #Exit loop as soon as at least one prenyl chain is found
+
+    if not found_prenyl:
+          return False, "No polyprenyl side chain found attached to the quinone"
+
+    
+    #Check for minimum number of carbons in the molecule to filter out false positives
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 13: #Arbitrary number based on the examples. A molecule should have at least 13 carbons to be a prenylquinone
+        return False, "Too few carbons for prenylquinone"
 
     return True, "Contains a quinone core and a polyprenyl side chain"
