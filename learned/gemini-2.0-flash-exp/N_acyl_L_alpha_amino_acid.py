@@ -20,46 +20,23 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for L-alpha-amino acid pattern.
-    # Note: [C@H] denotes L stereochemistry.
-    amino_acid_pattern = Chem.MolFromSmarts("[C@H](C(=O)O)N")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "Molecule does not contain L-alpha-amino acid core"
+    #Check for stereochemistry
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    for atom_index, chirality_tag in chiral_centers:
+       if chirality_tag == '?':
+        continue
+       atom = mol.GetAtomWithIdx(atom_index)
+       if atom.GetSymbol() == 'C' and atom.HasProp('_Chirality'):
+           if atom.GetProp('_Chirality') == 'S': # All chiral carbons are L
+            return False, f"Molecule does not have L configuration on all chiral carbons. Atom {atom_index} is S"
+           elif not atom.GetProp('_Chirality') == 'R':
+            return False, f"Molecule does not have L configuration on all chiral carbons. Atom {atom_index} is not R"
 
-    # Check for N-acyl group attached to the alpha amino
-    acyl_group_pattern = Chem.MolFromSmarts("[NX3][CX3]=O")
-
-    
-    matches = mol.GetSubstructMatches(acyl_group_pattern)
-    
-    
-    if not matches:
-        return False, "Molecule does not contain an N-acyl group"
-
-    
-    # Find the specific N-H of the amino group.
-    amino_matches = mol.GetSubstructMatches(amino_acid_pattern)
-
-    if not amino_matches:
-        return False, "Error: no amino acid group found even after initial match"
-
-    # Get the atom index of the N in the amino group.
-    amino_n_index = amino_matches[0][2]
-
-    # check that the N of the amide group is the same as that of the amino group.
-    amide_found = False
-
-    for match in matches:
-      for n_index in match:
-        # check for atom type
-        atom = mol.GetAtomWithIdx(n_index)
-        if atom.GetAtomicNum() == 7 and n_index == amino_n_index:
-          amide_found = True
-          break
-      if amide_found:
-          break
-    if not amide_found:
-      return False, "N-acyl group is not attached to the alpha-amino group"
-
+    # Check for N-acyl-L-alpha-amino acid pattern.
+    # This SMARTS pattern looks for an L-alpha-amino acid with an N-acyl group.
+    # It looks for C(=O)-[C@H]-N-C(=O) where the C(=O) is attached to the N of the amino acid.
+    n_acyl_amino_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NH1X2][C@H](C(=O)O)")
+    if not mol.HasSubstructMatch(n_acyl_amino_acid_pattern):
+         return False, "Molecule does not match N-acyl-L-alpha-amino acid pattern"
 
     return True, "Molecule is an N-acyl-L-alpha-amino acid"
