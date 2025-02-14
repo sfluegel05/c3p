@@ -23,8 +23,8 @@ def is_withanolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Detect the steroid core
-    steroid_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C][C]3[C]([C]1)([C]4[C]2[C]5[C]3[C]4[C]5)")
+    # 1. Detect the steroid core using a more relaxed pattern
+    steroid_pattern = Chem.MolFromSmarts("[R]1[R][R]2[R][R]3[R]([R]1)[R]4[R]2[R]5[R]3[R]4[R]5")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid core found"
     
