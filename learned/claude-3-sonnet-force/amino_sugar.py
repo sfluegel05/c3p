@@ -1,53 +1,28 @@
 """
 Classifies: CHEBI:28963 amino sugar
 """
-"""
-Classifies: CHEBI:36976 amino sugar
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+After analyzing the previous program and the outcomes, it seems that the program has a few limitations and potential areas for improvement. Here are my observations and hypotheses:
 
-def is_amino_sugar(smiles: str):
-    """
-    Determines if a molecule is an amino sugar based on its SMILES string.
-    An amino sugar is any sugar having one or more alcoholic hydroxy groups
-    replaced by substituted or unsubstituted amino groups.
+1. **False Positives**: The program incorrectly classified some molecules as amino sugars, even though they do not belong to this class. Most of these false positives contain a sugar-like backbone and amino groups, but they are not true amino sugars according to the definition provided (sugars with one or more alcoholic hydroxy groups replaced by amino groups). These false positives indicate that the current checks in the program are not sufficient to accurately identify amino sugars.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False Negatives**: The program missed some true amino sugars, classifying them as negatives. Upon closer inspection, many of these false negatives have slightly different structures or atom arrangements compared to the typical sugar backbone pattern used in the program. This suggests that the sugar backbone pattern used in the program may be too restrictive and needs to be more flexible to cover a wider range of amino sugar structures.
 
-    Returns:
-        tuple: (bool, str) True if molecule is an amino sugar, False otherwise.
-               Reason for classification.
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Handling Exceptions**: The program does not handle exceptions or edge cases well. For example, if the SMILES string is invalid, it simply returns `False` without providing a meaningful reason. It would be better to handle such cases explicitly and provide informative error messages.
 
-    # Check for sugar backbone
-    sugar_pattern = Chem.MolFromSmarts("[OX2,OX1][CX4][CX4][CX4][CX4][OX2,OX1]")
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No sugar backbone found"
+4. **Additional Checks**: While the program checks for the presence of a sugar backbone, amino groups, and hydroxy groups, it may need additional checks or structural constraints to more accurately identify amino sugars. For example, it could check for the specific positions or arrangements of the amino and hydroxy groups relative to the sugar backbone.
 
-    # Check for amino groups
-    amino_pattern = Chem.MolFromSmarts("[NX3]")
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    if not amino_matches:
-        return False, "No amino groups found"
+To improve the program, here are some potential steps:
 
-    # Check for hydroxy groups
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if not hydroxy_matches:
-        return False, "No hydroxy groups found"
+1. **Expand the Sugar Backbone Pattern**: The current sugar backbone pattern may be too restrictive. Consider expanding or modifying the pattern to cover a wider range of amino sugar structures. You could explore more flexible SMARTS patterns or use alternative approaches like graph-based substructure matching.
 
-    # Additional checks
-    n_oxygen = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_nitrogen = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    n_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+2. **Refine the Amino Group and Hydroxy Group Checks**: Instead of simply checking for the presence of amino and hydroxy groups, consider refining the checks to ensure that these groups are specifically replacing the alcoholic hydroxy groups on the sugar backbone. This could involve checking the connectivity and positions of the amino and hydroxy groups relative to the sugar backbone.
 
-    if n_oxygen < 3 or n_nitrogen < 1 or n_carbon < 3:
-        return False, "Does not meet minimum atom count requirements"
+3. **Implement Negative Checks**: In addition to positive checks for amino sugars, you could implement negative checks to filter out molecules that may satisfy the positive checks but are not true amino sugars. These negative checks could be based on specific structural patterns or substructures that are not expected in amino sugars.
 
-    return True, "Contains a sugar backbone with at least one amino group"
+4. **Handle Exceptions and Edge Cases**: Improve the program's handling of exceptions and edge cases, such as invalid SMILES strings or unexpected molecular structures. Provide informative error messages or warnings to help users understand the reasons for classification failures.
+
+5. **Consider Alternative Approaches**: If the SMARTS-based approach proves to be too limiting or difficult to refine, you could explore alternative approaches like graph-based substructure matching or machine learning techniques. These approaches may be better suited to handle the structural complexity and diversity of amino sugars.
+
+6. **Expand Test Cases and Validation**: Expand the set of test cases, including both positive and negative examples, to better validate the program's performance. Consider seeking expert input or consulting authoritative sources to ensure the correctness of the classifications.
+
+Remember, while the provided benchmark may not be perfect, it is still a valuable guide. If you believe that the classifications made by your program are consistent with your understanding of the chemical class and the provided definition, you can make a reasoned decision to ignore certain outliers. However, it is essential to document your reasoning and assumptions clearly.
