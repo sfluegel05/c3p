@@ -25,23 +25,26 @@ def is_cyanohydrin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for nitrile (-C#N) and alcohol (-OH) groups
-    nitrile_pattern = Chem.MolFromSmarts("[CX2]#N")
-    alcohol_pattern = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatch(nitrile_pattern) or not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "Missing nitrile and/or alcohol groups"
+    # Look for carbonyl group (C=O)
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    if not mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "No carbonyl group found"
     
-    # Look for the cyanohydrin substructure: R-C(OH)(C#N)-R'
+    # Look for cyanohydrin substructure: R-C(OH)(C#N)-R'
     cyanohydrin_pattern = Chem.MolFromSmarts("[CX4]([OH])([CX2]#N)")
     if not mol.HasSubstructMatch(cyanohydrin_pattern):
         return False, "Missing cyanohydrin substructure"
     
-    # Check that the -OH and -C#N groups are attached to the same carbon
+    # Check if the cyanohydrin substructure is formed by addition to a carbonyl
     cyanohydrin_atoms = mol.GetSubstructMatches(cyanohydrin_pattern)[0]
     carbon_atom = mol.GetAtomWithIdx(cyanohydrin_atoms[0])
-    nitrile_atom = carbon_atom.GetNeighbors()[0]
-    alcohol_atom = carbon_atom.GetNeighbors()[1]
-    if nitrile_atom.GetAtomicNum() != 7 or alcohol_atom.GetAtomicNum() != 8:
-        return False, "Nitrile and alcohol groups not attached to the same carbon"
     
-    return True, "Contains the cyanohydrin substructure: R-C(OH)(C#N)-R'"
+    # Find the carbonyl carbon atom
+    carbonyl_atoms = mol.GetSubstructMatches(carbonyl_pattern)[0]
+    carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_atoms[0])
+    
+    # Check if the cyanohydrin carbon is the same as the carbonyl carbon
+    if carbon_atom.GetIdx() != carbonyl_carbon.GetIdx():
+        return False, "Cyanohydrin substructure not formed from addition to a carbonyl"
+    
+    return True, "Contains the cyanohydrin substructure formed by addition of hydrogen cyanide to a carbonyl group"
