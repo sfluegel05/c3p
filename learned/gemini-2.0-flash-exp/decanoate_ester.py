@@ -2,7 +2,6 @@
 Classifies: CHEBI:87658 decanoate ester
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_decanoate_ester(smiles: str):
     """
@@ -21,11 +20,11 @@ def is_decanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the decanoyl group attached to an ester oxygen
-    decanoyl_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)O")
-
-    # Check for the decanoate ester substructure
-    if mol.HasSubstructMatch(decanoyl_ester_pattern):
-         return True, "Contains a decanoyl group connected via an ester bond"
+    # Define the SMARTS pattern for a decanoate ester
+    decanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCC(=O)O")
     
-    return False, "No decanoate ester core found"
+    # Check if the molecule matches the pattern
+    if mol.HasSubstructMatch(decanoate_pattern):
+        return True, "Contains a decanoyl group connected via an ester bond"
+    else:
+        return False, "No decanoate ester core found"
