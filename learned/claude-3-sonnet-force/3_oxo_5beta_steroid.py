@@ -1,28 +1,45 @@
 """
 Classifies: CHEBI:1624 3-oxo-5beta-steroid
 """
-Based on the previous program and the outcomes, it seems that the primary issue is with the detection of the ketone group at position 3 and the beta configuration at position 5. The program is failing to correctly identify these structural features in many of the positive examples provided.
+"""
+Classifies: CHEBI:17971 3-oxo-5beta-steroid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are a few potential reasons and improvements:
+def is_3_oxo_5beta_steroid(smiles: str):
+    """
+    Determines if a molecule is a 3-oxo-5beta-steroid based on its SMILES string.
+    A 3-oxo-5beta-steroid is a steroid with a ketone at position 3 and beta configuration at position 5.
 
-1. **Rigid SMARTS patterns**: The SMARTS patterns used for detecting the ketone at position 3 and the beta configuration at position 5 are very specific and rigid. They may not account for all possible variations in the steroid backbone structure, such as different substituents or ring conformations. This could lead to false negatives for valid 3-oxo-5beta-steroids.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   **Improvement**: Use more flexible SMARTS patterns that can accommodate a wider range of steroid backbone structures. Alternatively, consider using a substructure matching approach with individual functional group and ring fragment patterns instead of a single, rigid pattern.
+    Returns:
+        bool: True if molecule is a 3-oxo-5beta-steroid, False otherwise
+        str: Reason for classification
+    """
 
-2. **Incomplete steroid backbone patterns**: The steroid backbone patterns used in the `is_steroid_backbone` function may not cover all possible steroid backbone structures, leading to false negatives for valid 3-oxo-5beta-steroids with slightly different backbones.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-   **Improvement**: Review the steroid backbone patterns and consider adding more variations or using a more generalized approach to detect the steroid backbone.
+    # Look for ketone at position 3
+    ketone_pattern = Chem.MolFromSmarts("[CX3](=O)[CX3]")
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    if not ketone_matches:
+        return False, "No ketone group found at position 3"
 
-3. **Stereochemistry handling**: The current program relies heavily on the correct stereochemistry information being present in the input SMILES strings. If the stereochemistry is not specified correctly or is missing, the program may fail to correctly identify the ketone at position 3 or the beta configuration at position 5.
+    # Look for beta configuration at position 5
+    beta_pattern = Chem.MolFromSmarts("[C@@H]1[C@H](CC[C@@]2([C@]1([C@H]([C@@]3([C@H](CC2)C)C)(C)C)C)C")
+    if not mol.HasSubstructMatch(beta_pattern):
+        return False, "No beta configuration found at position 5"
 
-   **Improvement**: Implement a more robust stereochemistry handling approach, such as using the `AllChem.EmbedMolecule` function from RDKit to generate 3D coordinates and perceive stereochemistry, or using alternative methods for stereochemistry detection.
+    # Check if molecule is a steroid
+    steroid_pattern = Chem.MolFromSmarts("[C@]12CC[C@@]3([C@@]1(CCC[C@@H]2O)C)[C@H](CC[C@@H]4[C@]3(CCC(=O)C[C@@H]4)C)C"
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "Not a steroid backbone"
 
-4. **Combinatorial approach**: Instead of relying solely on SMARTS patterns, consider a more combinatorial approach that incorporates multiple structural features and properties of 3-oxo-5beta-steroids. This could include checking for specific functional groups, ring systems, molecular weight ranges, and other relevant properties.
-
-   **Improvement**: Implement a more comprehensive set of checks and combine the results using logical operations to improve the overall classification accuracy.
-
-5. **Handling exceptions and outliers**: It's important to note that the benchmark used for evaluation may have occasional and systematic mistakes. If the classifications made by your program are consistent with your understanding of the chemical class, you can consider ignoring outliers or false negatives, provided you can justify your reasoning.
-
-   **Improvement**: Carefully review the false negatives and false positives, and if you believe your program's classifications are correct, document your reasoning for ignoring those outliers.
-
-By addressing these potential issues and incorporating the suggested improvements, you may be able to enhance the accuracy and robustness of your program in classifying 3-oxo-5beta-steroids.
+    return True, "Molecule contains a ketone at position 3 and beta configuration at position 5 on a steroid backbone"
