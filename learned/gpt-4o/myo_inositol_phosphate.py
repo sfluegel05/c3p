@@ -22,20 +22,24 @@ def is_myo_inositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for cyclohexane core with exact hydroxyl position (stereochemistry included)
-    # In myo-inositol, all hydroxyl groups are oriented in a specific manner
-    myo_inositol_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)[C@H]1(O)")
-    if not mol.HasSubstructMatch(myo_inositol_pattern):
-        return False, "Molecule does not match the myo-inositol configuration"
-    
-    # Search for phosphate groups - note that phosphates can be complex with different charged states
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)[O-]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    # Check for the correct core of myo-inositol (cyclohexane with alternating stereochemistry for hydroxyl groups)
+    myo_inositol_core = Chem.MolFromSmarts("C1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
+    if not mol.HasSubstructMatch(myo_inositol_core):
+        return False, "Molecule does not match the myo-inositol core configuration"
+
+    # Search for general phosphate groups
+    phosphate_patterns = [
+        Chem.MolFromSmarts("OP(O)(=O)[O-]"),
+        Chem.MolFromSmarts("OP(O)(=O)O")
+    ]
+
+    phosphate_matches = sum(mol.HasSubstructMatch(phosphate) for phosphate in phosphate_patterns)
+    if not phosphate_matches:
         return False, "No phosphate groups found"
-    
-    # Count number of phosphate groups, expecting at least one
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) == 0:
-        return False, "Insufficient phosphate groups to qualify as myo-inositol phosphate"
+
+    # Ensure there are no long carbon chains which indicate non-inositol components (e.g., fats)
+    longest_chain = max(len(chain) for chain in Chem.rdmolops.GetMolFrags(mol, asMols=False))
+    if longest_chain > 6:
+        return False, "Long carbon chain detected, possibly non-inositol component"
 
     return True, "Molecule contains myo-inositol core with phosphate groups attached"
