@@ -6,6 +6,7 @@ Classifies: CHEBI:15955 monosaccharide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_monosaccharide(smiles: str):
     """
@@ -26,8 +27,9 @@ def is_monosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbons, oxygens
+    # Count carbons, hydrogens, oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
     # Must have at least 3 carbons
@@ -43,30 +45,24 @@ def is_monosaccharide(smiles: str):
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
 
-    # Check for polyhydroxy (at least 2 hydroxyls, allowing for deoxy sugars)
-    if hydroxyl_count < 2:
+    # Check for polyhydroxy (at least 3 hydroxyls)
+    if hydroxyl_count < 3:
         return False, "Not enough hydroxyl groups for monosaccharide"
 
-    # Check for ring structures
-    ring_info = mol.GetRingInfo()
-    if ring_info.AtomRings():
-        # Molecule contains ring structures
-        # Ensure rings contain carbonyl and hydroxyl groups
-        has_carbonyl_in_ring = False
-        has_hydroxyl_in_ring = False
-        for ring in ring_info.AtomRings():
-            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-            ring_smarts = Chem.MolToSmarts(Chem.PathToSubmol(mol, ring_atoms, canonicalOrder=False))
-            if mol.HasSubstructMatch(Chem.MolFromSmarts(f"{ring_smarts}C(=O)")):
-                has_carbonyl_in_ring = True
-            if mol.HasSubstructMatch(Chem.MolFromSmarts(f"{ring_smarts}[OX2H]")):
-                has_hydroxyl_in_ring = True
-        if not (has_carbonyl_in_ring and has_hydroxyl_in_ring):
-            return False, "Ring structures do not contain carbonyl and hydroxyl groups"
-    else:
-        # Check for linear aldose or ketose pattern
-        linear_pattern = Chem.MolFromSmarts("[CH2](C(=O))[CH](O)[CH](O)[CH](O)*")
-        if not mol.HasSubstructMatch(linear_pattern):
-            return False, "Does not match linear aldose or ketose pattern"
+    # Check for glycosidic bonds (shouldn't have any)
+    glycosidic_pattern = Chem.MolFromSmarts("[OX2][CX4][OX2]")
+    if mol.HasSubstructMatch(glycosidic_pattern):
+        return False, "Contains glycosidic bonds, not a monosaccharide"
 
-    return True, "Contains carbonyl group and at least 2 hydroxyls, meets monosaccharide criteria"
+    # Check hydrogen deficiency (for ring structures)
+    hd = rdMolDescriptors.CalcHydrogenDeficiency(mol)
+    if hd > 2:
+        return False, "Hydrogen deficiency too high, likely polycyclic"
+
+    # Additional checks based on counts
+    if h_count < 2 * o_count:
+        return False, "Too few hydrogens for the number of oxygens"
+    if c_count > 8:
+        return False, "Carbon chain too long for monosaccharide"
+
+    return True, "Contains carbonyl group and at least 3 hydroxyls without glycosidic bonds"
