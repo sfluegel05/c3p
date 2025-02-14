@@ -22,11 +22,17 @@ def is_primary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a primary amine (N with 2 hydrogens and 1 bond to any other atom)
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2]~[!H]")
+    # Check each nitrogen atom
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7: # Check if the atom is Nitrogen
+            num_h = 0
+            num_non_h = 0
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 1: # If neighbor is H, then count
+                    num_h +=1
+                else:
+                   num_non_h +=1 #if it is not H, then count it as non-H
+            if num_non_h == 1 and (num_h <= 2):
+                return True, "Contains a primary amine"
 
-    # Check for the substructure match
-    if mol.HasSubstructMatch(primary_amine_pattern):
-        return True, "Contains a primary amine"
-    else:
-        return False, "Does not contain a primary amine"
+    return False, "Does not contain a primary amine"
