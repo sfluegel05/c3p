@@ -27,29 +27,25 @@ def is_anilide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the anilide core structure
-    anilide_pattern = Chem.MolFromSmarts("c1ccc(cc1)NC(=O)")
-    anilide_matches = mol.GetSubstructMatches(anilide_pattern)
+    # Look for aniline substructure (aromatic ring with NH2 group)
+    aniline_pattern = Chem.MolFromSmarts("c1ccc(cc1)N")
+    aniline_matches = mol.GetSubstructMatches(aniline_pattern)
 
-    if not anilide_matches:
-        return False, "Does not contain the anilide core structure"
+    # Look for amide group (-C(=O)N-)
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
 
-    # Ensure the entire aromatic system is aromatic
-    aromatic_atoms = [mol.GetAtomWithIdx(idx).GetIsAromatic() for match in anilide_matches for idx in match]
-    if not all(aromatic_atoms):
-        return False, "The aromatic system is not fully aromatic"
+    # Check if aniline and amide groups are connected
+    connected = False
+    for aniline_match in aniline_matches:
+        for amide_match in amide_matches:
+            aniline_atom = aniline_match[0]
+            amide_atom = amide_match[1]
+            if mol.GetBondBetweenAtoms(aniline_atom, amide_atom):
+                connected = True
+                break
 
-    # Check for common substituents on the aromatic ring(s)
-    allowed_substituents = "[Cl,Br,I,F,#17,#35,#53,#16,#7,#6]"  # Halogens, -NH2, -NO2, -OH, alkyls, aryls
-    substituent_pattern = Chem.MolFromSmarts(f"c1ccc(cc1)NC(=O)[{allowed_substituents}]")
-    substituent_matches = mol.GetSubstructMatches(substituent_pattern)
-
-    if not substituent_matches:
-        return False, "The substituents on the aromatic ring(s) are not allowed"
-
-    # Check molecular weight
-    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 150 or mol_weight > 500:
-        return False, "Molecular weight outside the typical range for anilides"
-
-    return True, "Contains an aromatic amide group connected to an aromatic ring, characteristic of anilides"
+    if connected:
+        return True, "Contains aniline group connected to an amide group"
+    else:
+        return False, "Aniline and amide groups are not connected"
