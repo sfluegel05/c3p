@@ -25,53 +25,57 @@ def is_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define SMARTS pattern for thioester linkage (-C(=O)-S-)
+
+    # Check for thioester linkage (-C(=O)-S-)
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
-    # Check for thioester linkage
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
-    
-    # Define SMARTS pattern for adenosine moiety in coenzyme A
-    adenosine_pattern = Chem.MolFromSmarts("n1c2ncnc2n(c1)[C@H]3O[C@H](CO)[C@@H](O)[C@H]3O")
+
+    # Simplify adenosine moiety pattern (remove stereochemistry)
+    adenosine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")
     if not mol.HasSubstructMatch(adenosine_pattern):
         return False, "No adenosine moiety found, not coenzyme A"
-    
-    # Define SMARTS pattern for pantetheine unit in coenzyme A
-    pantetheine_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP")
+
+    # Simplify pantetheine moiety pattern
+    pantetheine_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)C(O)C(C)(C)COP")
     if not mol.HasSubstructMatch(pantetheine_pattern):
         return False, "No pantetheine moiety found, not coenzyme A"
 
+    # Check for full coenzyme A structure
+    coenzymeA_pattern = Chem.MolFromSmarts("O=C(NCCSC=O)CCNC(=O)C(O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@H]1O)n2cnc3c(n2)nc(N)[nH]c3=O")
+    if not mol.HasSubstructMatch(coenzymeA_pattern):
+        return False, "Full coenzyme A structure not found"
+
     # Check for fatty acyl chain attached via thioester linkage
-    # Look for long carbon chains attached to the carbonyl of thioester
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("C(=O)SCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP")
-    if not mol.HasSubstructMatch(fatty_acid_chain_pattern):
+    # The fatty acyl chain is connected to the carbonyl carbon of the thioester
+    fatty_acyl_pattern = Chem.MolFromSmarts("C(=O)[CH2][CH2]")
+    fatty_acyl_matches = mol.GetSubstructMatches(fatty_acyl_pattern)
+    if not fatty_acyl_matches:
         return False, "No fatty acyl chain attached via thioester linkage found"
 
-    # Optional: Check length of fatty acyl chain (typically >4 carbons)
-    # Get the carbon count in the fatty acyl chain
-    fatty_acyl_chain = Chem.MolFromSmarts("C(=O)[CX4]")
-    matches = mol.GetSubstructMatches(fatty_acyl_chain)
-    fatty_chain_lengths = []
-    for match in matches:
-        carbon = mol.GetAtomWithIdx(match[1])
-        chain_length = 1  # Start with 1 carbon
-        # Traverse the carbon chain
-        atoms_visited = set()
-        atoms_to_visit = [carbon.GetIdx()]
-        while atoms_to_visit:
-            atom_idx = atoms_to_visit.pop()
-            if atom_idx in atoms_visited:
-                continue
-            atoms_visited.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:  # Carbon
-                chain_length += 1
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in atoms_visited:
-                        atoms_to_visit.append(neighbor.GetIdx())
-        fatty_chain_lengths.append(chain_length)
-    if not fatty_chain_lengths or max(fatty_chain_lengths) < 5:
-        return False, "Fatty acyl chain is too short"
+    # Determine length of fatty acyl chain (should be >4 carbons)
+    # Start from the thioester carbonyl carbon and traverse the chain
+    carbonyl_carbons = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)S"))
+    if not carbonyl_carbons:
+        return False, "No thioester carbonyl carbon found"
+    carbonyl_carbon_idx = carbonyl_carbons[0][0]
+    chain_length = 0
+    visited = set()
+    to_visit = [mol.GetAtomWithIdx(carbonyl_carbon_idx)]
+    while to_visit:
+        atom = to_visit.pop()
+        if atom.GetIdx() in visited:
+            continue
+        visited.add(atom.GetIdx())
+        if atom.GetAtomicNum() == 6:  # Carbon
+            chain_length += 1
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                    # Avoid traversing back to the coenzyme A moiety
+                    if neighbor.HasSubstructMatch(Chem.MolFromSmarts("SCCNC(=O)")):
+                        continue
+                    to_visit.append(neighbor)
+    if chain_length <= 4:
+        return False, f"Fatty acyl chain is too short ({chain_length} carbons)"
 
     return True, "Contains coenzyme A moiety with fatty acyl chain attached via thioester linkage"
