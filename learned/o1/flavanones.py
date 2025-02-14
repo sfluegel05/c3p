@@ -21,52 +21,39 @@ def is_flavanones(smiles: str):
         bool: True if molecule is a flavanone, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone core SMARTS pattern
-    # Core structure: 3,4-dihydro-2-aryl-2H-1-benzopyran-4-one
-    flavanone_smarts = """
-    [$([cR1]:[cR1]:[cR1]:[cR1]:[cR1]:[cR1])]Ar-[C@@H]1CC(=O)O[c]2[cH][cH][cH][cH]2C1
-    """
+    # Define the chroman-4-one core SMARTS pattern
+    chromanone_smarts = '[O]=C1CCCOc2ccccc12'  # Chroman-4-one core fused with an aromatic ring
+    chromanone_pattern = Chem.MolFromSmarts(chromanone_smarts)
+    if chromanone_pattern is None:
+        return None, "Error in defining chroman-4-one SMARTS pattern"
 
-    flavanone_pattern = Chem.MolFromSmarts(flavanone_smarts.strip())
+    if not mol.HasSubstructMatch(chromanone_pattern):
+        return False, "Does not contain chroman-4-one core"
 
-    if flavanone_pattern is None:
-        return None, "Error in defining flavanone SMARTS pattern"
+    # Now check if the carbon at position 2 is connected to an aryl group
+    matches = mol.GetSubstructMatches(chromanone_pattern)
+    for match in matches:
+        # Atom indices in chromanone_smarts:
+        # 0: O of ketone
+        # 1: C (ketone carbon)
+        # 2: C at position 2
+        # 3: C
+        # 4: C
+        # 5: O in ring
+        # 6-11: Aromatic ring fused to heterocycle
 
-    # Check for flavanone core
-    if not mol.HasSubstructMatch(flavanone_pattern):
-        # Try alternative patterns due to variability in representations
-        flavanone_smarts_alt = """
-        O=C1[C@H](Cc2ccccc2)Oc3ccccc13
-        """
-        flavanone_pattern_alt = Chem.MolFromSmarts(flavanone_smarts_alt.strip())
-        if flavanone_pattern_alt is None:
-            return None, "Error in defining alternative flavanone SMARTS pattern"
+        atom_idx_C2 = match[2]  # Carbon at position 2
+        atom_C2 = mol.GetAtomWithIdx(atom_idx_C2)
+        for bond in atom_C2.GetBonds():
+            nbr_atom = bond.GetOtherAtom(atom_C2)
+            nbr_idx = nbr_atom.GetIdx()
+            if nbr_idx in match:
+                continue  # Skip atoms in the chromanone core
+            if nbr_atom.GetIsAromatic() and nbr_atom.IsInRing():
+                return True, "Contains flavanone core with aryl group at position 2"
 
-        if not mol.HasSubstructMatch(flavanone_pattern_alt):
-            return False, "Does not contain flavanone core structure"
-
-    # Additional checks
-    # Ensure the molecule has exactly 3 rings (2 aromatic, 1 heterocyclic)
-    ri = mol.GetRingInfo()
-    if ri.NumRings() < 3:
-        return False, "Insufficient number of rings for flavanone structure"
-
-    aromatic_rings = 0
-    heteroatom_in_ring = False
-    for ring in ri.BondRings():
-        ring_atoms = [mol.GetBondWithIdx(bidx).GetBeginAtom().GetIdx() for bidx in ring]
-        is_aromatic = all(mol.GetAtomWithIdx(aidx).GetIsAromatic() for aidx in ring_atoms)
-        if is_aromatic:
-            aromatic_rings += 1
-        for aidx in ring_atoms:
-            if mol.GetAtomWithIdx(aidx).GetAtomicNum() not in [6, 1]:  # Not carbon or hydrogen
-                heteroatom_in_ring = True
-    if aromatic_rings < 2 or not heteroatom_in_ring:
-        return False, "Ring structure does not match flavanone characteristics"
-
-    return True, "Contains flavanone core structure"
+    return False, "Does not have aryl group attached at position 2 of chromanone core"
