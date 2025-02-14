@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_carboxamidine(smiles: str):
     """
     Determines if a molecule is a carboxamidine based on its SMILES string.
-    A carboxamidine is characterized by the presence of a -C(=N)-NR2 group.
+    A carboxamidine is characterized by the presence of a -C(=NR)NR2 group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,8 +21,11 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define carboxamidine SMARTS pattern
-    carboxamidine_pattern = Chem.MolFromSmarts("C(=N)[N&R]")  # Simplified pattern for carboxamidine
+    # Define a more accurate carboxamidine SMARTS pattern
+    carboxamidine_pattern = Chem.MolFromSmarts("N=C(N)N")  # Specific pattern for carboxamidine
+
+    # Adjust pattern matching to recognize we want these to be connected.
+    # This attempts to identify the C(=N)-N pattern more reliably
     if mol.HasSubstructMatch(carboxamidine_pattern):
         return True, "Contains carboxamidine group (-C(=N)-NR2)"
 
@@ -30,4 +33,4 @@ def is_carboxamidine(smiles: str):
 
 # Example usage:
 # test_smiles = "NC(=N)c1ccccc1"  # benzamidine
-# is_carboxamidine(test_smiles)
+# print(is_carboxamidine(test_smiles))
