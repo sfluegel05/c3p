@@ -5,14 +5,14 @@ Classifies: CHEBI:25413 monounsaturated fatty acid
 Classifies: monounsaturated fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_monounsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a monounsaturated fatty acid based on its SMILES string.
-    A monounsaturated fatty acid has a carboxylic acid group and a long unbranched carbon chain
-    with exactly one double or triple bond (excluding the carboxylic acid group), and singly bonded carbon atoms in the rest of the chain.
-    Hydroxyl groups may be present on the chain.
+    A monounsaturated fatty acid has a carboxylic acid group and a long carbon chain
+    with exactly one double or triple bond, and singly bonded carbon atoms in the rest of the chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,100 +23,64 @@ def is_monounsaturated_fatty_acid(smiles: str):
     """
 
     # Parse SMILES
-    mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Look for carboxylic acid group
-    carboxylic_acid = Chem.MolFromSmarts("C(=O)O")
-    matches = mol.GetSubstructMatches(carboxylic_acid)
-    if not matches:
+    carboxylic_acid = Chem.MolFromSmarts("C(=O)[O;H1]")
+    if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
-    if len(matches) > 1:
-        return False, "More than one carboxylic acid group found"
+    # Get the indices of the carboxylic acid carbon
+    carboxy_matches = mol.GetSubstructMatches(carboxylic_acid)
+    carboxy_carbons = [match[0] for match in carboxy_matches]
+    if not carboxy_carbons:
+        return False, "No carboxylic acid carbon found"
+    carboxy_carbon_idx = carboxy_carbons[0]
 
-    # Get the carboxylic acid carbon atom index
-    carboxy_c_idx = matches[0][0]
-
-    # Recursively find the longest unbranched carbon chain starting from carboxylic carbon
-    def find_longest_chain(current_idx, visited):
-        atom = mol.GetAtomWithIdx(current_idx)
+    # Identify the longest carbon chain starting from the carboxylic acid carbon
+    def get_longest_chain(atom_idx, visited):
+        atom = mol.GetAtomWithIdx(atom_idx)
         if atom.GetAtomicNum() != 6:
-            return [], []
-
-        visited.add(current_idx)
-        max_chain = [current_idx]
-        max_bonds = []
+            return []
+        visited.add(atom_idx)
+        max_chain = []
         for neighbor in atom.GetNeighbors():
             neighbor_idx = neighbor.GetIdx()
-            bond = mol.GetBondBetweenAtoms(current_idx, neighbor_idx)
-            if neighbor_idx not in visited:
-                neighbor_atom = mol.GetAtomWithIdx(neighbor_idx)
-                if neighbor_atom.GetAtomicNum() == 6 or (neighbor_atom.GetAtomicNum() == 8 and neighbor_atom.GetDegree() == 1):
-                    # Exclude branching in carbon atoms (degree > 2)
-                    if neighbor_atom.GetAtomicNum() == 6 and neighbor_atom.GetDegree() > 2:
-                        continue
-                    chain, bonds = find_longest_chain(neighbor_idx, visited)
-                    chain = [current_idx] + chain
-                    bonds = [bond.GetIdx()] + bonds
-                    if len(chain) > len(max_chain):
-                        max_chain = chain
-                        max_bonds = bonds
-        visited.remove(current_idx)
-        return max_chain, max_bonds
+            if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
+                chain = get_longest_chain(neighbor_idx, visited.copy())
+                if len(chain) > len(max_chain):
+                    max_chain = chain
+        return [atom_idx] + max_chain
 
-    longest_chain, chain_bonds = find_longest_chain(carboxy_c_idx, set())
-    if len(longest_chain) <= 1:
-        return False, "No carbon chain found attached to carboxylic acid"
+    longest_chain = get_longest_chain(carboxy_carbon_idx, set())
+    if len(longest_chain) < 2:
+        return False, "Chain is too short to be a fatty acid"
 
-    chain_mol = Chem.PathToSubmol(mol, chain_bonds)
-
-    # Check for rings in the chain
-    sssr = Chem.GetSSSR(chain_mol)
-    if sssr > 0:
-        return False, "Chain contains rings"
-
-    # Count the number of double and triple bonds in the chain, excluding the carboxylic acid
+    # Count double and triple bonds in the chain
     unsaturation_count = 0
-    for bond in chain_mol.GetBonds():
-        bond_type = bond.GetBondType()
-        begin_idx = bond.GetBeginAtomIdx()
-        end_idx = bond.GetEndAtomIdx()
-        if carboxy_c_idx in [begin_idx, end_idx]:
-            continue  # Skip bonds involving carboxylic acid carbon
-        if bond_type in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]:
+    for i in range(len(longest_chain) - 1):
+        bond = mol.GetBondBetweenAtoms(longest_chain[i], longest_chain[i+1])
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE or bond.GetBondType() == Chem.rdchem.BondType.TRIPLE:
             unsaturation_count += 1
+            bond_type = bond.GetBondType()
+        elif bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
+            return False, "Non-single bond found that is not double or triple"
 
     if unsaturation_count == 0:
         return False, "No double or triple bonds found in the chain"
     elif unsaturation_count > 1:
         return False, f"More than one double or triple bond found in the chain ({unsaturation_count} unsaturations)"
 
-    # Check that the rest of the chain contains singly bonded carbons (allowing for hydroxyl groups)
-    for atom in chain_mol.GetAtoms():
-        idx = atom.GetIdx()
-        atomic_num = atom.GetAtomicNum()
-        if idx == carboxy_c_idx:
-            continue  # Skip carboxylic acid carbon
-        if atomic_num == 6:  # Carbon atom
-            num_multiple_bonds = sum(1 for bond in atom.GetBonds()
-                                     if bond.GetBondType() in [Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]
-                                     and bond.GetOtherAtom(atom).GetIdx() in longest_chain)
-            if num_multiple_bonds > 1:
-                return False, "Carbon atom in chain has more than one unsaturation"
-            if atom.GetDegree() > 2:
-                return False, "Chain is branched at carbon atom"
-        elif atomic_num == 8:  # Oxygen atom
-            # Allow hydroxyl groups (oxygen with degree 1)
-            if atom.GetDegree() != 1:
-                return False, "Oxygen atom in chain with invalid bonding"
-        else:
-            return False, "Chain contains atoms other than carbon and oxygen"
+    # Check that other bonds are single bonds
+    for i in range(len(longest_chain) - 1):
+        bond = mol.GetBondBetweenAtoms(longest_chain[i], longest_chain[i+1])
+        if bond.GetBondType() not in [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE, Chem.rdchem.BondType.TRIPLE]:
+            return False, "Bond type not single, double, or triple found in chain"
 
-    # Optionally, adjust chain length criteria
-    num_carbons_in_chain = sum(1 for idx in longest_chain if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-    if num_carbons_in_chain < 2:
-        return False, "Chain is too short to be a fatty acid"
-
-    return True, "Molecule is a monounsaturated fatty acid"
+    # Ensure rest of the chain is saturated
+    if unsaturation_count == 1:
+        return True, "Molecule is a monounsaturated fatty acid"
+    else:
+        return False, "Unsaturation count does not match monounsaturated fatty acid definition"
