@@ -24,7 +24,7 @@ def is_cholesteryl_ester(smiles: str):
 
     # Define the cholesterol core substructure using SMARTS - generalized
     # The ring structure and connectivity is essential. Specific chirality or position of double bond are not.
-    cholesterol_core = Chem.MolFromSmarts("[C]1[C]2[C][C]3[C]([C]1[C])CC[C]4[C]3[C]C[C]([C]2)[C]4[O]")
+    cholesterol_core = Chem.MolFromSmarts("[C]1[C]2[C]=[C]3[C]([C]1[C])CC[C]4[C]3[C]C[C]([C]2)[C]4[OX2]")
     
 
     # Find matches for the core structure
