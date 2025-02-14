@@ -5,7 +5,6 @@ Classifies: CHEBI:27283 very long-chain fatty acid
 Classifies: very long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_very_long_chain_fatty_acid(smiles: str):
     """
@@ -25,70 +24,55 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify carboxylic acid group (C(=O)O[H] or deprotonated form)
-    carboxylic_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H0-1]')
-    if carboxylic_acid_pattern is None:
-        return False, "Invalid SMARTS pattern for carboxylic acid"
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_acid_matches:
+    # Identify carboxylic acid group (O=C-O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if not matches:
         return False, "No carboxylic acid group found"
 
-    # Exclude molecules with ester or amide functional groups connected to the chain
-    ester_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2][!H]')
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if ester_matches:
-        return False, "Ester functional group(s) found"
+    # Use the first carboxylic acid group found
+    carboxylic_c_idx = matches[0][0]  # Carbonyl carbon index
 
-    amide_pattern = Chem.MolFromSmarts('[CX3](=O)[NX3][!$([NX3][H2])]')
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if amide_matches:
-        return False, "Amide functional group(s) found"
+    # Identify terminal carbons (degree 1 carbons excluding the carboxylic carbon)
+    terminal_carbons = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            idx = atom.GetIdx()
+            if idx == carboxylic_c_idx:
+                continue  # Skip the carboxylic carbon
+            neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+            if len(neighbors) == 1:
+                terminal_carbons.append(idx)
 
-    # Identify the aliphatic chain attached to the carboxyl group
-    # We will find the longest path starting from the carbonyl carbon
-    fatty_acid = False
+    # Initialize maximum chain length
     max_chain_length = 0
-    reason = ""
 
-    for match in carboxylic_acid_matches:
-        carbonyl_c_idx = match[0]
-        carbonyl_c_atom = mol.GetAtomWithIdx(carbonyl_c_idx)
+    # Compute the longest linear carbon chain starting from the carboxylic carbon
+    for t_c_idx in terminal_carbons:
+        # Get shortest path between carboxylic carbon and terminal carbon
+        path = Chem.rdmolops.GetShortestPath(mol, carboxylic_c_idx, t_c_idx)
+        carbons_in_path = [idx for idx in path if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
 
-        # Perform a search for the longest aliphatic chain starting from the carbonyl carbon
-        visited = set()
-        stack = [(carbonyl_c_idx, 0)]  # (atom_idx, chain_length)
+        # Check for branching in the chain
+        branching = False
+        for idx in carbons_in_path[1:-1]:  # Exclude end carbons
+            atom = mol.GetAtomWithIdx(idx)
+            neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+            if len(neighbors) != 2:
+                branching = True
+                break
+        if branching:
+            continue  # Skip this path due to branching
 
-        while stack:
-            current_idx, chain_length = stack.pop()
-            visited.add(current_idx)
-            current_atom = mol.GetAtomWithIdx(current_idx)
+        # Update maximum chain length
+        chain_length = len(carbons_in_path)
+        if chain_length > max_chain_length:
+            max_chain_length = chain_length
 
-            # Exclude non-carbon atoms
-            if current_atom.GetAtomicNum() != 6:
-                continue
-
-            # Update maximum chain length
-            if chain_length > max_chain_length:
-                max_chain_length = chain_length
-
-            for neighbor in current_atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx not in visited:
-                    bond = mol.GetBondBetweenAtoms(current_idx, neighbor_idx)
-                    # Exclude cycles
-                    if bond.IsInRing():
-                        continue
-                    # Exclude backward to carboxyl oxygens
-                    if neighbor.GetAtomicNum() == 8:
-                        continue
-                    # Include only single, double, or triple bonds (to account for unsaturation)
-                    if bond.GetBondType() in (rdchem.BondType.SINGLE, rdchem.BondType.DOUBLE, rdchem.BondType.TRIPLE):
-                        stack.append((neighbor_idx, chain_length + 1))
+    if max_chain_length == 0:
+        return False, "No linear carbon chain found"
 
     if max_chain_length > 22:
-        fatty_acid = True
-        reason = f"Longest carbon chain length is {max_chain_length}, which is greater than 22"
+        return True, f"Chain length is {max_chain_length}, which is greater than 22"
     else:
-        reason = f"Longest carbon chain length is {max_chain_length}, which is not greater than 22"
-
-    return fatty_acid, reason
+        return False, f"Chain length is {max_chain_length}, which is not greater than 22"
