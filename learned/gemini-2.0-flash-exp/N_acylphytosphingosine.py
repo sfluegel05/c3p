@@ -25,7 +25,7 @@ def is_N_acylphytosphingosine(smiles: str):
     # 1. Check for phytosphingosine backbone using SMARTS
     #   - The pattern checks for C-C(O)-C(O)-C(N)-C(O) where the N atom is connected to three other atoms (to identify the N in the chain)
     #   - The 3 chiral centers are not enforced. This avoids errors in molecules that have stereoisomers or unspecified stereocenters.
-    phytosphingosine_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2])[CHX4]([OX2])[CHX4]([NX3])[CHX4]([OX2])") 
+    phytosphingosine_pattern = Chem.MolFromSmarts("[CH2][CH](O)[CH](O)[CH](N)[CH](O)")
     if not mol.HasSubstructMatch(phytosphingosine_pattern):
        return False, "Phytosphingosine backbone not found"
 
