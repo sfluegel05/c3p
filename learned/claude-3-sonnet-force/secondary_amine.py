@@ -7,7 +7,7 @@ A compound formally derived from ammonia by replacing two hydrogen atoms by hydr
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_secondary_amine(smiles: str):
     """
@@ -38,23 +38,24 @@ def is_secondary_amine(smiles: str):
     if n_atom.GetIsAromatic():
         return False, "Nitrogen atom is aromatic, should be aliphatic"
     
-    # Check for charges on nitrogen
-    if n_atom.GetFormalCharge() != 0:
-        return False, "Nitrogen atom has a formal charge"
+    # Get the hydrocarbyl groups attached to the nitrogen atom
+    hydrocarbyl_groups = [bond.GetOtherAtom(n_atom) for bond in n_atom.GetBonds()]
+    hydrocarbyl_groups = [atom for atom in hydrocarbyl_groups if atom.GetAtomicNum() in [6, 7]]
     
-    # Count substituents attached to nitrogen
-    n_substituents = sum(1 for bond in n_atom.GetBonds() if bond.GetOtherAtom(n_atom).GetAtomicNum() not in [1, 6, 7, 8, 16])
-    if n_substituents > 0:
-        return False, "Nitrogen atom has additional substituents besides C, N, O, S"
+    # Check if there are exactly two hydrocarbyl groups
+    if len(hydrocarbyl_groups) != 2:
+        return False, "Nitrogen atom does not have exactly two hydrocarbyl groups attached"
     
-    # Check if nitrogen has at least two substituents (C, N, O, S)
-    n_subs = sum(1 for bond in n_atom.GetBonds() if bond.GetOtherAtom(n_atom).GetAtomicNum() in [6, 7, 8, 16])
-    if n_subs < 2:
-        return False, "Nitrogen atom has less than two substituents (C, N, O, S)"
-    
-    # Check if molecule is neutral
-    mol_charge = rdMolDescriptors.CalcFormalCharge(mol)
-    if mol_charge != 0:
-        return False, f"Molecule has formal charge {mol_charge}, should be 0"
+    # Check if the hydrocarbyl groups are alkyl or aryl
+    for atom in hydrocarbyl_groups:
+        if atom.GetAtomicNum() == 6:  # Carbon
+            if not any(bond.GetIsAromatic() for bond in atom.GetBonds()):
+                continue  # Alkyl group
+            else:
+                aromatic_rings = Chem.GetSymmSSSR(mol)
+                if not any(atom.IsInRingOfSize(r.NumAtoms()) for r in aromatic_rings):
+                    return False, "Hydrocarbyl group is not alkyl or aryl"
+        else:  # Nitrogen
+            return False, "Nitrogen atom attached to another nitrogen atom"
     
     return True, "Contains a secondary aliphatic amine group"
