@@ -18,42 +18,27 @@ def is_11_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the steroid core (fused 4 ring system, with no explicit bond specifications)
-    steroid_core_smarts = "[C]1[C][C][C]2[C][C]([C]1)[C][C]3[C]([C]2)[C][C][C]4[C]3[C][C][C]4"
+    # Improved SMARTS pattern for the steroid core. The numbers in [] represent
+    # the ring positions that will be used for the subsequent 11-oxo SMARTS.
+    # The pattern also allows for unsaturations and substitution at positions
+    # that are not ring junctions.
+    steroid_core_smarts = "[C]1[C][C]([C])[C]2[C]([C]1)[C][C]3[C]([C]2)[C][C]4[C]([C]3)[C]([C])[C][C]4"
     steroid_core_pattern = Chem.MolFromSmarts(steroid_core_smarts)
-    
-    # Define SMARTS pattern for a carbonyl group (=O) attached to any carbon
-    carbonyl_smarts = "[C]~[C](=O)"
-    carbonyl_pattern = Chem.MolFromSmarts(carbonyl_smarts)
+
+    # SMARTS pattern for the 11-oxo group. It refers to the atom numbers of the core pattern.
+    # Note that, as specified on the document, 11-oxo means that there is a carbonyl at position 11.
+    # position 11 corresponds to the carbon with the number [C]3.
+    oxo_11_smarts = "[C]3=O"
+    oxo_11_pattern = Chem.MolFromSmarts(oxo_11_smarts)
 
     if not mol.HasSubstructMatch(steroid_core_pattern):
-         return False, "Not a steroid core."
-
-    #Check if a carbonyl group is attached to any carbon in the steroid.
-    matches = mol.GetSubstructMatches(carbonyl_pattern)
-    if not matches:
-        return False, "No carbonyl group"
+        return False, "Not a steroid core"
     
-    #check for any carbonyl that is not in the steroid
-    for match in matches:
-        for atom_idx in match:
-           atom = mol.GetAtomWithIdx(atom_idx)
-           if atom.IsInRing():
-              is_steroid_carbon = False
-              for atom_idx_ring in mol.GetSubstructMatch(steroid_core_pattern):
-                   if atom_idx == atom_idx_ring:
-                      is_steroid_carbon= True
-                      break
-              if not is_steroid_carbon:
-                continue
-              
-              # Get the neighbours of the carbonyl carbon
-              carbon_neighbors = [n.GetIdx() for n in atom.GetNeighbors()]
-              # Get the atom of the carbonyl oxygen
-              carbonyl_oxygen =  [a.GetIdx() for a in mol.GetAtoms() if a.GetSymbol() == 'O' and atom_idx in [n.GetIdx() for n in a.GetNeighbors()]]
+    # Combine both queries, to verify that the carbonyl group is at the 11 position
+    # defined in the steroid_core_smarts.
+    combined_smarts = steroid_core_smarts + "." + oxo_11_smarts
+    combined_pattern = Chem.MolFromSmarts(combined_smarts)
+    if not mol.HasSubstructMatch(combined_pattern):
+       return False, "No carbonyl group at position 11"
 
-              
-              if carbonyl_oxygen:
-                return True, "Steroid with a carbonyl group at position 11"
-              
-    return False, "No 11-oxo steroid"
+    return True, "11-oxo steroid"
