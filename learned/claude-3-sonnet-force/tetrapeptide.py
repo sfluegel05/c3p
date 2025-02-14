@@ -1,26 +1,83 @@
 """
 Classifies: CHEBI:48030 tetrapeptide
 """
-After analyzing the previous code and the outcomes, it seems that the approach used to identify tetrapeptides was correct in principle, but there might be some issues with the implementation or the test set used for evaluation.
+"""
+Classifies: CHEBI:25104 tetrapeptide
+A tetrapeptide is any molecule that contains four amino-acid residues connected by peptide linkages.
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential reasons for the failure and suggestions for improvement:
+# Define SMARTS patterns for common proteinogenic amino acids
+amino_acid_patterns = [
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[C@@H](C)O",  # Ala
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(C)=O",  # Val
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(C)(C)C",  # Leu
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(C)(C)O",  # Ile
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)O",  # Asp
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N",  # Asn
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](C(=O)O)CCC(C)C",  # Lys
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](CC(C)C)C(=O)O",  # Arg
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](CC[C@@H](C(=O)O)N)C(=O)O",  # Glu
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](CC(=O)N)C(=O)O",  # Gln
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(C)(C)S",  # Met
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](CC[C@@H](C(=O)O)O)C(=O)O",  # Ser
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](CO)C(=O)O",  # Thr
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O",  # Trp
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](Cc1ccc(cc1)O)C(=O)O",  # Tyr
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](Cc1cnc[nH]1)C(=O)O",  # His
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(C)(C)O",  # Thr
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](CS)C(=O)O",  # Cys
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(C)(C)N",  # Pro
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](CCC(=O)O)C(=O)O",  # Glu
+    "[NX3H2,NX4H3+][C@H](C(=O)O)[CH2]C(=O)N[C@@H](CCC(=O)N)C(=O)O"  # Gln
+]
 
-1. **Peptide bond pattern**: The SMARTS pattern used to match peptide bonds (`"[NX3][CX3](=[OX1])[NX3]"`) should be correct. However, it is worth double-checking if there are any edge cases or alternative representations of peptide bonds in the test set that might not be captured by this pattern.
+def is_tetrapeptide(smiles: str):
+    """
+    Determines if a molecule is a tetrapeptide based on its SMILES string.
+    A tetrapeptide is any molecule that contains four amino-acid residues connected by peptide linkages.
 
-2. **Amino acid residue pattern**: The pattern used to match amino acid residues (`"[NX3][C@H]([C,c])([C,c])C(=O)"`) is a generic pattern that matches any alpha-amino acid. However, it might be too broad and match other structures that are not necessarily amino acid residues. Consider using a more specific pattern or a combination of patterns to match common proteinogenic amino acids explicitly.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **N-terminus and C-terminus patterns**: The patterns used to match the N-terminus (`"[NX3H2]"`) and C-terminus (`"[CX3](=O)[OX2H1]"`) should be correct for standard peptides. However, there might be cases where the N-terminus or C-terminus is modified or capped, which could lead to misclassifications.
+    Returns:
+        bool: True if molecule is a tetrapeptide, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Test set quality**: It is possible that the test set used for evaluation contains incorrect or inconsistent classifications. As you mentioned, you do not have 100% confidence in the benchmark, so there might be systematic mistakes or outliers. In such cases, it is reasonable to trust your understanding of the chemical class and adjust the program accordingly, while explaining your reasoning.
+    # Check for peptide bonds
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]")
+    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    if len(peptide_bond_matches) != 3:
+        return False, f"Found {len(peptide_bond_matches)} peptide bonds, need exactly 3 for tetrapeptide"
 
-To improve the program, you could try the following:
+    # Check for amino acid residues
+    residues = []
+    for pattern in amino_acid_patterns:
+        residue_pattern = Chem.MolFromSmarts(pattern)
+        residue_matches = mol.GetSubstructMatches(residue_pattern)
+        residues.extend(residue_matches)
 
-1. **Refine the amino acid residue pattern**: Instead of using a generic pattern, consider using a combination of patterns to match specific proteinogenic amino acids explicitly. This will increase the specificity of the pattern and reduce false positives.
+    if len(set(residues)) != 4:
+        return False, f"Found {len(set(residues))} amino acid residues, need exactly 4 for tetrapeptide"
 
-2. **Handle modifications and variations**: Introduce additional patterns or checks to handle cases where the N-terminus, C-terminus, or peptide bonds are modified or capped. This can be done by identifying common modifications or variations and incorporating them into the pattern matching process.
+    # Check for correct N-terminus and C-terminus
+    n_terminus_pattern = Chem.MolFromSmarts("[NX3H2]")
+    c_terminus_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    n_terminus_matches = mol.GetSubstructMatches(n_terminus_pattern)
+    c_terminus_matches = mol.GetSubstructMatches(c_terminus_pattern)
 
-3. **Molecular weight and composition checks**: Incorporate additional checks based on the molecular weight and composition of the molecule. Tetrapeptides typically have a specific range of molecular weights and a certain composition of atoms (e.g., carbon, nitrogen, oxygen, and hydrogen). These checks can help filter out false positives and improve the accuracy of the classification.
+    if len(n_terminus_matches) != 1 or len(c_terminus_matches) != 1:
+        return False, "Incorrect N-terminus or C-terminus"
 
-4. **Consult additional resources**: If you have access to databases or literature that provide more information about the structural patterns and variations of tetrapeptides, consult them to refine your understanding and incorporate additional checks or patterns into the program.
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 800:
+        return False, "Molecular weight outside typical range for tetrapeptides"
 
-Remember, it is essential to use your judgment and chemical knowledge when dealing with potential outliers or inconsistencies in the benchmark. If you are confident that your program's classifications align with the scientific definition of tetrapeptides, you can choose to ignore the benchmark's mistakes and provide a clear explanation for your reasoning.
+    return True, "Molecule contains four amino acid residues connected by peptide linkages"
