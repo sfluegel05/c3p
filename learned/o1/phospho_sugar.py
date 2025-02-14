@@ -23,61 +23,46 @@ def is_phospho_sugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Flag to indicate if phospho sugar is found
-    phospho_sugar_found = False
+    # Define SMARTS pattern for phosphate group (considering various protonation states)
+    phosphate_smarts = Chem.MolFromSmarts('OP(=O)(O)O')  # Phosphate group
 
-    # Iterate over all phosphorus atoms in the molecule
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 15:  # Atomic number of phosphorus
-            p_atom = atom
-            neighbors = p_atom.GetNeighbors()
-            double_bonded_oxygens = 0
-            single_bonded_oxygens = []
-            # Analyze the bonds to phosphorus
-            for neighbor in neighbors:
-                if neighbor.GetAtomicNum() == 8:  # Oxygen
-                    bond = mol.GetBondBetweenAtoms(p_atom.GetIdx(), neighbor.GetIdx())
-                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        double_bonded_oxygens += 1
-                    elif bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                        single_bonded_oxygens.append(neighbor)
-            # Check for phosphate group: P bonded to one double-bonded O and three single-bonded O
-            if double_bonded_oxygens == 1 and len(single_bonded_oxygens) >=2:
-                # Check for ester linkage to carbon
-                for o_atom in single_bonded_oxygens:
-                    # Check if oxygen is connected to carbon
-                    for neighbor in o_atom.GetNeighbors():
-                        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != p_atom.GetIdx():
-                            c_atom = neighbor
-                            # Now check if carbon is part of a sugar ring
-                            # Get rings that include this carbon
-                            ring_info = mol.GetRingInfo()
-                            atom_rings = ring_info.AtomRings()
-                            for ring in atom_rings:
-                                if len(ring) == 5 or len(ring) == 6:
-                                    if c_atom.GetIdx() in ring:
-                                        # Check if ring consists of C and O atoms
-                                        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-                                        ring_atom_nums = [atom.GetAtomicNum() for atom in ring_atoms]
-                                        if all(num == 6 or num == 8 for num in ring_atom_nums):
-                                            # Check if carbons in ring have hydroxyl groups (O-H)
-                                            has_hydroxyls = True
-                                            for ring_atom in ring_atoms:
-                                                if ring_atom.GetAtomicNum() == 6:
-                                                    hydroxyl_found = False
-                                                    for neighbor in ring_atom.GetNeighbors():
-                                                        if neighbor.GetAtomicNum() == 8:
-                                                            bond = mol.GetBondBetweenAtoms(ring_atom.GetIdx(), neighbor.GetIdx())
-                                                            if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                                                                # Check if oxygen has a hydrogen (is a hydroxyl group)
-                                                                if neighbor.GetTotalNumHs() > 0:
-                                                                    hydroxyl_found = True
-                                                                    break
-                                                    if not hydroxyl_found:
-                                                        has_hydroxyls = False
-                                                        break
-                                            if has_hydroxyls:
-                                                phospho_sugar_found = True
-                                                return True, "Contains monosaccharide with an alcoholic hydroxy group esterified with phosphoric acid"
-    if not phospho_sugar_found:
-        return False, "No phospho sugar moiety found"
+    # Define SMARTS pattern for monosaccharide
+    # This pattern looks for a sugar ring (5 or 6 membered ring with oxygens and carbons)
+    sugar_smarts = Chem.MolFromSmarts('[#6,#8]1-[#6,#8]-[#6,#8]-[#6,#8]-[#6,#8]-1')
+
+    # Find matches for phosphate group
+    phosphate_matches = mol.GetSubstructMatches(phosphate_smarts)
+    if not phosphate_matches:
+        return False, "No phosphate group found"
+
+    # Find matches for sugar moiety
+    sugar_matches = mol.GetSubstructMatches(sugar_smarts)
+    if not sugar_matches:
+        return False, "No monosaccharide (sugar moiety) found"
+
+    # Check for ester linkage between sugar hydroxyl and phosphate group
+    # Look for an oxygen atom connected to both a sugar carbon and phosphorus
+    ester_found = False
+    for phosphate_match in phosphate_matches:
+        # Get phosphorus atom index
+        p_idx = phosphate_match[1]  # Phosphorus is the second atom in the pattern
+        p_atom = mol.GetAtomWithIdx(p_idx)
+        # Get oxygen atoms bonded to phosphorus
+        phosphate_oxygen_idxs = [nbr.GetIdx() for nbr in p_atom.GetNeighbors() if nbr.GetAtomicNum() == 8]
+        for sugar_match in sugar_matches:
+            # Get atoms in sugar ring
+            sugar_atom_idxs = list(sugar_match)
+            # Check for ester linkage
+            for idx in sugar_atom_idxs:
+                atom = mol.GetAtomWithIdx(idx)
+                # Look for oxygen atoms connected to this carbon
+                for nbr in atom.GetNeighbors():
+                    if nbr.GetAtomicNum() == 8:
+                        nbr_idx = nbr.GetIdx()
+                        # Check if this oxygen is connected to phosphorus
+                        if nbr_idx in phosphate_oxygen_idxs:
+                            ester_found = True
+                            return True, "Contains monosaccharide with an alcoholic hydroxy group esterified with phosphoric acid"
+
+    if not ester_found:
+        return False, "Phosphate group not esterified to monosaccharide hydroxyl group"
