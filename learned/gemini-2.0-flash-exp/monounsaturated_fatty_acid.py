@@ -3,7 +3,6 @@ Classifies: CHEBI:25413 monounsaturated fatty acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monounsaturated_fatty_acid(smiles: str):
     """
@@ -24,46 +23,52 @@ def is_monounsaturated_fatty_acid(smiles: str):
     # Check for carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O,OH]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
-      return False, "No carboxylic acid group found"
-    
-    # Count double and triple bonds
-    num_double_bonds = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
-    num_triple_bonds = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C#C")))
+        return False, "No carboxylic acid group found"
 
+    # Find the carbon chain connected to the carboxyl group
+    chain_pattern = Chem.MolFromSmarts("[CX4](=O)[O,OH]-[*;!H0]") # Carbon connected to carboxyl group
+    matches = mol.GetSubstructMatches(chain_pattern)
+
+    if not matches:
+        return False, "No carbon chain attached to the carboxyl group"
+
+    # Get the first carbon atom connected to the carboxyl group
+    start_atom_index = matches[0][0]  # Get index of the carbon in the carboxyl
+    
+    # Initialize an empty list to store the atoms in the chain
+    chain_atoms = [start_atom_index]
+
+    # Recursively follow the chain from the start atom
+    def find_chain(atom_index, visited_atoms, chain_atoms):
+      atom = mol.GetAtomWithIdx(atom_index)
+      neighbors = atom.GetNeighbors()
+      for neighbor in neighbors:
+        neighbor_index = neighbor.GetIdx()
+        if neighbor_index not in visited_atoms:
+            visited_atoms.add(neighbor_index)
+            bond = mol.GetBondBetweenAtoms(atom_index, neighbor_index)
+            if bond.GetBondType() == Chem.BondType.SINGLE and neighbor.GetAtomicNum() == 6:
+                  chain_atoms.append(neighbor_index)
+                  find_chain(neighbor_index,visited_atoms,chain_atoms)
+
+    visited_atoms = set([start_atom_index])
+    find_chain(start_atom_index, visited_atoms, chain_atoms)
+
+    chain_mol = Chem.PathToSubmol(mol, chain_atoms)
+    
+    # Count double and triple bonds within the chain
+    num_double_bonds = len(chain_mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
+    num_triple_bonds = len(chain_mol.GetSubstructMatches(Chem.MolFromSmarts("C#C")))
     total_unsaturations = num_double_bonds + num_triple_bonds
-    
+
     if total_unsaturations != 1:
-        return False, f"Molecule has {total_unsaturations} double/triple bonds, should have exactly 1"
-      
-    # Get the number of carbons in the fatty acid chain (number of carbons - those in the carboxyl group)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+        return False, f"Molecule has {total_unsaturations} double/triple bonds in the fatty acid chain, should have exactly 1"
+
+     # Count the number of carbons in the chain
+    c_count = len(chain_atoms)
+
+    # Check for fatty acid chain length (at least 4 carbons in the chain, as smallest MUFA is butenoic acid)
+    if c_count < 4:
+      return False, f"Carbon chain length ({c_count}) is too short for a fatty acid"
     
-    #check for rings
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 1:
-         return False, "Contains more than one ring."
-    
-    if ring_info.NumRings() == 1:
-        ring_atoms = set(ring_info.AtomRings()[0])
-        if not len(ring_atoms) == 3:
-            return False, "Ring contains more than 3 atoms"
-            
-    # Check for fatty acid chain length
-    if c_count < 10 or c_count > 30 :
-        return False, f"Carbon chain length ({c_count}) is not within range [10-30] for a fatty acid"
-    
-    # Check that every other bond is a single bond, this is complicated, but might work.
-    saturated_pattern = Chem.MolFromSmarts("C-C")
-    saturated_matches = len(mol.GetSubstructMatches(saturated_pattern))
-    
-    if num_double_bonds == 1:
-      carbon_count_single_bonds = c_count -1
-    elif num_triple_bonds ==1:
-      carbon_count_single_bonds = c_count -2
-    else:
-      return False, f"No unsaturation identified"
-    
-    if saturated_matches != carbon_count_single_bonds -1 :
-        return False, f"Chain has more than 1 unsaturated bond: {saturated_matches} bonds found, {carbon_count_single_bonds -1} expected"
-            
     return True, "Monounsaturated fatty acid identified"
