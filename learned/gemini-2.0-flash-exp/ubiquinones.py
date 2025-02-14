@@ -21,36 +21,27 @@ def is_ubiquinones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core structure: benzoquinone with two methoxy or -OH groups (or a combination) and a methyl group
-    core_pattern_quinone = Chem.MolFromSmarts("C1(=C(C(=O)C=C(C1=O))([OX2]))[OX2]")
+    # Core structure: benzoquinone with two methoxy or -OH groups (or a combination) 
+    # and any substituion at position 5
+    core_pattern_quinone = Chem.MolFromSmarts("[c]1[c]([OX2H])[c]([OX2H])[c](=O)[c][c]1=O")
     
     if not mol.HasSubstructMatch(core_pattern_quinone):
         return False, "Core benzoquinone structure with two methoxy/OH groups not found"
 
-    # Check for a methyl group on the ring
-    methyl_pattern = Chem.MolFromSmarts("C[c]")
-    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
-    if not methyl_matches:
-       return False, "No methyl group found on the ring"
+    #Verify that the oxygen substituents are at positions 2 and 3:
+    methoxy_pattern = Chem.MolFromSmarts("[c]1[c]([OX2H])[c]([OX2H])[c](=O)[c][c]1=O")
+    matches_methoxy = mol.GetSubstructMatches(methoxy_pattern)
+    if len(matches_methoxy) < 1:
+        return False, "No methoxy/alcohol groups in positions 2 and 3"
 
-
-    #Check for a polyprenoid side chain (or a methyl group for ubiquinone-0).
-    # Look for a double bond with a methyl group and a series of carbons with alternating single and double bonds
-    sidechain_pattern = Chem.MolFromSmarts("[CX4]=[CX3]([CX4])~[CX4]=[CX3]")
-    sidechain_matches = mol.GetSubstructMatches(sidechain_pattern)
-
-    # Check the ubiquinone-0 case: a single methyl group and no side chain.
-    if not sidechain_matches and "CC1=C(C(OC)=C(OC)C(=O)C=C1)=O" not in smiles and not "CC1=C(O)C(=O)C=C(C1=O)C" in smiles: 
-       return False, "Polyprenoid side chain not found and not ubiquinone-0"
+    #Check for a polyprenoid side chain (or a methyl group for ubiquinone-0)
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     
-    #Handle demethylated ubiquinones
-    methoxy_pattern = Chem.MolFromSmarts("OC")
-    methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
-    if len(methoxy_matches) < 1:
-        alcohol_pattern = Chem.MolFromSmarts("[OH1]")
-        alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-        if len(alcohol_matches) < 1:
-            return False, "No methoxy/alcohol groups found"
-        
-
-    return True, "Matches the ubiquinone criteria: core structure, methyl group, methoxy/alcohol groups and polyprenoid chain (or no side chain for ubiquinone-0)."
+    # If there are more than 4 rotatable bonds and 10 carbon atoms, it has a significant side chain
+    if n_rotatable > 4: 
+       c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+       if c_count < 10:
+           return False, "Not enough carbons to form a polyprenoid side chain"
+    # else it could be ubiquinone-0, so we should not discard the molecule if it has no sidechain
+    
+    return True, "Matches the ubiquinone criteria: core structure with methoxy/alcohol groups at positions 2 and 3, and polyprenoid chain (or no chain for ubiquinone-0)."
