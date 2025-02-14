@@ -6,9 +6,9 @@ from rdkit import Chem
 def is_azole(smiles: str):
     """
     Determines if a molecule is an azole based on its SMILES string.
-    An azole is defined as any five-membered aromatic ring containing nitrogen
-    and possibly other heteroatoms (e.g., oxygen, sulfur).
-
+    An azole is defined as any monocyclic heteroarene consisting of a five-membered ring containing nitrogen
+    and possibly other non-carbon atoms (e.g., oxygen, sulfur).
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -24,9 +24,14 @@ def is_azole(smiles: str):
 
     # Get ring information
     ri = mol.GetRingInfo()
-    # Get list of all ring atom indices
     ring_atoms = ri.AtomRings()
     found_azole = False
+
+    # Precompute atom ring counts
+    atom_ring_count = [0]*mol.GetNumAtoms()
+    for ring in ring_atoms:
+        for idx in ring:
+            atom_ring_count[idx] += 1
 
     # Iterate over each ring
     for ring in ring_atoms:
@@ -43,11 +48,16 @@ def is_azole(smiles: str):
         if not contains_nitrogen:
             continue  # Skip rings without nitrogen
 
+        # Check if ring is monocyclic (atoms belong only to this ring)
+        is_monocyclic = all(atom_ring_count[idx] == 1 for idx in ring)
+        if not is_monocyclic:
+            continue  # Skip fused rings
+
         # Found an azole ring
         found_azole = True
         break
 
     if found_azole:
-        return True, "Contains a five-membered aromatic ring with nitrogen (azole)"
+        return True, "Contains a monocyclic five-membered aromatic ring with nitrogen (azole)"
     else:
-        return False, "No five-membered aromatic ring with nitrogen found (not an azole)"
+        return False, "No monocyclic five-membered aromatic ring with nitrogen found (not an azole)"
