@@ -31,28 +31,40 @@ def is_alditol(smiles: str):
     # Check for the two terminal CH2OH groups
     terminal_ch2oh_count = 0
     for atom in atoms:
-        if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 3: # Find carbons with 3 bonds
-            neighbors = [neighbor.GetAtomicNum() for neighbor in atom.GetNeighbors()]
-            if neighbors.count(6) == 1 and neighbors.count(8) == 1 and neighbors.count(1) == 2: # One C, one O, and two Hs
-               o_neighbor = [neighbor for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 8][0]
-               if o_neighbor.GetTotalDegree() == 1:
-                terminal_ch2oh_count += 1
-    
+        if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 3 : # carbons with three bonds
+            neighbors = [neighbor for neighbor in atom.GetNeighbors()] # get neighbours
+            oxygen_neighbor = [neigh for neigh in neighbors if neigh.GetAtomicNum() == 8] # get all O neighbours
+            if len(oxygen_neighbor) == 1: # if there is one oxygen
+                o_atom = oxygen_neighbor[0]
+                if o_atom.GetTotalDegree() == 1: #oxygen needs to have a single bond
+                    h_neighbors = [h for h in o_atom.GetNeighbors() if h.GetAtomicNum() == 1]
+                    if len(h_neighbors) == 1: #oxygen must be bound to one hydrogen
+                            h_neighbors = [neigh for neigh in neighbors if neigh.GetAtomicNum() == 1] #Get H neighbours from carbon
+                            if len(h_neighbors) == 2: #There must be 2 H's on carbon
+                                terminal_ch2oh_count += 1
+
     if terminal_ch2oh_count != 2:
-       return False, "Molecule does not have exactly two terminal CH2OH groups"
+        return False, f"Molecule does not have exactly two terminal CH2OH groups, found {terminal_ch2oh_count}"
 
 
     # Check for CHOH groups in the chain
     for atom in atoms:
-        if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 3: # carbons connected to 3 other atoms
-            neighbors = [neighbor.GetAtomicNum() for neighbor in atom.GetNeighbors()]
-            if neighbors.count(6) == 2 and neighbors.count(8) == 1 and neighbors.count(1) == 1: # two carbon neighbours and 1 oxygen and hydrogen
-                o_neighbor = [neighbor for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 8][0]
-                if o_neighbor.GetTotalDegree() != 1: # check if the oxygen is part of an OH group
-                    return False, "Molecule does not have CHOH in the chain"
-            elif neighbors.count(6) != 1 and neighbors.count(8) != 1 and neighbors.count(1) != 2:
-              return False, "Molecule does not have CHOH in the chain (found an invalid carbon neighbor)"
-            
+        if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 3: # carbons with three bonds
+            neighbors = [neighbor for neighbor in atom.GetNeighbors()]
+            oxygen_neighbor = [neigh for neigh in neighbors if neigh.GetAtomicNum() == 8] # get all O neighbours
+            if len(oxygen_neighbor) == 1: # if there is one oxygen
+                o_atom = oxygen_neighbor[0]
+                if o_atom.GetTotalDegree() == 1: #oxygen needs to have a single bond
+                    h_neighbors = [h for h in o_atom.GetNeighbors() if h.GetAtomicNum() == 1]
+                    if len(h_neighbors) == 1: #oxygen must be bound to one hydrogen
+                        
+                        c_count = 0
+                        for neigh in neighbors:
+                            if neigh.GetAtomicNum() == 6:
+                                c_count +=1
+                        if c_count != 2:
+                           return False, f"Molecule does not have CHOH in the chain, found carbon chain with carbon neighbours {c_count}"
+
     # Verify that there are only carbons, hydrogens, and oxygens
     for atom in atoms:
        if atom.GetAtomicNum() not in [1, 6, 8]:
