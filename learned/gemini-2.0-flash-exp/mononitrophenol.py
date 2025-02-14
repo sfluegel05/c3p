@@ -21,19 +21,16 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phenol substructure (aromatic carbon with -OH or -O-)
-    phenol_pattern = Chem.MolFromSmarts("[c][OH]")
-    phenol_pattern2 = Chem.MolFromSmarts("[c][O-]")
-    if not (mol.HasSubstructMatch(phenol_pattern) or mol.HasSubstructMatch(phenol_pattern2)):
-            return False, "No phenol substructure found"
-
-    #Check for exactly one nitro group directly attached to any aromatic ring
+    # Check for phenol substructure using a more general pattern
+    phenol_pattern1 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1[OH]")
+    phenol_pattern2 = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1[O-]")
+    if not (mol.HasSubstructMatch(phenol_pattern1) or mol.HasSubstructMatch(phenol_pattern2)):
+        return False, "No phenol substructure found"
+    
+    # Check for exactly one nitro group directly attached to the ring
     nitro_pattern = Chem.MolFromSmarts("[c][N+](=O)[O-]")
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
     if len(nitro_matches) != 1:
-            return False, f"Found {len(nitro_matches)} nitro groups directly attached to aromatic ring, expected exactly 1"
-    
-    # Check that the nitro group and the hydroxyl group are on the same aromatic system.
-    # This is hard to do, so we'll use a simpler approach for now.
+        return False, f"Found {len(nitro_matches)} nitro groups directly attached to the ring, expected exactly 1"
 
-    return True, "Contains a phenol substructure with a single nitro group directly attached to an aromatic ring"
+    return True, "Contains a phenol substructure with a single nitro group directly attached to the ring"
