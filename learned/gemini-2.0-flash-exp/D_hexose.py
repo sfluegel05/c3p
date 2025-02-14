@@ -3,6 +3,8 @@ Classifies: CHEBI:4194 D-hexose
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
+
 
 def is_D_hexose(smiles: str):
     """
@@ -28,25 +30,33 @@ def is_D_hexose(smiles: str):
     if c_count != 6:
         return False, f"Not a hexose. Found {c_count} carbon atoms"
     if o_count < 5:
-         return False, f"Not a hexose. Found {o_count} oxygen atoms"
+        return False, f"Not a hexose. Found {o_count} oxygen atoms"
 
-    # Identify the carbon chain with 4 chiral centers and an alcohol at one end using SMARTS
-    pattern = Chem.MolFromSmarts("[C@H](O)[C](O)[C](O)[C](O)CO")
-    matches = mol.GetSubstructMatches(pattern)
+    # Find a chain of 6 carbons. Get indices of the longest chain.
+    longest_chain_indices = []
+    for path in rdMolDescriptors.GetLongestChainPaths(mol):
+      if len(path) == 6:
+          longest_chain_indices = path
+          break
+    if len(longest_chain_indices) != 6:
+        return False, "Could not find a 6 carbon chain"
 
-    if not matches:
-      pattern = Chem.MolFromSmarts("[C@@H](O)[C](O)[C](O)[C](O)CO")
-      matches = mol.GetSubstructMatches(pattern)
-      if not matches:
-          return False, "Could not find a suitable carbon chain with 4 chiral centers."
+    # Get the 5th carbon index (index 4 in the list) from the carbon chain.
+    fifth_carbon_index = longest_chain_indices[4]
+    
+    fifth_carbon = mol.GetAtomWithIdx(fifth_carbon_index)
+    
+    # Ensure the 5th carbon is indeed a carbon and is chiral.
+    if fifth_carbon.GetAtomicNum() != 6:
+        return False, "Fifth carbon is not carbon"
+    if fifth_carbon.GetDegree() != 4:
+        return False, "Fifth carbon is not tetrahedral"
 
 
-    # Check the stereo configuration of the first chiral carbon atom in the pattern
-    for match in matches:
-        first_chiral_carbon_index = match[0]
-        first_chiral_carbon = mol.GetAtomWithIdx(first_chiral_carbon_index)
-        stereo = first_chiral_carbon.GetStereo()
-        if stereo == Chem.rdchem.StereoType.STEREO_D:
+    # Check the stereo configuration
+    stereo = fifth_carbon.GetStereo()
+
+    if stereo == Chem.rdchem.StereoType.STEREO_D:
           return True, "Confirmed D-configuration at carbon 5"
-        
-    return False, f"No carbon with the D-configuration at carbon 5 was found"
+    else:
+          return False, f"No D-configuration at carbon 5. Found {stereo}"
