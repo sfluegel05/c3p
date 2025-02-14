@@ -21,12 +21,13 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for different pyrroline patterns: Allow flexible positions for the double bond
-    # Patterns cover 2-pyrroline, 3-pyrroline, etc.
+    # Extended patterns to cover more pyrroline variations
     pyrroline_patterns = [
-        Chem.MolFromSmarts("C1=CCNC1"),   # 2-pyrroline
-        Chem.MolFromSmarts("C1=CNCC1"),   # 3-pyrroline
-        Chem.MolFromSmarts("[n]=1[c,C][c,C][c,C][c,C]1"),  # Generic pyrroline with flexible atom type
+        Chem.MolFromSmarts("C1CC=NC1"),   # 2-pyrroline (aromatic ring)
+        Chem.MolFromSmarts("C1C=CCN1"),   # 3-pyrroline
+        Chem.MolFromSmarts("N1C=CCC1"),   # Reversed 2-pyrroline
+        Chem.MolFromSmarts("[nH]1cccn1"),  # Aromatic 2-pyrroline (e.g., pyrrolo-decoated)
+        Chem.MolFromSmarts("[nX3]1[c,C][c,C][c,C][c,C]1"),  # Generic pyrroline with flexible atom type
     ]
     
     for pattern in pyrroline_patterns:
