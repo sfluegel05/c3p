@@ -23,7 +23,7 @@ def is_secondary_alcohol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for a secondary alcohol
-    secondary_alcohol_pattern = Chem.MolFromSmarts("[C](-[OX2])(-[C])(-[C])")
+    secondary_alcohol_pattern = Chem.MolFromSmarts("[CH1]([CX4])([CX4])O")
     
     # Find all occurrences of the pattern in the molecule
     matches = mol.GetSubstructMatches(secondary_alcohol_pattern)
@@ -38,13 +38,18 @@ def is_secondary_alcohol(smiles: str):
 
         # Get neighbors of the central carbon
         neighbors = [atom for atom in central_carbon.GetNeighbors()]
-        carbon_neighbors = 0
-        
-        # Check neighbors.
+        carbon_neighbors = []
         for neighbor in neighbors:
-          if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != match[1]: #avoid the oxygen atom
-            carbon_neighbors +=1
-        if carbon_neighbors == 2:    
-          return True, "Molecule contains a secondary alcohol group."
-    
-    return False, "No secondary alcohol substructure found"
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != match[3]:
+                 carbon_neighbors.append(neighbor)
+                 
+        if len(carbon_neighbors) != 2:
+              return False, "Central carbon has incorrect number of carbon neighbors"
+
+        for carbon_neighbor in carbon_neighbors:
+            carbon_neighbors_neighbors = [atom for atom in carbon_neighbor.GetNeighbors()]
+            if len(carbon_neighbors_neighbors) > 2:
+                return False, "Carbon neighbor bonded to > 2 atoms, which is not a secondary carbon"
+           
+
+    return True, "Molecule contains a secondary alcohol group."
