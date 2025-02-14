@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_saturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a saturated fatty acid based on its SMILES string.
-    Saturated fatty acids have a terminal carboxylic acid group (-COOH) and only carbon-carbon single bonds with long carbon chain.
+    Saturated fatty acids have a terminal carboxylic acid group (-COOH), only carbon-carbon single bonds, and a long carbon chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,42 +20,50 @@ def is_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the terminal carboxylic acid group. The carbon of the carboxyl group needs to be a CX3 carbon atom
-    acid_pattern = Chem.MolFromSmarts("[CX3](=O)O")
-    if not mol.HasSubstructMatch(acid_pattern):
-        return False, "No terminal carboxylic acid group found"
-    
-    # Check for absence of C=C or C#C bonds
-    unsaturated_pattern = Chem.MolFromSmarts("[CX3]=[CX3]") # checking for double bonds
-    if mol.HasSubstructMatch(unsaturated_pattern):
-          return False, "Contains carbon-carbon double bonds"
-    
-    triple_pattern = Chem.MolFromSmarts("[CX2]#[CX2]") # checking for triple bonds
-    if mol.HasSubstructMatch(triple_pattern):
-          return False, "Contains carbon-carbon triple bonds"
-    
-    # Check for at least 4 carbons in the chain using rdkit tools.
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 4:
-        return False, "Too few carbons to be a fatty acid"
-
-    # Check that the structure has only one carboxylic acid group
+    # Check for the terminal carboxylic acid group (CX3(=O)O)
+    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     acid_matches = mol.GetSubstructMatches(acid_pattern)
     if len(acid_matches) != 1:
         return False, f"Found {len(acid_matches)} carboxylic acid groups, must be exactly 1"
-    
-    # Check if there are other heteroatoms besides O and check for other functional groups
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1 and atom.GetAtomicNum() != 8: #Check for atoms that are not C,H or O
-                return False, "Contains heteroatoms other than C, H or O"
-        if atom.GetAtomicNum() == 8:  #if it's an O atom, it needs to be part of the COOH group
-            is_acid_oxygen = False
-            for match in acid_matches: # Check if the O atoms belong to the COOH
-                acid_match_atoms = mol.GetSubstructMatch(acid_pattern) #Returns the atom indexes of the match
-                if atom.GetIdx() in acid_match_atoms:
-                     is_acid_oxygen = True
-                     break
-            if not is_acid_oxygen:
-                return False, "Contains O atoms outside of carboxyl group"
 
-    return True, "Contains a carboxylic acid group and only carbon-carbon single bonds"
+    # Get indices of the atoms belonging to the acid group
+    acid_atom_indices = mol.GetSubstructMatch(acid_pattern)
+    
+    # Check for absence of C=C or C#C bonds
+    unsaturated_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
+    if mol.HasSubstructMatch(unsaturated_pattern):
+          return False, "Contains carbon-carbon double bonds"
+    triple_pattern = Chem.MolFromSmarts("[CX2]#[CX2]")
+    if mol.HasSubstructMatch(triple_pattern):
+          return False, "Contains carbon-carbon triple bonds"
+    
+    # Check for minimum carbon chain length (arbitrarily set to 4, might need to be increased in future)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 4:
+        return False, "Too few carbons to be a fatty acid"
+    
+    # Check for only C, H, O, or 2H atoms
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 1 and atom.GetAtomicNum() != 8 and atom.GetAtomicNum() != 1:
+          if atom.GetIsotope() != 2:
+            return False, "Contains heteroatoms other than C, H, O or D"
+        
+        #Check that all oxygens belong to the carboxylic acid
+        if atom.GetAtomicNum() == 8: #It's an oxygen atom
+           if atom.GetIdx() not in acid_atom_indices:
+               return False, "Contains O atoms outside of the terminal carboxyl group"
+    
+    # Check for rings
+    if mol.GetRingInfo().NumRings() > 0:
+          return False, "Contains a ring, fatty acids are acyclic"
+
+    #Ensure that the carboxyl group is terminal
+    
+    carbonyl_carbon_index = acid_atom_indices[0]
+    carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_carbon_index)
+
+    neighbors = [atom.GetIdx() for atom in carbonyl_carbon.GetNeighbors()]
+    if len(neighbors) > 2:
+        return False, "The carbonyl group is not terminal"
+    
+    return True, "Contains a terminal carboxylic acid group, only carbon-carbon single bonds, no rings and a long carbon chain"
