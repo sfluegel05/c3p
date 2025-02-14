@@ -21,16 +21,55 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Simplified CoA core SMARTS:
-    # Look for a substructure containing a pyrophosphate, ribose and part of the pantetheine
-    # P-O-P, a ribose (C1-O-C-C-C-O-C1) linked to phosphate and a thioester moiety:
-    coa_core_smarts = "[P](=O)(O)-O-[P](=O)(O)-O-C1[CH](O)[CH]([CH](O)[CH](O)C1)-O-[CX4]-C(C)(C)-[CX4]-[NX3]-[CX3](=[OX1])-[NX3]-[CX2]-[CX2]-S"
-    coa_core_pattern = Chem.MolFromSmarts(coa_core_smarts)
-
-    if not mol.HasSubstructMatch(coa_core_pattern):
-         return False, "CoA core not found"
+    # Define SMARTS patterns for CoA fragments
+    # Flexible pyrophosphate SMARTS
+    pyrophosphate_smarts = "[P](=O)([O-])[O]-[P](=O)([O-])[O-]"
+    pyrophosphate_pattern = Chem.MolFromSmarts(pyrophosphate_smarts)
+    pyrophosphate_matches = mol.GetSubstructMatches(pyrophosphate_pattern)
 
 
+    # Ribose SMARTS - modified to also find the ribose when connected to the phosphate.
+    ribose_smarts = "C1[CH](O)[CH]([CH](O)[CH](O)C1)-O-[P]"
+    ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
+    ribose_matches = mol.GetSubstructMatches(ribose_pattern)
+
+
+    # Pantetheine fragment SMARTS
+    pantetheine_smarts = "[CX4]-C(C)(C)-[CX4]-[NX3]-[CX3](=[OX1])-[NX3]-[CX2]-[CX2]-S"
+    pantetheine_pattern = Chem.MolFromSmarts(pantetheine_smarts)
+    pantetheine_matches = mol.GetSubstructMatches(pantetheine_pattern)
+
+
+    if not pyrophosphate_matches or not ribose_matches or not pantetheine_matches:
+         return False, "Missing CoA core fragment(s)"
+
+    # Check if fragments are connected, this could be enhanced with bond tracing
+    # Get the index of the phosphate connecting the ribose and pyrophosphate
+    ribose_phosphate_index = -1
+    for match in ribose_matches:
+        for atom_index in match:
+            atom = mol.GetAtomWithIdx(atom_index)
+            if atom.GetSymbol() == "P":
+                ribose_phosphate_index = atom_index
+                break
+        if ribose_phosphate_index != -1:
+            break
+    
+    connected_to_pyrophosphate = False
+    for match in pyrophosphate_matches:
+        for atom_index in match:
+             atom = mol.GetAtomWithIdx(atom_index)
+             if atom.GetSymbol() == "O":
+               for neighbor in atom.GetNeighbors():
+                  if neighbor.GetIdx() == ribose_phosphate_index:
+                      connected_to_pyrophosphate = True
+                      break
+        if connected_to_pyrophosphate:
+              break
+
+    if not connected_to_pyrophosphate:
+      return False, "Ribose not connected to the pyrophosphate"
+      
     # Define the thioester bond
     thioester_smarts = "[CX3](=[OX1])[SX2]"
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
@@ -38,30 +77,29 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if not thioester_matches:
         return False, "No thioester bond found"
 
-    # Check if thioester is attached to CoA. Get a match to CoA, check if the S is connected to that match.
-    coa_match = mol.GetSubstructMatch(coa_core_pattern)
-    if coa_match: #we only run this if there is a CoA match
-        attached_to_coa = False
-        for thioester_match in thioester_matches:
-            for atom_index in thioester_match:
-                atom = mol.GetAtomWithIdx(atom_index)
-                if atom.GetSymbol() == "S":
-                    for neighbor in atom.GetNeighbors():
-                       if neighbor.GetIdx() in coa_match:
-                           attached_to_coa = True
-                           break
-            if attached_to_coa:
-                break
-
-        if not attached_to_coa:
-           return False, "Thioester not attached to CoA core"
-    else: # should not get here, as we checked already for the core
-        return False, "CoA core not found"
+    # Check if thioester is attached to the pantetheine fragment
+    attached_to_pantetheine = False
+    for thioester_match in thioester_matches:
+      for atom_index in thioester_match:
+        atom = mol.GetAtomWithIdx(atom_index)
+        if atom.GetSymbol() == "S":
+           for neighbor in atom.GetNeighbors():
+             for match in pantetheine_matches:
+                 if neighbor.GetIdx() in match:
+                      attached_to_pantetheine = True
+                      break
+           if attached_to_pantetheine:
+               break
+      if attached_to_pantetheine:
+              break
 
 
+    if not attached_to_pantetheine:
+       return False, "Thioester not attached to pantetheine fragment"
 
-    # Find the acyl chain and count carbons.  We do this by looking at neighbors of the carbonyl carbon
-    # Note that this does not guarantee that it is a single chain, just a chain
+
+
+    # Find the acyl chain and count carbons.
     acyl_carbon_count = 0
     for thioester_match in thioester_matches:
         carbonyl_carbon_index = -1
@@ -75,7 +113,7 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
              carbonyl_atom = mol.GetAtomWithIdx(carbonyl_carbon_index)
              chain_atoms = set()
              queue = [carbonyl_carbon_index]
-
+             
              while queue:
                  current_index = queue.pop(0)
                  if current_index in chain_atoms:
@@ -85,9 +123,10 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
                  if current_atom.GetSymbol() == "C" :
                     acyl_carbon_count += 1
                     for neighbor in current_atom.GetNeighbors():
-                        if neighbor.GetSymbol() == "C" and neighbor.GetIdx() not in chain_atoms and neighbor.GetIdx() != carbonyl_carbon_index : # avoid going back to carbonyl carbon
+                        if neighbor.GetSymbol() == "C" and neighbor.GetIdx() not in chain_atoms and neighbor.GetIdx() != carbonyl_carbon_index:
                             queue.append(neighbor.GetIdx())
-                
+
+
     # Remove the carbonyl carbon itself
     acyl_carbon_count -= 1
 
