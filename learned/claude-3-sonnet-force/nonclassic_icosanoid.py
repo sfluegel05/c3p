@@ -31,9 +31,9 @@ def is_nonclassic_icosanoid(smiles: str):
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Must have exactly 20 carbon atoms
-    if c_count != 20:
-        return False, f"Molecule has {c_count} carbon atoms, nonclassic icosanoids must have 20"
+    # Check for C20 or fewer carbons
+    if c_count > 20:
+        return False, f"Molecule has more than 20 carbon atoms"
     
     # Look for carboxyl group (-COOH)
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
@@ -42,24 +42,22 @@ def is_nonclassic_icosanoid(smiles: str):
     
     # Look for multiple double bonds
     double_bond_pattern = Chem.MolFromSmarts("=")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern, mol)
-    if len(double_bond_matches) < 3:
-        return False, "Fewer than 3 double bonds found"
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) < 2:
+        return False, "Fewer than 2 double bonds found"
     
     # Look for at least 3 oxygens
     if o_count < 3:
         return False, "Fewer than 3 oxygen atoms found"
     
-    # Look for C20 chain with oxygenated functional groups
-    c20_chain_pattern = Chem.MolFromSmarts("C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C~C")
-    c20_chain_matches = mol.GetSubstructMatches(c20_chain_pattern, mol)
-    if not c20_chain_matches:
-        return False, "No C20 chain found"
+    # Check for absence of leukotriene substructure
+    leukotriene_pattern = Chem.MolFromSmarts("CC(=O)C=CC=CC=CC=CC=CC=CC(=O)O")
+    if mol.HasSubstructMatch(leukotriene_pattern):
+        return False, "Leukotriene substructure found, not a nonclassic icosanoid"
     
-    # Check for oxygenated functional groups on C20 chain
-    oxygenated_groups_pattern = Chem.MolFromSmarts("[O;X2]")
-    oxygenated_groups_matches = mol.GetSubstructMatches(oxygenated_groups_pattern, mol)
-    if not oxygenated_groups_matches:
-        return False, "No oxygenated functional groups found on C20 chain"
+    # Check for absence of prostanoid substructure
+    prostanoid_pattern = Chem.MolFromSmarts("CC(=O)C=CC=CC=CC=CC=CC=C")
+    if mol.HasSubstructMatch(prostanoid_pattern):
+        return False, "Prostanoid substructure found, not a nonclassic icosanoid"
 
-    return True, "Contains C20 chain with carboxyl group, multiple double bonds, and oxygenated functional groups"
+    return True, "Contains C20 or fewer carbons, carboxyl group, multiple double bonds, oxygenated functional groups, and is not a leukotriene or prostanoid"
