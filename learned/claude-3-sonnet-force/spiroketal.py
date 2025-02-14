@@ -6,7 +6,6 @@ Classifies: CHEBI:48597 spiroketal
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_spiroketal(smiles: str):
     """
@@ -37,15 +36,15 @@ def is_spiroketal(smiles: str):
     for match in spiro_matches:
         spiro_atom_idx = match[0]  # Extract the atom index from the match tuple
         spiro_atom = mol.GetAtomWithIdx(spiro_atom_idx)
-        if mol.HasSubstructMatch(ketal_pattern, atomIdxList=[spiro_atom.GetIdx()]):
-            # Check ring sizes
+        match_ketal = mol.GetSubstructMatch(ketal_pattern, spiro_atom_idx)
+        if match_ketal:
+            # Check if the ketal carbon is part of two rings
             ring_info = mol.GetRingInfo()
-            ring_systems = ring_info.AtomRings()
-            ring_sizes = set()
-            for ring in ring_systems:
-                if spiro_atom_idx in ring:
-                    ring_sizes.add(len(ring))
-            if len(ring_sizes) == 2:
-                return True, "Contains a spiroketal moiety with two rings sharing a ketal carbon"
+            ketal_carbon_rings = ring_info.AtomRings()[spiro_atom_idx]
+            if len(ketal_carbon_rings) == 2:
+                # Check if the two rings share only the ketal carbon
+                ring1, ring2 = [set(ring) for ring in ketal_carbon_rings]
+                if len(ring1.intersection(ring2)) == 1:
+                    return True, "Contains a spiroketal moiety with two rings sharing a ketal carbon"
     
     return False, "No spiroketal moiety found"
