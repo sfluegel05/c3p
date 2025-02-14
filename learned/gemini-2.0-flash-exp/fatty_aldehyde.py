@@ -21,32 +21,25 @@ def is_fatty_aldehyde(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for terminal aldehyde group (C=O, connected to one other C)
+    # Check for at least one terminal aldehyde group (C=O, connected to one other C)
     aldehyde_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[#6]")
     aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    if len(aldehyde_matches) != 1:
-        return False, f"Found {len(aldehyde_matches)} terminal aldehyde groups, need exactly 1"
+    if not aldehyde_matches:
+        return False, "No terminal aldehyde group found"
 
-    # Check for long carbon chain (at least 6 carbons)
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-       return False, "Carbon chain too short"
+    # Check for a long alkyl carbon chain attached to the aldehyde carbon.
+    # The chain must have a total of at least 6 carbons. 
+    # The carbon directly attached to the aldehyde is included in this count.
+    # This pattern looks for the aldehyde group's carbon, then 5 additional
+    # carbons of type C (not aromatic) connected via single bonds.
+    long_chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "Carbon chain too short or not a fatty acid derivative."
 
-    # Check for number of carbons and oxygens
+
+    # Check for number of carbons, must have at least 6
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
     if c_count < 6:
-        return False, "Too few carbons for fatty aldehyde"
-    if o_count != 1:
-        return False, "Must have exactly 1 oxygen from the aldehyde group"
+        return False, "Too few carbons for a fatty aldehyde"
 
-    
-    # Check molecular weight is greater than 80. A shorter chain may have MW close to 80,
-    # therefore more weight is given to presence of at least 6 carbons.
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 80:
-         return False, "Molecular weight too low for fatty aldehyde"
-        
-    
     return True, "Has a terminal aldehyde group and a long carbon chain"
