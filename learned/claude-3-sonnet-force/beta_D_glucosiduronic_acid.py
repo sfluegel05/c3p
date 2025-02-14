@@ -1,24 +1,49 @@
 """
 Classifies: CHEBI:15341 beta-D-glucosiduronic acid
 """
-Based on the outcomes provided, the previous program seems to have some issues in correctly identifying beta-D-glucosiduronic acids. Here are my observations and suggestions for improvement:
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **Missed positive cases**: Several examples provided, such as "4-androsten-17beta-ol-3-one glucosiduronate" and "16-epiestriol 3-O-(beta-D-glucuronide)," were not identified as beta-D-glucosiduronic acids despite containing the beta-D-glucuronic acid substructure and a glycosidic bond. This suggests that the current implementation may be too restrictive in its checks.
+def is_beta_D_glucosiduronic_acid(smiles: str):
+    """
+    Determines if a molecule is a beta-D-glucosiduronic acid based on its SMILES string.
+    A beta-D-glucosiduronic acid is defined as a glucosiduronic acid resulting from the
+    formal condensation of any substance with beta-D-glucuronic acid to form a glycosidic bond.
 
-2. **Incorrect glycosidic bond check**: The current implementation checks for the presence of a glycosidic bond (O-C) but does not verify if this bond connects the beta-D-glucuronic acid substructure to the rest of the molecule. This may lead to false positives or false negatives.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of additional checks**: The program seems to rely solely on the presence of the beta-D-glucuronic acid substructure and a glycosidic bond. However, additional checks for the overall molecular structure and properties may be necessary to accurately identify beta-D-glucosiduronic acids.
+    Returns:
+        bool: True if molecule is a beta-D-glucosiduronic acid, False otherwise
+        str: Reason for classification
+    """
 
-To improve the program, you could consider the following steps:
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Refine the beta-D-glucuronic acid substructure search**: Instead of using a strict SMARTS pattern, you could try a more flexible approach that accounts for different conformations and substitutions. For example, you could use a series of SMARTS patterns or a larger substructure search with additional checks for stereochemistry and connectivity.
+    # Define beta-D-glucuronic acid substructure
+    beta_d_glucuronic_acid = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H]([C@H](O1)O)O)O)O)C(=O)O")
 
-2. **Verify the glycosidic bond connection**: Modify the glycosidic bond check to ensure that the identified bond connects the beta-D-glucuronic acid substructure to the rest of the molecule. This could involve checking the neighboring atoms and their connectivity.
+    # Check for beta-D-glucuronic acid substructure
+    matches = mol.GetSubstructMatches(beta_d_glucuronic_acid)
+    if not matches:
+        return False, "No beta-D-glucuronic acid substructure found"
 
-3. **Incorporate additional checks**: Depending on the chemical class definition, you could add additional checks for molecular properties, such as molecular weight, atom counts, ring systems, or specific functional groups. These checks could help filter out false positives and false negatives.
+    # Define glycosidic bond pattern
+    glycosidic_bond = Chem.MolFromSmarts("[OX2]C")
 
-4. **Handle exceptional cases**: Some examples provided may be outliers or edge cases that do not strictly follow the class definition. If you are confident in your understanding of the chemical class, you could consider handling these exceptions separately or providing a more nuanced explanation for the classification.
+    # Check for glycosidic bond connecting beta-D-glucuronic acid to the rest of the molecule
+    for match in matches:
+        o_idx = match[0]  # Index of the ring oxygen in beta-D-glucuronic acid
+        neighbors = [mol.GetBondWithAtomAtomIndices(o_idx, n).GetBondType() for n in mol.GetAtomWithIdx(o_idx).GetNeighbors()]
+        if "SINGLE" in neighbors and mol.HasSubstructMatch(glycosidic_bond, atomIds=[o_idx]):
+            # Additional checks (optional)
+            mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+            if mol_wt < 300:  # Adjust as needed
+                return False, "Molecular weight too low for beta-D-glucosiduronic acid"
 
-5. **Consider using machine learning techniques**: If the rule-based approach becomes too complex or fails to achieve satisfactory results, you could explore machine learning techniques, such as training a classifier on a curated dataset of beta-D-glucosiduronic acids and non-beta-D-glucosiduronic acids.
+            return True, "Contains beta-D-glucuronic acid substructure connected via a glycosidic bond"
 
-It's important to note that the benchmark you are using may not be perfect, and there could be systematic mistakes or edge cases that require human judgment. If you believe your program's classifications are consistent with your understanding of the chemical class, you can explain your reasoning for ignoring certain outliers or edge cases.
+    return False, "No glycosidic bond connecting beta-D-glucuronic acid found"
