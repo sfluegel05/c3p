@@ -37,13 +37,17 @@ def is_metal_atom(smiles: str):
     if mol.GetNumAtoms() != 1:
         return False, "Not a standalone atom"
 
-    # Get the atomic number (to consider isotopes)
+    # Get the atom information
     atom = mol.GetAtomWithIdx(0)
     symbol = atom.GetSymbol()
     atomic_num = atom.GetAtomicNum()
 
-    # Ensure the standalone atom is a metal
+    # Check for neutrality (no charge)
+    if atom.GetFormalCharge() != 0:
+        return False, f"{symbol} is a charged atom"
+
+    # Ensure the standalone atom is an uncharged metal
     if symbol in metal_symbols and atomic_num > 0:
-        return True, f"{symbol} is a standalone metal atom including isotopic forms"
-    
-    return False, f"{symbol} is not a standalone metal atom"
+        return True, f"{symbol} is a standalone neutral metal atom"
+
+    return False, f"{symbol} is not a standalone neutral metal atom"
