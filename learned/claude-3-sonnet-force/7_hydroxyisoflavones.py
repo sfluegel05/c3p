@@ -2,15 +2,15 @@
 Classifies: CHEBI:55465 7-hydroxyisoflavones
 """
 """
-Classifies: CHEBI:31647 7-hydroxyisoflavone
+Classifies: CHEBI:50009 7-hydroxyisoflavone
+"A hydroxyisoflavone compound having a hydroxy group at the 7-position."
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, TautomerEnumerator
+from rdkit.Chem import AllChem
 
 def is_7_hydroxyisoflavone(smiles: str):
     """
     Determines if a molecule is a 7-hydroxyisoflavone based on its SMILES string.
-    A 7-hydroxyisoflavone is an isoflavone compound with a hydroxy group at the 7-position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,37 +19,24 @@ def is_7_hydroxyisoflavone(smiles: str):
         bool: True if molecule is a 7-hydroxyisoflavone, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES and enumerate tautomers
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    tautomers = TautomerEnumerator(mol)
-    mol = tautomers.EnumerateIsomericSmiles(False, True)
-
-    # Look for isoflavone backbone pattern
-    isoflavone_pattern = Chem.MolFromSmarts("O=C1C=C(O)c2ccccc2OC1")
+    # Look for isoflavone backbone (2 fused rings, one pyrone and one benzene)
+    isoflavone_pattern = Chem.MolFromSmarts("c1c(-c2ccc(O)cc2)oc2ccccc2c1=O")
     if not mol.HasSubstructMatch(isoflavone_pattern):
         return False, "No isoflavone backbone found"
 
     # Look for hydroxy group at 7-position
-    hydroxy_7_pattern = Chem.MolFromSmarts("O=C1C=C(O)c2ccc(O)cc2OC1")
+    hydroxy_7_pattern = Chem.MolFromSmarts("c1c(-c2ccc(O)cc2)oc2cc(O)ccc2c1=O")
     if not mol.HasSubstructMatch(hydroxy_7_pattern):
-        return False, "No hydroxy group at the 7-position of the isoflavone backbone"
+        return False, "No hydroxy group at 7-position"
 
-    # Check for the absence of additional hydroxy groups
-    hydroxy_pattern = Chem.MolFromSmarts("OC")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if len(hydroxy_matches) > 1:
-        return False, "Additional hydroxy groups present"
+    # Check that there is only one hydroxy group at 7-position
+    hydroxy_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
+    if hydroxy_count != 1:
+        return False, f"Found {hydroxy_count} hydroxy groups, should be exactly 1"
 
-    # Check if the molecule is a known 7-hydroxyisoflavone
-    known_7_hydroxyisoflavones = [
-        "CC(C)(O)CCc1cc(ccc1O)-c1coc2cc(O)cc(O)c2c1=O",  # isowigtheone hydrate
-        "CC(C)=CCc1c(O)ccc(c1O)-c1coc2cc(O)cc(O)c2c1=O",  # licoisoflavone A
-        # Add more known SMILES strings as needed
-    ]
-    if Chem.MolToSmiles(mol) in known_7_hydroxyisoflavones:
-        return True, "Matches a known 7-hydroxyisoflavone structure"
-
-    return True, "Contains an isoflavone backbone with a hydroxy group at the 7-position"
+    return True, "Molecule is a 7-hydroxyisoflavone"
