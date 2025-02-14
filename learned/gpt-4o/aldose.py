@@ -2,6 +2,7 @@
 Classifies: CHEBI:15693 aldose
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_aldose(smiles: str) -> (bool, str):
     """
@@ -15,32 +16,37 @@ def is_aldose(smiles: str) -> (bool, str):
         bool: True if molecule is an aldose, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for an aldehyde group (-C=O)
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No aldehyde group found"
+    # Check to determine if the structure is an open-chain aldose:
+    # Look for an aldehyde group -C(=O)H
+    aldehyde_pattern = Chem.MolFromSmarts("[C;H1](=O)[CH2,CH0]")
+    if mol.HasSubstructMatch(aldehyde_pattern):
+        # Expected polyhydroxy structure (-OH groups)
+        hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+        hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+        if len(hydroxyl_matches) < 2:
+            return False, f"Not enough hydroxyl groups found, got {len(hydroxyl_matches)}"
 
-    # Look for polyhydroxy structure (multiple -OH groups)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, f"Not enough hydroxyl groups found, got {len(hydroxyl_matches)}"
+        carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+        if carbon_count < 3:
+            return False, f"Insufficient carbon backbone, found {carbon_count}"
 
-    # Check for cyclic forms indicating a hemiacetal (specific to sugars)
+        return True, "Structure is consistent with open-chain form of an aldose"
+
+    # Determine if it is a cyclic form with hemiacetal/ketal form:
     ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings() > 0:
-        return False, "No rings found, indicating lack of hemiacetal form"
+    if ring_info.NumRings() > 0:
+        # Look for ether linkage with adjacent hydroxyl (O-C-O-H) which indicates hemiacetal
+        ether_pattern = Chem.MolFromSmarts("[C](O)([CH2,CH0])O")
+        if mol.HasSubstructMatch(ether_pattern):
+            # Check for adequate carbon and hydroxyl groups in the cyclic form
+            carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
+            hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+            if carbon_count >= 3 and len(hydroxyl_matches) >= 2:
+                return True, "Structure is consistent with cyclic hemiacetal form of an aldose"
 
-    # Verify the presence of minimum carbon number for backbone
-    carbon_count = len([atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6])
-    if carbon_count < 3:  # At least two carbons excluding aldehyde carbon
-        return False, f"Insufficient carbon backbone, found {carbon_count}"
-
-    # If all checks are passed, classify as aldose
-    return True, "Structure is consistent with an aldose"
+    return False, "Structure does not fit criteria for an aldose"
