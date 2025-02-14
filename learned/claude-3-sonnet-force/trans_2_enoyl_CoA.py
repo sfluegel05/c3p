@@ -1,56 +1,22 @@
 """
 Classifies: CHEBI:50998 trans-2-enoyl-CoA
 """
-"""
-Classifies: CHEBI:57926 trans-2-enoyl-CoA
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and the outcomes, it seems that the issue lies in the pattern used to identify the CoA backbone. The pattern `"[C;R](C)(C)(CO[P@@](=O)(O)O[P@@](=O)(O)OC[C@H]1[C@@H]([C@@H]([C@H](O1)n2cnc3c2ncnc3N)O)OP(=O)(O)O)C(=O)NCCCC(=O)NCCSC(=O)"` is too specific and may not cover all possible variations of the CoA backbone.
 
-def is_trans_2_enoyl_CoA(smiles: str):
-    """
-    Determines if a molecule is a trans-2-enoyl-CoA based on its SMILES string.
-    A trans-2-enoyl-CoA is an unsaturated fatty acyl-CoA that results from the formal condensation
-    of the thiol group of coenzyme A with the carboxy group of any 2,3-trans-enoic acid.
+The CoA backbone is a complex structure, and using a more flexible pattern or a combination of patterns might be a better approach. Additionally, the previous pattern does not account for the possibility of different tautomers or ionization states of the CoA backbone.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program, we can try the following strategies:
 
-    Returns:
-        bool: True if molecule is a trans-2-enoyl-CoA, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+1. Break down the CoA backbone pattern into smaller subpatterns and check for the presence of each subpattern individually. This way, we can account for minor variations in the CoA backbone structure.
 
-    # Look for CoA backbone pattern (more flexible pattern)
-    coa_pattern = Chem.MolFromSmarts("[C;R](C)(C)(CO[P@@](=O)(O)O[P@@](=O)(O)OC[C@H]1[C@@H]([C@@H]([C@H](O1)n2cnc3c2ncnc3N)O)OP(=O)(O)O)C(=O)NCCCC(=O)NCCSC(=O)"
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No CoA backbone found"
+2. Use more general patterns to capture the overall structure of the CoA backbone, such as the presence of the adenine ring, the ribose sugar, and the phosphate groups.
 
-    # Look for trans double bond at position 2 (more flexible pattern)
-    trans_pattern = Chem.MolFromSmarts("C\C=C/C(=O)[CX4]")
-    if not mol.HasSubstructMatch(trans_pattern):
-        return False, "No trans double bond at position 2 found"
+3. Consider using additional checks, such as counting the number of specific atoms (e.g., nitrogen, phosphorus) or functional groups (e.g., phosphate groups) present in the molecule, to further validate the presence of the CoA backbone.
 
-    # Look for fatty acid chain (long carbon chain attached to the carbonyl)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) == 0:
-        return False, "No fatty acid chain found"
+4. Investigate the use of different SMARTS patterns or alternative approaches, such as substructure matching using RDKit's built-in functionality or other cheminformatics libraries.
 
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
-        return False, "Fatty acid chain too short"
+5. Analyze the false positives and false negatives to identify any systematic errors or edge cases that need to be addressed in the pattern matching or additional checks.
 
-    # Check molecular weight - CoA derivatives typically >700 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 700:
-        return False, "Molecular weight too low for CoA derivative"
+6. If the benchmark data is not entirely reliable, consider cross-checking the results against other sources or expert knowledge to validate the classifications.
 
-    return True, "Contains CoA backbone and trans double bond at position 2, with fatty acid chain attached"
+By iterating and refining the approach, we can potentially improve the accuracy of the program in classifying trans-2-enoyl-CoA molecules.
