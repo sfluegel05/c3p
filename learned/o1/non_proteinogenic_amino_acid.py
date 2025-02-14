@@ -27,11 +27,14 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for alpha-amino acid backbone
+    # Define SMARTS pattern for alpha-amino acid backbone
     # Matches an alpha carbon with amino group and carboxyl group
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("""
-        [C;!$(C=O);!$(C#N);!$(C=[N,O,S])](N)(C(=O)[O,H,-1])
-    """)
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2][C@@H]([*])C(=O)[O-]")
+    if alpha_amino_acid_pattern is None:
+        return False, "Invalid SMARTS pattern for alpha-amino acid backbone"
+
+    # Add hydrogens (necessary for accurate matching)
+    mol = Chem.AddHs(mol)
 
     # Check for alpha-amino acid backbone
     matches = mol.GetSubstructMatches(alpha_amino_acid_pattern)
@@ -42,43 +45,53 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if len(matches) > 1:
         return False, f"Multiple amino acid backbones found ({len(matches)}), possible peptide"
 
-    # Now, check if the molecule is one of the standard amino acids
-    # List of standard amino acids as RDKit molecules
+    # Generate canonical SMILES for the molecule
+    mol_canonical_smiles = Chem.MolToSmiles(mol, isomericSmiles=True)
+
+    # List of standard amino acids canonical SMILES (with stereochemistry)
     standard_amino_acids_smiles = [
-        "N[C@@H](C)C(=O)O",                       # L-Alanine
-        "N[C@@H](CC(=O)O)C(=O)O",                 # L-Aspartic acid
-        "N[C@@H](C(=O)N)C(=O)O",                  # L-Asparagine
-        "N[C@@H](CS)C(=O)O",                      # L-Cysteine
-        "NCC(=O)O",                               # Glycine
-        "N[C@@H](CCC(=O)O)C(=O)O",                # L-Glutamic acid
-        "N[C@@H](CC(=O)N)C(=O)O",                 # L-Glutamine
-        "N[C@@H](Cc1c[nH]cn1)C(=O)O",             # L-Histidine
-        "N[C@@H](I)C(=O)O",                       # L-Isoleucine
-        "N[C@@H](CCCN)C(=O)O",                    # L-Lysine
-        "N1CCCC1C(=O)O",                          # L-Proline
-        "N[C@@H](C(C)C)C(=O)O",                   # L-Valine
-        "N[C@@H](CC1=CNC=N1)C(=O)O",              # L-Tryptophan
-        "N[C@@H](Cc1ccccc1)C(=O)O",               # L-Phenylalanine
-        "N[C@@H](Cc1ccc(O)cc1)C(=O)O",            # L-Tyrosine
-        "N[C@@H](CSCC[SeH])C(=O)O",               # L-Selenocysteine
-        "N[C@@H](C(=O)O)C(=O)O",                  # L-Aspartic acid (beta)
-        # ... (add other standard amino acids)
+        "N[C@@H](C)C(=O)O",                          # L-Alanine
+        "N[C@@H](CC(=O)O)C(=O)O",                    # L-Aspartic acid
+        "N[C@@H](C(=O)N)C(=O)O",                     # L-Asparagine
+        "N[C@@H](CS)C(=O)O",                         # L-Cysteine
+        "NCC(=O)O",                                  # Glycine
+        "N[C@@H](CCC(=O)O)C(=O)O",                   # L-Glutamic acid
+        "N[C@@H](CC(=O)N)C(=O)O",                    # L-Glutamine
+        "N[C@@H](Cc1c[nH]cn1)C(=O)O",                # L-Histidine
+        "N[C@@H](I)C(=O)O",                          # L-Isoleucine
+        "N1CCCC1C(=O)O",                             # L-Proline
+        "N[C@@H](CC(C)C)C(=O)O",                     # L-Leucine
+        "N[C@@H](CO)C(=O)O",                         # L-Serine
+        "N[C@@H](Cc1ccccc1)C(=O)O",                  # L-Phenylalanine
+        "N[C@@H](Cc1ccc(O)cc1)C(=O)O",               # L-Tyrosine
+        "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O",          # L-Tryptophan
+        "N[C@@H](CCCN)C(=O)O",                       # L-Lysine
+        "N[C@@H](CCS)C(=O)O",                        # L-Methionine
+        "N[C@@H](C(C)O)C(=O)O",                      # L-Threonine
+        "N[C@@H](C(C)C)C(=O)O",                      # L-Valine
+        "N[C@@H](C(=O)O)C(=O)O",                     # L-Serine (alternative representation)
+        # Add any missing standard amino acids
     ]
 
-    standard_amino_acids = [Chem.MolFromSmiles(smi) for smi in standard_amino_acids_smiles]
+    # Generate canonical SMILES for standard amino acids
+    standard_amino_acids_canon_smiles = set()
+    for smi in standard_amino_acids_smiles:
+        std_mol = Chem.MolFromSmiles(smi)
+        if std_mol:
+            std_mol_canon = Chem.MolToSmiles(std_mol, isomericSmiles=True)
+            standard_amino_acids_canon_smiles.add(std_mol_canon)
 
-    # Check for exact match with standard amino acids (including stereochemistry)
-    for std_mol in standard_amino_acids:
-        if std_mol is None:
-            continue
-        if mol.HasSubstructMatch(std_mol):
-            return False, "Molecule is a standard (proteinogenic) amino acid"
+    # Check if the molecule matches any standard amino acid
+    if mol_canonical_smiles in standard_amino_acids_canon_smiles:
+        return False, "Molecule is a standard (proteinogenic) amino acid"
 
     # Check for peptide bonds to exclude peptides
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N[C;!$([C;!H0])]")
+    if peptide_bond_pattern is None:
+        return False, "Invalid SMARTS pattern for peptide bond"
+
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
-    # Subtract 1 because the amino acid itself will have one amide bond if it's an amide
-    if len(peptide_bonds) > 1:
+    if peptide_bonds:
         return False, "Peptide bonds detected, molecule may be a peptide"
 
     return True, "Molecule is a non-proteinogenic amino acid (contains alpha-amino acid backbone but is not a standard amino acid)"
