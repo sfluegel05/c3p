@@ -21,16 +21,16 @@ def is_4_hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core flavanone structure with a carbonyl group and a three-carbon bridge
-    flavanone_core_smarts = "c1ccccc1C2C(=O)C3C=C(c4ccccc4)O3"
+    # Define core flavanone structure; C3-C6 coupling, closed C-ring with carbonyl
+    flavanone_core_smarts = "[#6]1=[#8]-[C@H]2C(c3ccccc3O2)=C(c4ccccc4)C1=O"
     flavanone_core_mol = Chem.MolFromSmarts(flayanone_core_smarts)
     if not mol.HasSubstructMatch(flayanone_core_mol):
         return False, "Missing core flavanone structure"
     
-    # Pattern to specifically find a hydroxyl group at the 4' position on the B-ring
-    hydroxy_b_ring_smarts = "c1cc(ccc1O)c2cc(c(=O)C3OC(C=C3)c2)c4ccccc4"  # Account for the correct hydroxyl position
-    b_ring_hydroxy_mol = Chem.MolFromSmarts(hydroxy_b_ring_smarts)
-    if mol.HasSubstructMatch(b_ring_hydroxy_mol):
+    # SMARTS for specific 4'-hydroxy group on the B-ring (phenyl group opposite the ketone)
+    hydroxy_4_prime_position_smarts = "[#6](=[#8])[C@@H]1O[C@@H](C=C1)c2ccc(O)cc2"  # Hydroxy on B-ring's para position
+    hydroxy_4_prime_mol = Chem.MolFromSmarts(hydroxy_4_prime_position_smarts)
+    if mol.HasSubstructMatch(hydroxy_4_prime_mol):
         return True, "Molecule is a 4'-hydroxyflavanone"
 
     return False, "No 4'-hydroxy group found on flavanone B ring"
