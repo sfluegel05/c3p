@@ -18,78 +18,41 @@ def is_triglyceride(smiles: str):
         bool: True if molecule is a triglyceride, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for esterified glycerol backbone
-    glycerol_ester_pattern = Chem.MolFromSmarts("""
-        [
-            CH2  # First carbon of glycerol
-            -
-            O    # Connected to oxygen
-            -
-            C(=O)  # Connected to carbonyl
-        ]
-        -
-        [
-            CH   # Second carbon of glycerol
-            -
-            O
-            -
-            C(=O)
-        ]
-        -
-        [
-            CH2  # Third carbon of glycerol
-            -
-            O
-            -
-            C(=O)
-        ]
-    """)
-    if glycerol_ester_pattern is None:
-        return False, "Invalid glycerol ester pattern"
-
-    # Check for glycerol backbone esterified
-    if not mol.HasSubstructMatch(glycerol_ester_pattern):
-        return False, "No esterified glycerol backbone found"
-
-    # Find ester groups
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[CH]")
+    # Define ester pattern: carbonyl carbon(=O) - ester oxygen - glycerol carbon
+    ester_pattern = Chem.MolFromSmarts('[#6](=O)O[#6]')
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 3:
-        return False, f"Found {len(ester_matches)} ester groups attached to glycerol, need exactly 3"
 
-    # Check for long carbon chains attached via ester bonds (fatty acid chains)
-    fatty_acid_chains = []
+    # Collect the carbons attached to ester oxygens (glycerol carbons)
+    esterified_carbons = set()
     for match in ester_matches:
-        ester_atom_index = match[2]  # Index of the oxygen atom in the ester linkage
-        # Get the carbon atom attached to the carbonyl carbon (start of the fatty acid chain)
-        fatty_acid_start = mol.GetAtomWithIdx(ester_atom_index).GetNeighbors()[0]
-        c_chain_length = 0
-        visited_atoms = set()
-        atoms_to_visit = [fatty_acid_start.GetIdx()]
+        ester_o_idx = match[1]      # Index of the ester oxygen atom
+        glycerol_c_idx = match[2]   # Index of the glycerol carbon attached to ester oxygen
+        esterified_carbons.add(glycerol_c_idx)
 
-        # Traverse the fatty acid chain
-        while atoms_to_visit:
-            atom_idx = atoms_to_visit.pop()
-            if atom_idx in visited_atoms:
-                continue
-            visited_atoms.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:  # Carbon atom
-                c_chain_length += 1
-                for neighbor in atom.GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    if neighbor_idx not in visited_atoms and neighbor.GetAtomicNum() in [6, 1]:  # Carbon or Hydrogen
-                        atoms_to_visit.append(neighbor_idx)
+    # Check if there are exactly 3 esterified carbons
+    if len(esterified_carbons) != 3:
+        return False, f"Found {len(esterified_carbons)} ester groups, need exactly 3"
 
-        if c_chain_length < 4:
-            return False, "Fatty acid chains too short, need chains longer than 4 carbons"
-        fatty_acid_chains.append(c_chain_length)
+    # Convert the set to a list for indexing
+    glycerol_carbons = list(esterified_carbons)
 
-    # If all checks pass
+    # Check if the esterified carbons form a connected chain (C-C-C)
+    # Compute the shortest paths between the carbons
+    path_lengths = []
+    for i in range(3):
+        for j in range(i+1, 3):
+            path = Chem.rdmolops.GetShortestPath(mol, glycerol_carbons[i], glycerol_carbons[j])
+            path_lengths.append(len(path) - 1)  # Subtract 1 to get number of bonds
+
+    # For a linear chain C-C-C, the path lengths should be [1, 1, 2]
+    if sorted(path_lengths) != [1, 1, 2]:
+        return False, "Esterified carbons do not form a glycerol backbone (C-C-C chain)"
+
+    # If all checks pass, the molecule is a triglyceride
     return True, "Contains esterified glycerol backbone with three fatty acid chains"
