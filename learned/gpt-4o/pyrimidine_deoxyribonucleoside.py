@@ -21,22 +21,25 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define deoxyribose pattern: 5-membered ring with specific OH groups, accounting for typical stereochemistry
-    deoxyribose_pattern = Chem.MolFromSmarts("C1C(O)C([C@@H](CO)O)O1")
+    # Define a broad pattern for deoxyribose: a furan with specific hydroxyls
+    deoxyribose_pattern = Chem.MolFromSmarts("C1([C@H](O)[C@@H](CO)O)OC1")
+    
     if not mol.HasSubstructMatch(deoxyribose_pattern):
-        return False, "No deoxyribose backbone found"
+        return False, "No deoxyribose sugar found"
 
-    # Define a generic pyrimidine pattern recognizing the core pyrimidine structure
-    pyrimidine_pattern = Chem.MolFromSmarts("c1cncnc1|c1ccncn1")
+    # Define a broader pyrimidine SMARTS to match pyrimidine rings
+    pyrimidine_pattern = Chem.MolFromSmarts("c1cncnc1|c1ccncn1|c1cnco1|c1ccnco1")
+    
     if not mol.HasSubstructMatch(pyrimidine_pattern):
-        return False, "No pyrimidine base found"
+        return False, "No pyrimidine-related base found"
 
-    # Confirm pyrimidine is connected correctly to deoxyribose
-    pyrimidine_attachment_pattern = Chem.MolFromSmarts("c1cncnc1[C@H]1C(O)C([C@@H](CO)O)O1")
+    # Ensure pyrimidine is correctly attached to deoxyribose
+    pyrimidine_attachment_pattern = Chem.MolFromSmarts("c1cncnc1[C@H]1OC[C@@H](O1)CO|c1ccncn1[C@H]1OC[C@@H](O1)CO")
+    
     if not mol.HasSubstructMatch(pyrimidine_attachment_pattern):
         return False, "Pyrimidine base not correctly connected to deoxyribose"
 
-    return True, "Contains a deoxyribose backbone with a pyrimidine base correctly attached"
+    return True, "Contains pyrimidine base attached to deoxyribose sugar"
 
 # Example test case
 example_smiles = "Cc1cn([C@H]2C[C@H](O)[C@@H](CO)O2)c(=O)[nH]c1=O"  # Thymidine
