@@ -1,96 +1,24 @@
 """
 Classifies: CHEBI:16749 1-phosphatidyl-1D-myo-inositol
 """
-"""
-Classifies: CHEBI:18299 1-phosphatidyl-1D-myo-inositol
+Based on the outcomes provided, it seems like the previous program has a few issues:
 
-A phosphatidylinositol in which the inositol moiety is the 1D-myo isomer and the phosphatidyl group is located at its position 1.
-"""
+1. **False Negatives**: The program is missing a significant number of true positive cases, as evident from the 361 false negatives. Upon examining some of the false negative examples, it appears that the program is failing to identify molecules with the correct inositol backbone and phosphate group at position 1, even though they have the two required fatty acid chains.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+2. **False Positives**: Although the number of false positives is relatively low (15), it is still worth examining these cases to identify any potential flaws in the program's logic.
 
-def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
-    """
-    Determines if a molecule is a 1-phosphatidyl-1D-myo-inositol based on its SMILES string.
+Analyzing the false positive examples, it seems that the program is incorrectly classifying molecules with an inositol backbone, a phosphate group at position 1, and only one fatty acid chain as 1-phosphatidyl-1D-myo-inositol. This is likely due to the program's requirement of having "two fatty acid chains" being too lenient or improperly implemented.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program, we can consider the following steps:
 
-    Returns:
-        bool: True if molecule is a 1-phosphatidyl-1D-myo-inositol, False otherwise
-        str: Reason for classification
-    """
+1. **Refine the identification of the inositol backbone**: Instead of relying solely on the SMARTS pattern for the inositol backbone, we could incorporate additional checks to ensure that the identified substructure is indeed the correct inositol backbone. This could involve verifying the stereochemistry, connectivity, and atom types more rigorously.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Improve the detection of fatty acid chains**: The current approach of using a generic SMARTS pattern for fatty acid chains may be too broad, leading to false positives. We could refine the pattern to specifically target long, hydrophobic carbon chains typically found in fatty acids. Additionally, we could incorporate checks for the presence of specific functional groups (e.g., carbonyl groups) that are common in fatty acid chains.
 
-    # Look for inositol backbone pattern
-    inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)O")
-    if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol backbone found"
+3. **Ensure the correct number of fatty acid chains**: Instead of simply checking if there are at least two fatty acid chain matches, we should explicitly count the number of distinct fatty acid chains and ensure that there are exactly two.
 
-    # Look for phosphate group attached to position 1
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])[O;X2]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) != 1:
-        return False, f"Found {len(phosphate_matches)} phosphate groups, need exactly 1"
+4. **Consider additional constraints**: Depending on the specific requirements of the 1-phosphatidyl-1D-myo-inositol class, we may need to incorporate additional constraints or checks. For example, we could verify the molecular weight range, the presence of specific functional groups, or the stereochemistry of the fatty acid chains.
 
-    phosphate_atom = mol.GetAtomWithIdx(list(phosphate_matches[0])[1])
-    if phosphate_atom.GetTotalNumHs() != 0:
-        return False, "Phosphate group not attached to inositol backbone"
+5. **Examine outliers and potential benchmark errors**: While the benchmark dataset is generally reliable, there may be occasional mistakes or inconsistencies. If you strongly believe that some of the false positive or false negative cases are incorrectly classified by the benchmark, you could consider ignoring those outliers or adjusting the program accordingly, while providing a clear explanation for your reasoning.
 
-    # Look for two fatty acid chains (long carbon chains attached to glycerol backbone)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    if len(glycerol_matches) != 1:
-        return False, f"Found {len(glycerol_matches)} glycerol backbones, need exactly 1"
-
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
-
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
-        return False, "Chains too short to be fatty acids"
-
-    return True, "Contains inositol backbone with phosphate group at position 1 and two fatty acid chains"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:18299',
-                          'name': '1-phosphatidyl-1D-myo-inositol',
-                          'definition': 'A phosphatidylinositol in which the '
-                                        'inositol moiety is the 1D-myo isomer '
-                                        'and the phosphatidyl group is located '
-                                        'at its position 1.',
-                          'parents': ['CHEBI:17834', 'CHEBI:18291']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 768,
-    'num_false_positives': 15,
-    'num_true_negatives': 182428,
-    'num_false_negatives': 361,
-    'num_negatives': None,
-    'precision': 0.9808264462809917,
-    'recall': 0.6804123711340206,
-    'f1': 0.8053097345132744,
-    'accuracy': 0.9984106908774476}
+By addressing these issues and refining the program's logic, we should be able to improve the classification accuracy and reduce the number of false positives and false negatives.
