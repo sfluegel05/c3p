@@ -21,11 +21,11 @@ def is_flavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define an improved flavonoid structural pattern
-    # Benzopyran: a benzene ring followed by a pyran ring with an aryl at 2-position
-    # SMARTS: OC1=CC=C2C=CC=CC2=C1-c1ccccc1 (simplified, may need adjustment)
-    # We add -c:c pattern to capture variability of aryl substitution
-    flavonoid_pattern = Chem.MolFromSmarts("Oc1cc2c([r6])[r6][r6][r6][r6]c2[o,c]c1-c:c")
+    # Define a SMARTS pattern for flavonoids:
+    # Benzopyran core (more adaptable): rings share a bridge, typically six-membered (benzene and pyran)
+    # Ensure an aryl (aromatic, variable) ring is at the substituent position.
+    # Adjust for typical flavored structures through additional flexibility in substitutions
+    flavonoid_pattern = Chem.MolFromSmarts("c1cc2occc(c2c1)-c1ccccc1")  # Flexible aryl at position 2
 
     # If the flavonoid skeleton with a 2-position aryl is present
     if mol.HasSubstructMatch(flavonoid_pattern):
