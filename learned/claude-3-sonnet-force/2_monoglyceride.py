@@ -25,8 +25,8 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone (C-C-C with at least one oxygen attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    # Look for glycerol backbone (C-C-C with 2 oxygens attached)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X3][CHX4][CH2X3]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
@@ -51,16 +51,5 @@ def is_2_monoglyceride(smiles: str):
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 4:
         return False, "Acyl chain too short"
-
-    # Check molecular weight - monoglycerides typically 200-600 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 600:
-        return False, "Molecular weight outside typical range for 2-monoglycerides"
-
-    # Check atom counts
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 10 or o_count < 3:
-        return False, "Atom counts outside typical range for 2-monoglycerides"
 
     return True, "Molecule has a glycerol backbone with an acyl chain attached at position 2"
