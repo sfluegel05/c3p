@@ -7,7 +7,7 @@ Classifies: CHEBI:35577 17beta-hydroxy steroid
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.rdchem import Bond
 
 def is_17beta_hydroxy_steroid(smiles: str):
     """
@@ -28,24 +28,38 @@ def is_17beta_hydroxy_steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C&r1,r2,r3,r4]1CCC2C3=CC=C4C[C@@]5(CC[C@@H](C5)C4)C[C@H]3[C@@H](C2)C1")
+    steroid_pattern = Chem.MolFromSmarts("[C@]1(C)[C@H]2[C@@]3([C@H](C[C@]4([C@@]3(C[C@H](C2)C4(C)C)C)C)C)CC[C@@]1(O)C(=O)CO"
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
 
-    # Find the 17-hydroxy group in the beta configuration
-    hydroxy_pattern = Chem.MolFromSmarts("[C@]([H])(O)[C@@]1([H])CCC2=CC=C3C[C@@]4(CC[C@@H](C4)C3)C[C@H]2C1")
-    matches = mol.GetSubstructMatches(hydroxy_pattern)
-    if not matches:
-        return False, "No 17-hydroxy group in the beta configuration found"
+    # Find the 17-position oxygen (attached to a cyclohexane ring)
+    o_atom = None
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:  # Oxygen
+            neighbors = [mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx()).GetBondType() for nbr in atom.GetNeighbors()]
+            if Bond.SINGLE in neighbors and Bond.SINGLE in neighbors:  # Connected to two carbon atoms
+                ring_info = mol.GetRingInfo().IsBondInRingOfSize(mol.GetBondBetweenAtoms(atom.GetIdx(), neighbors[0].GetIdx()).GetIdx(), 6)
+                if ring_info:  # One of the carbons is part of a cyclohexane ring
+                    o_atom = atom
+                    break
 
-    # Check for basic structural requirements
-    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 250 or mol_weight > 500:
-        return False, "Molecular weight out of typical range for 17beta-hydroxy steroids"
+    if o_atom is None:
+        return False, "No 17-hydroxy group found"
 
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 18 or o_count < 2:
-        return False, "Incorrect number of carbon or oxygen atoms for 17beta-hydroxy steroids"
+    # Check configuration of 17-hydroxy group
+    conf = mol.GetConformer(-1)
+    o_neighbors = [nbr for nbr in o_atom.GetNeighbors()]
+    c1_idx = o_neighbors[0].GetIdx()
+    c2_idx = o_neighbors[1].GetIdx()
+    c1_pos = conf.GetAtomPosition(c1_idx)
+    c2_pos = conf.GetAtomPosition(c2_idx)
+    o_pos = conf.GetAtomPosition(o_atom.GetIdx())
+    v1 = c1_pos - o_pos
+    v2 = c2_pos - o_pos
+    cross = v1.CrossProduct(v2)
 
-    return True, "Molecule has a 17beta-hydroxy group on the steroid backbone"
+    # Positive cross product indicates beta configuration
+    if cross.z > 0:
+        return True, "Molecule has a 17beta-hydroxy group on the steroid backbone"
+    else:
+        return False, "17-hydroxy group is in the alpha configuration"
