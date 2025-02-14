@@ -20,42 +20,29 @@ def is_polyprenol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for phosphate groups
-    phosphate_patterns = [
-        Chem.MolFromSmarts("O[P](=O)(O)O"),  # monophosphate
-        Chem.MolFromSmarts("O[P](=O)(O)O[P](=O)(O)O"), #diphosphate
-        Chem.MolFromSmarts("O[P](=O)(O)O[P](=O)(O)O[P](=O)(O)O")  # triphosphate
-    ]
+    # Define SMARTS pattern for phosphate group (allowing for deprotonation)
+    phosphate_pattern = Chem.MolFromSmarts("[P](=[O])([O])([O,H])[O,H]") #P with 3 or 4 oxygens.
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found"
     
-    #Check for the presense of at least one of those patterns.
-    found_phosphate = False
-    phosphate_match = None
-    for pattern in phosphate_patterns:
-      if mol.HasSubstructMatch(pattern):
-         found_phosphate = True
-         phosphate_match = pattern
-         break
-
-    if not found_phosphate:
-         return False, "No phosphate group found"
-
-    #Find the polyprenol chain via the isoprenoid pattern
-    isoprenoid_pattern = Chem.MolFromSmarts("CC(=C)CC")
-    isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_pattern)
-    if len(isoprenoid_matches) < 3:
-          return False, "Not enough isoprenoid units in chain"
+    # Define SMARTS for isoprenoid unit within polyprenol chain
+    isoprenoid_unit = Chem.MolFromSmarts("C[C](C)=C[C]") #one methyl branch
+    isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_unit)
     
-    #Check for connectivity between the phosphate group and the polyprenol
-    #We look for the substructure C-O-P
+    if len(isoprenoid_matches) < 1:
+         return False, "Not enough isoprenoid units in chain"
+
+    #Check for connection between phosphate and the chain
     connectivity_pattern = Chem.MolFromSmarts("[CX4,CX3]O[P]")
     connectivity_matches = mol.GetSubstructMatches(connectivity_pattern)
     
-    if len(connectivity_matches) < 1:
-         return False, "Phosphate group is not connected to the chain via an oxygen"
-         
-    # Check the length of the polyprenol chain by looking at the number of rotatable bonds
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-      return False, "Chain too short for polyprenol"
+    if len(connectivity_matches) < 1 :
+         return False, "Phosphate group is not connected to chain via an oxygen"
+    
+    
+    # Check chain length - count carbons and make sure it's a reasonable multiple of 5 (length of isoprene)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 5:
+        return False, "Too few carbons for polyprenol"
 
     return True, "Contains a polyprenol chain esterified with a phosphate group"
