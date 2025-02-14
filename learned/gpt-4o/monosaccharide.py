@@ -7,8 +7,8 @@ def is_monosaccharide(smiles: str):
     """
     Determines if a molecule is a monosaccharide based on its SMILES string.
     Monosaccharides are polyhydroxy aldehydes or ketones with three or more carbon
-    atoms and no glycosidic bonds to other sugar molecules.
-    
+    atoms, typically with multiple hydroxyl groups and potentially in cyclic form.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -16,7 +16,7 @@ def is_monosaccharide(smiles: str):
         bool: True if molecule is a monosaccharide, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -27,26 +27,19 @@ def is_monosaccharide(smiles: str):
     if c_count < 3:
         return False, "Too few carbon atoms for a monosaccharide"
 
-    # Look for hydroxyl groups (-OH)
+    # Count hydroxyl groups (-OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl groups found"
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 2:
+        return False, "Too few hydroxyl groups for a monosaccharide"
 
-    # Look for carbonyl group (C=O)
-    carbonyl_pattern = Chem.MolFromSmarts("C=O")
-    if not mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "No carbonyl group found"
-
-    # Check for glycosidic bonds (1->n connections)
-    glycosidic_bond_pattern = Chem.MolFromSmarts("O-C-O")
-    if mol.HasSubstructMatch(glycosidic_bond_pattern):
-        # Checking for potential larger sugar structure
-        return False, "Potential oligosaccharide/polysaccharide structure detected"
-
-    # Assess if molecule is likely a polyhydroxy aldehyde or ketone
-    aldehyde_pattern = Chem.MolFromSmarts("O=CC(O)")
-    ketone_pattern = Chem.MolFromSmarts("O=C[CH2]C(O)")
-    if mol.HasSubstructMatch(aldehyde_pattern) or mol.HasSubstructMatch(ketone_pattern):
-        return True, "Structure matches polyhydroxy aldehyde/ketone pattern"
+    # Consider the structure as potentially cyclic, check for ring
+    ring_count = mol.GetRingInfo().NumRings()
     
+    # Allow structures with either explicit carbonyl groups or cyclic forms
+    # i.e., hemiacetal/hemiketal should be considered
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=O")
+    if mol.HasSubstructMatch(carbonyl_pattern) or ring_count > 0:
+        return True, "Structure has characteristic features of monosaccharides (polyhydroxy and cyclic or carbonyl)"
+
     return False, "Does not match monosaccharide structural requirements"
