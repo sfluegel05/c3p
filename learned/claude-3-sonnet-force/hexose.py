@@ -1,24 +1,63 @@
 """
 Classifies: CHEBI:18133 hexose
 """
-After analyzing the previous program and the outcomes, I believe the main issue with the program is its inability to distinguish between hexoses and other carbohydrates or compounds containing six carbon atoms and an aldehyde or ketone group.
+"""
+Classifies: CHEBI:18020 hexose
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The program correctly identifies the presence of six carbon atoms, at least one oxygen atom, and an aldehyde or ketone group. However, it does not account for additional structural features specific to hexoses, such as the presence of multiple hydroxyl groups and the arrangement of these groups in a particular pattern.
+def is_hexose(smiles: str):
+    """
+    Determines if a molecule is a hexose based on its SMILES string.
+    A hexose is any six-carbon monosaccharide which in its linear form contains 
+    either an aldehyde group at position 1 (aldohexose) or a ketone group at position 2 (ketohexose).
 
-To improve the program, we can incorporate additional checks to ensure that the molecule meets the structural requirements of a hexose. Here are some potential improvements:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. **Check for the presence of multiple hydroxyl groups**: Hexoses typically have four or more hydroxyl groups attached to the carbon atoms. We can add a pattern matching step to ensure that the molecule has at least four hydroxyl groups.
-
-2. **Check for the arrangement of hydroxyl groups and the carbon chain**: Hexoses have a specific arrangement of hydroxyl groups along the carbon chain. We can use substructure matching patterns to ensure that the molecule follows this arrangement.
-
-3. **Check for specific ring structures**: Many hexoses exist in cyclic forms, such as pyranose or furanose rings. We can add substructure matching patterns to identify these ring structures and ensure that the molecule fits the expected ring size and configuration.
-
-4. **Implement additional checks for linear forms**: For linear forms of hexoses, we can check for the presence of a terminal aldehyde or ketone group and the arrangement of hydroxyl groups along the carbon chain.
-
-5. **Consider molecular weight and other properties**: Hexoses typically have a molecular weight within a specific range. We can add a check for the molecular weight and potentially other properties, such as the number of rotatable bonds or the presence of specific functional groups.
-
-6. **Analyze false positives and false negatives**: By carefully examining the false positives and false negatives, we may be able to identify additional patterns or exceptions that can be incorporated into the program to improve its accuracy.
-
-It's important to note that while these improvements may increase the accuracy of the program, there may still be some edge cases or exceptions that the program cannot handle correctly. Additionally, it's crucial to consider the trade-off between the complexity of the program and its accuracy, as well as the potential for overfitting to the specific examples provided.
-
-If you have any specific concerns or observations regarding the false positives or false negatives, please feel free to share them, as they may provide valuable insights for further improvements.
+    Returns:
+        bool: True if molecule is a hexose, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for 6 carbon atoms and at least 4 oxygen atoms (multiple hydroxyl groups)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count != 6 or o_count < 4:
+        return False, "Not a hexose (wrong number of C or O atoms)"
+    
+    # Check for aldehyde or ketone group
+    aldehyde_pattern = Chem.MolFromSmarts("[CH]=O")
+    ketone_pattern = Chem.MolFromSmarts("C(=O)")
+    if not mol.HasSubstructMatch(aldehyde_pattern) and not mol.HasSubstructMatch(ketone_pattern):
+        return False, "No aldehyde or ketone group found"
+    
+    # Check for linear chain or ring structure
+    chain_pattern = Chem.MolFromSmarts("[CH2]-[CH]-[CH]-[CH]-[CH]-[CH]")
+    pyranose_pattern = Chem.MolFromSmarts("C1OCCCC1")
+    furanose_pattern = Chem.MolFromSmarts("C1OCCC1")
+    
+    if mol.HasSubstructMatch(chain_pattern):
+        # Linear hexose, check aldehyde/ketone position
+        if mol.HasSubstructMatch(aldehyde_pattern):
+            aldehyde_idx = list(mol.GetSubstructMatches(aldehyde_pattern))[0][0]
+            if aldehyde_idx != 0:
+                return False, "Aldehyde not at position 1 (linear form)"
+        else:
+            ketone_idx = list(mol.GetSubstructMatches(ketone_pattern))[0][0]
+            if ketone_idx != 1:
+                return False, "Ketone not at position 2 (linear form)"
+    elif mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern):
+        # Cyclic hexose, check ring size and arrangement of hydroxyl groups
+        pass  # TODO: Implement ring checks
+    else:
+        return False, "Neither linear nor cyclic hexose structure found"
+    
+    return True, "Molecule matches the definition of a hexose"
