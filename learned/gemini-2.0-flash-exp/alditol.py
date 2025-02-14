@@ -21,49 +21,41 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for cycles
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains rings, not an alditol"
-
-    # Get all atoms in the molecule
+    # Get all atoms
     atoms = mol.GetAtoms()
 
-    # Check for the two terminal CH2OH groups
-    terminal_ch2oh_count = 0
+    #Find the linear backbone:
+    chain_pattern = Chem.MolFromSmarts("[CH2X4][CHX4](O)[CHX4](O)[CH2X4]") # minimum 4 carbons
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+
+    if not chain_matches:
+        return False, "Molecule does not have a linear chain of carbons with OH groups"
+    
+    # We assume that the first match contains the alditol backbone
+    chain_atoms = chain_matches[0]
+    backbone_atoms = []
+    for atom_idx in chain_atoms:
+        backbone_atoms.append(mol.GetAtomWithIdx(atom_idx))
+    
+    #Check if the chain has CH2OH termini
+    if not (backbone_atoms[0].GetTotalDegree() == 3 and  backbone_atoms[0].GetNeighbors()[0].GetAtomicNum() == 6 and backbone_atoms[0].GetNeighbors()[1].GetAtomicNum() == 8 and backbone_atoms[3].GetTotalDegree() == 3 and  backbone_atoms[3].GetNeighbors()[0].GetAtomicNum() == 6 and backbone_atoms[3].GetNeighbors()[1].GetAtomicNum() == 8):
+          return False, "Molecule does not have CH2OH termini in linear chain"
+
+    for i in range(1,len(backbone_atoms)-1):
+         if not (backbone_atoms[i].GetTotalDegree() == 3 and  backbone_atoms[i].GetNeighbors()[0].GetAtomicNum() == 6 and backbone_atoms[i].GetNeighbors()[1].GetAtomicNum() == 6 and backbone_atoms[i].GetNeighbors()[2].GetAtomicNum() == 8 and backbone_atoms[i].GetNeighbors()[2].GetTotalDegree() == 1):
+             return False, "Molecule does not have CHOH in linear chain"
+
+    # Check that non-backbone carbon atoms have O neighbors
     for atom in atoms:
-        if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 3 : # carbons with three bonds
-            neighbors = [neighbor for neighbor in atom.GetNeighbors()] # get neighbours
-            oxygen_neighbor = [neigh for neigh in neighbors if neigh.GetAtomicNum() == 8] # get all O neighbours
-            if len(oxygen_neighbor) == 1: # if there is one oxygen
-                o_atom = oxygen_neighbor[0]
-                if o_atom.GetTotalDegree() == 1: #oxygen needs to have a single bond
-                    h_neighbors = [h for h in o_atom.GetNeighbors() if h.GetAtomicNum() == 1]
-                    if len(h_neighbors) == 1: #oxygen must be bound to one hydrogen
-                            h_neighbors = [neigh for neigh in neighbors if neigh.GetAtomicNum() == 1] #Get H neighbours from carbon
-                            if len(h_neighbors) == 2: #There must be 2 H's on carbon
-                                terminal_ch2oh_count += 1
+        if atom.GetAtomicNum() == 6 and atom not in backbone_atoms:
+            has_oxygen_neighbor = False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8:
+                    has_oxygen_neighbor = True
+                    break
+            if not has_oxygen_neighbor:
+                return False, "Non-backbone carbon atom does not have an oxygen neighbor"
 
-    if terminal_ch2oh_count != 2:
-        return False, f"Molecule does not have exactly two terminal CH2OH groups, found {terminal_ch2oh_count}"
-
-
-    # Check for CHOH groups in the chain
-    for atom in atoms:
-        if atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 3: # carbons with three bonds
-            neighbors = [neighbor for neighbor in atom.GetNeighbors()]
-            oxygen_neighbor = [neigh for neigh in neighbors if neigh.GetAtomicNum() == 8] # get all O neighbours
-            if len(oxygen_neighbor) == 1: # if there is one oxygen
-                o_atom = oxygen_neighbor[0]
-                if o_atom.GetTotalDegree() == 1: #oxygen needs to have a single bond
-                    h_neighbors = [h for h in o_atom.GetNeighbors() if h.GetAtomicNum() == 1]
-                    if len(h_neighbors) == 1: #oxygen must be bound to one hydrogen
-                        
-                        c_count = 0
-                        for neigh in neighbors:
-                            if neigh.GetAtomicNum() == 6:
-                                c_count +=1
-                        if c_count != 2:
-                           return False, f"Molecule does not have CHOH in the chain, found carbon chain with carbon neighbours {c_count}"
 
     # Verify that there are only carbons, hydrogens, and oxygens
     for atom in atoms:
