@@ -29,46 +29,30 @@ def is_oligosaccharide(smiles: str):
         return False, "Molecule has less than 2 rings, not an oligosaccharide"
     
     # Check for glycosidic linkages (C-O-C between rings)
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_linkage_pattern)
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[CX4][OX2]([CX4])")
+    if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
+      return False, "Molecule does not contain any glycosidic linkages."
     
-    ring_atoms_count = 0
-    for atom in mol.GetAtoms():
-       if atom.IsInRing():
-         ring_atoms_count+=1
-         if atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 8:
-            return False, "Rings must contain only carbon and oxygen atoms."
-
-
-    if len(glycosidic_matches) < 1:
-        return False, "Molecule does not contain any glycosidic linkages."
-
-    # Check that the molecule consists mainly of 5- and 6-membered rings with multiple -OH groups.
-    sugar_ring_pattern1 = Chem.MolFromSmarts("[C1]([C][C][C][C][O1])[O]") #5 member ring
-    sugar_ring_pattern2 = Chem.MolFromSmarts("[C1]([C][C][C][C][C][O1])[O]") #6 member ring
+    # Check that the molecule consists mainly of 5- and 6-membered rings with at least one oxygen
+    #in the ring.
+    sugar_ring_pattern1 = Chem.MolFromSmarts("[C;R1,R2]1[C;R1,R2][C;R1,R2][C;R1,R2][O;R1,R2]1") #5 member ring
+    sugar_ring_pattern2 = Chem.MolFromSmarts("[C;R1,R2]1[C;R1,R2][C;R1,R2][C;R1,R2][C;R1,R2][O;R1,R2]1") #6 member ring
     
-    sugar_matches1 = mol.GetSubstructMatches(sugar_ring_pattern1)
-    sugar_matches2 = mol.GetSubstructMatches(sugar_ring_pattern2)
-    if len(sugar_matches1) + len(sugar_matches2) == 0:
+    if not mol.HasSubstructMatch(sugar_ring_pattern1) and not mol.HasSubstructMatch(sugar_ring_pattern2):
          return False, "Molecule does not contain sugar rings (5 or 6 membered cycles with an oxygen in the ring)."
 
-    #Check number of carbons and oxygen
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-
-    if c_count < 6: #minimum 2 monosaccharides are required, hence 2*3 carbons
-       return False, "Oligosaccharide should have at least 6 carbon atoms"
-
-    if o_count < 4: #minimum 2 monosaccharides are required, hence 2*2 oxygens
-       return False, "Oligosaccharide should have at least 4 oxygen atoms"
+    # Check all ring atoms are either C or O
+    for atom in mol.GetAtoms():
+      if atom.IsInRing() and atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 8:
+         return False, "Rings must contain only carbon and oxygen atoms."
     
-    # Check the linkages between cycles
+    #Check the link between rings
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_linkage_pattern)
     for match in glycosidic_matches:
       start_atom = mol.GetAtomWithIdx(match[0])
       mid_atom = mol.GetAtomWithIdx(match[1])
       end_atom = mol.GetAtomWithIdx(match[2])
       if not (mid_atom.GetAtomicNum()==8 and start_atom.IsInRing() and end_atom.IsInRing()):
-         return False, "Linkages between the cycles must be ether links."
-         
+         return False, "Linkages between the cycles must be ether links between two rings."
 
     return True, "Molecule contains multiple sugar rings linked by glycosidic bonds."
