@@ -18,7 +18,6 @@ def is_methyl_branched_fatty_acid(smiles: str):
         bool: True if molecule is a methyl-branched fatty acid, False otherwise
         str: Reason for classification
     """
-
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
@@ -32,54 +31,40 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if mol.HasSubstructMatch(Chem.MolFromSmarts("[R]")):
         return False, "Molecule contains rings"
 
-    # Check for non-methyl branches
-    non_methyl_branch = Chem.MolFromSmarts("C[CH2,CH]([CH3])")
-    if mol.HasSubstructMatch(non_methyl_branch):
-         return False, "Molecule contains non-methyl branches"
+    #Check for other atoms except C,H,O
+    other_atoms = Chem.MolFromSmarts("[!#1!#6!#8]")
+    if mol.HasSubstructMatch(other_atoms):
+         return False, "Molecule contains non C, H, or O atoms"
 
-    # Find main chain carbons connected to the acid group
-    chain_carbon = mol.GetSubstructMatches(Chem.MolFromSmarts("CC(=O)O"))
-    if len(chain_carbon) == 0:
-        return False, "Chain not connected to acid"
-
-    # Get number of carbon atoms
+    # Check for minimum chain length of at least 4 carbons excluding the carbonyl carbon (C=O).
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     num_carbons = len(carbon_atoms)
 
-
-    #check main chain
-    
-    main_chain_carbons = set()
-    
-    for match in chain_carbon:
-      main_chain_start = match[0]
-      main_chain_carbons.add(main_chain_start)
-
-      
-    #Find adjacent chain
-    next_carbon_atoms = []
-    for atom_id in main_chain_carbons:
-        atom = mol.GetAtomWithIdx(atom_id)
-        for neighbor in atom.GetNeighbors():
-          if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != chain_carbon[0][1]:
-            next_carbon_atoms.append(neighbor.GetIdx())
-
-    main_chain_carbons.update(next_carbon_atoms)
-
-
-
-    # Check for minimum chain length of at least 4 carbons excluding the carbonyl carbon (C=O).
     if num_carbons < 4:
-      return False, "Too few carbons to be a fatty acid"
+       return False, "Too few carbons to be a fatty acid"
 
-    # Get number of branches
-    branch_pattern = Chem.MolFromSmarts("[CH]([CH3])")
-    num_branches = len(mol.GetSubstructMatches(branch_pattern))
-
-
-    #Check if we have other functional groups
-    other_functional_group_pattern = Chem.MolFromSmarts("[!#1!#6!#8!#7!#15]")
-    if mol.HasSubstructMatch(other_functional_group_pattern):
-        return False, "Molecule contains other functional groups"
+    #Find carbon connected to carboxyl group
+    chain_carbon_pattern = Chem.MolFromSmarts("CC(=O)O")
+    chain_carbon_matches = mol.GetSubstructMatches(chain_carbon_pattern)
+    if not chain_carbon_matches:
+         return False, "Carboxylic acid not attached to carbon chain"
+    
+    
+    #Check all carbons for non-methyl branch
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  #only look at carbon atoms
+            neighbors = atom.GetNeighbors()
+            for neighbor in neighbors:
+                if neighbor.GetAtomicNum() == 6: #only check the neighbors that are carbon atoms
+                    if len(neighbor.GetNeighbors()) > 1 and neighbor.GetDegree() > 1: #check branching carbons
+                        is_methyl = True
+                        for next_neighbor in neighbor.GetNeighbors():
+                            if next_neighbor.GetAtomicNum() == 6:
+                                if next_neighbor.GetDegree() > 1 and next_neighbor.GetIdx() != atom.GetIdx():
+                                    is_methyl = False
+                                    break
+                        if not is_methyl:
+                           return False, "Molecule contains non-methyl branches"
+                                
 
     return True, "Methyl-branched fatty acid"
