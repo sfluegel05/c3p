@@ -1,22 +1,56 @@
 """
 Classifies: CHEBI:28034 beta-D-galactoside
 """
-After analyzing the previous program and the outcomes, it appears that the program was able to correctly identify beta-D-galactosides based on the presence of a D-galactose substructure in the beta configuration at the anomeric center and with a glycosidic bond (-O- linker). The program achieved an impressive F1 score of 1.0, indicating perfect precision and recall.
+"""
+Classifies: CHEBI:28015 beta-D-galactoside
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-However, the failure cases reported indicate that the program missed some structures that should have been classified as beta-D-galactosides. Here are some potential reasons for these missed cases and suggestions for improvement:
+def is_beta_D_galactoside(smiles: str):
+    """
+    Determines if a molecule is a beta-D-galactoside based on its SMILES string.
+    A beta-D-galactoside is any D-galactoside having beta-configuration at its anomeric centre.
 
-1. **Structural Variations**: Some of the missed structures, such as `O-5''-beta-D-galactosylqueuosine` and `kaempferol 3-O-beta-D-galactopyranosyl-7-O-alpha-L-rhamnopyranoside`, have additional substituents or modifications to the core beta-D-galactoside structure. The current program may not be able to handle these variations effectively.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   **Potential Improvement**: Expand the SMARTS patterns to include common substituents or modifications that can occur in beta-D-galactosides. This can be done by analyzing the missed structures and identifying recurring structural motifs.
+    Returns:
+        bool: True if molecule is a beta-D-galactoside, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Assign stereochemistry based on heuristics
+    AllChem.AssignStereochemistryFromSmiles(mol)
+    
+    # Look for beta-D-galactoside substructure
+    beta_gal_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H](O[C@@]1(O)CO)O)O)O")
+    beta_gal_matches = mol.GetSubstructMatches(beta_gal_pattern)
+    
+    if not beta_gal_matches:
+        return False, "No beta-D-galactoside substructure found"
+    
+    # Look for common substituents or modifications
+    mod_patterns = [
+        Chem.MolFromSmarts("[C@H](O)[C@H](CO)[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O"),  # alpha-L-rhamnosyl
+        Chem.MolFromSmarts("[C@H](O)[C@@H](CO)[C@H](O)[C@H](O)[C@H](O)"),  # alpha-L-arabinosyl
+        Chem.MolFromSmarts("O=S(=O)(O)"),  # sulfate group
+        Chem.MolFromSmarts("O=P(O)(O)O"),  # phosphate group
+        # Add more patterns as needed
+    ]
+    
+    for pattern in mod_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains beta-D-galactoside substructure with common modification"
+    
+    return True, "Contains unmodified beta-D-galactoside substructure"
 
-2. **Multiple Occurrences**: Some structures, like `beta-D-GlcA3S-(1->3)-beta-D-Gal-OC6H4-4-OMe`, contain multiple occurrences of the beta-D-galactoside substructure. The current program may only detect one occurrence and miss the others.
-
-   **Potential Improvement**: Modify the code to find all occurrences of the beta-D-galactoside substructure within a molecule and classify it as a positive case if at least one occurrence is found.
-
-3. **Stereochemistry Handling**: The program relies on specific stereochemistry patterns to identify the beta configuration at the anomeric center. However, some structures may not have explicit stereochemistry specified in the SMILES string, leading to missed cases.
-
-   **Potential Improvement**: Explore ways to handle stereochemistry more robustly, such as using the `Chem.AssignStereochemistry` function from RDKit to assign stereochemistry based on certain rules or heuristics.
-
-4. **False Negatives in the Benchmark**: It is important to note that the benchmark data may not be 100% accurate, and there could be occasional systematic mistakes or misclassifications. If you have a strong understanding of the chemical class and are confident that some of the missed cases should indeed be classified as beta-D-galactosides, you could consider ignoring those outliers and explaining your reasoning.
-
-Overall, while the program achieved a high F1 score, there is still room for improvement, particularly in handling structural variations and stereochemistry more robustly. Iterative refinement of the SMARTS patterns and incorporating additional checks or rules could further enhance the performance of the classifier.
+# Example usage
+smiles = "O([C@H]1[C@@H]([C@H]([C@H]([C@H](O1)CO)O)O[C@H]2[C@@H]([C@H]([C@@H]([C@H](O2)C(O)=O)O)OS(=O)(=O)O)O)O)C=3C=CC(=CC3)OC"
+result, reason = is_beta_D_galactoside(smiles)
+print(f"Is beta-D-galactoside? {result} ({reason})")
