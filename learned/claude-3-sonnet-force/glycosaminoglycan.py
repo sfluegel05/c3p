@@ -1,60 +1,30 @@
 """
 Classifies: CHEBI:18085 glycosaminoglycan
 """
-"""
-Classifies: CHEBI:36973 glycosaminoglycan
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+From the outcomes provided, it appears that the previous program has some limitations in accurately identifying glycosaminoglycans. Here's my analysis and suggestions for improvement:
 
-def is_glycosaminoglycan(smiles: str):
-    """
-    Determines if a molecule is a glycosaminoglycan based on its SMILES string.
-    A glycosaminoglycan is any polysaccharide containing a substantial proportion
-    of aminomonosaccharide residues.
+1. **Aminomonosaccharide Residues**: The current code checks for the presence of at least two aminomonosaccharide residues, but it seems that this condition alone is not sufficient. Some of the false negatives, like Desferrioxamine X4 and Tenuecyclamide D, appear to have aminomonosaccharide residues but are not classified as glycosaminoglycans.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+   Potential improvement: Instead of just counting the number of aminomonosaccharide residues, the program could look for specific patterns or motifs that are characteristic of glycosaminoglycans. For example, it could look for repeating units of aminomonosaccharides linked by glycosidic bonds.
 
-    Returns:
-        bool: True if molecule is a glycosaminoglycan, False otherwise
-        str: Reason for classification
-    """
+2. **Polysaccharide Backbone**: The current program checks for a polysaccharide backbone by looking for the pattern "[OX2]~[CX4]~[OX2]". This pattern matches a single sugar unit but may not be sufficient to identify a polysaccharide backbone.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+   Potential improvement: Instead of looking for a single sugar unit, the program could look for longer patterns that represent a polysaccharide backbone, such as "[OX2]~[CX4]~[OX2]~[CX4]~[OX2]~[CX4]" or use a more flexible SMARTS pattern that can match longer chains.
 
-    # Look for patterns of aminomonosaccharide residues
-    amino_sugar_pattern = Chem.MolFromSmarts("[N;X3;H2,H1][-;!@C]")
-    amino_sugar_matches = mol.GetSubstructMatches(amino_sugar_pattern)
+3. **Glycosidic Bonds**: The current program checks for the presence of at least one glycosidic bond, but it may not be sufficient for identifying glycosaminoglycans.
 
-    # Check if there are multiple aminomonosaccharide residues
-    if len(amino_sugar_matches) < 2:
-        return False, "Insufficient aminomonosaccharide residues"
+   Potential improvement: Similar to the polysaccharide backbone, the program could look for patterns that represent multiple glycosidic bonds or longer polysaccharide chains.
 
-    # Check for polysaccharide backbone
-    polysaccharide_pattern = Chem.MolFromSmarts("[OX2]~[CX4]~[OX2]")
-    polysaccharide_matches = mol.GetSubstructMatches(polysaccharide_pattern)
-    if len(polysaccharide_matches) < 2:
-        return False, "No polysaccharide backbone found"
+4. **Nitrogen Atom Count**: The current program checks for the presence of at least two nitrogen atoms, but this condition alone may not be discriminating enough.
 
-    # Check for additional glycosidic bonds
-    glycosidic_pattern = Chem.MolFromSmarts("[OX2]~[CX4]~[OX2]~[CX4]")
-    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
-    if not glycosidic_matches:
-        return False, "No glycosidic bonds found"
+   Potential improvement: Instead of just counting the number of nitrogen atoms, the program could look for specific patterns or motifs that involve nitrogen atoms, such as aminomonosaccharide residues or sulfated groups, which are common in glycosaminoglycans.
 
-    # Count nitrogen atoms
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count < 2:
-        return False, "Too few nitrogen atoms for glycosaminoglycan"
+5. **Molecular Weight**: While the molecular weight check can be a useful heuristic, it may not be sufficient on its own, as some glycosaminoglycans or related compounds may have lower molecular weights.
 
-    # Check molecular weight - glycosaminoglycans typically >500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for glycosaminoglycan"
+   Potential improvement: Instead of relying solely on molecular weight, the program could combine it with other structural features or patterns to improve the classification accuracy.
 
-    return True, "Contains aminomonosaccharide residues and a polysaccharide backbone"
+6. **Handling Exceptions**: Some of the false negatives, like Clonostachysin A and Awamycin, appear to be complex molecules that may not fit the traditional definition of glycosaminoglycans. In such cases, it might be reasonable to ignore these outliers if they are consistent with your understanding of the chemical class.
+
+   Potential improvement: If you are confident that the program's classifications are correct for these edge cases, you could include exceptions or additional checks to handle these specific cases or provide a more nuanced explanation for the classification.
+
+Overall, the current program seems to be taking a reasonable approach by looking for specific structural patterns and features, but it may need to be more specific and flexible in its pattern matching to accurately identify glycosaminoglycans. Incorporating additional patterns, motifs, and combinations of features could potentially improve the classification accuracy.
