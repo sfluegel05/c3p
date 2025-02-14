@@ -19,14 +19,15 @@ def is_glucosinolate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for thioglucoside core (pyranose linked to sulfur), allow for substitutions
-    thioglucoside_pattern = Chem.MolFromSmarts("[C]1[C][C][O][C][C]1[S]")
-    thioglucoside_matches = mol.GetSubstructMatches(thioglucoside_pattern)
-    if not thioglucoside_matches:
-       return False, "Thioglucoside core not found"
+    # 1. Check for the combined thioglucoside core and central C atom connectivity, allows substitutions on the sugar ring.
+    # The S from the thioglucoside needs to be connected to the central C and side-chain.
+    combined_pattern = Chem.MolFromSmarts("[C]1[C]([O][H])([C]([O][H])([C]([O][H])([C]([C]([O][H])[C])O1)))[S][C](!=[H])=[N]")
+    combined_matches = mol.GetSubstructMatches(combined_pattern)
+    if not combined_matches:
+       return False, "Thioglucoside core not found or not connected to central carbon"
 
     # 2. Check for the central C atom bonded to S, N, and a side-chain, with stereochemistry
-    # This includes the trans C=N bond pattern and ensures that C has 3 bonds and side chain on C is not H. 
+    # This includes the trans C=N bond pattern and ensures that C has 3 bonds and side chain on C is not H.
     central_carbon_pattern = Chem.MolFromSmarts("[SX2][C](!=[H])(=[N])")
     central_carbon_matches = mol.GetSubstructMatches(central_carbon_pattern)
     if not central_carbon_matches:
@@ -38,12 +39,13 @@ def is_glucosinolate(smiles: str):
 
     if not sulfonated_oxime_matches:
        return False, "Sulfonated oxime group not found"
+
     
-    # 4. Check connectivity between thioglucoside S and central C and combine the pattern
-    # this ensures that the S in the thioglucoside and the S in the central_carbon_pattern is the same
-    combined_pattern = Chem.MolFromSmarts("[C]1[C][C][O][C][C]1[S][C](!=[H])=[N]")
-    combined_matches = mol.GetSubstructMatches(combined_pattern)
-    if not combined_matches:
-        return False, "Thioglucoside sulfur not connected to the central carbon"
+    # 4. Combine patterns to ensure all three components are present and connected.
+    # Ensure that the sulfur is connected to the central carbon, and that the central carbon is connected to the sulfonated oxime
+    overall_pattern = Chem.MolFromSmarts("[C]1[C]([O][H])([C]([O][H])([C]([O][H])([C]([C]([O][H])[C])O1)))[S][C](!=[H])(=[N]\[OS(=O)(=O)[O-,O])")
+    overall_matches = mol.GetSubstructMatches(overall_pattern)
+    if not overall_matches:
+        return False, "Combined pattern not found"
 
     return True, "Molecule matches all required patterns for glucosinolate"
