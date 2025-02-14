@@ -6,7 +6,7 @@ Classifies: CHEBI:35930 octanoate ester
 Any fatty acid ester in which the carboxylic acid component is octanoic acid (caprylic acid).
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_octanoate_ester(smiles: str):
     """
@@ -25,15 +25,20 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for octanoate group (CCCCCCCC(=O)O-)
-    octanoate_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)[O-]")
-    octanoate_matches = mol.GetSubstructMatches(octanoate_pattern)
+    # Look for octanoic acid (caprylic acid) substructure
+    octanoic_acid_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)O")
+    octanoic_acid_matches = mol.GetSubstructMatches(octanoic_acid_pattern)
     
-    # Look for ester bond (CCCCCCCC(=O)O-C)
-    ester_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)OC")
+    # Look for any ester bond (-C(=O)O-)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
-    if len(octanoate_matches) > 0 or len(ester_matches) > 0:
-        return True, "Contains octanoate group and ester bond"
+    # Check molecular weight and atom counts
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if len(octanoic_acid_matches) > 0 and len(ester_matches) > 0 and mol_wt > 200 and c_count >= 8 and o_count >= 2:
+        return True, "Contains octanoic acid component and ester bond"
     else:
-        return False, "Does not contain octanoate group or ester bond"
+        return False, "Does not meet the criteria for an octanoate ester"
