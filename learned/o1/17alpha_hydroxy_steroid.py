@@ -6,7 +6,7 @@ Classifies: 17alpha-hydroxy steroid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdMolAlign
 
 def is_17alpha_hydroxy_steroid(smiles: str):
     """
@@ -29,38 +29,63 @@ def is_17alpha_hydroxy_steroid(smiles: str):
     # Ensure molecule has stereochemistry information
     Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
 
-    # Check for steroid backbone (four fused rings: three six-membered, one five-membered)
-    ri = mol.GetRingInfo()
-    atom_rings = ri.AtomRings()
-    ring_counts = {}
-    for ring in atom_rings:
-        ring_size = len(ring)
-        ring_counts[ring_size] = ring_counts.get(ring_size, 0) + 1
+    # Steroid backbone SMARTS with labeled atoms (C17 is labeled as atom 17)
+    steroid_smarts = """
+    [#6]-1=[#6]-[#6]-[#6]-2-[#6]-[#6]-3=[#6]-[#6]-[#6]-[#6]-[#6]-3-
+    [#6]-[#6]-2-[#6]-1
+    """
 
-    if ring_counts.get(6, 0) < 3 or ring_counts.get(5, 0) < 1:
-        return False, "Does not have the typical steroid ring structure"
+    # Create a template steroid molecule with labeled atoms
+    steroid_template = Chem.MolFromSmiles('C1CCC2C3CCC4=CC(=O)CC[C@]4(C)[C@@H]3CC[C@]12C')
+    if steroid_template is None:
+        return False, "Failed to create steroid template"
 
-    # Check for hydroxyl group at a chiral tertiary carbon (possible C17 position)
-    hydroxyl_pattern = Chem.MolFromSmarts("[C@@H](O)[C]")
-    matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if not matches:
-        return False, "No chiral carbon with attached hydroxyl group found"
+    # Label the C17 atom in the template (atom index 16 in zero-based indexing)
+    atom_map = {atom.GetIdx(): atom.GetIdx() + 1 for atom in steroid_template.GetAtoms()}
+    steroid_template.GetAtomWithIdx(16).SetAtomMapNum(17)  # C17
 
-    # Check if any of these carbons could be the C17 position
-    found = False
-    for match in matches:
-        idx_C = match[0]
-        atom_C = mol.GetAtomWithIdx(idx_C)
-        # Ensure the carbon is tertiary (connected to three carbons)
-        neighbor_carbons = [nbr for nbr in atom_C.GetNeighbors() if nbr.GetAtomicNum() == 6]
-        if len(neighbor_carbons) == 3:
-            # Check stereochemistry
-            chirality = atom_C.GetChiralTag()
-            if chirality == Chem.CHI_TETRAHEDRAL_CCW:
-                found = True
+    # Perform substructure match to align the molecule to the steroid template
+    match = mol.GetSubstructMatch(steroid_template)
+    if not match:
+        return False, "Molecule does not match steroid backbone"
+
+    # Create an atom map from template to molecule
+    atom_map = {template_idx: mol_idx for template_idx, mol_idx in enumerate(match)}
+
+    # Get the C17 atom in the molecule
+    c17_idx = atom_map.get(16)  # Template atom index 16 corresponds to C17
+    if c17_idx is None:
+        return False, "C17 atom not found in molecule"
+
+    c17_atom = mol.GetAtomWithIdx(c17_idx)
+
+    # Check for hydroxyl group at C17
+    has_oh = False
+    for neighbor in c17_atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 8:
+            # Check if the oxygen is part of a hydroxyl group
+            if len(neighbor.GetNeighbors()) == 1:
+                has_oh = True
+                oxygen_idx = neighbor.GetIdx()
                 break
 
-    if not found:
-        return False, "No tertiary chiral carbon with alpha-hydroxyl group found"
+    if not has_oh:
+        return False, "No hydroxyl group attached to C17"
 
-    return True, "Contains steroid backbone with 17alpha-oriented hydroxyl group"
+    # Check stereochemistry at C17 (alpha orientation)
+    stereo = c17_atom.GetChiralTag()
+    if stereo == Chem.CHI_UNSPECIFIED:
+        return False, "Chirality at C17 is unspecified"
+
+    # Determine if the configuration is alpha at C17
+    # For steroids, alpha orientation corresponds to S configuration at C17
+    # RDKit uses CIP rules to assign R/S configuration
+    c17_symbol = c17_atom.GetSymbol()
+    if c17_atom.HasProp('_CIPCode'):
+        cip_code = c17_atom.GetProp('_CIPCode')
+        if cip_code != 'S':
+            return False, f"Hydroxyl group at C17 is not alpha-oriented (CIP code: {cip_code})"
+    else:
+        return False, "Unable to assign CIP code to C17 atom"
+
+    return True, "Molecule is a 17alpha-hydroxy steroid with correct stereochemistry at C17"
