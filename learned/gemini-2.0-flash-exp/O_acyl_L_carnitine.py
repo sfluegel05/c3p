@@ -22,49 +22,55 @@ def is_O_acyl_L_carnitine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the L-carnitine core with correct stereochemistry using SMARTS
-    # The key here is the @ which designates the chirality
-    # The ester oxygen (O) and quaternary nitrogen (N) are linked to the chiral carbon (*)
-    # The other carbons (C) have at least one hydrogen.
+    # the pattern also allows for both the charged and uncharged forms
+    # Note the explicit specification of the C-N bond and the chiral hydrogen
 
     carnitine_core_smarts = "[C@H]([OX2])(CC(=O)[O-,OH])C[N+](C)(C)C"
+
     carnitine_core_pattern = Chem.MolFromSmarts(carnitine_core_smarts)
 
     if not mol.HasSubstructMatch(carnitine_core_pattern):
-        return False, "L-carnitine core not found with the correct stereochemistry"
-    
+        return False, "L-carnitine core not found"
+
     # Check for an ester group attached to the oxygen of the core. We also allow a charged ester oxygen.
-    ester_pattern = Chem.MolFromSmarts("[OX2-,OX2][CX3](=[OX1])")
+    # The key here is the explicit connection to the carnitine core with correct stereochemistry.
+    ester_smarts = "[C@H]([OX2])(CC(=O)[O-,OH])C[N+](C)(C)C[OX2][CX3](=[OX1])"
+    ester_pattern = Chem.MolFromSmarts(ester_smarts)
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 1:
-        return False, "No ester bond found"
-    
-    # check that the ester oxygen atom is indeed the oxygen at the carnitine chiral carbon
+
+    if not ester_matches:
+          return False, "No ester bond found directly linked to the carnitine core"
+
+    # check that the carbon at position 1 is indeed chiral (L configuration)
     matches = mol.GetSubstructMatches(carnitine_core_pattern)
     found_correct_oxygen = False
     for match in matches:
         chiral_carbon_idx = match[0]
         chiral_carbon = mol.GetAtomWithIdx(chiral_carbon_idx)
-        oxygen_idx = -1 # will store the index of the oxygen linked to the chiral carbon
+        
+        # now verify that it's indeed an L stereocenter by looking for the hydrogen
+        hydrogen_idx = -1
         for neighbor in chiral_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8:
-                oxygen_idx = neighbor.GetIdx()
+            if neighbor.GetAtomicNum() == 1:
+                hydrogen_idx = neighbor.GetIdx()
                 break
-        if oxygen_idx == -1:
-           continue #should not happen in a correctly matched structure
-        for ester_match in ester_matches:
-           if oxygen_idx == ester_match[0]:
-                found_correct_oxygen = True
-                break
-        if found_correct_oxygen:
-           break
+        if hydrogen_idx == -1:
+            return False, "No hydrogen bound to chiral carbon"
+
+        # Check that the hydrogen is pointing up
+        
+        if chiral_carbon.GetChiralTag() != Chem.ChiralType.CHI_TETRAHEDRAL_CW:
+             return False, "Chiral center not L (or S) configuration"
+        
+        found_correct_oxygen = True
+        break
     
     if not found_correct_oxygen:
-        return False, "Ester bond not attached to the carnitine oxygen"
+        return False, "Chiral carbon not correctly bound to an ester"
 
     # check the number of nitrogens (sanity check, should be 1 quaternary)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and atom.GetFormalCharge() == 1)
     if n_count != 1:
       return False, f"Number of quaternary nitrogens incorrect, should be 1, found {n_count}"
-    
-    
+
     return True, "Molecule is an O-acyl-L-carnitine"
