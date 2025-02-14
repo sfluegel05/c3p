@@ -2,7 +2,6 @@
 Classifies: CHEBI:50998 trans-2-enoyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_trans_2_enoyl_CoA(smiles: str):
@@ -30,67 +29,27 @@ def is_trans_2_enoyl_CoA(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
     
-    # Define the thioester group
-    thioester_pattern = Chem.MolFromSmarts("S[CX3](=O)")
-    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    if len(thioester_matches) != 1:
-         return False, f"Found {len(thioester_matches)} thioester groups, need exactly 1"
+   
+    # Define the trans-2-enoyl-CoA fragment with trans double bond
+    # This SMARTS pattern specifically looks for a C=C with a trans config and with the acyl chain
+    # and sulfur from coA attached.
+    trans_2_enoyl_pattern = Chem.MolFromSmarts("[CX4][C@H]=[C@H][CX3](=O)[SX2]")
     
-    # Define the trans double bond pattern
-    trans_double_bond_pattern = Chem.MolFromSmarts("[CX4]=[CX4]")
-    trans_double_bond_matches = mol.GetSubstructMatches(trans_double_bond_pattern)
-    
-    # Check for trans configuration.
+    matches = mol.GetSubstructMatches(trans_2_enoyl_pattern)
+
     found_correct_bond = False
-    for match in trans_double_bond_matches:
-        bond = mol.GetBondBetweenAtoms(match[0],match[1])
-        if bond.GetStereo() != Chem.BondStereo.STEREOE:
-           continue # skip if not trans
-        
-        #Find atoms connected to the double bond
-        atom1 = mol.GetAtomWithIdx(match[0])
-        atom2 = mol.GetAtomWithIdx(match[1])
+    for match in matches:
+      # check if the sulfur belongs to the coA using substruct match
+      sulfur_idx = match[4]
+      for sulfur_match in mol.GetSubstructMatches(Chem.MolFromSmarts('S')):
+           if sulfur_match[0] == sulfur_idx:
+               found_correct_bond = True
+               break
+      if found_correct_bond:
+          break
 
-        # find the carbonyl carbon
-        carbonyl_carbon_idx = None
-        for neighbor in atom1.GetNeighbors():
-            if neighbor.GetIdx() not in match:
-              neighbor_atom = mol.GetAtomWithIdx(neighbor.GetIdx())
-              if neighbor_atom.GetAtomicNum() == 8 and neighbor_atom.GetTotalValence() == 2:
-                   # This is the carbonyl oxygen, so skip
-                   continue
-              elif neighbor_atom.GetAtomicNum() == 8 and neighbor_atom.GetTotalValence() == 1:
-                   # not a carbonyl
-                   continue
-              elif neighbor_atom.GetAtomicNum() == 6 and neighbor_atom.GetTotalValence() == 3:
-                  # this is the thioester carbonyl carbon
-                  carbonyl_carbon_idx = neighbor.GetIdx()
-        
-        if carbonyl_carbon_idx is None:
-          continue # skip if the double bond does not come from an acyl chain
-        
-        # find the thioester sulfur
-        thio_sulfur_idx = None
-        for neighbor in mol.GetAtomWithIdx(carbonyl_carbon_idx).GetNeighbors():
-            neighbor_atom = mol.GetAtomWithIdx(neighbor.GetIdx())
-            if neighbor_atom.GetAtomicNum() == 16:
-                 thio_sulfur_idx = neighbor.GetIdx()
-                 break
-        
-        if thio_sulfur_idx is None:
-           continue # skip if no sulfur connected
-
-        # find if the sulfur belongs to the CoA
-        for sulfur_match in mol.GetSubstructMatches(Chem.MolFromSmarts('S')):
-            if sulfur_match[0] == thio_sulfur_idx:
-                found_correct_bond = True
-                break
-        if found_correct_bond:
-           break
-        
     if not found_correct_bond:
         return False, "Could not find correct trans double bond"
-
 
     # Check molecular weight - generally > 700 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
