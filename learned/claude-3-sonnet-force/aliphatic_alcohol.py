@@ -31,11 +31,12 @@ def is_aliphatic_alcohol(smiles: str):
         return False, "No hydroxyl group found"
 
     # Check for aliphatic carbon chain
-    aliphatic_pattern = Chem.MolFromSmarts("[CH4]")
-    if not mol.HasSubstructMatch(aliphatic_pattern):
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[CH4,CH3,CH2,CH1,CH]~[CH4,CH3,CH2,CH1,CH]~[CH4,CH3,CH2,CH1,CH]")
+    if not mol.HasSubstructMatch(aliphatic_chain_pattern):
         return False, "No aliphatic carbon chain found"
 
-    # Check for aromatic rings
+    # Check for aromatic rings (optional)
+    # If aromatic rings are allowed, remove this check
     if mol.GetNumAtomRings() > 0:
         aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() if Chem.rdchem.IsAromaticRing(mol, ring)]
         if len(aromatic_rings) > 0:
