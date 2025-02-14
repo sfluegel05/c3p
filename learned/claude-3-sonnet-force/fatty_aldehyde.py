@@ -21,51 +21,33 @@ def is_fatty_aldehyde(smiles: str):
         str: Reason for classification
     """
     
-    # Preprocess SMILES string to handle backslash characters
-    preprocessed_smiles = Chem.MolToSmiles(Chem.MolFromSmiles(smiles.replace('\\', '_')))
-    
     # Parse SMILES
-    mol = Chem.MolFromSmiles(preprocessed_smiles)
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for aldehyde functional group (-CHO) at the end of a carbon chain
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
-    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    
-    if not aldehyde_matches:
+    # Look for aldehyde functional group (-C=O)
+    aldehyde_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])")
+    if not mol.HasSubstructMatch(aldehyde_pattern):
         return False, "No aldehyde group found"
     
-    # Check if the aldehyde group is at the end of a linear carbon chain
-    for aldehyde_atom in aldehyde_matches:
-        aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_atom)
-        
-        # Check if aldehyde is at the end of the chain
-        if aldehyde_carbon.GetDegree() > 2:
-            continue
-        
-        # Check for linear carbon chain
-        carbon_chain = []
-        visited = set()
-        curr_atom = aldehyde_carbon
-        max_chain_length = 30  # Maximum allowed length of the carbon chain
-        
-        while curr_atom.GetAtomicNum() == 6:
-            if curr_atom.GetIdx() in visited:
-                break  # Cycle detected, skip this chain
-            visited.add(curr_atom.GetIdx())
-            carbon_chain.append(curr_atom.GetIdx())
-            
-            neighbors = [nb for nb in curr_atom.GetNeighbors() if nb.GetAtomicNum() == 6]
-            if len(neighbors) != 2:
-                break  # Not a linear chain
-            
-            curr_atom = neighbors[0] if neighbors[0].GetIdx() not in visited else neighbors[1]
-            
-            if len(carbon_chain) > max_chain_length:
-                break  # Chain too long, skip this chain
-        
-        if len(carbon_chain) >= 2:
-            return True, "Aldehyde group at the end of a linear carbon chain"
+    # Look for long carbon chain
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "No long carbon chain found"
     
-    return False, "No aldehyde group found at the end of a linear carbon chain"
+    # Check if aldehyde is at the end of the chain
+    aldehyde_atom = mol.GetSubstructMatch(aldehyde_pattern)[0]
+    end_atom = None
+    for match in chain_matches:
+        if aldehyde_atom in match:
+            end_atom = match[0] if match[0] != aldehyde_atom else match[-1]
+            break
+    if end_atom is None or mol.GetAtomWithIdx(end_atom).GetDegree() > 1:
+        return False, "Aldehyde group not at the end of the chain"
+    
+    # Check for unsaturations in the carbon chain
+    unsaturated = any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in mol.GetBonds())
+    
+    return True, "Contains aldehyde group at the end of a long carbon chain" + (", unsaturated" if unsaturated else "")
