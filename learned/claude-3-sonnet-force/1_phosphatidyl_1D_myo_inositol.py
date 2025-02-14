@@ -22,7 +22,7 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for 1D-myo-inositol backbone
-    inositol_pattern = Chem.MolFromSmarts("[C@H]1(O[C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)O")
+    inositol_pattern = Chem.MolFromSmarts("[C@H]1(O[C@@H]([C@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)O")
     inositol_match = mol.GetSubstructMatches(inositol_pattern)
     if not inositol_match:
         return False, "No 1D-myo-inositol backbone found"
