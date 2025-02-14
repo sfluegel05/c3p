@@ -19,7 +19,7 @@ def is_tetrahydrofuranone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
+    
     found = False  # Flag to indicate if tetrahydrofuranone ring is found
 
     ring_info = mol.GetRingInfo()
@@ -31,26 +31,35 @@ def is_tetrahydrofuranone(smiles: str):
         if len(ring) != 5:
             continue
         
-        # Check if ring contains at least one oxygen atom (oxolane ring)
-        oxygen_in_ring = [idx for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8]
-        if len(oxygen_in_ring) < 1:
-            continue  # Not an oxolane ring
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+
+        # Check if ring contains exactly one oxygen atom and four carbon atoms
+        oxygen_atoms = [atom for atom in ring_atoms if atom.GetAtomicNum() == 8]
+        carbon_atoms = [atom for atom in ring_atoms if atom.GetAtomicNum() == 6]
+
+        if len(oxygen_atoms) != 1 or len(carbon_atoms) != 4:
+            continue  # Not a ring with exactly one oxygen and four carbons
         
-        # For each atom in the ring, check if it has a double bond to an oxygen atom
-        for atom_idx in ring:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for bond in atom.GetBonds():
-                neighbor = bond.GetOtherAtom(atom)
-                if neighbor.GetAtomicNum() == 8:  # Neighbor is oxygen
+        # Check that all bonds in the ring are single (saturated ring)
+        is_saturated = True
+        for i in range(len(ring)):
+            atom1 = mol.GetAtomWithIdx(ring[i])
+            atom2 = mol.GetAtomWithIdx(ring[(i+1)%len(ring)])
+            bond = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
+            if bond.GetBondType() != Chem.BondType.SINGLE:
+                is_saturated = False
+                break
+        if not is_saturated:
+            continue  # Ring is not saturated
+        
+        # Now check for oxo substituent (C=O) on any ring carbon
+        for carbon in carbon_atoms:
+            for neighbor in carbon.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in ring:
+                    bond = mol.GetBondBetweenAtoms(carbon.GetIdx(), neighbor.GetIdx())
                     if bond.GetBondType() == Chem.BondType.DOUBLE:
-                        # Confirm that the oxygen is not part of the ring (to avoid counting ring oxygens)
-                        if not ring_info.IsAtomInRingOfSize(neighbor.GetIdx(), 5):
-                            found = True
-                            break
-                        else:
-                            # Also consider cases where the double-bonded oxygen is in the ring (e.g., lactones)
-                            found = True
-                            break
+                        found = True
+                        break
             if found:
                 break
         if found:
@@ -59,4 +68,4 @@ def is_tetrahydrofuranone(smiles: str):
     if found:
         return True, "Contains an oxolane ring with an oxo substituent (tetrahydrofuranone)"
     else:
-        return False, "Does not contain an oxolane ring with an oxo substituent"
+        return False, "Does not contain a tetrahydrofuranone structure"
