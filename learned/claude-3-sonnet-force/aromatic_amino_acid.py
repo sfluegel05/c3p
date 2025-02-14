@@ -25,23 +25,16 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for amino acid pattern
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3H2][CX4H]([CX3](=O)[OX1-,OX2H1])[CX4H]")
+    # Check for amino acid substructure
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)[OX2H0-]")
     amino_acid_match = mol.GetSubstructMatches(amino_acid_pattern)
     if not amino_acid_match:
-        return False, "No amino acid pattern found"
+        return False, "No amino acid substructure found"
     
-    # Check if any atom in the amino acid backbone is aromatic
-    amino_acid_atoms = [mol.GetAtomWithIdx(idx) for idx in amino_acid_match[0]]
-    aromatic_atoms = [atom for atom in amino_acid_atoms if atom.GetIsAromatic()]
-    if not aromatic_atoms:
-        return False, "No aromatic atoms in amino acid backbone"
+    # Check for aromatic ring
+    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")
+    aromatic_ring_match = mol.GetSubstructMatches(aromatic_ring_pattern)
+    if not aromatic_ring_match:
+        return False, "No aromatic ring found"
     
-    # Additional checks for increased confidence
-    has_carboxyl = any(atom.GetDegree() == 2 and atom.GetFormalCharge() == -1 for atom in mol.GetAtoms())
-    has_amino = any(atom.GetDegree() == 3 and atom.GetFormalCharge() == 0 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 3 for atom in mol.GetAtoms())
-    
-    if has_carboxyl and has_amino:
-        return True, "Contains an aromatic ring in the amino acid backbone, with carboxyl and amino groups"
-    else:
-        return False, "Missing carboxyl or amino group"
+    return True, "Contains both an amino acid substructure and an aromatic ring"
