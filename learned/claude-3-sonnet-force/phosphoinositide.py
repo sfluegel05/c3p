@@ -6,6 +6,7 @@ Classifies: CHEBI:17855 phosphoinositide
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_phosphoinositide(smiles: str):
     """
@@ -45,10 +46,26 @@ def is_phosphoinositide(smiles: str):
                     next_atom = neighbors[0]
                     chain.append(next_atom.GetIdx())
                     curr_atom = next_atom
-                if len(chain) >= 6:
+                if len(chain) >= 6:  # Minimum chain length of 6 carbon atoms
                     fatty_acid_chains.append(chain)
     if len(fatty_acid_chains) != 2:
         return False, f"Found {len(fatty_acid_chains)} fatty acid chains, expected 2"
+    
+    # Check for unsaturation in fatty acid chains
+    unsaturated_chains = []
+    for chain in fatty_acid_chains:
+        unsaturated = False
+        for i in range(len(chain) - 1):
+            atom1 = mol.GetAtomWithIdx(chain[i])
+            atom2 = mol.GetAtomWithIdx(chain[i + 1])
+            bond = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                unsaturated = True
+                break
+        if unsaturated:
+            unsaturated_chains.append(chain)
+    if len(unsaturated_chains) == 0:
+        return False, "No unsaturated fatty acid chains found"
     
     # Check for phosphate groups on the inositol ring
     inositol_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.IsInRingSize(6)]
