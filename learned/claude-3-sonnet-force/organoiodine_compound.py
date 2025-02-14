@@ -2,15 +2,16 @@
 Classifies: CHEBI:37142 organoiodine compound
 """
 """
-Classifies: CHEBI:51574 organoiodine compound
+Classifies: CHEBI:33121 organoiodine compound
 An organoiodine compound is a compound containing at least one carbon-iodine bond.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_organoiodine_compound(smiles: str) -> tuple[bool, str]:
+def is_organoiodine_compound(smiles: str):
     """
     Determines if a molecule is an organoiodine compound based on its SMILES string.
+    An organoiodine compound contains at least one carbon-iodine bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,35 +20,23 @@ def is_organoiodine_compound(smiles: str) -> tuple[bool, str]:
         bool: True if molecule is an organoiodine compound, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for presence of iodine atoms
+    
+    # Check for iodine atoms
     iodine_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 53]
     if not iodine_atoms:
-        return False, "No iodine atoms present"
-
+        return False, "No iodine atoms found"
+    
     # Check for carbon-iodine bonds
-    has_c_i_bond = False
-    for atom in iodine_atoms:
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                has_c_i_bond = True
-                break
-        if has_c_i_bond:
-            break
-
-    if has_c_i_bond:
-        return True, "Contains at least one carbon-iodine bond"
-    else:
+    c_i_bonds = [bond for bond in mol.GetBonds() if bond.GetBeginAtomIdx() in [atom.GetIdx() for atom in iodine_atoms] and
+                 bond.GetEndAtomIdx() in [atom.GetIdx() for atom in mol.GetAromaticAtoms()] or
+                 bond.GetEndAtomIdx() in [atom.GetIdx() for atom in iodine_atoms] and
+                 bond.GetBeginAtomIdx() in [atom.GetIdx() for atom in mol.GetAromaticAtoms()]]
+    if not c_i_bonds:
         return False, "No carbon-iodine bonds found"
-
-    # Additional checks (optional)
-    # mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    # if mol_wt < 100:
-    #     return False, "Molecular weight too low for an organoiodine compound"
-
-    # return True, "Contains at least one carbon-iodine bond"
+    
+    return True, "Contains at least one carbon-iodine bond"
