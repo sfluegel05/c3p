@@ -1,24 +1,99 @@
 """
 Classifies: CHEBI:26267 proanthocyanidin
 """
-The previous program has a good overall approach for identifying proanthocyanidins, but there are a few potential issues that could lead to misclassifications:
+"""
+Classifies: CHEBI:38142 proanthocyanidin
 
-1. The SMARTS pattern for detecting flavan-3-ol units may be too specific. It requires the aromatic ring, the heterocycle, and the hydroxyl group at position 3 to match exactly. However, proanthocyanidins can have variations in the substitution patterns, and the units may not always conform to this exact pattern.
+A proanthocyanidin is a flavonoid oligomer obtained by the the condensation of two or more units of hydroxyflavans.
+Common features:
+- Contains flavan-3-ol units (e.g., catechin, epicatechin, gallocatechin, epigallocatechin)
+- Units linked via C-C or ether bonds, often 4→8, 4→6, or 2→O→7 linkages
+- May contain galloyl or other ester groups
+- Typically higher molecular weight oligomers or polymers
+"""
 
-2. The program relies on finding at least two flavan-3-ol units to classify a molecule as a proanthocyanidin. While this is a reasonable requirement, there could be cases where a single flavan-3-ol unit is linked to another non-flavan-3-ol unit, forming an oligomeric structure that could still be considered a proanthocyanidin.
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-3. The program checks for ether or C-C linkages between the flavan units, but it does not explicitly check for the specific types of linkages that are common in proanthocyanidins, such as 4→8, 4→6, or other regio-isomeric linkages.
+def is_proanthocyanidin(smiles: str):
+    """
+    Determines if a molecule is a proanthocyanidin based on its SMILES string.
 
-To improve the program, we could consider the following modifications:
+    Args:
+        smiles (str): SMILES string of the molecule
 
-1. Use a more general SMARTS pattern or a combination of patterns to capture a wider range of flavan-3-ol units with varying substitution patterns. For example, we could look for the presence of the heterocyclic ring and the hydroxyl group at position 3, but allow for different substitution patterns on the aromatic ring.
+    Returns:
+        bool: True if molecule is a proanthocyanidin, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for flavan-3-ol units
+    flavan_pattern = Chem.MolFromSmarts("[C&r5]1=C([C@@H](O)[C@H](O)[C@@]2(O)Cc3c(O)cc(O)cc3O2)c2ccccc12")
+    flavan_matches = mol.GetSubstructMatches(flavan_pattern)
+    if not flavan_matches:
+        return False, "No flavan-3-ol units found"
+    
+    # Look for common linkages (4→8, 4→6, 2→O→7)
+    link_patterns = [
+        Chem.MolFromSmarts("[C&r4]@[C&r8]"),  # 4→8 linkage
+        Chem.MolFromSmarts("[C&r4]@[C&r6]"),  # 4→6 linkage
+        Chem.MolFromSmarts("[C&r2]@[O&r7]")   # 2→O→7 linkage
+    ]
+    link_matches = []
+    for pattern in link_patterns:
+        link_matches.extend(mol.GetSubstructMatches(pattern))
+    if not link_matches:
+        return False, "No characteristic linkages found between flavan units"
+    
+    # Check for galloyl or other ester groups
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
+    # Check molecular weight - proanthocyanidins typically >500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        if not ester_matches:
+            return False, "Molecular weight too low for proanthocyanidin"
+    
+    return True, "Contains flavan-3-ol units linked via characteristic bonds, potentially with ester groups"
 
-2. Instead of requiring at least two flavan-3-ol units, we could check for the presence of at least one flavan-3-ol unit and then look for linkages to other units, regardless of their structure. This would allow for the identification of proanthocyanidins where one flavan-3-ol unit is linked to a non-flavan-3-ol unit.
-
-3. Incorporate SMARTS patterns or other checks to specifically look for the common 4→8, 4→6, and other regio-isomeric linkages found in proanthocyanidins. This would increase the confidence in the classification, as these linkages are characteristic of proanthocyanidins.
-
-4. Additionally, we could consider incorporating other structural features that are typical of proanthocyanidins, such as the presence of galloyl or other ester groups, the degree of polymerization, or the overall molecular weight range.
-
-Regarding the outliers in the benchmark, it's important to critically evaluate them based on your understanding of the chemical class. If the classifications made by your program align with the definition and structural features of proanthocyanidins, and the outliers seem inconsistent with this understanding, you could consider them as potential errors in the benchmark and provide a justification for ignoring them.
-
-However, if the outliers highlight genuine gaps or shortcomings in your program's ability to correctly classify proanthocyanidins, it would be wise to address those issues by refining the structural patterns or rules used in your code.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:38142',
+        'name': 'proanthocyanidin',
+        'definition': 'A flavonoid oligomer obtained by the the condensation of two or more units of hydroxyflavans.',
+        'parents': ['CHEBI:24034', 'CHEBI:27856']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 1,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 130,
+    'num_false_positives': 8,
+    'num_true_negatives': 182359,
+    'num_false_negatives': 1,
+    'num_negatives': None,
+    'precision': 0.9418604651162791,
+    'recall': 0.9923076923076923,
+    'f1': 0.9667769727484958,
+    'accuracy': 0.9995654976664447
+}
