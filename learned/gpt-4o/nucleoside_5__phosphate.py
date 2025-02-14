@@ -22,25 +22,23 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define more general patterns for sugar moieties
-    # Pattern for generic pentose sugar (both ribose and deoxyribose without strict stereochemistry)
-    ribose_deoxyribose_general = Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H]([C@H]1O)O |C|")
-    ribose_or_deoxyribose_no_stereo = Chem.MolFromSmarts("O[C](CO)C(C)C(O)O")
+    # Define a pattern for the sugar moiety (more generic version)
+    sugar_pattern = Chem.MolFromSmarts("O[C@@H]1[C@H](CO)O[C@H](n)C1")
 
-    # Patterns for phosphate groups at 5' position (allowing for both charged and uncharged forms)
-    phosphate_group_any = Chem.MolFromSmarts("COP(=O)(O*)O")  # Generic phosphate group matching
+    # Pattern for 5'-phosphate group, could be one or more phosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("COP([O-])([O-])=O")
     
-    # Check for the sugar part
-    if not (mol.HasSubstructMatch(ribose_deoxyribose_general) or mol.HasSubstructMatch(ribose_or_deoxyribose_no_stereo)):
-        return False, "No ribose or deoxyribose sugar detected"
+    # Check for the presence of the sugar moiety
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No recognized ribose or deoxyribose sugar detected"
     
     # Check for the presence of a phosphate group
-    if not mol.HasSubstructMatch(phosphate_group_any):
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
         return False, "No recognizable phosphate group at the 5' position"
 
-    # Check for nucleobase; maintain pyrimidine and purine bases with expanded structure matching
-    # This pattern covers basic structures in common nucleobases
-    nucleobase_smarts = Chem.MolFromSmarts("[nH]1cnc2c(n1)[nH]c[nH]c2 |C,n,o|")
+    # Check for nucleobase; purine or pyrimidine
+    nucleobase_smarts = Chem.MolFromSmarts("n1cnc2c1ncnc2 |C|")
 
     if not mol.HasSubstructMatch(nucleobase_smarts):
         return False, "No recognizable nucleobase found"
