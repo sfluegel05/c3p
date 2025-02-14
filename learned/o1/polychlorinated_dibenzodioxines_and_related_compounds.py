@@ -4,10 +4,13 @@ Classifies: CHEBI:134045 polychlorinated dibenzodioxines and related compounds
 """
 Classifies: polychlorinated dibenzodioxines and related compounds
 
-Checks if a molecule is a polychlorinated dibenzodioxin, dibenzofuran, biphenyl, or related compound by identifying core structures and counting chlorine or bromine substituents.
+This program checks if a molecule is a polychlorinated dibenzodioxin, dibenzofuran, biphenyl, or related compound
+by identifying core structures and counting chlorine or bromine substituents.
 
-This improved version addresses previous issues by using more general SMARTS patterns for core structures
-and implementing size constraints to exclude large molecules not relevant to the class.
+Improvements made:
+- Updated SMARTS patterns for core structures using canonical SMILES to improve matching accuracy.
+- Removed limits on the number of rings and heavy atoms to include larger structurally related molecules.
+- Excluded molecules with hydroxyl groups by limiting allowed heteroatoms to oxygen in ring structures only.
 """
 
 from rdkit import Chem
@@ -33,23 +36,18 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Limit the size of the molecule to exclude large, complex molecules
-    max_heavy_atoms = 50
-    num_heavy_atoms = mol.GetNumHeavyAtoms()
-    if num_heavy_atoms > max_heavy_atoms:
-        return False, f"Molecule has {num_heavy_atoms} heavy atoms; exceeds limit of {max_heavy_atoms}"
+    # Define core structure patterns using canonical SMILES
+    # Dibenzo-p-dioxin core
+    dibenzo_dioxin_smiles = 'O1c2ccccc2Oc3ccccc13'
+    dibenzo_dioxin_pattern = Chem.MolFromSmiles(dibenzo_dioxin_smiles)
 
-    # Limit the number of rings
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings > 4:
-        return False, f"Molecule has {num_rings} rings; exceeds limit of 4"
+    # Dibenzofuran core
+    dibenzofuran_smiles = 'O1c2ccccc2c3ccccc13'
+    dibenzofuran_pattern = Chem.MolFromSmiles(dibenzofuran_smiles)
 
-    # Define core structure patterns using SMARTS
-    # Use more general patterns for better matching
-    dibenzo_dioxin_pattern = Chem.MolFromSmarts('c1cc2oc3ccccc3oc2cc1')  # Dibenzo-p-dioxin core
-    dibenzofuran_pattern = Chem.MolFromSmarts('c1cc2oc3ccccc3c2cc1')    # Dibenzofuran core
-    biphenyl_pattern = Chem.MolFromSmarts('c1ccccc1-c2ccccc2')          # Biphenyl core
+    # Biphenyl core
+    biphenyl_smiles = 'c1ccccc1c2ccccc2'
+    biphenyl_pattern = Chem.MolFromSmiles(biphenyl_smiles)
 
     # Check for core structures
     has_dibenzo_dioxin = mol.HasSubstructMatch(dibenzo_dioxin_pattern)
@@ -79,11 +77,16 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if num_f > 0 or num_i > 0:
         return False, "Molecule contains fluorine or iodine atoms; only chlorine and bromine are allowed"
 
-    # Ensure that the molecule does not contain other large functional groups by checking for other heteroatoms
-    # For simplicity, we can limit heteroatoms to oxygen, chlorine, and bromine
+    # Check for prohibited functional groups (e.g., hydroxyl groups)
+    hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')  # Hydroxyl group
+    if mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "Molecule contains hydroxyl groups; these are not allowed"
+
+    # Ensure that the molecule does not contain other heteroatoms besides oxygen
     allowed_atomic_numbers = {6, 1, 8, 17, 35}  # Carbon, hydrogen, oxygen, chlorine, bromine
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atomic_numbers:
+        atomic_num = atom.GetAtomicNum()
+        if atomic_num not in allowed_atomic_numbers:
             return False, f"Molecule contains atom {atom.GetSymbol()}; only C, H, O, Cl, and Br are allowed"
 
     return True, f"Molecule contains {core_structure} core and is polychlorinated/polybrominated with {total_halogens} halogen atoms"
