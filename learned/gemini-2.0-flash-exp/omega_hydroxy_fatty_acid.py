@@ -28,18 +28,17 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
             return False, "No carboxyl group found"
 
     # Check for at least one hydroxyl group (OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH1]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
          return False, "No hydroxyl group found"
-
+    
     # Find position of the carbonyl carbon in the COOH
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    carbonyl_atom_idx = carboxyl_matches[0][0] if carboxyl_matches else None
-    if carbonyl_atom_idx is None:
-       return False, "Could not determine carbonyl position"
-
-    # find all hydroxyl groups
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    
+    if not carboxyl_matches:
+        return False, "Could not determine carbonyl position"
+    
+    carbonyl_atom_idx = carboxyl_matches[0][0] 
 
     # Get atoms
     atoms = mol.GetAtoms()
@@ -47,89 +46,38 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if n_atoms < 3:
         return False, "Too few atoms to be an omega-hydroxy fatty acid"
     
-    
     # Count total number of carbons
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 3:
         return False, "Too few carbon atoms"
     
-    # Calculate molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
-         return False, "Molecular weight too low"
+
+    #Find all terminal carbon atoms with no branching.
+    terminal_carbon_pattern = Chem.MolFromSmarts("[CX4]([CX4])[#6]")
+    terminal_carbon_matches = mol.GetSubstructMatches(terminal_carbon_pattern)
 
     valid_omega = False
     reason = "No omega-hydroxyl group found"
+    
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+
+    #Get the indices of the terminal carbon atoms
+    terminal_carbons_indices = [match[2] for match in terminal_carbon_matches if match[2] != carbonyl_atom_idx ]
 
 
     for match in hydroxyl_matches:
-        hydroxyl_atom_idx = match[0]
-
-        if hydroxyl_atom_idx == carbonyl_atom_idx:
-           continue #same atom
-
-        #Get the carbon chain
-        
-        #Find the atom connected to the carbonyl carbon, this will be the first C in chain
-        carbonyl_atom = atoms[carbonyl_atom_idx]
-        carbonyl_neighbors = [x.GetIdx() for x in carbonyl_atom.GetNeighbors() if x.GetAtomicNum() == 6]
-        if len(carbonyl_neighbors) != 1:
-           continue #This is not a linear chain if there is not one carbon atom adjacent to the carboxyl carbon
-        first_chain_carbon_idx = carbonyl_neighbors[0]
-
-        #Now the first atom in the chain is defined. From here, follow path to hydroxyl group
-        
-        current_atom_idx = first_chain_carbon_idx
-        prev_atom_idx = carbonyl_atom_idx
-        
-        chain_atoms_list = []
-        chain_atoms_list.append(carbonyl_atom_idx)
-        chain_atoms_list.append(current_atom_idx)
-        is_linear = True
-
-        while current_atom_idx != hydroxyl_atom_idx:
-              current_atom = atoms[current_atom_idx]
-              
-              next_carbons = [x.GetIdx() for x in current_atom.GetNeighbors() if x.GetAtomicNum() == 6 and x.GetIdx() != prev_atom_idx]
-              if len(next_carbons) != 1:
-                   is_linear = False
-                   break
-              prev_atom_idx = current_atom_idx
-              current_atom_idx = next_carbons[0]
-
-              chain_atoms_list.append(current_atom_idx)
-
-        if is_linear:
-            last_chain_atom = atoms[chain_atoms_list[-1]]
             
-            #Make sure last chain atom has a hydroxyl group attached to it.
+            hydroxy_atom_idx = match[0]
             
-            found_hydroxy = False
-            for neighbor in last_chain_atom.GetNeighbors():
-                 if neighbor.GetAtomicNum() == 8:
-                      found_hydroxy = True
-                      break
+            #Check if the hydroxy group is directly connected to one of the terminal carbon atoms
+            hydroxy_atom = atoms[hydroxy_atom_idx]
             
-            if found_hydroxy:
-
-                  
-                #Ensure that there are no other branches on chain.
-
-                is_branching = False
-                for i, idx in enumerate(chain_atoms_list):
-                      
-                      atom = atoms[idx]
-                      
-                      if i != 0 and i != len(chain_atoms_list)-1:
-                        
-                            carbon_neighbors = [x.GetIdx() for x in atom.GetNeighbors() if x.GetAtomicNum() == 6 and x.GetIdx() != chain_atoms_list[i-1] and x.GetIdx() != chain_atoms_list[i+1]]
-                            if len(carbon_neighbors) > 0:
-                                is_branching= True
-                                break
-                if not is_branching:
+            for neighbor in hydroxy_atom.GetNeighbors():
+                if neighbor.GetIdx() in terminal_carbons_indices:
                   valid_omega = True
-                  reason = "Omega hydroxyl group found on a linear chain"
+                  reason = "Omega hydroxyl group found"
                   break
-
+            if valid_omega:
+                break
 
     return valid_omega, reason
