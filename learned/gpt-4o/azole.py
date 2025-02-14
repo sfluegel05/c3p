@@ -6,9 +6,7 @@ from rdkit import Chem
 def is_azole(smiles: str):
     """
     Determines if a molecule is an azole based on its SMILES string.
-    An azole is defined as a monocyclic heteroarene with a five-membered ring
-    containing at least one nitrogen atom and possibly other heteroatoms such
-    as nitrogen, sulfur, or oxygen.
+    An azole is defined as a monocyclic or fused five-membered ring (heteroarene) containing nitrogen and possible other heteroatoms such as N, S, or O.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,18 +21,22 @@ def is_azole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for different azoles
+    # Extended SMARTS patterns to account for different azole forms
     azole_patterns = [
-        Chem.MolFromSmarts("c1ncnc1"),  # Pyrazole
-        Chem.MolFromSmarts("c1ncc[nH]1"),  # Imidazole
-        Chem.MolFromSmarts("c1nncn1"),  # 1,2,3-Triazole
-        Chem.MolFromSmarts("c1nnnc1"),  # Tetrazole
-        Chem.MolFromSmarts("c1ncn[s,o]1"),  # Thiazole/Oxazole
+        Chem.MolFromSmarts("n1cccn1"),  # Imidazole
+        Chem.MolFromSmarts("n1c[nH]cc1"),  # Pyrazole
+        Chem.MolFromSmarts("n1ncc[nH]1"),  # 1,2,3-Triazole
+        Chem.MolFromSmarts("n1nncn1"),  # Tetrazole
+        Chem.MolFromSmarts("c1ncn[nH]1"),  # 1,2,4-Triazole
+        Chem.MolFromSmarts("n1cn[o,s]c1"),  # Oxazole/Thiazole
+        Chem.MolFromSmarts("n1csc[nH]1"),  # Thiazole variant
+        Chem.MolFromSmarts("n1onc2ccccc2c1"), # Furan-like plus azole in benzo-fused systems
+        Chem.MolFromSmarts("c1nccn1"),  # Pyrrole-like azole
     ]
 
     # Check if any azole pattern is present in the molecule
     for pattern in azole_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Contains an azole ring based on defined patterns"
+            return True, "Contains an azole ring based on expanded set of patterns"
 
     return False, "No azole ring found"
