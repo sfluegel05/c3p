@@ -24,28 +24,13 @@ def is_monocarboxylic_acid_anion(smiles: str) -> tuple[bool, str]:
     carboxylate_pattern = Chem.MolFromSmarts("C(=O)[O-]")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
     
-    # Count carboxylic acid groups
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O[H]")
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    
-    # Count esters and anhydrides
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
     
     if len(carboxylate_matches) != 1:
         return False, f"Molecule has {len(carboxylate_matches)} carboxylate groups, it should have exactly 1"
-
-    if len(carboxylic_acid_matches) > 0:
-        return False, "Molecule has protonated carboxylic acid groups"
-
-    if len(ester_matches) > 0:
-      return False, "Molecule has ester or anhydride groups"
 
     charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
 
     if charge != -1:
         return False, f"Molecule has a charge of {charge}, should have a charge of -1"
     
-
     return True, "Molecule is a monocarboxylic acid anion"
