@@ -2,6 +2,7 @@
 Classifies: CHEBI:61051 lipid hydroperoxide
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_lipid_hydroperoxide(smiles: str):
@@ -20,20 +21,20 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for hydroperoxy group (-OOH or -OO-)
-    hydroperoxy_pattern = Chem.MolFromSmarts("[OX2][OX1]")  # Matches -OOH and -OO-
+    # 1. Check for hydroperoxy group (-OOH)
+    hydroperoxy_pattern = Chem.MolFromSmarts("[OX2][OX2H1]")
     hydroperoxy_matches = mol.GetSubstructMatches(hydroperoxy_pattern)
     if not hydroperoxy_matches:
         return False, "No hydroperoxy group found"
 
-    # 2. Check for sufficient heavy atoms to be a lipid
-    num_heavy_atoms = mol.GetNumHeavyAtoms()
-    if num_heavy_atoms < 10:
-         return False, f"Too few heavy atoms ({num_heavy_atoms}), not likely a lipid"
+    # 2. Check for a long carbon chain (at least 8 carbons)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 8:
+         return False, "Too few carbons for a lipid"
+    
+    # 3. Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200:
+         return False, "Molecular weight too low for a lipid"
 
-    # 3. Check for at least one carbon atom (to handle edge cases)
-    carbon_pattern = Chem.MolFromSmarts("[CX4,CX3]")
-    if not mol.HasSubstructMatch(carbon_pattern):
-        return False, "Not a carbon based molecule"
-
-    return True, "Contains at least one hydroperoxy group and is likely a lipid"
+    return True, "Contains at least one hydroperoxy group and a long carbon chain"
