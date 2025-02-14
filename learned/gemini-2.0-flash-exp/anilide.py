@@ -20,12 +20,12 @@ def is_anilide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the anilide core. 
+    # Define the SMARTS pattern for the anilide core.
     #   - [c:1] is a carbon in an aromatic ring
-    #   - [N:2] is the nitrogen connected to the ring
+    #   - [N:2H] is the nitrogen connected to the ring, with at least one H (aniline nitrogen)
     #   - [C:3](=[O:4]) is the carbonyl carbon of the amide and the O
-    anilide_pattern = Chem.MolFromSmarts("[c:1][N:2][C:3](=[O:4])")
-    
+    anilide_pattern = Chem.MolFromSmarts("[c:1]1[c:1][c:1][c:1][c:1][c:1]1[N:2H][C:3](=[O:4])")
+
     if mol.HasSubstructMatch(anilide_pattern):
          return True, "Correct Anilide core detected"
     
