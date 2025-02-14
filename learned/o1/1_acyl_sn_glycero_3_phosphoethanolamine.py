@@ -10,9 +10,9 @@ from rdkit.Chem import AllChem
 def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     """
     Determines if a molecule is a 1-acyl-sn-glycero-3-phosphoethanolamine based on its SMILES string.
-    A 1-acyl-sn-glycero-3-phosphoethanolamine has a glycerol backbone with an acyl group
-    esterified at the sn-1 position, a hydroxyl group at the sn-2 position, and a phosphoethanolamine group at the sn-3 position,
-    with (R)-configuration at the sn-2 position if stereochemistry is specified.
+    This class has a glycerol backbone with an acyl group esterified at the sn-1 position,
+    a hydroxyl group at the sn-2 position, and a phosphoethanolamine group at the sn-3 position,
+    with (R)-configuration at the sn-2 carbon if stereochemistry is specified.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,47 +30,57 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     # Add hydrogens to correctly perceive chiral centers
     mol = Chem.AddHs(mol)
 
+    # Assign stereochemistry
+    Chem.AssignAtomChiralTagsFromStructure(mol)
+
     # Define SMARTS patterns
-    # Glycerol backbone with ester at sn-1, hydroxyl at sn-2, phosphoethanolamine at sn-3
-    glycerol_pattern = Chem.MolFromSmarts("""
-        [C@@H]([O])[C@@H](COP(=O)(OCCN)O)O
-        """)
-    ester_pattern = Chem.MolFromSmarts("""
-        [C](=O)O[C@@H]
-        """)
-    phospho_ethanolamine_pattern = Chem.MolFromSmarts("""
-        P(=O)(O[C][C]N)O
-        """)
+    # Ester linkage at sn-1 position
+    ester_sn1_pattern = Chem.MolFromSmarts("[$([O][C](=O)[C])]")
+
+    # Hydroxyl group at sn-2 position
+    hydroxyl_sn2_pattern = Chem.MolFromSmarts("[C@H](O)")
+
+    # Phosphoethanolamine group at sn-3 position
+    phospho_ethanolamine_pattern = Chem.MolFromSmarts("[O][P](=O)([O])[O][C][C][N]")
+
+    # Validate patterns
+    if None in (ester_sn1_pattern, hydroxyl_sn2_pattern, phospho_ethanolamine_pattern):
+        return False, "Error in SMARTS pattern definitions"
 
     # Search for ester linkage at sn-1 position
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    ester_matches = mol.GetSubstructMatches(ester_sn1_pattern)
     if not ester_matches:
         return False, "No ester linkage found at sn-1 position"
 
-    # Search for glycerol backbone with hydroxyl at sn-2 and phosphoethanolamine at sn-3
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    if not glycerol_matches:
-        return False, "No glycerol backbone with required functional groups found"
+    # Search for hydroxyl group at sn-2 position
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_sn2_pattern)
+    if not hydroxyl_matches:
+        return False, "No hydroxyl group found at sn-2 position"
 
-    # Search for phosphoethanolamine group
+    # Search for phosphoethanolamine group at sn-3 position
     phospho_matches = mol.GetSubstructMatches(phospho_ethanolamine_pattern)
     if not phospho_matches:
         return False, "No phosphoethanolamine group found at sn-3 position"
 
-    # Optional: Check chiral configuration at sn-2 (C2)
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    # Identify sn-2 chiral carbon
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=False)
     sn2_chiral = None
     for idx, config in chiral_centers:
         atom = mol.GetAtomWithIdx(idx)
-        if atom.GetSymbol() == 'C':
-            # Check if this carbon is connected to OH and part of glycerol backbone
-            neighbors = [n.GetSymbol() for n in atom.GetNeighbors()]
-            if neighbors.count('O') >= 1 and neighbors.count('C') >= 2:
-                sn2_chiral = config
+        if atom.GetSymbol() == 'C' and config == 'R':
+            # Check if this carbon matches the hydroxyl pattern
+            if mol.HasSubstructMatch(Chem.MolFromSmarts("[C@H](O)")):
+                sn2_chiral = idx
                 break
-    if sn2_chiral:
-        if sn2_chiral != 'R':
-            return False, f"Chiral center at sn-2 position is not (R)-configuration (found {sn2_chiral})"
+
+    if sn2_chiral is None:
+        return False, "No chiral center with (R)-configuration at sn-2 position"
+
+    # Verify connectivity of sn-2 carbon
+    sn2_atom = mol.GetAtomWithIdx(sn2_chiral)
+    neighbor_elements = [nbr.GetSymbol() for nbr in sn2_atom.GetNeighbors()]
+    if neighbor_elements.count('O') < 1 or neighbor_elements.count('C') < 3:
+        return False, "sn-2 carbon does not have the correct connectivity"
 
     return True, "Molecule is a 1-acyl-sn-glycero-3-phosphoethanolamine"
 
@@ -94,7 +104,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 2,
+    'attempt': 3,
     'success': True,
     'best': True,
     'error': '',
