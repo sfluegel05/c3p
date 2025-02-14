@@ -5,7 +5,6 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-
 def is_ceramide(smiles: str):
     """
     Determines if a molecule is a ceramide based on its SMILES string.
@@ -24,64 +23,74 @@ def is_ceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Sphingosine Backbone Pattern
-    # Focus on core with a double bond on one side, and a -CH2OH on the other, and a -OH next to it
-    # the double bond may be on either side of the central part
-    sphingosine_pattern1 = Chem.MolFromSmarts("[CX4]=[CX3]-[CX4]([OH])-[CX4]([NH])-[CX4]([CH2X4][OH])") #double bond, C-OH-C-N-C-CH2OH
-    sphingosine_pattern2 = Chem.MolFromSmarts("[CX4]([CH2X4][OH])-[CX4]([NH])-[CX4]([OH])-[CX3]=[CX4]") #CH2OH-C-N-C-OH-C double bond
-    if not (mol.HasSubstructMatch(sphingosine_pattern1) or mol.HasSubstructMatch(sphingosine_pattern2)):
-        return False, "No sphingosine backbone found"
-        
+    # 1. Sphingosine Backbone Pattern (relaxed)
+    # Core definition: a chain of at least 3 carbons, one with a hydroxyl, one with an amine, and a CH2OH on one side
+    sphingosine_core = Chem.MolFromSmarts("[CX4]-[CX4]([OH])-[CX4]([NH])-[CX4][CH2X4]") #C-C(OH)-C(N)-C-CH2
+    if not mol.HasSubstructMatch(sphingosine_core):
+        return False, "No sphingosine backbone core found"
+
+
     # 2. Amide Linkage Pattern
     amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-
     if not amide_matches:
         return False, "No amide linkage found"
 
-    # Check that the amide is linked to the sphingosine
+
+    #Check that the amide is linked to the sphingosine
     found_amide_connected_to_sphingosine = False
     for amide_match in amide_matches:
-        for atom_index in amide_match:
-            atom = mol.GetAtomWithIdx(atom_index)
-            if atom.GetSymbol() == 'N':
-                for neighbor in atom.GetNeighbors():
-                     if neighbor.Match(Chem.MolFromSmarts("[CX4]([OH])-[CX4]([NH])-[CX4]([CH2X4][OH])")) or \
-                           neighbor.Match(Chem.MolFromSmarts("[CX4]([CH2X4][OH])-[CX4]([NH])-[CX4]([OH])")) or \
-                           neighbor.Match(Chem.MolFromSmarts("[CX4]=[CX3]-[CX4]([OH])-[CX4]([NH])")) or \
-                           neighbor.Match(Chem.MolFromSmarts("[CX4]([OH])-[CX3]=[CX4]")):
-                        found_amide_connected_to_sphingosine = True
-                        break
-            if found_amide_connected_to_sphingosine:
+         for atom_index in amide_match:
+              atom = mol.GetAtomWithIdx(atom_index)
+              if atom.GetSymbol() == 'N':
+                  for neighbor in atom.GetNeighbors():
+                       if neighbor.Match(Chem.MolFromSmarts("[CX4]")) and mol.HasSubstructMatch(Chem.MolFromSmarts(f"[{neighbor.GetIdx()}]-[CX4]([OH])-[CX4]([NH])-[CX4][CH2X4]")) or \
+                         (mol.HasSubstructMatch(Chem.MolFromSmarts(f"[{neighbor.GetIdx()}]-[CX4]-[CX4]([OH])-[CX4]([NH])")) and mol.GetAtomWithIdx(neighbor.GetIdx()).GetTotalValence() == 4) :
+                          found_amide_connected_to_sphingosine = True
+                          break
+         if found_amide_connected_to_sphingosine:
               break
-        if found_amide_connected_to_sphingosine:
-          break
-    
     if not found_amide_connected_to_sphingosine:
         return False, "Amide not connected to the sphingosine backbone"
 
 
-    # 3. Fatty Acid Chain Check (using rotatable bonds)
-    # We count rotatable bonds connected to carbonyl
+    # 3. Fatty Acid Chain Length
     for match in amide_matches:
       carbonyl_c_index = -1
       for atom_index in match:
-        atom = mol.GetAtomWithIdx(atom_index)
-        if atom.GetSymbol() == 'C' and atom.GetTotalValence() == 3 and any (neighbor.GetSymbol() == 'O' for neighbor in atom.GetNeighbors()):
-            carbonyl_c_index = atom_index
-            break
+          atom = mol.GetAtomWithIdx(atom_index)
+          if atom.GetSymbol() == 'C' and atom.GetTotalValence() == 3 and any (neighbor.GetSymbol() == 'O' for neighbor in atom.GetNeighbors()):
+              carbonyl_c_index = atom_index
+              break
       if carbonyl_c_index == -1:
           continue
-      submol = Chem.Mol(mol)
-      for atom in submol.GetAtoms():
-            if atom.GetIdx() != carbonyl_c_index:
-                 submol.GetAtomWithIdx(atom.GetIdx()).SetAtomMapNum(0)
 
-      submol = Chem.DeleteSubstructs(submol,Chem.MolFromSmarts("[#0]"))
+      # Extract the fatty acid chain
+      fatty_acid_mol = Chem.RWMol(mol)
       
-      num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(submol)
-      if num_rotatable_bonds < 12 or num_rotatable_bonds > 25:
-          return False, f"Fatty acid chain length not within range (14-26 C). Found {num_rotatable_bonds}"
+      # Remove sphingosine core and everything that is not the fatty acid
+      sphingo_match = mol.GetSubstructMatch(sphingosine_core)
+      if sphingo_match: #protect the core atoms.
+          for atom_index in sphingo_match:
+              fatty_acid_mol.GetAtomWithIdx(atom_index).SetAtomMapNum(1)
+              
+      for atom in fatty_acid_mol.GetAtoms():
+            if atom.GetIdx() != carbonyl_c_index:
+                 fatty_acid_mol.GetAtomWithIdx(atom.GetIdx()).SetAtomMapNum(0)
 
 
-    return True, "Contains a sphingosine backbone with an amide-linked fatty acid"
+      fatty_acid_mol = Chem.DeleteSubstructs(fatty_acid_mol, Chem.MolFromSmarts("[#0]"))
+      fatty_acid_mol = Chem.DeleteSubstructs(fatty_acid_mol, Chem.MolFromSmarts("[#1]")) #remove the core (marked with atom map 1)
+      if fatty_acid_mol.GetNumAtoms() == 0: #if all atoms were removed, this is not a ceramide
+            return False, "Could not isolate fatty acid chain"
+
+
+      carbon_count = 0
+      for atom in fatty_acid_mol.GetAtoms():
+           if atom.GetSymbol() == 'C':
+                carbon_count += 1
+
+      if carbon_count < 14 or carbon_count > 26:
+            return False, f"Fatty acid chain length not within range (14-26 C). Found {carbon_count} carbons."
+
+    return True, "Contains a sphingosine backbone with an amide-linked fatty acid."
