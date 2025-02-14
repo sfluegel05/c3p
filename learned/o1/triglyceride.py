@@ -24,21 +24,16 @@ def is_triglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define ester pattern: O=C-O-C 
-    ester_pattern = Chem.MolFromSmarts('C(=O)O[*]')
+    # Define ester pattern: [#6][C](=O)[O][#6]
+    ester_pattern = Chem.MolFromSmarts('[#6][CX3](=O)[OX2H0][#6]')
     ester_matches = mol.GetSubstructMatches(ester_pattern)
 
     # Collect the indices of ester oxygens and the carbons they are attached to (glycerol carbons)
     esterified_carbons = set()
     for match in ester_matches:
-        carbonyl_c = match[0]   # Carbonyl carbon
-        ester_o = match[1]      # Ester oxygen
-        attached_atom = match[2]  # Atom attached to ester oxygen (should be glycerol carbon)
-
-        # Check if the attached atom is a carbon
-        atom = mol.GetAtomWithIdx(attached_atom)
-        if atom.GetAtomicNum() == 6:
-            esterified_carbons.add(attached_atom)
+        # match indices: [C(attached to carbonyl C), carbonyl C, ester O, glycerol C]
+        glycerol_c = match[3]   # Carbon attached to ester oxygen (possibly glycerol carbon)
+        esterified_carbons.add(glycerol_c)
 
     # Check if there are exactly 3 esterified carbons
     if len(esterified_carbons) != 3:
@@ -80,20 +75,30 @@ def is_triglyceride(smiles: str):
     for c_idx in glycerol_carbons:
         atom = mol.GetAtomWithIdx(c_idx)
         ester_o_counts = 0
-        for neighbor in atom.GetNeighbors():
+        for bond in atom.GetBonds():
+            neighbor = bond.GetOtherAtom(atom)
             if neighbor.GetAtomicNum() == 8:  # Oxygen
                 # Check if this oxygen is part of an ester group
-                bond = mol.GetBondBetweenAtoms(c_idx, neighbor.GetIdx())
-                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    for nbr in neighbor.GetNeighbors():
-                        if nbr.GetIdx() != c_idx and nbr.GetAtomicNum() == 6:
-                            # Found C-O-C where O is connected to a carbonyl carbon
-                            for nbr_of_nbr in nbr.GetNeighbors():
-                                if nbr_of_nbr.GetIdx() != neighbor.GetIdx() and nbr_of_nbr.GetAtomicNum() == 8:
-                                    # Found carbonyl oxygen
-                                    ester_o_counts +=1
-                                    break
-        if ester_o_counts != 1:
+                o_atom = neighbor
+                is_ester_o = False
+                for o_bond in o_atom.GetBonds():
+                    o_neighbor = o_bond.GetOtherAtom(o_atom)
+                    if o_neighbor.GetIdx() != c_idx:
+                        if o_neighbor.GetAtomicNum() == 6:
+                            # Check if this carbon (o_neighbor) is a carbonyl carbon with a double-bonded oxygen
+                            has_carbonyl_o = False
+                            for obond in o_neighbor.GetBonds():
+                                if obond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                    other_atom = obond.GetOtherAtom(o_neighbor)
+                                    if other_atom.GetAtomicNum() == 8:
+                                        has_carbonyl_o = True
+                                        break
+                            if has_carbonyl_o:
+                                is_ester_o = True
+                                break
+                if is_ester_o:
+                    ester_o_counts +=1
+        if ester_o_counts !=1:
             return False, f"Glycerol carbon at index {c_idx} is not connected to exactly one ester group"
 
     # If all checks pass, the molecule is a triglyceride
