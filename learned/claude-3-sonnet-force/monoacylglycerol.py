@@ -1,66 +1,24 @@
 """
 Classifies: CHEBI:17408 monoacylglycerol
 """
-"""
-Classifies: CHEBI:17613 monoacylglycerol
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program appears to be a decent attempt at classifying monoacylglycerols, but there are a few potential issues and areas for improvement based on the outcomes provided:
 
-def is_monoacylglycerol(smiles: str):
-    """
-    Determines if a molecule is a monoacylglycerol based on its SMILES string.
-    A monoacylglycerol is a glyceride in which any one of the R groups (position not specified) is an acyl group
-    while the remaining two R groups can be either H or alkyl groups.
+1. **Molecular Weight Cutoff**: The program uses a molecular weight cutoff of 350 Da for monoacylglycerols. However, some of the false negatives such as "3-octanoyl-sn-glycerol" and "(R)-glycerol 1-acetate" have molecular weights below 350 Da but are still valid monoacylglycerols. The molecular weight cutoff may need to be lowered or removed entirely.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Oxygen Count Check**: The program checks that the oxygen count is between 4 and 6 for a valid monoacylglycerol. However, one of the false negatives, "prostaglandin E2 1-glyceryl ester," has an oxygen count outside this range but is still classified as a monoacylglycerol in the benchmark. The oxygen count check may need to be adjusted or removed.
 
-    Returns:
-        bool: True if molecule is a monoacylglycerol, False otherwise
-        str: Reason for classification
-    """
+3. **Acyl Chain Pattern**: The program uses a simple pattern `"[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"` to detect an acyl chain. This pattern may be too permissive, as it can match any chain of three connected carbons, including those not typically found in acyl chains. A more specific pattern or additional checks may be needed to ensure the matched chain is a valid acyl chain.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. **False Positives**: The program seems to struggle with some false positives, such as "Carbamidocyclophane V" and "3a,7b,12b-Trihydroxy-5b-cholanoic acid." These molecules likely contain the glycerol backbone and an ester group but do not fit the definition of a monoacylglycerol. Additional checks or patterns may be needed to exclude these types of molecules.
 
-    # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+5. **Stereochemistry**: The program does not consider stereochemistry, which may be important for correctly identifying certain monoacylglycerols. For example, the benchmark distinguishes between "MG(15:0/0:0/0:0)" and "rac-1-monopalmitoylglycerol," which have the same molecular formula but different stereochemistry.
 
-    # Look for one ester group (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+To improve the program, you could consider the following strategies:
 
-    # Check for acyl chain (carbon chain attached to ester)
-    acyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if len(acyl_matches) < 1:
-        return False, "Missing acyl chain"
+- Adjust or remove the molecular weight and oxygen count cutoffs based on the benchmark data.
+- Develop a more specific pattern or set of patterns to accurately identify valid acyl chains.
+- Implement additional checks or patterns to exclude false positives, such as checking for specific functional groups or substructures that should not be present in monoacylglycerols.
+- Consider incorporating stereochemistry information into the classification process, either by using more specific SMARTS patterns or by analyzing the stereochemistry directly using RDKit functionality.
+- Investigate any systematic errors or biases in the benchmark data, as there may be occasional mistakes or inconsistencies that could affect the program's performance.
 
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 3:
-        return False, "Acyl chain too short"
-
-    # Check molecular weight - monoacylglycerols typically >350 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350:
-        return False, "Molecular weight too low for monoacylglycerol"
-
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-
-    if c_count < 10:
-        return False, "Too few carbons for monoacylglycerol"
-    if o_count < 4 or o_count > 6:
-        return False, "Oxygen count outside expected range for monoacylglycerol"
-
-    return True, "Contains glycerol backbone with 1 acyl chain attached via an ester bond"
+It's important to note that while the F1 score of 0.08 is low, it's difficult to assess the program's true performance without a reliable and consistent benchmark. If you believe the program's classifications are consistent with the chemical definition of monoacylglycerols, you may choose to prioritize that understanding over the benchmark results, while still addressing any clear errors or oversights in the program.
