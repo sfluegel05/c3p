@@ -22,88 +22,77 @@ def is_nonclassic_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count number of carbon atoms
+    # Count number of carbon atoms (flexible range around 20)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    # Allow molecules with 20 to 25 carbons to account for side chains
-    if not 20 <= c_count <= 25:
-        return False, f"Molecule has {c_count} carbons, expected between 20 and 25"
+    if not 18 <= c_count <= 24:
+        return False, f"Molecule has {c_count} carbons, expected between 18 and 24"
 
-    # Check for terminal carboxylic acid group (-COOH)
-    carboxylic_acid = Chem.MolFromSmarts('C(=O)[O;H1]')
-    if not mol.HasSubstructMatch(carboxylic_acid):
-        return False, "No terminal carboxylic acid group found"
+    # Count number of oxygen atoms (must have oxygenated functional groups)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 2:
+        return False, f"Molecule has {o_count} oxygen atoms, expected at least 2"
 
-    # Exclude molecules with peptide bonds (amide linkages between carbons)
-    peptide_bond = Chem.MolFromSmarts('C(=O)N[C]')
-    if mol.HasSubstructMatch(peptide_bond):
-        return False, "Molecule contains peptide bonds (possible peptide/protein)"
+    # Check for long hydrocarbon chain (indicative of fatty acid backbone)
+    chain_lengths = []
+    paths = Chem.rdmolops.FindAllPathsOfLengthN(mol, 15, useBonds=False)
+    if not paths:
+        return False, "No long hydrocarbon chain of at least 15 atoms found"
 
-    # Exclude prostaglandins by identifying cyclopentane ring with side chains
-    prostaglandin_pattern = Chem.MolFromSmarts('C1CCCC1')
-    if mol.HasSubstructMatch(prostaglandin_pattern):
-        # Further check for side chains to confirm prostaglandin
-        side_chain = Chem.MolFromSmarts('C1CCCC1CC')
-        if mol.HasSubstructMatch(side_chain):
-            return False, "Molecule contains prostaglandin-like cyclopentane ring"
+    # Count number of double bonds (polyunsaturation)
+    num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if num_double_bonds < 3:
+        return False, f"Molecule has {num_double_bonds} double bonds, expected at least 3"
 
-    # Count total number of oxygen atoms
-    o_count_total = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    # Count number of carboxylic acid groups
-    carboxy_matches = mol.GetSubstructMatches(carboxylic_acid)
-    o_count_carboxy = len(carboxy_matches) * 2  # Each carboxylic acid has 2 oxygens
+    # Check for oxygenated functional groups
+    functional_groups = 0
 
-    # Calculate number of oxygens beyond carboxylic acid(s)
-    o_count_additional = o_count_total - o_count_carboxy
-    if o_count_additional < 1:
-        return False, "No additional oxygenated functional groups found"
-
-    # Check for hydroxyl groups (-OH)
+    # Hydroxyl groups (-OH)
     hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')
     num_hydroxyls = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    functional_groups += num_hydroxyls
 
-    # Check for epoxides (three-membered cyclic ethers)
+    # Epoxide rings (three-membered cyclic ethers)
     epoxide_pattern = Chem.MolFromSmarts('C1OC1')
     num_epoxides = len(mol.GetSubstructMatches(epoxide_pattern))
+    functional_groups += num_epoxides
 
-    # Exclude molecules with ketone groups (C=O not part of carboxylic acid)
-    ketone_pattern = Chem.MolFromSmarts('[CX3](=O)[#6]')
-    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-    # Exclude ketones that are not part of carboxylic acids
-    num_ketones = 0
-    for match in ketone_matches:
-        ketone_atom = mol.GetAtomWithIdx(match[0])
-        is_in_carboxy = any(ketone_atom.IsInRing() for match in carboxy_matches)
-        if not is_in_carboxy:
-            num_ketones += 1
-    if num_ketones > 0:
-        return False, "Molecule contains ketone groups (possible prostanoid)"
+    # Ketone groups (C=O)
+    ketone_pattern = Chem.MolFromSmarts('C(=O)[C!O]')
+    num_ketones = len(mol.GetSubstructMatches(ketone_pattern))
+    functional_groups += num_ketones
 
-    # Sum up oxygenated functional groups
-    num_oxygenated_groups = num_hydroxyls + num_epoxides
-    if num_oxygenated_groups < 1:
-        return False, "No significant oxygenated functional groups found"
+    # Peroxy groups (-OOH)
+    peroxy_pattern = Chem.MolFromSmarts('OO')
+    num_peroxides = len(mol.GetSubstructMatches(peroxy_pattern))
+    functional_groups += num_peroxides
 
-    # Exclude molecules with multiple rings unrelated to epoxides
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings > num_epoxides:
-        return False, "Molecule contains rings unrelated to epoxides"
+    if functional_groups < 2:
+        return False, f"Molecule has {functional_groups} oxygenated functional groups, expected at least 2"
 
-    # Check for long hydrocarbon chain
-    # Identify the longest carbon chain in the molecule
-    chains = Chem.GetSSSR(mol)
-    max_chain_length = 0
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.SINGLE:
-            atom1 = bond.GetBeginAtom()
-            atom2 = bond.GetEndAtom()
-            if atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 6:
-                # Simple heuristic to estimate chain length
-                chain_length = len(Chem.rdmolops.GetShortestPath(mol, atom1.GetIdx(), atom2.GetIdx()))
-                if chain_length > max_chain_length:
-                    max_chain_length = chain_length
-    if max_chain_length < 10:
-        return False, "No long hydrocarbon chain found"
+    # Exclude prostanoids (prostaglandins) by identifying specific cyclopentane ring
+    prostaglandin_pattern = Chem.MolFromSmarts('C1C=CC(C1)CCCC(=O)O')
+    if mol.HasSubstructMatch(prostaglandin_pattern):
+        return False, "Molecule contains prostaglandin-like cyclopentane ring"
+
+    # Exclude leukotrienes by identifying their conjugated triene structure
+    leukotriene_pattern = Chem.MolFromSmarts('C=C/C=C/C=C')
+    triene_matches = mol.GetSubstructMatches(leukotriene_pattern)
+    # Check if triene is part of a specific leukotriene backbone
+    for match in triene_matches:
+        atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+        if all(atom.GetDegree() == 2 for atom in atoms):  # Linear conjugated triene
+            return False, "Molecule contains leukotriene-like conjugated triene"
+
+    # Accept molecules with terminal carboxylic acids or their derivatives
+    terminal_groups = [
+        Chem.MolFromSmarts('C(=O)[O;H1]'),   # Carboxylic acid
+        Chem.MolFromSmarts('C(=O)O[CH3]'),   # Methyl ester
+        Chem.MolFromSmarts('C(=O)O[C]'),     # Ester
+        Chem.MolFromSmarts('C(=O)N'),        # Amide
+    ]
+    has_terminal_group = any(mol.HasSubstructMatch(patt) for patt in terminal_groups)
+    if not has_terminal_group:
+        return False, "No terminal carboxylic acid or derivative group found"
 
     # If molecule passes all checks, classify as nonclassic icosanoid
     return True, "Molecule meets criteria for nonclassic icosanoid"
