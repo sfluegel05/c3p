@@ -31,8 +31,8 @@ def is_glycerophosphocholine(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
         
-    # Look for phosphate group (-O-P(=O)(-O)-O-)
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P([OX1-,OX2-])([OX1-,OX2-])[OX2-]")
+    # Look for phosphate group (-O-P(=O)(-O)-O-) with a more flexible SMARTS pattern
+    phosphate_pattern = Chem.MolFromSmarts("[OX2]P([OX1-,OX2-,OX3])(=[OX1])([OX1-,OX2-,OX3])[OX2-,OX1-]")
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
         
