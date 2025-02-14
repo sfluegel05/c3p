@@ -5,6 +5,8 @@ Classifies: CHEBI:35179 2-oxo monocarboxylic acid anion
 Classifies: CHEBI:25450 2-oxo monocarboxylic acid anion
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     """
@@ -18,54 +20,45 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
         bool: True if molecule is a 2-oxo monocarboxylic acid anion, False otherwise
         str: Reason for classification
     """
-
     # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify carboxylate groups (-C(=O)[O-]) or carboxylic acids (-C(=O)O)
-    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1-]")
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
+    # Check for exactly one carboxylate group (-C(=O)[O-])
+    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=O)[O-]")
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    carboxy_matches = carboxylate_matches + carboxylic_acid_matches
+    num_carboxylate = len(carboxylate_matches)
+    if num_carboxylate != 1:
+        return False, f"Found {num_carboxylate} carboxylate groups, require exactly 1"
 
-    num_carboxy_groups = len(carboxy_matches)
-    if num_carboxy_groups == 0:
-        return False, "No carboxylate or carboxylic acid groups found"
+    # Get the index of the carboxylate carbon atom
+    carboxylate_C_idx = carboxylate_matches[0][0]
+    carboxylate_C = mol.GetAtomWithIdx(carboxylate_C_idx)
 
-    # For each carboxylate/carboxylic acid group, check for oxo group at 2-position
-    for match in carboxy_matches:
-        carboxy_C_idx = match[0]  # Index of the carbonyl carbon
-        carboxy_C = mol.GetAtomWithIdx(carboxy_C_idx)
+    # Find the alpha carbon (adjacent to the carboxylate carbon)
+    alpha_carbons = [nbr for nbr in carboxylate_C.GetNeighbors() if nbr.GetAtomicNum() == 6]
+    if len(alpha_carbons) == 0:
+        return False, "No alpha carbon adjacent to carboxylate group"
 
-        # Find alpha carbons (adjacent carbons to carboxylate carbon)
-        alpha_carbons = []
-        for neighbor in carboxy_C.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon atom
-                alpha_carbons.append(neighbor)
+    # Check if any alpha carbon has an oxo group (=O) attached
+    has_oxo_at_alpha = False
+    for alpha_C in alpha_carbons:
+        # Look for a double bond to oxygen on the alpha carbon
+        oxo_found = False
+        for bond in alpha_C.GetBonds():
+            neighbor = bond.GetOtherAtom(alpha_C)
+            if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                oxo_found = True
+                break
+        if oxo_found:
+            has_oxo_at_alpha = True
+            break
 
-        if not alpha_carbons:
-            continue  # No alpha carbon adjacent to this carboxylate group
+    if not has_oxo_at_alpha:
+        return False, "No oxo group (=O) at the alpha carbon (2-position)"
 
-        # Check each alpha carbon for an oxo group at the 2-position
-        for alpha_C in alpha_carbons:
-            alpha_C_idx = alpha_C.GetIdx()
-
-            # Check if alpha carbon is double-bonded to an oxygen (oxo group)
-            has_oxo = False
-            for neighbor in alpha_C.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:  # Oxygen atom
-                    bond = mol.GetBondBetweenAtoms(alpha_C_idx, neighbor.GetIdx())
-                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        has_oxo = True
-                        break
-
-            if has_oxo:
-                return True, "Molecule has a carboxylate group with an oxo group at the 2-position"
-
-    return False, "No oxo group found at the 2-position relative to any carboxylate group"
+    return True, "Molecule is a 2-oxo monocarboxylic acid anion"
 
 __metadata__ = {
     'chemical_class': {
@@ -85,5 +78,20 @@ __metadata__ = {
         'max_negative_in_prompt': 20,
         'max_instances_in_prompt': 100,
         'test_proportion': 0.1
-    }
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': None,
+    'num_false_positives': None,
+    'num_true_negatives': None,
+    'num_false_negatives': None,
+    'num_negatives': None,
+    'precision': None,
+    'recall': None,
+    'f1': None,
+    'accuracy': None
 }
