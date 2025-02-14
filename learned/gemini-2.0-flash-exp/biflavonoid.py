@@ -20,15 +20,14 @@ def is_biflavonoid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
     # Define flavonoid substructure using SMARTS
-    # This is a generalized pattern for the core of a flavonoid structure.
-    # We are accounting for different oxidation states and substitution patterns
-    # with the flexible SMARTS patterns used below.
+    # A more generalized pattern for the core of a flavonoid structure.
+    # Allows different oxidation states and substitution patterns
     flavonoid_pattern = Chem.MolFromSmarts(
-        "[cH1]1[cH][cH]([OX2])[c]([c]1)[CX3](=[OX1])[c]2[cH][cH][cH][c]([OX2])[c]2"
-        ) # Modified to account for different substitution patterns
+        "[c]1[c][c]([O])[c]([c]1)[CX4,CX3][c]2[c][c][c][c]([O])[c]2" # Changed to allow flexibility in oxidation state, and allow substitutions on the aromatic rings
+        )
 
     # Count number of flavonoid units
     flavonoid_matches = mol.GetSubstructMatches(flavonoid_pattern)
@@ -38,7 +37,6 @@ def is_biflavonoid(smiles: str):
         return False, f"Found {num_flavonoids} flavonoid units, need at least 2."
 
     # Check if flavonoids are linked directly (or through one atom)
-    # We'll use a more flexible approach.
     # If a molecule has two or more flavonoids, and the molecule has no unconnected fragments,
     # we will assume the flavonoids are connected and therefore it's a biflavonoid.
     if len(Chem.GetMolFrags(mol)) > 1:
