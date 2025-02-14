@@ -21,15 +21,15 @@ def is_bioconjugate(smiles: str):
     if mol is None:
         return None, "Invalid SMILES string"
 
-    # Define substructure patterns
+    # Define a range of known biological moiety patterns for identification
     patterns = {
-        "amino_acid": Chem.MolFromSmarts("[NX3][CX4](C)C(=O)[OX2H1]"),  # Improved amino acid pattern
-        "fatty_acid": Chem.MolFromSmarts("C(=O)O[CX4][CX4]C(C)..."),    # Multi-bond to capture longer chains
-        "nucleotide": Chem.MolFromSmarts("n1cnc2c1ncnc2"),             # DNA/RNA base
-        "sugar": Chem.MolFromSmarts("C(O)C(O)C(O)C(O)"),                # Generic sugar
-        "peptide_bond": Chem.MolFromSmarts("C(=O)N[C]"),                # Broad peptide bond angle
-        "thiol": Chem.MolFromSmarts("C[S]"),                            # Generic thiol group
-        "phosphate": Chem.MolFromSmarts("P(=O)(O)O")                    # Phosphate backbone
+        "amino_acid": Chem.MolFromSmarts("N[C@@H](C)C(=O)O"),                    # Simplified amino acid backbones
+        "fatty_acid": Chem.MolFromSmarts("C(=O)[CX4]C"),                         # General fatty acid residue
+        "nucleotide": Chem.MolFromSmarts("n1cnc2c1ncnc2"),                       # DNA/RNA bases
+        "sugar": Chem.MolFromSmarts("C(O)C(O)C(O)C(O)"),                         # Simple sugar backbone
+        "peptide_bond": Chem.MolFromSmarts("C(=O)N"),                            # Peptide linkage
+        "thiol": Chem.MolFromSmarts("CSC(C)"),                                   # Cysteine related
+        "phosphate": Chem.MolFromSmarts("P(=O)(O)O")                             # Phosphate group
     }
 
     # Track identified biological moieties
@@ -40,13 +40,10 @@ def is_bioconjugate(smiles: str):
         if mol.HasSubstructMatch(pattern):
             identified_moieties.add(name)
 
-    # Check that they are covalently linked
+    # Consider it a bioconjugate if two or more distinct moieties are found
     if len(identified_moieties) >= 2:
-        for atom in mol.GetAtoms():
-            if any(atom.HasSubstructMatch(pattern) for pattern in patterns.values()):
-                if len(set(pattern for pattern in patterns if atom.HasSubstructMatch(pattern))) >= 2:
-                    return True, f"Contains at least two different biological moieties covalently linked: {', '.join(identified_moieties)}"
-
+        return True, f"Contains at least two different biological moieties covalently linked: {', '.join(identified_moieties)}"
+    
     return False, "Does not contain at least two distinct biological components"
 
 # Example use (replace SMILES with an actual string to test):
