@@ -1,29 +1,66 @@
 """
 Classifies: CHEBI:25413 monounsaturated fatty acid
 """
-Reasoning:
+"""
+Classifies: monounsaturated fatty acids
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The previous code attempts to classify monounsaturated fatty acids by checking for the following properties:
+def is_monounsaturated_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is a monounsaturated fatty acid based on its SMILES string.
+    A monounsaturated fatty acid has:
+    - A carboxylic acid group (-C(=O)OH)
+    - One double or triple bond in the fatty acid chain
+    - Singly bonded carbon atoms in the rest of the chain
+    - A continuous hydrocarbon chain of at least 4 carbon atoms
 
-1. Presence of a carboxylic acid group (-C(=O)OH)
-2. Exactly one double or triple bond in the molecule
-3. At least two singly bonded carbon atoms (degree 4)
-4. Chain length of at least 4 carbon atoms
+    Args:
+        smiles (str): SMILES string of the molecule
 
-However, the error "tuple index out of range" suggests that the code is failing on certain input molecules, likely due to an issue with the chain length check.
+    Returns:
+        bool: True if molecule is a monounsaturated fatty acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-The chain length check uses the Chem.GetMolFrags function, which returns a list of molecular fragments (individual disconnected components of the molecule). The code assumes that there are exactly two fragments (the carboxylic acid group and the hydrocarbon chain) and takes the maximum length of these two fragments as the chain length.
+    # Check for carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    if mol.HasSubstructMatch(carboxyl_pattern) == False:
+        return False, "No carboxylic acid group found"
 
-This assumption may not hold true for all monounsaturated fatty acids, especially those with more complex structures or additional functional groups. For example, the molecule "OC(C(O)CC=1C=C(C=CC1O)C(OC)=O)(C)C" is a monounsaturated fatty acid, but it has multiple disconnected fragments, which could lead to the "tuple index out of range" error.
+    # Check for one double or triple bond
+    num_double_bonds = rdMolDescriptors.CalcNumDoubleBonds(mol)
+    num_triple_bonds = rdMolDescriptors.CalcNumTripleBonds(mol)
+    if num_double_bonds + num_triple_bonds != 1:
+        return False, "Not exactly one double or triple bond"
 
-To improve the program, we need to find a more robust way to determine the chain length, taking into account the possibility of multiple fragments or additional functional groups.
+    # Check for hydrocarbon chain
+    hydrocarbon_chain = False
+    for chain in AllChem.FindAllSubgraphIsomers(mol):
+        chain_smiles = Chem.MolToSmiles(chain)
+        if "C=C" in chain_smiles or "C#C" in chain_smiles:
+            hydrocarbon_chain = True
+            break
 
-Additionally, the previous code does not explicitly check for the presence of a hydrocarbon chain, which is a crucial characteristic of fatty acids. We should add a check for this to ensure that the molecule is indeed a fatty acid.
+    if not hydrocarbon_chain:
+        return False, "No continuous hydrocarbon chain found"
 
-Proposed Improvements:
+    # Calculate chain length
+    chain_length = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon
+            neighbors = atom.GetNeighbors()
+            longest_chain = max([len(Chem.FindAllSubgraphIsomers(mol, atomPredicate=AllChem.IsSingleCarbonAtom, startAtom=neighbor)) for neighbor in neighbors], default=0)
+            chain_length = max(chain_length, longest_chain)
 
-1. Use a more robust method to calculate the chain length, such as summing the lengths of all linear carbon chains in the molecule.
-2. Add a check for the presence of a continuous hydrocarbon chain, allowing for the double or triple bond.
-3. Consider additional checks or patterns to handle complex structures or edge cases, if necessary.
+    if chain_length < 4:
+        return False, "Fatty acid chain too short"
 
-It's important to note that while the benchmark dataset may contain some errors, it's still valuable to analyze and learn from the outcomes. If the classifications made by the program align with the general understanding of the chemical class, it's reasonable to prioritize the program's logic over potential outliers in the dataset.
+    return True, "Contains a carboxylic acid group, one double or triple bond, and a hydrocarbon chain of at least 4 carbon atoms"
