@@ -8,7 +8,7 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
     """
     Determines if a molecule is a secondary alpha-hydroxy ketone based on its SMILES string.
     A secondary alpha-hydroxy ketone is a ketone with a hydroxyl group on the alpha carbon,
-    which also has exactly one hydrogen attached.
+    which also has exactly one hydrogen attached and one organyl group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,9 +23,10 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Create SMARTS pattern for secondary alpha-hydroxy ketone
-    # [CX4H1]([OX2])[CX3](=[OX1])[CX4] where the carbon with O and H is attached to a ketone.
+    # [CX4H1]([OX2])[CX3](=[OX1])[#6X3] where the carbon with O and H is attached to a ketone.
+    # The [#6X3] part enforces a carbon that is bonded to exactly 3 other atoms, with one of them being the carbonyl carbon.
 
-    pattern = Chem.MolFromSmarts("[CX4H1]([OX2])[CX3](=[OX1])[CX4]")
+    pattern = Chem.MolFromSmarts("[CX4H1]([OX2])[CX3](=[OX1])[#6X3]")
     matches = mol.GetSubstructMatches(pattern)
 
     if len(matches) == 0:
