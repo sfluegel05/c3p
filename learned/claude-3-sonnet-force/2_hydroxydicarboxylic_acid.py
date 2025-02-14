@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_2_hydroxydicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-hydroxydicarboxylic acid based on its SMILES string.
-    A 2-hydroxydicarboxylic acid is a dicarboxylic acid carrying a hydroxy group on the
+    A 2-hydroxydicarboxylic acid is any dicarboxylic acid carrying a hydroxy group on the
     carbon atom at position alpha to the carboxy group.
 
     Args:
@@ -27,49 +27,41 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for dicarboxylic acid pattern (two -C(=O)O groups)
-    dicarboxylic_acid_pattern = Chem.MolFromSmarts("[$(C(=O)O)][$(C(=O)O)]")
-    dicarboxylic_acid_matches = mol.GetSubstructMatches(dicarboxylic_acid_pattern)
-    
-    if not dicarboxylic_acid_matches:
+    # Check for two carboxylic acid groups (-C(=O)O)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[$(C(=O)O)]")
+    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(carboxylic_acid_matches) != 2:
         return False, "Not a dicarboxylic acid"
     
-    # Find alpha carbon (between two carboxylic acids)
+    # Check for hydroxyl group (-OH)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if not hydroxyl_matches:
+        return False, "No hydroxyl group found"
+    
+    # Find alpha carbon (connected to hydroxyl group)
     alpha_carbon_idx = None
-    for match in dicarboxylic_acid_matches:
-        carboxyl_atom1 = mol.GetAtomWithIdx(match[0])
-        carboxyl_atom2 = mol.GetAtomWithIdx(match[1])
-        
-        for bond in carboxyl_atom1.GetBonds():
-            if bond.GetBeginAtomIdx() == carboxyl_atom2.GetIdx():
-                continue
-            alpha_carbon_idx = bond.GetBeginAtomIdx()
-            break
-        
+    for match in hydroxyl_matches:
+        hydroxyl_atom = mol.GetAtomWithIdx(match[0])
+        for neighbor in hydroxyl_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                alpha_carbon_idx = neighbor.GetIdx()
+                break
         if alpha_carbon_idx is not None:
             break
     
     if alpha_carbon_idx is None:
-        return False, "No alpha carbon found between two carboxylic acids"
+        return False, "No alpha carbon found connected to hydroxyl group"
     
-    # Check for hydroxy group on alpha carbon
+    # Check if alpha carbon is connected to one of the carboxylic acid groups
     alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
-    has_hydroxyl = any(neighbor.GetAtomicNum() == 8 and
-                       neighbor.GetTotalNumHs() == 1
-                       for neighbor in alpha_carbon.GetNeighbors())
+    for neighbor in alpha_carbon.GetNeighbors():
+        for bond in neighbor.GetBonds():
+            if bond.GetBeginAtomIdx() == neighbor.GetIdx():
+                continue
+            if mol.GetAtomWithIdx(bond.GetBeginAtomIdx()).GetAtomicNum() == 6:
+                if mol.GetAtomWithIdx(bond.GetEndAtomIdx()).GetAtomicNum() == 8:
+                    if mol.GetAtomWithIdx(bond.GetEndAtomIdx()).GetTotalNumHs() == 0:
+                        return True, "2-hydroxydicarboxylic acid"
     
-    if not has_hydroxyl:
-        return False, "No hydroxyl group on alpha carbon"
-    
-    # Additional checks
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100 or mol_wt > 300:
-        return False, "Molecular weight outside typical range for 2-hydroxydicarboxylic acids"
-    
-    # Handle stereochemistry
-    AllChem.AdjustQueryParameters()
-    query_mol = Chem.MolFromSmarts("[C@@](C(=O)O)(O)[C@@](C(=O)O)(O)")
-    if not mol.HasSubstructMatch(query_mol):
-        return False, "Stereochemistry does not match 2-hydroxydicarboxylic acid pattern"
-    
-    return True, "Dicarboxylic acid with hydroxyl group on alpha carbon"
+    return False, "Alpha carbon not connected to carboxylic acid group"
