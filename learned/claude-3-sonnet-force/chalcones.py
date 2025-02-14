@@ -1,57 +1,28 @@
 """
 Classifies: CHEBI:23086 chalcones
 """
-"""
-Classifies: CHEBI:38236 chalcone
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous code attempts to classify a molecule as a chalcone based on the presence of the chalcone backbone pattern (ArCH=CH(=O)Ar) and a few additional criteria. However, it seems that the code has a few limitations that might have led to the poor performance on the benchmark.
 
-def is_chalcone(smiles: str):
-    """
-    Determines if a molecule is a chalcone based on its SMILES string.
-    A chalcone is a ketone with the structure ArCH=CH(=O)Ar, where Ar represents an aryl group.
+Possible reasons for the failure:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Overly strict criteria**: The code checks for specific atom counts (e.g., c_count >= 15 and o_count == 1) and a specific number of rotatable bonds (2-3). While these criteria might be true for many chalcones, they may be too restrictive and exclude some valid chalcone structures. Chemical classes can have a wide structural diversity, and strict atom count or bond count rules may not be appropriate.
 
-    Returns:
-        bool: True if molecule is a chalcone, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Limited recognition of substituents**: The code only checks for the presence of hydroxyl, methoxy, and prenyl groups as common substituents. However, chalcones can have a much broader range of substituents, including other alkoxy groups, halides, alkyl groups, and more complex substituents.
 
-    # Look for chalcone backbone pattern (two aryl groups separated by ketone and alkene)
-    chalcone_pattern = Chem.MolFromSmarts("[a]C=CC(=O)[a]")
-    if not mol.HasSubstructMatch(chalcone_pattern):
-        return False, "No chalcone backbone found"
+3. **Incomplete structural matching**: The code uses the `MolFromSmarts` function to match the chalcone backbone pattern, but this may not be sufficient to capture all possible variations of the chalcone structure. Some chalcone structures may have additional rings, substituents, or conformations that are not covered by the current pattern.
 
-    # Check for aromaticity and specific atom counts
-    aromatic_rings = AllChem.GetSSSR(mol)
-    if len(aromatic_rings) < 2:
-        return False, "Not enough aromatic rings for chalcone"
+4. **Incorrect assumption about aromaticity**: The code assumes that chalcones must have at least two aromatic rings. However, the definition of chalcones does not explicitly require both aryl groups to be aromatic. Some chalcone derivatives may have non-aromatic ring systems, which would be incorrectly classified by this code.
 
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 15 or o_count != 1:
-        return False, "Incorrect carbon or oxygen count"
+To improve the code, here are some suggestions:
 
-    # Count rotatable bonds - chalcones typically have 2-3
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 2 or n_rotatable > 3:
-        return False, "Incorrect number of rotatable bonds"
+1. **Use a more flexible backbone pattern**: Instead of using a strict SMARTS pattern, consider using a broader pattern that captures the essential chalcone backbone while allowing for more structural variations.
 
-    # Check for common substituents or functional groups
-    has_hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX1]"))
-    has_methoxy = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2C]"))
-    has_prenyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[CH2]=CC(C)C"))
+2. **Incorporate common substituent patterns**: Instead of checking for specific substituents, consider using SMARTS patterns to match common substituent groups or patterns found in chalcones.
 
-    if has_hydroxyl or has_methoxy or has_prenyl:
-        return True, "Contains the chalcone backbone ArCH=CH(=O)Ar with common substituents"
+3. **Utilize structural fingerprints or machine learning**: For complex chemical classes like chalcones, it may be more effective to use structural fingerprints or machine learning techniques to capture the structural diversity and identify patterns that are characteristic of the class.
 
-    return True, "Contains the chalcone backbone ArCH=CH(=O)Ar"
+4. **Relax strict atom count and bond count rules**: Unless the definition of the chemical class explicitly mandates specific atom counts or bond counts, it is generally better to avoid such strict rules and focus on the essential structural features.
+
+5. **Review the definition and examples carefully**: Carefully review the definition and examples of the chemical class to ensure that the code accurately captures the essential structural features and does not make incorrect assumptions about aromaticity or other properties.
+
+By addressing these limitations and incorporating more flexible and comprehensive structural matching techniques, the code can potentially improve its performance on the benchmark and better capture the diversity of chalcone structures.
