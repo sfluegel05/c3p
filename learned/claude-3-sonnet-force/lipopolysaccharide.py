@@ -12,12 +12,12 @@ acid units. They are a major constituent of the cell walls of Gram-negative bact
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import AllChem
-from rdkit.ML.Descriptors import MoleculeDescriptors
 from rdkit.Chem.Fingerprints import FingerprintMols
+from rdkit.DataStructs import DiceSimilarity
 
 def is_lipopolysaccharide(smiles):
     """
-    Determines if a molecule is a lipopolysaccharide based on its SMILES string.
+    Determines if a molecule is likely a lipopolysaccharide based on its SMILES string.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -35,45 +35,8 @@ def is_lipopolysaccharide(smiles):
     # Calculate molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     
-    # LPS typically have high molecular weights (>1000 Da)
-    if mol_wt < 1000:
-        return False, "Molecular weight too low for lipopolysaccharide"
-    
-    # Calculate oxygen-to-carbon ratio
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_to_c_ratio = o_count / c_count if c_count > 0 else 0
-    
-    # LPS typically have high oxygen-to-carbon ratio (>0.5)
-    if o_to_c_ratio < 0.5:
-        return False, "Oxygen-to-carbon ratio too low for lipopolysaccharide"
-    
-    # Check for presence of phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-])[O-]")
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
-    
-    # LPS often contain phosphate groups
-    if not has_phosphate:
-        return False, "No phosphate groups found"
-    
-    # Check for presence of heptose and octulosonic acid units
-    heptose_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@@H]([C@@H](CO)O1)O)O)O)O)O")
-    octulosonic_acid_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@@H]([C@H](C(=O)O)O1)O)O)O)O")
-    has_heptose = mol.HasSubstructMatch(heptose_pattern)
-    has_octulosonic_acid = mol.HasSubstructMatch(octulosonic_acid_pattern)
-    
-    if not (has_heptose and has_octulosonic_acid):
-        return False, "No heptose or octulosonic acid units found"
-    
-    # Check for presence of oligosaccharide chains
-    oligosaccharide_pattern = Chem.MolFromSmarts("[OX2][CX4][OX2][CX4][OX2][CX4][OX2][CX4][OX2]")
-    has_oligosaccharide = mol.HasSubstructMatch(oligosaccharide_pattern)
-    
-    if not has_oligosaccharide:
-        return False, "No oligosaccharide chains found"
-    
     # Check for presence of lipid chains
-    lipid_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    lipid_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
     has_lipid = mol.HasSubstructMatch(lipid_pattern)
     
     if not has_lipid:
@@ -84,11 +47,11 @@ def is_lipopolysaccharide(smiles):
     known_lps_mols = [Chem.MolFromSmiles(smi) for smi in known_lps_smiles]
     known_lps_fps = [FingerprintMols.FingerprintMol(m) for m in known_lps_mols]
     
-    similarity_scores = [DataStructs.DiceSimilarity(fps[0], fp) for fp in known_lps_fps]
+    similarity_scores = [DiceSimilarity(fps[0], fp) for fp in known_lps_fps]
     avg_similarity = sum(similarity_scores) / len(similarity_scores)
     
-    # LPS structures should have high similarity to known examples
-    if avg_similarity < 0.6:
+    # LPS structures should have moderate similarity to known examples
+    if avg_similarity < 0.4:
         return False, "Low structural similarity to known lipopolysaccharides"
     
     return True, "Molecule exhibits structural features characteristic of lipopolysaccharides"
