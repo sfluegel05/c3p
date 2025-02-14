@@ -21,37 +21,50 @@ def is_monoradylglycerol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define glycerol backbone patterns allowing attachment to any of the three carbons
-    glycerol_pattern1 = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4][OX2]")
-    glycerol_pattern2 = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4]([OX2H1])[CH2X4]([OX2H1])")
-    glycerol_pattern3 = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2])[CH2X4]([OX2H1])")
 
-    if glycerol_pattern1 is None or glycerol_pattern2 is None or glycerol_pattern3 is None:
-      return False, "Invalid glycerol SMARTS pattern"
-    
-    glycerol_matches1 = mol.GetSubstructMatches(glycerol_pattern1)
-    glycerol_matches2 = mol.GetSubstructMatches(glycerol_pattern2)
-    glycerol_matches3 = mol.GetSubstructMatches(glycerol_pattern3)
-    
-    if not glycerol_matches1 and not glycerol_matches2 and not glycerol_matches3:
+    # Look for glycerol backbone pattern (C-C-C with 2 OH and 1 attachment)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not glycerol_matches:
         return False, "No glycerol backbone found"
 
-    # Define attachment patterns
-    attachment_pattern1 = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4][OX2][CX3,CX4]~[!#1]")
-    attachment_pattern2 = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4]([OX2H1])[CH2X4]([OX2H1])[CX3,CX4]~[!#1]")
-    attachment_pattern3 = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2])[CH2X4]([OX2H1])[CX3,CX4]~[!#1]")
+    # Find the attachment points on the glycerol
+    attachment_pattern = Chem.MolFromSmarts("[CH2X4;!H0]([OX2H1])[CHX4;!H0]([OX2H1])[CH2X4;!H0]")
+    attachment_matches = mol.GetSubstructMatches(attachment_pattern)
+    if not attachment_matches:
+       attachment_pattern = Chem.MolFromSmarts("[CH2X4;!H0]([OX2H1])[CHX4;!H0][CH2X4;!H0]([OX2H1])")
+       attachment_matches = mol.GetSubstructMatches(attachment_pattern)
+    if not attachment_matches:
+        attachment_pattern = Chem.MolFromSmarts("[CH2X4;!H0][CHX4;!H0]([OX2H1])[CH2X4;!H0]([OX2H1])")
+        attachment_matches = mol.GetSubstructMatches(attachment_pattern)
+    if not attachment_matches:
+        return False, "No attachment point found"
 
-    if attachment_pattern1 is None or attachment_pattern2 is None or attachment_pattern3 is None:
-         return False, "Invalid attachment SMARTS pattern"
-    
-    attachment_matches1 = mol.GetSubstructMatches(attachment_pattern1)
-    attachment_matches2 = mol.GetSubstructMatches(attachment_pattern2)
-    attachment_matches3 = mol.GetSubstructMatches(attachment_pattern3)
-    
-    total_matches = len(attachment_matches1) + len(attachment_matches2) + len(attachment_matches3)
-    
-    if total_matches != 1:
-        return False, f"Found {total_matches} attachment points, require exactly 1"
+    # Count ester linkages (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
 
+    # Count ether linkages (-C-O-C-)
+    ether_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+
+    # Count vinyl ether linkages (-C=C-O-C-)
+    vinylether_pattern = Chem.MolFromSmarts("[CX3]=[CX3][OX2][CX4]")
+    vinylether_matches = mol.GetSubstructMatches(vinylether_pattern)
+
+
+    total_attachments = len(ester_matches) + len(ether_matches) + len(vinylether_matches)
+
+    if total_attachments != 1:
+        return False, f"Found {total_attachments} attachments, require exactly 1"
+
+    # Count number of carbons and oxygens for consistency
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+
+    if c_count < 3:
+        return False, "Too few carbons"
+    if o_count < 3:
+         return False, "Too few oxygens"
+    
     return True, "Contains a glycerol backbone with a single acyl, alkyl, or alk-1-enyl substituent"
