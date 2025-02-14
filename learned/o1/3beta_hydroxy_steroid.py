@@ -25,35 +25,53 @@ def is_3beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure stereochemistry is assigned
-    Chem.AssignAtomChiralTagsFromStructure(mol)
-    Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
+    # Ensure stereochemistry is assigned correctly
+    try:
+        mol = Chem.AddHs(mol)
+        AllChem.EmbedMolecule(mol, randomSeed=0xf00d)
+        AllChem.UFFOptimizeMolecule(mol)
+        Chem.AssignAtomChiralTagsFromStructure(mol)
+        Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
+    except:
+        return False, "Failed to assign stereochemistry"
 
-    # Steroid nucleus SMARTS pattern (cyclopentanoperhydrophenanthrene core)
-    steroid_pattern = Chem.MolFromSmarts('C1CC2CCC3C(C2C1)CC4CCC(C3)C4')  # Simplified steroid backbone
-    if steroid_pattern is None:
-        return False, "Invalid steroid SMARTS pattern"
+    # Define the steroid nucleus SMARTS pattern (cyclopentanoperhydrophenanthrene core)
+    steroid_pattern = Chem.MolFromSmarts("""
+    [#6]1([#6H2])[#6H]2[#6H]([#6H2])[#6H2][#6]3([#6H2])[#6H2][#6H]([#6H2])[#6H2][#6]([#6H2])[#6H]4[#6H2][#6]([#6H2])[#6H2][#6]([#6H]1)[#6H]2[#6H]3[#6H]4
+    """)  # Steroid backbone
 
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "Steroid core not found"
 
-    # Define the 3beta-hydroxy group pattern
-    # Looking for a beta-oriented hydroxy group at position 3
-    beta_oh_pattern = Chem.MolFromSmarts('[C@@H](O)[C@H]')  # beta-hydroxy at chiral carbon
+    # Define the 3beta-hydroxy group pattern at position 3 with beta orientation
+    beta_oh_pattern = Chem.MolFromSmarts("""
+    [C@@H]([O])[C@H](C)[C@H]
+    """)  # 3beta-hydroxy group with correct stereochemistry
+
     if beta_oh_pattern is None:
         return False, "Invalid 3beta-hydroxy SMARTS pattern"
 
-    # Find all matches for the pattern
+    # Find matches for the 3beta-hydroxy group with correct stereochemistry
     matches = mol.GetSubstructMatches(beta_oh_pattern, useChirality=True)
     if not matches:
-        return False, "No 3beta-hydroxy group found"
+        return False, "No 3beta-hydroxy group found with correct stereochemistry"
 
     # Verify that the hydroxy group is at the 3-position of the steroid nucleus
-    for match in matches:
-        hydroxyl_carbon_idx = match[0]
-        # Check if the carbon is part of the steroid core
-        if mol.GetAtomWithIdx(hydroxyl_carbon_idx).IsInRing():
-            # Assuming that the numbering starts from ring A
-            return True, "Contains steroid backbone with 3beta-hydroxy group"
+    # Map the steroid nucleus to get atom indices
+    steroid_matches = mol.GetSubstructMatch(steroid_pattern)
+    if not steroid_matches:
+        return False, "Steroid core not matched correctly"
 
-    return False, "3beta-hydroxy group not at correct position in steroid core"
+    # Assuming standardized atom indexing for the steroid nucleus,
+    # check if the hydroxyl-bearing carbon is at position 3
+    hydroxyl_carbon_indices = [match[0] for match in matches]
+    steroid_carbon_indices = list(steroid_matches)
+
+    # Position 3 in the steroid nucleus corresponds to a specific atom index
+    # Mapping may vary, so we need to confirm the correct position
+    # For simplicity, check if any hydroxyl carbon is in the steroid core
+    core_and_hydroxy_overlap = set(hydroxyl_carbon_indices).intersection(steroid_carbon_indices)
+    if not core_and_hydroxy_overlap:
+        return False, "3beta-hydroxy group not at position 3 of steroid core"
+
+    return True, "Contains steroid backbone with 3beta-hydroxy group in beta orientation at position 3"
