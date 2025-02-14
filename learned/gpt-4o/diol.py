@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_diol(smiles: str):
     """
     Determines if a molecule is a diol based on its SMILES string.
-    A diol contains exactly two hydroxy groups.
+    A diol contains at least two hydroxy groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,13 +25,13 @@ def is_diol(smiles: str):
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     
-    # Check number of hydroxyl groups
-    if len(hydroxy_matches) != 2:
-        return False, f"Found {len(hydroxy_matches)} hydroxy groups, need exactly 2"
+    # Check number of hydroxy groups
+    if len(hydroxy_matches) < 2:
+        return False, f"Found {len(hydroxy_matches)} hydroxy groups, need at least 2"
     
-    # The molecule has two hydroxy groups, classify as diol
-    return True, "Contains exactly two hydroxy groups"
+    # The molecule has at least two hydroxy groups, classify as diol
+    return True, f"Contains {len(hydroxy_matches)} hydroxy groups, which qualifies it as a diol"
 
 # Example usage:
-# result, reason = is_diol("OC(CO)CO")  # Should return True, "Contains exactly two hydroxy groups"
+# result, reason = is_diol("OC(CO)CO")  # Should return True, "Contains 3 hydroxy groups, which qualifies it as a diol"
 # print(result, reason)
