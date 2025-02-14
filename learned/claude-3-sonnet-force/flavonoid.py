@@ -10,7 +10,6 @@ but is now also used to describe semi-synthetic and fully synthetic compounds.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
 
 def is_flavonoid(smiles: str):
     """
@@ -24,29 +23,23 @@ def is_flavonoid(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+    try:
+        # Parse SMILES
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return False, "Invalid SMILES string"
 
-    # Define flavonoid scaffold pattern
-    scaffold_pattern = Chem.MolFromSmarts("[c&r1]1[c&r2]c2c(cc1)oc(c2)-c1ccccc1")
+        # Define flavonoid scaffold pattern
+        scaffold_pattern = Chem.MolFromSmarts("[c&r1]1[c&r2]c2c(cc1)oc(c2)-[c&r3]")
 
-    # Find maximum common substructure with flavonoid scaffold
-    mcs = rdFMCS.FindMCS([mol, scaffold_pattern], ringMatchesRingOnly=True)
+        # Find maximum common substructure with flavonoid scaffold
+        mcs = mol.GetMaxMatchingSubstructure(scaffold_pattern, matchValencePermit=True)
 
-    # Check if scaffold is present
-    if mcs.numAtoms < scaffold_pattern.GetNumAtoms():
-        return False, "Flavonoid scaffold not present"
+        # Check if scaffold is present
+        if mcs.GetNumAtoms() == scaffold_pattern.GetNumAtoms():
+            return True, "Contains flavonoid scaffold"
+        else:
+            return False, "Flavonoid scaffold not present"
 
-    # Check for aryl substituent at position 2
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == "C" and atom.GetTotalNumHs() == 1:
-            neighbors = [mol.GetAtomWithIdx(n.GetIdx()).GetSymbol() for n in atom.GetNeighbors()]
-            if "O" in neighbors and "C" in neighbors:
-                aryl_sub = True
-                break
-    else:
-        return False, "No aryl substituent at position 2"
-
-    return True, "Contains flavonoid scaffold with aryl substituent at position 2"
+    except Exception as e:
+        return False, f"Error: {str(e)}"
