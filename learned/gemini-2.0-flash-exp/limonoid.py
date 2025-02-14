@@ -28,19 +28,28 @@ def is_limonoid(smiles: str):
     if not mol.HasSubstructMatch(furan_pattern):
         return False, "No furan ring found."
 
-    # Check for the tetracyclic core with correct methyl groups at 4,4,8 and a furan at position 17
-    # This core is highly variable, we will look for a simpler SMARTS and number of carbons
+     # Check for a triterpenoid core (4 fused rings) with some flexibility.
+    # This pattern is not perfect, but it captures the basic tetracyclic skeleton
+    core_pattern = Chem.MolFromSmarts("[C]1[C]([C])[C]2[C]([C])[C]([C])[C]3[C]([C])([C])([C])[C]([C])([C])[C]([C])([C])([C])C([C])([C])C3C2C1")
+    if not mol.HasSubstructMatch(core_pattern):
+         return False, "No tetracyclic triterpenoid core found."
 
-    # We also need to check the overall number of carbons to see if it is 30
+
+    # Check the overall number of carbons (range)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count != 30:
-        return False, f"Number of carbons is not 30, found {carbon_count}"
+    if carbon_count < 20 or carbon_count > 40:
+        return False, f"Number of carbons is outside triterpenoid range, found {carbon_count}"
 
-    # Check for high oxygenation (at least 4 oxygens, we need to do this to avoid other triterpenoids)
+    # Check for high oxygenation (at least 6 oxygens)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 4:
-        return False, f"Too few oxygen atoms, found {oxygen_count}, need at least 4"
+    if oxygen_count < 6:
+        return False, f"Too few oxygen atoms, found {oxygen_count}, need at least 6"
+    
+    # Check Molecular Weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 350:
+        return False, f"Molecular weight too low for a limonoid, {mol_wt}"
 
 
     # If all criteria pass return true
-    return True, "Matches limonoid criteria: triterpenoid with furan, 30 carbons, and high oxygenation."
+    return True, "Matches limonoid criteria: triterpenoid with furan, tetracyclic core, within carbon range, and high oxygenation."
