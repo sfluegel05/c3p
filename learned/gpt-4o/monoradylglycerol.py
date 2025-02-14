@@ -2,6 +2,7 @@
 Classifies: CHEBI:76575 monoradylglycerol
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_monoradylglycerol(smiles: str):
     """
@@ -21,25 +22,39 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("O[CH](CO)CO")
-    
-    # Check for the glycerol backbone match
+    # Define less restrictive glycerol backbone pattern allowing some variations
+    glycerol_pattern = Chem.MolFromSmarts("[O][CH2]CO")
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    if len(glycerol_matches) != 1:
-        return False, "Glycerol backbone not found or multiple present"
+    
+    if not glycerol_matches:
+        return False, "No glycerol backbone found or pattern too restrictive"
 
-    # Identify and count valid substituents
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    # Check for the presence of one acyl/alkyl/alk-1-enyl substituent
+    # Look for ester linkage pointing to a single substituent
+    acyl_pattern = Chem.MolFromSmarts("C(=O)[O]")
     alkyl_pattern = Chem.MolFromSmarts("C[C,C][C,C]")
     alk1enyl_pattern = Chem.MolFromSmarts("C=C")
 
-    acyl_match_count = len(mol.GetSubstructMatches(acyl_pattern))
-    alkyl_match_count = len(mol.GetSubstructMatches(alkyl_pattern))
-    alk1enyl_match_count = len(mol.GetSubstructMatches(alk1enyl_pattern))
+    # While ensuring correct connection to glycerol
+    substituent_count = 0
+    reasons = []
+    for atom in glycerol_matches[0]:
+        if mol.GetAtomWithIdx(atom).GetSymbol() == 'O':  # Focus on substitution-prone oxygen
+            acyl_matches = mol.GetAtomWithIdx(atom).GetNeighbors()[0].HasSubstructMatch(acyl_pattern)
+            alkyl_matches = mol.GetAtomWithIdx(atom).GetNeighbors()[0].HasSubstructMatch(alkyl_pattern)
+            alk1enyl_matches = mol.GetAtomWithIdx(atom).GetNeighbors()[0].HasSubstructMatch(alk1enyl_pattern)
 
-    # We expect exactly one substituent type to match
-    if acyl_match_count == 1 or alkyl_match_count == 1 or alk1enyl_match_count == 1:
-        return True, "Contains a glycerol backbone with a single acyl, alkyl or alk-1-enyl substituent"
+            if acyl_matches:
+                substituent_count += 1
+                reasons.append("Acyl substituent linked to glycerol")
+            if alkyl_matches:
+                substituent_count += 1
+                reasons.append("Alkyl substituent linked to glycerol")
+            if alk1enyl_matches:
+                substituent_count += 1
+                reasons.append("Alk-1-enyl substituent linked to glycerol")
+
+    if substituent_count == 1:
+        return True, f"Contains glycerol backbone with a single substituent: {', '.join(reasons)}"
     
-    return False, "Glycerol backbone does not have exactly one suitable substituent"
+    return False, f"Glycerol backbone has {substituent_count} substitutions; require exactly one"
