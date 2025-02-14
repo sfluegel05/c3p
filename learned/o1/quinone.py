@@ -23,39 +23,44 @@ def is_quinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a quinone: a ring with two carbonyl groups attached to sp2 carbons
-    quinone_pattern = Chem.MolFromSmarts('[$([cR1]=O)]')
-
-    # Find all carbonyl groups attached to ring carbons
-    carbonyl_matches = mol.GetSubstructMatches(quinone_pattern)
-    ring_carbonyl_carbons = set()
-    for match in carbonyl_matches:
-        carbon_idx = match[0]
-        oxygen_idx = match[1]
-        atom = mol.GetAtomWithIdx(carbon_idx)
-        if atom.IsInRing():
-            ring_carbonyl_carbons.add(carbon_idx)
-
-    # Check if there are at least two carbonyl groups attached to ring carbons
-    if len(ring_carbonyl_carbons) < 2:
-        return False, "Less than two carbonyl groups attached to ring carbons"
-
-    # Get all rings in the molecule
+    # Get ring information
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
 
-    # Check for rings that contain at least two carbonyl carbons
+    if not atom_rings:
+        return False, "Molecule does not contain any rings"
+
+    # Find all carbonyl carbons (C=O)
+    carbonyl_carbons = set()
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            begin_atom = bond.GetBeginAtom()
+            end_atom = bond.GetEndAtom()
+            if (begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 8) or \
+               (begin_atom.GetAtomicNum() == 8 and end_atom.GetAtomicNum() == 6):
+                if begin_atom.GetAtomicNum() == 6:
+                    carbon_atom = begin_atom
+                else:
+                    carbon_atom = end_atom
+                carbonyl_carbons.add(carbon_atom.GetIdx())
+
+    # Check each ring for quinone pattern
     for ring in atom_rings:
         ring_set = set(ring)
-        if len(ring_set.intersection(ring_carbonyl_carbons)) >= 2:
-            # Check if the ring is fully conjugated (all ring atoms are sp2 hybridized)
-            is_conjugated = True
-            for idx in ring:
-                atom = mol.GetAtomWithIdx(idx)
-                if atom.GetHybridization() != Chem.HybridizationType.SP2:
-                    is_conjugated = False
-                    break
-            if is_conjugated:
-                return True, "Molecule contains a fully conjugated cyclic diketone characteristic of quinones"
+        # Check if ring is fully conjugated (all atoms are sp2 hybridized)
+        is_conjugated = True
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetHybridization() != Chem.HybridizationType.SP2:
+                is_conjugated = False
+                break
+        if not is_conjugated:
+            continue  # Skip this ring
+
+        # Count carbonyl carbons in ring
+        carbonyls_in_ring = ring_set.intersection(carbonyl_carbons)
+        num_carbonyls_in_ring = len(carbonyls_in_ring)
+        if num_carbonyls_in_ring >= 2:
+            return True, "Molecule contains a fully conjugated cyclic diketone characteristic of quinones"
 
     return False, "Molecule does not contain the characteristic quinone structure"
