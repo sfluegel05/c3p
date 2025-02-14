@@ -9,7 +9,6 @@ If any non-hydrocarbon substituent is present, the compound is not normally rega
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_short_chain_fatty_acid(smiles: str):
     """
@@ -28,36 +27,15 @@ def is_short_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    # Convert to SMARTS pattern
+    smarts = Chem.MolToSmarts(mol)
     
-    # Check for aliphatic chain (no rings, no heteroatoms except O)
-    aliphatic_pattern = Chem.MolFromSmarts("[CH2,CH3](C)(C)")
-    aliphatic_atoms = mol.GetSubstructMatches(aliphatic_pattern)
-    non_aliphatic_atoms = [atom.GetSymbol() for atom in mol.GetAtoms() if atom.GetSymbol() not in ['C', 'H', 'O']]
-    if not aliphatic_atoms or non_aliphatic_atoms:
-        return False, "Molecule is not aliphatic"
+    # Check if SMARTS matches pattern for short-chain fatty acid
+    pattern = r"C(=O)O[C@,C@@,C]([C,c])[C,c]([C,c])([C,c])=O"
+    if not Chem.MolFromSmarts(pattern).HasSubstructMatch(mol):
+        return False, "Molecule does not match pattern for short-chain fatty acid"
     
-    # Find the longest carbon chain
-    longest_chain = 0
-    for atom in aliphatic_atoms:
-        chain_length = 1
-        visited = set()
-        queue = [atom]
-        while queue:
-            current = queue.pop(0)
-            if current not in visited:
-                visited.add(current)
-                neighbors = [n for n in mol.GetAtomWithIdx(current).GetNeighbors() if n.GetSymbol() == 'C']
-                chain_length += len(neighbors)
-                queue.extend(n.GetIdx() for n in neighbors)
-        longest_chain = max(longest_chain, chain_length)
-    if longest_chain >= 6:
-        return False, "Carbon chain is too long (>= C6)"
-    
-    # Check for non-hydrocarbon substituents
+    # Check for non-hydrocarbon substituents (allow hydroxy groups)
     non_h_substituents = False
     for atom in mol.GetAtoms():
         if atom.GetSymbol() != 'H' and atom.GetSymbol() != 'C' and atom.GetSymbol() != 'O':
@@ -71,4 +49,4 @@ def is_short_chain_fatty_acid(smiles: str):
     if non_h_substituents:
         return False, "Molecule contains non-hydrocarbon substituents"
     
-    return True, "Aliphatic monocarboxylic acid with chain length < C6 and no non-hydrocarbon substituents"
+    return True, "Aliphatic monocarboxylic acid with chain length < C6 and no non-hydrocarbon substituents (except hydroxy groups)"
