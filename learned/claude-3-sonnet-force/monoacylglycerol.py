@@ -39,19 +39,19 @@ def is_monoacylglycerol(smiles: str):
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
 
     # Check for acyl chain (carbon chain attached to ester)
-    acyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    acyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) < 1:
         return False, "Missing acyl chain"
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
+    if n_rotatable < 3:
         return False, "Acyl chain too short"
 
-    # Check molecular weight - monoacylglycerols typically >250 Da
+    # Check molecular weight - monoacylglycerols typically >350 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250:
+    if mol_wt < 350:
         return False, "Molecular weight too low for monoacylglycerol"
 
     # Count carbons and oxygens
@@ -60,7 +60,7 @@ def is_monoacylglycerol(smiles: str):
 
     if c_count < 10:
         return False, "Too few carbons for monoacylglycerol"
-    if o_count != 4:
-        return False, "Must have exactly 4 oxygens (1 ester group)"
+    if o_count < 4 or o_count > 6:
+        return False, "Oxygen count outside expected range for monoacylglycerol"
 
     return True, "Contains glycerol backbone with 1 acyl chain attached via an ester bond"
