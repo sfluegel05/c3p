@@ -47,8 +47,9 @@ def is_methyl_branched_fatty_acid(smiles: str):
                     return False, "Non-methyl branch found"
 
     # Check if molecule is acyclic
-    if not Chem.Lipinski.IsAliphaticMolecule(mol):
-        return False, "Molecule is not acyclic"
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() > 0:
+        return False, "Molecule contains rings"
 
     # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
