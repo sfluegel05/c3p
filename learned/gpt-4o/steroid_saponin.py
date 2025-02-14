@@ -21,20 +21,25 @@ def is_steroid_saponin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for steroid and glycoside features
-    steroid_pattern = Chem.MolFromSmarts("C1CC2=C3C(C=C4C3CCC4)CC2C1")
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    glycoside_pattern = Chem.MolFromSmarts("[O;D2]-;!@[C;R]")  # Sugars typically attached via an oxygen atom
+    # Define SMARTS pattern for a generic steroid backbone
+    steroid_pattern = Chem.MolFromSmarts("C1C[C@@H]2[C@@H](C1)CC[C@H]3[C@@H]2CC[C@H]4C3(C)CC[C@]4(C)C")
+    
+    # Define SMARTS pattern for hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[C][OH]")  # Hydroxyl group attached to carbon
 
-    # Check for steroid backbone with hydroxyl groups
+    # Define SMARTS pattern for glycosidic linkage (oxygen linking two carbons)
+    glycoside_pattern = Chem.MolFromSmarts("O[C;R][C;R]")  # Oxygen linking ring carbons
+    
+    # Check for steroid backbone
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid backbone found"
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl groups on steroid backbone"
 
-    # Check for attached glycoside(s)
+    # Check for hydroxyl groups
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No hydroxyl groups found"
+
+    # Check for glycosidic linkage (indicating sugar presence)
     if not mol.HasSubstructMatch(glycoside_pattern):
         return False, "No glycoside linkages found"
-
-    # If all patterns are matched, classify as steroid saponin
+    
     return True, "Contains hydroxysteroid backbone with glycoside linkages"
