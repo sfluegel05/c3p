@@ -1,100 +1,20 @@
 """
 Classifies: CHEBI:61778 triterpenoid saponin
 """
-"""
-Classifies: CHEBI:36624 triterpenoid saponin
-A terpene glycoside in which the terpene moiety is a triterpenoid.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the provided outcomes, it seems that the previous program performed reasonably well in classifying triterpenoid saponins, achieving a high F1 score of 0.99 and accuracy of 0.9999817424242424. However, there are a few false negatives (3 instances), which means that the program failed to identify some actual triterpenoid saponins correctly.
 
-def is_triterpenoid_saponin(smiles: str):
-    """
-    Determines if a molecule is a triterpenoid saponin based on its SMILES string.
+To improve the program, we could consider the following:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Analyze False Negatives**: It would be helpful to examine the false negatives (the 3 instances that were misclassified as non-triterpenoid saponins) and try to understand why the program failed to identify them correctly. This could reveal potential blind spots or edge cases that the current rules do not account for.
 
-    Returns:
-        bool: True if molecule is a triterpenoid saponin, False otherwise
-        str: Reason for classification
-    """
+2. **Expand Backbone Patterns**: The program currently checks for three specific triterpenoid backbone patterns (oleanane, ursane, and lupane). While these are common backbones, there may be other less common triterpenoid backbones that the program does not recognize. Expanding the list of backbone patterns or using a more general pattern could help capture a wider range of triterpenoid saponins.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Refine Sugar Moiety Detection**: The program currently checks for the presence of any sugar moiety by looking for oxygen atoms with specific atom mapping rules. However, this approach may not be sufficient to accurately identify sugar moieties in all cases. You could consider using more specific SMARTS patterns or leveraging additional rules based on the structural properties of common sugar moieties found in triterpenoid saponins.
 
-    # Look for triterpenoid backbone patterns
-    triterpene_backbones = [
-        Chem.MolFromSmarts("[C@@]12[C@H]([C@@H]3[C@]([C@@H]4[C@H](C[C@@H]5[C@@]4(C)C[C@@H](O)[C@@]56C)C3(C)C)C2)C[C@@H]([C@@]1(C)C)O",  # oleanane
-        Chem.MolFromSmarts("[C@@]12[C@H]([C@@H]3[C@]([C@@H]4[C@H](C[C@@H]5[C@@]4(C)C[C@@H](O)[C@@]56C)C3(C)C)C2)C[C@@H]([C@@]1(C)C)O",  # ursane
-        Chem.MolFromSmarts("[C@@]12[C@H]([C@@H]3[C@]([C@@H]4[C@H](C[C@@H]5[C@@]4(C)C[C@@H](O)[C@@]56C)C3(C)C)C2)C[C@@H]([C@@]1(C)C)O"   # lupane
-    ]
-    has_triterpene_backbone = any(mol.HasSubstructMatch(pattern) for pattern in triterpene_backbones)
-    if not has_triterpene_backbone:
-        return False, "No triterpenoid backbone found"
+4. **Adjust Molecular Weight Range**: The current molecular weight range (500-1500 Da) may not be optimal for capturing all triterpenoid saponins. You could consider analyzing the molecular weight distribution of the false negatives and adjusting the range accordingly.
 
-    # Look for sugar moieties
-    sugar_pattern = Chem.MolFromSmarts("[OX2r3]")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    has_sugar_moiety = len(sugar_matches) > 0
-    if not has_sugar_moiety:
-        return False, "No sugar moiety found"
+5. **Incorporate Additional Rules**: Depending on the specific chemical characteristics of triterpenoid saponins, you could consider incorporating additional rules or filters based on other properties, such as the presence of specific functional groups, the number of certain atom types, or specific structural motifs.
 
-    # Check for long chains (potential sugar chains)
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
-        return False, "Potential sugar chains too short"
+6. **Outlier Analysis**: As mentioned in the prompt, there may be occasional and systematic mistakes in the benchmark data. If you have a strong understanding of the chemical class and believe that some of the false negatives are actually correct classifications, you could consider ignoring those outliers and provide a justification for your reasoning.
 
-    # Check molecular weight - triterpenoid saponins typically >500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500 or mol_wt > 1500:
-        return False, "Molecular weight outside typical range for triterpenoid saponins"
-
-    # Check elemental composition - should contain C, H, O
-    atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
-    has_c = 6 in atoms
-    has_h = 1 in atoms
-    has_o = 8 in atoms
-    if not (has_c and has_h and has_o):
-        return False, "Missing expected elements (C, H, O)"
-
-    return True, "Contains triterpenoid backbone and sugar moiety"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:36624',
-        'name': 'triterpenoid saponin',
-        'definition': 'A terpene glycoside in which the terpene moiety is a triterpenoid.',
-        'parents': ['CHEBI:35701', 'CHEBI:36623']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 5,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 149,
-    'num_false_positives': 0,
-    'num_true_negatives': 182432,
-    'num_false_negatives': 3,
-    'num_negatives': None,
-    'precision': 1.0,
-    'recall': 0.9801980198019802,
-    'f1': 0.9900498508175089,
-    'accuracy': 0.9999817424242424
-}
+It's important to note that while the program performed well overall, there is always room for improvement, especially when dealing with complex chemical structures and diverse subclasses. Iterative refinement based on error analysis and domain knowledge can help enhance the program's performance and robustness.
