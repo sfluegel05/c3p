@@ -22,19 +22,50 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the tetradecanoyl group attached to the *carbon* of an ester group.
-    tetradecanoyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH3]")
+    # Define SMARTS pattern for the tetradecanoyl group attached to an ester.
+    # [CH2] part at the end allows for branched chains.
+    tetradecanoyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[OX2]-[#6]")
     if not mol.HasSubstructMatch(tetradecanoyl_ester_pattern):
-        return False, "No tetradecanoyl group attached to the carbon of an ester group found"
+        return False, "No tetradecanoate ester linkage found"
 
-    # Verify minimum number of carbons (14 in tetradecanoyl and at least one more carbon in the alcohol chain)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15:
-         return False, "Too few carbons to be a tetradecanoate ester"
+    # Get the substructure matches of the ester bond.
+    ester_matches = mol.GetSubstructMatches(tetradecanoyl_ester_pattern)
     
-    # Verify that molecular weight is within the appropriate range
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250:
-        return False, "Molecular weight too low for tetradecanoate ester"
+    # Check if the carbonyl carbon of the ester is directly attached to a tetradecanoyl group
+    for match in ester_matches:
+        carbonyl_carbon_index = match[0]
+
+        # get neighboring carbons
+        neighbors = mol.GetAtomWithIdx(carbonyl_carbon_index).GetNeighbors()
+        
+        # Find the neighbor which is a carbon with 3 bonds (not the ester oxygen)
+        acyl_carbon_neighbor = None
+        for neighbor in neighbors:
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetTotalDegree() == 3:
+                acyl_carbon_neighbor = neighbor
+                break
+        
+        if acyl_carbon_neighbor is None:
+             return False, "No tetradecanoyl group attached to the carbon of an ester group found"
+        
+        
+        # Define a SMARTS pattern for a tetradecanoyl group chain starting at the carbonyl carbon
+        # The pattern requires 13 more carbons
+        tetradecanoyl_chain_pattern = Chem.MolFromSmarts(f"[CX3]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]") 
+
+        
+        # Check if tetradecanoyl carbon has a long chain
+        if not mol.HasSubstructMatch(tetradecanoyl_chain_pattern,  useIndices=True, atomMap={0:acyl_carbon_neighbor.GetIdx()}):
+            return False, "Not a tetradecanoyl chain attached to the carbon of an ester group"
+        
+        # Count the number of carbons directly attached to the carbonyl of the ester.
+        carbon_count=0
+        
+        for atom in mol.GetSubstructMatch(tetradecanoyl_chain_pattern, useIndices=True, atomMap={0:acyl_carbon_neighbor.GetIdx()}):
+            if atom.GetAtomicNum()==6:
+                carbon_count += 1
+        
+        if carbon_count != 13:
+              return False, "Not a 13 carbon chain on the tetradecanoyl"
 
     return True, "Contains tetradecanoyl group in an ester linkage"
