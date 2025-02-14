@@ -2,7 +2,6 @@
 Classifies: CHEBI:50523 butenolide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_butenolide(smiles: str):
     """
@@ -23,19 +22,28 @@ def is_butenolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define gamma-lactone (lactone) pattern (O=C1OC(C=C1))
-    lactone_pattern = Chem.MolFromSmarts("O=C1OC=C1")
-    if not mol.HasSubstructMatch(lactone_pattern):
-        return False, "No gamma-lactone (lactone) structure found"
+    # Define a broader gamma-lactone pattern for 2-furanone which allows for substituents
+    # This SMARTS pattern can capture a 5-membered lactone with variations at positions 3 and 4.
+    gamma_lactone_pattern = Chem.MolFromSmarts("O=C1C=COC1")  # Gamma-lactone core
     
-    # Define 2-furanone skeleton pattern (O=C1OC=CC1)
-    furanone_pattern = Chem.MolFromSmarts("O=C1OC=CC1")
-    if not mol.HasSubstructMatch(furanone_pattern):
-        return False, "No 2-furanone skeleton found"
+    # Check if the structure contains the gamma-lactone pattern
+    if not mol.HasSubstructMatch(gamma_lactone_pattern):
+        return False, "No gamma-lactone (lactone) structure found or wrong substitutions"
+
+    # Validate the detected substructure with examples
+    example_substructures = [
+        "O=C1OC=C(C1)",
+        "O=C1O/C=C/C1"
+    ]
     
-    # If both patterns are found, it is a butenolide
-    return True, "Contains gamma-lactone structure with 2-furanone skeleton"
+    for example in example_substructures:
+        example_pattern = Chem.MolFromSmarts(example)
+        if mol.HasSubstructMatch(example_pattern):
+            return True, f"Structure matches butenolide subpattern: {example}"
+    
+    return False, "Pattern does not fully match any known butenolide subpattern"
 
 # Example usage
 smiles = "O=C1OCC=C1"  # Example of butenolide (but-2-en-4-olide)
-is_butenolide(smiles)
+result, reason = is_butenolide(smiles)
+print(result, reason)
