@@ -25,29 +25,28 @@ def is_nucleotide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Simplify molecule by adding hydrogens
+    mol = Chem.AddHs(mol)
+    
     # Define SMARTS patterns
-    # Sugar (ribose or deoxyribose)
-    sugar_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")  # Furanose ring
+    # Sugar ring (ribose or deoxyribose, furanose ring without specifying stereochemistry)
+    sugar_pattern = Chem.MolFromSmarts("[C;!R]=,:[C;!R]1-[O]-[C;!R]-[C;!R]-[C;!R]-1")  # Flexible furanose ring
 
-    # Nitrogenous bases (purines and pyrimidines)
-    purine_pattern = Chem.MolFromSmarts("c1ncnc2ncnn12")  # Purine base
-    pyrimidine_pattern = Chem.MolFromSmarts("c1cncnc1=O")  # Pyrimidine base (uracil)
-    cytosine_pattern = Chem.MolFromSmarts("c1cnc(N)nc1=O")  # Cytosine
-    thymine_pattern = Chem.MolFromSmarts("Cc1cnc(=O)[nH]c1=O")  # Thymine
-    guanine_pattern = Chem.MolFromSmarts("c1[nH]c2c(n1)nc(N)nc2=O")  # Guanine
-    adenine_pattern = Chem.MolFromSmarts("c1[nH]c2c(n1)nc(N)nc2")  # Adenine
+    # Nitrogenous bases (purine and pyrimidine rings)
+    purine_pattern = Chem.MolFromSmarts("c1nc2ncnc-2n1")  # Purine ring
+    pyrimidine_pattern = Chem.MolFromSmarts("c1ncncn1")    # Pyrimidine ring
 
-    # Phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)[O-]")  # Phosphate group
+    # Phosphate group (match any phosphate group)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)O")  # Phosphoric acid
 
-    # Check for sugar moiety
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No ribose or deoxyribose sugar found"
+    # Check for sugar ring
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
+        return False, "No sugar ring found"
 
     # Check for nitrogenous base
     base_found = False
-    base_patterns = [purine_pattern, pyrimidine_pattern, cytosine_pattern,
-                     thymine_pattern, guanine_pattern, adenine_pattern]
+    base_patterns = [purine_pattern, pyrimidine_pattern]
     for base_pattern in base_patterns:
         if mol.HasSubstructMatch(base_pattern):
             base_found = True
@@ -55,23 +54,51 @@ def is_nucleotide(smiles: str):
     if not base_found:
         return False, "No nitrogenous base found"
 
-    # Check for phosphate group
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
-
-    # Check for connection between sugar and base (glycosidic bond)
-    # Define bond between sugar anomeric carbon and base nitrogen
-    glycosidic_bond = Chem.MolFromSmarts("[C@H]1([O])[C@@H](O)[C@H](O)[C@H](O)1[*]")  # Sugar connected to base
-    if not mol.HasSubstructMatch(glycosidic_bond):
+    # Check for glycosidic bond between sugar and base
+    # Find atoms that are connected: sugar anomeric carbon to base nitrogen
+    # Define anomeric carbon in sugar (any carbon in sugar ring connected to oxygen)
+    anomeric_carbons = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.IsInRing():
+            neighbors = atom.GetNeighbors()
+            for neighbor in neighbors:
+                if neighbor.GetAtomicNum() == 8 and neighbor.IsInRing():
+                    anomeric_carbons.append(atom.GetIdx())
+    # Check for bond between anomeric carbon and base nitrogen
+    glycosidic_bond_found = False
+    for anomeric_carbon_idx in anomeric_carbons:
+        atom = mol.GetAtomWithIdx(anomeric_carbon_idx)
+        neighbors = atom.GetNeighbors()
+        for neighbor in neighbors:
+            if neighbor.GetAtomicNum() == 7:  # Nitrogen
+                if neighbor.IsInRing():
+                    glycosidic_bond_found = True
+                    break
+        if glycosidic_bond_found:
+            break
+    if not glycosidic_bond_found:
         return False, "No glycosidic bond found between sugar and base"
 
-    # Check for phosphate attached to 3' or 5' hydroxyl group of sugar
-    # 5' phosphate pattern
-    five_prime_phosphate = Chem.MolFromSmarts("O[P](=O)(O)OC[C@H]1O[C@@H](O)[C@H](O)[C@@H]1O")  # Phosphate on 5' carbon
-    # 3' phosphate pattern
-    three_prime_phosphate = Chem.MolFromSmarts("O[P](=O)(O)O[C@H]1O[C@@H](O)[C@H](O)[C@@H]1CO")  # Phosphate on 3' carbon
+    # Check for phosphate group attached to sugar
+    # Find phosphate groups
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
+        return False, "No phosphate group found"
 
-    if mol.HasSubstructMatch(five_prime_phosphate) or mol.HasSubstructMatch(three_prime_phosphate):
-        return True, "Molecule is a nucleotide with phosphate group on sugar"
-    else:
-        return False, "Phosphate group not correctly attached to sugar"
+    # Check if phosphate is connected to sugar at any position
+    phosphate_connected_to_sugar = False
+    sugar_atom_indices = [atom_idx for match in sugar_matches for atom_idx in match]
+    phosphate_atom_indices = [atom_idx for match in phosphate_matches for atom_idx in match]
+    for phosphate_idx in phosphate_atom_indices:
+        phosphate_atom = mol.GetAtomWithIdx(phosphate_idx)
+        neighbors = phosphate_atom.GetNeighbors()
+        for neighbor in neighbors:
+            if neighbor.GetIdx() in sugar_atom_indices:
+                phosphate_connected_to_sugar = True
+                break
+        if phosphate_connected_to_sugar:
+            break
+    if not phosphate_connected_to_sugar:
+        return False, "Phosphate group not connected to sugar"
+
+    return True, "Molecule is a nucleotide"
