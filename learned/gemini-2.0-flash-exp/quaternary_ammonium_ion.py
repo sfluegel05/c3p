@@ -25,22 +25,12 @@ def is_quaternary_ammonium_ion(smiles: str):
         if atom.GetAtomicNum() == 7: # Nitrogen has atomic number 7
             # Check if positively charged
             if atom.GetFormalCharge() == 1:
-                # Check number of bonds
-                if len(atom.GetBonds()) == 4:
-                    # Check if all bonds are to non hydrogen
-                    all_non_h_bonds = True
-                    for bond in atom.GetBonds():
-                        neighbor = bond.GetOtherAtom(atom)
-                        if neighbor.GetAtomicNum() == 1:
-                            all_non_h_bonds = False
-                            break
-                    if all_non_h_bonds:
-                         return True, "Positively charged nitrogen with four bonds to non-hydrogen atoms found."
-                    else:
-                        continue # Try next nitrogen
-                else:
-                    continue # Try next nitrogen
-            else:
-                continue #Try next nitrogen
-    
+                #Check number of non-hydrogen neighbors
+                non_h_neighbors = 0
+                for neighbor in atom.GetNeighbors():
+                  if neighbor.GetAtomicNum() != 1:
+                    non_h_neighbors += 1
+                if non_h_neighbors == 4:
+                    return True, "Positively charged nitrogen with four bonds to non-hydrogen atoms found."
+                
     return False, "No positively charged nitrogen with four bonds to non-hydrogen atoms found."
