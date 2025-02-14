@@ -27,11 +27,15 @@ def is_metal_atom(smiles: str):
             return False, "Not a single atom."
 
         atom = mol.GetAtomWithIdx(0)
-        atomic_num = atom.GetAtomicNum()
+        symbol = atom.GetSymbol()
 
-        # Check if the atom is a metal using RDKit's PeriodicTable
+        # Get atomic number from the symbol using PeriodicTable
         pt = PeriodicTable.GetPeriodicTable()
-        if pt.GetElementSymbol(atomic_num) in ["Li","Na","K","Rb","Cs","Fr", "Be","Mg","Ca","Sr","Ba","Ra",
+        atomic_num = pt.GetAtomicNumber(symbol)
+
+
+        # Check if the atom is a metal
+        if symbol in ["Li","Na","K","Rb","Cs","Fr", "Be","Mg","Ca","Sr","Ba","Ra",
                     "Sc","Y","La","Ac",
                     "Ti","Zr","Hf","Rf",
                     "V","Nb","Ta","Db",
@@ -46,12 +50,10 @@ def is_metal_atom(smiles: str):
                      "Ge","Sn","Pb",
                     "Sb","Bi",
                     "Po"]:
-                return True, "Single metal atom"
-        elif atomic_num > 0:
-            return False, f"Single atom, but not a metal: {pt.GetElementSymbol(atomic_num)}"
+            return True, "Single metal atom"
+        elif atomic_num > 0 :
+            return False, f"Single atom, but not a metal: {symbol}"
         else:
-            return False, "Invalid atom"
-
-
+             return False, "Invalid atom"
     except Exception as e:
-         return None, None
+        return None, None
