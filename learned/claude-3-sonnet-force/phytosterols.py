@@ -1,74 +1,28 @@
 """
 Classifies: CHEBI:26125 phytosterols
 """
-"""
-Classifies: CHEBI:37616 phytosterols
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem.Lipinski import NumRotatableBonds
+The previous program seems to have a good overall structure and approach for identifying phytosterols based on their SMILES strings. However, there are a few potential issues that could lead to the low F1 score:
 
-def is_phytosterol(smiles: str):
-    """
-    Determines if a molecule is a phytosterol based on its SMILES string.
-    Phytosterols are sterols similar to cholesterol that occur in plants and vary only in carbon side chains and/or presence or absence of a double bond.
+1. **Missing function definition**: The error message "name 'is_phytosterols' is not defined" suggests that the function `is_phytosterols` was not defined in the code. This could be simply a typo or a copy-paste issue. The function should be named `is_phytosterol` (singular) to match the code.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Overfitting to specific examples**: The program includes some specific structural patterns for identifying cycloartenol and brassicasterol. While this can be helpful for those specific compounds, it may lead to overfitting and miss other phytosterols that do not match those patterns. A more general approach might be better, focusing on the core structural features of phytosterols.
 
-    Returns:
-        bool: True if molecule is a phytosterol, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Side chain flexibility check**: The program checks for side chain flexibility by counting the number of rotatable bonds. However, the cutoff of 2 rotatable bonds may be too strict or too lenient, leading to false positives or false negatives. It might be better to check for a more specific side chain pattern or adjust the cutoff value based on the benchmark data.
 
-    # Check for the sterol backbone (tetracyclic triterpene)
-    sterol_pattern = Chem.MolFromSmarts("[C@]1([C@H]([C@@H]2[C@@]([C@]([C@H](C1)CC2)(C)C)(C)C)C")
-    if not mol.HasSubstructMatch(sterol_pattern):
-        return False, "No sterol backbone found"
-    
-    # Check for hydroxyl group at position 3
-    hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[C@H]1[C@@]2([C@H](C[C@@H]3[C@]([C@@](CC3)(C)[H])(C)[H])C2)")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No hydroxyl group at position 3"
-    
-    # Check for side chain length and flexibility
-    n_rotatable = NumRotatableBonds(mol)
-    if n_rotatable < 2:
-        return False, "Side chain too rigid for phytosterol"
-    
-    # Check for double bonds in side chain or sterol backbone
-    double_bond_pattern = Chem.MolFromSmarts("[C=C]")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    if not double_bond_matches:
-        return False, "No double bonds found in side chain or sterol backbone"
-    
-    # Check molecular weight - phytosterols typically ~400-500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 350 or mol_wt > 550:
-        return False, "Molecular weight outside typical range for phytosterols"
-    
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 27 or c_count > 32:
-        return False, "Incorrect carbon count for phytosterol"
-    if o_count != 1:
-        return False, "Must have exactly 1 oxygen (hydroxyl group)"
-    
-    # Check for specific structural patterns
-    cyclopropane_pattern = Chem.MolFromSmarts("[C@]1([C@@H]([C@@H]2[C@@]1([C@]([C@@H](C2)C)(C)C)C)C")
-    if mol.HasSubstructMatch(cyclopropane_pattern):
-        return True, "Contains cyclopropane ring, characteristic of cycloartenol"
-    
-    additional_hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[C@H]1[C@@]2([C@H](C[C@@H]3[C@]([C@@](CC3)(C)[H])(C)[H])C2)O")
-    if mol.HasSubstructMatch(additional_hydroxy_pattern):
-        return True, "Contains additional hydroxyl group, characteristic of brassicasterol"
-    
-    return True, "Contains sterol backbone with hydroxyl at position 3, flexible side chain, and double bonds"
+4. **Molecular weight check**: The molecular weight range of 350-550 Da might be too narrow or too broad for phytosterols. It might be helpful to analyze the benchmark data and adjust the range accordingly.
+
+5. **Double bond check**: The program checks for the presence of any double bond, but it might be more specific to look for double bonds in the side chain or at specific positions in the sterol backbone.
+
+6. **Atom count checks**: The program checks for the number of carbon and oxygen atoms, which is a good approach. However, the ranges used (27-32 carbons and exactly 1 oxygen) might be too strict or too lenient, depending on the benchmark data.
+
+To improve the program, you could consider the following steps:
+
+1. Fix the function name typo or copy-paste issue.
+2. Analyze the benchmark data (true positives, false positives, and false negatives) to identify patterns and adjust the rules accordingly.
+3. Remove or generalize the specific structural patterns for cycloartenol and brassicasterol, unless they are necessary for good performance.
+4. Adjust the side chain flexibility check, either by modifying the rotatable bond cutoff or using a different approach, such as checking for specific side chain patterns.
+5. Refine the molecular weight range based on the benchmark data.
+6. Check for double bonds specifically in the side chain or at specific positions in the sterol backbone, if relevant.
+7. Adjust the atom count ranges based on the benchmark data.
+
+Additionally, if there are clear outliers or systematic mistakes in the benchmark data that contradict your understanding of phytosterols, you can consider ignoring them and explaining your reasoning. However, it's generally better to try to understand and accommodate the benchmark data as much as possible.
