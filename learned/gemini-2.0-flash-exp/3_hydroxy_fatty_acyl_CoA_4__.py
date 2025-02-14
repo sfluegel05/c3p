@@ -24,8 +24,6 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
         return False, "Invalid SMILES string"
 
     # Core CoA Pattern (without charges)
-    # Trying to include the negative charges in the SMARTS query seems to fail
-    # The charges will be handled later with a global analysis on the molecule
     coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA core structure found."
@@ -35,48 +33,52 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester link found."
 
-    # Check for the 3-hydroxy group
-    hydroxy_pattern = Chem.MolFromSmarts("[CX4][CX4](O)[CX4]")
+    # Check for the 3-hydroxy group (relaxed pattern)
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4][CX4](O)")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
 
-    # Extract positions of matches. Then check if one of them is within a fatty acyl chain
+    # Check if a 3-hydroxy group is within a fatty acyl chain
     found_valid_3_hydroxy = False
     for match in hydroxy_matches:
         # Get the index of the carbon with OH
         oh_carbon_index = match[1]
         oh_carbon = mol.GetAtomWithIdx(oh_carbon_index)
-        if not oh_carbon.HasProp('_is_alkyl'):
-            continue # skip if OH is not on an alkyl chain.
-        # Check neighbours, at least two carbon atoms next to the OH carbon
-        neighbours = [n.GetSymbol() for n in oh_carbon.GetNeighbors()]
-        c_count = 0
-        for n in oh_carbon.GetNeighbors():
-            if n.GetAtomicNum() == 6:
-                c_count += 1
-                carbon_neighbours = [n2.GetSymbol() for n2 in n.GetNeighbors()]
-                found_carbon_in_chain = False
-                for nn in n.GetNeighbors():
-                    if (nn.GetIdx() != oh_carbon.GetIdx()) and nn.GetAtomicNum()==6:
-                        found_carbon_in_chain = True
-                        break
-                if not found_carbon_in_chain:
-                    c_count = 0
-                    break
-                
-        if c_count >= 2:
-            found_valid_3_hydroxy = True
-            break #found a 3-hydroxy group on the fatty acid chain
-            
+        
+        #Check neighbors
+        neighbors = [n for n in oh_carbon.GetNeighbors() if n.GetAtomicNum() == 6] # Only carbon neighbors
+        if len(neighbors) != 2:
+            continue
+
+        # Check if neighbors are connected to chain of carbons
+        c1, c2 = neighbors
+        c1_neighbors = [n for n in c1.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != oh_carbon_index]
+        c2_neighbors = [n for n in c2.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != oh_carbon_index]
+
+        if len(c1_neighbors) > 0 and len(c2_neighbors) > 0:
+              #check that the number of carbons is at least 3, not counting the hydroxyl carbon
+              chain_carbons = 0
+              visited_atoms = {oh_carbon_index}
+              
+              def count_chain_recursive(atom, depth):
+                  nonlocal chain_carbons
+                  if depth > 5:
+                      return
+                  
+                  visited_atoms.add(atom.GetIdx())
+                  for neighbor in atom.GetNeighbors():
+                      if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited_atoms:
+                           chain_carbons += 1
+                           count_chain_recursive(neighbor, depth+1)
+
+              count_chain_recursive(c1, 0)
+              count_chain_recursive(c2, 0)
+
+              if chain_carbons >= 3:
+                   found_valid_3_hydroxy = True
+                   break
+
     if not found_valid_3_hydroxy:
         return False, "No 3-hydroxy group found or not on fatty acid chain."
-
-    # Check for the presence of fatty acid chain
-    # This is a loose check, so if fails there might still be a valid chain
-    # The presence of a chain is enforced by the 3-hydroxy group
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 1:
-            return False, "Missing a fatty acid chain"
     
     # Check for four negative charges on phosphates.
     charge = 0
