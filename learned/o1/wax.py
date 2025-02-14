@@ -7,7 +7,6 @@ Classifies: CHEBI:82198 wax
 
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import rdchem
 
 def is_wax(smiles: str):
     """
@@ -27,7 +26,7 @@ def is_wax(smiles: str):
     # Attempt to parse SMILES with error handling
     try:
         mol = Chem.MolFromSmiles(smiles)
-    except Chem.rdchem.KekulizeException as e:
+    except Exception as e:
         return False, f"SMILES parsing error: {str(e)}"
     if mol is None:
         return False, "Invalid SMILES string"
@@ -48,62 +47,34 @@ def is_wax(smiles: str):
         ester_o_idx = match[2]
 
         # Break the ester bond (between carbonyl carbon and oxygen)
-        rw_mol = Chem.RWMol(mol)
-        rw_mol.BeginBatchEdit()
-        rw_mol.RemoveBond(carbonyl_c_idx, ester_o_idx)
-        rw_mol.CommitBatchEdit()
-
-        # Get the fragments resulting from bond breakage
-        frags = Chem.GetMolFrags(rw_mol, asMols=True, sanitizeFrags=True)
+        bonds_to_break = [(carbonyl_c_idx, ester_o_idx)]
+        frags = Chem.FragmentOnBonds(mol, [mol.GetBondBetweenAtoms(*pair).GetIdx() for pair in bonds_to_break])
+        frag_mols = Chem.GetMolFrags(frags, asMols=True, sanitizeFrags=True)
 
         # Initialize counts for long chains
         long_chain_count = 0
 
         # Analyze each fragment
-        for frag in frags:
-            # Calculate the longest aliphatic carbon chain
-            longest_chain = get_longest_aliphatic_chain(frag)
-            
-            if longest_chain >= chain_length_threshold:
+        for frag in frag_mols:
+            carbon_count = count_carbons(frag)
+            if carbon_count >= chain_length_threshold:
                 long_chain_count += 1
 
         # If both fragments have long aliphatic chains, it's a wax
         if long_chain_count >= 2:
-            return True, f"Ester with two long aliphatic chains found (long chains: {long_chain_count})"
+            return True, f"Ester with two long carbon chains found (long chains: {long_chain_count})"
 
-    return False, "No ester with two long aliphatic chains found"
+    return False, "No ester with two long carbon chains found"
 
-def get_longest_aliphatic_chain(mol):
+def count_carbons(mol):
     """
-    Calculates the length of the longest continuous aliphatic carbon chain in a molecule.
+    Counts the number of carbon atoms in a molecule.
 
     Args:
         mol (rdkit.Chem.Mol): Molecule to analyze
 
     Returns:
-        int: Length of the longest aliphatic carbon chain
+        int: Number of carbon atoms in the molecule
     """
-    # Find all carbon atoms
-    carbon_idxs = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-
-    # Build a graph of carbon-carbon connections
-    paths = []
-    for carbon_idx in carbon_idxs:
-        for other_carbon_idx in carbon_idxs:
-            if carbon_idx < other_carbon_idx:
-                # Find all paths between two carbon atoms
-                all_paths = Chem.rdmolops.GetAllPaths(mol, carbon_idx, other_carbon_idx)
-                for path in all_paths:
-                    # Check if all atoms in path are carbons
-                    if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in path):
-                        # Check if bonds are single or double (allow for unsaturation)
-                        if all(mol.GetBondBetweenAtoms(path[i], path[i+1]).GetBondType() in [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE] for i in range(len(path)-1)):
-                            paths.append(path)
-
-    # Find the longest path
-    if paths:
-        longest_path_length = max(len(path) for path in paths)
-    else:
-        longest_path_length = 0
-
-    return longest_path_length
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    return carbon_count
