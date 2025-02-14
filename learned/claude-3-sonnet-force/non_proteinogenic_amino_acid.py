@@ -1,76 +1,28 @@
 """
 Classifies: CHEBI:83820 non-proteinogenic amino acid
 """
-"""
-Classifies: CHEBI:33673 non-proteinogenic amino acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and the outcomes, it seems that the approach of checking for the presence of one carboxyl and one amino group, and then excluding proteinogenic amino acids, is too simplistic and results in many false positives and false negatives.
 
-PROTEINOGENIC_SMILES = ['NC(C(=O)O)C(C)C',  # Alanine
-                         'NC(C(=O)O)CC(C)C',  # Valine
-                         'NC(C(=O)O)CC(=O)O',  # Aspartic acid
-                         'NC(C(=O)O)C(C)(C)C',  # Leucine
-                         'NC(C(=O)O)CC1=CNC=N1',  # Histidine
-                         'NC(C(=O)O)CS',  # Cysteine
-                         'NC(C(=O)O)C(O)C(=O)O',  # Glutamic acid
-                         'NC(C(=O)O)C1=CN=CN1',  # Tryptophan
-                         'NC(C(=O)O)CO',  # Serine
-                         'NC(C(=O)O)CC1=CC=C(O)C=C1',  # Tyrosine
-                         'NC(C(=O)O)C(N)=N',  # Arginine
-                         'NC(C(=O)O)CC1=CNc2ccccc12',  # Tryptophan
-                         'NC(C(=O)O)CCSC(N)=N',  # Methionine
-                         'NC(C(=O)O)CC(C)C(=O)N',  # Proline
-                         'NC(C(=O)O)CC(=O)NC(N)=N',  # Citrulline
-                         'NC(C(=O)O)CC1=CNC2=C1C=CC=C2',  # Histidine
-                         'NC(C(=O)O)CC(N)=O',  # Asparagine
-                         'NC(C(=O)O)C(C)(C)O',  # Threonine
-                         'NC(C)C(=O)O',  # Glycine
-                         'NC(C(=O)O)CC1=CC=CC=C1',  # Phenylalanine
-                         'NC(C(=O)O)CCCNC(N)=N',  # Lysine
-                         'NC(C(=O)O)CCC(C)C',  # Isoleucine
-                         'NC(C(=O)NCC(N)=O)C(C)C',  # Glutamine
-                         ]
+False positives:
+The program incorrectly classified many non-amino acid molecules as non-proteinogenic amino acids because they contained one carboxyl and one amino group, but did not satisfy other structural requirements for amino acids. Examples include various drug molecules, intermediates, and byproducts.
 
+False negatives:
+The program missed many valid non-proteinogenic amino acids because they did not strictly follow the pattern of having one carboxyl and one amino group. Examples include amino acids with modified backbones, additional functional groups, or unusual side chains.
 
-def is_non_proteinogenic_amino_acid(smiles: str):
-    """
-    Determines if a molecule is a non-proteinogenic amino acid based on its SMILES string.
-    A non-proteinogenic amino acid is any amino acid that is not naturally encoded in the genetic code.
+To improve the program, we need a more sophisticated approach that considers the overall structural features of amino acids, rather than just counting specific functional groups. Here are some potential improvements:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. Use a more comprehensive SMARTS pattern or substructure matching to identify the core amino acid backbone structure (alpha-carbon with amino and carboxyl groups).
 
-    Returns:
-        bool: True if molecule is a non-proteinogenic amino acid, False otherwise
-        str: Reason for classification
-    """
+2. Allow for additional functional groups or modifications on the amino acid backbone, but still enforce the core structural requirements.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. Use machine learning techniques or expert-curated rules to identify non-proteinogenic amino acids based on their structural features, rather than relying solely on substructure matching.
 
-    # Count carboxyl and amino groups
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
-    amino_pattern = Chem.MolFromSmarts("N[C;H3]")
-    n_carboxyl = len(mol.GetSubstructMatches(carboxyl_pattern))
-    n_amino = len(mol.GetSubstructMatches(amino_pattern))
+4. Incorporate additional checks or filters, such as molecular weight, atom counts, or other molecular descriptors, to further refine the classification.
 
-    # Amino acid must have one carboxyl and one amino group
-    if n_carboxyl != 1 or n_amino != 1:
-        return False, "Does not contain one carboxyl and one amino group"
+5. Consider using a curated database or list of known non-proteinogenic amino acids as a reference, rather than relying solely on the exclusion of proteinogenic amino acids.
 
-    # Check if it matches a proteinogenic amino acid
-    is_proteinogenic = False
-    for smiles in PROTEINOGENIC_SMILES:
-        proteinogenic_mol = Chem.MolFromSmiles(smiles)
-        if mol.HasSubstructMatch(proteinogenic_mol):
-            is_proteinogenic = True
-            break
+6. Analyze the false positives and false negatives to identify systematic issues or patterns that can be addressed through refinements to the program logic or additional checks.
 
-    if is_proteinogenic:
-        return False, "Matches a proteinogenic amino acid"
-    else:
-        return True, "Contains carboxyl and amino groups but does not match any proteinogenic amino acids"
+It's important to note that the classification of non-proteinogenic amino acids can be challenging, as there can be ambiguities or borderline cases. Therefore, it may be necessary to make reasonable assumptions or simplifications, and to clearly document the limitations of the program.
+
+In summary, while the previous program had the right idea of using SMARTS patterns and substructure matching, it was too simplistic and missed many valid non-proteinogenic amino acids while also incorrectly classifying many non-amino acid molecules. A more sophisticated approach that considers the overall structural features and incorporates additional checks or machine learning techniques is likely required to improve the accuracy of the classification.
