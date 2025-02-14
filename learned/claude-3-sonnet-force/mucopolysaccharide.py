@@ -31,8 +31,8 @@ def is_mucopolysaccharide(smiles: str):
     uronic_acid_patterns = [Chem.MolFromSmarts("[C&R1](=O)[O-]"), Chem.MolFromSmarts("[C&R1](=O)O")]
     glycosamine_pattern = Chem.MolFromSmarts("[N;R1][C;R2][C;R2][C;R2][C;R2][O;R1]")
     
-    uronic_acids = sum(mol.GetSubstructMatches(pat) for pat in uronic_acid_patterns)
-    glycosamines = mol.GetSubstructMatches(glycosamine_pattern)
+    uronic_acids = sum(1 for pat in uronic_acid_patterns if mol.HasSubstructMatch(pat))
+    glycosamines = len(mol.GetSubstructMatches(glycosamine_pattern))
     
     # Check for alternating units
     if not uronic_acids or not glycosamines:
