@@ -25,20 +25,20 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count the number of amino groups (-NH2, -NHR, -NR2)
-    amino_pattern_1 = Chem.MolFromSmarts("[N;H2&!H0][C;!$(C=[O,N,P,S])]")
-    amino_pattern_2 = Chem.MolFromSmarts("[N;H1&!H0;!$(NC=[O,N,P,S])]")
-    amino_pattern_3 = Chem.MolFromSmarts("[N;H0&!H1;!$(N([C;!$(C=[O,N,P,S])])(C))]")
-    amino_count = len(mol.GetSubstructMatches(amino_pattern_1)) + \
-                  len(mol.GetSubstructMatches(amino_pattern_2)) + \
-                  len(mol.GetSubstructMatches(amino_pattern_3))
+    # Count the number of primary, secondary, and tertiary amino groups
+    primary_amino_pattern = Chem.MolFromSmarts("[NH2;!$(NC=O)]")
+    secondary_amino_pattern = Chem.MolFromSmarts("[NH1;!$(NC=O)]")
+    tertiary_amino_pattern = Chem.MolFromSmarts("[NH0;!$(N([C;!$(C=[O,N,P,S])])(C))]")
+    amino_count = len(mol.GetSubstructMatches(primary_amino_pattern)) + \
+                  len(mol.GetSubstructMatches(secondary_amino_pattern)) + \
+                  len(mol.GetSubstructMatches(tertiary_amino_pattern))
 
     # Check for at least two amino groups
     if amino_count >= 2:
         # Exclude molecules containing amide groups
         amide_pattern = Chem.MolFromSmarts("C(=O)N")
         if mol.HasSubstructMatch(amide_pattern):
-            return False, f"Contains amide group(s), not a polyamine"
+            return False, "Contains amide group(s), not a polyamine"
         else:
             return True, f"Found {amino_count} amino groups"
     else:
