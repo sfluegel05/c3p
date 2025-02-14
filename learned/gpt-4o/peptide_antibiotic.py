@@ -20,28 +20,29 @@ def is_peptide_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of peptide bonds
+    # Check for the presence of multiple peptide bonds
     peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    if len(peptide_bond_matches) < 2:
+    if len(peptide_bond_matches) < 5:
         return False, "Insufficient peptide bonds found"
 
-    # Check for cyclic peptide structures
-    cycle_inds = Chem.GetSymmSSSR(mol)
-    if not cycle_inds:
-        return False, "No cyclic structures found, common in many peptide antibiotics"
+    # Check for unique amino acids or cyclic structures patterns
+    cyclic_pattern = Chem.MolFromSmarts("C1CCC(CC1)C1=CNC2=NC=CC=C2C1")
+    if mol.HasSubstructMatch(cyclic_pattern):
+        return True, "Contains unique cyclic patterns often found in peptide antibiotics"
 
-    # Check sulfur presence, a common element in peptide antibiotics like daptomycin
-    contains_sulfur = any(atom.GetAtomicNum() == 16 for atom in mol.GetAtoms())
-    if contains_sulfur:
-        return True, "Contains sulfur, which is common in peptide antibiotics"
+    # Check sulfur or specific thiazole/oxazole presence, indicative of some antibiotics
+    thiazole_pattern = Chem.MolFromSmarts("c1sccc1")
+    oxazole_pattern = Chem.MolFromSmarts("c1noc1")
+    if mol.HasSubstructMatch(thiazole_pattern) or mol.HasSubstructMatch(oxazole_pattern):
+        return True, "Contains thiazole/oxazole rings, which are common in some peptide antibiotics"
 
-    # Check for complex structures characteristic of peptide antibiotics
+    # Check overall complexity: large molecule with multiple rings and chiral centers
     heavy_atoms = mol.GetNumHeavyAtoms()
     num_rings = Chem.GetSSSR(mol)
     chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     
-    if heavy_atoms > 25 and num_rings > 1 and len(chiral_centers) > 3:
-        return True, "Matches the complexity and structural features typical of peptide antibiotics"
+    if heavy_atoms > 25 and num_rings > 3 and len(chiral_centers) > 5:
+        return True, "Complex structure fits the profile of many peptide antibiotics"
 
     return False, "Structure does not match typical peptide antibiotics patterns"
