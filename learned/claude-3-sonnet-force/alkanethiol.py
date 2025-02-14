@@ -30,14 +30,14 @@ def is_alkanethiol(smiles: str):
     if not mol.HasSubstructMatch(sh_pattern):
         return False, "No sulfanyl (-SH) group found"
     
-    # Look for linear or branched alkyl chains attached to sulfur
-    alkyl_pattern = Chem.MolFromSmarts("[SH]~[CX4]~[CX4,CX3]~*")
+    # Look for linear or branched alkyl/alkenyl chains attached to sulfur
+    alkyl_pattern = Chem.MolFromSmarts("[SH]~[CX4,CX3]~*")
     if not mol.HasSubstructMatch(alkyl_pattern):
-        return False, "No alkyl chain attached to sulfur"
+        return False, "No alkyl/alkenyl chain attached to sulfur"
 
-    # Exclude molecules with additional sulfur-containing groups or rings
-    exclude_pattern = Chem.MolFromSmarts("[SH]~[CX4]~[CX4,CX3]~*~[#16,c]")
-    if mol.HasSubstructMatch(exclude_pattern):
-        return False, "Contains additional sulfur-containing groups or ring structures"
+    # Exclude peptides and amino acids
+    aa_pattern = Chem.MolFromSmarts("[NX3H2,NX4H3+]")
+    if mol.HasSubstructMatch(aa_pattern):
+        return False, "Molecule appears to be a peptide or amino acid"
 
-    return True, "Contains sulfanyl (-SH) group attached to an alkyl chain"
+    return True, "Contains sulfanyl (-SH) group attached to an alkyl/alkenyl chain"
