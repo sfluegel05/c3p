@@ -1,26 +1,75 @@
 """
 Classifies: CHEBI:28802 flavonols
 """
-The previous program attempted to classify flavonols based on their structural features, but it seems to have some issues that may have led to the poor performance.
+"""
+Classifies: CHEBI:17773 flavonol
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-Potential problems:
-1. **Overspecific patterns**: The SMARTS patterns used to identify the flavonoid backbone and the hydroxy group at position 3 may be too specific, failing to match some valid flavonol structures. Flavonols can have additional substituents or ring systems that the patterns do not account for.
+def is_flavonol(smiles: str):
+    """
+    Determines if a molecule is a flavonol based on its SMILES string.
+    A flavonol is a hydroxyflavone with a hydroxy group at position 3 of the heterocyclic ring.
 
-2. **Rigid constraints**: The constraints on the number of carbons, oxygens, and molecular weight range may be too strict. While these constraints can help filter out some non-flavonols, they may also exclude valid flavonol structures that fall outside the specified ranges.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Insufficient features**: The program relies solely on structural patterns and simple molecular descriptors (e.g., atom counts, molecular weight). However, flavonols may exhibit additional structural or physicochemical features that are not being considered.
+    Returns:
+        bool: True if molecule is a flavonol, False otherwise
+        str: Reason for classification
+    """
 
-Potential improvements:
-1. **Use more flexible patterns**: Instead of relying on highly specific SMARTS patterns, consider using more flexible patterns that can accommodate a wider range of substituents and ring systems commonly found in flavonols.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Relax or remove rigid constraints**: Evaluate the necessity of the strict constraints on atom counts and molecular weight. These constraints could be relaxed or removed altogether if they are causing too many false negatives.
+    # Check if molecule is a flavonoid (has benzopyran backbone)
+    flavonoid_pattern = Chem.MolFromSmarts("[c1]2[c]([c]3[c]([c]([c]2[o]1)[O])[O])-[c]([c]([c]3=O)[O])")
+    if not mol.HasSubstructMatch(flavonoid_pattern):
+        return False, "Not a flavonoid (missing benzopyran backbone)"
 
-3. **Incorporate additional features**: Explore other structural or physicochemical features that could help differentiate flavonols from other compounds. These could include features like aromaticity, ring strain, hydrogen bonding patterns, or molecular descriptors that capture the electronic or steric properties of flavonols.
+    # Check for hydroxy group at position 3
+    position_3_oh = Chem.MolFromSmarts("[c1]2[c]([c]([c]([o]2)[OH])[O])-[c]([c]([c]1=O)[O])")
+    if not mol.HasSubstructMatch(position_3_oh):
+        return False, "No hydroxy group at position 3 of heterocyclic ring"
 
-4. **Use machine learning**: Instead of relying solely on hand-crafted rules and patterns, consider using machine learning techniques to learn the patterns and features that distinguish flavonols from other compounds. This would require a labeled dataset of flavonols and non-flavonols for training and validation.
+    return True, "Contains a hydroxyflavone backbone with a hydroxy group at position 3"
 
-5. **Analyze false positives and false negatives**: Carefully examine the false positives and false negatives from the previous attempt to identify specific cases where the program fails. This can provide insights into additional patterns or features that need to be considered.
 
-It's essential to remember that chemical classification is a complex task, and a single set of rules or patterns may not be sufficient to capture all the nuances of a chemical class. A combination of structural analysis, physicochemical properties, and potentially machine learning techniques may be necessary to achieve accurate classification.
-
-If the provided benchmark data is not entirely reliable, it is reasonable to rely more on your understanding of the chemical class and make adjustments to the program accordingly, while explaining your reasoning.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:17773',
+        'name': 'flavonol',
+        'definition': 'Any hydroxyflavone in which is the ring hydrogen at position 3 of the heterocyclic ring is replaced by a hydroxy group.',
+        'parents': ['CHEBI:17282']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 176,
+    'num_false_positives': 1,
+    'num_true_negatives': 182409,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.9943502824858757,
+    'recall': 1.0,
+    'f1': 0.9971547266730862,
+    'accuracy': 0.9999455453326621
+}
