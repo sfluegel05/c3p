@@ -25,20 +25,16 @@ def is_acetate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for acetate group
-    acetate_pattern = Chem.MolFromSmarts("CC(=O)O[*]")
-    acetate_matches = mol.GetSubstructMatches(acetate_pattern)
+    # Check for acetate ester substructure pattern
+    acetate_ester_pattern = Chem.MolFromSmarts("CC(=O)OC")
+    acetate_ester_matches = mol.GetSubstructMatches(acetate_ester_pattern)
 
-    # Check for ester bond
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[*]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # Ensure there is only one acetate ester group
+    if len(acetate_ester_matches) == 1:
+        # Check for additional structural requirements
+        # (e.g., no other ester bonds, specific molecular weight range, etc.)
+        mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+        if 50 < mol_wt < 500:  # Typical molecular weight range for acetate esters
+            return True, "Contains an acetate group as part of an ester bond, and meets additional structural requirements"
 
-    # Ensure the acetate group is part of the ester bond
-    for acetate_match in acetate_matches:
-        for ester_match in ester_matches:
-            if any(atom_idx in acetate_match for atom_idx in ester_match):
-                # The acetate group and ester bond overlap, indicating an acetate ester
-                return True, "Contains an acetate group as part of an ester bond"
-
-    # If no acetate ester was found
-    return False, "Does not contain an acetate group as part of an ester bond"
+    return False, "Does not contain an acetate ester group, or does not meet additional structural requirements"
