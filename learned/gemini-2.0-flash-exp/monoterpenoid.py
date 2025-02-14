@@ -20,50 +20,72 @@ def is_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight
+    # Hints for molecular weight and carbon count, less strict now
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 130 or mol_wt > 350: # Adjusted range
-        return False, f"Molecular weight {mol_wt} is not within the typical range of monoterpenoids (130-350)."
-
-    # Check carbon count
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8 or c_count > 15: # Adjusted range to account for some modifications
-        return False, f"Too few or too many carbons: {c_count}. Monoterpenoids typically have around 10 carbons."
-    
-    # Check O:C ratio
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count > 0 and (o_count / c_count) > 0.5:
-        return False, "Monoterpenoids usually have a low ratio of oxygen to carbon atoms."
-
-    # Common monoterpenoid substructures
+    
+    # Isoprene units check
+    isoprene_pattern = Chem.MolFromSmarts("CC(=C)C") # Basic isoprene unit
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    
+    
+    # More specific substructure patterns
     menthane_pattern = Chem.MolFromSmarts("[C]1([C])[C]([C])([C])[C]([C])[C]1")
     pinane_pattern = Chem.MolFromSmarts("C1[C]2[C]([C]1([C])C)[C]([C])([C])CC2")
     bornane_pattern = Chem.MolFromSmarts("C1[C]2[C]([C]1([C])C)[C]([C])([C])CC2")
     thujane_pattern = Chem.MolFromSmarts("C1[C]2[C]([C]1([C])C)[C]([C])([C])CC2")
+
     p_menthene_pattern1 = Chem.MolFromSmarts("C[C]1([C])[C]([C])([C])[C]([C])=[C]1")
     p_menthene_pattern2 = Chem.MolFromSmarts("C[C]1([C])=[C]([C])[C]([C])[C]([C])[C]1")
-
+    
+    # Include more complex variations
+    menthene_pattern_carbonyl = Chem.MolFromSmarts("[C]1([C])[C]([C])([C])[C](=[O])[C]1")
+    menthene_pattern_hydroxyl = Chem.MolFromSmarts("[C]1([C])[C]([C])([C])[C]([OH])[C]1")    
+    
+    bicyclic_pinene = Chem.MolFromSmarts("C1[C]2[C](C1([C])C)[C]([C])=[C]C2")
+    bicyclic_thujene = Chem.MolFromSmarts("C1[C]2[C](C1([C])C)[C]([C])=[C]C2")
+    bicyclic_bornane = Chem.MolFromSmarts("C1[C]2[C](C1([C])C)[C]([C])([C])C2")
+    
+    
     if (mol.HasSubstructMatch(menthane_pattern) or
             mol.HasSubstructMatch(pinane_pattern) or
             mol.HasSubstructMatch(bornane_pattern) or
             mol.HasSubstructMatch(thujane_pattern) or
             mol.HasSubstructMatch(p_menthene_pattern1) or
-            mol.HasSubstructMatch(p_menthene_pattern2)):
-        return True, "Matches monoterpenoid criteria"
+            mol.HasSubstructMatch(p_menthene_pattern2) or
+            mol.HasSubstructMatch(menthene_pattern_carbonyl) or
+            mol.HasSubstructMatch(menthene_pattern_hydroxyl) or
+            mol.HasSubstructMatch(bicyclic_pinene) or
+            mol.HasSubstructMatch(bicyclic_thujene) or
+            mol.HasSubstructMatch(bicyclic_bornane)
+            ):
+            
+        if len(isoprene_matches) >= 1:
+                return True, "Matches monoterpenoid substructure and contains one or more isoprene unit(s)"
+        else:
+             return False, "Matches monoterpenoid substructure, but is missing isoprene unit(s)"
+            
+    elif len(isoprene_matches) >= 2 and (c_count >= 8 and c_count <= 15):
+        return True, "Contains two or more isoprene units, and carbon count suggest it could be a monoterpenoid"
 
-    # Additional check for rings
+    # Ring Check: allow for fused bicyclics (relax constraints)
     ring_info = mol.GetRingInfo()
     num_rings = ring_info.NumRings()
-    found_6_member = False
-    found_5_member = False
-    for ring in ring_info.AtomRings():
-      if len(ring) == 6:
-        found_6_member = True
-      if len(ring) == 5:
-         found_5_member = True
+    if num_rings > 0 :
+        found_6_member = False
+        found_5_member = False
+        for ring in ring_info.AtomRings():
+            if len(ring) == 6:
+              found_6_member = True
+            if len(ring) == 5:
+                found_5_member = True
+        if not (found_6_member or found_5_member):
+           if  not (mol.HasSubstructMatch(bicyclic_pinene) or mol.HasSubstructMatch(bicyclic_thujene) or mol.HasSubstructMatch(bicyclic_bornane)):
+               return False, "Monoterpenoids usually contain a 5 or 6-membered ring or a bicyclic fused ring"
 
-    if num_rings > 0 and not (found_6_member or found_5_member) :
-         return False, "Monocyclic monoterpenoids usually contain a 5 or 6-membered ring"
+    if  (c_count >= 8 and c_count <= 15) and (mol_wt >=120 and mol_wt <= 400):
+            if  len(isoprene_matches) >= 1:
+               return True, "Carbon count, molecular weight, and isoprene matches suggest it could be a monoterpenoid"
 
-    
     return False, "Does not match common monoterpenoid substructures or characteristics"
