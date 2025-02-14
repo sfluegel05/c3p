@@ -42,7 +42,7 @@ def is_flavonoid(smiles: str):
     # Check for aryl substituent at position 2
     for atom in mol.GetAtoms():
         if atom.GetSymbol() == "C" and atom.GetTotalNumHs() == 1:
-            neighbors = [mol.GetAtomWithIdx(n).GetSymbol() for n in atom.GetNeighbors()]
+            neighbors = [mol.GetAtomWithIdx(n.GetIdx()).GetSymbol() for n in atom.GetNeighbors()]
             if "O" in neighbors and "C" in neighbors:
                 aryl_sub = True
                 break
