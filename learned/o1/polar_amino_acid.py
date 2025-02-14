@@ -20,38 +20,121 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the amino acid backbone pattern (inclusive of zwitterions)
-    backbone_pattern = Chem.MolFromSmarts("[N;H1,H2;+0;+1][C@@,H](C)[C](=O)[O;H1,-1]")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "Molecule does not have a standard amino acid backbone"
+    # Identify alpha carbon(s)
+    alpha_carbons = []
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon
+            n_neighbor = False
+            carboxyl_neighbor = False
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 7:
+                    n_neighbor = True
+                elif nbr.GetAtomicNum() == 6:
+                    # Potential carboxyl carbon
+                    nbr_c = nbr
+                    o_count = 0
+                    for nbr_c_nbr in nbr_c.GetNeighbors():
+                        if nbr_c_nbr.GetAtomicNum() == 8:
+                            o_count += 1
+                    if o_count >= 2:
+                        carboxyl_neighbor = True
+            if n_neighbor and carboxyl_neighbor:
+                alpha_carbons.append(atom)
 
-    # Find backbone atoms
-    backbone_matches = mol.GetSubstructMatches(backbone_pattern)
-    if not backbone_matches:
-        return False, "Amino acid backbone not found"
-    backbone_atoms = set(backbone_matches[0])
+    if not alpha_carbons:
+        return False, "No alpha carbon connected to both amino and carboxyl groups found"
 
-    # Identify side chain atoms (atoms not in backbone)
-    side_chain_atoms = [atom for atom in mol.GetAtoms() if atom.GetIdx() not in backbone_atoms]
-    if not side_chain_atoms:
+    # Assume first alpha carbon
+    alpha_carbon = alpha_carbons[0]
+    alpha_carbon_idx = alpha_carbon.GetIdx()
+
+    # Identify backbone atoms
+    backbone_indices = set()
+    backbone_indices.add(alpha_carbon_idx)
+
+    # Identify nitrogen neighbor
+    nitrogen_idx = None
+    for nbr in alpha_carbon.GetNeighbors():
+        if nbr.GetAtomicNum() == 7:
+            nitrogen_idx = nbr.GetIdx()
+            backbone_indices.add(nitrogen_idx)
+            break
+    if nitrogen_idx is None:
+        return False, "Alpha carbon does not have a nitrogen neighbor"
+
+    # Identify carboxyl carbon neighbor
+    carboxyl_c_idx = None
+    for nbr in alpha_carbon.GetNeighbors():
+        if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != nitrogen_idx:
+            # Check if this carbon is connected to two oxygens
+            nbr_c = nbr
+            oxygen_indices = []
+            for nbr_c_nbr in nbr_c.GetNeighbors():
+                if nbr_c_nbr.GetAtomicNum() == 8:
+                    oxygen_indices.append(nbr_c_nbr.GetIdx())
+            if len(oxygen_indices) >=2:
+                carboxyl_c_idx = nbr_c.GetIdx()
+                backbone_indices.add(carboxyl_c_idx)
+                backbone_indices.update(oxygen_indices)
+                break
+
+    if carboxyl_c_idx is None:
+        return False, "Alpha carbon does not have a carboxyl group neighbor"
+
+    # Identify side chain start atoms
+    side_chain_start_atoms = []
+    for nbr in alpha_carbon.GetNeighbors():
+        nbr_idx = nbr.GetIdx()
+        if nbr_idx not in backbone_indices:
+            side_chain_start_atoms.append(nbr_idx)
+            
+    if not side_chain_start_atoms:
         return False, "No side chain found"
 
-    # Define SMARTS patterns for hydrogen bonding groups
-    hbond_donor_acceptor_smarts = [
-        "[OX1H0-,OX2H1]",        # Hydroxyl group and oxyanions
-        "[SX2H]",                # Thiol group
-        "[NX3H2,NX3H1,NX4+]",    # Primary and secondary amines, protonated amines
-        "[NX3][CX3](=O)[NX3]",   # Amide group
-        "c1ncn[cH]1",            # Imidazole group in histidine
-        "c1ccc(O)cc1",           # Phenol group in tyrosine
-        "C(=O)[O-,OH]"           # Carboxylate and carboxylic acid
-    ]
+    # Get side chain atoms
+    from collections import deque
 
-    # Check for hydrogen bonding groups in the side chain
-    for atom in side_chain_atoms:
-        for smarts in hbond_donor_acceptor_smarts:
-            pattern = Chem.MolFromSmarts(smarts)
-            if mol.HasSubstructMatch(pattern, atomIndices=[atom.GetIdx()]):
-                return True, "Side chain contains hydrogen bonding groups"
+    def get_side_chain_atoms(mol, side_chain_start_atoms, backbone_indices):
+        side_chain_atoms = set()
+        visited = set()
+        queue = deque(side_chain_start_atoms)
+        while queue:
+            atom_idx = queue.popleft()
+            if atom_idx in backbone_indices or atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            side_chain_atoms.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for nbr in atom.GetNeighbors():
+                nbr_idx = nbr.GetIdx()
+                if nbr_idx not in backbone_indices and nbr_idx not in visited:
+                    queue.append(nbr_idx)
+        return side_chain_atoms
 
-    return False, "Side chain does not contain hydrogen bonding groups"
+    side_chain_atoms = get_side_chain_atoms(mol, side_chain_start_atoms, backbone_indices)
+
+    # Check for hydrogen bond donors and acceptors in side chain
+    hbond_donor_atoms = []
+    hbond_acceptor_atoms = []
+
+    for idx in side_chain_atoms:
+        atom = mol.GetAtomWithIdx(idx)
+        atomic_num = atom.GetAtomicNum()
+        # Check for hydrogen bond donors
+        if atomic_num in [7, 8, 16]:  # N, O, S
+            num_H = 0
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 1:  # Hydrogen
+                    num_H += 1
+            if num_H > 0:
+                hbond_donor_atoms.append(idx)
+        # Check for hydrogen bond acceptors
+        if atomic_num in [7, 8, 16]:  # N, O, S
+            # Exclude positively charged atoms (e.g., protonated amines)
+            if atom.GetFormalCharge() >= 0:
+                hbond_acceptor_atoms.append(idx)
+
+    if hbond_donor_atoms or hbond_acceptor_atoms:
+        return True, "Side chain can form hydrogen bonds"
+    else:
+        return False, "Side chain cannot form hydrogen bonds"
