@@ -19,16 +19,15 @@ def is_dipeptide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Dipeptide pattern: two amino acids connected by one peptide bond.
+    dipeptide_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])N[CX4][CX3](=[OX1])[OX2]")
     
-    # Define a more specific peptide bond pattern.
-    # This pattern looks for a C(=O)-N fragment between two alpha carbons.
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX4][CX3](=[OX1])N[CX4]")
-    
-    peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    if not mol.HasSubstructMatch(dipeptide_pattern):
+        return False, "Molecule does not contain the dipeptide substructure (two amino acids connected by peptide bond)"
 
-
-    if len(peptide_matches) != 1:
-        return False, f"Molecule has {len(peptide_matches)} peptide bonds, a dipeptide should have exactly 1"
-
+    matches = mol.GetSubstructMatches(dipeptide_pattern)
+    if len(matches) != 1:
+        return False, f"Molecule has {len(matches)} dipeptide substructures, should have exactly 1."
 
     return True, "Contains two amino acid residues connected by a single peptide bond"
