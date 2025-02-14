@@ -1,26 +1,60 @@
 """
 Classifies: CHEBI:16219 cucurbitacin
 """
-After analyzing the previous program and the outcomes, I notice a few potential issues:
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-1. **False negatives**: The program missed some molecules that were labeled as cucurbitacins, such as 3beta-Cucurbita-5,24-dien-3-ol and (3b,16a,20R)-25-Acetoxy-3,16,20,22-tetrahydroxy-5-cucurbiten-11-one 3-glucoside. These molecules do not match the tetracyclic scaffold pattern used in the program, but they may still be considered cucurbitacins based on their structural similarity to the cucurbitane core.
+def is_cucurbitacin(smiles: str):
+    """
+    Determines if a molecule is a cucurbitacin based on its SMILES string.
+    Cucurbitacins are tetracyclic triterpenoids derived from the triterpene hydrocarbon cucurbitane,
+    characterized by a rigid tetracyclic scaffold with oxygenated substituents.
 
-2. **Potential overfitting**: The program relies heavily on the presence of a specific tetracyclic scaffold and the cucurbitane core, which may be too restrictive. Cucurbitacins can have varying degrees of structural modifications while still retaining the essential characteristics of the class.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Lack of consideration for substituents**: While the program checks for the presence of oxygenated substituents, it does not consider the specific types or positions of these substituents, which can be important for defining the cucurbitacin class.
+    Returns:
+        bool: True if molecule is a cucurbitacin, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we could consider the following strategies:
+    # Check for cucurbitane core
+    cucurbitane_pattern = Chem.MolFromSmarts("[C@@]12[C@H]([C@@]3([C@H]([C@@H]4[C@@H](C(=C3)C)C[C@@H](C4)O)CC2)C)[C@H](C1)O")
+    if not mol.HasSubstructMatch(cucurbitane_pattern):
+        return False, "No cucurbitane core found"
 
-1. **Use more flexible substructure matching**: Instead of relying on a single rigid scaffold pattern, we could use a combination of substructure patterns or fingerprints to capture the essential features of cucurbitacins. This could include patterns for the cucurbitane core, common oxygenated substituents, and other structural motifs.
+    # Check for oxygenated substituents (hydroxy, keto, ester, ether, glycosides)
+    oxy_patterns = [Chem.MolFromSmarts("[OX2]"),
+                    Chem.MolFromSmarts("[OX1]=C"),
+                    Chem.MolFromSmarts("[OX2][CX3](=O)"),
+                    Chem.MolFromSmarts("[OX2][CX3]")]
+    oxy_matches = sum(mol.HasSubstructMatch(pat) for pat in oxy_patterns)
+    if oxy_matches < 2:
+        return False, "Not enough oxygenated substituents found"
 
-2. **Incorporate machine learning techniques**: Machine learning algorithms, such as random forests or support vector machines, could be trained on a diverse set of cucurbitacin and non-cucurbitacin molecules to learn the relevant structural features and make more accurate predictions.
+    # Check molecular weight - cucurbitacins typically 500-1000 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500 or mol_wt > 1000:
+        return False, "Molecular weight outside typical range for cucurbitacins"
 
-3. **Consider expert knowledge and literature**: Consult literature and experts in the field to better understand the structural nuances and variations within the cucurbitacin class. This knowledge could inform the development of more robust rules or features for classification.
+    # Check for tetracyclic scaffold
+    ring_info = mol.GetRingInfo()
+    num_rings = len(ring_info.AtomRings())
+    if num_rings < 4:
+        return False, "Not a tetracyclic compound"
 
-4. **Tune parameters and thresholds**: Adjust the molecular weight and atom count thresholds based on a more comprehensive analysis of the cucurbitacin structures. This could help reduce false negatives and false positives.
+    # Count carbons, oxygens, and rings
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 20 or c_count > 40:
+        return False, "Carbon count outside typical range for cucurbitacins"
+    if o_count < 3 or o_count > 10:
+        return False, "Oxygen count outside typical range for cucurbitacins"
 
-5. **Incorporate additional molecular descriptors**: Explore the use of additional molecular descriptors, such as topological indices, shape descriptors, or physicochemical properties, which could capture more subtle differences between cucurbitacins and non-cucurbitacins.
-
-It's important to note that while the program may miss some true positives (false negatives), it appears to have a high precision (low false positives), which is valuable in many applications. If the goal is to identify potential cucurbitacins with high confidence, even at the cost of missing some true positives, the current program may still be useful.
-
-However, if the goal is to achieve a more balanced and comprehensive classification, incorporating some of the suggested improvements could help increase the overall accuracy and F1 score.
+    return True, "Contains cucurbitane core with oxygenated substituents and tetracyclic scaffold"
