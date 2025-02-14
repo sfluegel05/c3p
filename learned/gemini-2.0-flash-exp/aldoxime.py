@@ -20,19 +20,19 @@ def is_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core aldoxime substructure using SMARTS
-    oxime_pattern = Chem.MolFromSmarts('[CH][C]=[N][O]') # C=N-O with C attached to at least 1 H
-    aldehyde_carbon = Chem.MolFromSmarts('[CH1]')
-
-    # Check if the core substructure and the aldehyde carbon are present
-    if not mol.HasSubstructMatch(oxime_pattern):
-            return False, "Molecule does not contain the C=N-O oxime group"
+    # Define the core oxime substructure using SMARTS (C=N-O)
+    oxime_pattern = Chem.MolFromSmarts("[C]=[N][O]")
     
-    # Find matches for the [CH][C]=[N][O] pattern, and ensure that the [CH] part is connected to one H
+    # Find matches for the oxime pattern
     matches = mol.GetSubstructMatches(oxime_pattern)
+    if not matches:
+      return False, "Molecule does not contain the C=N-O oxime group"
+
+    # Check if at least one of the matched C is [CH1]
     for match in matches:
-      c_atom = mol.GetAtomWithIdx(match[0])
-      if c_atom.HasSubstructMatch(aldehyde_carbon):
-          return True, "Molecule contains the R-CH=NOH aldoxime substructure."
+        c_atom_idx = match[0] #The carbon in the C=N
+        c_atom = mol.GetAtomWithIdx(c_atom_idx)
+        if c_atom.GetTotalNumHs() == 1: #if this C is a [CH1]
+            return True, "Molecule contains the R-CH=NOH aldoxime substructure."
 
     return False, "Molecule does not contain the correct R-CH=NOH aldoxime substructure."
