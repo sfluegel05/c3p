@@ -1,51 +1,32 @@
 """
 Classifies: CHEBI:47016 tetrahydrofuranone
 """
-"""
-Classifies: CHEBI:30736 tetrahydrofuranone
-Any oxolane having an oxo- substituent at any position on the tetrahydrofuran ring.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+Based on the outcomes provided, the previous program seems to have a few issues:
 
-def is_tetrahydrofuranone(smiles: str):
-    """
-    Determines if a molecule is a tetrahydrofuranone based on its SMILES string.
-    A tetrahydrofuranone is an oxolane with an oxo- substituent on the tetrahydrofuran ring.
+1. False positives:
+The program is incorrectly classifying some molecules as tetrahydrofuranones, even though they do not belong to this class. This could be due to the program's inability to distinguish between different types of ring systems or substituents on the ring.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. Missed true positives:
+There are no false negatives listed, which means the program is not missing any tetrahydrofuranones from the provided examples. However, it's possible that there are other tetrahydrofuranone structures that the program fails to identify correctly.
 
-    Returns:
-        bool: True if molecule is a tetrahydrofuranone, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for oxolane (tetrahydrofuran) ring
-    oxolane_pattern = Chem.MolFromSmarts("[O;R]1CCCC1")
-    if not mol.HasSubstructMatch(oxolane_pattern):
-        return False, "No oxolane (tetrahydrofuran) ring found"
-    
-    # Look for oxo- substituent on the ring
-    oxo_pattern = Chem.MolFromSmarts("[O;X1]=[C;R]")
-    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    
-    # Check if any oxo- substituent is attached to the oxolane ring
-    for oxo_match in oxo_matches:
-        oxo_atom = mol.GetAtomWithIdx(oxo_match[1])
-        for bond in oxo_atom.GetBonds():
-            if bond.GetBeginAtomIdx() == oxo_match[1]:
-                ring_atom_idx = bond.GetEndAtomIdx()
-            else:
-                ring_atom_idx = bond.GetBeginAtomIdx()
-            
-            ring_atom = mol.GetAtomWithIdx(ring_atom_idx)
-            if ring_atom.IsInRingSize(5):
-                return True, "Contains oxolane (tetrahydrofuran) ring with oxo- substituent"
-    
-    return False, "No oxo- substituent attached to the oxolane (tetrahydrofuran) ring"
+3. Potential issues with the benchmark:
+As mentioned in the note, there may be occasional and systematic mistakes in the benchmark used for evaluation. It's essential to use your understanding of the chemical class and critical thinking to assess the correctness of the classifications.
+
+To improve the program, here are some potential steps:
+
+1. Refine the SMARTS patterns:
+The current SMARTS patterns used to identify the oxolane (tetrahydrofuran) ring and the oxo- substituent may not be specific enough. Consider using more detailed patterns or combining multiple patterns to ensure that the program correctly identifies the desired structural features.
+
+2. Incorporate additional checks:
+Implement additional checks or filters to eliminate false positives. For example, you could check for the presence of other functional groups or substituents that are not allowed in the tetrahydrofuranone class, or look for specific connectivity patterns that distinguish tetrahydrofuranones from other ring systems.
+
+3. Analyze false positives and true negatives:
+Carefully examine the false positives and true negatives (if any) to identify potential patterns or structural features that the program may be missing or misinterpreting. Use this information to refine the SMARTS patterns or add additional checks.
+
+4. Expand the test set:
+While the provided examples cover a wide range of tetrahydrofuranone structures, it's possible that there are other variations or edge cases that the program does not handle correctly. Consider expanding the test set with more diverse examples to thoroughly evaluate the program's performance.
+
+5. Consider alternative approaches:
+If the SMARTS pattern-based approach proves too limited, explore alternative approaches, such as using substructure matching with RDKit's chemical reaction functionality or implementing a machine learning-based classifier trained on a larger dataset of tetrahydrofuranone and non-tetrahydrofuranone structures.
+
+It's important to keep in mind that the classification of chemical structures can be challenging, and there may not be a perfect solution that covers all edge cases. The goal should be to develop a program that is reasonably accurate and reliable for the intended use case, while acknowledging its limitations and potential for improvement.
