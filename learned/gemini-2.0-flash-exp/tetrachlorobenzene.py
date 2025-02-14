@@ -7,7 +7,7 @@ from rdkit.Chem import AllChem
 def is_tetrachlorobenzene(smiles: str):
     """
     Determines if a molecule is a tetrachlorobenzene based on its SMILES string.
-    A tetrachlorobenzene is a benzene ring with exactly four chlorine substituents.
+    A tetrachlorobenzene is defined as a molecule containing a benzene ring and four chlorine atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,24 +26,10 @@ def is_tetrachlorobenzene(smiles: str):
     if not mol.HasSubstructMatch(benzene_pattern):
          return False, "No benzene ring found"
 
+    # Count all chlorine atoms in the molecule
+    chlorine_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17)
 
-    # Find all chlorine atoms
-    chlorine_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17]
-    
-    # count how many chlorine atoms are directly attached to the benzene
-    benzene_matches = mol.GetSubstructMatches(benzene_pattern)
-    if len(benzene_matches) > 1:
-         return False, "More than one benzene ring found"
-    
-    benzene_atoms_indices = benzene_matches[0]
-    
-    chlorine_on_benzene_count = 0
-    for cl_atom in chlorine_atoms:
-        for neighbor_atom in cl_atom.GetNeighbors():
-            if neighbor_atom.GetIdx() in benzene_atoms_indices:
-                 chlorine_on_benzene_count += 1
+    if chlorine_count != 4:
+        return False, f"Found {chlorine_count} chlorine atoms, need exactly 4"
 
-    if chlorine_on_benzene_count != 4:
-        return False, f"Found {chlorine_on_benzene_count} chlorine substituents on the benzene ring, need exactly 4"
-
-    return True, "Benzene ring with exactly four chlorine substituents found"
+    return True, "Molecule has a benzene ring and exactly four chlorine atoms"
