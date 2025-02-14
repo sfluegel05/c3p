@@ -22,22 +22,16 @@ def is_carbapenems(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the carbapenem core structure using SMARTS
+    # Carbapenem core SMARTS pattern
     # This pattern captures:
-    # - A fused bicyclic ring system with a four-membered beta-lactam ring and a five-membered ring
-    # - Beta-lactam ring contains nitrogen and carbonyl group
-    # - Five-membered ring with exocyclic double bond
+    # - Fused bicyclic system: four-membered beta-lactam ring fused to a five-membered ring
+    # - Beta-lactam ring: four-membered ring with N and carbonyl group
+    # - Five-membered ring: with exocyclic double bond
+    # - Substituents allowed at positions 3, 4, and 6
 
     carbapenem_smarts = '''
-    [$([C;R3]-1-[C;R3]-[N;R3]-[C;R3](=O)-1)]
-    [$([C;R5]-2=[C;R5]-[C;R5]-[C;R5]-[C;R5]-2)]
+    [C;R1]=C1[C;R1][C;R1][C;R1]2[N;R1][C;R1](=O)[C;R1]12
     '''
-
-    # Remove line breaks and whitespace
-    carbapenem_smarts = ''.join(carbapenem_smarts.split())
-
-    # Combine the two patterns to represent the fused ring system
-    # The exocyclic double bond is attached to the five-membered ring
     carbapenem_pattern = Chem.MolFromSmarts(carbapenem_smarts)
     if carbapenem_pattern is None:
         return False, "Error in defining carbapenem SMARTS pattern"
@@ -46,10 +40,10 @@ def is_carbapenems(smiles: str):
     if not mol.HasSubstructMatch(carbapenem_pattern):
         return False, "Does not contain carbapenem core structure"
 
-    # Additional check for exocyclic double bond at the five-membered ring
-    # Look for C=C double bond attached to the five-membered ring
-    exocyclic_double_bond = Chem.MolFromSmarts('[C;R5]=[C;R0]')
-    if not mol.HasSubstructMatch(exocyclic_double_bond):
+    # Check for exocyclic double bond on five-membered ring
+    # The exocyclic double bond is between a ring carbon and an external carbon
+    exocyclic_double_bond_pattern = Chem.MolFromSmarts('[C;R][C;R]=[C;R0]')
+    if not mol.HasSubstructMatch(exocyclic_double_bond_pattern):
         return False, "Missing exocyclic double bond on five-membered ring"
 
     return True, "Contains carbapenem core structure"
@@ -74,7 +68,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
