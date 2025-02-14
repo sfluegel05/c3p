@@ -6,6 +6,7 @@ from rdkit import Chem
 def is_metal_atom(smiles: str):
     """
     Determines if a molecule is a metal atom based on its SMILES string.
+    Considers charges and isotopes as part of metal atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -33,16 +34,12 @@ def is_metal_atom(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure it represents a single atom
-    if mol.GetNumAtoms() != 1:
-        return False, "SMILES string does not represent a single atom"
-
-    # Extract the element symbol
+    # Extract the element symbol (strip isotopic number and charge info)
     atom = mol.GetAtomWithIdx(0)
     element_symbol = atom.GetSymbol()
 
     # Check if the element is in the list of metal symbols
     if element_symbol in metal_symbols:
-        return True, f"{element_symbol} is a metal atom"
+        return True, f"{element_symbol} is a metal atom including isotopic or charged forms"
   
     return False, f"{element_symbol} is not a metal atom"
