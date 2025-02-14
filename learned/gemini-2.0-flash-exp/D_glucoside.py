@@ -3,11 +3,13 @@ Classifies: CHEBI:35436 D-glucoside
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_D_glucoside(smiles: str):
     """
     Determines if a molecule is a D-glucoside based on its SMILES string.
     A D-glucoside is a molecule with a D-glucose moiety linked to another molecule via a glycosidic bond.
+    The D-glucose is in its pyranose form.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -20,82 +22,50 @@ def is_D_glucoside(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # SMARTS pattern for D-glucose (pyranose form)
+    # Explicitly specifies the stereochemistry at all chiral centers, including the anomeric carbon.
+    d_glucose_smarts = "[C@H]1([C@H]([C@@H]([C@H]([C@H](O1)CO)O)O)O)"
+    d_glucose_pattern = Chem.MolFromSmarts(d_glucose_smarts)
+
+    #Canonical D-glucose SMILES (for verification of found fragment)
+    canonical_d_glucose_smiles = "[C@H]1([C@H]([C@@H]([C@H]([C@@H](O1)CO)O)O)O)"
     
-    # Generalized SMARTS pattern for D-glucose (covers both linear and cyclic forms), does not include the glycosidic oxygen
-    glucose_smarts = "[CX4]([OX2])([CX4])([CX4])[CX4]([OX2])[CX4]([OX2])"
-    glucose_pattern = Chem.MolFromSmarts(glucose_smarts)
-    
+    if d_glucose_pattern is None:
+        return None, "Invalid SMARTS pattern for D-glucose"
+
     # Find all substructure matches of D-glucose
-    glucose_matches = mol.GetSubstructMatches(glucose_pattern)
-    
+    glucose_matches = mol.GetSubstructMatches(d_glucose_pattern)
+
     if not glucose_matches:
-       return False, "No glucose moiety found"
+       return False, "No D-glucose moiety found."
 
+    # Iterate through the glucose matches, verify their configuration, and check for glycosidic bonds.
     for match in glucose_matches:
-        for anomeric_carbon_idx in match:
-             anomeric_carbon = mol.GetAtomWithIdx(anomeric_carbon_idx)
+        
+       #Extract the found fragment as a SMILES
+        d_glucose_fragment_mol = Chem.MolFragment(mol, match)
+        d_glucose_fragment_smiles = Chem.MolToSmiles(d_glucose_fragment_mol)
+
+        #Verify the configuration
+        if d_glucose_fragment_smiles != Chem.MolToSmiles(Chem.MolFromSmiles(canonical_d_glucose_smiles)):
+            continue # Incorrect stereochemistry
+
+       # Now, look for the glycosidic bond
+        for atom_idx in match:
+             atom = mol.GetAtomWithIdx(atom_idx)
              
-             for neighbor in anomeric_carbon.GetNeighbors():
-                 if neighbor.GetAtomicNum() == 8: # Check for Oxygen
-                     
-                    # Check if the Oxygen is linked to a non-glucose atom
+             # Look for Oxygen neighbors.
+             for neighbor in atom.GetNeighbors():
+                 if neighbor.GetAtomicNum() == 8:
                     is_glycosidic = False
-                    for neighbor_of_neighbor in neighbor.GetNeighbors():
-                         if neighbor_of_neighbor.GetIdx() not in match:
-                            is_glycosidic = True
-                            glycosidic_carbon_idx = neighbor_of_neighbor.GetIdx()
-                            break
                     
+                    # Check if the oxygen is linked to a carbon outside the glucose
+                    for neighbor_of_neighbor in neighbor.GetNeighbors():
+                          if neighbor_of_neighbor.GetIdx() not in match and neighbor_of_neighbor.GetAtomicNum() == 6 :
+                            is_glycosidic = True
+                            break
                     if is_glycosidic:
-                        # Check stereochemistry of the anomeric carbon
-                        
-                        # Get the anomeric C in the pattern
-                        anomeric_carbon_in_pattern = 0
-                        # Get the chiral carbon in the D-glucose pattern
-                        chiral_carbon_in_pattern = 1
-                        
-                        anomeric_carbon_match = mol.GetAtomWithIdx(anomeric_carbon_idx)
-                        chiral_carbon_match = mol.GetAtomWithIdx(match[chiral_carbon_in_pattern])
-
-                        # The bond between the oxygen and the carbon of the other group
-                        bond_to_other_group = mol.GetBondBetweenAtoms(neighbor.GetIdx(),glycosidic_carbon_idx)
-
-                        if bond_to_other_group is None:
-                           continue
-                         
-                        # Get neighbors of the anomeric carbon. This must be the non-glycosidic bond part
-                        anomeric_neighbors = [ n.GetIdx() for n in anomeric_carbon_match.GetNeighbors() if n.GetIdx() != neighbor.GetIdx()]
-                        if len(anomeric_neighbors) != 3:
-                           continue
-                        
-                        # Find the highest priority atom connected to the anomeric carbon
-                        highest_priority_atom_idx = -1
-                        highest_priority = -1
-                        for neighbor_idx in anomeric_neighbors:
-                            priority = mol.GetAtomWithIdx(neighbor_idx).GetAtomicNum()
-                            if priority > highest_priority:
-                                highest_priority = priority
-                                highest_priority_atom_idx = neighbor_idx
-
-                        if highest_priority_atom_idx == -1:
-                            continue # No heavy atom
-
-                        #Find the hydrogen atom linked to the chiral carbon of the D-glucose
-                        hydrogen_of_chiral_carbon = -1
-                        for neighbor_idx in chiral_carbon_match.GetNeighbors():
-                           if mol.GetAtomWithIdx(neighbor_idx).GetAtomicNum() == 1:
-                              hydrogen_of_chiral_carbon = neighbor_idx
-                              break
-                        if hydrogen_of_chiral_carbon == -1:
-                            continue
-
-                        #Get the configuration of the chiral carbon of the glucopyranose in the glucose unit
-                        configuration_of_chiral_carbon = anomeric_carbon_match.GetChiralTag()
-
-                        # Check if the stereochemistry is correct for D-glucose.
-                        # D-Glucose should have the configuration set to R at that chiral center
-                        if configuration_of_chiral_carbon != Chem.ChiralType.CHI_TETRAHEDRAL_R:
-                           continue
                         return True, "Contains a D-glucose moiety linked via a glycosidic bond."
-    
+
     return False, "No D-glucose moiety linked via a glycosidic bond found"
