@@ -20,14 +20,14 @@ def is_neoflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # A 1-benzopyran core: Benzene (c1ccccc1) fused to Pyran (O2c3c(C=CC=C3)CC(=C/1)\C2=O) with open valency at 4
-    benzopyran_pattern = Chem.MolFromSmarts('O1C=CC=CC1C2=CC=CC=C2')
+    # Refined 1-benzopyran core pattern
+    benzopyran_pattern = Chem.MolFromSmarts('c1cc2oc(C)c(C=CC2=c1)')  # Open valences allow detection of potential site for aryl group
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "1-benzopyran core not found"
     
-    # Check for aryl group attached at position 4 of the benzopyran core
-    aryl_at_pos4_pattern = Chem.MolFromSmarts('O1C=CC=CC1-c2cccc3')
-    if not mol.HasSubstructMatch(aryl_at_pos4_pattern):
+    # Refined pattern for aryl group at position 4
+    aryl_pattern = Chem.MolFromSmarts('c2ccc(-c1coc3ccccc3c1)c2')  # General pattern for an aryl group connected to the core
+    if not mol.HasSubstructMatch(aryl_pattern):
         return False, "Aryl group not found at position 4"
     
     return True, "Contains a 1-benzopyran core with an aryl group at position 4"
