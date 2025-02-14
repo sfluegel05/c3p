@@ -26,19 +26,22 @@ def is_polypeptide(smiles: str):
     peptide_bond_pattern = Chem.MolFromSmarts("[-N]-C(=O)-")
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
     
-    # SMARTS pattern to find amino acid residue
-    # This pattern tries to capture amino acid residues
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]-[CX4;H2,H1,H0]-[CX3](=[OX1])")
+    # SMARTS pattern to find amino acid residues within peptide chains
+    # This pattern focuses on the N-C-C=O backbone and the alpha carbon with a substitution
+    amino_acid_pattern = Chem.MolFromSmarts("[N;H1]-C([*])(-[CX4])C(=O)-")
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
 
-    # If we find less than 10 amino acid residues, it cannot be a polypeptide
-    if len(amino_acid_matches) < 10:
-        return False, f"Molecule contains {len(amino_acid_matches)} amino acid residues, needs at least 10"
+    num_amino_acids = len(amino_acid_matches)
+    num_peptide_bonds = len(peptide_bonds)
     
-    # Check to see that the molecule contains at least 9 peptide bonds.
-    # Although the pattern is not fool proof, the number of peptide bonds should be around 1 less than the number of amino acid residues.
-    if len(peptide_bonds) < 9:
-         return False, f"Molecule contains {len(peptide_bonds)} peptide bonds, which seems too low."
+    # Check for the minimum number of amino acids.
+    if num_amino_acids < 10:
+        return False, f"Molecule contains {num_amino_acids} amino acid residues, which is less than the required 10."
+    
+    # Check that the number of peptide bonds is appropriate for a polypeptide.
+    # In most cases, the number of peptide bonds is the number of amino acids minus 1.
+    # We allow a tolerance here for cyclic peptides, etc.
+    if num_peptide_bonds < num_amino_acids -2:
+        return False, f"Molecule contains {num_peptide_bonds} peptide bonds, which seems too low for {num_amino_acids} residues."
 
-
-    return True, "Molecule contains at least 10 amino acid residues connected by peptide bonds"
+    return True, f"Molecule contains {num_amino_acids} amino acid residues connected by peptide bonds, consistent with a polypeptide."
