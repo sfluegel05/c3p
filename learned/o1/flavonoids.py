@@ -6,14 +6,14 @@ Classifies: flavonoids
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_flavonoids(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
     Flavonoids are characterized by a C6-C3-C6 skeleton consisting of two aromatic rings (A and B)
     connected via a heterocyclic ring (C) formed by a three-carbon bridge.
-    This includes subclasses like flavones, isoflavones, neoflavonoids, chalcones, aurones, etc.
+    This includes subclasses like flavones, isoflavones, neoflavonoids, chalcones, aurones,
+    pterocarpans, flavonolignans, etc.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,74 +30,82 @@ def is_flavonoids(smiles: str):
 
     # Define SMARTS patterns for different flavonoid subclasses
 
-    # Flavone core: 2-phenylchromen-4-one
-    flavone_pattern = Chem.MolFromSmarts('O=C1C=CC=CC1=O-c2ccccc2')
+    # Core flavonoid scaffold: C6-C3-C6 with heterocyclic ring
+    flavonoid_core = Chem.MolFromSmarts('c1cc(-c2ccc3occ(=O)c(-c4ccccc4)c3c2)ccc1')  # Flavone core
 
-    # Isoflavone core: 3-phenylchromen-4-one
-    isoflavone_pattern = Chem.MolFromSmarts('O=C1C=CC=CC1=COc2ccccc2')
+    # Isoflavone core: B ring at position 3
+    isoflavone_core = Chem.MolFromSmarts('c1cc(-c2cc3oc(=O)cc(c3c2)c2ccccc2)ccc1')  # Isoflavone core
 
-    # Flavanone core: 2,3-dihydroflavone
-    flavanone_pattern = Chem.MolFromSmarts('O=C1CC=CC=CC1=O-c2ccccc2')
+    # Flavanone core: Saturated heterocyclic ring
+    flavanone_core = Chem.MolFromSmarts('c1cc(-c2ccc3occ(=O)cc3c2)ccc1')  # Flavanone core
 
-    # Flavanol core: 3-hydroxyflavanone
-    flavanol_pattern = Chem.MolFromSmarts('O=C1CC(OC2=CC=CC=C2)C=CC1=O')
+    # Chalcone core: Open-chain flavonoid
+    chalcone_core = Chem.MolFromSmarts('c1ccccc1C=CC(=O)c2ccccc2')  # Chalcone core
 
-    # Chalcone core: 1,3-diphenylprop-2-en-1-one
-    chalcone_pattern = Chem.MolFromSmarts('O=CC=CCc1ccccc1')
+    # Dihydrochalcone core: Reduced chalcone
+    dihydrochalcone_core = Chem.MolFromSmarts('c1ccccc1CCC(=O)c2ccccc2')  # Dihydrochalcone core
 
-    # Aurone core: 2-benzylidenebenzofuran-3(2H)-one
-    aurone_pattern = Chem.MolFromSmarts('O=C1OC=CC2=CC=CC=C12')
+    # Aurone core
+    aurone_core = Chem.MolFromSmarts('c1ccc(-c2oc(=O)c3ccccc3c2=O)cc1')  # Aurone core
 
-    # Dihydrochalcone core
-    dihydrochalcone_pattern = Chem.MolFromSmarts('O=CCCc1ccccc1')
-
-    # Neoflavonoid core
-    neoflavonoid_pattern = Chem.MolFromSmarts('c1cc(O)ccc1C2=COC(=O)c3ccccc23')
+    # Neoflavonoid core: B ring at position 4
+    neoflavonoid_core = Chem.MolFromSmarts('c1cc(-c2ccc3oc(=O)cc(c3c2)c2ccccc2)ccc1')  # Neoflavonoid core
 
     # Pterocarpan core
-    pterocarpan_pattern = Chem.MolFromSmarts('c1ccc2c(c1)C3Oc4ccccc4C(C2O3)')
+    pterocarpan_core = Chem.MolFromSmarts('c1ccc2c(c1)c3c4ccc(O)cc4OC3CO2')  # Pterocarpan core
 
-    # Flavonolignan core (e.g., silybin structure)
-    flavonolignan_pattern = Chem.MolFromSmarts('C1COc2cc3c(cc2O1)-c1ccccc1O3')
+    # Flavonolignan core
+    flavonolignan_core = Chem.MolFromSmarts('c1ccccc1C2OC3=CC=CC=C3OC2c4ccccc4')  # Flavonolignan core
+
+    # Homoflavonoid core: C6-C3-C7 skeleton
+    homoflavonoid_core = Chem.MolFromSmarts('c1ccccc1CC=CC(=O)c2ccccc2')  # Homoflavonoid core
+
+    # Rotenoid core
+    rotenoid_core = Chem.MolFromSmarts('c1cc2c(cc1)C(=O)c3c(c2)oc4ccccc34')  # Rotenoid core
+
+    # Flavonoid oligomer (e.g., proanthocyanidins)
+    flavonoid_oligomer_core = Chem.MolFromSmarts('c1cc(ccc1O)-c2c(O)cc(O)cc2O')  # Simplified pattern
 
     # List of patterns with their corresponding flavonoid subclass names
     patterns = [
-        ('Flavone', flavone_pattern),
-        ('Isoflavone', isoflavone_pattern),
-        ('Flavanone', flavanone_pattern),
-        ('Flavanol', flavanol_pattern),
-        ('Chalcone', chalcone_pattern),
-        ('Aurone', aurone_pattern),
-        ('Dihydrochalcone', dihydrochalcone_pattern),
-        ('Neoflavonoid', neoflavonoid_pattern),
-        ('Pterocarpan', pterocarpan_pattern),
-        ('Flavonolignan', flavonolignan_pattern),
+        ('Flavonoid', flavonoid_core),
+        ('Isoflavone', isoflavone_core),
+        ('Flavanone', flavanone_core),
+        ('Chalcone', chalcone_core),
+        ('Dihydrochalcone', dihydrochalcone_core),
+        ('Aurone', aurone_core),
+        ('Neoflavonoid', neoflavonoid_core),
+        ('Pterocarpan', pterocarpan_core),
+        ('Flavonolignan', flavonolignan_core),
+        ('Homoflavonoid', homoflavonoid_core),
+        ('Rotenoid', rotenoid_core),
+        ('Flavonoid Oligomer', flavonoid_oligomer_core),
     ]
 
     # Check for matches with flavonoid patterns
     for name, pattern in patterns:
-        if mol.HasSubstructMatch(pattern):
+        if pattern and mol.HasSubstructMatch(pattern):
             return True, f"Contains {name} core structure"
 
     # Additional check for C6-C3-C6 skeleton with heterocyclic ring
-    # Identify rings in the molecule
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    aromatic_rings = [ring for ring in atom_rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
+    # Count aromatic rings and heterocyclic rings
+    ri = mol.GetRingInfo()
+    num_aromatic_rings = 0
+    num_hetero_rings = 0
+    for ring in ri.BondRings():
+        atoms_in_ring = [mol.GetBondWithIdx(idx).GetBeginAtomIdx() for idx in ring] + \
+                        [mol.GetBondWithIdx(ring[-1]).GetEndAtomIdx()]
+        is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in atoms_in_ring)
+        contains_heteroatom = any(mol.GetAtomWithIdx(idx).GetAtomicNum() not in [6,1] for idx in atoms_in_ring)
+        if is_aromatic:
+            num_aromatic_rings += 1
+        if contains_heteroatom:
+            num_hetero_rings += 1
 
-    if len(aromatic_rings) >= 2:
-        # Check for a three-carbon bridge connecting two aromatic rings
-        for bond in mol.GetBonds():
-            if bond.GetBondTypeAsDouble() == 1:
-                begin_atom = bond.GetBeginAtom()
-                end_atom = bond.GetEndAtom()
-                if begin_atom.GetIsAromatic() and end_atom.GetIsAromatic():
-                    path = Chem.GetShortestPath(mol, begin_atom.GetIdx(), end_atom.GetIdx())
-                    # Exclude direct connections between aromatic atoms (should be part of the same ring)
-                    if len(path) == 4:
-                        # Check if the path includes three connecting atoms (C3 bridge)
-                        bridge_atoms = path[1:-1]
-                        if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in bridge_atoms):
-                            return True, "Contains C6-C3-C6 skeleton characteristic of flavonoids"
+    if num_aromatic_rings >=2 and num_hetero_rings >=1:
+        carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+        # Flavonoids typically have 15 carbons (C15 skeleton)
+        if carbon_count >= 15:
+            return True, "Contains C6-C3-C6 skeleton with heterocyclic ring characteristic of flavonoids"
 
     return False, "No flavonoid core structure found"
