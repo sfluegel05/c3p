@@ -21,21 +21,21 @@ def is_7_hydroxyisoflavones(smiles: str):
         str: Reason for classification.
     """
 
-    # Parse SMILES
+    # Parse the SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the 7-hydroxyisoflavone core
-    # This pattern represents the isoflavone core with a hydroxy group at position 7
-    pattern_smarts = """
-    [OH]-c1ccc2occc(-c3cccc[cH]3)c2c1=O
-    """
+    # Define the SMARTS pattern for the isoflavone core with a hydroxy group at position 7
+    # This pattern represents the isoflavone core and a hydroxy group attached to position 7
+    pattern_smarts = '[OH]c1ccc2c(c1)cc(=O)oc2-c1ccccc1'  # Hydroxy at position 7
+
+    # Create the pattern molecule from SMARTS
     pattern = Chem.MolFromSmarts(pattern_smarts)
     if pattern is None:
         return False, "Invalid SMARTS pattern for 7-hydroxyisoflavone core"
 
-    # Check if the molecule contains the 7-hydroxyisoflavone core
+    # Check if the molecule matches the 7-hydroxyisoflavone pattern
     if mol.HasSubstructMatch(pattern):
         return True, "Molecule contains the 7-hydroxyisoflavone core with hydroxy at position 7"
     else:
