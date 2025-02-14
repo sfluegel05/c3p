@@ -22,8 +22,9 @@ def is_aldehyde(smiles: str):
         if mol is None:
             return False, "Invalid SMILES string"
 
-        # Create SMARTS pattern for aldehyde group (C=O-H)
-        aldehyde_pattern = Chem.MolFromSmarts("[CX3](=O)[H]")
+        # Create SMARTS pattern for aldehyde group (C=O-R).
+        # The R group must be a carbon.
+        aldehyde_pattern = Chem.MolFromSmarts("[CX3](=O)[#6]")
 
         # Check for the presence of the aldehyde group
         if mol.HasSubstructMatch(aldehyde_pattern):
