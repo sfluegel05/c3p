@@ -22,18 +22,35 @@ def is_carbapenems(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the carbapenem core structure using SMILES
-    # This represents the fused beta-lactam ring and five-membered ring with an exocyclic double bond
-    core_smiles = 'C1C=CN2C1C(=O)C2'  # Simplified carbapenem core structure
-    core_mol = Chem.MolFromSmiles(core_smiles)
-    if core_mol is None:
-        return False, "Error in defining carbapenem core structure"
+    # Define the carbapenem core structure using SMARTS
+    # This pattern captures:
+    # - A fused bicyclic ring system with a four-membered beta-lactam ring and a five-membered ring
+    # - Beta-lactam ring contains nitrogen and carbonyl group
+    # - Five-membered ring with exocyclic double bond
+
+    carbapenem_smarts = '''
+    [$([C;R3]-1-[C;R3]-[N;R3]-[C;R3](=O)-1)]
+    [$([C;R5]-2=[C;R5]-[C;R5]-[C;R5]-[C;R5]-2)]
+    '''
+
+    # Remove line breaks and whitespace
+    carbapenem_smarts = ''.join(carbapenem_smarts.split())
+
+    # Combine the two patterns to represent the fused ring system
+    # The exocyclic double bond is attached to the five-membered ring
+    carbapenem_pattern = Chem.MolFromSmarts(carbapenem_smarts)
+    if carbapenem_pattern is None:
+        return False, "Error in defining carbapenem SMARTS pattern"
 
     # Check if molecule contains the carbapenem core
-    if not mol.HasSubstructMatch(core_mol):
+    if not mol.HasSubstructMatch(carbapenem_pattern):
         return False, "Does not contain carbapenem core structure"
 
-    # If needed, further checks for substitutions at positions 3, 4, and 6 can be added here
+    # Additional check for exocyclic double bond at the five-membered ring
+    # Look for C=C double bond attached to the five-membered ring
+    exocyclic_double_bond = Chem.MolFromSmarts('[C;R5]=[C;R0]')
+    if not mol.HasSubstructMatch(exocyclic_double_bond):
+        return False, "Missing exocyclic double bond on five-membered ring"
 
     return True, "Contains carbapenem core structure"
 
@@ -57,7 +74,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
