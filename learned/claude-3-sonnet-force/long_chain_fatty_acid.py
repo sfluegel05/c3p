@@ -44,8 +44,9 @@ def is_long_chain_fatty_acid(smiles: str):
     if not mol_formula.startswith("C"):
         return False, "Molecular formula does not start with C"
     
-    # Check for unsaturation (double bonds)
-    if mol.GetRingInfo().NumAromaticRings() > 0:
+    # Check for aromatic rings
+    aromatic_rings = mol.GetAromaticRings()
+    if aromatic_rings:
         return False, "Aromatic rings not allowed"
     
     double_bond_pattern = Chem.MolFromSmarts("=")
