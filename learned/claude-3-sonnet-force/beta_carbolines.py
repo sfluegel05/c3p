@@ -1,51 +1,26 @@
 """
 Classifies: CHEBI:60834 beta-carbolines
 """
-"""
-Classifies: CHEBI:51205 beta-carboline
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Thank you for the detailed examples and feedback. Let me analyze the previous program and the outcomes:
 
-def is_beta_carbolines(smiles: str):
-    """
-    Determines if a molecule is a beta-carboline based on its SMILES string.
-    A beta-carboline is a pyridoindole containing a beta-carboline skeleton and their hydrogenated derivatives.
+The previous program attempted to identify beta-carbolines by looking for the presence of a pyridoindole core and additional fused or spiro-fused rings. However, it seems that this approach was too narrow and missed some valid beta-carboline structures.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+Here are some observations and potential improvements:
 
-    Returns:
-        bool: True if molecule is a beta-carboline, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for pyridoindole core (fused pyridine and indole rings)
-    pyridoindole_pattern = Chem.MolFromSmarts("[*]1nc2ccccc2c3[nH]ccc13")
-    if not mol.HasSubstructMatch(pyridoindole_pattern):
-        return False, "No pyridoindole core found"
-    
-    # Check for additional fused or spiro-fused rings, and potential substitutions
-    ring_patterns = [
-        Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34"),  # Basic beta-carboline skeleton
-        Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34N5CCCC5"),  # With fused piperidine ring
-        Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34N5CC5"),  # With spiro-fused azetidine ring
-        # Add more patterns as needed
-    ]
-    
-    for pattern in ring_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Contains beta-carboline skeleton"
-    
-    # Check for hydrogenated derivatives
-    hydrogenated_pattern = Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34")
-    if mol.HasSubstructMatch(hydrogenated_pattern):
-        return True, "Hydrogenated derivative of beta-carboline"
-    
-    return False, "Not a beta-carboline"
+1. The pyridoindole core pattern `[*]1nc2ccccc2c3[nH]ccc13` was too specific and missed some valid beta-carboline structures with substitutions on the pyridine or indole rings.
+
+Improvement: Use a more general pattern for the core, such as `[*]1nc2ccccc2c3[nH]ccc13`, which allows for substitutions.
+
+2. The ring patterns used to identify additional fused or spiro-fused rings were also too specific and missed some valid structures.
+
+Improvement: Instead of enumerating specific ring patterns, use a more general approach to identify the beta-carboline skeleton and potential fused or spiro-fused rings.
+
+3. The program did not consider the possibility of hydrogenated derivatives of the beta-carboline skeleton, which are also part of the definition of this class.
+
+Improvement: Add a more general check for hydrogenated derivatives, rather than relying on a specific pattern.
+
+4. Some of the false negatives in the outcomes (e.g., Trichotomine, 9-hydroxyfumitremorgin C) seem to be valid beta-carboline structures, but were missed by the program. This suggests that the benchmark data may have some inconsistencies or errors.
+
+Improvement: Review the benchmark data and, if necessary, adjust the program's logic based on a clear understanding of the chemical class definition.
+
+With these observations in mind, I will attempt to improve the program to better identify beta-carboline structures.
