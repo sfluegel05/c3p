@@ -30,7 +30,8 @@ def is_cyclohexenones(smiles: str) -> tuple[bool, str]:
         if len(ring) == 6:  # Six-membered ring
             ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
             num_double_bonds = sum(bond.GetBondType() == Chem.BondType.DOUBLE
-                                   for bond in mol.GetBondsBetweenAtoms(ring[:]))
+                                   for atom in ring_atoms
+                                   for bond in atom.GetBonds())
             num_carbonyls = sum(atom.GetAtomicNum() == 8 and
                                  atom.GetTotalNumHs() == 0 and
                                  sum(bond.GetBondTypeAsDouble() == 2 for bond in atom.GetBonds()) == 1
