@@ -27,7 +27,7 @@ def is_3_oxo_Delta_1__steroid(smiles: str):
 
     # Check for steroid backbone
     steroid_pattern = Chem.MolFromSmarts("[C@H]1[C@H]2[C@@]3([C@@]4([C@@]1(CC[C@@]2([H])C)[H])CC[C@H]5[C@@]4(C)CC[C@](C)(C5)C)[C@@]34C")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    if not mol.HasSubstructMatch(steroid_pattern, useChirality=True):
         return False, "No steroid backbone found"
 
     # Check for 3-oxo group
