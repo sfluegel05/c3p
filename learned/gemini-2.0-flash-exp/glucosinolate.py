@@ -17,57 +17,78 @@ def is_glucosinolate(smiles: str):
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, "Invalid SMILES string"
 
-    # 1. Check for thioglucoside core (glucose linked to sulfur)
-    thioglucoside_pattern = Chem.MolFromSmarts("[C]1[O][C]([C]([C]([C]([O]1)CO)[O])[O])[S]")
-    if not mol.HasSubstructMatch(thioglucoside_pattern):
-      return False, "Thioglucoside core not found"
+    # 1. Check for thioglucoside core (pyranose linked to sulfur)
+    thioglucoside_pattern = Chem.MolFromSmarts("[C]1[O][C][C][C][C]1[S]")
+    thioglucoside_matches = mol.GetSubstructMatches(thioglucoside_pattern)
+    if not thioglucoside_matches:
+        return False, "Thioglucoside core not found"
 
     # 2. Check for the central C atom bonded to S, N, and a side-chain
     central_carbon_pattern = Chem.MolFromSmarts("[S][C](=[N])")
-    matches = mol.GetSubstructMatches(central_carbon_pattern)
-    if not matches:
+    central_carbon_matches = mol.GetSubstructMatches(central_carbon_pattern)
+    if not central_carbon_matches:
         return False, "Central carbon with S and N not found"
-    
-    
-    #3. Check for sulfonated oxime and its stereochemistry
-    sulfonated_oxime_pattern = Chem.MolFromSmarts("C=N/OS(=O)(=O)[O-]")
+
+    # 3. Check for sulfonated oxime group (anionic and non-anionic)
+    sulfonated_oxime_pattern = Chem.MolFromSmarts("[C]=[N][O]S(=O)(=O)[O-,O]")
     sulfonated_oxime_matches = mol.GetSubstructMatches(sulfonated_oxime_pattern)
-    sulfonated_oxime_pattern_nonanionic = Chem.MolFromSmarts("C=N/OS(=O)(=O)O")
-    sulfonated_oxime_matches_nonanionic = mol.GetSubstructMatches(sulfonated_oxime_pattern_nonanionic)
+    if not sulfonated_oxime_matches:
+      return False, "Sulfonated oxime group not found"
 
+    # 4. Check connectivity between thioglucoside S and central C
+    
+    central_c_atoms = [match[1] for match in central_carbon_matches] # indices of the central carbons
+    sulfur_atoms_central_group = [mol.GetAtomWithIdx(idx).GetNeighbors()[0].GetIdx() for idx in central_c_atoms] #indices of the sulfur atoms directly connected to the central carbon
+    thioglucoside_s_atoms = [match[-1] for match in thioglucoside_matches] # indices of the S atoms of the thioglucoside
 
-    if not sulfonated_oxime_matches and not sulfonated_oxime_matches_nonanionic:
-      return False, "Sulfonated oxime group not found or incorrect stereochemistry"
+    if not any(s_center in thioglucoside_s_atoms for s_center in sulfur_atoms_central_group):
+        return False, "Thioglucoside sulfur not connected to the central carbon"
+    
+    #5. Check for C=N bond stereochemistry
 
-    if sulfonated_oxime_matches and sulfonated_oxime_matches_nonanionic:
-      return False, "Found a sulfonated oxime group but could not determine anion status"
+    for match in sulfonated_oxime_matches:
+        c_idx = match[0]
+        n_idx = match[1]
+        o_idx = match[2]
     
-    
-    
-    # 4. Check the connectivity and stereochemistry between S of thioglucoside to the central C atom, and the oxime to the central C atom.
-    
-    
-    
-    for match in matches:
-      center_c_index = match[0]
-      
-      sulfur_neighbors = [atom.GetIdx() for atom in mol.GetAtomWithIdx(center_c_index).GetNeighbors() if atom.GetAtomicNum() == 16]
-      nitrogen_neighbors = [atom.GetIdx() for atom in mol.GetAtomWithIdx(center_c_index).GetNeighbors() if atom.GetAtomicNum() == 7]
+        c_atom = mol.GetAtomWithIdx(c_idx)
+        n_atom = mol.GetAtomWithIdx(n_idx)
 
-      if len(sulfur_neighbors) != 1 or len(nitrogen_neighbors) != 1 :
-        return False, "Central Carbon is not connected to exactly one S and one N"
-      
-      sulfur_index = sulfur_neighbors[0]
-      nitrogen_index = nitrogen_neighbors[0]
-      
-      sulfur_matches = mol.GetSubstructMatches(thioglucoside_pattern)
-      
-      if not any(sulfur_index in match for match in sulfur_matches):
-        return False, "Central sulfur not part of the thioglucoside group"
-    
-    if sulfonated_oxime_matches:
-          return True, "Molecule matches all required patterns for glucosinolate with anionic sulfate"
-    else:
-        return True, "Molecule matches all required patterns for glucosinolate with non-anionic sulfate"
+        c_neighbors = [neighbor.GetIdx() for neighbor in c_atom.GetNeighbors()]
+        n_neighbors = [neighbor.GetIdx() for neighbor in n_atom.GetNeighbors()]
+            
+        #Find neighbors of C that are not N or H. If there are no neighbors return False because the molecule doesn't have an anti configuration.
+        c_other_neighbor_index = None
+        for c_neigh_index in c_neighbors:
+            if c_neigh_index != n_idx and mol.GetAtomWithIdx(c_neigh_index).GetAtomicNum() != 1:
+                c_other_neighbor_index = c_neigh_index
+                break
+
+        if c_other_neighbor_index is None:
+           return False, "No anti configuration found on C=N bond"
+
+        n_other_neighbor_index = None
+        for n_neigh_index in n_neighbors:
+            if n_neigh_index != o_idx and mol.GetAtomWithIdx(n_neigh_index).GetAtomicNum() != 1:
+                n_other_neighbor_index = n_neigh_index
+                break
+
+        if n_other_neighbor_index is None:
+           return False, "No anti configuration found on C=N bond"
+
+        # check anti configuration using bond direction
+        c_neigh_pos = mol.GetConformer().GetAtomPosition(c_other_neighbor_index)
+        n_neigh_pos = mol.GetConformer().GetAtomPosition(n_other_neighbor_index)
+        c_pos = mol.GetConformer().GetAtomPosition(c_idx)
+        n_pos = mol.GetConformer().GetAtomPosition(n_idx)
+
+        vec1 = c_neigh_pos - c_pos
+        vec2 = n_neigh_pos - n_pos
+        cross_product = vec1[0] * vec2[1] - vec1[1] * vec2[0]
+        
+        if cross_product > 0:
+            return False, "Anti configuration not found on C=N bond"
+        
+    return True, "Molecule matches all required patterns for glucosinolate"
