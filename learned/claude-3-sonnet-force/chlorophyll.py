@@ -1,24 +1,96 @@
 """
 Classifies: CHEBI:28966 chlorophyll
 """
-The previous program seems to be a good attempt at classifying chlorophylls based on their SMILES strings. However, there are a few potential issues that could lead to the low F1 score observed.
+"""
+Classifies: CHEBI:27683 chlorophyll
 
-1. **Porphyrin Ring System Pattern**: The SMARTS pattern used to identify the porphyrin ring system may be too strict or not inclusive enough. The pattern assumes a specific arrangement of the ring system, which may not account for all possible variations found in chlorophylls. Additionally, the pattern does not explicitly check for the presence of nitrogen atoms in the pyrrole-like rings, which is a characteristic of chlorophylls.
+A family of magnesium porphyrins, defined by the presence of a fifth ring beyond the four pyrrole-like rings.
+The rings can have various side chains which usually include a long phytol chain.
+"""
 
-2. **Fifth Ring Pattern**: The SMARTS pattern used to identify the fifth ring beyond the four pyrrole-like rings may also be too strict. The pattern assumes a specific arrangement of the fifth ring, which may not account for all possible variations found in chlorophylls.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-3. **Phytol Side Chain Pattern**: The SMARTS pattern used to identify the long aliphatic side chain (phytol or similar) may not be comprehensive enough. While the pattern matches the typical phytol chain, there could be other variations or substituents on the side chain that are not accounted for.
+def is_chlorophyll(smiles: str):
+    """
+    Determines if a molecule is a chlorophyll based on its SMILES string.
 
-4. **Additional Substituents Check**: The check for typical chlorophyll substituents (vinyl, ester, ketone) may be too strict or not inclusive enough. There could be other substituents or variations that are not being considered.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program, you could consider the following approaches:
+    Returns:
+        bool: True if molecule is a chlorophyll, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. **Expand the SMARTS Patterns**: Analyze the false negatives and false positives to identify patterns or structural features that are not being adequately captured by the current SMARTS patterns. Expand or modify the patterns to be more inclusive and account for variations in the chlorophyll structures.
+    # Check for magnesium atom
+    has_mg = any(atom.GetAtomicNum() == 12 for atom in mol.GetAtoms())
+    if not has_mg:
+        return False, "No magnesium atom found"
 
-2. **Use Machine Learning Techniques**: Instead of relying solely on hand-crafted SMARTS patterns, you could explore the use of machine learning techniques to learn the structural features that distinguish chlorophylls from other molecules. This could involve featurizing the molecules and training a classifier on a labeled dataset of chlorophylls and non-chlorophylls.
+    # Look for porphyrin ring pattern (4 pyrrole-like rings + 1 extra ring)
+    porphyrin_pattern = Chem.MolFromSmarts("[N,n]!@[c,C]1[nH]c2[nH]c3[nH]c4[nH]c(c2c1c1c3c5c4c1c1c6c5c1c1c6c6cc6)c6cc6"
+                                           "|!@[n,N]!@c1c2c3c4c5c6c1c2c3c4c5c6")
+    
+    if not mol.HasSubstructMatch(porphyrin_pattern):
+        return False, "No porphyrin ring system found"
 
-3. **Incorporate Additional Chemical Information**: In addition to the structural features, you could consider incorporating other chemical information, such as molecular properties (e.g., molecular weight, logP, hydrogen bond donors/acceptors), or functional group analysis, to improve the classification performance.
+    # Look for long aliphatic side chain (phytol chain)
+    phytol_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    phytol_matches = mol.GetSubstructMatches(phytol_pattern)
+    if not phytol_matches:
+        return False, "No long aliphatic side chain (phytol) found"
 
-4. **Analyze Outliers and Exceptions**: As mentioned, there may be occasional and systematic mistakes in the benchmark data. Carefully analyze the false positives and false negatives to identify potential outliers or exceptions that may not align with your understanding of the chlorophyll class. If you are confident that your program's classifications are correct for certain cases, you could consider adjusting the benchmark data or excluding those cases from the evaluation.
+    # Check for other typical chlorophyll substituents (vinyl groups, esters, etc.)
+    substituent_patterns = [
+        Chem.MolFromSmarts("[C,c]=C=C"), # vinyl group
+        Chem.MolFromSmarts("[CX3](=[OX1])OC"), # ester group
+        Chem.MolFromSmarts("C(=O)C") # ketone
+    ]
+    has_substituents = any(mol.HasSubstructMatch(p) for p in substituent_patterns)
+    if not has_substituents:
+        return True, "Minimal chlorophyll structure: porphyrin ring system with Mg and aliphatic side chain"
 
-By iteratively refining the program based on the analysis of misclassified instances and incorporating additional chemical knowledge or machine learning techniques, you may be able to improve the classification performance for chlorophylls.
+    return True, "Contains porphyrin ring system with Mg, long aliphatic side chain, and typical chlorophyll substituents"
+
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:27683',
+        'name': 'chlorophyll',
+        'definition': 'A family of magnesium porphyrins, defined by the presence of a fifth ring beyond the four pyrrole-like rings. The rings can have various side chains which usually include a long phytol chain.',
+        'parents': ['CHEBI:26860', 'CHEBI:37083']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 22,
+    'num_false_positives': 0,
+    'num_true_negatives': 1100,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 1.0,
+    'recall': 1.0,
+    'f1': 1.0,
+    'accuracy': 1.0
+}
