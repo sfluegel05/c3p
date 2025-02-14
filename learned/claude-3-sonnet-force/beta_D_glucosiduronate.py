@@ -2,17 +2,16 @@
 Classifies: CHEBI:83411 beta-D-glucosiduronate
 """
 """
-Classifies: CHEBI:62543 beta-D-glucosiduronate
+Classifies: CHEBI:36937 beta-D-glucosiduronate
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_beta_D_glucosiduronate(smiles: str):
     """
     Determines if a molecule is a beta-D-glucosiduronate based on its SMILES string.
-    A beta-D-glucosiduronate is a carbohydrate acid derivative anion obtained by
-    deprotonation of the carboxy group of any beta-D-glucosiduronic acid.
+    A beta-D-glucosiduronate is a carbohydrate acid derivative anion obtained by deprotonation
+    of the carboxy group of any beta-D-glucosiduronic acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,29 +25,27 @@ def is_beta_D_glucosiduronate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for glucuronide substructure pattern ([O-]C(=O)OC1OC(C(O)C(O)C1O)*)
-    glucuronide_pattern = Chem.MolFromSmarts("[O-]C(=O)OC1OC(C(O)C(O)C1O)*")
+    
+    # Look for glucuronide substructure (glucose with carboxylate group)
+    glucuronide_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H]([C@@H](O1)O)O)O)O)C([O-])=O")
     if not mol.HasSubstructMatch(glucuronide_pattern):
         return False, "No glucuronide substructure found"
-
-    # Check for carboxylate group
-    carboxylate_pattern = Chem.MolFromSmarts("[O-]C(=O)")
-    if not mol.HasSubstructMatch(carboxylate_pattern):
-        return False, "No carboxylate group found"
-
-    # Check for sugar-like moiety
-    sugar_pattern = Chem.MolFromSmarts("OC1OC(C(O)C(O)C1O)*")
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No sugar-like moiety found"
-
-    # Additional checks
+    
+    # Check for ring strain (glucuronides typically have pyranose ring)
+    ring_atoms = mol.GetRingInfo().AtomRings()[0]
+    ring_bond_orders = [mol.GetBondBetweenAtoms(ring_atoms[i], ring_atoms[i-1]).GetBondType() 
+                        for i in range(len(ring_atoms))]
+    if 1.0 not in ring_bond_orders:  # No single bonds in ring
+        return False, "Abnormal ring structure for glucuronide"
+    
+    # Count hydroxy groups (should be 4)
+    num_hydroxy = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
+    if num_hydroxy != 4:
+        return False, f"Expected 4 hydroxy groups, got {num_hydroxy}"
+    
+    # Check molecular weight (typically 200-400 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 1000:
-        return False, "Molecular weight out of typical range for beta-D-glucosiduronates"
-
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Too few rotatable bonds for a typical beta-D-glucosiduronate"
-
-    return True, "Contains a glucuronide substructure with a carboxylate group and a sugar-like moiety"
+    if mol_wt < 200 or mol_wt > 400:
+        return False, "Molecular weight outside typical range for glucuronide"
+    
+    return True, "Contains glucuronide substructure (glucose with carboxylate group)"
