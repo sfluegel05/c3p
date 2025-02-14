@@ -27,67 +27,73 @@ def is_3__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavanone core SMARTS pattern (2-phenylchroman-4-one)
-    flavanone_core_smarts = 'O=C1CCC2=C(C1)C=CC=C2-c1ccccc1'
+    # Define a more general SMARTS pattern for the flavanone core
+    # Flavanone core: two fused rings (benzopyranone) with ketone at position 4
+    flavanone_core_smarts = 'O=C1CCC2=CC=CC=C2O1'
     flavanone_core = Chem.MolFromSmarts(flavanone_core_smarts)
+    if flavanone_core is None:
+        return False, "Invalid flavanone core SMARTS"
+
+    # Check for flavanone core
     if not mol.HasSubstructMatch(flavanone_core):
         return False, "Flavanone core not found"
 
-    # Get matches for the flavanone core
+    # Find the matching flavanone core in the molecule
     core_matches = mol.GetSubstructMatches(flavanone_core)
     if not core_matches:
         return False, "Flavanone core not found"
 
-    # Assume first match is the flavanone core
-    core_atoms = core_matches[0]
+    # Iterate over core matches to find B ring and check for hydroxy at 3'
+    for core_match in core_matches:
+        core_atom_indices = set(core_match)
 
-    # Atom indices in the flavanone core SMARTS (0-based)
-    # [O]=C1CCC2=C(C1)C=CC=C2-c1ccccc1
-    # Index 7 is the attachment point to the B ring (phenyl ring)
-    attachment_idx_in_smarts = 7
-    attachment_atom_idx = core_atoms[attachment_idx_in_smarts]
+        # Find atom at position 2 (attachment point for B ring)
+        # In the SMARTS pattern, atom index 3 corresponds to position 2
+        position_2_idx = core_match[3]
+        position_2_atom = mol.GetAtomWithIdx(position_2_idx)
 
-    # Get the B ring (phenyl ring attached at position 2)
-    attachment_atom = mol.GetAtomWithIdx(attachment_atom_idx)
-    b_ring = None
-    for neighbor in attachment_atom.GetNeighbors():
-        if neighbor.GetIdx() not in core_atoms:
-            # This neighbor is part of the B ring
-            if neighbor.IsInRing():
-                b_ring = neighbor.GetOwningMol().GetRingInfo().AtomRings()
+        # Find neighboring atoms not in the core (B ring)
+        b_ring_atom = None
+        for neighbor in position_2_atom.GetNeighbors():
+            if neighbor.GetIdx() not in core_atom_indices:
+                b_ring_atom = neighbor
                 break
-    if b_ring is None:
-        return False, "B ring not found"
+        if b_ring_atom is None:
+            continue  # B ring not found
 
-    # Find the B ring containing the neighbor atom
-    for ring in b_ring:
-        if neighbor.GetIdx() in ring:
-            b_ring_atoms = ring
-            break
-    else:
-        return False, "B ring not found"
+        # Check if the B ring is a benzene ring
+        b_ring_info = mol.GetRingInfo()
+        b_ring_atoms = None
+        for ring in b_ring_info.AtomRings():
+            if b_ring_atom.GetIdx() in ring:
+                ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+                if all(atom.GetIsAromatic() for atom in ring_atoms) and len(ring_atoms) == 6:
+                    b_ring_atoms = ring
+                    break
+        if b_ring_atoms is None:
+            continue  # B ring not found
 
-    # Reorder B ring atoms starting from the attachment point
-    b_ring_atoms = list(b_ring_atoms)
-    attachment_idx_in_ring = b_ring_atoms.index(neighbor.GetIdx())
-    b_ring_atoms = b_ring_atoms[attachment_idx_in_ring:] + b_ring_atoms[:attachment_idx_in_ring]
+        # Number the B ring atoms starting from the attachment point
+        b_ring_atom_indices = list(b_ring_atoms)
+        attachment_idx_in_ring = b_ring_atom_indices.index(b_ring_atom.GetIdx())
+        ordered_b_ring_atoms = b_ring_atom_indices[attachment_idx_in_ring:] + b_ring_atom_indices[:attachment_idx_in_ring]
 
-    # Position 1' is the attachment point, positions increase around the ring
-    # Position 3' is at index 2
-    pos_3_prime_idx = b_ring_atoms[2]
-    pos_3_prime_atom = mol.GetAtomWithIdx(pos_3_prime_idx)
+        # Position 1' is the attachment point, positions increase around the ring
+        # Position 3' is at index 2
+        pos_3_prime_idx = ordered_b_ring_atoms[2]
+        pos_3_prime_atom = mol.GetAtomWithIdx(pos_3_prime_idx)
 
-    # Check for hydroxy group at position 3'
-    hydroxy_found = False
-    for nbr in pos_3_prime_atom.GetNeighbors():
-        if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:
-            hydroxy_found = True
-            break
+        # Check for hydroxy group at position 3'
+        hydroxy_group_found = False
+        for neighbor in pos_3_prime_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
+                hydroxy_group_found = True
+                break
 
-    if hydroxy_found:
-        return True, "Contains flavanone core with hydroxy group at 3' position of B ring"
-    else:
-        return False, "No hydroxy group at 3' position of B ring"
+        if hydroxy_group_found:
+            return True, "Contains flavanone core with hydroxy group at 3' position of B ring"
+
+    return False, "No hydroxy group at 3' position of B ring"
 
 __metadata__ = {
     'chemical_class': {
