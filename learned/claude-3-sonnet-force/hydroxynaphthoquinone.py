@@ -23,66 +23,53 @@ def is_hydroxynaphthoquinone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define patterns for naphthoquinone cores
-    # 1,4-naphthoquinone pattern
-    pattern_14 = Chem.MolFromSmarts("[#6]1:[#6]:[#6]:[#6]2:[#6](:[#6]1):[#6]:[#6]C(=O)[#6]2=O")
-    # 1,2-naphthoquinone pattern
-    pattern_12 = Chem.MolFromSmarts("[#6]1:[#6]:[#6]:[#6]2:[#6](:[#6]1)C(=O)C(=O)[#6]2")
     
-    if pattern_14 is None or pattern_12 is None:
-        return None, "Error in SMARTS pattern"
-
-    has_naphthoquinone = False
-    core_atoms = set()
+    # First check for naphthoquinone core
+    # Two patterns to catch both ortho and para quinone arrangements
+    naphthoquinone_pattern1 = Chem.MolFromSmarts("[#6]1[#6][#6][#6]2[#6](=[O])[#6][#6](=[O])[#6][#6]12") # ortho
+    naphthoquinone_pattern2 = Chem.MolFromSmarts("[#6]1[#6][#6][#6]2[#6](=[O])[#6][#6][#6](=[O])[#6]12") # para
     
-    # Check for 1,4-naphthoquinone
-    if mol.HasSubstructMatch(pattern_14):
-        has_naphthoquinone = True
-        matches = mol.GetSubstructMatches(pattern_14)
-        for match in matches:
-            core_atoms.update(match)
+    has_naphthoquinone = mol.HasSubstructMatch(naphthoquinone_pattern1) or \
+                         mol.HasSubstructMatch(naphthoquinone_pattern2)
     
-    # Check for 1,2-naphthoquinone
-    if mol.HasSubstructMatch(pattern_12):
-        has_naphthoquinone = True
-        matches = mol.GetSubstructMatches(pattern_12)
-        for match in matches:
-            core_atoms.update(match)
-
     if not has_naphthoquinone:
         return False, "No naphthoquinone core found"
-
-    # Look for hydroxy groups
-    # Count oxygens attached to the core
-    hydroxy_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:  # oxygen atom
-            # Get neighboring carbons
-            neighbors = atom.GetNeighbors()
-            for neighbor in neighbors:
-                if neighbor.GetIdx() in core_atoms:
-                    hydroxy_count += 1
-                    break
-
-    if hydroxy_count == 0:
-        return False, "No hydroxy groups attached to naphthoquinone core"
     
-    return True, f"Contains naphthoquinone core with {hydroxy_count} hydroxy group(s)"
+    # Get the atoms that are part of the naphthoquinone core
+    core_atoms = set()
+    if mol.HasSubstructMatch(naphthoquinone_pattern1):
+        core_atoms.update(mol.GetSubstructMatch(naphthoquinone_pattern1))
+    if mol.HasSubstructMatch(naphthoquinone_pattern2):
+        core_atoms.update(mol.GetSubstructMatch(naphthoquinone_pattern2))
+    
+    # Look for hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    
+    if not hydroxyl_matches:
+        return False, "No hydroxyl groups found"
+    
+    # Check if any hydroxyl group is attached to the naphthoquinone core
+    for match in hydroxyl_matches:
+        oh_oxygen = mol.GetAtomWithIdx(match[0])
+        for neighbor in oh_oxygen.GetNeighbors():
+            if neighbor.GetIdx() in core_atoms:
+                position = "ortho" if mol.HasSubstructMatch(naphthoquinone_pattern1) else "para"
+                return True, f"Contains {position}-naphthoquinone core with at least one hydroxyl group attached"
+    
+    return False, "No hydroxyl groups attached to naphthoquinone core"
 
 def test_examples():
     """Test function with some example molecules"""
     examples = [
-        ("Oc1cc(O)c2C(=O)C=C(O)C(=O)c2c1", "flaviolin"),
-        ("OC1=C([C@H]2CC[C@@H](CC2)c2ccc(Cl)cc2)C(=O)c2ccccc2C1=O", "atovaquone"),
-        ("CC(C)=CC[C@H](O)C1=CC(=O)c2c(O)ccc(O)c2C1=O", "Alkannin"),
-        ("CC1=CC(=O)C=CC1=O", "methylquinone (negative)"),
-        ("Oc1cccc2C(=O)C=CC(=O)c12", "juglone")
+        "Oc1cc(O)c2C(=O)C=C(O)C(=O)c2c1",  # flaviolin
+        "OC1=C([C@H]2CC[C@@H](CC2)c2ccc(Cl)cc2)C(=O)c2ccccc2C1=O",  # atovaquone
+        "Oc1cccc2C(=O)C=CC(=O)c12",  # juglone
+        "CC1=CC(=O)C=CC1=O"  # not a hydroxynaphthoquinone (methylquinone)
     ]
     
-    for smi, name in examples:
+    for smi in examples:
         result, reason = is_hydroxynaphthoquinone(smi)
-        print(f"Name: {name}")
         print(f"SMILES: {smi}")
         print(f"Is hydroxynaphthoquinone: {result}")
         print(f"Reason: {reason}\n")
