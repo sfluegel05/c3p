@@ -21,33 +21,24 @@ def is_aliphatic_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 2. Check for the oxime group (C=N-O)
-    oxime_pattern = Chem.MolFromSmarts("[CH1]=[N]-O")
-    if not mol.HasSubstructMatch(oxime_pattern):
-        return False, "No aldoxime group found"
-    
-    # Get the carbon atoms from the oxime group
+    # 2. Check for the sp2 oxime group (C=N-O) and the directly linked carbon must be aldehyde-like
+    oxime_pattern = Chem.MolFromSmarts("[CX3H1]=[NX2]-O")
     matches = mol.GetSubstructMatches(oxime_pattern)
+    if not matches:
+      return False, "No sp2 aldoxime group found"
 
-    # Function to check if the chain connected to the oxime carbon is aliphatic
-    def is_aliphatic_chain(atom, visited_atoms):
-      visited_atoms.add(atom.GetIdx())
-      for neighbor in atom.GetNeighbors():
-          if neighbor.GetIdx() not in visited_atoms: # Check for visited atoms to prevent loops
-            if neighbor.GetIsAromatic():
-                return False
-            #Recursive step
-            if neighbor.GetAtomicNum() == 6:
-                if not is_aliphatic_chain(neighbor, visited_atoms):
-                    return False
-      return True
-
-    # 3. Check for aliphatic nature of the chain connected to the carbon
     for match in matches:
-        carbon_index = match[0]
-        carbon_atom = mol.GetAtomWithIdx(carbon_index)
-        if not is_aliphatic_chain(carbon_atom,set()):
-            return False, "The carbon of the oxime group is not part of an aliphatic chain"
+      carbon_index = match[0]
+      carbon_atom = mol.GetAtomWithIdx(carbon_index)
+      is_aliphatic = True
+    
+      for neighbor in carbon_atom.GetNeighbors():
+          if neighbor.GetAtomicNum() != 1 and neighbor.GetAtomicNum() != 6 and neighbor.GetIdx() != match[1]:  #check that it is either C or H, or the nitrogen of the oxime.
+              is_aliphatic = False
+              break
+      if not is_aliphatic:
+          return False, "Aldoxime carbon is not directly connected to an aliphatic carbon"
+
 
     # 4. Return True if all conditions are met
     return True, "Molecule is an aliphatic aldoxime"
