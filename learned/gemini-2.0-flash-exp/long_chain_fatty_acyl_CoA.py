@@ -21,11 +21,18 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    #  Check for CoA substructure - using a more complete SMARTS
-    coa_pattern = Chem.MolFromSmarts("N[c]1[n][c]([n][c]2[n]1[C]([C@H]3[C@@H]([C@@H]([C@H](O3)COP(=O)(O)OP(=O)(O)OCC(C)(C)[C@H](O)CC(=O)NCCS)=O)O)O)=N2")
+    
+    # Check for CoA substructure - using a simplified SMARTS focusing on the core CoA moiety
+    coa_pattern = Chem.MolFromSmarts("[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12")
     if not mol.HasSubstructMatch(coa_pattern):
        return False, "Molecule does not contain the required coenzyme A substructure"
+    
+    # Get Coenzyme A atom indices to exclude them from counting
+    coa_atoms = set()
+    for match in mol.GetSubstructMatches(coa_pattern):
+        for idx in match:
+            coa_atoms.add(idx)
+
 
     # Check for thioester linkage
     thioester_pattern = Chem.MolFromSmarts("[SX2][CX3](=[OX1])")
@@ -57,32 +64,30 @@ def is_long_chain_fatty_acyl_CoA(smiles: str):
     if fatty_acid_start is None:
         return False, "Fatty acid chain not directly linked to the thioester group"
 
-
-    # Trace and count carbons in the fatty acid chain using DFS and exclude Coenzyme A atoms.
-    visited_atoms = set()
-    stack = [fatty_acid_start]
+    # Trace and count carbons in the fatty acid chain, excluding Coenzyme A atoms
     carbon_count = 0
-    
-    coa_atoms = set()
-    for match in mol.GetSubstructMatches(coa_pattern):
-        for idx in match:
-            coa_atoms.add(idx)
-    
-    while stack:
-      current_atom = stack.pop()
-      if current_atom.GetIdx() in visited_atoms or current_atom.GetIdx() in coa_atoms:
-        continue
-      
-      visited_atoms.add(current_atom.GetIdx())
-      
-      if current_atom.GetAtomicNum() == 6: # Carbon
-        carbon_count+=1
+    current_atom = fatty_acid_start
 
-      for neighbor in current_atom.GetNeighbors():
-        stack.append(neighbor)
     
+    # Simple iterative carbon count along one chain
+    
+    visited_atoms = set()
+    while current_atom is not None and current_atom.GetIdx() not in coa_atoms: # Stop at CoA or a non-carbon
+        if current_atom.GetAtomicNum() == 6:
+          carbon_count += 1
+        visited_atoms.add(current_atom.GetIdx())
+        
+        next_atom = None
+        for neighbor in current_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited_atoms:
+                next_atom = neighbor
+                break
+        
+        current_atom = next_atom
+
     # Check chain length
     if carbon_count < 13 or carbon_count > 22:
       return False, f"Fatty acid chain has {carbon_count} carbons, should be between 13 and 22."
+
 
     return True, "Molecule is a long-chain fatty acyl-CoA"
