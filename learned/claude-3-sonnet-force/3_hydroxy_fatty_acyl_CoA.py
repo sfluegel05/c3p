@@ -1,14 +1,59 @@
 """
 Classifies: CHEBI:20060 3-hydroxy fatty acyl-CoA
 """
-From the previous program and the outcomes, it seems that the main issue is that the current approach is not accurately identifying all instances of 3-hydroxy fatty acyl-CoA molecules. The program missed several true positive examples, resulting in false negatives.
+"""
+Classifies: CHEBI:36795 3-hydroxy fatty acyl-CoA
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The main reason for this appears to be the overly strict SMARTS pattern used to identify the 3-hydroxy fatty acyl chain. The pattern `[CX4H2][CX4H2][CX4H2][CX4H2]([CX4H2])[CX4H2][CX4H2][CX4H2][CX4H2]([CX3](=[OX1])[CH3])[OX2H,OX1-]` is quite specific and may not cover all possible variations of the 3-hydroxy fatty acyl chain, especially when dealing with longer chains or different degrees of unsaturation.
+def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
+    """
+    Determines if a molecule is a 3-hydroxy fatty acyl-CoA based on its SMILES string.
+    A 3-hydroxy fatty acyl-CoA is defined as a hydroxy fatty acyl-CoA that results from the
+    formal condensation of the thiol group of coenzyme A with the carboxy group of any 3-hydroxy fatty acid.
 
-To improve the program, we can consider a more general approach to identifying the 3-hydroxy fatty acyl chain. Instead of relying on a specific SMARTS pattern, we could search for the presence of a hydroxyl group (-OH) at the third carbon position of a fatty acid chain (identified by a long aliphatic carbon chain), which is the defining characteristic of this class.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-Additionally, we can incorporate other checks to ensure the molecule meets the expected properties of a 3-hydroxy fatty acyl-CoA, such as the presence of the coenzyme A moiety, the carbonyl connection between the fatty acid and coenzyme A, and reasonable ranges for molecular weight and atom counts.
+    Returns:
+        bool: True if molecule is a 3-hydroxy fatty acyl-CoA, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-If you have high confidence in the benchmark data, and the false negatives are indeed true positives, we could adjust the program accordingly. However, since you mentioned that there might be occasional and systematic mistakes in the benchmark, we should also consider the possibility that some of the false negatives might be correctly classified by the program, and the benchmark data might be inaccurate in those cases.
+    # Check for coenzyme A moiety
+    coa_pattern = Chem.MolFromSmarts("C(COP(OP(OC[C@H]1O[C@@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12)(=O)O)(=O)O)")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Missing coenzyme A moiety"
+    
+    # Check for fatty acid chain
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4H2]([CX4H2])([CX4H2])([CX3](=[OX1])[CH3])[OX2H,OX1-]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if not fatty_acid_matches:
+        return False, "No fatty acid chain found"
+    
+    # Check for 3-hydroxy group on fatty acid chain
+    for match in fatty_acid_matches:
+        fatty_acid_chain = mol.GetAtomWithIdx(match[0])
+        if fatty_acid_chain.GetProp("nHydroxyls") == "1":
+            hydroxy_carbon = fatty_acid_chain.GetNeighbors()[0]
+            if hydroxy_carbon.GetProp("nHydroxyls") == "1" and hydroxy_carbon.GetDegree() == 4:
+                break
+    else:
+        return False, "No 3-hydroxy group found on fatty acid chain"
 
-It's important to strike a balance between relying on the benchmark data and using our chemical understanding to make informed decisions. If the program's classifications align with our understanding of the chemical class definition, we can choose to ignore some outliers in the benchmark data, while still aiming to improve the program's overall performance.
+    # Count carbons and check molecular weight
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 10:
+        return False, "Fatty acid chain too short"
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500 or mol_wt > 1500:
+        return False, "Molecular weight outside expected range for 3-hydroxy fatty acyl-CoA"
+
+    return True, "Contains a 3-hydroxy fatty acid chain connected to coenzyme A via a thioester bond"
