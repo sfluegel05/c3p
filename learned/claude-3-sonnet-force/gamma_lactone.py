@@ -1,22 +1,45 @@
 """
 Classifies: CHEBI:37581 gamma-lactone
 """
-The previous code attempted to classify gamma-lactones, which are defined as lactones with a five-membered lactone ring. However, it seems that the code had an issue with importing the `RingUtils` module from `rdkit.Chem`. This module is likely required for identifying ring systems in molecules.
+"""
+Classifies: CHEBI:27370 gamma-lactone
 
-Here's an analysis of the previous code and the potential issues:
+A gamma-lactone is a lactone with a five-membered lactone ring.
+"""
 
-1. **Import Statement**: The import statement `from rdkit.Chem import rdchem, RingUtils` is causing an error, as the `RingUtils` module cannot be imported from `rdkit.Chem`. This module may have been moved or renamed in the latest version of RDKit.
+from rdkit import Chem
+from rdkit.Chem import rdmolops
 
-2. **Identifying Lactone Rings**: The code uses the `MolFromSmarts` function to identify lactone ring patterns in the molecule. This approach seems reasonable, as it allows for the identification of specific substructures within the molecule.
+def is_gamma_lactone(smiles: str):
+    """
+    Determines if a molecule is a gamma-lactone based on its SMILES string.
 
-3. **Checking Ring Size**: Once the lactone rings are identified, the code iterates through each match and checks the size of the ring using the `AtomRings.BondRings` function from `rdchem`. This approach seems correct, as it allows for the identification of the ring size.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-4. **Classification**: The code correctly classifies a molecule as a gamma-lactone if it contains at least one five-membered lactone ring.
-
-To improve the code and resolve the import issue, we can try the following:
-
-1. Check the latest RDKit documentation to see if the `RingUtils` module has been moved or renamed.
-2. If the module is still available, try importing it using a different import statement or from a different module within RDKit.
-3. If the module is no longer available or has been deprecated, explore alternative methods for identifying ring systems in RDKit. This may involve using different functions or modules.
-
-Additionally, it's worth noting that the provided code seems to work correctly for the given example SMILES string. If the benchmark classifications are consistent with your understanding of gamma-lactones, you could consider ignoring any outliers or false negatives/positives, as the benchmark itself may have occasional or systematic mistakes.
+    Returns:
+        bool: True if molecule is a gamma-lactone, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Find lactone rings
+    lactone_pattern = Chem.MolFromSmarts("[O;r5]1[C;r5][C;r5][C;r5][C;r5]1=O")
+    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
+    
+    # Check if any match is a 5-membered lactone ring
+    has_gamma_lactone = False
+    for match in lactone_matches:
+        ring = Chem.rdmolops.GetMolFragFromAtomSmilesPattern(mol, smiles, atomsToUse=match, bondsToUse=[], atomMemory={})
+        if ring is not None and ring.GetNumAtoms() == 5:
+            has_gamma_lactone = True
+            break
+    
+    if has_gamma_lactone:
+        return True, "Contains a five-membered lactone ring"
+    else:
+        return False, "No five-membered lactone ring found"
