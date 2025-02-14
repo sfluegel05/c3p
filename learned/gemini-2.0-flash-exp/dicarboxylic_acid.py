@@ -21,7 +21,7 @@ def is_dicarboxylic_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the carboxylic acid group pattern
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OH1]")
     if carboxylic_acid_pattern is None:
         return False, "Invalid SMARTS pattern"
 
@@ -32,6 +32,6 @@ def is_dicarboxylic_acid(smiles: str):
     if num_matches == 2:
         return True, "Molecule contains exactly two carboxylic acid groups."
     elif num_matches < 2:
-        return False, f"Molecule contains {num_matches} carboxylic acid groups, less than 2."
+         return False, f"Molecule contains {num_matches} carboxylic acid groups, less than 2."
     else:
         return False, f"Molecule contains {num_matches} carboxylic acid groups, more than 2."
