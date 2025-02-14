@@ -36,25 +36,11 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if not mol.HasSubstructMatch(ps_head_pattern):
         return False, "No phosphoserine head group found"
 
-    # Get the atoms of the glycerol backbone
-    glycerol_atoms = mol.GetSubstructMatches(glycerol_pattern)[0]
-
-    # Check for ester groups (-O-C(=O)-) attached to the glycerol backbone
-    ester_count = 0
-    for atom_idx in glycerol_atoms:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetTotalNumHs() == 0:  # If the atom has no hydrogens attached
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:  # Oxygen atom
-                    for bond in neighbor.GetBonds():
-                        if bond.GetBondType() == Chem.BondType.SINGLE:
-                            atom2 = bond.GetOtherAtom(neighbor)
-                            if atom2.GetAtomicNum() == 6 and atom2.GetFormalCharge() == 0 and len(atom2.GetBonds()) == 3 and any(b.GetBondType() == Chem.BondType.DOUBLE for b in atom2.GetBonds()):
-                                ester_count += 1
-
-    # Check if there are exactly 2 ester groups attached to the glycerol backbone
-    if ester_count != 2:
-        return False, f"Found {ester_count} ester groups attached to the glycerol backbone, need exactly 2"
+    # Look for 2 ester groups (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -87,4 +73,4 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if p_count != 1:
         return False, "Must have exactly 1 phosphorus (phosphate group)"
 
-    return True, "Contains glycerol backbone with 2 fatty acid chains attached via ester bonds and a phosphoserine head group"
+    return True, "Contains glycerol backbone with 2 fatty acid chains and a phosphoserine head group"
