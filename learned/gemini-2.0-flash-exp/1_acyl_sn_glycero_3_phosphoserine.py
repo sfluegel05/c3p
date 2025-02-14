@@ -34,61 +34,55 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     glycerol_c2_idx = glycerol_match[1] # Get the index of the center carbon of glycerol
     glycerol_c3_idx = glycerol_match[2] # Get the index of the third carbon of glycerol
 
-
     # Check for ester group attached to sn-1 carbon
-    sn1_ester_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[CX3](=[OX1])") 
-    sn1_ester_matches = mol.GetSubstructMatches(sn1_ester_pattern)
+    # Looking for C-O-C=O
+    ester_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
     
-    found_sn1_ester = False;
-    sn1_ester_carbonyl_idx = -1;
-    for match in sn1_ester_matches:
-      #Check that one end of the ester is attached to glycerol C1
-      if mol.GetBondBetweenAtoms(glycerol_c1_idx,match[1]):
-        found_sn1_ester = True;
-        sn1_ester_carbonyl_idx = match[2];
-        break;
+    found_sn1_ester = False
+    for match in ester_matches:
+        # Get the atom connected to the glycerol_c1. It should be the oxygen of the ester
+      
+      for atom in mol.GetAtomNeighbors(glycerol_c1_idx):
+        if atom.GetIdx() == match[1]:
+            found_sn1_ester = True
+            break
+      if found_sn1_ester:
+        break
     if not found_sn1_ester:
         return False, "No ester group at sn-1 position"
 
 
     # check if chain connected to ester is long enough (>=4 carbons)
     acyl_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    acyl_matches = mol.GetSubstructMatches(acyl_chain_pattern)
+    
     found_acyl_chain = False;
 
-    if mol.GetSubstructMatch(acyl_chain_pattern, sn1_ester_carbonyl_idx):
-      found_acyl_chain = True;
-
+    for acyl_match in acyl_matches:
+      for match in ester_matches:
+        if mol.GetBondBetweenAtoms(acyl_match[0], match[2]): # Check if first carbon is connected to carbonyl
+          found_acyl_chain = True
+          break
+      if found_acyl_chain:
+        break
     if not found_acyl_chain:
-        return False, "No acyl chain connected to the ester at sn-1 position or chain is too short"
+      return False, "No acyl chain connected to the ester at sn-1 position or chain is too short"
 
     # Check for phosphoserine group at sn-3 carbon
     phosphoserine_pattern = Chem.MolFromSmarts("P(=O)(O)-O[CX4][CX4](N)C(=O)O")
     phosphoserine_matches = mol.GetSubstructMatches(phosphoserine_pattern);
     found_ps = False;
     for match in phosphoserine_matches:
-        # Check if phosphate is attached to glycerol C3
-        if mol.GetBondBetweenAtoms(glycerol_c3_idx, match[2]):
-            found_ps = True;
-            break;
+        for atom in mol.GetAtomNeighbors(glycerol_c3_idx):
+            if atom.GetIdx() == match[2]: # check that the O attached to the P is attached to the glycerol C3
+                found_ps = True;
+                break
+        if found_ps:
+            break
+
     if not found_ps:
       return False, "No phosphoserine group found at sn-3 position"
 
-
-    # Count atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    
-    if n_count != 1:
-         return False, f"Must have exactly 1 nitrogen, got {n_count}"
-
-    if p_count != 1:
-         return False, f"Must have exactly 1 phosphorus, got {p_count}"
-    if o_count < 7:
-        return False, f"Must have at least 7 oxygens for 3-phosphoserine, got {o_count}"
-
-    if c_count < 6:
-        return False, f"Too few carbons, got {c_count}"
 
     return True, "Matches 1-acyl-sn-glycero-3-phosphoserine criteria"
