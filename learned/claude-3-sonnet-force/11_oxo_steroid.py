@@ -1,49 +1,28 @@
 """
 Classifies: CHEBI:47787 11-oxo steroid
 """
-"""
-Classifies: CHEBI:35595 11-oxo steroid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous code seems to be on the right track, but there are a few potential issues that may have led to the poor performance:
 
-def is_11_oxo_steroid(smiles: str):
-    """
-    Determines if a molecule is an 11-oxo steroid based on its SMILES string.
-    An 11-oxo steroid has an oxo (=O) group at position 11 of the steroid core.
+1. **Overly Specific Steroid Backbone Pattern**: The SMARTS pattern used to identify the steroid backbone is very specific and may not cover all possible variations of steroid structures. Some 11-oxo steroids may have different ring conformations or substituents that are not captured by this pattern.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Incorrect Oxo Group Position Pattern**: The SMARTS pattern used to identify the oxo group at position 11 may be incorrect or too specific. The pattern assumes a specific ring conformation and substituent arrangement, which may not hold true for all 11-oxo steroids.
 
-    Returns:
-        bool: True if molecule is an 11-oxo steroid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts("[C@]12[C@@H]3[C@@H]([C@@H]1CC[C@]2(C)O)CCC4=CC(=O)C=C45")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
-    
-    # Look for oxo group at position 11
-    oxo_pattern = Chem.MolFromSmarts("[C@@]1(CCC(=O)[C@@H]2[C@@]1(CCC3=CC(=O)C=C[C@@]23C)C)=O")
-    if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "No oxo group at position 11"
-    
-    # Check molecular weight range (typical for steroids)
-    mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
-        return False, "Molecular weight out of typical steroid range"
-    
-    # Check for additional required features
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 19 or o_count < 2:
-        return False, "Insufficient carbons or oxygens for steroid"
-    
-    return True, "Contains steroid backbone with oxo group at position 11"
+3. **Molecular Weight Range**: The molecular weight range used (250-500 Da) may be too narrow or inaccurate for this class of compounds. Some 11-oxo steroids may fall outside of this range.
+
+4. **Carbon and Oxygen Count**: The criteria for the minimum number of carbon and oxygen atoms may be too strict or not specific enough for this class of compounds.
+
+To improve the program, here are some potential strategies:
+
+1. **Analyze the False Positives and False Negatives**: Examine the examples that were misclassified by the previous program. Look for patterns or structural features that were not captured correctly. This can help identify areas where the SMARTS patterns or other criteria need to be adjusted.
+
+2. **Use a More Flexible Steroid Backbone Pattern**: Instead of a highly specific SMARTS pattern, consider using a more general pattern that captures the essential features of a steroid backbone, such as the fused ring system and the presence of specific functional groups or substituents.
+
+3. **Refine the Oxo Group Position Pattern**: Analyze the false negatives and the structures of known 11-oxo steroids to develop a more robust SMARTS pattern for identifying the oxo group at position 11. Consider using atom maps or other techniques to ensure the correct positioning of the oxo group.
+
+4. **Adjust Molecular Weight and Atom Count Criteria**: Review the molecular weight and atom count ranges for 11-oxo steroids and adjust the criteria accordingly. Consider using a broader range or applying different criteria based on subclasses or specific substituents.
+
+5. **Incorporate Additional Structural Features**: Explore other structural features or patterns that are characteristic of 11-oxo steroids and incorporate them into the classification criteria. This could include specific substituents, ring conformations, or other structural motifs.
+
+6. **Use Machine Learning Approaches**: If the rule-based approach continues to struggle, consider exploring machine learning techniques, such as training a classifier on a large dataset of known 11-oxo steroids and non-11-oxo steroids.
+
+It's important to note that the classification task may be challenging due to the structural diversity within this class of compounds. Iterative refinement of the classification criteria, based on analysis of misclassified examples and expert knowledge, may be necessary to achieve satisfactory performance.
