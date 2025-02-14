@@ -20,22 +20,11 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate over all carbon atoms
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Check if it is a carbon atom
-            
-            has_oh = False
-            has_nhx = False
+    # Define SMARTS pattern for a hemiaminal: a carbon with single bond to OH and single bond to NX3
+    hemiaminal_pattern = Chem.MolFromSmarts("[CX4]([OH1])[NX3]") #X3 is any atom with 3 bonds
 
-            # Check the neighbors for -OH and -NHx
-            for neighbor in atom.GetNeighbors():
-                neighbor_atomic_num = neighbor.GetAtomicNum()
-                if neighbor_atomic_num == 8: #check if it is oxygen
-                    has_oh = True
-                elif neighbor_atomic_num == 7: #check if it is nitrogen
-                    has_nhx = True
-
-            if has_oh and has_nhx:
-                return True, "Found a carbon bonded to both a hydroxyl and an amine group"
-
-    return False, "No hemiaminal structure found"
+    #Check if the pattern is present
+    if mol.HasSubstructMatch(hemiaminal_pattern):
+        return True, "Found a carbon bonded to both a hydroxyl and an amine group via single bonds"
+    else:
+        return False, "No hemiaminal structure found"
