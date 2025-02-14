@@ -22,23 +22,9 @@ def is_indole_alkaloid(smiles: str):
         return False, "Invalid SMILES string"
 
     # More robust SMARTS pattern for indole - simplified to a 5-membered ring with N connected to an aromatic 6-membered ring.
-    indole_pattern = Chem.MolFromSmarts("c1cc2[nH]c(c1)cc2") # simplified smarts, aromatic C connected to aromatic N
+    indole_pattern = Chem.MolFromSmarts("c1cc2[nH]c3ccccc3c21") # simplified smarts, aromatic C connected to aromatic N
 
     if mol.HasSubstructMatch(indole_pattern):
-        
-        #Verify the substructure has at least 9 ring atoms and 1 Nitrogen.
-        match = mol.GetSubstructMatch(indole_pattern)
-        ring_atoms = [mol.GetAtomWithIdx(i) for i in match]
-        
-        n_count = 0
-        aromatic_count = 0
-        for atom in ring_atoms:
-            if atom.GetAtomicNum() == 7: #nitrogen
-                n_count+=1
-            if atom.GetIsAromatic():
-              aromatic_count +=1
-        
-        if n_count >0 and aromatic_count>=9:
-            return True, "Contains an indole substructure"
+        return True, "Contains an indole substructure"
 
     return False, "Does not contain an indole substructure"
