@@ -26,11 +26,11 @@ def is_tetrahydrofuranone(smiles: str):
     if not mol.HasSubstructMatch(thf_pattern):
         return False, "No tetrahydrofuran ring found"
     
-    # Check for carbonyl group directly attached to the ring 
-    carbonyl_pattern = Chem.MolFromSmarts("[C;R1][C](=O)")
-    carbonyl_matches = mol.GetSubstructMatches(carbonyl_pattern)
+    # Check for carbonyl group directly attached to the ring using updated SMARTS
+    carbonyl_pattern1 = Chem.MolFromSmarts("C1C[C](=O)O1")
+    carbonyl_pattern2 = Chem.MolFromSmarts("C1C[C](=O)[C]1")
 
-    if not carbonyl_matches:
-         return False, "No carbonyl group attached to ring"
-    
-    return True, "Contains a tetrahydrofuran ring with a carbonyl group directly attached"
+    if not mol.HasSubstructMatch(carbonyl_pattern1) and not mol.HasSubstructMatch(carbonyl_pattern2):
+         return False, "No carbonyl group directly attached to the THF ring"
+
+    return True, "Contains a tetrahydrofuran ring with a carbonyl group directly attached to the ring"
