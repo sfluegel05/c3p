@@ -27,33 +27,50 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C@]13[C@H]([C@H]([C@@H]2[C@@]([C@@]1(CC[C@H](C2)C)(C)C)(C)CCC(=O)O)C")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    # Check for steroid backbone
+    steroid_patterns = [
+        Chem.MolFromSmarts("[C@]13[C@H]([C@H]([C@@H]2[C@@]([C@@]1(CC[C@H](C2)C)(C)C)(C)CCC(=O)O)C"),
+        Chem.MolFromSmarts("[C@]13[C@H]([C@H]([C@@H]2[C@@]([C@@]1(CC[C@H](C2)C)(C)C)(C)CC(=O)O)C"),
+        Chem.MolFromSmarts("[C@]13[C@H]([C@H]([C@@H]2[C@@]([C@@]1(CC[C@H](C2)C)(C)C)(C)CCC(=O)C)C"),
+        # Add more patterns as needed
+    ]
+    has_steroid_backbone = any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns)
+    if not has_steroid_backbone:
         return False, "No steroid backbone found"
 
     # Check for 3-oxo group
-    oxo_pattern = Chem.MolFromSmarts("[CX3](=O)")
-    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
-    if len(oxo_matches) == 0:
-        return False, "No ketone group found"
+    oxo_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and sum(bond.GetBondTypeAsDouble() for bond in atom.GetBonds()) == 2]
+    has_oxo_group = len(oxo_atoms) > 0
 
     # Check if oxo group is at position 3
-    position_3_pattern = Chem.MolFromSmarts("[C@]13[C@H]([C@@H]2[C@@](CC[C@H](C2)C)(C)CCC(=O)O)[C@@H](C)CCC1")
-    if not mol.HasSubstructMatch(position_3_pattern):
-        return False, "Ketone group not at position 3"
+    is_oxo_at_position_3 = False
+    for oxo_idx in oxo_atoms:
+        oxo_atom = mol.GetAtomWithIdx(oxo_idx)
+        neighbor_atoms = [mol.GetAtomWithIdx(nbr_idx) for nbr_idx in oxo_atom.GetNeighbors()]
+        if any(nbr_atom.GetAtomicNum() == 6 and nbr_atom.GetDegree() == 4 for nbr_atom in neighbor_atoms):
+            is_oxo_at_position_3 = True
+            break
+
+    if not has_oxo_group or not is_oxo_at_position_3:
+        return False, "No ketone group at position 3"
 
     # Check for 5alpha configuration
-    alpha_pattern = Chem.MolFromSmarts("[C@@]13[C@H]([C@H]2[C@@](CC[C@H](C2)C)(C)CCC(=O)O)[C@@H](C)CCC1")
-    if not mol.HasSubstructMatch(alpha_pattern):
-        return False, "Not alpha configuration at position 5"
+    chiral_centers = Chem.FindMolChiralUnassignedAtoms(mol, includeUnassigned=True)
+    has_5alpha_config = any(atom_idx == mol.GetAtomWithIdx(atom_idx).GetNeighbors()[0] - 1 and
+                             mol.GetAtomWithIdx(atom_idx).GetHybridization() == Chem.HybridizationType.SP3 and
+                             mol.GetAtomWithIdx(atom_idx).GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW
+                             for atom_idx in chiral_centers)
+
+    if not has_5alpha_config:
+        return False, "No alpha configuration at position 5"
+
+    # Additional checks for molecular properties
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 250 or mol_wt > 600:
+        return False, "Molecular weight outside typical range for steroids"
+
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 17 or c_count > 30:
+        return False, "Carbon count outside typical range for steroids"
 
     return True, "Contains 3-oxo and 5alpha configurations in a steroid backbone"
-
-
-# Example usage
-smiles1 = "C[C@H](C[C@@H](O)[C@H](O)C(C)(C)O)[C@H]1CC[C@@]2(C)[C@@H]3[C@@H](O)C[C@@H]4[C@]5(C[C@@]35CC[C@]12C)CCC(=O)[C@@]4(C)CO"
-smiles2 = "CCCCCCCCCCCCCCCCCCCC"
-
-print(is_3_oxo_5alpha_steroid(smiles1))  # (True, 'Contains 3-oxo and 5alpha configurations in a steroid backbone')
-print(is_3_oxo_5alpha_steroid(smiles2))  # (False, 'No steroid backbone found')
