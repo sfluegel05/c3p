@@ -2,6 +2,7 @@
 Classifies: CHEBI:87658 decanoate ester
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_decanoate_ester(smiles: str):
     """
@@ -13,7 +14,7 @@ def is_decanoate_ester(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a decanoate ester, False otherwise
+        bool: True if the molecule is a decanoate ester, False otherwise
         str: Reason for classification
     """
 
@@ -22,38 +23,39 @@ def is_decanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define decanoate ester SMARTS pattern
-    # This pattern matches an ester group with a linear 10-carbon acyl chain (decanoyl group)
-    decanoate_smarts = '[CH3][CH2]{8}C(=O)O[!$(*C(=O)[O,N])]'
+    # Define ester functional group SMARTS pattern
+    ester_smarts = '[C;!R](=O)O[C;!R]'  # Non-ring ester functional group
+    ester_mol = Chem.MolFromSmarts(ester_smarts)
 
-    decanoate_mol = Chem.MolFromSmarts(decanoate_smarts)
-    if decanoate_mol is None:
-        return False, "Invalid decanoate SMARTS pattern"
+    ester_matches = mol.GetSubstructMatches(ester_mol)
+    if not ester_matches:
+        return False, "No ester groups found"
 
-    # Search for the decanoate ester pattern in the molecule
-    if not mol.HasSubstructMatch(decanoate_mol):
-        return False, "No decanoate ester groups found"
+    # Iterate over each ester group found
+    for match in ester_matches:
+        carbonyl_carbon_idx = match[0]
+        ester_oxygen_idx = match[2]
 
-    # Find all matches
-    matches = mol.GetSubstructMatches(decanoate_mol)
-    for match in matches:
-        # Extract atoms in the acyl chain
-        acyl_chain_atoms = match[:-2]  # Exclude the ester oxygen and attached atom
-        acyl_chain = [mol.GetAtomWithIdx(idx) for idx in acyl_chain_atoms]
+        # Traverse the acyl side (decanoic acid side)
+        acyl_atoms = set()
+        atoms_to_visit = [carbonyl_carbon_idx]
+        while atoms_to_visit:
+            current_atom_idx = atoms_to_visit.pop()
+            if current_atom_idx in acyl_atoms:
+                continue
+            acyl_atoms.add(current_atom_idx)
+            current_atom = mol.GetAtomWithIdx(current_atom_idx)
+            for neighbor in current_atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                bond = mol.GetBondBetweenAtoms(current_atom_idx, neighbor_idx)
+                if bond.GetBondType() == rdchem.BondType.SINGLE and neighbor_idx != ester_oxygen_idx:
+                    atoms_to_visit.append(neighbor_idx)
 
-        # Check that the acyl chain is unbranched and saturated
-        for atom in acyl_chain:
-            if atom.GetDegree() != 2:
-                # Terminal carbons can have degree 1 (methyl group)
-                if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1:
-                    continue
-                else:
-                    break
-            # Check for unsaturation
-            bonds = [bond for bond in atom.GetBonds() if bond.GetBondType() != Chem.rdchem.BondType.SINGLE]
-            if bonds:
-                break
-        else:
+        # Count the number of carbon atoms in the acyl chain
+        carbon_count = sum(1 for idx in acyl_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+
+        # Check if the acyl chain corresponds to decanoic acid (10 carbons)
+        if carbon_count == 10:
             return True, "Contains decanoate ester group"
 
-    return False, "No decanoate ester groups found"
+    return False, "No decanoate ester groups with 10 carbons found"
