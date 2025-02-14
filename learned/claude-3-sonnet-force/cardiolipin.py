@@ -31,8 +31,8 @@ def is_cardiolipin(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for 2 phosphatidic acid moieties
-    phosphatidic_acid_pattern = Chem.MolFromSmarts("OP(OCC(OCC=O)OCCCO)OCC(OCC=O)OCC")
+    # Check for 2 phosphatidic acid moieties (more general SMARTS pattern)
+    phosphatidic_acid_pattern = Chem.MolFromSmarts("OCC(OCC=O)OC[C@H](COP(O)(=O)O)O")
     phosphatidic_acid_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
     if len(phosphatidic_acid_matches) != 2:
         return False, f"Found {len(phosphatidic_acid_matches)} phosphatidic acid moieties, need exactly 2"
@@ -52,5 +52,17 @@ def is_cardiolipin(smiles: str):
     has_double_bonds = any(bond.GetIsAromatic() and bond.GetBondType() == Chem.BondType.DOUBLE for bond in mol.GetBonds())
     if not has_double_bonds:
         return False, "No double bonds found in fatty acid chains"
+
+    # Check molecular weight and composition
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 1000 or mol_wt > 2000:
+        return False, "Molecular weight outside the expected range for cardiolipins"
+
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+
+    if c_count < 50 or o_count < 15 or p_count != 4:
+        return False, "Composition inconsistent with cardiolipins"
 
     return True, "Contains glycerol backbone with 2 phosphatidic acid moieties attached"
