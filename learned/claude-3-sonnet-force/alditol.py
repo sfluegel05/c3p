@@ -25,25 +25,26 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for alditol backbone pattern
-    alditol_pattern = Chem.MolFromSmarts("[CH2O][CH](O)[CH2](O)[CH2](O)~[CH2](O)~[CH2](O)")
-    if not mol.HasSubstructMatch(alditol_pattern):
-        return False, "Missing alditol backbone pattern"
+    # Check for acyclic structure
+    if mol.GetRingInfo().AtomRings():
+        return False, "Molecule contains rings, but alditols are acyclic"
     
-    # Count hydroxy groups
+    # Check for polyol structure (multiple hydroxy groups)
     num_hydroxy = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == "O" and atom.GetHybridization() == Chem.HybridizationType.SP3)
+    if num_hydroxy < 3:
+        return False, "Fewer than 3 hydroxy groups, not a polyol"
+    
+    # Check for terminal hydroxy groups
+    terminal_hydroxy = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == "O" and atom.GetHybridization() == Chem.HybridizationType.SP3 and atom.GetDegree() == 1)
+    if terminal_hydroxy != 2:
+        return False, "Does not have 2 terminal hydroxy groups as required for alditols"
     
     # Count carbon atoms
     num_carbon = mol.GetNumAtoms(onlyObsMask=Chem.AtomProp.Query(["#6"]))
     
-    # Check if number of hydroxy groups matches the expected formula
+    # Check if number of hydroxy groups matches the expected formula (n + 2)
     if num_hydroxy != num_carbon + 2:
         return False, f"Incorrect number of hydroxy groups for alditol (expected {num_carbon + 2}, got {num_hydroxy})"
-    
-    # Check for absence of other heteroatoms
-    het_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() not in ["C", "H", "O"])
-    if het_atom_count > 0:
-        return False, "Molecule contains heteroatoms other than C, H, O"
 
     return True, "Acyclic polyol matching the formula HOCH2[CH(OH)]nCH2OH"
 
