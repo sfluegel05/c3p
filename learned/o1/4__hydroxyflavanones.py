@@ -2,7 +2,6 @@
 Classifies: CHEBI:140331 4'-hydroxyflavanones
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_4__hydroxyflavanones(smiles: str):
     """
@@ -22,17 +21,11 @@ def is_4__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a general SMARTS pattern for the flavanone core with atom mapping
-    # Atom mappings:
-    # [C:1] - carbonyl carbon
-    # [O:2] - carbonyl oxygen
-    # [C:3]-[C:4]-[O:5] - heterocyclic ring
-    # [c:6] - aromatic carbons in A-ring
-    # [c:7] - aromatic carbons in B-ring
+    # Define the flavanone core SMARTS pattern with atom mapping
     flavanone_core_smarts = """
-    [$(*(=O)[#6]):1]-[#6:3]-[#6:4]-[#8:5]-1
-    -[#6]-[#6]-[#6]-[#6]-[#6]-1
-    -[#6]-2:[#6]:[#6]:[#6]:[#6]:[#6]:2
+    [#6]-1(=[#8])                      # carbonyl group
+    -[#6]-[#6]-[#8]-[#6]-1             # heterocyclic ring with oxygen
+    -[#6]-2:[#6]:[#6]:[#6]:[#6]:[#6]:2 # A-ring (aromatic ring fused to heterocycle)
     """
 
     flavanone_core = Chem.MolFromSmarts(flavanone_core_smarts)
@@ -45,35 +38,42 @@ def is_4__hydroxyflavanones(smiles: str):
         return False, "Flavanone core not found"
 
     for match in flavanone_matches:
-        match_atoms = {}
-        for idx, atom_idx in enumerate(match):
-            match_atoms[idx+1] = atom_idx  # Atom mappings start from 1
+        # Map the indices from the SMARTS pattern to the molecule
+        # Assuming the first atom in SMARTS is index 0, adjust if needed
+        carbonyl_c_idx = match[0]
+        oxygen_idx = match[1]
+        hetero_ring_c_idx = match[2]
+        o_in_ring_idx = match[3]
+        fused_ring_c_idx = match[4]
 
-        # Get the atom index for the attachment point of the B-ring
-        b_ring_attachment_idx = match_atoms[5]  # Atom [O:5]
+        # Identify the B-ring attached to the heterocycle
+        attachment_atom = mol.GetAtomWithIdx(o_in_ring_idx)
+        neighbors = [nbr.GetIdx() for nbr in attachment_atom.GetNeighbors() if nbr.GetIdx() != hetero_ring_c_idx]
+        if not neighbors:
+            continue  # No B-ring attached
 
-        # Find the B-ring (phenyl ring attached to heterocycle)
-        aromatic_rings = mol.GetRingInfo().AtomRings()
+        b_ring_start_idx = neighbors[0]
+        # Get the B-ring (phenyl ring attached via oxygen)
+        rings = mol.GetRingInfo().AtomRings()
         b_ring = None
-        for ring in aromatic_rings:
-            if b_ring_attachment_idx in ring:
+        for ring in rings:
+            if b_ring_start_idx in ring and len(ring) == 6:
                 b_ring = ring
                 break
-
         if b_ring is None:
-            continue  # B-ring not found in this match
+            continue  # B-ring not found
 
         # Identify the 4' position (para to attachment point)
-        # In a phenyl ring, the atom opposite the attachment point is at a path length of 3
-        attachment_atom = mol.GetAtomWithIdx(b_ring_attachment_idx)
+        attachment_idx = o_in_ring_idx
+        b_ring_atoms = set(b_ring)
         for atom_idx in b_ring:
-            if atom_idx == b_ring_attachment_idx:
+            if atom_idx == b_ring_start_idx:
                 continue
-            path = Chem.rdmolops.GetShortestPath(mol, b_ring_attachment_idx, atom_idx)
+            path = Chem.rdmolops.GetShortestPath(mol, b_ring_start_idx, atom_idx)
             if len(path) == 4:
                 # This is the 4' position
                 four_prime_atom = mol.GetAtomWithIdx(atom_idx)
-                # Check if it has a hydroxy group attached
+                # Check if a hydroxy group is attached
                 has_hydroxy = False
                 for neighbor in four_prime_atom.GetNeighbors():
                     if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
@@ -81,6 +81,7 @@ def is_4__hydroxyflavanones(smiles: str):
                         break
                 if has_hydroxy:
                     return True, "4'-hydroxy group found on B-ring"
-        # If no hydroxy group at 4' position in this match, continue to next match
+        # If no hydroxy at 4' position in this match, continue to next match
+
     # No matches with 4'-hydroxy group found
     return False, "4'-hydroxy group on B-ring not found"
