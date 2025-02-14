@@ -21,16 +21,17 @@ def is_polysaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Recognize hexose rings using pyranose (including common variations)
-    pyranose_pattern = Chem.MolFromSmarts("C1C(O)C(O)C(O)C(O)O1")
+    # Improved pattern for recognizing hexose/pyranose rings
+    # This includes stereochemistry and common variations
+    pyranose_pattern = Chem.MolFromSmarts("C1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)O1")
     pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
 
     if len(pyranose_matches) <= 10:
         return False, f"Found {len(pyranose_matches)} pyranose rings, need more than 10"
 
-    # Glycosidic linkages typically involve C-O-C bridges
-    # Adjust the pattern to match variations in glycosidic bonds
-    glycosidic_pattern = Chem.MolFromSmarts("[C;!R]-O-[C;!R]")
+    # Enhanced pattern for glycosidic linkages
+    # Acknowledges variability in C-O-C connectivity with potential stereochemistry
+    glycosidic_pattern = Chem.MolFromSmarts("C[O]-[C@]")
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
 
     if len(glycosidic_matches) < 10:
