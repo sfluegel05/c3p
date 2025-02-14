@@ -21,30 +21,33 @@ def is_flavin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core isoalloxazine structure with variations on positions 7 and 8
-    # The [NX3] is for an NH or a positive charged N at position 10
-    core_pattern = Chem.MolFromSmarts("c1cc2[nX3]c3c([nX]c(=O)[nX]c3=O)n([!H])c2cc1")
+    # Define the core dimethylisoalloxazine structure using a more specific SMARTS pattern
+    core_pattern = Chem.MolFromSmarts("c1cc2nc3c(nc(=O)[nH]c3=O)nc2cc1")
     if not mol.HasSubstructMatch(core_pattern):
          return False, "Core dimethylisoalloxazine structure not found"
 
-    # Define the isoalloxazine with 7 and 8 positions substituted with anything, and 
-    # check for any substitution on the nitrogen at position 10.
-    # this pattern does not enforce 7 and 8 to be methyl groups.
-    
-    full_pattern = Chem.MolFromSmarts("c1c([!H])c2[nX3]c3c([nX]c(=O)[nX]c3=O)n([!H])c2c([!H])c1")
-    matches = mol.GetSubstructMatches(full_pattern)
-    if len(matches) == 0:
-        return False, "Core structure not found or not correctly substituted"
-
-    # Get the nitrogen atom (N10)
-    n10_match = mol.GetSubstructMatches(Chem.MolFromSmarts("[nX3]"))
-    
+    # Get the nitrogen atom (N10) - this is the nitrogen directly bonded to the core.
+    n10_match = mol.GetSubstructMatches(Chem.MolFromSmarts("n1c2cc(c)c(c)cc2nc2c1nc(=O)[nH]c2=O"))
     if not n10_match:
         return False, "N10 not found"
-
+    
+    # Check for a substituent at N10 (outside the core)
     for match in n10_match:
-        n10_atom = mol.GetAtomWithIdx(match[0])
+        n10_atom_index = -1
+        for atom_index in match:
+            atom = mol.GetAtomWithIdx(atom_index)
+            if atom.GetSymbol() == "n":
+                 n10_atom_index = atom_index
+                 break
+
+        if n10_atom_index == -1:
+            return False, "N10 atom not found within substructure match."
+        
+        n10_atom = mol.GetAtomWithIdx(n10_atom_index)
+        
+        
+        # Ensure that the degree is higher than 2, meaning it has a substituent outside the core
         if n10_atom.GetTotalDegree() > 2:
-            return True, "Contains dimethylisoalloxazine core with a substituent on the 10 position"
+           return True, "Contains dimethylisoalloxazine core with a substituent on the 10 position"
 
     return False, "No substituent found at N10"
