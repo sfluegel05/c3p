@@ -36,27 +36,24 @@ def is_diol(smiles: str):
         Chem.MolFromSmarts("[OX2H][CX4][CX4][OX2H]"),  # 1,2-diol
         Chem.MolFromSmarts("[OX2H]C1CCCCC1[OX2H]"),  # cyclic diol
         Chem.MolFromSmarts("[OX2H][CX4H2][OX2H]"),  # geminal diol
+        Chem.MolFromSmarts("[OX2H][CX4][CX4][CX4][OX2H]"),  # 1,3-diol
+        Chem.MolFromSmarts("[OX2H][CX4][CX4][CX4][CX4][OX2H]"),  # 1,4-diol
+        # Add more diol patterns as needed
     ]
 
     has_diol_substructure = any(mol.HasSubstructMatch(p) for p in diol_patterns)
 
-    # Set molecular weight/size limits
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 500 or mol.GetNumHeavyAtoms() > 30:
-        return False, "Molecule too large or heavy to be a diol"
-
-    # Check for specific exceptions
-    exceptions = [
-        "COC[C@H](C[C@H]1O[C@@H](C[C@@H](O)C1(C)C)[C@@H](NC(=O)[C@@H](O)[C@]1(CC(=C)[C@@H](C)[C@@H](C)O1)OC)OC)OC",  # pederin
-        "C\C(CC\C=C(/C)CC[C@@H](O)C(C)(C)O)=C/CC[C@H]1C(C)=CC[C@H]2C(C)(C)C(=O)CC[C@]12C",  # lamesticumin F
-        # Add more exceptions as needed
+    # Check for disqualifying substructures
+    disqualifying_patterns = [
+        Chem.MolFromSmarts("[C$(C(=O)O)]=O"),  # Carboxylic acid
+        Chem.MolFromSmarts("C(=O)O[CX4]"),  # Ester
+        # Add more disqualifying patterns as needed
     ]
 
-    if smiles in exceptions:
-        return True, "Known exception, classified as a diol"
+    has_disqualifying_substructure = any(mol.HasSubstructMatch(p) for p in disqualifying_patterns)
 
     # Make the final decision
-    if hydroxy_count == 2 and has_diol_substructure:
+    if hydroxy_count == 2 and has_diol_substructure and not has_disqualifying_substructure:
         return True, "Contains two hydroxy groups in a typical diol arrangement"
     elif hydroxy_count > 2:
         return False, "Contains more than two hydroxy groups, not a typical diol"
