@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_beta_D_glucoside(smiles: str):
     """
     Determines if a molecule is a beta-D-glucoside based on its SMILES string.
-    A beta-D-glucoside is characterized by a beta-D-glucose moiety linked through an ether bond.
-    The stereochemistry must reflect the beta-configuration at the anomeric site.
+    A beta-D-glucoside is identified by the presence of a beta-D-glucose moiety linked through an ether bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,19 +16,30 @@ def is_beta_D_glucoside(smiles: str):
         str: Reason for classification.
     """
     
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Construct a comprehensive pattern for beta-D-glucoside
-    # - Identify the pyranose ring of glucose
-    # - Ensure beta stereochemistry at the anomeric carbon
-    pattern_glucoside = Chem.MolFromSmarts("""
-        [C@H]1(O[C@H](CO[*])[*])O[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O
-        """)
+    # Define improved SMARTS pattern for a beta-D-glucoside structure
+    # Note: The stereochemistry in SMARTS might need further refinement depending on actual test results.
 
-    if mol.HasSubstructMatch(pattern_glucoside):
-        return True, "Contains beta-D-glucoside substructure with beta-configuration at anomeric center"
+    # This pattern aims to capture: - a 6-membered pyranose ring
+    #                               - hydroxyl group positions that are characteristic of glucose
+    #                               - beta anomeric carbon (-O linkage)
+    beta_d_glucoside_patterns = [
+        Chem.MolFromSmarts("[C@@H]1(O[C@@H](CO)O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O)"),
+        Chem.MolFromSmarts("O[C@@H]1[C@@H](O[C@H](O)[C@H](O)[C@H]1O)CO"),
+        Chem.MolFromSmarts("O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O1)CO")
+    ]
+    
+    # Check if the molecule has the beta-D-glucoside pattern
+    for pattern in beta_d_glucoside_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains beta-D-glucoside substructure"
     
     return False, "No beta-D-glucoside substructure found"
+
+# Example of usage:
+# result, reason = is_beta_D_glucoside("OC[C@H]1O[C@@H](Oc2ccc3ccc(c2)-c2ccccc3c2)C1O")
+# print(result, reason)
