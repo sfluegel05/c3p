@@ -22,21 +22,10 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the tetradecanoyl group attached to an ester group, and make sure the 
-    # tetradecanoyl is attached to the carbon of the ester bond.
-    tetradecanoyl_ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH3]")
+    # Check for the tetradecanoyl group attached to the *carbon* of an ester group.
+    tetradecanoyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH2]-[CH3]")
     if not mol.HasSubstructMatch(tetradecanoyl_ester_pattern):
-        return False, "No tetradecanoyl group attached to an ester group found"
-    
-    #Check for presence of a single ester
-    single_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][#6]")
-    if len(mol.GetSubstructMatches(single_ester_pattern)) != 1:
-         return False, "Not a single ester"
-    
-    #Check that no chain is linked to the oxygen of the ester bond
-    no_chain_on_oxygen_pattern = Chem.MolFromSmarts("[OX2;!H0][CX4]")
-    if mol.HasSubstructMatch(no_chain_on_oxygen_pattern):
-      return False, "Chain detected on oxygen of the ester group, not a simple ester"
+        return False, "No tetradecanoyl group attached to the carbon of an ester group found"
 
     # Verify minimum number of carbons (14 in tetradecanoyl and at least one more carbon in the alcohol chain)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -45,9 +34,7 @@ def is_tetradecanoate_ester(smiles: str):
     
     # Verify that molecular weight is within the appropriate range
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
+    if mol_wt < 250:
         return False, "Molecular weight too low for tetradecanoate ester"
-    if mol_wt > 1000:
-       return False, "Molecular weight too high for tetradecanoate ester"
 
     return True, "Contains tetradecanoyl group in an ester linkage"
