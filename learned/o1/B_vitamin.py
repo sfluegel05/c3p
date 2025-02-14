@@ -6,6 +6,7 @@ Classifies: B vitamin
 """
 
 from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors, DataStructs
 
 def is_B_vitamin(smiles: str):
     """
@@ -13,49 +14,58 @@ def is_B_vitamin(smiles: str):
     The B vitamins include vitamin B1 (thiamine), B2 (riboflavin), B3 (niacin),
     B5 (pantothenic acid), B6 (pyridoxine, pyridoxal, pyridoxamine),
     B7 (biotin), B9 (folic acid), and B12 (cobalamin).
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if the molecule is a B vitamin, False otherwise
         str: Reason for classification
     """
-
+    
+    # List of known B vitamin SMILES strings
+    b_vitamins = {
+        'Vitamin B1 (Thiamine)': 'CC1=C(C)C=CN=C1C[C@H](O)CO',
+        'Vitamin B2 (Riboflavin)': 'CC1=C(C)C=C2N(C[C@H](O)[C@H](O)[C@H](O)CO)C3=NC(=O)NC(=O)C3=NC2=C1',
+        'Vitamin B3 (Niacin)': 'OC(=O)C1=CN=CC=C1',
+        'Vitamin B5 (Pantothenic acid)': 'CC(C)(CO)C(=O)NCCC(=O)O',
+        'Vitamin B6 (Pyridoxine)': 'NC1=NC=C(C(=C1O)CO)C',
+        'Vitamin B7 (Biotin)': 'O=C1NC(=O)N2[C@@](CS1)([H])CCCCC2',
+        'Vitamin B9 (Folic acid)': 'NC1=NC2=C(N1)C(=O)NC(=O)C2=CC=C3C=CC=CC3N',
+        # Vitamin B12 (Cobalamin) is complex; we check for cobalt atom
+    }
+    
     # Convert input SMILES to molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS patterns for each B vitamin
-    b_vitamin_patterns = [
-        # Vitamin B1 (Thiamine) - thiazolium ring connected to a pyrimidine ring
-        (Chem.MolFromSmarts('c1[n+](ccs1)CCc1ncccn1'), 'Vitamin B1 (Thiamine)'),
-        # Vitamin B2 (Riboflavin) - isoalloxazine ring system
-        (Chem.MolFromSmarts('c1cc2nc3c([nH]c(=O)[nH]c3nc2c(c1)N)[C@H]1O[C@H](CO)[C@H](O)[C@H]1O'), 'Vitamin B2 (Riboflavin)'),
-        # Vitamin B3 (Niacin) - nicotinic acid and nicotinamide
-        (Chem.MolFromSmarts('c1cccnc1C(=O)[O,NH2]'), 'Vitamin B3 (Niacin)'),
-        # Vitamin B5 (Pantothenic acid) - beta-alanine linked to pantoic acid
-        (Chem.MolFromSmarts('CC(C)(CO)C(=O)NCCC(=O)O'), 'Vitamin B5 (Pantothenic acid)'),
-        # Vitamin B6 (Pyridoxine, Pyridoxal, Pyridoxamine)
-        (Chem.MolFromSmarts('c1cc(CO)c(C)c(O)c1'), 'Vitamin B6 (Pyridoxine/Pyridoxal/Pyridoxamine)'),
-        # Vitamin B7 (Biotin) - ureido ring fused with a tetrahydrothiophene ring
-        (Chem.MolFromSmarts('O=C1NC(=O)N2C[C@@H](SC1)[C@]2([H])'), 'Vitamin B7 (Biotin)'),
-        # Vitamin B9 (Folic acid and derivatives) - pteridine ring linked to p-aminobenzoic acid and glutamic acid
-        (Chem.MolFromSmarts('Nc1nc2ncc(CNc3ccc(cc3)C(=O)N[C@@H](CC(O)=O)C(=O)O)nc2c(=O)[nH]1'), 'Vitamin B9 (Folic acid)'),
-        # Vitamin B12 (Cobalamin) - corrin ring with central cobalt atom
-        (Chem.MolFromSmarts('[Cobalt]'), 'Vitamin B12 (Cobalamin)'),
-    ]
-
-    # Check if the molecule matches any B vitamin pattern
-    for pattern, vit_name in b_vitamin_patterns:
-        if pattern is None:
-            continue  # Skip if the pattern is invalid
-        if mol.HasSubstructMatch(pattern):
-            return True, f"Molecule matches {vit_name}"
-
-    # Special check for cobalamin derivatives (Vitamin B12)
-    if any(atom.GetAtomicNum() == 27 for atom in mol.GetAtoms()):
-        return True, "Molecule contains cobalt atom characteristic of Vitamin B12 (Cobalamin)"
-
+    
+    # Generate fingerprint for input molecule
+    input_fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=2048)
+    
+    # Threshold for Tanimoto similarity
+    similarity_threshold = 0.8
+    
+    # Compare input molecule with known B vitamins
+    for vitamin_name, vitamin_smiles in b_vitamins.items():
+        # Convert vitamin SMILES to molecule
+        vitamin_mol = Chem.MolFromSmiles(vitamin_smiles)
+        if vitamin_mol is None:
+            continue  # Skip invalid vitamin SMILES
+        
+        # Generate fingerprint for vitamin molecule
+        vitamin_fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(vitamin_mol, radius=2, nBits=2048)
+        
+        # Calculate Tanimoto similarity
+        similarity = DataStructs.TanimotoSimilarity(input_fp, vitamin_fp)
+        
+        # If similarity is above threshold, classify as B vitamin
+        if similarity >= similarity_threshold:
+            return True, f"Molecule matches {vitamin_name}"
+    
+    # Check for the presence of cobalt for vitamin B12
+    contains_cobalt = any(atom.GetAtomicNum() == 27 for atom in mol.GetAtoms())
+    if contains_cobalt:
+        return True, "Molecule contains cobalt characteristic of Vitamin B12 (Cobalamin)"
+    
     return False, "Molecule does not match any known B vitamin"
