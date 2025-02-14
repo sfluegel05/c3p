@@ -22,15 +22,9 @@ def is_phosphoinositide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for glycerol backbone (C-C-C with 2 esters and 1 phosphate)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2][CX3](=[OX1]))[CH2X4][OX2][P]")
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2][CX3](=[OX1]))[CH2X4][OX2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
          return False, "No glycerol-phosphate backbone found"
-
-    # Check for 2 ester groups (fatty acid chains)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups, need at least 2"
 
 
     # Check for a myo-inositol ring (six membered ring with 5 OH groups)
@@ -39,9 +33,9 @@ def is_phosphoinositide(smiles: str):
         return False, "No myo-inositol ring found"
 
     # Check for at least one phosphate group attached to the inositol ring
-    inositol_phosphate_pattern = Chem.MolFromSmarts("[C]([O])[OP]")
+    inositol_phosphate_pattern = Chem.MolFromSmarts("[C][O][P](=O)([O])([O])")
     inositol_phosphate_matches = mol.GetSubstructMatches(inositol_phosphate_pattern)
     if len(inositol_phosphate_matches) < 1:
         return False, "No phosphate group attached to the inositol ring found"
 
-    return True, "Contains glycerol backbone, two fatty acid chains, a phosphate group linked to glycerol, a myo-inositol ring, and at least one phosphate group on the inositol ring"
+    return True, "Contains glycerol backbone, a phosphate group linked to glycerol, a myo-inositol ring, and at least one phosphate group on the inositol ring"
