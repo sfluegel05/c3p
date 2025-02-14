@@ -21,28 +21,28 @@ def is_galactosylceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Galactose head group pattern: Galactose is typically a hexose sugar pattern that includes hydroxyl groups
-    galactose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O")
+    # Detect the galactose portion, including common modifications like sulfate
+    galactose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](~[CH2S](=O)(=O)[O])[C@H]1O | C[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(galactose_pattern):
-        return False, "No galactose head group found"
+        return False, "No recognizable galactose head group found"
 
-    # Amide bond pattern connecting a fatty acid to a sphingolipid: C(=O)N
+    # Ensure an amide bond connecting a fatty acid to a sphingolipid
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "No amide linkage found"
     
-    # Sphingolipid backbone is characterized by the presence of an aliphatic chain and double bond(s) in certain configurations
-    sphingosine_base_pattern = Chem.MolFromSmarts("[CX3](=O)N[C@@H](CO[*])[CH]=C[*]")  # adapted to capture common sphingoid bases
-    if not mol.HasSubstructMatch(sphingosine_base_pattern):
+    # Broader sphingolipid backbone pattern with allowance for common variations
+    sphingolipid_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](CO[*])[CX3]=C[*]")  # Broader pattern considering sphingoid variations
+    if not mol.HasSubstructMatch(sphingolipid_pattern):
         return False, "No sphingolipid backbone found"
-  
-    # Ensure enough oxygen for sugar and amide functionality, and enough carbon for the lipid chain
+    
+    # Checking elemental composition for carbohydrates and lipid chain validity
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
     if o_count < 6:
-        return False, "Not enough oxygen atoms for galactose and amide functionality"
+        return False, "Insufficient oxygen atoms for necessary sugar and amide functionalities"
     if c_count < 30:
-        return False, "Not enough carbon atoms for long sphingolipid and sugar chains"
+        return False, "Insufficient carbon atoms for long lipid and sugar chains"
 
-    return True, "Contains galactose head group, amide linkage, and sphingolipid backbone"
+    return True, "Contains galactose head group, sphingolipid backbone, and necessary structural features"
