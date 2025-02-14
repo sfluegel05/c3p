@@ -21,9 +21,12 @@ def is_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS for amino group (any N with 3 bonds or a quaternary N) and carboxyl (carboxylic acid and carboxylate)
-    amino_pattern = Chem.MolFromSmarts("[NX3+,NX3]") 
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX1-,OX2H0,OX2H1]")
+    # SMARTS for amino group (primary, secondary, tertiary, protonated)
+    # explicitly specify hydrogens for explicit match or include charged N
+    amino_pattern = Chem.MolFromSmarts("[NX3H2,NX3H1,NX3H0+,NX3+,NX2H1,NX2H0]")
+    # SMARTS for carboxylic acid group, excluding those in amides and esters
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX1H0,OX2H1]")
+    
 
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "No amino group found"
@@ -31,5 +34,4 @@ def is_amino_acid(smiles: str):
         return False, "No carboxylic acid group found"
     
     # If we reach this point, it means there is at least one amino and one carboxyl group.
-    # No further checks regarding the connection are needed according to the problem definition.
     return True, "Contains at least one amino and one carboxylic acid group"
