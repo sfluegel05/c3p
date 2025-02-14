@@ -25,14 +25,10 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add explicit hydrogens (important for accurate hydrogen count)
-    mol = Chem.AddHs(mol)
-
-    # Define thiol SMARTS pattern: sulfur with one hydrogen bonded to carbon
-    thiol_pattern = Chem.MolFromSmarts("[#16X2H1]-[C]")
-
-    if thiol_pattern is None:
-        return False, "Invalid SMARTS pattern for thiol"
+    # Define thiol SMARTS pattern: sulfur atom bonded to hydrogen and carbon
+    # [#16]-[H]: sulfur bonded to hydrogen
+    # [#16]-[H]-[C]: sulfur bonded to hydrogen and carbon
+    thiol_pattern = Chem.MolFromSmarts("[#16][H]")  # Sulfur atom bonded to hydrogen
 
     # Search for thiol group
     matches = mol.GetSubstructMatches(thiol_pattern)
@@ -40,13 +36,20 @@ def is_thiol(smiles: str):
         for match in matches:
             s_idx = match[0]  # Index of the sulfur atom
             s_atom = mol.GetAtomWithIdx(s_idx)
-            # Verify that sulfur is only bonded to hydrogen and carbon atoms
-            neighbor_elements = [neighbor.GetAtomicNum() for neighbor in s_atom.GetNeighbors()]
-            if set(neighbor_elements).issubset({1, 6}):
-                return True, "Contains a thiol group (-SH) attached to a carbon atom"
-
-        # If no valid thiol is found after checking neighbors
-        return False, "No valid thiol group (-SH) attached to a carbon atom found"
-
+            # Check if sulfur is bonded to at least one carbon atom
+            bonded_to_carbon = False
+            for neighbor in s_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                    bonded_to_carbon = True
+                    break
+            if bonded_to_carbon:
+                # Exclude peptides by checking for peptide bonds (amide linkages)
+                # Peptide bond pattern: [C](=O)[N]
+                peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+                if mol.HasSubstructMatch(peptide_bond_pattern):
+                    return False, "Contains a thiol group but is likely a peptide or protein"
+                else:
+                    return True, "Contains a thiol group (-SH) attached to a carbon atom"
+        return False, "Thiol group (-SH) not attached to a carbon atom"
     else:
-        return False, "No thiol group (-SH) attached to a carbon atom found"
+        return False, "No thiol group (-SH) found"
