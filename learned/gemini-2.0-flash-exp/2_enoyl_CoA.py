@@ -25,7 +25,7 @@ def is_2_enoyl_CoA(smiles: str):
 
     # Define a simplified CoA substructure, focusing on the pantetheine and pyrophosphate core
     # and simplifying the ribose and adenine portions.
-    coa_pattern = Chem.MolFromSmarts("CC(C)(COP(=O)(O)OP(=O)(O)OCC[C@H]1[C@H](O)[C@@H](OP(=O)(O)O)[C@@H](O)[C@H]1O)C(=O)NCCS")
+    coa_pattern = Chem.MolFromSmarts("CC(C)(COP(=O)(O)OP(=O)(O)OCC(=O)NCCS)")
     
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA substructure not found"
