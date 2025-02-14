@@ -1,18 +1,85 @@
 """
 Classifies: CHEBI:36500 glucosylceramide
 """
-After analyzing the previous program and the outcomes, it appears that the ceramide backbone detection patterns used in the code are not comprehensive enough to identify all glucosylceramide structures. The false negatives suggest that the program missed some valid glucosylceramide structures due to the limitations of the SMARTS patterns used.
+"""
+Classifies: CHEBI:17680 glucosylceramide
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here's how we can improve the program:
+def is_glucosylceramide(smiles: str):
+    """
+    Determines if a molecule is a glucosylceramide based on its SMILES string.
+    A glucosylceramide is a ceramide with a glucose moiety attached to the ceramide backbone.
 
-1. **Expand the ceramide backbone patterns**: The current patterns cover standard ceramides, ceramides with double bonds, and ceramides with substituents. However, they may not cover all possible variations of the ceramide backbone. We can explore more general patterns or combine multiple patterns to ensure better coverage.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Improve glucose moiety detection**: While the current glucose patterns cover glycosidic and ester bonds, they may not account for all possible conformations and substitutions of the glucose moiety. We can explore more flexible patterns or use additional checks to ensure robust detection.
+    Returns:
+        bool: True if molecule is a glucosylceramide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Consider additional checks**: In addition to the substructure matching, we can incorporate additional checks or constraints based on the molecular properties or features specific to glucosylceramides. For example, we could check for the presence of a specific number of nitrogen, oxygen, and other atoms, or enforce specific bond types or stereochemistry.
+    # Look for ceramide backbone pattern
+    ceramide_pattern = Chem.MolFromSmarts("[NX3H2;$(NC(=O)C)][CX4H](C[CX4])([CX4])[CX3](=O)[OX2H]")
+    if not mol.HasSubstructMatch(ceramide_pattern):
+        return False, "No ceramide backbone found"
 
-4. **Evaluate and refine patterns**: After implementing the above improvements, we should thoroughly evaluate the program on a diverse set of glucosylceramide structures, including the false negatives from the previous attempt. Based on the evaluation results, we can further refine the patterns and checks to achieve better performance.
+    # Look for glucose pattern
+    glucose_pattern = Chem.MolFromSmarts("[OX2;$([C@H]1[C@@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O[CX4;!$(NC=O)])][CX4]")
+    if not mol.HasSubstructMatch(glucose_pattern):
+        return False, "No glucose moiety found"
 
-It's important to note that while the benchmark data is not 100% reliable, it can still provide valuable guidance. However, if the classifications made by your program are consistent with your understanding of the chemical class and the provided definition, you can choose to ignore outliers or false negatives that seem reasonable. In such cases, it's essential to document your reasoning and justification for accepting or rejecting specific outcomes.
+    # Check for ether/ester bond between glucose and ceramide backbone
+    ether_pattern = Chem.MolFromSmarts("[OX2;$([C@H]1[C@@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O[CX4;!$(NC=O)])][CX4;$(NC(=O)C)]")
+    ester_pattern = Chem.MolFromSmarts("[OX2;$([C@H]1[C@@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O[CX3]=O)]")
+    if not (mol.HasSubstructMatch(ether_pattern) or mol.HasSubstructMatch(ester_pattern)):
+        return False, "No ether/ester bond between glucose and ceramide"
 
-By iteratively refining the patterns, incorporating additional checks, and thoroughly evaluating the program on diverse data, we can improve the accuracy and robustness of the glucosylceramide classification.
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 20:
+        return False, "Too few carbons for glucosylceramide"
+    if o_count < 8:
+        return False, "Too few oxygens for glucosylceramide"
+
+    return True, "Contains a ceramide backbone with a glucose moiety attached"
+
+__metadata__ = {
+    'chemical_class': {'id': 'CHEBI:17680',
+                       'name': 'glucosylceramide',
+                       'definition': 'Any of the cerebrosides in which the monosaccharide head group is glucose.',
+                       'parents': ['CHEBI:35783', 'CHEBI:83427']},
+    'config': {'llm_model_name': 'lbl/claude-sonnet',
+               'f1_threshold': 0.8,
+               'max_attempts': 5,
+               'max_positive_instances': None,
+               'max_positive_to_test': None,
+               'max_negative_to_test': None,
+               'max_positive_in_prompt': 50,
+               'max_negative_in_prompt': 20,
+               'max_instances_in_prompt': 100,
+               'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 24,
+    'num_false_positives': 1,
+    'num_true_negatives': 182406,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.96,
+    'recall': 1.0,
+    'f1': 0.9795918367346939,
+    'accuracy': 0.9999944795918365}
