@@ -22,8 +22,8 @@ def is_butenolide(smiles: str):
         return False, "Invalid SMILES string provided."
 
     # Define the SMARTS pattern for the butenolide core (2-furanone)
-    # This matches 5-membered rings with one oxygen, a carbonyl group, and adjacent double-bonded carbon
-    butenolide_pattern = Chem.MolFromSmarts("[OX2]1[CX3](=[OX1])[CX3]=[CX3]1")
+    # This matches a 5-membered ring with one oxygen, a carbonyl group and a double bond.
+    butenolide_pattern = Chem.MolFromSmarts("[O]1[C](=O)[C]=[C]1")
 
     # Check if the molecule has the butenolide core structure
     if mol.HasSubstructMatch(butenolide_pattern):
