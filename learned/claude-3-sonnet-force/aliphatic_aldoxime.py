@@ -31,27 +31,25 @@ def is_aliphatic_aldoxime(smiles: str):
         return False, "No oxime group found"
     
     # Check for aliphatic carbon chains
-    aliphatic_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    aliphatic_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]")
     if not mol.HasSubstructMatch(aliphatic_pattern):
         return False, "No aliphatic carbon chains found"
     
-    # Check for aromatic rings
+    # Check for aromatic rings or cyclic structures
     aromatic_pattern = Chem.MolFromSmarts("c")
-    if mol.HasSubstructMatch(aromatic_pattern):
-        return False, "Contains aromatic rings, not aliphatic"
+    ring_pattern = Chem.MolFromSmarts("R")
+    if mol.HasSubstructMatch(aromatic_pattern) or mol.HasSubstructMatch(ring_pattern):
+        return False, "Contains aromatic rings or cyclic structures, not aliphatic"
     
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Check for aldehyde functional group (-CHO)
+    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
+    if not mol.HasSubstructMatch(aldehyde_pattern):
+        return False, "Not derived from an aliphatic aldehyde"
+    
+    # Allow for additional oxygen atoms beyond the oxime group
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if o_count != 1:
-        return False, "Must have exactly 1 oxygen (in oxime group)"
-    
-    # Aliphatic aldoximes typically have >3 carbons
-    if c_count < 3:
-        return False, "Too few carbons for aliphatic aldoxime"
-    
-    return True, "Contains an oxime (C=N-O) group and aliphatic carbon chains"
+    return True, "Contains an oxime (C=N-O) group derived from an aliphatic aldehyde"
 
 # Example usage
 example_smiles = "[H]\C(=N/O)C(C)CC"
