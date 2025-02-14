@@ -22,18 +22,18 @@ def is_3_oxo_Delta_1__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for a 3-oxo group in steroids (carbonyl C=O at position 3)
-    oxo_pattern = Chem.MolFromSmarts("C(=O)[C@H]")  # [C@H] is a chiral carbon indicator, could be adjusted if needed
+    # Updated SMARTS pattern for a 3-oxo group (carbonyl C=O at position 3)
+    oxo_pattern = Chem.MolFromSmarts("C1=CC[C@]2(C)CC(=O)CC3=C2C[CH2]CC18")
     if not mol.HasSubstructMatch(oxo_pattern):
         return False, "No 3-oxo group (ketone) found on the third carbon"
     
-    # SMARTS pattern for a Delta(1) double bond (C=C between first two carbons)
-    double_bond_pattern = Chem.MolFromSmarts("C=C[C@H]")  # Includes chiral carbon subsequent to double bond
+    # Updated SMARTS pattern for a Delta(1) double bond (C=C between the first two carbons)
+    double_bond_pattern = Chem.MolFromSmarts("C=C-C[CH2]")
     if not mol.HasSubstructMatch(double_bond_pattern):
         return False, "No Delta(1) double bond (C=C between C1 and C2) found"
     
-    # SMARTS pattern for a steroid core structure (four connected rings)
-    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC3C24C1")  # Simplified core structure
+    # Refined SMARTS pattern for the core tetracyclic structure of steroids
+    steroid_core_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CCCC3C24C1")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "Molecule does not have the steroid four-ring core structure"
     
