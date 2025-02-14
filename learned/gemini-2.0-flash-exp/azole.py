@@ -18,34 +18,28 @@ def is_azole(smiles: str):
         str: Reason for classification
     """
     
-    # Sanitize SMILES string
-    try:
-      mol = Chem.MolFromSmiles(smiles, sanitize=True)
-    except:
-      return False, "Invalid SMILES string"
-
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if it's monocyclic
-    if Chem.GetSSSR(mol) != 1:
-        return False, "Molecule is not monocyclic"
+    # Find 5-membered rings with at least 1 Nitrogen
+    # This SMARTS pattern matches any 5-membered ring with at least one N and optionally other heteroatoms (O, S, N)
+    azole_pattern = Chem.MolFromSmarts("[NX2,NX3;R5][CX3,CX2,NX2,OX2,SX2;R5]~[CX3,CX2,NX2,OX2,SX2;R5]~[CX3,CX2,NX2,OX2,SX2;R5]~[CX3,CX2,NX2,OX2,SX2;R5]") # 5-membered ring with at least one N
     
-    # Find 5-membered rings, each atom in the ring
-    azole_pattern = Chem.MolFromSmarts("[R5][R5][R5][R5][R5]")
-    if not mol.HasSubstructMatch(azole_pattern):
-          return False, "No 5-membered ring found"
+    ring_matches = mol.GetSubstructMatches(azole_pattern)
 
-    #check for at least one nitrogen atom
-    nitrogen_pattern = Chem.MolFromSmarts("[n;R5]")
-    if not mol.HasSubstructMatch(nitrogen_pattern):
-        return False, "No nitrogen atom in the 5-membered ring"
+    if not ring_matches:
+          return False, "No azole ring found"
 
-    #Check for no more than 2 other heteroatoms (N, O, S). Max 3 heteroatoms, min 1 nitrogen.
-    other_hetero_pattern = Chem.MolFromSmarts("[o,s;R5]")
-    other_hetero_matches = mol.GetSubstructMatches(other_hetero_pattern)
-    if len(other_hetero_matches) > 2:
-        return False, "Too many heteroatoms in the ring"
-        
+    #Check that all atoms in the ring have ring bond count = 2
+    for match in ring_matches:
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetDegree() > 3: # If total degree >3 it is part of fused ring. 2 ring bonds max + 1 substituent is ok
+              return False, "Found fused ring or too many bonds to ring atom"
+            if atom.IsInRing() and atom.GetRingBondCount() != 2: # check for monocyclic ring
+              return False, "ring atom not part of monocyclic ring"
 
-    return True, "Contains a monocyclic 5-membered heterocycle with at least one nitrogen and no more than 2 other heteroatoms."
+    
+    return True, "Contains a monocyclic 5-membered heterocycle with at least one nitrogen."
