@@ -21,21 +21,15 @@ def is_ribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the D-ribose SMARTS pattern with relative stereochemistry. This pattern is more flexible.
-    ribose_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@@H]([C@H](O1)CO)O)O)")
+    # Define the D-ribose SMARTS pattern with specific stereochemistry.
+    #  C1(O)[C@H](O)[C@@H](CO)[C@H](O)O1
+    ribose_pattern = Chem.MolFromSmarts("[C@H]1([O])[C@@H]([O])[C@@H](CO)[C@H]([O])O1")
     if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "Molecule does not contain the correct D-ribose sugar"
-
-    # Check for a nitrogen atom attached to the ribose carbon (glycosidic bond).
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[NX3;H0][CX4]1[C@H]([C@@H]([C@@H]([C@H](O1)CO)O)O)")
-    nucleobase_pattern = Chem.MolFromSmarts("[n;H0]1cc[cn]c1") # general pattern for pyrimidines
-    nucleobase_pattern2 = Chem.MolFromSmarts("[n;H0]1c[nc][nc]1") # general pattern for purines
-
-    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "Molecule does not contain a nucleobase attached to the ribose sugar via a glycosidic bond"
-   
-    if not (mol.HasSubstructMatch(nucleobase_pattern) or mol.HasSubstructMatch(nucleobase_pattern2)):
-        return False, "Molecule does not contain a nucleobase attached to the ribose sugar"
+         return False, "Molecule does not contain the correct D-ribose sugar"
     
+    # check for nitrogen attachment to ribose carbon, meaning nucleobase attached. 
+    base_attach_pattern = Chem.MolFromSmarts("[NX3][CX4]1[C@H]([O])[C@@H]([O])[C@@H](CO)[C@H]([O])O1")
+    if not mol.HasSubstructMatch(base_attach_pattern):
+        return False, "Molecule does not contain a nucleobase attached to the ribose sugar"
 
     return True, "Molecule contains a D-ribose sugar and a nucleobase attached to it."
