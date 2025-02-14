@@ -15,16 +15,18 @@ def is_tetradecanoate_ester(smiles: str):
         bool: True if molecule is a tetradecanoate ester, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define updated tetradecanoate ester functional group pattern
-    # 13-carbon chain with ester linkage and additional carbon confirming alcohol linkage
-    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCC(=O)O[CX4]")
     
-    if mol.HasSubstructMatch(tetradecanoate_pattern):
+    # Define tetradecanoate ester pattern (14-carbons with ester linkage)
+    # [*] is a wildcard for any attachment, handles various alcohols
+    tetradecanoate_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O[*]")
+    
+    # Check if the molecule matches the tetradecanoate ester pattern
+    if mol.HasSubstructMatch(tetradecanoate_ester_pattern):
         return True, "Contains tetradecanoate ester group"
     else:
         return False, "No tetradecanoate ester group found"
