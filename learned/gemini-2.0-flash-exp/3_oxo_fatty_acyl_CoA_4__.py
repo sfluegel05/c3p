@@ -25,23 +25,24 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(coa_pattern):
          return False, "Core CoA structure not found"
     
-    # Check for the thioester linkage, and the adjacent carbon
-    thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]") # Modified SMARTS to account for bond type
+    # Check for the thioester linkage
+    thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]") 
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "Thioester linkage not found"
     
-    #Check for 3-oxo group adjacent to a methylene group and the fatty acid chain
-    oxo_group_pattern = Chem.MolFromSmarts("[CX4](=O)[CX2][CX4](=O)~[CX4]") # The 3-oxo group is next to a CH2 and also connects to a carbon of a chain
+    # Check for 3-oxo group with an adjacent carbon and then a connection to a fatty acid chain 
+    # [CX3](=O)[CX4][CX3](=O)-[CX4] does not address methyl subs
+    oxo_group_pattern = Chem.MolFromSmarts("[CX3](=O)[CX4]([CH3])?[CX3](=O)-[CX4]") # account for methyl sub
     if not mol.HasSubstructMatch(oxo_group_pattern):
-        return False, "3-oxo group and adjacent methylene not found or improperly connected to fatty acid"
+       return False, "3-oxo group and adjacent methylene/methine not found or improperly connected to fatty acid"
 
-    # Check for a long aliphatic chain (at least 2 carbons) directly attached to the carbonyl
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4](=O)~[CX4][CX4]") # At least 2 carbons attached to the carbonyl of the 3-oxo group
+    # Check for a long aliphatic chain (at least 3 carbons) attached to the 3-oxo
+    # Need to account for the carbon from the oxo group too, so 2+2 or more carbons in total
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=O)-[CX4]-[CX4]-[CX4]") # at least 3 carbons directly attached to the carbonyl of the 3-oxo group
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
-      return False, "Missing or too short fatty acyl chain attached to 3-oxo group"
-
-
+        return False, "Missing or too short fatty acyl chain attached to 3-oxo group"
+    
     # Check for at least 30 heavy atoms and 3 phosphorus atoms
     heavy_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() != 1)
     if heavy_atoms < 30:
@@ -54,6 +55,5 @@ def is_3_oxo_fatty_acyl_CoA_4__(smiles: str):
     o_minus_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1)
     if o_minus_count < 4:
         return False, f"Must have at least 4 deprotonated oxygens."
-
 
     return True, "Meets all criteria for a 3-oxo-fatty acyl-CoA(4-)"
