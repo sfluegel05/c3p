@@ -7,9 +7,8 @@ from rdkit.Chem import AllChem
 def is_steroid(smiles: str):
     """
     Determines if a molecule is a steroid based on its SMILES string.
-    A steroid is defined as a molecule with a cyclopenta[a]phenanthrene skeleton,
-    partially or completely hydrogenated, with methyl groups at C-10 and C-13.
-    An alkyl group at C-17 is optional.
+    A steroid is a molecule with a cyclopenta[a]phenanthrene skeleton,
+    typically with methyl groups at C-10 and C-13.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,44 +22,49 @@ def is_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the cyclopenta[a]phenanthrene core pattern using SMARTS
-    # The [R] in ring system are unspecified ring atoms
-    steroid_core_smarts = "[R]1[R]2[R]3[R]([R]4[R]1[R]5[R]2[R]3[R]45)"
+    # Define the basic steroid skeleton using SMARTS
+    # This SMARTS pattern tries to capture the four fused rings with flexible bonds
+    # [C]12[C]([C]3[C]([C]4[C]([C]([C]1)([C]2)[C]5)([C]3)[C]4)[C]5)  
+    # However, this rigid representation causes a large number of false negatives, so we focus on the carbon atoms of the ring system only
+    steroid_core_smarts = "[C]1~[C]~[C]~[C]2~[C]~[C]3~[C]~[C]4~[C]~[C]~[C]~[C](~[C]1)~[C]~[C]~4~2~3"
     steroid_core_pattern = Chem.MolFromSmarts(steroid_core_smarts)
 
-    # Check if the molecule has the specific fused ring system
     if not mol.HasSubstructMatch(steroid_core_pattern):
-       return False, "No cyclopenta[a]phenanthrene ring system found"
+      return False, "No steroid tetracyclic ring system found"
 
-    # Check for at least 2 methyl groups attached to the ring system using SMARTS
-    methyl_group_smarts = "[R][CH3]"
-    methyl_group_pattern = Chem.MolFromSmarts(methyl_group_smarts)
-    methyl_matches = mol.GetSubstructMatches(methyl_group_pattern)
+    # Check for methyl groups at C-10 and C-13. 
+    # We first need to find the numbering of atoms according to the steroid skeleton
+    match = mol.GetSubstructMatch(steroid_core_pattern)
 
-    methyl_count = 0
-    for match in methyl_matches:
-      # Check that the ring atom that the methyl group is attached to
-      #  is actually part of the steroid ring system.
-      if mol.GetAtomWithIdx(match[0]).IsInRing():
-          methyl_count += 1
+    if not match:
+        return False, "Failed to get substructure match for numbering."
 
-    if methyl_count < 2:
-      return False, f"Found only {methyl_count} methyl group(s) on the ring system, at least two are required."
+    # Define substructure for C10 and C13 methyls
+    methyl_pattern = Chem.MolFromSmarts("[C]-C")
 
-    # Optional: Check for an alkyl group (at least one carbon) attached to the core.
-    # Look for any chain of at least one carbon attached to any carbon of core
-    alkyl_group_smarts = "[R](-[C])"
-    alkyl_group_pattern = Chem.MolFromSmarts(alkyl_group_smarts)
-    alkyl_matches = mol.GetSubstructMatches(alkyl_group_pattern)
+    # Check number of methyl groups
+    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
 
-    alkyl_group_found = False
-    for match in alkyl_matches:
-        if mol.GetAtomWithIdx(match[0]).IsInRing():
-            alkyl_group_found = True
-            break
+    if len(methyl_matches) < 2:
+        return False, f"Found {len(methyl_matches)} methyl groups, at least two are required"
 
-    reason = "Contains the steroid tetracyclic ring system with at least two methyl groups on the core."
-    if alkyl_group_found:
-        reason += " Also contains an alkyl group on the core."
+    # Get the atoms in the ring system
+    atoms = [mol.GetAtomWithIdx(x) for x in match]
+    
+    # Get the neighbors of each ring atom that are not in the ring system
+    neighbors = []
+    for i,atom in enumerate(atoms):
+      for neighbor in atom.GetNeighbors():
+         if neighbor.GetIdx() not in match:
+            neighbors.append((i,neighbor))
 
-    return True, reason
+    methyl_atoms = []
+    for (i,atom) in neighbors:
+      if atom.GetSymbol() == 'C' and len(atom.GetNeighbors())==1:
+        methyl_atoms.append( (i,atom) )
+
+    # We check for methyl groups only, assuming two of them will be at C-10 and C-13 in most cases
+    if len(methyl_atoms) < 2:
+        return False, f"Found {len(methyl_atoms)} methyl groups on the ring system, at least two are required."
+
+    return True, "Contains the steroid tetracyclic ring system with at least two methyl groups"
