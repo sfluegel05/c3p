@@ -20,39 +20,38 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the amino acid backbone pattern
-    backbone_pattern = Chem.MolFromSmarts("[NX3,NH2,NH3+][CX4H]([*])[CX3](=O)[O-,OH]")
+    # Define the amino acid backbone pattern (inclusive of zwitterions)
+    backbone_pattern = Chem.MolFromSmarts("[N;H1,H2;+0;+1][C@@,H](C)[C](=O)[O;H1,-1]")
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "Molecule does not have a standard amino acid backbone"
 
-    # Find the match for the backbone to identify backbone atoms
-    backbone_match = mol.GetSubstructMatch(backbone_pattern)
-    backbone_atoms = set(backbone_match)
+    # Find backbone atoms
+    backbone_matches = mol.GetSubstructMatches(backbone_pattern)
+    if not backbone_matches:
+        return False, "Amino acid backbone not found"
+    backbone_atoms = set(backbone_matches[0])
 
     # Identify side chain atoms (atoms not in backbone)
-    side_chain_atoms = set()
-    for atom in mol.GetAtoms():
-        if atom.GetIdx() not in backbone_atoms:
-            side_chain_atoms.add(atom.GetIdx())
-
+    side_chain_atoms = [atom for atom in mol.GetAtoms() if atom.GetIdx() not in backbone_atoms]
     if not side_chain_atoms:
         return False, "No side chain found"
 
-    # Check for hydrogen bond donors and acceptors in side chain
-    # Functional groups capable of hydrogen bonding: -OH, -SH, -NH2, -CONH2, imidazole, phenol, carboxylic acids, etc.
+    # Define SMARTS patterns for hydrogen bonding groups
     hbond_donor_acceptor_smarts = [
-        "[OX2H]",          # Hydroxyl group
-        "[SX2H]",          # Thiol group
-        "[NX3H2]",         # Primary amine
-        "[NX3H][CX3](=O)[#6]",  # Amide group
-        "c1nccc1",         # Imidazole ring
-        "c1cc([OX2H])ccc1",# Phenol group
-        "[CX3](=O)[OX1H0-]"# Carboxylate group
+        "[OX1H0-,OX2H1]",        # Hydroxyl group and oxyanions
+        "[SX2H]",                # Thiol group
+        "[NX3H2,NX3H1,NX4+]",    # Primary and secondary amines, protonated amines
+        "[NX3][CX3](=O)[NX3]",   # Amide group
+        "c1ncn[cH]1",            # Imidazole group in histidine
+        "c1ccc(O)cc1",           # Phenol group in tyrosine
+        "C(=O)[O-,OH]"           # Carboxylate and carboxylic acid
     ]
-    side_chain_mol = Chem.PathToSubmol(mol, list(side_chain_atoms))
-    for smarts in hbond_donor_acceptor_smarts:
-        pattern = Chem.MolFromSmarts(smarts)
-        if side_chain_mol.HasSubstructMatch(pattern):
-            return True, "Side chain can form hydrogen bonds"
 
-    return False, "Side chain cannot form hydrogen bonds"
+    # Check for hydrogen bonding groups in the side chain
+    for atom in side_chain_atoms:
+        for smarts in hbond_donor_acceptor_smarts:
+            pattern = Chem.MolFromSmarts(smarts)
+            if mol.HasSubstructMatch(pattern, atomIndices=[atom.GetIdx()]):
+                return True, "Side chain contains hydrogen bonding groups"
+
+    return False, "Side chain does not contain hydrogen bonding groups"
