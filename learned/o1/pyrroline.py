@@ -1,65 +1,75 @@
 """
 Classifies: CHEBI:23763 pyrroline
 """
+"""
+Classifies: CHEBI:25122 pyrroline
+"""
+
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_pyrroline(smiles: str):
     """
-    Determines if a molecule contains a pyrroline ring based on its SMILES string.
-    A pyrroline is a dihydropyrrole, a five-membered heterocyclic ring containing one nitrogen atom and two double bonds.
+    Determines if a molecule is a pyrroline based on its SMILES string.
+    A pyrroline is any organic heteromonocyclic compound with a structure based on dihydropyrrole,
+    which is a five-membered, non-aromatic ring containing one nitrogen atom and one double bond.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule contains a pyrroline ring, False otherwise
+        bool: True if molecule is a pyrroline, False otherwise
         str: Reason for classification
     """
-
-    # Parse SMILES string to RDKit molecule
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information from the molecule
+    # Get ring information
     ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
+    # Get list of atom indices for each ring
+    rings = ring_info.AtomRings()
 
-    # Flag to indicate if a pyrroline ring is found
-    pyrroline_found = False
+    # Initialize flag
+    is_pyrroline = False
 
-    # Iterate over each ring in the molecule
-    for ring in atom_rings:
+    # Iterate over each ring
+    for ring in rings:
+        # Check if ring is five-membered
         if len(ring) != 5:
-            continue  # Skip if ring is not five-membered
+            continue
 
-        # Get atoms in the ring
+        # Collect atoms in the ring
         ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
 
-        # Count nitrogen atoms in the ring
+        # Count the number of nitrogen atoms in the ring
         num_nitrogens = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
         if num_nitrogens != 1:
-            continue  # Skip if there is not exactly one nitrogen atom
+            continue
 
-        # Get bonds in the ring
-        ring_bonds = []
-        for i in range(len(ring)):
-            atom1 = mol.GetAtomWithIdx(ring[i])
-            atom2 = mol.GetAtomWithIdx(ring[(i+1)%len(ring)])
-            bond = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
-            if bond is not None:
-                ring_bonds.append(bond)
+        # Check if ring is aromatic
+        is_aromatic = any(atom.GetIsAromatic() for atom in ring_atoms)
+        if is_aromatic:
+            continue
 
-        # Count double bonds in the ring
-        num_double_bonds = sum(1 for bond in ring_bonds if bond.GetBondType() == Chem.BondType.DOUBLE)
-        if num_double_bonds != 2:
-            continue  # Skip if there are not exactly two double bonds
+        # Count the number of double bonds in the ring
+        num_double_bonds = 0
+        for bond in mol.GetBonds():
+            begin_idx = bond.GetBeginAtomIdx()
+            end_idx = bond.GetEndAtomIdx()
+            if begin_idx in ring and end_idx in ring:
+                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    num_double_bonds += 1
 
-        # All criteria met; pyrroline ring found
-        pyrroline_found = True
+        if num_double_bonds != 1:
+            continue
+
+        # If all conditions are met, it's a pyrroline
+        is_pyrroline = True
         break
 
-    if pyrroline_found:
-        return True, "Contains a pyrroline ring (five-membered ring with one nitrogen and two double bonds)"
+    if is_pyrroline:
+        return True, "Contains a non-aromatic five-membered ring with one nitrogen atom and one double bond (pyrroline ring)"
     else:
-        return False, "No pyrroline ring found (requires five-membered ring with one nitrogen and two double bonds)"
+        return False, "Does not contain a pyrroline ring"
