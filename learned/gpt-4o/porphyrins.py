@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_porphyrins(smiles: str):
     """
     Determines if a molecule is a porphyrin based on its SMILES string.
-    Porphyrins have a fundamental skeleton of four pyrrole nuclei connected by four methine groups forming a macrocyclic structure.
+    Porphyrins have a fundamental skeleton of four pyrrole-like units connected by four methine groups forming a macrocyclic structure.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,27 +20,32 @@ def is_porphyrins(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Enhanced SMARTS pattern for pyrrole-like units with possible substitutions
-    pyrrole_pattern = Chem.MolFromSmarts("c1[c,nH]c[nH]c1")  # More flexible in matching pyrrole variations
+
+    # Define pyrrole-like pattern more flexibly
+    pyrrole_pattern = Chem.MolFromSmarts("[nH]1[cR1][cR1][cR1][cR1]1")  # Allowing for aromatic conjugation
     pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
 
-    # Ensure at least four pyrrole-like units
     if len(pyrrole_matches) < 4:
         return False, f"Insufficient pyrrole-like units found: {len(pyrrole_matches)} (requires at least 4)"
-    
-    # SMARTS pattern for methine bridges: a single carbon possibly bonded to other heteroatoms in different porphyrin forms
-    methine_bridge_pattern = Chem.MolFromSmarts("C(c1[c,nH]c[nH]c1)C")
-    if not mol.HasSubstructMatch(methine_bridge_pattern):
-        return False, "Methine bridge pattern not found"
-    
-    # Verify if there's a macrocyclic structure consisting of the pyrroles and methine bridges
-    # Revised logic for macrocycle detection
+  
+    # Methine bridge pattern: Carbon bonded to other carbon/nitrogen that forms part of the macrocycle
+    methine_bridge_pattern = Chem.MolFromSmarts("C~[C,N]")  # More generic linkage
+    methine_matches = mol.GetSubstructMatches(methine_bridge_pattern)
+
+    # Check for minimum number of methine bridges typically seen in porphyrins
+    if len(methine_matches) < 4:
+        return False, f"Insufficient methine bridge-like features found: {len(methine_matches)} (requires at least 4)"
+
+    # Enhanced cycle detection logic for macrocyclic structure comprised of identified units
     cycle_info = mol.GetRingInfo()
     rings = cycle_info.AtomRings()
 
-    # Check for at least one large cycle containing enough atoms (approximately 18-22 typical for porphyrins)
-    macrocyclic_detected = any(len(ring) >= 18 and sum(int(cycle_info.IsAtomInRingOfSize(atom, 5)) for atom in ring) >= 4 for ring in rings)
+    # Check for macrocycle with enough pyrrole-like units (using typical porphyrin ring sizes)
+    macrocyclic_detected = any(
+        len(ring) >= 18 and 
+        sum(int(cycle_info.IsAtomInRingOfSize(atom, 5)) for atom in ring) >= 4
+        for ring in rings
+    )
     
     if not macrocyclic_detected:
         return False, "No macrocyclic structure consistent with porphyrin found"
