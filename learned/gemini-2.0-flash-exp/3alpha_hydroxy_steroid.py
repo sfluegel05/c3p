@@ -3,11 +3,11 @@ Classifies: CHEBI:36835 3alpha-hydroxy steroid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-import numpy as np
 
 def is_3alpha_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 3alpha-hydroxy steroid based on its SMILES string.
+    Uses a SMARTS-based approach for ring detection and alpha configuration.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,62 +20,58 @@ def is_3alpha_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure the molecule has a 3D conformation
-    if mol.GetNumConformers() == 0:
-        mol = Chem.AddHs(mol)  # Add hydrogens for conformer generation
-        AllChem.EmbedMolecule(mol,randomSeed=42)
-        if mol.GetNumConformers() == 0:
-            return False, "Could not generate a 3D conformation for the molecule."
-
-
-    # 1. Check for steroid core
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]([C]([C]([C]3[C]([C]([C]1[C])([C]2)C)[C]4[C]([C](C3)([C])C)CC4)[H])([H])[H]")
+    # 1. Check for steroid core (simplified)
+    steroid_core_pattern = Chem.MolFromSmarts("C1CC2CCC3C(C)(C)C(CCC4C3(C)CCC2C1)C")
+    if steroid_core_pattern is None:
+        return None, "Invalid steroid core SMARTS pattern"
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "Not a steroid core structure"
 
-    # 2. Check for a hydroxy group at position 3 using SMARTS (ring position number)
-    hydroxy_at_3_pattern = Chem.MolFromSmarts("[C;R][C;R]([O])([H])[C;R]")
-    hydroxy_matches = mol.GetSubstructMatches(hydroxy_at_3_pattern)
-    if len(hydroxy_matches) == 0:
+    # 2. Check for a 3-alpha-hydroxy group with chirality
+    alpha_hydroxy_pattern = Chem.MolFromSmarts("[C@H](O)[C]")
+    if alpha_hydroxy_pattern is None:
+        return None, "Invalid alpha hydroxy SMARTS pattern"
+    
+    alpha_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
+    
+    if len(alpha_matches) == 0:
+        
+        #Check if it is a beta hydroxy group for a more descriptive negative outcome.
+        beta_hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)[C]")
+        if beta_hydroxy_pattern is None:
+            return None, "Invalid beta hydroxy SMARTS pattern"
+
+        beta_matches = mol.GetSubstructMatches(beta_hydroxy_pattern)
+        if len(beta_matches) > 0:
+            return False, "Hydroxyl group at position 3 is in beta-configuration"
+
         return False, "No hydroxyl group found at position 3"
 
-    #Get the positions of the atoms in the substructure matching the steroid_core pattern:
+    # Check that the hydroxyl group is attached to the steroid core by matching the pattern with the molecule
+    matched_atoms = mol.GetSubstructMatch(alpha_hydroxy_pattern)
+    if not matched_atoms:
+        return False, "No hydroxyl group attached to steroid core"
+
     core_match = mol.GetSubstructMatch(steroid_core_pattern)
-    if len(core_match) != 20: #The pattern has 20 atoms.
-        return False, "Internal error: wrong number of atoms in core"
     
-    #Get the positions of the atoms in the substructure matching the hydroxy_at_3_pattern:
-    hydroxy_match = mol.GetSubstructMatch(hydroxy_at_3_pattern)
-    if len(hydroxy_match) != 3: #The pattern has 3 atoms.
-        return False, "Internal error: wrong number of atoms in hydroxy_match"
-    
-    #3. Check for alpha-orientation of the hydroxyl group:
-    conf = mol.GetConformer()
-    
-    #Indexes of atoms:
-    pos_3 = hydroxy_match[1]
-    pos_10 = core_match[12]
-    pos_13 = core_match[15]
-    pos_3_h = hydroxy_match[2]
+    if not core_match:
+         return False, "No steroid core match after hydroxy match. Internal Error"
 
-    #Coordinates of atoms:
-    p3_xyz = conf.GetAtomPosition(pos_3)
-    p10_xyz = conf.GetAtomPosition(pos_10)
-    p13_xyz = conf.GetAtomPosition(pos_13)
-    p3h_xyz = conf.GetAtomPosition(pos_3_h)
+    hydroxyl_carbon_index = matched_atoms[0]
     
-    #Compute the centroid of positions 10 and 13
-    p1013_center = (np.array(p10_xyz) + np.array(p13_xyz)) / 2.0
-    
-    #Direction vector from the centroid of 10/13 to H at pos 3
-    dir_3h = np.array(p3h_xyz) - p1013_center
-
-    #Direction vector from center 10/13 to O at pos 3.
-    dir_3o = np.array(p3_xyz) - p1013_center
-
-    #Check if the hydroxy group at position 3 is in the alpha configuration by checking the orientation of the H at position 3.
-    dot_product = np.dot(dir_3h,dir_3o)
-    if dot_product > 0: #If the dot product is positive, the H at pos 3 points in the same direction as the hydroxy group (not alpha)
-        return False, "Hydroxyl group at position 3 is not in alpha-configuration"
+    is_core_attached = False
+    for core_atom_index in core_match:
         
+        #Get all neighbors of the core atoms
+        for neighbor_atom in mol.GetAtomWithIdx(core_atom_index).GetNeighbors():
+            if neighbor_atom.GetIdx() == hydroxyl_carbon_index:
+                is_core_attached = True
+                break
+        if is_core_attached:
+            break
+
+
+    if not is_core_attached:
+        return False, "Hydroxyl group not attached to the steroid core"
+
     return True, "Molecule is a 3alpha-hydroxy steroid"
