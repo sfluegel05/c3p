@@ -21,17 +21,17 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved peptide bond pattern: N-C(=O)-C(alpha carbon of amino acids)
-    peptide_bond_pattern = Chem.MolFromSmarts("N[C][C](=O)C")
+    # Correct peptide bond pattern: C(=O)N
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
     peptide_matches = mol.GetSubstructMatches(peptide_bond_pattern)
 
-    # Count the number of matched peptide motifs
-    num_amino_acid_residues = len(peptide_matches)
+    # Count the number of matched peptide bonds, which indicates the number of residues minus one
+    num_peptide_bonds = len(peptide_matches)
 
-    # Polypeptide criteria: 10 or more residues
-    if num_amino_acid_residues >= 10:
-        return True, f"Contains {num_amino_acid_residues} amino acid residues, qualifies as a polypeptide"
+    # Polypeptide criteria: 9 or more peptide bonds (10 or more residues)
+    if num_peptide_bonds >= 9:
+        return True, f"Contains {num_peptide_bonds + 1} amino acid residues, qualifies as a polypeptide"
     else:
-        return False, f"Contains only {num_amino_acid_residues} amino acid residues, not a polypeptide"
+        return False, f"Contains only {num_peptide_bonds + 1} amino acid residues, not a polypeptide"
 
     return None, None
