@@ -26,16 +26,35 @@ def is_fatty_acid_anion(smiles: str):
     carboxylate_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[O-]")
     if not mol.HasSubstructMatch(carboxylate_pattern):
         return False, "Molecule does not contain a terminal carboxylate group."
-
-    # Find a carbon atom connected to the carboxylate group
+    
+     #Find carboxylate matches
     carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
-    if not carboxylate_matches:
-        return False, "Molecule does not contain a terminal carboxylate group."
+    if len(carboxylate_matches) != 1:
+        return False, "Molecule must contain exactly one carboxylate group"
 
-    #Check the chain length to see if there are at least 6 carbons using a more general SMARTS pattern
-    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check that there are no other anions present (sulfonate/phosphate etc.)
+    anion_pattern = Chem.MolFromSmarts("[!#6!#1][-,@]") # any non-carbon, non-hydrogen atom with negative charge
+    anion_matches = mol.GetSubstructMatches(anion_pattern)
+    if len(anion_matches) > 1 :
+      return False, "Molecule contains more than one anionic group"
+
+    # Check that there are no zwitterions present
+    zwitterion_pattern = Chem.MolFromSmarts("[#7+]")
+    zwitterion_matches = mol.GetSubstructMatches(zwitterion_pattern)
+    if len(zwitterion_matches) > 0 :
+      return False, "Molecule is a zwitterion"
+
+    # Check for a carbon chain (>= 6 carbons) attached to carboxylate group
+    # This pattern checks for a carbon connected to the carboxylate carbon, and then an additional 5 carbons
+    chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[O-][CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     carbon_chain_matches = mol.GetSubstructMatches(chain_pattern)
     if len(carbon_chain_matches) == 0:
-        return False, "Carboxylate group not attached to a carbon chain with length >= 6 carbons"
+      return False, "Carboxylate group not attached to a carbon chain with length >= 6 carbons"
+
+    # Check for rings and heteroatoms in the chain
+    no_ring_hetero_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[O-][CX4,CX3](~[CX4,CX3])(~[CX4,CX3])(~[CX4,CX3])(~[CX4,CX3])(~[CX4,CX3])~[!#7,!#8,!#16,R]") # carbon chain with branching, no rings or heteroatoms
+    no_ring_hetero_matches = mol.GetSubstructMatches(no_ring_hetero_pattern)
+    if len(no_ring_hetero_matches) == 0:
+       return False, "Carboxylate chain contains a ring or heteroatom"
 
     return True, "Contains a carboxylate group at the end of a carbon chain (>=6 carbons), consistent with a fatty acid anion."
