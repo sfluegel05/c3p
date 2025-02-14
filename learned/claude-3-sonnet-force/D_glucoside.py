@@ -5,7 +5,7 @@ Classifies: CHEBI:35436 D-glucoside
 Classifies: CHEBI:27815 D-glucoside
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem, rdMolDescriptors
 
 def is_D_glucoside(smiles: str):
     """
@@ -25,25 +25,30 @@ def is_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for D-glucose substructure
+    # Check for D-glucose substructure
     d_glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H]([C@H]([C@@H]([C@H]1O)O)O)CO")
-    if not mol.HasSubstructMatch(d_glucose_pattern):
-        return False, "No D-glucose substructure found"
-    
-    # Look for pyranose ring
-    pyranose_pattern = Chem.MolFromSmarts("O[C@H]1[C@H]([C@H]([C@@H]([C@H]([C@@H]1O)O)O)O)O")
-    if not mol.HasSubstructMatch(pyranose_pattern):
-        return False, "No pyranose ring found"
-    
-    # Look for glycosidic bonds (O-C-O)
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CR][OX2]")
-    glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    if not glycosidic_bond_matches:
-        return False, "No glycosidic bonds found"
-    
-    # Check molecular weight - glucosides typically >300 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-        return False, "Molecular weight too low for glucoside"
+    d_glucose_matches = mol.GetSubstructMatches(d_glucose_pattern)
 
-    return True, "Contains D-glucose substructure, pyranose ring, and glycosidic bonds"
+    # If no D-glucose substructure found, return False
+    if not d_glucose_matches:
+        return False, "No D-glucose substructure found"
+
+    # Check if D-glucose is attached to the aglycone via a glycosidic bond
+    for match in d_glucose_matches:
+        atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+        for atom1, atom2 in zip(atoms, atoms[1:]):
+            if atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 8:
+                # Found a glycosidic bond (O-C-O)
+                break
+        else:
+            # No glycosidic bond found for this match
+            continue
+        
+        # Check stereochemistry of the glucose moiety
+        conf = mol.GetConformer()
+        if AllChem.ConfStereochemistry(conf, atoms, mol.GetAtomProperties()):
+            # Correct stereochemistry, classify as D-glucoside
+            return True, "Contains D-glucose substructure attached to the aglycone via a glycosidic bond"
+
+    # If no match with correct stereochemistry found, return False
+    return False, "No D-glucose substructure found with correct stereochemistry and connectivity"
