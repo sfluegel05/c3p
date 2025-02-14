@@ -21,18 +21,13 @@ def is_thiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Enhanced thiol pattern to capture thiol groups precisely: S attached to a carbon and a hydrogen
-    # This prevents false positives like thioethers (sulfur bonded to two carbons) or other non-thiol compounds.
-    thiol_pattern = Chem.MolFromSmarts("[#6][SH]")  # Carbon singly bonded to sulfur with hydrogen on sulfur
+    # Look for thiol group pattern, -SH attached to carbon (aliphatic or aromatic)
+    # This includes aliphatic carbon ([CX4H,CX3H0]), aromatic carbon ([c]), and covers general aliphatic connections as well.
+    thiol_pattern_aliphatic = Chem.MolFromSmarts("[CX4H0,CX3][SH]")
+    thiol_pattern_aromatic = Chem.MolFromSmarts("[c][SH]")
 
-    # Check if a thiol group is present
-    if not mol.HasSubstructMatch(thiol_pattern):
-        return False, "No thiol group found"
+    # Check for thiol pattern matches in the molecule
+    if mol.HasSubstructMatch(thiol_pattern_aliphatic) or mol.HasSubstructMatch(thiol_pattern_aromatic):
+        return True, "Contains a thiol group (-SH) attached to a carbon atom"
 
-    # Additional check for thiolate (deprotonated thiols)
-    thiolate_pattern = Chem.MolFromSmarts("[#6][S-]")  # Carbon singly bonded to sulfur with negative charge
-
-    if mol.HasSubstructMatch(thiolate_pattern):
-        return True, "Contains a thiol group (or thiolate anion) attached to a carbon atom"
-
-    return True, "Contains a thiol group (-SH) attached to a carbon atom"
+    return False, "No thiol group found"
