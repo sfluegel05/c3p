@@ -2,6 +2,7 @@
 Classifies: CHEBI:143004 ultra-long-chain fatty acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_ultra_long_chain_fatty_acid(smiles: str):
     """
@@ -19,33 +20,37 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a carboxylic acid group
+    # Check for the presence of a single carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "Molecule does not contain a carboxylic acid group."
+    matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if len(matches) != 1:
+         return False, "Molecule does not contain exactly one carboxylic acid group."
+    
+    # Get the carbon atom index of the carboxyl carbon
+    carboxyl_carbon_idx = matches[0][0]
 
-    # Find all carbon atoms
-    carbon_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-
-    def dfs(current_node, visited):
-      """Recursive Depth-First Search to find carbon chains"""
-      max_path_length = 0
+    # Function to find the longest chain of carbons starting from carboxyl carbon
+    def find_longest_chain(start_atom_idx, visited_atoms):
       
-      for neighbor in mol.GetAtomWithIdx(current_node).GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:
-          if neighbor.GetIdx() not in visited:
-              path_length = dfs(neighbor.GetIdx(), visited | {neighbor.GetIdx()}) + 1
-              max_path_length = max(max_path_length, path_length)
+      max_len = 0
+      for neighbor in mol.GetAtomWithIdx(start_atom_idx).GetNeighbors():
+        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited_atoms:
+          max_len = max(max_len, 1 + find_longest_chain(neighbor.GetIdx(), visited_atoms | {neighbor.GetIdx()}))
 
-      return max_path_length
-  
-    max_chain_length = 0
-    for start_node in carbon_atoms:
-        chain_length = dfs(start_node, {start_node}) + 1 # +1 for the current atom
-        max_chain_length = max(max_chain_length, chain_length)
+      return max_len
+
+    longest_chain = find_longest_chain(carboxyl_carbon_idx, {carboxyl_carbon_idx}) +1 # +1 for the starting carbon
+
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
 
-    if max_chain_length > 27:
-        return True, f"Longest carbon chain has {max_chain_length} carbons, which is > 27."
+    # Filter out non-fatty acid molecules using oxygen counts
+    if o_count > 5:
+        return False, f"Too many oxygen atoms for a fatty acid ({o_count})"
+
+    if longest_chain > 27:
+        return True, f"Longest carbon chain has {longest_chain} carbons, which is > 27."
     else:
-        return False, f"Longest carbon chain has {max_chain_length} carbons, which is <= 27."
+        return False, f"Longest carbon chain has {longest_chain} carbons, which is <= 27."
