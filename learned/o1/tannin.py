@@ -13,8 +13,7 @@ def is_tannin(smiles: str):
     Determines if a molecule is a tannin based on its SMILES string.
     A tannin is defined as 'Any of a group of astringent polyphenolic vegetable principles or compounds,
     chiefly complex glucosides of catechol and pyrogallol.'
-    This function checks for the presence of multiple catechol or pyrogallol units, phenolic hydroxyl groups,
-    and possible presence of sugar moieties connected via glycosidic or ester bonds.
+    This function checks for structural features characteristic of hydrolyzable and condensed tannins.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,48 +28,44 @@ def is_tannin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phenolic hydroxyl groups attached to aromatic rings
-    phenol_pattern = Chem.MolFromSmarts('a O')
-    phenol_matches = mol.GetSubstructMatches(phenol_pattern)
-    num_phenol_groups = len(phenol_matches)
+    # Define patterns for hydrolyzable tannins (gallotannins and ellagitannins)
+    # Galloyl group attached via ester linkage to sugar
+    galloyl_ester_pattern = Chem.MolFromSmarts('O[C;R][C;R](O)COC(=O)c1cc(O)ccc1O')
+    galloyl_ester_matches = mol.HasSubstructMatch(galloyl_ester_pattern)
 
-    # Tannins typically have multiple phenolic hydroxyl groups
-    if num_phenol_groups < 6:
-        return False, f"Only {num_phenol_groups} phenolic hydroxyl groups found, need at least 6"
+    # Hexahydroxydiphenoyl (HHDP) group attached to sugar
+    hhdp_ester_pattern = Chem.MolFromSmarts('O[C;R][C;R](O)COC(=O)c1c(O)cc2oc(=O)c(O)cc2c1O')
+    hhdp_ester_matches = mol.HasSubstructMatch(hhdp_ester_pattern)
 
-    # Check for catechol units (benzene ring with two adjacent hydroxyl groups)
-    catechol_pattern = Chem.MolFromSmarts('c1c(O)cc(O)cc1')
-    num_catechol_units = len(mol.GetSubstructMatches(catechol_pattern))
+    # Define patterns for condensed tannins (proanthocyanidins)
+    # Flavan-3-ol unit (catechin/epicatechin)
+    flavan3ol_pattern = Chem.MolFromSmarts('[C@@H]1(O)Cc2cc(O)cc(O)c2O[C@@H]1c1cc(O)cc(O)c1')
 
-    # Check for pyrogallol units (benzene ring with three adjacent hydroxyl groups)
-    pyrogallol_pattern = Chem.MolFromSmarts('c1c(O)cc(O)cc1O')
-    num_pyrogallol_units = len(mol.GetSubstructMatches(pyrogallol_pattern))
+    # Interflavan linkage C4-C8 or C4-C6
+    c4_c8_linkage_pattern = Chem.MolFromSmarts('[C@@H]1(O)Cc2cc(O)cc(O)c2O[C@@H]1-c1c(O)cc(O)cc1')
+    c4_c6_linkage_pattern = Chem.MolFromSmarts('[C@@H]1(O)Cc2cc(O)cc(O)c2O[C@@H]1-c1cc(O)cc(O)c1')
 
-    total_catechol_pyrogallol = num_catechol_units + num_pyrogallol_units
+    flavan3ol_matches = mol.GetSubstructMatches(flavan3ol_pattern)
+    c4_c8_matches = mol.GetSubstructMatches(c4_c8_linkage_pattern)
+    c4_c6_matches = mol.GetSubstructMatches(c4_c6_linkage_pattern)
 
-    if total_catechol_pyrogallol < 2:
-        return False, f"Only {total_catechol_pyrogallol} catechol/pyrogallol units found, need at least 2"
+    # Check for hydrolyzable tannins
+    if galloyl_ester_matches or hhdp_ester_matches:
+        return True, "Molecule is a hydrolyzable tannin (gallotannin or ellagitannin)"
 
-    # Check for sugar moieties (e.g., glucose unit)
-    glucose_pattern = Chem.MolFromSmarts('C1OC(O)C(O)C(O)C(O)C1O')
-    glucose_matches = mol.GetSubstructMatches(glucose_pattern)
-    num_glucose_units = len(glucose_matches)
+    # Check for condensed tannins
+    if len(flavan3ol_matches) >= 2 and (len(c4_c8_matches) > 0 or len(c4_c6_matches) > 0):
+        return True, "Molecule is a condensed tannin (proanthocyanidin) with multiple flavan-3-ol units linked via C-C bonds"
 
-    # Check for ester linkages (-C(=O)O-)
-    ester_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2H0][#6]')
-    num_ester_bonds = len(mol.GetSubstructMatches(ester_pattern))
+    # Additional check for larger condensed tannins
+    if len(flavan3ol_matches) >= 3:
+        return True, "Molecule is a larger condensed tannin with multiple flavan-3-ol units"
 
-    # Check for glycosidic bonds (oxygen linking two carbons in rings)
-    glycosidic_pattern = Chem.MolFromSmarts('[$([C;R])]-O-[$([C;R])]')
-    num_glycosidic_bonds = len(mol.GetSubstructMatches(glycosidic_pattern))
+    # Check for multiple galloyl groups attached to a molecule
+    galloyl_pattern = Chem.MolFromSmarts('c1cc(O)ccc1O[C](=O)')
+    num_galloyl_groups = len(mol.GetSubstructMatches(galloyl_pattern))
+    if num_galloyl_groups >= 2:
+        return True, f"Molecule has multiple galloyl groups ({num_galloyl_groups}) attached via ester linkages"
 
-    # Determine if molecule meets criteria for tannin
-    if num_glucose_units > 0 or num_glycosidic_bonds > 0 or num_ester_bonds > 0:
-        reason = "Molecule has multiple catechol/pyrogallol units and linkages characteristic of tannins"
-        return True, reason
-    else:
-        if num_phenol_groups >= 10:
-            reason = "Molecule is a high molecular weight polyphenol with sufficient phenolic groups"
-            return True, reason
-        else:
-            return False, "Insufficient linkages or sugar moieties characteristic of tannins"
+    # If none of the above, molecule is likely not a tannin
+    return False, "Molecule does not match structural features characteristic of tannins"
