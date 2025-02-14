@@ -8,6 +8,9 @@ def is_trichlorobenzene(smiles: str):
     Determines if a molecule is a trichlorobenzene based on its SMILES string.
     A trichlorobenzene is any chlorobenzene carrying three chloro substituents at unspecified positions.
     
+    The molecule must contain a single benzene ring with exactly three chlorine substituents,
+    and the ring should not be fused to or directly connected to any other ring systems.
+    
     Args:
         smiles (str): SMILES string of the molecule
     
@@ -33,6 +36,21 @@ def is_trichlorobenzene(smiles: str):
             if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
                 # Check if the ring is not fused (atoms are only part of one ring)
                 if all(ring_info.NumAtomRings(idx) == 1 for idx in ring):
+                    # Check if the ring is not connected to other rings
+                    ring_atoms = set(ring)
+                    is_connected_to_other_rings = False
+                    for idx in ring:
+                        atom = mol.GetAtomWithIdx(idx)
+                        for neighbor in atom.GetNeighbors():
+                            neighbor_idx = neighbor.GetIdx()
+                            # If neighbor is in a ring and not in the current ring, it's connected to another ring
+                            if neighbor_idx not in ring_atoms and ring_info.NumAtomRings(neighbor_idx) > 0:
+                                is_connected_to_other_rings = True
+                                break
+                        if is_connected_to_other_rings:
+                            break
+                    if is_connected_to_other_rings:
+                        continue  # Skip this ring
                     # Count the number of chlorine atoms attached directly to the ring
                     num_cl = 0
                     for idx in ring:
@@ -42,7 +60,7 @@ def is_trichlorobenzene(smiles: str):
                             if neighbor.GetAtomicNum() == 17 and neighbor.GetIdx() not in ring:
                                 num_cl += 1
                     if num_cl == 3:
-                        return True, "Contains standalone benzene ring with exactly three chlorine substituents"
+                        return True, "Contains benzene ring with exactly three chlorine substituents, not connected to other rings"
     
     # No suitable benzene ring with exactly three chlorine substituents found
-    return False, "Does not contain standalone benzene ring with exactly three chlorine substituents"
+    return False, "Does not contain appropriate trichlorobenzene ring"
