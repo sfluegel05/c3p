@@ -7,7 +7,7 @@ Organic sulfides are compounds having the structure RSR (R =/= H)
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_organic_sulfide(smiles: str):
     """
@@ -34,17 +34,18 @@ def is_organic_sulfide(smiles: str):
     if not sulfur_atoms:
         return False, "No sulfur atoms found"
     
-    # Check if each sulfur atom is bonded to two non-hydrogen atoms
+    # Exclude thiocyanate and thiol groups
+    thiocyanate_pattern = Chem.MolFromSmarts("[S-]C#N")
+    thiol_pattern = Chem.MolFromSmarts("[SH]")
+    if mol.HasSubstructMatch(thiocyanate_pattern) or mol.HasSubstructMatch(thiol_pattern):
+        return False, "Molecule contains a thiocyanate or thiol group"
+    
+    # Check if any sulfur atom satisfies the RSR structure
     for sulfur in sulfur_atoms:
         neighbors = [atom for bond in sulfur.GetBonds() for atom in [bond.GetBeginAtom(), bond.GetEndAtom()] if atom.GetAtomicNum() != 1]
-        if len(neighbors) != 2:
-            return False, f"Sulfur atom has {len(neighbors)} non-hydrogen neighbors, expected 2"
+        if len(neighbors) >= 2:
+            r1, r2 = neighbors[:2]
+            if r1.GetAtomicNum() != 1 and r2.GetAtomicNum() != 1:
+                return True, "Contains the structure RSR where R is not hydrogen (organic sulfide)"
     
-    # Check if all substituents on sulfur are not hydrogen
-    for sulfur in sulfur_atoms:
-        for bond in sulfur.GetBonds():
-            neighbor = bond.GetOtherAtom(sulfur)
-            if neighbor.GetAtomicNum() == 1:
-                return False, "One of the substituents on sulfur is hydrogen"
-    
-    return True, "Contains the structure RSR where R is not hydrogen (organic sulfide)"
+    return False, "No sulfur atom satisfies the RSR structure"
