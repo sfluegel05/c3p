@@ -3,13 +3,11 @@ Classifies: CHEBI:35436 D-glucoside
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_D_glucoside(smiles: str):
     """
     Determines if a molecule is a D-glucoside based on its SMILES string.
-    A D-glucoside is a molecule with a D-glucose moiety linked to another molecule via a glycosidic bond.
-    The D-glucose is in its pyranose form.
+    A D-glucoside is a molecule with a D-glucose moiety linked to another molecule.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -18,43 +16,44 @@ def is_D_glucoside(smiles: str):
          bool: True if the molecule is a D-glucoside, False otherwise.
          str: Reason for the classification.
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for D-glucose (pyranose form)
-    # Explicitly specifies the stereochemistry at all chiral centers, including the anomeric carbon.
-    d_glucose_smarts = "[C@H]1([C@H]([C@@H]([C@H]([C@@H](O1)CO)O)O)O)"
+    # Define the SMARTS pattern for D-glucose. Stereochemistry is specified.
+    # This accounts for the ring form of D-glucose.
+    d_glucose_smarts = '[C@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O)'
     d_glucose_pattern = Chem.MolFromSmarts(d_glucose_smarts)
 
-    if d_glucose_pattern is None:
-        return None, "Invalid SMARTS pattern for D-glucose"
+    #Check for a match to the D-glucose pattern.
+    if not mol.HasSubstructMatch(d_glucose_pattern):
+        return False, "No D-glucose moiety found"
 
-    # Find all substructure matches of D-glucose
-    glucose_matches = mol.GetSubstructMatches(d_glucose_pattern)
+    # Check for a glycosidic bond (an oxygen attached to the anomeric carbon of the glucose pattern)
+    # Find the anomeric carbon (C1) in the glucose pattern
+    glucose_match = mol.GetSubstructMatch(d_glucose_pattern)
+    if glucose_match:
+         anomeric_carbon = glucose_match[0]
+    else:
+        return False, "D-glucose pattern not found or invalid"
+    
+    glucose_atom = mol.GetAtomWithIdx(anomeric_carbon)
 
-    if not glucose_matches:
-       return False, "No D-glucose moiety found."
+    has_glycosidic_bond = False
+    for neighbor in glucose_atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 8: # Check for Oxygen
+              #Check if it is connected to the glucose residue, not an internal oxygen
+            is_glycosidic = False
+            for neighbor_of_neighbor in neighbor.GetNeighbors():
+                if neighbor_of_neighbor.GetIdx() not in glucose_match:
+                    is_glycosidic = True
+            if is_glycosidic:
+               has_glycosidic_bond = True
+               break
 
-    # Iterate through the glucose matches, and check for glycosidic bonds.
-    for match in glucose_matches:
+    if not has_glycosidic_bond:
+      return False, "No glycosidic bond found"
 
-       # Now, look for the glycosidic bond
-        for atom_idx in match:
-             atom = mol.GetAtomWithIdx(atom_idx)
-             
-             # Look for Oxygen neighbors.
-             for neighbor in atom.GetNeighbors():
-                 if neighbor.GetAtomicNum() == 8:
-                    is_glycosidic = False
-                    
-                    # Check if the oxygen is linked to a carbon outside the glucose
-                    for neighbor_of_neighbor in neighbor.GetNeighbors():
-                          if neighbor_of_neighbor.GetIdx() not in match and neighbor_of_neighbor.GetAtomicNum() == 6 :
-                            is_glycosidic = True
-                            break
-                    if is_glycosidic:
-                        return True, "Contains a D-glucose moiety linked via a glycosidic bond."
-
-    return False, "No D-glucose moiety linked via a glycosidic bond found"
+    return True, "Contains a D-glucose moiety linked via a glycosidic bond."
