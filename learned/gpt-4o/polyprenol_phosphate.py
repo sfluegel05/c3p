@@ -2,7 +2,6 @@
 Classifies: CHEBI:16460 polyprenol phosphate
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_polyprenol_phosphate(smiles: str):
     """
@@ -21,26 +20,34 @@ def is_polyprenol_phosphate(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Recognize phosphate (P=O with single or two oxygens linked) or diphosphate groups
+    phosphate_pattern = Chem.MolFromSmarts("O=P([O-])([O-])" )  # Adjusted for phosphorylated oxygen
+    debug_info = []
+
+    oid = mol.HasSubstructMatch(phosphate_pattern)
+    debug_info.append(f"Phosphate group match: {oid}")
+
+    if not oid:
+        return False, "No phosphate or diphosphate group found or incorrectly connected"
     
-    # Check for phosphate or diphosphate group pattern
-    phosphate_pattern = Chem.MolFromSmarts("[OX1][PX4](=[OX1])(O)")
-    diphosphate_pattern = Chem.MolFromSmarts("[OX1][PX4](=[OX1])([OX1])O[PX4](=[OX1])")
-    if not (mol.HasSubstructMatch(phosphate_pattern) or mol.HasSubstructMatch(diphosphate_pattern)):
-        return False, "No phosphate or diphosphate group found"
-    
-    # Check for ester linkage to phosphate group: O-P(=O)(O)...
-    ester_linkage_smarts = "O[PX4](=O)(O)"
-    ester_linkage = Chem.MolFromSmarts(ester_linkage_smarts)
-    if not mol.HasSubstructMatch(ester_linkage):
+    # Improved ester linkage search targeting polyprenol specific attachment
+    ester_linkage = Chem.MolFromSmarts("O=P([O-])([O-])O")
+    match_ester = mol.HasSubstructMatch(ester_linkage)
+    debug_info.append(f"Ester linkage to phosphate match: {match_ester}")
+
+    if not match_ester:
         return False, "Ester linkage to phosphate group not found"
 
-    # Look for repeating isoprene units (better pattern for polyprenol) in linear fashion
-    # We are enhancing to identify C=C connectivity more precisely.
-    isoprene_pattern = Chem.MolFromSmarts("C=CC(CC=C)")
-    isoprene_count = len(mol.GetSubstructMatches(isoprene_pattern))
+    # Refine isoprene detection, ensuring correct context inside polyprenyl chain.
+    isoprene_pat = Chem.MolFromSmarts("C(C)=C(C)CC")  # Aligning more closely to polyprenol structure implications
+    isoprene_match = len(mol.GetSubstructMatches(isoprene_pat))
+
+    debug_info.append(f"Isoprene unit counts: {isoprene_match}")
+
+    if isoprene_match < 3:  # Typically three or more isoprene units
+        return False, f"Insufficient isoprene units for polyprenol chain: {isoprene_match}"
     
-    # It's a polyprenol phosphate if there are 3 or more.
-    if isoprene_count < 3:
-        return False, f"Insufficient isoprene units: {isoprene_count}"
-    
-    return True, "Contains polyprenol chain with phosphate ester bond"
+    # Optionally add other layers of validation here if needed.
+
+    return True, "Successfully identified as a polyprenol phosphate" + "; Debug info: " + ", ".join(debug_info)
