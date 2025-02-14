@@ -25,25 +25,15 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for amino acid backbone pattern (C-C-N-C-C-C=O)
-    amino_acid_pattern = Chem.MolFromSmarts("[C,$(C(-C)(-C)(-C))](-C(-C(-N(-[OH])))(-C(-C(-C(=O)))))")
+    # Look for amino acid backbone pattern (C-C-N-C-C=O)
+    amino_acid_pattern = Chem.MolFromSmarts("[C,$(C(-C)(-C)(-C))](-C(-N(-[#6]))(-C(-C(=O))))")
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No amino acid backbone found"
     
-    # Look for N-hydroxy group (-N(-[OH])-)
-    n_hydroxy_pattern = Chem.MolFromSmarts("N(-[OH])")
-    if not mol.HasSubstructMatch(n_hydroxy_pattern):
+    # Look for N-hydroxy group (-N(-[OH]) or -N(-[O])(-[O]))
+    n_hydroxy_pattern = Chem.MolFromSmarts("[N;X3](-[OH])[#6]")
+    n_dihydroxy_pattern = Chem.MolFromSmarts("[N;X3](-[O])(-[O])[#6]")
+    if not mol.HasSubstructMatch(n_hydroxy_pattern) and not mol.HasSubstructMatch(n_dihydroxy_pattern):
         return False, "No N-hydroxy group found"
-    
-    # Check for alpha position of N-hydroxy group
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == "N" and atom.GetDegree() == 3:
-            n_hydroxy_atom = atom
-            break
-    else:
-        return False, "N-hydroxy group not in alpha position"
-    
-    if n_hydroxy_atom.GetTotalNumHs() != 1:
-        return False, "N-hydroxy group not in alpha position"
     
     return True, "Contains N-hydroxy group in alpha position of amino acid backbone"
