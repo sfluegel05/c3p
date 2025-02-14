@@ -19,7 +19,7 @@ def is_prenols(smiles: str):
         bool: True if molecule is a prenol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -27,85 +27,27 @@ def is_prenols(smiles: str):
 
     # Check for alcohol group (-OH)
     OH_pattern = Chem.MolFromSmarts('[OX2H]')
-    OH_matches = mol.GetSubstructMatches(OH_pattern)
-    if not OH_matches:
-        return False, "No hydroxyl group (-OH) found"
+    if not mol.HasSubstructMatch(OH_pattern):
+        return False, "No alcohol group (-OH) found"
 
-    # Find all carbon chains starting from an alcohol group
-    for oh_match in OH_matches:
-        oh_atom_idx = oh_match[0]
-        oh_atom = mol.GetAtomWithIdx(oh_atom_idx)
+    # Define isoprene unit pattern: CH2-C(Me)=CH-CH2
+    isoprene_pattern = Chem.MolFromSmarts('[CH2]-[C]([CH3])=C-[CH2]')
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_matches) == 0:
+        return False, "No isoprene units found"
 
-        # Look for carbon atom attached to the hydroxyl oxygen
-        neighbors = [n for n in oh_atom.GetNeighbors() if n.GetAtomicNum() == 6]
-        if not neighbors:
-            continue  # No carbon attached to hydroxyl group
-        start_atom = neighbors[0]
+    # Check that isoprene units are connected head-to-tail
+    # Build a graph of isoprene units
+    isoprene_atoms = set()
+    for match in isoprene_matches:
+        isoprene_atoms.update(match)
 
-        # Traverse the longest carbon chain starting from the alcohol carbon
-        path = Chem.GetLongestCarbonChain(mol, start_atom.GetIdx())
-        if not path:
-            continue  # Couldn't find a valid carbon chain
+    # Get all atoms in the molecule
+    total_atoms = set(range(mol.GetNumAtoms()))
 
-        # Check if the chain length corresponds to one or more isoprene units
-        chain_length = len(path)
-        if chain_length < 5 or chain_length % 5 != 0:
-            continue  # Chain length does not correspond to complete isoprene units
+    # Remove isoprene atoms from total atoms, the remaining should be minimal
+    remaining_atoms = total_atoms - isoprene_atoms
+    if len(remaining_atoms) > 5: # Allowing for OH group and possible variations
+        return False, "Isoprene units are not connected head-to-tail or extra atoms detected"
 
-        n_units = chain_length // 5  # Number of isoprene units
-
-        # Check for methyl branches at correct positions
-        is_prenol = True
-        for i in range(n_units):
-            unit_start_idx = path[i*5]
-            unit_carbon = mol.GetAtomWithIdx(unit_start_idx)
-
-            # The second carbon in the isoprene unit (position i*5 + 1)
-            methyl_carbon_idx = path[i*5 + 1]
-            methyl_carbon = mol.GetAtomWithIdx(methyl_carbon_idx)
-
-            # Check for methyl branch attached to this carbon
-            methyl_found = False
-            for neighbor in methyl_carbon.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in path:
-                    # Found a carbon branch not in the main chain
-                    if neighbor.GetDegree() == 1:
-                        methyl_found = True
-                        break
-            if not methyl_found:
-                is_prenol = False
-                break  # Missing methyl group at expected position
-
-        if is_prenol:
-            return True, f"Molecule is a prenol with {n_units} isoprene unit(s)"
-
-    return False, "Molecule does not conform to prenol structure"
-
-# Helper function to get the longest carbon chain starting from a given atom
-def GetLongestCarbonChain(mol, start_atom_idx):
-    """
-    Finds the longest carbon chain in the molecule starting from the given atom index.
-
-    Args:
-        mol: RDKit molecule object
-        start_atom_idx: Index of the starting atom
-
-    Returns:
-        list: List of atom indices representing the longest carbon chain
-    """
-    def dfs(atom_idx, visited):
-        visited.add(atom_idx)
-        atom = mol.GetAtomWithIdx(atom_idx)
-        max_path = [atom_idx]
-        for neighbor in atom.GetNeighbors():
-            nbr_idx = neighbor.GetIdx()
-            if nbr_idx in visited:
-                continue
-            if neighbor.GetAtomicNum() != 6:
-                continue  # Only consider carbon atoms
-            path = dfs(nbr_idx, visited.copy())
-            if len(path) > len(max_path):
-                max_path = [atom_idx] + path
-        return max_path
-
-    return dfs(start_atom_idx, set())
+    return True, "Contains alcohol group and one or more isoprene units connected head-to-tail"
