@@ -8,7 +8,6 @@ Definition: An oxo fatty acyl-CoA that results from the formal condensation of t
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdFMCS
 
 def is_3_oxo_fatty_acyl_CoA(smiles: str):
     """
@@ -27,50 +26,53 @@ def is_3_oxo_fatty_acyl_CoA(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Remove hydrogen atoms for substructure matching
-    mol = Chem.RemoveHs(mol)
+    # Define the coenzyme A (CoA) substructure pattern
+    # Simplified pattern for the CoA moiety
+    coa_smarts = """
+    N[C@@H](CCNC(=O)[C@@H](O)C(C)(C)COP(=O)(O)OC[C@H]1O[C@H](n2cnc3c(N)ncnc32)[C@@H](O)[C@H]1OP(=O)(O)O)C(=O)O
+    """
+    coa_pattern = Chem.MolFromSmarts(coa_smarts)
+    if not coa_pattern:
+        return False, "Invalid CoA SMARTS pattern"
 
-    # Define the CoA substructure pattern (more comprehensive)
-    # Using the SMILES of Coenzyme A minus the thiol hydrogen
-    coa_smiles = "CC(C)(COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)(O)O)n2cnc3c(N)ncnc23)O[C@@H](C(=O)NCCC(=O)NCCS)C(=O)NCCS"
-    coa_mol = Chem.MolFromSmiles(coa_smiles)
-    if not coa_mol:
-        return False, "Invalid CoA SMILES"
-
-    # Check for CoA substructure
-    if not mol.HasSubstructMatch(coa_mol):
-        return False, "CoA moiety not found"
+    # Check for CoA moiety
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Coenzyme A moiety not found"
 
     # Define the thioester linkage pattern
+    # Thioester linkage between fatty acyl chain and CoA: C(=O)-S-C
     thioester_smarts = "C(=O)SCCNC(=O)"
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
+    if not thioester_pattern:
+        return False, "Invalid thioester SMARTS pattern"
+
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester linkage not found"
+        return False, "Thioester linkage to CoA not found"
 
     # Define the 3-oxo-fatty acyl chain pattern
-    # Pattern for thioester-linked 3-oxo-fatty acyl chain
-    # The pattern starts from the carbonyl carbon of the thioester linkage
-    # and includes the beta-keto group at the 3-position
-    oxo_fatty_acyl_smarts = "C(=O)SC[C;H2][C](=O)[C;H]"
-    oxo_fatty_acyl_pattern = Chem.MolFromSmarts(oxo_fatty_acyl_smarts)
-    if not mol.HasSubstructMatch(oxo_fatty_acyl_pattern):
+    # Fatty acyl chain with a keto group at the 3-position
+    # Pattern: O=C-C-C(=O)-C
+    three_oxo_acyl_smarts = "C(=O)CC(=O)C"
+    three_oxo_acyl_pattern = Chem.MolFromSmarts(three_oxo_acyl_smarts)
+    if not three_oxo_acyl_pattern:
+        return False, "Invalid 3-oxo-fatty acyl SMARTS pattern"
+
+    # Check for 3-oxo-fatty acyl chain attached via thioester linkage
+    if not mol.HasSubstructMatch(three_oxo_acyl_pattern):
         return False, "3-oxo-fatty acyl chain not found"
 
-    # Optional: Check the length of the fatty acyl chain
-    # Exclude very short chains that are not considered fatty acids
-    chain_length = 0
-    for match in mol.GetSubstructMatches(oxo_fatty_acyl_pattern):
-        # The match includes the thioester linkage and the beta-keto group
-        # Count the number of carbons in the chain beyond the beta carbon
-        beta_carbon_idx = match[3]
-        chain_atoms = Chem.rdmolops.GetShortestPath(mol, beta_carbon_idx, beta_carbon_idx)
-        for atom_idx in chain_atoms:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() == 6:
-                chain_length += 1
-        break  # Only need the first match
+    # Optionally, check the length of the fatty acyl chain
+    # Find the match for the acyl chain
+    acyl_matches = mol.GetSubstructMatches(three_oxo_acyl_pattern)
+    if not acyl_matches:
+        return False, "3-oxo-fatty acyl chain not found"
 
-    if chain_length < 4:
-        return False, f"Fatty acyl chain too short ({chain_length} carbons)"
+    for match in acyl_matches:
+        # Get the acyl chain atoms from the match
+        acyl_chain_atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+        # Count the number of carbons in the acyl chain
+        c_count = sum(1 for atom in acyl_chain_atoms if atom.GetAtomicNum() == 6)
+        if c_count < 5:  # Minimum length to be considered a fatty acid
+            return False, "Fatty acyl chain too short"
 
     return True, "Molecule is a 3-oxo-fatty acyl-CoA"
