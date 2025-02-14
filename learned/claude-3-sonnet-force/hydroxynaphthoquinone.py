@@ -23,47 +23,47 @@ def is_hydroxynaphthoquinone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # More general naphthoquinone patterns that capture both ortho and para arrangements
-    # Using aromatic and non-aromatic carbons to be more flexible
+
+    # Define patterns for 1,2- and 1,4-naphthoquinone cores
     naphthoquinone_patterns = [
-        # Basic naphthoquinone core with flexible bond types
-        "[#6]1[#6]~[#6]~[#6]2[#6](=[O])[#6]~[#6](=[O])[#6]~[#6]12",
-        # Alternative pattern with different quinone positions
-        "[#6]1[#6]~[#6]~[#6]2[#6](=[O])[#6]~[#6]~[#6](=[O])[#6]12",
-        # Pattern for more complex fused systems
-        "[#6]2~[#6]~[#6]~[#6]1[#6](~[#6]~[#6](~[#6]2)~[#6](=[O])[#6]1)=[O]"
+        # 1,4-naphthoquinone core
+        "[#6]1:,[#6]-,:[#6]:,[#6]:,[#6]2:,[#6]:,[#6]:,[#6]:,[#6]:,[#6]1[#6](=O)-,:[#6]:,[#6]-,:[#6]2=O",
+        # 1,2-naphthoquinone core
+        "[#6]1:,[#6]-,:[#6]:,[#6]:,[#6]2:,[#6]:,[#6]:,[#6]:,[#6]:,[#6]1[#6](=O)-,:[#6]2=O"
     ]
     
     has_naphthoquinone = False
-    core_atoms = set()
+    matched_atoms = set()
     
     for pattern in naphthoquinone_patterns:
         patt = Chem.MolFromSmarts(pattern)
         if mol.HasSubstructMatch(patt):
             has_naphthoquinone = True
-            core_atoms.update(mol.GetSubstructMatch(patt))
-    
+            # Get all matches to find the core atoms
+            matches = mol.GetSubstructMatches(patt)
+            for match in matches:
+                matched_atoms.update(match)
+
     if not has_naphthoquinone:
         return False, "No naphthoquinone core found"
-    
-    # Look for both hydroxyl groups and deprotonated oxygens attached to the core
+
+    # Look for hydroxyl groups attached to the core
+    # Include both -OH and -O- forms
     hydroxyl_patterns = [
-        "[OX2H1]",  # regular hydroxyl
-        "[O-]",     # deprotonated hydroxyl
-        "[OX2H0]-[#6]"  # other oxygen attachments that might be hydroxyls
+        "[OX2H]-[#6]",  # neutral hydroxyl
+        "[O-]-[#6]"     # deprotonated hydroxyl
     ]
     
     for pattern in hydroxyl_patterns:
-        hydroxyl_pattern = Chem.MolFromSmarts(pattern)
-        hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-        
-        for match in hydroxyl_matches:
-            oh_oxygen = mol.GetAtomWithIdx(match[0])
-            for neighbor in oh_oxygen.GetNeighbors():
-                if neighbor.GetIdx() in core_atoms:
-                    return True, "Contains naphthoquinone core with at least one hydroxyl group attached"
-    
+        hydroxyl_patt = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(hydroxyl_patt):
+            matches = mol.GetSubstructMatches(hydroxyl_patt)
+            for match in matches:
+                # Get the carbon atom the hydroxyl is attached to
+                carbon_idx = match[1]  # second atom in the match is the carbon
+                if carbon_idx in matched_atoms:
+                    return True, "Contains naphthoquinone core with hydroxyl group attached"
+
     return False, "No hydroxyl groups attached to naphthoquinone core"
 
 def test_examples():
@@ -72,8 +72,8 @@ def test_examples():
         ("Oc1cc(O)c2C(=O)C=C(O)C(=O)c2c1", "flaviolin"),
         ("OC1=C([C@H]2CC[C@@H](CC2)c2ccc(Cl)cc2)C(=O)c2ccccc2C1=O", "atovaquone"),
         ("CC(C)=CC[C@H](O)C1=CC(=O)c2c(O)ccc(O)c2C1=O", "Alkannin"),
-        ("CC1=CC(=O)C=CC1=O", "not a hydroxynaphthoquinone (methylquinone)"),
-        ("[C@H](C)([C@@H]([C@@H]([C@H](\C=C\O[C@]1(OC=2C(C1=O)=C3C(C(C(C(=C3[O-])/C=N/N4CCN(CC4)C)=O)=O)=C(C2C)[O-])C)OC)C)OC(=O)C)[C@H](O)[C@@H]([C@@H](O)[C@@H](C)/C=C/C=C(/C)\C(N)=O)C", "rifampicin derivative")
+        ("CC1=CC(=O)C=CC1=O", "methylquinone (negative example)"),
+        ("Oc1cccc2C(=O)C=CC(=O)c12", "juglone")
     ]
     
     for smi, name in examples:
