@@ -25,41 +25,31 @@ def is_glycerophospholipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for exactly one phosphate group
-    phosphate_pattern = Chem.MolFromSmarts('P(=O)(O)(O)')
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) != 1:
-        return False, f"Found {len(phosphate_matches)} phosphate groups, need exactly 1"
-
-    # Define glycerol backbone with phosphate group on a terminal carbon
-    glycerol_phosphate_pattern = Chem.MolFromSmarts('[C;H2][C;H][C;H2][O][P](=O)(O)O')
-    backbone_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-    if not backbone_matches:
-        # Try the glycerol backbone with phosphate group on the other terminal carbon
-        glycerol_phosphate_pattern = Chem.MolFromSmarts('[C;H2][C;H][C;H2][O][C;H2][O][P](=O)(O)O')
-        backbone_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-        if not backbone_matches:
-            return False, "Glycerol backbone with phosphate group not found"
+    # Define glycerol backbone pattern with phosphate group ester-linked to terminal carbon
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("""
+    [C@@H]([O]*)([C@@H]([O]*)([C@@H]([O]*)([O][P](=O)([O-])[O*])))
+    """)
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+        return False, "Glycerol backbone with phosphate group not found"
     
-    # Define patterns for ester and ether linkages at positions 1 and 2
-    ester_pattern = Chem.MolFromSmarts('[C;H2][O][C](=O)[C]')
-    ether_pattern = Chem.MolFromSmarts('[C;H2][O][C;H]')
-
-    # Check for ester or ether linkage at position 1
-    position1_matches = mol.GetSubstructMatches(ester_pattern) + mol.GetSubstructMatches(ether_pattern)
-    if not position1_matches:
+    # Check for ester or ether linkages at positions 1 and 2
+    # Position 1 linkage (can be ester or ether)
+    pos1_ester = Chem.MolFromSmarts('[O][CH2][C](=O)[C]')
+    pos1_ether = Chem.MolFromSmarts('[O][CH2][CH][C]')
+    pos1_match = mol.HasSubstructMatch(pos1_ester) or mol.HasSubstructMatch(pos1_ether)
+    if not pos1_match:
         return False, "No ester or ether linkage found at position 1 of glycerol backbone"
 
-    # Check for ester or ether linkage at position 2
-    ester_pattern_pos2 = Chem.MolFromSmarts('[C;H][O][C](=O)[C]')
-    ether_pattern_pos2 = Chem.MolFromSmarts('[C;H][O][C;H]')
-    position2_matches = mol.GetSubstructMatches(ester_pattern_pos2) + mol.GetSubstructMatches(ether_pattern_pos2)
-    if not position2_matches:
+    # Position 2 linkage (can be ester or ether)
+    pos2_ester = Chem.MolFromSmarts('[O][CH][C](=O)[C]')
+    pos2_ether = Chem.MolFromSmarts('[O][CH][CH][C]')
+    pos2_match = mol.HasSubstructMatch(pos2_ester) or mol.HasSubstructMatch(pos2_ether)
+    if not pos2_match:
         return False, "No ester or ether linkage found at position 2 of glycerol backbone"
 
-    # Ensure that molecule is not a cardiolipin (exclude molecules with more than one phosphate group)
-    phosphate_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('P(=O)(O)(O)')))
-    if phosphate_count != 1:
-        return False, "Molecule has more than one phosphate group, likely not a glycerophospholipid"
+    # Check that phosphate group is ester-linked to terminal carbon
+    phosphate_pattern = Chem.MolFromSmarts('[O][CH2][O][P](=O)([O-])[O*]')
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "Phosphate group ester-linked to terminal carbon not found"
 
-    return True, "Contains glycerol backbone with ester or ether-linked fatty acids and a phosphate group at terminal carbon"
+    return True, "Contains glycerol backbone with phosphate group ester-linked to terminal carbon"
