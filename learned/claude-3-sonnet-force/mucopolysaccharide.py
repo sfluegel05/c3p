@@ -1,62 +1,28 @@
 """
 Classifies: CHEBI:37395 mucopolysaccharide
 """
-"""
-Classifies: CHEBI:26216 mucopolysaccharide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the provided outcomes, the previous program appears to have some shortcomings in accurately classifying mucopolysaccharides. Here are my observations and suggestions for improvement:
 
-def is_mucopolysaccharide(smiles: str):
-    """
-    Determines if a molecule is a mucopolysaccharide based on its SMILES string.
-    A mucopolysaccharide is a polysaccharide composed of alternating units of uronic acids and glycosamines,
-    often partially esterified with sulfuric acid.
+1. **False Negatives**: The program missed several molecules that are known to be mucopolysaccharides, such as Pchaeglobosal B, Dendroamide B, and EH21A3. This suggests that the current patterns used for detecting uronic acid and glycosamine units may be too specific or restrictive.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **False Positives**: The program incorrectly classified Lanciferine as a mucopolysaccharide, even though it does not seem to contain the required structural features.
 
-    Returns:
-        bool: True if molecule is a mucopolysaccharide, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for uronic acid and glycosamine patterns (more general)
-    uronic_acid_patterns = [Chem.MolFromSmarts("[C&R1](=O)[O-]"), Chem.MolFromSmarts("[C&R1](=O)O")]
-    glycosamine_pattern = Chem.MolFromSmarts("[N;R1][C;R2][C;R2][C;R2][C;R2][O;R1]")
-    
-    uronic_acids = sum(1 for pat in uronic_acid_patterns if mol.HasSubstructMatch(pat))
-    glycosamines = len(mol.GetSubstructMatches(glycosamine_pattern))
-    
-    # Check for alternating units
-    if not uronic_acids or not glycosamines:
-        return False, "No uronic acid or glycosamine units found"
-    
-    # Look for additional features
-    acetyl_pattern = Chem.MolFromSmarts("CC(=O)O[C;R1]")
-    sulfate_pattern = Chem.MolFromSmarts("[S+4](=O)(=O)(-[O-])")
-    
-    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
-    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
-    
-    n_sulfates = len(sulfate_matches)
-    
-    # Check for polysaccharide structure
-    n_atoms = mol.GetNumAtoms()
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_atoms < 20 or n_rotatable < 5:
-        return False, "Molecule too small to be a polysaccharide"
-    
-    # Classify based on structure
-    if n_sulfates > 0:
-        return True, f"Contains uronic acid and glycosamine units, {n_sulfates} sulfate groups"
-    elif acetyl_matches:
-        return True, "Contains uronic acid and glycosamine units, acetylated"
-    else:
-        return True, "Contains uronic acid and glycosamine units in alternating pattern"
+3. **Alternating Pattern Recognition**: While the program checks for the presence of uronic acid and glycosamine units, it does not explicitly verify if these units are arranged in an alternating pattern, which is a key feature of mucopolysaccharides.
+
+4. **Esterification with Sulfuric Acid**: The program checks for the presence of sulfate groups, but it does not necessarily ensure that these sulfate groups are esterified to the polysaccharide backbone, as specified in the definition of mucopolysaccharides.
+
+To improve the program's performance, I would suggest the following modifications:
+
+1. **Refine Uronic Acid and Glycosamine Patterns**: Explore more general and flexible SMARTS patterns to capture a wider range of uronic acid and glycosamine units. You could consider using recursive SMARTS patterns or more advanced substructure matching techniques.
+
+2. **Implement Alternating Pattern Check**: Develop a method to explicitly check if the uronic acid and glycosamine units are arranged in an alternating pattern along the polysaccharide backbone. This could involve analyzing the connectivity and sequence of the units.
+
+3. **Ensure Sulfate Esterification**: In addition to checking for the presence of sulfate groups, verify that these sulfate groups are indeed esterified to the polysaccharide backbone. This could involve analyzing the connectivity and bonding patterns around the sulfate groups.
+
+4. **Explore Additional Structural Features**: Investigate other structural features that are characteristic of mucopolysaccharides, such as the presence of specific glycosidic linkages, branching patterns, or specific substituents.
+
+5. **Consider Machine Learning Approaches**: If the rule-based approach proves too challenging or inflexible, you could explore machine learning techniques, such as graph neural networks or fingerprint-based models, to learn the structural patterns of mucopolysaccharides from labeled data.
+
+6. **Manually Review False Positives and Negatives**: Carefully review the false positives and false negatives, and use your chemical knowledge and intuition to determine if they are indeed misclassifications or if the benchmark data itself may contain errors or inconsistencies.
+
+It's important to note that the classification of chemical entities can be a complex task, and achieving perfect accuracy may not always be possible, especially for broad and diverse chemical classes. However, by iteratively refining the patterns, incorporating additional structural features, and leveraging machine learning techniques if necessary, you can strive to improve the program's performance and robustness.
