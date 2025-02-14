@@ -8,7 +8,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_ganglioside(smiles: str):
     """
     Determines if a molecule is a ganglioside based on its SMILES string.
-    A ganglioside is a glycosphingolipid with one or more sialic acids attached to the sugar chain.
+    A ganglioside is a glycosphingolipid (ceramide and oligosaccharide) with one or more sialic acids linked on the sugar chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,39 +23,43 @@ def is_ganglioside(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Ceramide Identification
-    #   - Sphingosine base (long carbon chain with a hydroxyl and an amine group with a double bond)
-    #   - Fatty acid attached via amide bond
-    ceramide_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]~[CX4]~[CHX4](-[OX2])~[CHX3]~[NX3]~[CX3](=[OX1])-[CX4](-[CX4])")  # Simplified ceramide pattern
+    ceramide_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CHX4](-[OX2])~[CHX3]~[NX3]~[CX3](=[OX1])-[CX4]")
     ceramide_matches = mol.GetSubstructMatches(ceramide_pattern)
     if not ceramide_matches:
-      return False, "No ceramide structure found."
+        return False, "No ceramide structure found."
 
-    # 2. Sialic Acid (Neu5Ac) Detection
-    #   - 9-carbon skeleton with carboxyl, N-acetyl, and hydroxyl groups.
-    neu5ac_pattern = Chem.MolFromSmarts("C[C](=[O])N[C]1[C]([CH]([CH]([CH]([C]([CH]([CH]([CH]1O)O)O)O)C(=O)O)O)O")
+    # 2. Sialic Acid (Neu5Ac and Neu5Gc) Detection
+    neu5ac_pattern = Chem.MolFromSmarts("[C]([C](=[O])N[C]1[C]([CH]([CH]([CH]([C]([CH]([CH]([CH]1O)O)O)O)C(=O)O)O)O)O")
+    neu5gc_pattern = Chem.MolFromSmarts("[C]([C](=[O])N[C]1[C]([CH]([CH]([CH]([C]([CH]([CH]([CH]1O)O)O)O)C(=O)O)O)O)CO")
     neu5ac_matches = mol.GetSubstructMatches(neu5ac_pattern)
+    neu5gc_matches = mol.GetSubstructMatches(neu5gc_pattern)
 
-    if not neu5ac_matches:
-        return False, "No sialic acid (Neu5Ac) found."
+    if not neu5ac_matches and not neu5gc_matches:
+        return False, "No sialic acid (Neu5Ac or Neu5Gc) found."
 
-    #3. Check that there is a chain between the ceramide and sialic acids
-    sugar_pattern = Chem.MolFromSmarts("[CX4]([OX2])-[CX4]([OX2])-[CX4]([OX2])-[OX2]-[CX4]")  # Simplified sugar pattern
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
-        return False, "No oligosaccharide chain between ceramide and sialic acid was found."
+    # 3. Check for Glycosidic bonds (ether oxygens) - ensure sugar is present
+    ether_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and len(atom.GetBonds()) > 1 )
+    if ether_count < 3:
+       return False, "No sugar chain found."
+
+    # 4. Verify ceramide link to sugar and sialic acid link to sugar
+    # Check if the -OH in the ceramide is linked to a sugar, which has an ether oxygen.
+    ceramide_atom_idx = [match[2] for match in ceramide_matches[0]] # index of the oxygen atom in the ceramide
+    if ceramide_atom_idx:
+        ceramide_atom = mol.GetAtomWithIdx(ceramide_atom_idx[0])
+        has_sugar_link = False
+        for neighbor in ceramide_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and len(neighbor.GetBonds()) > 1:
+                has_sugar_link = True
+                break
+        if not has_sugar_link:
+            return False, "Ceramide not linked to a sugar."
+
+    # 5. Check for multiple pyranose rings as a sign of oligosaccharide
+    pyranose_pattern = Chem.MolFromSmarts("C1OC(C)C(C)C(C)C1")
+    pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
+    if len(pyranose_matches) < 2:
+        return False, "Not an oligosaccharide chain."
 
 
-    # Additional checks can be added
-    # For example check for a minimum number of carbons and oxygens to avoid false positives.
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-
-    if c_count < 30:
-        return False, "Too few carbons for ganglioside."
-    if o_count < 10:
-        return False, "Too few oxygens for ganglioside."
-    if n_count < 2:
-        return False, "Too few nitrogens for ganglioside."
-    
-    return True, "Contains a ceramide, an oligosaccharide, and at least one sialic acid (Neu5Ac) unit."
+    return True, "Contains a ceramide, an oligosaccharide, and at least one sialic acid (Neu5Ac or Neu5Gc) unit."
