@@ -22,49 +22,43 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define benzylisoquinoline unit as SMARTS pattern
-    # This pattern represents an isoquinoline ring attached to a benzyl group
-    benzylisoquinoline_smarts = "c1ccccc1CC2=CC=NC3=CC=CC=C32"
-    benzylisoquinoline_pattern = Chem.MolFromSmarts(benzylisoquinoline_smarts)
+    # Define isoquinoline ring as SMARTS pattern (flexible matching)
+    isoquinoline_smarts = 'c1ccc2ncccc2c1'  # Simplified isoquinoline pattern
+    isoquinoline_pattern = Chem.MolFromSmarts(isoquinoline_smarts)
 
-    if benzylisoquinoline_pattern is None:
-        return False, "Invalid benzylisoquinoline SMARTS pattern"
+    if isoquinoline_pattern is None:
+        return False, "Invalid isoquinoline SMARTS pattern"
 
-    # Find all benzylisoquinoline units in the molecule
-    matches = mol.GetSubstructMatches(benzylisoquinoline_pattern)
+    # Find all isoquinoline units in the molecule
+    matches = mol.GetSubstructMatches(isoquinoline_pattern)
     if len(matches) < 2:
-        return False, f"Found {len(matches)} benzylisoquinoline units, need at least 2"
+        return False, f"Found {len(matches)} isoquinoline units, need at least 2"
 
-    # Convert matches into list of sets for easier processing
-    unit_atom_sets = [set(match) for match in matches]
+    # Get list of atom indices for each isoquinoline unit
+    isoquinoline_units = []
+    for match in matches:
+        isoquinoline_units.append(set(match))
 
-    # Check for bridges between benzylisoquinoline units
+    # Check for bridges between isoquinoline units
     bridges_found = False
-    for i in range(len(unit_atom_sets)):
-        for j in range(i+1, len(unit_atom_sets)):
-            unit_i_atoms = unit_atom_sets[i]
-            unit_j_atoms = unit_atom_sets[j]
-            # Iterate over bonds to find connections between units
+    for i in range(len(isoquinoline_units)):
+        for j in range(i+1, len(isoquinoline_units)):
+            unit_i_atoms = isoquinoline_units[i]
+            unit_j_atoms = isoquinoline_units[j]
+            # Find atoms that are connected between units
             for bond in mol.GetBonds():
                 atom1_idx = bond.GetBeginAtomIdx()
                 atom2_idx = bond.GetEndAtomIdx()
-                # Check if bond connects atoms from different units
                 if (atom1_idx in unit_i_atoms and atom2_idx in unit_j_atoms) or \
                    (atom1_idx in unit_j_atoms and atom2_idx in unit_i_atoms):
                     atom1 = mol.GetAtomWithIdx(atom1_idx)
                     atom2 = mol.GetAtomWithIdx(atom2_idx)
                     # Check if the bridge involves oxygen or carbon atoms
                     if atom1.GetAtomicNum() in [6, 8] and atom2.GetAtomicNum() in [6, 8]:
-                        # Check for methylenedioxy group (O-CH2-O)
-                        if atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6:
-                            for nbr in atom2.GetNeighbors():
-                                if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in [atom1_idx, atom2_idx]:
-                                    bridges_found = True
-                                    return True, "Contains two benzylisoquinoline units linked by methylenedioxy bridge"
-                        else:
-                            bridges_found = True
-                            return True, "Contains two benzylisoquinoline units linked by bridges"
+                        bridges_found = True
+                        bridge_type = "oxygen" if 8 in [atom1.GetAtomicNum(), atom2.GetAtomicNum()] else "carbon"
+                        return True, f"Contains two isoquinoline units linked by {bridge_type} bridge"
     if bridges_found:
-        return True, "Contains two benzylisoquinoline units linked by bridges"
+        return True, "Contains two isoquinoline units linked by bridges"
     else:
-        return False, "No bridges found between benzylisoquinoline units"
+        return False, "No bridges found between isoquinoline units"
