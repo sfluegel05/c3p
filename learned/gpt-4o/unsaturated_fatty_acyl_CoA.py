@@ -21,21 +21,25 @@ def is_unsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for thioester linkage: C(=O)S
+    # Look for thioester linkage between fatty acid chain and CoA: C(=O)S
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     if not mol.HasSubstructMatch(thioester_pattern):
         return False, "No thioester linkage found"
 
-    # Improve the pattern for Coenzyme A recognition
-    # Although CoA is complex, a SMARTS pattern can capture key components
-    improved_coenzymeA_pattern = Chem.MolFromSmarts('NC(=O)[C@H](O)C(C)(C)COP(O)(=O)O')
-    if not mol.HasSubstructMatch(improved_coenzymeA_pattern):
+    # Improved pattern for Coenzyme A recognition, accounting for charged states
+    coenzymeA_pattern = Chem.MolFromSmarts("NC(=O)[C@H](O)[C](C)(C)COP(=O)(O)O[C@H]")
+    if not mol.HasSubstructMatch(coenzymeA_pattern):
         return False, "Coenzyme A moiety pattern not found"
 
-    # Recognize unsaturated fatty acid chains
-    # Look for a pattern of at least one C=C bond among longer chains
-    unsaturated_fatty_acid_pattern = Chem.MolFromSmarts("C(=C)")
+    # Recognize unsaturated fatty acid chains with substantial chain length
+    # Ensure there is an unsaturation (C=C bond) in the context of a long carbon chain
+    unsaturated_fatty_acid_pattern = Chem.MolFromSmarts("C=C[CH2,CH]")
     if not mol.HasSubstructMatch(unsaturated_fatty_acid_pattern):
         return False, "No unsaturation (C=C bond) found in the fatty acid chain"
 
-    return True, "Molecule is an unsaturated fatty acyl-CoA, identified by the presence of CoA moiety and unsaturated fatty acid chain"
+    # Check chain length, this ensures we're getting significant carbon chains
+    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCCC")  # Minimum length example
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "Fatty acid chain is too short"
+
+    return True, "Molecule is an unsaturated fatty acyl-CoA, identified by the presence of CoA moiety with long unsaturated fatty acid chain"
