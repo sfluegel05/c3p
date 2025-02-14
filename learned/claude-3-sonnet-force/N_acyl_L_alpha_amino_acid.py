@@ -1,48 +1,20 @@
 """
 Classifies: CHEBI:48927 N-acyl-L-alpha-amino acid
 """
-"""
-Classifies: CHEBI:27310 N-acyl-L-alpha-amino acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous code attempted to classify N-acyl-L-alpha-amino acids by looking for the backbone substructure and checking for the correct stereochemistry (L-configuration). However, the program failed with a `'NoneType' object has no attribute 'GetAtoms'` error, likely due to an issue with the `mol` object being `None` at some point in the code.
 
-def is_N_acyl_L_alpha_amino_acid(smiles: str):
-    """
-    Determines if a molecule is an N-acyl-L-alpha-amino acid based on its SMILES string.
-    An N-acyl-L-alpha-amino acid is an L-alpha-amino acid carrying an N-acyl substituent.
+Here are a few potential reasons for the failure and ways to improve the program:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Handling invalid SMILES strings**: The code checks if `mol` is `None` after parsing the SMILES string, which is a good practice. However, it might be better to use a try-except block to catch any exceptions raised during the SMILES parsing step.
 
-    Returns:
-        bool: True if molecule is an N-acyl-L-alpha-amino acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+2. **Backbone substructure matching**: The SMARTS pattern used to match the N-acyl-L-alpha-amino acid backbone might be too specific or restrictive. It might be better to use a more general pattern and then check for additional conditions separately.
 
-    # Look for N-acyl-L-alpha-amino acid backbone
-    n_acyl_l_alpha_amino_acid_pattern = Chem.MolFromSmarts("[C@@H](N[C@@H](C(=O)))(C(=O)[O;H,-])[C@@H]")
-    if not mol.HasSubstructMatch(n_acyl_l_alpha_amino_acid_pattern):
-        return False, "No N-acyl-L-alpha-amino acid backbone found"
+3. **Stereochemistry assignment**: The code assumes that the `AllChem.AssignAtomChiralTagsFromStructure` function will always succeed. However, it might fail for certain molecules, leading to the `None` object error. It would be better to handle this case gracefully by checking if the stereochemistry assignment was successful before proceeding.
 
-    # Check for stereochemistry (L-configuration)
-    try:
-        mol = AllChem.AssignAtomChiralTagsFromStructure(mol)
-    except Exception as e:
-        return False, f"Error in assigning stereochemistry: {str(e)}"
+4. **Handling chiral centers**: The code assumes that there are at least two chiral centers in the molecule. However, some N-acyl-L-alpha-amino acids might have only one chiral center (e.g., N-acetyl-L-alanine). It would be better to handle this case separately or relax the chiral center requirement.
 
-    chiral_centers = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetChiralTag() != Chem.rdchem.ChiralType.CHI_UNSPECIFIED]
-    if len(chiral_centers) < 2:
-        return False, "Not enough chiral centers to determine L-configuration"
+5. **Stereochemistry check**: The code checks for the L-configuration by looking for the `CHI_TETRAHEDRAL_CCW` tag. However, this might not be the most robust way to check for the L-configuration, as there could be exceptions or edge cases. It might be better to use a more general approach, such as comparing the chiral volume or using a predefined set of known L-amino acids as a reference.
 
-    for idx in chiral_centers:
-        atom = mol.GetAtomWithIdx(idx)
-        if atom.GetHybridization() == Chem.HybridizationType.SP3 and atom.GetChiralTag() != Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW:
-            return False, "Stereochemistry not consistent with L-configuration"
+6. **Test cases**: The program might benefit from more comprehensive test cases, including both positive and negative examples, to ensure that it correctly classifies a wide range of N-acyl-L-alpha-amino acids and other molecules.
 
-    return True, "Contains N-acyl-L-alpha-amino acid backbone"
+With these improvements, the program should be able to classify N-acyl-L-alpha-amino acids more reliably and handle edge cases more gracefully.
