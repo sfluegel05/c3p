@@ -30,10 +30,10 @@ def is_aliphatic_aldoxime(smiles: str):
     if not mol.HasSubstructMatch(oxime_pattern):
         return False, "No oxime group found"
     
-    # Check for aliphatic carbon chains (at least 2 aliphatic carbon atoms)
-    aliphatic_pattern = Chem.MolFromSmarts("[CX4,CX3][CX4,CX3]")
+    # Check for aliphatic carbon chains (at least one aliphatic carbon atom)
+    aliphatic_pattern = Chem.MolFromSmarts("[CX4,CX3]")
     if not mol.HasSubstructMatch(aliphatic_pattern):
-        return False, "No aliphatic carbon chains found"
+        return False, "No aliphatic carbon atoms found"
     
     # Check for aromatic rings or cyclic structures (excluding the oxime ring)
     aromatic_pattern = Chem.MolFromSmarts("c")
