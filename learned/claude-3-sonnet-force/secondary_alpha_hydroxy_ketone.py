@@ -27,7 +27,7 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the alpha-hydroxy ketone pattern: C(=O)C(O)
-    pattern = Chem.MolFromSmarts("[C&D2&H1]")
+    pattern = Chem.MolFromSmarts("[C&D3](=O)[C&D3](O)")
     matches = mol.GetSubstructMatches(pattern)
     
     if not matches:
@@ -38,6 +38,13 @@ def is_secondary_alpha_hydroxy_ketone(smiles: str):
         atom = mol.GetAtomWithIdx(atom_idx)
         if atom.IsInRing():
             return False, "Alpha-hydroxy ketone group is part of a ring"
+        
+        # Check if the carbon is attached to an organyl group and a hydrogen
+        organyl_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetDegree() > 1)
+        hydrogen_count = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 1)
+        
+        if organyl_count != 1 or hydrogen_count != 1:
+            return False, "Alpha-hydroxy ketone carbon is not attached to an organyl group and a hydrogen"
     
     # Check for exactly 1 carbonyl and 1 hydroxyl group
     carbonyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalDegree() == 1)
