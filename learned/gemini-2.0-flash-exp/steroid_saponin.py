@@ -23,13 +23,20 @@ def is_steroid_saponin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for steroid core and glycosidic linkages
-    # Simplified steroid core pattern: four fused rings with some variability.
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C][C]3[C][C]4[C]([C]1)[C]2[C]34")
+    # Improved steroid core pattern: four fused rings with any atoms and more flexibility
+    steroid_core_pattern = Chem.MolFromSmarts("[*]12[*]34[*]([*](1)[*]2)[*]3[*](4)")
     if steroid_core_pattern is None:
         return None, "Could not create steroid core pattern" # sanity check
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core found."
     
+    # Check for at least one alcohol group attached to the core 
+    hydroxy_group_pattern = Chem.MolFromSmarts("[*]~[OH]")
+    if hydroxy_group_pattern is None:
+        return None, "Could not create alcohol pattern" # sanity check
+    if not mol.HasSubstructMatch(hydroxy_group_pattern):
+         return False, "No hydroxy group found. Thus not a steroid saponin"
+         
     # Check for glycosidic linkages (ring carbon-O-sugar carbon)
     glycosidic_linkage_pattern = Chem.MolFromSmarts("[C;R][O][C;R](O)")
     if glycosidic_linkage_pattern is None:
@@ -39,7 +46,7 @@ def is_steroid_saponin(smiles: str):
       return False, "No glycosidic linkage found. Thus not a saponin"
     
     # Check for sugar presence (ring containing multiple O)
-    sugar_pattern = Chem.MolFromSmarts("[C]1[C](O)[C](O)[C](O)[C](O)[C]1")
+    sugar_pattern = Chem.MolFromSmarts("[C;R]1[C;R](O)[C;R](O)[C;R]*[C;R]*[O;R]1")
     if sugar_pattern is None:
         return None, "Could not create sugar pattern" # sanity check
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
