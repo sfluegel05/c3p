@@ -1,16 +1,62 @@
 """
 Classifies: CHEBI:17334 penicillin
 """
-From the analysis of the previous code and the provided outcomes, it appears that the current approach has some limitations in correctly identifying penicillin molecules. Here are some observations and potential improvements:
+"""
+Classifies: CHEBI:35489 penicillin
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-1. The current code checks for the presence of a penam ring system, which is a necessary condition for penicillins. However, the SMARTS pattern used for this check may not be capturing all possible variations of the penam ring system. It might be worth exploring alternative SMARTS patterns or using a more flexible approach, such as enumerating all possible ring systems and checking if any of them match the penam ring system.
+def is_penicillin(smiles: str):
+    """
+    Determines if a molecule is a penicillin based on its SMILES string.
+    A penicillin is defined as any member of the group of substituted penams 
+    containing two methyl substituents at position 2, a carboxylate substituent
+    at position 3 and a carboxamido group at position 6.
 
-2. The code checks for the presence of two methyl groups, a carboxylate group, and a carboxamido group, which are essential structural features of penicillins. However, it does not consider the specific positions where these groups should be located on the penam ring system. It may be beneficial to incorporate position-specific checks for these substituents to improve the accuracy of the classification.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. Some of the false negatives, such as "6beta-({5-[(p-aminophenyl)imino]pentylidene}amino)penicillanic acid" and "LSM-6045," appear to be penicillin derivatives or prodrugs, which may have additional substituents or modifications to the core penam ring system. The program could be extended to handle these cases by incorporating additional checks for common substituents or modifications found in penicillin derivatives.
+    Returns:
+        bool: True if molecule is a penicillin, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for penam ring system
+    penam_pattern = Chem.MolFromSmarts("[$(C2(N)C(=O)N(C1([CH3])([CH3])SC1(C)C)C2=O)]")
+    if not mol.HasSubstructMatch(penam_pattern):
+        return False, "No penam ring system found"
+    
+    # Check for methyl groups at position 2
+    methyl_pattern = Chem.MolFromSmarts("[C@@](N)(C(=O)N1C(=O)[C@]2([CH3])([CH3])SC[C@@H]12)(C)")
+    if not mol.HasSubstructMatch(methyl_pattern):
+        return False, "Missing methyl groups at position 2"
+    
+    # Check for carboxylate group at position 3
+    carboxylate_pattern = Chem.MolFromSmarts("C(=O)([O-])")
+    carboxylate_match = mol.GetSubstructMatches(carboxylate_pattern)
+    if len(carboxylate_match) != 1:
+        return False, "Missing or incorrect carboxylate group at position 3"
+    
+    # Check for carboxamido group at position 6
+    carboxamido_pattern = Chem.MolFromSmarts("C(=O)N")
+    carboxamido_match = mol.GetSubstructMatches(carboxamido_pattern)
+    if len(carboxamido_match) != 1:
+        return False, "Missing or incorrect carboxamido group at position 6"
+    
+    # Check for typical molecular weight range
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 600:
+        return False, "Molecular weight outside typical range for penicillins"
+    
+    return True, "Contains penam ring system with two methyl groups at position 2, carboxylate at 3, and carboxamido at 6"
 
-4. The additional checks for molecular size and the number of rings are reasonable but may not be necessary if the other checks are sufficiently robust. It might be worth re-evaluating the importance of these checks or adjusting the thresholds based on the distribution of true positives and false positives observed in the benchmark data.
-
-5. If the benchmark data contains systematic errors or inconsistencies with the provided definition of penicillins, it may be appropriate to make informed decisions about ignoring certain outliers or adjusting the program's behavior based on your understanding of the chemical class. However, such decisions should be well-justified and explained in the reasoning step.
-
-Overall, while the previous code captures some essential features of penicillins, it may benefit from additional refinements, such as position-specific checks for substituents, handling of common derivatives or prodrugs, and potentially adjusting the SMARTS patterns or ring system detection methods. Additionally, if systematic errors are present in the benchmark data, it may be necessary to make informed decisions about ignoring outliers or adjusting the program's behavior based on your chemical knowledge.
+# Additional examples of true positives
+print(is_penicillin("CC1(C)SC2N(C(=O)C(NC(=O)C(N)C3=CC=CC=C3)C(=O)O2)C(=O)N1")[0]) # True
+print(is_penicillin("CC1(C(N2C(S1)C(C2=O)NC(=O)[C@H](N=C)C3=CC=CC=C3)C(=O)O)C")[0]) # True
+print(is_penicillin("CC1(C(N2C(S1)C(C2=O)NC(=O)C(CC3=CC=CC=C3)OC)C(=O)O)C")[0]) # True
