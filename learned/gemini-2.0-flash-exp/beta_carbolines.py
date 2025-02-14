@@ -20,28 +20,16 @@ def is_beta_carbolines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core indole structure using SMARTS.
-    indole_pattern = Chem.MolFromSmarts('c1cc2[nH]c(c1)c2')
-    if not mol.HasSubstructMatch(indole_pattern):
-        return False, "Does not contain the indole core."
+    # Define the core beta-carboline structure, allowing for saturation, using SMARTS.
+    # The core pattern captures the fused ring system with a nitrogen in the 5-membered ring.
+    # The SMARTS string should match both aromatic and hydrogenated versions.
+    beta_carboline_pattern = Chem.MolFromSmarts('[cH1,CH2,CH3]1[cH1,CH2,CH3][cH1,CH2,CH3]2[nH][cH0,CH1,CH2,CH3]3[cH1,CH2,CH3]([cH1,CH2,CH3]2[cH1,CH2,CH3]1)[c,n][cH1,CH2,CH3][cH1,CH2,CH3]3')
     
-    # Define the fused 6-membered ring structure (pyridine, pyrimidine, or derivatives) using SMARTS.
-    # This pattern allows for saturation in the 6-membered ring.
-    pyridine_pyrimidine_pattern = Chem.MolFromSmarts('[c,n]1ccccc1')
-
-    #check for spiro atoms, which have a valence of 4.
     spiro_pattern = Chem.MolFromSmarts('[C;X4]')
-    
-    # Check if the molecule has both patterns. We are not checking explicit fusion here,
-    # so it will likely overclassify.
-    # In the previous try, we tried to use a single pattern, but failed due to the numerous variants of beta-carbolines.
-    # Now we are explicitly looking for the two ring systems.
-    if mol.HasSubstructMatch(pyridine_pyrimidine_pattern):
-      
-      # If a spiro atom is present then we should also return true.
-       if mol.HasSubstructMatch(spiro_pattern):
-           return True, "Contains the beta-carboline core structure (including spirocyclic derivatives)"
-       return True, "Contains the beta-carboline core structure (not spirocyclic)"
 
+    if mol.HasSubstructMatch(beta_carboline_pattern):
+       if mol.HasSubstructMatch(spiro_pattern):
+         return True, "Contains the beta-carboline core structure (including spirocyclic derivatives)"
+       return True, "Contains the beta-carboline core structure"
 
     return False, "Does not contain the beta-carboline core structure"
