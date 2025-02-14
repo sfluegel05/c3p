@@ -1,26 +1,60 @@
 """
 Classifies: CHEBI:87691 tetradecanoate ester
 """
-The previous program attempts to classify a molecule as a tetradecanoate ester by checking for the presence of a tetradecanoic acid (myristic acid) fragment and an ester group, and then verifying if the ester group connects the tetradecanoic acid with an alcohol or phenol.
+"""
+Classifies: CHEBI:87693 tetradecanoate ester
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-However, based on the provided outcomes, the program seems to be failing to correctly classify the examples. Let's analyze the potential issues and propose improvements:
+def is_tetradecanoate_ester(smiles: str):
+    """
+    Determines if a molecule is a tetradecanoate ester based on its SMILES string.
+    A tetradecanoate ester is a fatty acid ester obtained by condensation of the carboxy group
+    of tetradecanoic acid (myristic acid) with a hydroxy group of an alcohol or phenol.
 
-1. **False Negatives**: The program may be too strict in its criteria, leading to false negatives. For example, it only checks for the presence of an ester group connecting tetradecanoic acid directly to an alcohol or phenol. However, some of the provided examples involve more complex structures, such as lipids and glycerides, where the tetradecanoic acid moiety is connected to a larger molecular framework.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Handling Complex Structures**: The provided examples include lipids, glycerides, and other complex molecules. The current program may not be adequately handling these structures, as it is primarily focused on identifying a simple tetradecanoic acid ester.
-
-3. **Stereochemistry**: Some of the provided examples contain stereochemical information in the SMILES strings (e.g., `@` symbols). The program does not consider stereochemistry, which could lead to misclassifications.
-
-4. **Potential Errors in the Benchmark**: As mentioned, there may be occasional and systematic mistakes in the benchmark dataset. If the classifications made by your program are consistent with your understanding of the chemical class definition, you can choose to ignore potential outliers, but provide a clear explanation for doing so.
-
-To improve the program, you could consider the following:
-
-1. **Expand the Substructure Search**: Instead of looking for a specific tetradecanoic acid fragment, consider searching for more general patterns that capture the presence of a tetradecanoic acid moiety within a larger molecular framework. This could involve searching for specific atom environments or using more flexible SMARTS patterns.
-
-2. **Incorporate Additional Criteria**: In addition to the presence of a tetradecanoic acid moiety and an ester group, you could incorporate additional criteria to better capture the definition of a tetradecanoate ester. This could include checking for the presence of specific functional groups (e.g., alcohols, phenols) and ensuring they are connected to the tetradecanoic acid moiety through an ester bond.
-
-3. **Handle Stereochemistry**: Modify the program to account for stereochemical information in the SMILES strings. This may involve using stereochemistry-aware functions from RDKit or modifying the SMARTS patterns to include stereochemical considerations.
-
-4. **Analyze Potential Outliers**: If you encounter examples that seem to be misclassified by the benchmark, carefully analyze them and provide a reasoned explanation for why your program's classification aligns with your understanding of the chemical class definition.
-
-By incorporating these improvements, the program should be better equipped to handle the complexity of the provided examples and provide more accurate classifications for tetradecanoate esters.
+    Returns:
+        bool: True if molecule is a tetradecanoate ester, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for tetradecanoic acid fragment
+    tetradecanoic_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")
+    tetradecanoic_acid_matches = mol.GetSubstructMatches(tetradecanoic_acid_pattern)
+    
+    # Look for ester bond (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
+    # Check if tetradecanoic acid is esterified
+    tetradecanoic_acid_esterified = False
+    for match in tetradecanoic_acid_matches:
+        acid_oxygen = match[-2]
+        for ester_match in ester_matches:
+            if acid_oxygen in ester_match:
+                tetradecanoic_acid_esterified = True
+                break
+        if tetradecanoic_acid_esterified:
+            break
+            
+    if not tetradecanoic_acid_esterified:
+        return False, "Tetradecanoic acid not esterified"
+    
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 16:
+        return False, "Too few carbons for tetradecanoate ester"
+    if o_count < 3:
+        return False, "Too few oxygens for tetradecanoate ester"
+    
+    return True, "Contains tetradecanoic acid esterified to an alcohol or phenol"
