@@ -26,13 +26,12 @@ def is_lactol(smiles: str):
     if not any(atom.IsInRing() for atom in mol.GetAtoms()):
         return False, "Molecule does not contain a ring"
 
-    # 2. Identify hemiacetal carbon (C-OH and C-O-C in a ring).
-    #    Look for -C(OH)-O- pattern where the C, O, and the other oxygen is in a ring.
-    hemiacetal_pattern = Chem.MolFromSmarts("[CX4]([OX2H1])[OX2]1[#6]~[#6]1")
+    # 2. Identify potential hemiacetal carbons
+    hemiacetal_pattern = Chem.MolFromSmarts("[CX4]([OX2H1])[OX2]")
     matches = mol.GetSubstructMatches(hemiacetal_pattern)
 
     if not matches:
-         return False, "No hemiacetal group found in a ring system"
+         return False, "No hemiacetal group found"
 
     for match in matches:
         central_carbon = mol.GetAtomWithIdx(match[0])
@@ -49,15 +48,17 @@ def is_lactol(smiles: str):
                 found_ring = True
                 break
         if not found_ring:
-            return False, "Hemiacetal is not completely within the same ring"
-        
-        # Check number of oxygen neighbours to the central carbon, should be exactly one other in the ring.
-        other_ring_oxygens = 0
-        for neighbor in central_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 8 and neighbor.IsInRing() and neighbor.GetIdx() != hydroxyl_oxygen.GetIdx():
-                other_ring_oxygens += 1
-            
-        if other_ring_oxygens != 1:
-            return False, "Hemiacetal carbon has more than one other ring oxygen."
+             continue  #  hemiacetal is not completely within the same ring
 
-    return True, "Contains a cyclic hemiacetal structure"
+        # Check number of oxygen neighbours to the central carbon, excluding hydroxyl oxygen
+        other_oxygens = 0
+        for neighbor in central_carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() != hydroxyl_oxygen.GetIdx():
+                other_oxygens += 1
+        if other_oxygens > 1:
+            continue # Hemiacetal carbon has more than one other oxygen, not a valid lactol
+
+        return True, "Contains a cyclic hemiacetal structure"
+
+
+    return False, "No cyclic hemiacetal structure found"
