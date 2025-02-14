@@ -20,26 +20,13 @@ def is_alpha_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the SMARTS pattern for an alpha-amino acid
-    # Handling protonated/deprotonated carboxylic acid and amino groups
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3;H0,H1,H2][CX4][CX3](=[OX1,OX2])O")
     
-    # Check for the substructure match
+    # Define the SMARTS pattern for an alpha-amino acid
+    # This pattern specifies that the amino group (N) and carboxylic acid group (C(=O)O)
+    # are attached to the SAME carbon atom (CX4) and it does not match other similar substructures.
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3;H0,H1,H2][CX4]([CX3](=[OX1,OX2])[OX1,OX2])")
+
     if not mol.HasSubstructMatch(alpha_amino_acid_pattern):
-            return False, "No alpha-amino acid substructure found."
-
-    # Additional check to verify that it is a simple alpha amino acid
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    carboxy_pattern = Chem.MolFromSmarts("C(=O)[O,OH]")
-    carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
-
-    if n_count != 1:
-        return False, f"More than one nitrogen found. Expected one for a simple alpha-amino-acid."
-
-    if len(carboxy_matches) != 1:
-        return False, f"Expected one carboxy group, found {len(carboxy_matches)}."
-
-
+        return False, "No alpha-amino acid substructure found."
+    
     return True, "Molecule matches the alpha-amino acid definition."
