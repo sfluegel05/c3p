@@ -26,14 +26,9 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for CoA backbone components
-    coa_components = [
-        Chem.MolFromSmarts("[C@@H]1([C@@H]([C@H](OP(O)(O)=O)O1)n1cnc2c(N)ncnc12)OP(OP(OCC(C)(C(=O)NCCC(=O)NCCS)O)(=O)O)(O)=O"),
-        Chem.MolFromSmarts("[C@@H]1([C@@H]([C@H](OP(O)(O)=O)O1)n1cnc2c(N)ncnc12)OP(OP(OCC(C)(C(=O)NCCC(=O)NCCSC)O)(=O)O)(O)=O"),
-        Chem.MolFromSmarts("[C@@H]1([C@@H]([C@H](OP(O)(O)=O)O1)n1cnc2c(N)ncnc12)OP(OP(OCC(C)(C(=O)NCCC(=O)N)O)(=O)O)(O)=O")
-    ]
-    
-    coa_match = any(mol.HasSubstructMatch(pattern) for pattern in coa_components)
+    # Look for CoA backbone
+    coa_pattern = Chem.MolFromSmarts("C1OC(COP(O)(=O)OP(O)(=O)OCC(O)C(O)CNC(=O)CCNC(=O)CCSC2=NC(=NC=N2)N)C(O)C1O")
+    coa_match = mol.HasSubstructMatch(coa_pattern)
     if not coa_match:
         return False, "No CoA backbone found"
     
