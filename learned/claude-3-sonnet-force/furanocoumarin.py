@@ -29,35 +29,41 @@ def is_furanocoumarin(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of a coumarin ring system
-    coumarin_pattern = Chem.MolFromSmarts("c1cc2ccoc2cc1=O")
-    if not mol.HasSubstructMatch(coumarin_pattern):
-        return False, "No coumarin ring system found"
+    # Identify the coumarin core structure
+    coumarin_pattern = Chem.MolFromSmarts("[O=2]=[c,C]1[c,C][c,C][c,C][c,C][c,C]1")
+    coumarin_matches = mol.GetSubstructMatches(coumarin_pattern)
 
-    # Check for the presence of a furan ring
+    # Identify the furan ring
     furan_pattern = Chem.MolFromSmarts("c1occc1")
-    if not mol.HasSubstructMatch(furan_pattern):
-        return False, "No furan ring found"
+    furan_matches = mol.GetSubstructMatches(furan_pattern)
 
     # Check if the coumarin and furan rings are fused
-    fused_system_pattern = Chem.MolFromSmarts("c1cc2ccoc2cc1oc3cccc3")
-    if not mol.HasSubstructMatch(fused_system_pattern):
+    fused_systems = []
+    for coumarin_match in coumarin_matches:
+        for furan_match in furan_matches:
+            common_atoms = set(coumarin_match) & set(furan_match)
+            if common_atoms:
+                fused_system = list(set(coumarin_match) | set(furan_match))
+                fused_systems.append(fused_system)
+
+    if not fused_systems:
         return False, "Coumarin and furan rings are not fused"
 
     # Additional checks for furanocoumarin characteristics
-    ring_info = mol.GetRingInfo()
-    fused_ring_count = len([r for r in ring_info.AtomRings() if len(r) > 6])
-    if fused_ring_count != 1:
-        return False, "Incorrect number of fused rings"
+    for fused_system in fused_systems:
+        ring_info = mol.GetRingInfo()
+        fused_ring = ring_info.IsFusedRing(fused_system)
+        if not fused_ring:
+            continue
 
-    # Check for appropriate molecular weight range
-    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 200 or mol_weight > 500:
-        return False, "Molecular weight outside the typical range for furanocoumarins"
+        # Check for appropriate atom connectivity and bond orders
+        coumarin_atoms = [mol.GetAtomWithIdx(idx) for idx in fused_system if idx in coumarin_match]
+        furan_atoms = [mol.GetAtomWithIdx(idx) for idx in fused_system if idx in furan_match]
 
-    # Check for the presence of oxygen atoms (typically 3-4)
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 3 or oxygen_count > 4:
-        return False, "Unexpected number of oxygen atoms for a furanocoumarin"
+        coumarin_valid = all(atom.GetAtomicNum() in [6, 8] and atom.GetTotalDegree() in [2, 3] for atom in coumarin_atoms)
+        furan_valid = all(atom.GetAtomicNum() in [6, 8] and atom.GetTotalDegree() in [2, 3] for atom in furan_atoms)
 
-    return True, "Contains a fused coumarin and furan ring system (furanocoumarin)"
+        if coumarin_valid and furan_valid:
+            return True, "Contains a fused coumarin and furan ring system (furanocoumarin)"
+
+    return False, "Does not match the structural characteristics of a furanocoumarin"
