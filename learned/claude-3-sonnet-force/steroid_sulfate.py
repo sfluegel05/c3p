@@ -28,9 +28,9 @@ def is_steroid_sulfate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for steroid backbone pattern (tetracyclic ring system with specific ring junctions)
-    steroid_pattern = Chem.MolFromSmarts(
-        "[C@]12[C@@]([C@](C[C@@]1[C@]([C@@]([C@]3([C@]([C@]([C@@]2(C)C)([H])CC3)([H])CC)([H])C)([H])[H])CC)([H])[H]")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    steroid_pattern1 = Chem.MolFromSmarts("[C@]12[C@@]([C@](C[C@@]1[C@]([C@@]([C@]3([C@]([C@]([C@@]2(C)C)([H])CC3)([H])CC)([H])[H])CC)([H])[H]")
+    steroid_pattern2 = Chem.MolFromSmarts("[C@]12[C@@]([C@](C[C@@]1[C@]([C@@]([C@]3([C@]([C@]([C@@]2(C)C)([H])C(C)C3)([H])C)([H])[H])CC)([H])[H]")
+    if not (mol.HasSubstructMatch(steroid_pattern1) or mol.HasSubstructMatch(steroid_pattern2)):
         return False, "No steroid backbone found"
 
     # Look for sulfate group (-O-S(=O)(=O)-O)
@@ -39,23 +39,12 @@ def is_steroid_sulfate(smiles: str):
     if not sulfate_matches:
         return False, "No sulfate group found"
 
-    # Check for common functional groups found in steroid sulfates
-    functional_groups = ["[C@H](CC)", "[C@H](O)", "[C@H](CCC)", "[C@H](CC=O)"]
-    functional_group_present = any(mol.HasSubstructMatch(Chem.MolFromSmarts(fg)) for fg in functional_groups)
-    if not functional_group_present:
-        return False, "Missing common functional groups found in steroid sulfates"
-
-    # Count rotatable bonds to verify steroid-like rigidity
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable > 10:
-        return False, "Too many rotatable bonds for a steroid-like structure"
-
-    # Check molecular weight - steroid sulfates typically >300 Da
+    # Check molecular weight - steroid sulfates typically >200 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
+    if mol_wt < 200:
         return False, "Molecular weight too low for steroid sulfate"
 
-    return True, "Contains steroid backbone and sulfate group, with common functional groups found in steroid sulfates"
+    return True, "Contains steroid backbone and sulfate group"
 
 
 __metadata__ = {
@@ -78,18 +67,18 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
-    'success': False,
-    'best': False,
+    'attempt': 1,
+    'success': True,
+    'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 85,
+    'num_true_positives': 154,
     'num_false_positives': 0,
     'num_true_negatives': 182419,
-    'num_false_negatives': 80,
+    'num_false_negatives': 11,
     'num_negatives': None,
     'precision': 1.0,
-    'recall': 0.515151515151515,
-    'f1': 0.6802721088435374,
-    'accuracy': 0.9995632778394829
+    'recall': 0.9333333333333333,
+    'f1': 0.9655172413793103,
+    'accuracy': 0.9994009567018254
 }
