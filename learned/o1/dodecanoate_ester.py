@@ -5,7 +5,6 @@ Classifies: CHEBI:87659 dodecanoate ester
 Classifies: CHEBI:36000 dodecanoate ester
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_dodecanoate_ester(smiles: str):
@@ -27,30 +26,19 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define lauric acid (dodecanoic acid)
-    lauric_acid_smiles = 'CCCCCCCCCCC(=O)O'  # 12 carbons including carbonyl carbon
-    lauric_acid_mol = Chem.MolFromSmiles(lauric_acid_smiles)
-    lauric_acid_fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(lauric_acid_mol, radius=2)
-
-    # Identify ester groups: pattern C(=O)O
-    ester_pattern = Chem.MolFromSmarts('C(=O)O')
+    # Identify ester groups: pattern [C;D2](=O)[O;D1]
+    ester_pattern = Chem.MolFromSmarts('[C;D2](=O)[O;D1][#6]')
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
         return False, "No ester groups found"
 
+    # Iterate over each ester group
     for match in ester_matches:
         carbonyl_c_idx = match[0]  # Carbonyl carbon
-        carbonyl_o_idx = match[1]  # Carbonyl oxygen
         ester_o_idx = match[2]     # Ester oxygen
 
-        # Check bond between carbonyl carbon and ester oxygen
-        bond = mol.GetBondBetweenAtoms(carbonyl_c_idx, ester_o_idx)
-        if bond is None:
-            continue  # Skip if bond does not exist
-
-        bond_to_break = bond.GetIdx()
-
         # Break the bond between carbonyl carbon and ester oxygen
+        bond_to_break = mol.GetBondBetweenAtoms(carbonyl_c_idx, ester_o_idx).GetIdx()
         fragmented_mol = Chem.FragmentOnBonds(mol, [bond_to_break], addDummies=False)
 
         # Get the fragments
@@ -62,27 +50,41 @@ def is_dodecanoate_ester(smiles: str):
         acyl_frag = None
         for frag in frags:
             atom_indices = [atom.GetIdx() for atom in frag.GetAtoms()]
-            if carbonyl_c_idx in atom_indices:
+            if any(atom.GetAtomicNum() == 6 and atom.GetIdx() == carbonyl_c_idx for atom in frag.GetAtoms()):
                 acyl_frag = frag
                 break
         if acyl_frag is None:
             continue  # Could not find acyl fragment, continue to next ester group
 
-        # Sanitize the fragment to fix valencies
-        Chem.SanitizeMol(acyl_frag)
+        # Analyze the acyl fragment
+        num_carbons = 0
+        num_double_bonds = 0
+        has_rings = False
+        is_linear = True
 
-        # Compare the acyl fragment to lauric acid
-        # Compute fingerprints
-        acyl_fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(acyl_frag, radius=2)
-        # Calculate Tanimoto similarity
-        similarity = Chem.DataStructs.TanimotoSimilarity(acyl_fp, lauric_acid_fp)
-        if similarity > 0.9:
-            return True, "Contains dodecanoate ester group"
+        for atom in acyl_frag.GetAtoms():
+            if atom.GetAtomicNum() == 6:
+                num_carbons += 1
+                if atom.GetDegree() > 2 and not atom.IsInRing():
+                    # Detect branching
+                    is_linear = False
+            for bond in atom.GetBonds():
+                if bond.IsInRing():
+                    has_rings = True
+                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and bond.GetIdx() != carbonyl_c_idx:
+                    # Exclude the carbonyl double bond
+                    num_double_bonds += 1
 
-        # Alternatively, compare molecular formulas
-        lauric_formula = rdMolDescriptors.CalcMolFormula(lauric_acid_mol)
-        acyl_formula = rdMolDescriptors.CalcMolFormula(acyl_frag)
-        if lauric_formula == acyl_formula:
-            return True, "Contains dodecanoate ester group based on molecular formula"
+        if num_carbons != 12:
+            continue  # Not a 12-carbon chain
+        if has_rings:
+            continue  # Contains rings
+        if not is_linear:
+            continue  # Contains branches
+        if num_double_bonds != 1:
+            continue  # Should have only one double bond (the carbonyl)
+
+        # Passed all checks
+        return True, "Contains dodecanoate ester group with lauric acid acyl chain"
 
     return False, "No dodecanoate ester groups with lauric acid found"
