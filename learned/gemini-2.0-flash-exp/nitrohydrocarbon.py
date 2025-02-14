@@ -23,7 +23,7 @@ def is_nitrohydrocarbon(smiles: str):
     # 1. Check for invalid atoms. Only C, H, N, O are allowed
     for atom in mol.GetAtoms():
         atomic_num = atom.GetAtomicNum()
-        if atomic_num not in [1, 6, 7, 8]: # 1(H), 6(C), 7(N), 8(O)
+        if atomic_num not in [1, 6, 7, 8]:  # 1(H), 6(C), 7(N), 8(O)
             return False, f"Contains invalid atom: {atom.GetSymbol()}"
 
     # 2. Check for at least one nitro group
@@ -32,50 +32,59 @@ def is_nitrohydrocarbon(smiles: str):
         return False, "No nitro group found"
 
     # 3. Create a copy of the molecule, remove the nitro groups and check that what remains is a hydrocarbon
-    mol_copy = Chem.Mol(mol) # create a copy of the molecule
-    nitro_matches = mol_copy.GetSubstructMatches(nitro_pattern)
+    mol_copy = Chem.Mol(mol)  # create a copy of the molecule
+
+    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
+
     if not nitro_matches:
-        return False, "No nitro group found"
-    
-    # remove the nitro groups from the copy
+         return False, "No nitro group found"
+
+    atoms_to_remove_idxs = [] # collect the indices of the atoms to remove, they are shared by the original and the copy
     for match in nitro_matches:
         # get all the atoms involved in the substructure match
-        atoms_to_remove = [mol_copy.GetAtomWithIdx(idx).GetIdx() for idx in match] 
-        
-        # Get the atom that is not nitrogen or oxygen (the carbon)
-        # Note: This is valid since we know that the nitrogen is always 
-        # bonded to two oxygens and one carbon, and because the substructure 
-        # match must be the -NO2 group.
-        carbon_idx = -1;
+        atoms_to_remove_idx = []
+        for idx in match:
+            atoms_to_remove_idx.append(mol_copy.GetAtomWithIdx(idx).GetIdx())
+            
+        nitro_nitrogen_idx = -1
         for atom_idx in match:
-            atom = mol_copy.GetAtomWithIdx(atom_idx);
-            if atom.GetSymbol() == 'C':
-                carbon_idx = atom_idx;
-                break;
+          if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 7:
+            nitro_nitrogen_idx = atom_idx
+            break
         
-        if carbon_idx == -1:
-          return False, "Could not find carbon bonded to -NO2 group"
-        
-        bonds_to_remove = []
-        # Find all the bonds we need to remove by comparing with original graph
-        for bond in mol_copy.GetBonds():
-           if bond.GetBeginAtomIdx() in atoms_to_remove and bond.GetEndAtomIdx() in atoms_to_remove:
-               bonds_to_remove.append(bond.GetIdx())
-           elif bond.GetBeginAtomIdx() == carbon_idx or bond.GetEndAtomIdx() == carbon_idx:
-             begin_atom_idx = bond.GetBeginAtomIdx()
-             end_atom_idx = bond.GetEndAtomIdx()
-             if (begin_atom_idx in atoms_to_remove and end_atom_idx not in atoms_to_remove) or \
-                (end_atom_idx in atoms_to_remove and begin_atom_idx not in atoms_to_remove):
-                    bonds_to_remove.append(bond.GetIdx())
-        
-        bonds_to_remove.sort(reverse=True)
-        for bond_idx in bonds_to_remove:
-            mol_copy.RemoveBond(mol_copy.GetBondWithIdx(bond_idx).GetBeginAtomIdx(), mol_copy.GetBondWithIdx(bond_idx).GetEndAtomIdx())
-        
-        atoms_to_remove.sort(reverse=True)
-        for atom_idx in atoms_to_remove:
-            mol_copy.RemoveAtom(atom_idx)
+        if nitro_nitrogen_idx == -1:
+          return False, "Could not find nitrogen in -NO2 group"
+
+        carbon_neighbor_count = 0;
+        carbon_neighbor_idx = -1;
+        for neighbor in mol.GetAtomWithIdx(nitro_nitrogen_idx).GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:
+                carbon_neighbor_count+=1
+                carbon_neighbor_idx = neighbor.GetIdx()
+
+        if carbon_neighbor_count != 1:
+             return False, "Nitro group is not bonded to exactly one carbon"
+         
+        atoms_to_remove_idxs.extend(atoms_to_remove_idx)
+
+
+    # remove the nitro groups from the copy
     
+    bonds_to_remove = []
+    for bond in mol_copy.GetBonds():
+      if bond.GetBeginAtomIdx() in atoms_to_remove_idxs and bond.GetEndAtomIdx() in atoms_to_remove_idxs:
+        bonds_to_remove.append(bond.GetIdx())
+    
+    bonds_to_remove.sort(reverse = True)
+    for bond_idx in bonds_to_remove:
+       mol_copy.RemoveBond(mol_copy.GetBondWithIdx(bond_idx).GetBeginAtomIdx(), mol_copy.GetBondWithIdx(bond_idx).GetEndAtomIdx())
+     
+
+    atoms_to_remove_idxs = sorted(list(set(atoms_to_remove_idxs)), reverse=True) # remove duplicates and sort
+    for atom_idx in atoms_to_remove_idxs:
+       mol_copy.RemoveAtom(atom_idx)
+
+
     for atom in mol_copy.GetAtoms():
       if atom.GetAtomicNum() not in [1,6]:
         return False, "After removing nitro groups, non-hydrocarbon fragment remains"
