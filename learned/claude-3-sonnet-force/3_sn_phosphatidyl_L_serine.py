@@ -36,11 +36,13 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if not mol.HasSubstructMatch(ps_head_pattern):
         return False, "No phosphoserine head group found"
 
-    # Look for 2 ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    # Look for ester groups (-O-C(=O)-) attached to the glycerol backbone
+    ester_pattern = Chem.MolFromSmarts("[CH2X4][OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
+
+    # Check if there are exactly 2 ester groups attached to the glycerol backbone
     if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+        return False, f"Found {len(ester_matches)} ester groups attached to the glycerol backbone, need exactly 2"
 
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -73,4 +75,4 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if p_count != 1:
         return False, "Must have exactly 1 phosphorus (phosphate group)"
 
-    return True, "Contains glycerol backbone with 2 fatty acid chains and a phosphoserine head group"
+    return True, "Contains glycerol backbone with 2 fatty acid chains attached via ester bonds and a phosphoserine head group"
