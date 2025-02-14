@@ -25,8 +25,8 @@ def is_lysophosphatidic_acids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X3][CHX3][CH2X3]")
+    # Look for glycerol backbone pattern (C-C-C with 2 or 3 oxygens attached)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X3,CH2X4][CHX3,CHX4][CH2X3,CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
         
