@@ -22,17 +22,22 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for broader catechol pattern (benzene with dihydroxy, not restricted to adjacent position)
-    catechol_pattern = Chem.MolFromSmarts("c1c(O)cc(O)ccc1")
+    # Look for exact catechol pattern (benzene 1,2-diol)
+    catechol_pattern = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
     if not mol.HasSubstructMatch(catechol_pattern):
-        return False, "No catechol (dihydroxybenzene) group found"
+        return False, "No catechol group (benzene-1,2-diol) found"
+    
+    # Look for ethylamine group with flexibility for substitution
+    ethylamine_patterns = [
+        Chem.MolFromSmarts("c1cc(O)c(O)cc1CCN"),
+        Chem.MolFromSmarts("c1cc(O)c(O)cc1C(C)N"),
+        Chem.MolFromSmarts("c1cc(O)c(O)cc1CC[NH2]"),
+        Chem.MolFromSmarts("c1c(O)cc(O)cc1CCN([CX4])"),
+        # More patterns can be added to match the variations in SMILES samples
+    ]
 
-    # Ethylamine pattern (C-C-N group connected to a catechol),
-    # also allowing potential substitutions or variations on ethyl chain
-    ethylamine_pattern = Chem.MolFromSmarts("c1ccc(O)c(O)c1CCN")
-    if not mol.HasSubstructMatch(ethylamine_pattern):
-        ethylamine_pattern_alt = Chem.MolFromSmarts("c1c(O)c(O)ccc1CC[NH2]")
-        if not mol.HasSubstructMatch(ethylamine_pattern_alt):
-            return False, "No ethylamine group connected to catechol found"
+    for pattern in ethylamine_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains catechol group with an ethylamine linkage or variant"
 
-    return True, "Contains catechol group with an ethylamine linkage or variant"
+    return False, "No ethylamine group connected to catechol found"
