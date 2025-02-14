@@ -32,8 +32,9 @@ def is_oligopeptide(smiles: str):
     # Look for amino acid residue pattern (N-C-C(=O))
     amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])")
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    if len(amino_acid_matches) < 1:  #An oligopeptide should have at least one aminoacid
-        return False, f"Found {len(amino_acid_matches)} amino acid residues, at least 1 required"
+
+    if len(amino_acid_matches) < 2 or len(amino_acid_matches) > 25: #set limits for oligopeptides
+        return False, f"Found {len(amino_acid_matches)} amino acid residues, must be between 2 and 25"
 
     # Check for free carboxylic acid and amine groups (or amide bond)
     has_terminal_carboxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("C(=O)O"))
@@ -43,13 +44,9 @@ def is_oligopeptide(smiles: str):
     if not (has_terminal_carboxyl or has_amide) or not (has_terminal_amino or has_amide):
         return False, "Not a typical oligopeptide structure without terminal amino or carboxyl group and without amides"
     
-    # Check chain length using rotatable bonds and molecular weight
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable > 20: # set an upper limit on rotatable bond based on typical oligopeptide
-        return False, "Too many rotatable bonds for a typical oligopeptide"
-    
+    # Check chain length using molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 2000: # set an upper limit on MW based on typical oligopeptide
+    if mol_wt > 3000: # set an upper limit on MW based on typical oligopeptide, increased
         return False, "Molecular weight is too high for a typical oligopeptide"
 
     #check for the presence of nitrogens and oxygens
