@@ -22,33 +22,38 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for isoflavone or flavone core
-    # General isoflavone/flavone core (two benzene rings connected by a 3-carbon chain, one with a carbonyl and an oxygen)
-    core_pattern = Chem.MolFromSmarts("c1ccccc1C(=O)C2=Cc3ccccc3O2")
-    if not mol.HasSubstructMatch(core_pattern):
-        core_pattern = Chem.MolFromSmarts("c1ccccc1C=C2C(=O)c3ccccc3O2") #check flavone core
-        if not mol.HasSubstructMatch(core_pattern):
-           return False, "No isoflavone/flavone core found"
+    # 1. Check for a flavone or isoflavone-like core (more general)
+    # Core patterns - allow for variations and dihydro forms
+    core_pattern1 = Chem.MolFromSmarts("c1cc(cc(c1)O)C(=O)c2ccccc2O")  # flavone/isoflavone core, some flexibility
+    core_pattern2 = Chem.MolFromSmarts("c1cc(cc(c1)O)C(=O)Cc2ccccc2O")  # dihydroflavone
+    core_pattern3 = Chem.MolFromSmarts("c1cc(cc(c1)O)C=Cc2ccccc2O")  # flavone core with double bond
+    core_pattern4 = Chem.MolFromSmarts("c1cc(cc(c1))C(=O)c2ccccc2") # basic flavone/isoflavone with no OH on B-ring, other positions can have OH
+    if not any(mol.HasSubstructMatch(pattern) for pattern in [core_pattern1, core_pattern2, core_pattern3, core_pattern4]):
+        return False, "No flavone/isoflavone-like core found"
 
-    # 2. Check for multiple hydroxyl groups (at least 2, often more)
-    hydroxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OH]")))
-    if hydroxyl_count < 2:
-        return False, f"Too few hydroxyl groups: {hydroxyl_count}"
-    
-    # 3. Check for glycosylation (at least 1 sugar moiety)
-    glycosidic_bond_pattern = Chem.MolFromSmarts("C-O-[C;R]") #check for glycosidic bonds (C-O-C where C is part of ring)
+    # 2. Check for glycosylation (optional)
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C;R]-O-[C;R][OX2]") #C-O-C, and terminal O
     sugar_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
+    is_glycosylated = len(sugar_matches) > 0
 
-    if len(sugar_matches) == 0 and hydroxyl_count<3: # some acrovestones are not glycosides but tend to have 3 or more OH groups
-        return False, "No glycosylation detected, and less than 3 hydroxyl groups"
+    # 3. Check for multiple hydroxyl groups or other substitutions
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    methoxy_pattern = Chem.MolFromSmarts("OC") #methoxy group
+    methoxy_count = len(mol.GetSubstructMatches(methoxy_pattern))
+    methyl_pattern = Chem.MolFromSmarts("C[CX4]") #methyl group, non-aromatic
+    methyl_count = len(mol.GetSubstructMatches(methyl_pattern))
+    malonyl_pattern = Chem.MolFromSmarts("C(=O)CC(=O)O") #malonyl group
+    malonyl_count = len(mol.GetSubstructMatches(malonyl_pattern))
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O") #carboxyl group
+    carboxyl_count = len(mol.GetSubstructMatches(carboxyl_pattern))
 
-    #additional checks
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 15:
-        return False, "Too few carbons for acrovestone"
+    #Conditions for classification. Must have core and one of the following:
+    #1. at least 2 hydroxyl groups OR
+    #2. at least one glycosylation OR
+    #3. at least 1 methoxy and/or malonyl or carboxyl substituent OR
+    #4. hydroxyl groups and other substitutions (methyl)
+    if hydroxyl_count >= 2 or is_glycosylated or methoxy_count>0 or malonyl_count>0 or carboxyl_count>0 or (hydroxyl_count > 0 and methyl_count>0):
+        return True, "Matches acrovestone structural features"
 
-    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 4:
-         return False, "Too few oxygens for acrovestone"
-
-    return True, "Matches acrovestone structural features"
+    return False, "Does not match acrovestone characteristics"
