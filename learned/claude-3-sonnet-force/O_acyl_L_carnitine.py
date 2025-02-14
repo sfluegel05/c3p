@@ -6,6 +6,7 @@ Classifies: CHEBI:36584 O-acyl-L-carnitine
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_O_acyl_L_carnitine(smiles: str):
     """
@@ -26,23 +27,24 @@ def is_O_acyl_L_carnitine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for carnitine backbone pattern ([N+]([C])([C])[C@H](CC([O-])=O))
-    carnitine_pattern = Chem.MolFromSmarts("[N+]([C])([C])[C@H](CC([O-])=O)")
-    carnitine_match = mol.GetSubstructMatch(carnitine_pattern)
-    if not carnitine_match:
-        return False, "No L-carnitine backbone found"
+    # Look for carnitine backbone pattern (C-C-C-N-C)
+    carnitine_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][N+]([C])[C]")
+    if not mol.HasSubstructMatch(carnitine_pattern):
+        return False, "No carnitine backbone found"
 
-    # Get the oxygen atom index of the carnitine backbone
-    carnitine_oxygen_idx = carnitine_match[3]
-
-    # Look for acyl group attached to the carnitine oxygen (-O-C(=O)-)
+    # Look for acyl group attached to oxygen (-O-C(=O)-)
     acyl_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
         return False, f"Found {len(acyl_matches)} acyl groups, expected exactly 1"
 
-    acyl_oxygen_idx = acyl_matches[0][0]
-    if acyl_oxygen_idx != carnitine_oxygen_idx:
-        return False, "Acyl group not attached to the oxygen of the carnitine backbone"
+    # Check for L-configuration of carnitine
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnspecified=True)
+    if not chiral_centers:
+        return False, "No chiral center found for carnitine"
 
-    return True, "Contains L-carnitine backbone with an acyl group attached to the oxygen"
+    chiral_atom = mol.GetAtomWithIdx(chiral_centers[0][0])
+    if chiral_atom.GetProp("_CIPCode") != "S":
+        return False, "Carnitine is not in L-configuration"
+
+    return True, "Contains carnitine backbone with an acyl group attached to oxygen, L-configuration"
