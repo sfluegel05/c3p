@@ -19,45 +19,33 @@ def is_xanthophyll(smiles: str):
         bool: True if molecule is a xanthophyll, False otherwise
         str: Reason for classification
     """
+
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check number of carbons: should be at least 30
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 30:
-        return False, "Too few carbon atoms for a xanthophyll."
-
-    # Check for a longer polyene backbone, common for carotenoids
-    # More permissive pattern for conjugated double bonds
-    carotenoid_pattern = Chem.MolFromSmarts("[CX3]=[CX3]~[CX3]")
+    
+    # Basic Carotenoid backbone - conjugated double bonds with methyl groups
+    carotenoid_pattern = Chem.MolFromSmarts("[CX3]=[CX3]-[CX3]=[CX3]-[CX3]=[CX3]-[CX3]=[CX3]")
     if not mol.HasSubstructMatch(carotenoid_pattern):
-        return False, "No basic carotenoid-like backbone structure found."
+        return False, "No carotenoid-like backbone structure found."
 
-    # Check for oxygen atoms
+    # Check for the presence of oxygen atoms
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if oxygen_count == 0:
-        return False, "No oxygen atoms present, not a xanthophyll."
+      return False, "No oxygen atoms, so cannot be a xanthophyll."
 
-    # Check for oxygen attached to sp3 carbon or double bonded to C
-    oxygenated_carbon_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    carbonyl_pattern = Chem.MolFromSmarts("[OX1]=[CX3]")
+    # check number of carbons, should be roughly 40
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 30 or carbon_count > 50:
+        return False, "Number of carbon atoms not within typical range for xanthophylls."
 
-    oxygenated_groups = len(mol.GetSubstructMatches(oxygenated_carbon_pattern)) + len(mol.GetSubstructMatches(carbonyl_pattern))
+    #Check for functional groups which contain oxygen: hydroxyl, carbonyl, epoxides, and glycosides
+    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
+    carbonyl_pattern = Chem.MolFromSmarts("C=[OX1]")
+    epoxide_pattern = Chem.MolFromSmarts("C1OC1")
+    glycoside_pattern = Chem.MolFromSmarts("OC[C@H]1[C@@H](O)[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1") # Simplified glycoside pattern
 
-    if oxygenated_groups == 0:
-        return False, "No characteristic oxygen-containing functional groups found."
-
-   # Check for glycoside or sulfates using a more permissive SMARTS
-    glycoside_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H]([OX2])[C@@H](CO)[OX1]")
-    sulfate_pattern = Chem.MolFromSmarts("S(=O)(=O)([OX1])([OX1])")
-    
-    if mol.HasSubstructMatch(glycoside_pattern) or mol.HasSubstructMatch(sulfate_pattern):
-        return True, "Contains a carotenoid-like backbone with characteristic oxygen-containing functional groups including glycosides or sulfates."
-    
-    # Check molecular weight - xanthophylls are typically > 400 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-        return False, "Molecular weight too low for a xanthophyll"
+    if not (mol.HasSubstructMatch(hydroxy_pattern) or mol.HasSubstructMatch(carbonyl_pattern) or mol.HasSubstructMatch(epoxide_pattern) or mol.HasSubstructMatch(glycoside_pattern)):
+      return False, "No oxygen-containing functional groups found which are typical for xanthophylls."
 
     return True, "Contains a carotenoid-like backbone with oxygen-containing functional groups."
