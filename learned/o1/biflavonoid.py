@@ -5,13 +5,12 @@ Classifies: CHEBI:50128 biflavonoid
 Classifies: biflavonoid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_biflavonoid(smiles: str):
     """
     Determines if a molecule is a biflavonoid based on its SMILES string.
-    A biflavonoid is a flavonoid oligomer obtained by the oxidative coupling of at least two flavonoid units (aryl-substituted benzopyran rings or derivatives), resulting in two ring systems being joined together by a single atom or bond.
+    A biflavonoid is a flavonoid dimer obtained by the coupling of at least two flavonoid units (aryl-substituted benzopyran rings or derivatives), resulting in two ring systems being joined together by a single atom or bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,11 +25,11 @@ def is_biflavonoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define flavonoid core SMARTS pattern (chromone moiety)
-    flavonoid_core_smarts = 'c1cc2oc(=O)cc2cc1'  # chromone-like core
+    # Define a general flavonoid core SMARTS pattern (C6-C3-C6 skeleton)
+    flavonoid_core_smarts = '[#6]1~[#6]~[#6]~[#6]~[#6]~[#6]1~[#6]2~[#6]~[#6]~[#6]~[#6]~[#8]~2'  # General flavonoid core
     flavonoid_core = Chem.MolFromSmarts(flavonoid_core_smarts)
     if flavonoid_core is None:
-        return None, "Invalid flavonoid core SMARTS pattern"
+        return False, "Invalid flavonoid core SMARTS pattern"
 
     # Find matches for the flavonoid core
     flavonoid_matches = mol.GetSubstructMatches(flavonoid_core)
@@ -42,42 +41,31 @@ def is_biflavonoid(smiles: str):
     # Create sets of atoms for each flavonoid core
     flavonoid_core_atoms = [set(match) for match in flavonoid_matches]
 
-    # Find pairs of flavonoid cores that are connected
-    connected_pairs = []
+    # Check if flavonoid cores are connected via a single atom or bond
+    found_connected = False
     for i in range(num_flavonoid_cores):
         for j in range(i+1, num_flavonoid_cores):
-            # Check if there is a bond between any atom of core i and any atom of core j
-            core_i_atoms = flavonoid_core_atoms[i]
-            core_j_atoms = flavonoid_core_atoms[j]
-            for atom_i in core_i_atoms:
-                for atom_j in core_j_atoms:
-                    bond = mol.GetBondBetweenAtoms(atom_i, atom_j)
-                    if bond is not None:
-                        # Found a bond connecting the two cores
-                        connected_pairs.append((i, j))
-                        break
-                if (i, j) in connected_pairs:
-                    break
+            # Check for direct bonds or shared atoms between cores i and j
+            inter_core_bonds = 0
+            inter_core_atoms = flavonoid_core_atoms[i] & flavonoid_core_atoms[j]
+            if inter_core_atoms:
+                inter_core_bonds = len(inter_core_atoms)
+            else:
+                for atom_i in flavonoid_core_atoms[i]:
+                    for atom_j in flavonoid_core_atoms[j]:
+                        bond = mol.GetBondBetweenAtoms(atom_i, atom_j)
+                        if bond is not None:
+                            inter_core_bonds += 1
+            if inter_core_bonds == 1:
+                found_connected = True
+                break
+        if found_connected:
+            break
 
-    if len(connected_pairs) == 0:
-        return False, "Flavonoid cores are not connected"
+    if not found_connected:
+        return False, "Flavonoid cores are not connected via a single atom or bond"
 
-    # Check if the connection is via a single atom or bond
-    for (i, j) in connected_pairs:
-        num_bonds_between_cores = 0
-        core_i_atoms = flavonoid_core_atoms[i]
-        core_j_atoms = flavonoid_core_atoms[j]
-        for atom_i in core_i_atoms:
-            for atom_j in core_j_atoms:
-                bond = mol.GetBondBetweenAtoms(atom_i, atom_j)
-                if bond is not None:
-                    num_bonds_between_cores += 1
-        if num_bonds_between_cores == 1:
-            return True, "Contains at least two flavonoid cores connected via a single bond"
-        else:
-            return False, f"Flavonoid cores are connected via {num_bonds_between_cores} bonds, expected 1"
-
-    return False, "Could not determine connectivity between flavonoid cores"
+    return True, "Contains at least two flavonoid cores connected via a single atom or bond"
 
 
 __metadata__ = {   'chemical_class': {   'name': 'biflavonoid',
