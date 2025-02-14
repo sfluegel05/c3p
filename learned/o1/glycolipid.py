@@ -2,15 +2,19 @@
 Classifies: CHEBI:33563 glycolipid
 """
 """
-Classifies: CHEBI:33563 glycolipid
+Classifies: Glycolipid
 """
+
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_glycolipid(smiles: str):
     """
     Determines if a molecule is a glycolipid based on its SMILES string.
-    A glycolipid is a lipid molecule with a carbohydrate attached by a glycosidic bond.
+    A glycolipid is defined as any molecule consisting of a glycosidic linkage
+    between a carbohydrate moiety (usually a mono-, di-, or trisaccharide)
+    and a lipid moiety (such as fatty acids or glycerolipids). In some cases,
+    the glycerol backbone may be absent, and the sugar part may be acylated.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,36 +29,47 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for a carbohydrate (sugar moiety)
-    sugar_pattern = Chem.MolFromSmarts("C1(CO)OC(O)C(O)C(O)C1O")  # Simplified glucose ring
-    if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No carbohydrate moiety detected"
+    # Define SMARTS patterns for carbohydrates (pyranose rings)
+    sugar_pattern = Chem.MolFromSmarts("OC1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1")  # Generic hexose
+    if sugar_pattern is None:
+        return None, "Error in sugar SMARTS pattern"
 
-    # Define SMARTS pattern for a lipid chain (long aliphatic chain)
-    lipid_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")  # Represents a hydrocarbon chain
-    if not mol.HasSubstructMatch(lipid_chain_pattern):
-        return False, "No lipid chain detected"
+    # Search for carbohydrate moiety
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if len(sugar_matches) == 0:
+        return False, "No carbohydrate moiety found"
+
+    # Define SMARTS pattern for long aliphatic chain (lipid moiety)
+    lipid_pattern = Chem.MolFromSmarts("C(CCCCCCCCCCCCCCCC)(CCCCCCCCCCCCCCCC)")  # Generic long chain
+    if lipid_pattern is None:
+        return None, "Error in lipid SMARTS pattern"
+
+    # Search for lipid moiety
+    lipid_matches = mol.GetSubstructMatches(lipid_pattern)
+    if len(lipid_matches) == 0:
+        return False, "No lipid moiety found"
 
     # Check for glycosidic linkage between sugar and lipid
-    # A glycosidic bond is an ether linkage connecting the sugar ring to another group
-    glycosidic_bond_found = False
+    # Find bonds connecting sugar and lipid moieties
+    sugar_atoms = set()
+    for match in sugar_matches:
+        sugar_atoms.update(match)
+    lipid_atoms = set()
+    for match in lipid_matches:
+        lipid_atoms.update(match)
+
+    linked = False
     for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        # Look for an oxygen atom connecting two carbons (C-O-C)
-        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-            if (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6) or \
-               (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8):
-                # Check if one carbon is in sugar and the other is in lipid chain
-                sugar_match = sugar_pattern.HasSubstructMatch(Chem.MolFromSmiles(atom1.GetSmarts())) or \
-                              sugar_pattern.HasSubstructMatch(Chem.MolFromSmiles(atom2.GetSmarts()))
-                lipid_match = lipid_chain_pattern.HasSubstructMatch(Chem.MolFromSmiles(atom1.GetSmarts())) or \
-                              lipid_chain_pattern.HasSubstructMatch(Chem.MolFromSmiles(atom2.GetSmarts()))
-                if sugar_match and lipid_match:
-                    glycosidic_bond_found = True
-                    break
+        begin_atom = bond.GetBeginAtomIdx()
+        end_atom = bond.GetEndAtomIdx()
+        if (begin_atom in sugar_atoms and end_atom in lipid_atoms) or \
+           (begin_atom in lipid_atoms and end_atom in sugar_atoms):
+            # Check if the bond is an ether linkage (glycosidic bond)
+            if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                linked = True
+                break
 
-    if not glycosidic_bond_found:
-        return False, "No glycosidic linkage detected between lipid and sugar"
-
-    return True, "Molecule contains lipid and carbohydrate moieties connected by a glycosidic bond"
+    if linked:
+        return True, "Contains carbohydrate and lipid moieties linked via glycosidic bond"
+    else:
+        return False, "No glycosidic linkage between carbohydrate and lipid moieties found"
