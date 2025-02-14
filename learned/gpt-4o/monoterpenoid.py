@@ -21,25 +21,26 @@ def is_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbons
+    # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    # Allow a range for C10 to account for rearrangement or slight modifications
-    if c_count < 9 or c_count > 12:
-        return False, f"Carbon count of {c_count} falls outside typical monoterpenoid range (9-12)"
+    if c_count < 8 or c_count > 12:
+        return False, f"Carbon count of {c_count} falls outside typical monoterpenoid range (8-12)"
 
-    # Check for cyclic structures (commonly found in monoterpenoids)
-    ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized():
-        return False, "Ring information could not be determined"
-    num_rings = len(ring_info.AtomRings())
-    if num_rings == 0:
-        return False, "No ring structures detected"
-
-    # (Optionally) Check for functional groups typical of monoterpenoids (OH, ketones, etc.)
+    # Check for common monoterpenoid functional groups
     alcohol_pattern = Chem.MolFromSmarts("[CX3][OH]")
     ketone_pattern = Chem.MolFromSmarts("C(=O)[C]")
+    ether_pattern = Chem.MolFromSmarts("C-O-C")
     ester_pattern = Chem.MolFromSmarts("C(=O)O[C]")
-    if not (mol.HasSubstructMatch(alcohol_pattern) or mol.HasSubstructMatch(ketone_pattern) or mol.HasSubstructMatch(ester_pattern)):
-        return False, "No characteristic functional groups for monoterpenoids found (alcohol, ketone, ester)"
+    if not (mol.HasSubstructMatch(alcohol_pattern) or
+            mol.HasSubstructMatch(ketone_pattern) or
+            mol.HasSubstructMatch(ether_pattern) or
+            mol.HasSubstructMatch(ester_pattern)):
+        return False, "No characteristic functional groups for monoterpenoids found (alcohol, ketone, ether, ester)"
 
-    return True, "Matches C10 skeleton estimate with typical monoterpenoid functional groups"
+    # Check for presence of at least one ring structure
+    ring_info = mol.GetRingInfo()
+    num_rings = len(ring_info.AtomRings())
+    if num_rings > 0:
+        return True, "Contains a C10 skeleton with typical monoterpenoid functional groups and ring structure."
+
+    return True, "Contains a C10 skeleton with typical monoterpenoid functional groups."
