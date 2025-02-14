@@ -11,7 +11,7 @@ def is_prostaglandin(smiles: str):
     """
     Determines if a molecule is a prostaglandin based on its SMILES string.
     Prostaglandins are compounds derived from prostanoic acid (C20),
-    containing specific functional groups and structural features.
+    containing a cyclopentane ring with specific functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -32,50 +32,60 @@ def is_prostaglandin(smiles: str):
         return False, f"Carbon count {c_count} not within prostaglandin range (18-22)"
 
     # Check for carboxylic acid group or its derivatives at one end
-    carboxylic_group = Chem.MolFromSmarts('C(=O)[O;H1,-]')
+    carboxylic_group = Chem.MolFromSmarts('C(=O)[O-]')
+    if carboxylic_group is None:
+        return False, "Invalid carboxylic acid SMARTS pattern"
     has_carboxylic = mol.HasSubstructMatch(carboxylic_group)
-    ester_group = Chem.MolFromSmarts('C(=O)O[C]')
+
+    # Also consider carboxylic acid in protonated form
+    carboxylic_group_protonated = Chem.MolFromSmarts('C(=O)O[H]')
+    if carboxylic_group_protonated is None:
+        return False, "Invalid protonated carboxylic acid SMARTS pattern"
+    has_carboxylic_protonated = mol.HasSubstructMatch(carboxylic_group_protonated)
+
+    # Check for ester group (e.g., in ester derivatives)
+    ester_group = Chem.MolFromSmarts('C(=O)OC')
+    if ester_group is None:
+        return False, "Invalid ester SMARTS pattern"
     has_ester = mol.HasSubstructMatch(ester_group)
-    amide_group = Chem.MolFromSmarts('C(=O)N')
-    has_amide = mol.HasSubstructMatch(amide_group)
 
-    if not (has_carboxylic or has_ester or has_amide):
-        return False, "No carboxylic acid group or its derivative found"
+    if not (has_carboxylic or has_carboxylic_protonated or has_ester):
+        return False, "No carboxylic acid group or ester derivative found"
 
-    # Check for hydroxyl groups
-    hydroxyl_group = Chem.MolFromSmarts('[OX2H]')
-    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_group)
-    if not has_hydroxyl:
-        return False, "No hydroxyl group found"
+    # Check for hydroxyl groups attached to the cyclopentane ring
+    hydroxyl_group = Chem.MolFromSmarts('[C;R][C;R][C;R][C;R][C;R]')  # Cyclopentane ring
+    if hydroxyl_group is None:
+        return False, "Invalid cyclopentane ring SMARTS pattern"
+    matches = mol.GetSubstructMatches(hydroxyl_group)
+    has_cyclopentane = len(matches) > 0
 
-    # Ketone group is optional
-    ketone_group = Chem.MolFromSmarts('C(=O)[#6]')
-    has_ketone = mol.HasSubstructMatch(ketone_group)
-    # Note: We won't enforce ketone presence
+    if not has_cyclopentane:
+        return False, "Cyclopentane ring not found"
 
-    # Check for cyclopentane ring (may or may not be present)
-    ring_info = mol.GetRingInfo()
-    has_cyclopentane = False
-    for ring in ring_info.AtomRings():
-        if len(ring) == 5:
-            # Check if all atoms in the ring are carbons
-            if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
-                has_cyclopentane = True
-                break  # At least one cyclopentane ring found
+    # Check for hydroxyl groups on the ring
+    ring_atoms = set()
+    for match in matches:
+        ring_atoms.update(match)
+    has_hydroxyl_on_ring = False
+    for atom_idx in ring_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for nbr in atom.GetNeighbors():
+            if nbr.GetSymbol() == 'O' and nbr.GetDegree() == 1:
+                has_hydroxyl_on_ring = True
+                break
+        if has_hydroxyl_on_ring:
+            break
 
-    # Prostaglandins may have conjugated double bonds in the chain
-    conjugated_diene = Chem.MolFromSmarts('C=C-C=C')
-    has_conjugated_diene = mol.HasSubstructMatch(conjugated_diene)
+    if not has_hydroxyl_on_ring:
+        return False, "No hydroxyl group attached to cyclopentane ring"
 
-    # Check for long aliphatic chain (at least 7 carbons in a row)
-    aliphatic_chain = Chem.MolFromSmarts('[C;!R](-[C;!R]){6,}')
-    has_long_chain = mol.HasSubstructMatch(aliphatic_chain)
-    if not has_long_chain:
-        return False, "No long aliphatic chain found"
-
-    # Overall check: molecule should have either cyclopentane ring or conjugated diene
-    if not (has_cyclopentane or has_conjugated_diene):
-        return False, "Neither cyclopentane ring nor conjugated diene found"
+    # Check for double bonds in side chains
+    double_bond = Chem.MolFromSmarts('C=C')
+    if double_bond is None:
+        return False, "Invalid double bond SMARTS pattern"
+    has_double_bond = mol.HasSubstructMatch(double_bond)
+    if not has_double_bond:
+        return False, "No double bonds found in side chains"
 
     # If all checks pass
     return True, "Matches prostaglandin structural features"
@@ -84,7 +94,7 @@ def is_prostaglandin(smiles: str):
 if __name__ == "__main__":
     smiles_list = [
         # Examples of prostaglandins
-        "CCCCCC[C@H](O)\\C=C\\C1=C(C\\C=C/CCCC(O)=O)C(=O)CC1",  # Prostaglandin B2
+        "CCCCC[C@H](O)\\C=C\\[C@H]1[C@H](O)C[C@H](O)[C@H]1C\\C=C/CC(O)=O",  # Prostaglandin F2alpha
         "CCCCCCCCC(=O)CC[C@H]1[C@H](O)C[C@H](O)[C@@H]1C\\C=C/CCCC(=O)OC(C)C",  # Isopropyl unoprostone
         "C(CCC(O)=O)/C=C\\C[C@@H]1\\C(=C\\C=C/C=C\\CC)[C@@H](O)CC1=O",  # 15-deoxy-Δ12,14-prostaglandin J2
         # Non-prostaglandin for testing
