@@ -10,7 +10,8 @@ from rdkit.Chem import AllChem
 def is_tetrachlorobenzene(smiles: str):
     """
     Determines if a molecule is a tetrachlorobenzene based on its SMILES string.
-    A tetrachlorobenzene is a benzene ring with four chlorine substituents.
+    A tetrachlorobenzene is any member of the class of chlorobenzenes carrying
+    four chloro groups at unspecified positions.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,24 +27,25 @@ def is_tetrachlorobenzene(smiles: str):
         return False, "Invalid SMILES string"
     
     # Count chlorine atoms
-    n_chlorine = sum(atom.GetTotalNumHs(includeNeighbors=True) == 0 and atom.GetImplicitValence() == 1 for atom in mol.GetAtoms())
+    n_chlorine = sum(atom.GetAtomicNum() == 17 for atom in mol.GetAtoms())
     
     # Tetrachlorobenzene must have exactly 4 chlorine atoms
     if n_chlorine != 4:
         return False, f"Found {n_chlorine} chlorine atoms, need exactly 4"
     
-    # Check for benzene ring pattern
-    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
-    if not mol.HasSubstructMatch(benzene_pattern):
-        return False, "No benzene ring found"
+    # Find ring systems
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
     
-    # Check if all chlorine atoms are attached to the benzene ring
-    chlorine_pattern = Chem.MolFromSmarts("Cl")
-    chlorine_atoms = mol.GetSubstructMatches(chlorine_pattern)
+    # Check if any ring system has 4 chlorine substituents
+    for ring in rings:
+        ring_atoms = set(ring)
+        chlorine_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17]
+        
+        if len(ring_atoms.intersection(chlorine_atoms)) == 4:
+            # Check if chlorine atoms are substituents on the ring
+            substituents = [mol.GetAtomWithIdx(atom_idx).GetTotalNumHs(includeNeighbors=True) == 0 and mol.GetAtomWithIdx(atom_idx).GetImplicitValence() == 1 for atom_idx in ring_atoms.intersection(chlorine_atoms)]
+            if all(substituents):
+                return True, "Contains a ring system with 4 chlorine substituents"
     
-    benzene_atoms = mol.GetSubstructMatch(benzene_pattern)
-    for cl_atom in chlorine_atoms:
-        if not any(mol.GetBondBetweenAtoms(cl_atom, benzene_atom).GetIsAromatic() for benzene_atom in benzene_atoms):
-            return False, "One or more chlorine atoms not attached to the benzene ring"
-    
-    return True, "Contains a benzene ring with 4 chlorine substituents"
+    return False, "No ring system found with 4 chlorine substituents"
