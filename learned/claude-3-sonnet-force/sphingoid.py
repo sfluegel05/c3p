@@ -1,29 +1,98 @@
 """
 Classifies: CHEBI:35785 sphingoid
 """
-The previous program attempted to classify sphingoids by looking for a specific backbone pattern and checking for various modifications, unsaturations, and molecular properties. While this approach captured many of the key structural features of sphingoids, there were some limitations that led to the observed false positives and false negatives.
+"""
+Classifies: CHEBI:36603 sphingoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-False Positives:
-The false positives were mostly long-chain fatty acids or their derivatives, such as acyl amino acids and hydroxy fatty acids. These molecules share some structural similarities with sphingoids, like long alkyl chains, unsaturations, and amino/hydroxy groups, but they lack the characteristic sphingoid backbone with the terminal amino alcohol group.
+def is_sphingoid(smiles: str):
+    """
+    Determines if a molecule is a sphingoid based on its SMILES string.
+    Sphingoids are sphinganine, its homologs and stereoisomers, and their hydroxy and unsaturated derivatives.
 
-The backbone pattern used in the previous program was too permissive, allowing for molecules with different connectivity patterns around the nitrogen and terminal alcohol. Additionally, the program did not explicitly check for the presence of the amino alcohol group, leading to the false positives.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-False Negatives:
-The false negatives were mostly true sphingoids that were missed due to the strict backbone pattern requirement. The backbone pattern was looking for a specific chain length and connectivity, which may not capture all possible variations in sphingoids, such as shorter or longer chains, or different branching patterns.
+    Returns:
+        bool: True if molecule is a sphingoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for sphingoid backbone pattern: C-C-C-N-C-C-O
+    backbone_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][NH][CH][CH][OH]")
+    if not mol.HasSubstructMatch(backbone_pattern):
+        return False, "No sphingoid backbone found"
+    
+    # Check for long alkyl chain (>=14 carbons)
+    chain_pattern = Chem.MolFromSmarts("[CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "Alkyl chain too short for sphingoid"
+    
+    # Check for hydroxyl group(s)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if not hydroxyl_matches:
+        return False, "No hydroxyl group found"
+    
+    # Check for optional unsaturation
+    unsaturated_pattern = Chem.MolFromSmarts("[CH2][CH][CH][CH]")
+    unsaturated_matches = mol.GetSubstructMatches(unsaturated_pattern)
+    
+    # Count carbons and nitrogens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    
+    if c_count < 16 or n_count != 1:
+        return False, "Incorrect atom counts for sphingoid"
+    
+    reason = "Contains sphingoid backbone with long alkyl chain and hydroxyl group"
+    if unsaturated_matches:
+        reason += ", potentially unsaturated"
+    
+    return True, reason
 
-Additionally, some sphingoids with unusual modifications or substituents may not have matched the expected patterns for glucosyl, phosphocholine, unsaturations, or branching, leading to their exclusion.
 
-Improvements:
-To address these issues, we need to refine the backbone pattern and incorporate additional checks to ensure the correct identification of sphingoids. Here are some potential improvements:
-
-1. Use a more specific backbone pattern that captures the essential features of sphingoids, such as the terminal amino alcohol group and the long alkyl chain with a specific range of chain lengths.
-
-2. Incorporate additional checks for common sphingoid modifications and substituents, such as hydroxyl groups, methyl branches, and unsaturations, without relying solely on predefined patterns.
-
-3. Use a combination of substructure searches and molecular property calculations to identify the key structural and physicochemical features of sphingoids.
-
-4. Consider implementing a machine learning-based approach that can learn the patterns and features of sphingoids from a larger dataset, rather than relying solely on predefined rules.
-
-5. Carefully review the false positives and false negatives, and adjust the classification criteria accordingly, while being mindful of potential errors or inconsistencies in the benchmark data.
-
-By implementing these improvements, we can develop a more robust and accurate sphingoid classification program that can handle a wider range of structural variations and minimize false positives and false negatives.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:36603',
+        'name': 'sphingoid',
+        'definition': 'Sphinganine, its homologs and stereoisomers, and the hydroxy and unsaturated derivatives of these compounds.',
+        'parents': ['CHEBI:35621', 'CHEBI:36963']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 42,
+    'num_false_positives': 1,
+    'num_true_negatives': 182418,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.9767441860465116,
+    'recall': 1.0,
+    'f1': 0.988235294117647,
+    'accuracy': 0.9999458240233187
+}
