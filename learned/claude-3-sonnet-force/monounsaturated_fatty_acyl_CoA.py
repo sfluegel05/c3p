@@ -6,6 +6,7 @@ Classifies: CHEBI:36691 monounsaturated fatty acyl-CoA
 """
 
 from rdkit import Chem
+from rdkit import DataStructs
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
@@ -27,9 +28,14 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for CoA moiety
-    coa_pattern = Chem.MolFromSmarts("C(C)(COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)([O-])=O)n1cnc2c(N)ncnc12)[C@@H](O)C(=O)NCCC(=O)NCCS")
-    if not mol.HasSubstructMatch(coa_pattern):
+    # Load reference CoA molecule
+    ref_coa_mol = Chem.MolFromSmiles("C(C)(COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)([O-])=O)n1cnc2c(N)ncnc12)[C@@H](O)C(=O)NCCC(=O)NCCS")
+    
+    # Check for CoA moiety using molecular fingerprint similarity
+    coa_fingerprint = AllChem.GetMorganFingerprint(ref_coa_mol, 2)
+    mol_fingerprint = AllChem.GetMorganFingerprint(mol, 2)
+    coa_similarity = DataStructs.TanimotoSimilarity(coa_fingerprint, mol_fingerprint)
+    if coa_similarity < 0.8:
         return False, "No CoA moiety found"
     
     # Look for fatty acyl chain
@@ -49,40 +55,3 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
         return False, "Fatty acyl chain too short"
     
     return True, "Contains a CoA moiety and a monounsaturated fatty acyl chain"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:36691',
-        'name': 'monounsaturated fatty acyl-CoA',
-        'definition': 'Any unsaturated fatty acyl-CoA in which the fatty acyl chain contains one carbon-carbon double bond.',
-        'parents': ['CHEBI:35473', 'CHEBI:57737']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 178,
-    'num_false_positives': 8,
-    'num_true_negatives': 182428,
-    'num_false_negatives': 6,
-    'num_negatives': None,
-    'precision': 0.9573418025651016,
-    'recall': 0.9675324675324675,
-    'f1': 0.9624212654794595,
-    'accuracy': 0.9998575796739161
-}
