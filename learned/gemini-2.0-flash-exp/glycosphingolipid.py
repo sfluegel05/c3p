@@ -22,20 +22,20 @@ def is_glycosphingolipid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS pattern for sphingosine/ceramide core (more flexible)
-    # This pattern checks for a long carbon chain with an amide bond and a hydroxyl group,
-    # and a glycosidic linkage.
-    ceramide_pattern = Chem.MolFromSmarts("[CX4][CX4](O)[CX4]([NX3][CX3](=[OX1])[#6])([CX4][O])") # The carbon with glycosidic linkage and an amide bond
-    
+
+    # More specific ceramide core pattern - accounts for variations
+    # Includes an amide link, two hydroxyls and a glycosidic link to a carbon atom.
+    ceramide_pattern = Chem.MolFromSmarts("[CX4][CX4](O)[CX4](O)([NX3][CX3](=[OX1])[#6])[CX4][O]")
     if not mol.HasSubstructMatch(ceramide_pattern):
         return False, "No ceramide/sphingosine core found"
-
-    # SMARTS pattern for glycosidic linkage
-    glycosidic_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]1([OX2][CX4]([OX2])[CX4]~[CX4]~[CX4]1)")
+    
+    # Check if glycosidic link is at position 1
+    # Pattern for glycosidic link at O-1 of sphingosine - [CX4]([OX2][CX4]1)([CX4](O)[CX4](O)N)
+    # This pattern looks for the carbon with the glycosidic link attached to the rest of the sphingosine
+    glycosidic_pattern = Chem.MolFromSmarts("[CX4]([OX2][CX4]1)([CX4](O)[CX4](O)[NX3])")
     if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "No glycosidic linkage found"
-
+        return False, "No glycosidic linkage at the correct position"
+    
     # Check for long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 10:
