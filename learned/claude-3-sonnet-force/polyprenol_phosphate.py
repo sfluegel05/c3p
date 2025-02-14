@@ -34,35 +34,30 @@ def is_polyprenol_phosphate(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Look for prenol chain (long chain of C=C-C units)
-    prenol_pattern = Chem.MolFromSmarts("[CX3]=C[CX3]C=[CX3]")
-    prenol_matches = mol.GetSubstructMatches(prenol_pattern)
+    # Look for linear isoprenoid chain (C=C-C=C-C=C...)
+    isoprenoid_pattern = Chem.MolFromSmarts("C=CC(C)C=CC=CC=C")
+    isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_pattern)
 
-    # Check for hydroxyl group attached to prenol chain
-    has_hydroxy = False
-    for match in prenol_matches:
-        for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:  # Oxygen atom
-                    has_hydroxy = True
-                    break
-            if has_hydroxy:
-                break
+    if not isoprenoid_matches:
+        return False, "No linear isoprenoid chain found"
 
-    if not has_hydroxy:
-        return False, "No hydroxyl group attached to prenol chain"
+    # Check the length of the isoprenoid chain (7 to 25 isoprene units)
+    chain_length = len(isoprenoid_matches[0])
+    min_length = 7 * 5  # 7 isoprene units, each with 5 atoms
+    max_length = 25 * 5  # 25 isoprene units, each with 5 atoms
 
-    # Count carbon atoms and double bonds to verify chain length
-    n_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    n_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if chain_length < min_length or chain_length > max_length:
+        return False, "Isoprenoid chain length outside the typical range for polyprenol phosphates"
 
-    if n_carbon < 10 or n_double_bonds < 3:
-        return False, "Prenol chain too short"
+    # Check if the isoprenoid chain is attached to the phosphate group via a terminal double bond
+    for match in isoprenoid_matches:
+        start_atom = mol.GetAtomWithIdx(match[0])
+        end_atom = mol.GetAtomWithIdx(match[-1])
 
-    # Check molecular weight range
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 1000:
-        return False, "Molecular weight outside typical range for polyprenol phosphates"
+        if start_atom.IsInRing() or end_atom.IsInRing():
+            continue  # Skip if part of a ring
 
-    return True, "Contains a prenol chain with a terminal hydroxyl group condensed with phosphoric acid"
+        if end_atom.HasBondToAtom(phosphate_pattern):
+            return True, "Contains a linear isoprenoid chain attached to a phosphate group"
+
+    return False, "Isoprenoid chain not attached to phosphate group"
