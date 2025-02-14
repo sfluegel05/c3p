@@ -21,11 +21,11 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Glycerol backbone check (C-C-C with three oxygens)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    # 1. Glycerol backbone check (C-C-C with three oxygens and two hydroxyls and an ester)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2H])[CH2X4]([OX2H])") # 2 hydroxyls
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
     if not glycerol_matches:
-        return False, "No glycerol backbone found"
+        return False, "No glycerol backbone found with two hydroxyls"
     if len(glycerol_matches) > 1:
         return False, "More than 1 glycerol backbone found"
     
@@ -33,14 +33,19 @@ def is_1_monoglyceride(smiles: str):
 
     # Get the glycerol carbon atoms from the match, convert them to a list of integers
     glycerol_carbon_atoms = [int(atom) for atom in glycerol_match]
-    
+
     #Check connectivity. The 2nd carbon of the glycerol has 1 OH bonded to it. The others have one.
     glycerol_carbon_2_index = glycerol_carbon_atoms[1]
     glycerol_carbon_2 = mol.GetAtomWithIdx(glycerol_carbon_2_index)
-    #Check that this carbon has 1 oxygen neighbor (hydroxy group)
+    
+    #Check that this carbon has 1 oxygen neighbor (hydroxy group) and 2 carbon neighbors
     oxygen_neighbors_c2 = [neighbor for neighbor in glycerol_carbon_2.GetNeighbors() if neighbor.GetAtomicNum() == 8]
     if len(oxygen_neighbors_c2) != 1:
       return False, "Glycerol position 2 does not have one hydroxyl group"
+    
+    carbon_neighbors_c2 = [neighbor for neighbor in glycerol_carbon_2.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+    if len(carbon_neighbors_c2) != 2:
+        return False, "Glycerol position 2 has wrong number of carbon neighbors"
     
     # Check that the first and third glycerol carbons have a hydroxyl group
     glycerol_carbon_1_index = glycerol_carbon_atoms[0]
@@ -49,11 +54,20 @@ def is_1_monoglyceride(smiles: str):
     if len(oxygen_neighbors_c1) != 1:
       return False, "Glycerol position 1 does not have a hydroxyl group"
     
+    carbon_neighbors_c1 = [neighbor for neighbor in glycerol_carbon_1.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+    if len(carbon_neighbors_c1) != 2:
+        return False, "Glycerol position 1 has wrong number of carbon neighbors"
+
+    
     glycerol_carbon_3_index = glycerol_carbon_atoms[2]
     glycerol_carbon_3 = mol.GetAtomWithIdx(glycerol_carbon_3_index)
     oxygen_neighbors_c3 = [neighbor for neighbor in glycerol_carbon_3.GetNeighbors() if neighbor.GetAtomicNum() == 8]
     if len(oxygen_neighbors_c3) != 1:
         return False, "Glycerol position 3 does not have a hydroxyl group"
+        
+    carbon_neighbors_c3 = [neighbor for neighbor in glycerol_carbon_3.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+    if len(carbon_neighbors_c3) != 2:
+        return False, "Glycerol position 3 has wrong number of carbon neighbors"
 
     #2. Check for one ester group (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -79,6 +93,16 @@ def is_1_monoglyceride(smiles: str):
 
     if not is_connected_to_glycerol_1:
       return False, "Ester is not attached to the 1-position of the glycerol backbone"
+
+    #Check that this ester is ONLY attached to the glycerol backbone and not to anything else.
+    
+    glycerol_c_indexes = [glycerol_carbon_1_index, glycerol_carbon_2_index, glycerol_carbon_3_index]
+    ester_oxygen_neighbors = [n.GetIdx() for n in ester_oxygen_atom.GetNeighbors()]
+    
+    ester_oxygen_neighbors_not_glycerol = [idx for idx in ester_oxygen_neighbors if idx not in glycerol_c_indexes ]
+    if len(ester_oxygen_neighbors_not_glycerol) != 0:
+        return False, "Ester is connected to something other than the glycerol backbone"
+
     
     #5. Check for fatty acid chain
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
