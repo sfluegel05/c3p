@@ -6,7 +6,6 @@ Classifies: CHEBI:16646 D-hexose
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_D_hexose(smiles: str):
     """
@@ -37,20 +36,18 @@ def is_D_hexose(smiles: str):
     if not ring_info.AtomRings():
         return False, "Not a hexose (no ring structure found)"
 
-    # Get the stereochemistry of the molecule
-    stereo_chem = Chem.FindMolChiralCenters(mol)
+    # Get the chiral centers of the molecule
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnspecified=True)
 
-    # Define a reference D-hexose (e.g., D-glucose) and its stereochemistry
-    reference_smiles = "OC[C@H]1OC(O)[C@@H](O)[C@@H](O)[C@@H]1O"
-    reference_mol = Chem.MolFromSmiles(reference_smiles)
-    reference_stereo_chem = Chem.FindMolChiralCenters(reference_mol)
+    # Check if there are at least 4 chiral centers (minimum for a hexose)
+    if len(chiral_centers) < 4:
+        return False, "Not a hexose (less than 4 chiral centers)"
 
-    # Compare the stereochemistry of the molecule with the reference D-hexose
-    if stereo_chem == reference_stereo_chem:
-        return True, "Molecule has the same stereochemistry as a reference D-hexose"
+    # Find the second-to-last chiral center (position 5 in a hexose)
+    second_to_last_chiral = chiral_centers[-2]
+
+    # Check if the second-to-last chiral center has D-configuration
+    if second_to_last_chiral == "R":
+        return True, "Molecule has D-configuration at position 5 (second-to-last chiral center)"
     else:
-        return False, "Stereochemistry does not match a reference D-hexose"
-
-# Example usage
-print(is_D_hexose("OC[C@H]1OC(O)[C@@H](O)[C@@H](O)[C@@H]1O"))  # True, 'Molecule has the same stereochemistry as a reference D-hexose'
-print(is_D_hexose("OC[C@@H]1OC(O)[C@H](O)[C@H](O)[C@H]1O"))  # False, 'Stereochemistry does not match a reference D-hexose'
+        return False, "Molecule does not have D-configuration at position 5 (second-to-last chiral center)"
