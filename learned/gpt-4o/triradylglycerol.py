@@ -6,6 +6,7 @@ from rdkit import Chem
 def is_triradylglycerol(smiles: str):
     """
     Determines if a molecule is a triradylglycerol based on its SMILES string.
+    A triradylglycerol is characterized by a glycerol backbone with acyl, alkyl, or alk-1-enyl substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,38 +16,34 @@ def is_triradylglycerol(smiles: str):
         str: Reason for classification
     """
     
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return None, "Invalid SMILES string"
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return None, "Invalid SMILES string"
 
-    # Pattern to identify glycerol backbone with three substituents
-    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)")
-    matching_atoms = mol.GetSubstructMatches(glycerol_pattern)
-    if not matching_atoms:
-        return False, "No glycerol backbone found with correct substituents"
-    
-    # Pattern to identify ester and ether bonds
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
-    ether_pattern = Chem.MolFromSmarts("COC")
-    
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    
-    # Check for at least three possible linkage groups (ester or ether)
-    if len(ester_matches) + len(ether_matches) < 3:
-        return False, f"Found {len(ester_matches) + len(ether_matches)} ester or ether linkages, need at least 3"
+        # Pattern to identify glycerol backbone with three possible substituents
+        glycerol_pattern = Chem.MolFromSmarts("OCC(O)C(O)")  # Glycerol pattern
+        matching_atoms = mol.GetSubstructMatches(glycerol_pattern)
+        if not matching_atoms:
+            return False, "No glycerol backbone found"
 
-    acyl_groups = set()
-    for match in ester_matches:
-        acyl_groups.add(mol.GetBondWithIdx(match[1]).GetBeginAtom().GetSymbol())
-    
-    # Test for diversity in substituents
-    enough_diversity = False
-    if len(acyl_groups) >= 2:
-        enough_diversity = True
-    
-    # Check if substituents have enough diversity and presence
-    if enough_diversity or len(ether_matches) > 1:
-        return True, "Is a triradylglycerol with enough diversity in substituents"
-    
-    return False, "Insufficient diversity among substituents"
+        # Identify ester or ether linkages in the molecule
+        ester_pattern = Chem.MolFromSmarts("C(=O)O[CX4]")
+        ether_pattern = Chem.MolFromSmarts("CO[CX4]")
+
+        ester_matches = mol.GetSubstructMatches(ester_pattern)
+        ether_matches = mol.GetSubstructMatches(ether_pattern)
+        
+        # Triradylglycerol should have three linkages combining esters and ethers
+        if len(ester_matches) + len(ether_matches) != 3:
+            return False, "Does not have three ester or ether groups attached to glycerol backbone"
+
+        # Check for substituent diversity based on acyl, alkyl, alk-1-enyl
+        substituent_count = len(set(ester_matches + ether_matches))
+        if substituent_count < 3:
+            return False, "Insufficient substituent diversity"
+
+        return True, "Is a triradylglycerol with appropriate substituents"
+
+    except Exception as e:
+        return None, f"Exception occurred: {str(e)}"
