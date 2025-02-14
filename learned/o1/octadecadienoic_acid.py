@@ -6,7 +6,6 @@ Classifies: CHEBI:24996 octadecadienoic acid
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_octadecadienoic_acid(smiles: str):
     """
@@ -36,26 +35,51 @@ def is_octadecadienoic_acid(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains rings; not a straight-chain fatty acid"
 
-    # Ensure the molecule is unbranched
+    # Build adjacency list for carbon atoms
+    adjacency = {}
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6:
-            if atom.GetDegree() > 3:
-                return False, "Molecule is branched; not a straight-chain fatty acid"
-
-    # Count the number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 18:
-        return False, f"Number of carbon atoms is {c_count}, expected 18"
-
-    # Count the number of carbon-carbon double bonds
-    cc_double_bonds = 0
+            idx = atom.GetIdx()
+            adjacency[idx] = []
     for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            begin_atom = bond.GetBeginAtom()
-            end_atom = bond.GetEndAtom()
-            if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
-                cc_double_bonds += 1
-    if cc_double_bonds != 2:
-        return False, f"Number of C=C double bonds is {cc_double_bonds}, expected 2"
+        begin_atom = bond.GetBeginAtom()
+        end_atom = bond.GetEndAtom()
+        if begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 6:
+            adjacency[begin_atom.GetIdx()].append((end_atom.GetIdx(), bond))
+            adjacency[end_atom.GetIdx()].append((begin_atom.GetIdx(), bond))
 
-    return True, "Molecule is a straight-chain C18 fatty acid with two C=C double bonds"
+    # Function to perform depth-first search to find the longest carbon chain
+    def dfs(node, visited, length, double_bonds):
+        visited.add(node)
+        max_length = length
+        max_double_bonds = double_bonds
+        for neighbor_idx, bond in adjacency.get(node, []):
+            if neighbor_idx not in visited:
+                bond_order = bond.GetBondType()
+                bond_is_double = (bond_order == Chem.rdchem.BondType.DOUBLE)
+                new_double_bonds = double_bonds + (1 if bond_is_double else 0)
+                l, d = dfs(neighbor_idx, visited.copy(), length + 1, new_double_bonds)
+                if l > max_length:
+                    max_length = l
+                    max_double_bonds = d
+                elif l == max_length and d > max_double_bonds:
+                    max_double_bonds = d
+        return max_length, max_double_bonds
+
+    max_chain_length = 0
+    max_chain_double_bonds = 0
+    # Iterate over all carbon atoms to find the longest chain
+    for node in adjacency:
+        length, double_bonds = dfs(node, set(), 1, 0)
+        if length > max_chain_length:
+            max_chain_length = length
+            max_chain_double_bonds = double_bonds
+        elif length == max_chain_length and double_bonds > max_chain_double_bonds:
+            max_chain_double_bonds = double_bonds
+
+    if max_chain_length < 18:
+        return False, f"Longest carbon chain is {max_chain_length}, expected at least 18"
+    if max_chain_double_bonds != 2:
+        return False, f"Number of C=C double bonds along the chain is {max_chain_double_bonds}, expected 2"
+
+    return True, "Molecule has a straight-chain C18 fatty acid backbone with two C=C double bonds"
