@@ -5,7 +5,6 @@ Classifies: CHEBI:17984 acyl-CoA
 Classifies: CHEBI:37577 acyl-CoA
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_acyl_CoA(smiles: str):
     """
@@ -20,42 +19,51 @@ def is_acyl_CoA(smiles: str):
         bool: True if molecule is an acyl-CoA, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the Coenzyme A moiety (simplified key features)
-    coenzymeA_smarts = "NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC(O)[C@@H](OP(=O)(O)[O-])[C@H](O)[C@H]1O"
-    coenzymeA_pattern = Chem.MolFromSmarts(coenzymeA_smarts)
-    if coenzymeA_pattern is None:
-        return False, "Failed to parse Coenzyme A SMARTS pattern"
+    # Coenzyme A SMILES (including the terminal sulfur atom)
+    coa_smiles = "NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1OC[n]2cnc3c(ncnc23)N[C@@H]1OP(=O)(O)OCCS"
+    coa_mol = Chem.MolFromSmiles(coa_smiles)
+    if coa_mol is None:
+        return False, "Failed to parse Coenzyme A SMILES"
 
-    # Check for Coenzyme A moiety
-    if not mol.HasSubstructMatch(coenzymeA_pattern):
+    # Check for Coenzyme A moiety in the molecule
+    if not mol.HasSubstructMatch(coa_mol):
         return False, "Coenzyme A moiety not found"
-
-    # Define SMARTS pattern for the thioester linkage (S-C(=O)-C)
-    thioester_smarts = "SC(=O)C"
+    
+    # Define SMARTS pattern for the thioester linkage connected to CoA sulfur
+    thioester_smarts = "S[C](=O)[C]"
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
     if thioester_pattern is None:
         return False, "Failed to parse thioester SMARTS pattern"
 
-    # Check for thioester linkage
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester linkage not found"
-
-    # Ensure the acyl group is attached via thioester bond
+    # Find matches for thioester linkage
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester linkage not found"
     else:
-        # Verify that the sulfur is connected to the CoA moiety
-        sulfur_idx = thioester_matches[0][0]
-        # Check if sulfur is part of the Coenzyme A moiety
-        coa_match = mol.GetSubstructMatch(coenzymeA_pattern)
-        if sulfur_idx not in coa_match:
-            return False, "Thioester linkage is not connected to Coenzyme A"
+        # Verify that the sulfur in the thioester is the same as the sulfur in CoA
+        coa_sulfur = None
+        for atom in coa_mol.GetAtoms():
+            if atom.GetAtomicNum() == 16:  # Atomic number 16 for sulfur
+                coa_sulfur = atom
+                break
+        if coa_sulfur is None:
+            return False, "Sulfur atom not found in CoA"
+        
+        # Map CoA sulfur atom index to the input molecule
+        match = mol.GetSubstructMatch(coa_mol)
+        if not match:
+            return False, "Coenzyme A moiety not matched properly"
+        coa_sulfur_idx_in_mol = match[coa_sulfur.GetIdx()]
+        
+        # Check if thioester sulfur is the same as CoA sulfur
+        thioester_sulfur_idxs = [m[0] for m in thioester_matches]  # First atom in thioester pattern is sulfur
+        if coa_sulfur_idx_in_mol not in thioester_sulfur_idxs:
+            return False, "Thioester linkage not connected to CoA sulfur atom"
 
     return True, "Contains Coenzyme A moiety linked via thioester bond to an acyl group"
