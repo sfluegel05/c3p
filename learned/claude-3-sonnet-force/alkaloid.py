@@ -6,7 +6,6 @@ Classifies: CHEBI:3115 alkaloid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alkaloid(smiles: str):
     """
@@ -44,11 +43,12 @@ def is_alkaloid(smiles: str):
         return False, "No basic nitrogen atoms found"
 
     # Check for common alkaloid heterocycles
-    common_rings = ['pyridine', 'piperidine', 'quinoline', 'isoquinoline', 'indole', 'purine', 'imidazole', 'pyrazine', 'pyrimidine', 'pyrrole', 'pyrrolidine', 'tropane', 'pyrrolizidine']
+    common_ring_systems = ['pyridine', 'piperidine', 'quinoline', 'isoquinoline', 'indole', 'purine', 'imidazole', 'pyrazine', 'pyrimidine', 'pyrrole', 'pyrrolidine', 'tropane', 'pyrrolizidine']
     ring_smarts = [''.join(['n', str(len(ring)), 'aaannnnn']) for ring in hetero_rings]
     ring_patterns = [Chem.MolFromSmarts(smart) for smart in ring_smarts]
-    ring_types = [AllChem.GetMolTemplateSetScore(mol, common_rings) for ring_pattern in ring_patterns]
-    if any(ring_type > 0 for ring_type in ring_types):
-        return True, "Contains nitrogen atom and heterocyclic ring(s) common in alkaloids"
+    ring_matches = [mol.GetSubstructMatches(ring_pattern) for ring_pattern in ring_patterns]
+    ring_systems = [Chem.MolToSmiles(Chem.PathToSubmol(mol, path, atomMap={})) for path in ring_matches for ring_system in common_ring_systems if ring_system in Chem.MolToSmiles(Chem.PathToSubmol(mol, path, atomMap={}))]
+    if ring_systems:
+        return True, f"Contains nitrogen atom and heterocyclic ring system(s) common in alkaloids: {', '.join(ring_systems)}"
 
     return True, "Contains nitrogen atom and heterocyclic ring(s)"
