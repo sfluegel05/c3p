@@ -40,13 +40,9 @@ def is_thiol(smiles: str) -> tuple[bool, str]:
         thiol_atom = mol.GetAtomWithIdx(thiol_idx)
         for neighbor_atom in thiol_atom.GetNeighbors():
             if neighbor_atom.GetAtomicNum() == 6:  # Carbon
-                aliphatic_or_aromatic = False
-                for bond in mol.GetBonds():
-                    if bond.GetBeginAtomIdx() == neighbor_atom.GetIdx() or bond.GetEndAtomIdx() == neighbor_atom.GetIdx():
-                        if bond.GetBondType() == Chem.BondType.AROMATIC or bond.GetBondType() == Chem.BondType.SINGLE:
-                            aliphatic_or_aromatic = True
-                            break
-                if aliphatic_or_aromatic:
+                # Check if the carbon atom is part of an aliphatic or aromatic moiety
+                is_aliphatic_or_aromatic = neighbor_atom.IsInRing() or neighbor_atom.GetIsAromatic()
+                if is_aliphatic_or_aromatic:
                     return True, "Contains a thiol group (-SH) attached to a carbon atom of an aliphatic or aromatic moiety"
 
     return False, "Thiol group not attached to a carbon atom of an aliphatic or aromatic moiety"
