@@ -1,91 +1,32 @@
 """
 Classifies: CHEBI:61778 triterpenoid saponin
 """
-"""
-Classifies: CHEBI:47802 triterpenoid saponin
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and its outcomes, I can identify a few potential issues and suggest improvements:
 
-def is_triterpenoid_saponin(smiles: str):
-    """
-    Determines if a molecule is a triterpenoid saponin based on its SMILES string.
-    A triterpenoid saponin is a terpene glycoside with a triterpenoid terpene moiety.
+1. **The triterpenoid backbone pattern**: The SMARTS pattern used to identify the triterpenoid backbone appears to be too specific and may not cover all possible structural variations of triterpenoid backbones. Triterpenoids are a diverse class of compounds, and a more general pattern or multiple patterns might be needed to capture the structural diversity.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Sugar moiety detection**: The current approach of looking for any ring with -O- atoms attached might not be sufficient to reliably identify sugar moieties. Sugar moieties can have various ring sizes and substitution patterns, and a more specific pattern or set of patterns may be required.
 
-    Returns:
-        bool: True if molecule is a triterpenoid saponin, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Rotatable bond count**: The cutoff of 6 rotatable bonds for the presence of sugar chains might be too low or too high, depending on the size and complexity of the sugar moieties. It might be better to use a range or adjust the cutoff based on further analysis of the dataset.
 
-    # Look for triterpenoid backbone
-    triterpenoid_pattern = Chem.MolFromSmarts("[C@@H]1[C@@]2([C@@]([C@@]3([C@]([C@]4([C@@]([C@]5([C@@](CC4)CCC5)C)[H])=CC3)C)(CC2)C)[H]CCC1")
-    if not mol.HasSubstructMatch(triterpenoid_pattern):
-        return False, "No triterpenoid backbone found"
+4. **Molecular weight cutoff**: The molecular weight cutoff of 500 Da may not be universally applicable to all triterpenoid saponins. While it can serve as a general guideline, there might be exceptions, and it would be better to use a range or adjust the cutoff based on the dataset.
 
-    # Look for sugar moieties (any ring with -O- atoms attached)
-    sugar_pattern = Chem.MolFromSmarts("[OR1]")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
-        return False, "No sugar moieties found"
+5. **Elemental composition check**: The elemental composition check for C, H, and O might be too strict and could exclude some valid triterpenoid saponins that contain additional elements, such as nitrogen or sulfur, due to modifications or substituents.
 
-    # Count rotatable bonds to verify presence of sugar chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
-        return False, "Insufficient rotatable bonds for sugar chains"
+To improve the program, you could consider the following steps:
 
-    # Check molecular weight - triterpenoid saponins typically >500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for triterpenoid saponin"
+1. **Analyze the dataset**: Carefully examine the positive and negative examples in the dataset to understand the structural diversity and variations within the triterpenoid saponin class and the potential false positives and false negatives.
 
-    # Check elemental composition - triterpenoid saponins contain C, H, O
-    atoms = [a.GetAtomicNum() for a in mol.GetAtoms()]
-    if set(atoms) - set([6, 1, 8]):
-        return False, "Contains elements other than C, H, O"
+2. **Refine the patterns**: Based on the analysis, refine the SMARTS patterns for the triterpenoid backbone and sugar moieties. You may need multiple patterns or more general patterns to cover the structural diversity.
 
-    return True, "Contains triterpenoid backbone and sugar moieties"
+3. **Adjust the cutoffs and ranges**: Adjust the cutoffs and ranges for rotatable bond counts, molecular weights, and elemental compositions based on the analysis of the dataset and the distribution of these properties within the positive and negative examples.
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:47802',
-        'name': 'triterpenoid saponin',
-        'definition': 'A terpene glycoside in which the terpene moiety is a triterpenoid.',
-        'parents': ['CHEBI:36334', 'CHEBI:24702']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 184,
-    'num_false_positives': 24,
-    'num_true_negatives': 182382,
-    'num_false_negatives': 2,
-    'num_negatives': None,
-    'precision': 0.8846153846153846,
-    'recall': 0.9892473118279569,
-    'f1': 0.9337349397590361,
-    'accuracy': 0.9998615447155333
-}
+4. **Consider additional structural features**: Explore additional structural features that may be characteristic of triterpenoid saponins, such as specific functional groups, stereochemistry, or connectivity patterns, and incorporate them into the classification criteria.
+
+5. **Combine multiple criteria**: Instead of relying on a single criterion, combine multiple criteria with appropriate weights or logical operations to improve the overall classification accuracy.
+
+6. **Implement a machine learning approach**: If the structural diversity and variations within the class make it challenging to develop a rule-based approach, consider implementing a machine learning-based approach, such as using molecular fingerprints or other descriptors as input features to a classification model.
+
+7. **Investigate false positives and false negatives**: Carefully examine the false positives and false negatives produced by the program and try to identify patterns or structural features that could be used to improve the classification.
+
+It's important to note that the classification task for chemical entities can be challenging due to the structural diversity and complexity of molecules. Iterative refinement and continuous evaluation against the dataset are often necessary to achieve satisfactory performance.
