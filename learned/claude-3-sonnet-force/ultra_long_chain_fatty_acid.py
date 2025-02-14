@@ -6,6 +6,7 @@ Classifies: CHEBI:36977 ultra-long-chain fatty acid
 """
 from rdkit import Chem
 from rdkit.Chem import rdmolops
+import numpy as np
 
 def is_ultra_long_chain_fatty_acid(smiles: str):
     """
@@ -32,7 +33,7 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count <= 27:
-        return False, "Chain length too short (<=C27)"
+        return False, f"Chain length too short ({c_count} carbons)"
     
     # Check for fatty acid chain
     chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -47,12 +48,9 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     
     # Count unsaturated carbons
     adjacency_matrix = rdmolops.GetAdjacencyMatrix(mol)
-    unsaturated_carbons = 0
-    for bond_idx, bond_order in adjacency_matrix.GetNonzeroElements().items():
-        if bond_order > 1:
-            unsaturated_carbons += 1
+    unsaturated_bonds = np.sum(adjacency_matrix > 1)
     
-    if unsaturated_carbons > 0:
-        return True, f"Ultra-long-chain fatty acid with {c_count} carbons and {unsaturated_carbons} unsaturations"
+    if unsaturated_bonds > 0:
+        return True, f"Ultra-long-chain fatty acid with {c_count} carbons and {unsaturated_bonds} unsaturations"
     else:
         return True, f"Ultra-long-chain saturated fatty acid with {c_count} carbons"
