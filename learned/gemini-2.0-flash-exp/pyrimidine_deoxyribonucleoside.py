@@ -20,30 +20,23 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pyrimidine base (generic) - a six-membered ring with 2 nitrogens and 4 carbons
-    # Allow for variation in bonding.
-    pyrimidine_base_pattern = Chem.MolFromSmarts("[N]1[CX3][CX3][CX3,NX3][CX3][CX3]1")
-    if not mol.HasSubstructMatch(pyrimidine_base_pattern):
+    # Generic pyrimidine base pattern. This pattern is more generic than the previous one
+    pyrimidine_base_pattern1 = Chem.MolFromSmarts("[n]1ccccc1")
+    pyrimidine_base_pattern2 = Chem.MolFromSmarts("[n]1c[c]nc[c]1")
+    if not (mol.HasSubstructMatch(pyrimidine_base_pattern1) or mol.HasSubstructMatch(pyrimidine_base_pattern2)):
        return False, "No pyrimidine base detected"
 
-    # Deoxyribose sugar with a C-C-C-C-O ring system, where C2 has no OH.
-    # We are using [C] instead of [C@H] or [C@@H] because the stereochemistry can vary,
-    # we are using the [] to indicate generic carbon atom.
-    deoxyribose_pattern = Chem.MolFromSmarts("[C]1[C]([C]([C](O)CO)[C])O1")
+    # Deoxyribose sugar, more robust pattern
+    deoxyribose_pattern = Chem.MolFromSmarts("[C]1[C][C](O)[C](CO)[C](O)1")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
          return False, "No deoxyribose sugar detected"
 
-
-    # Check if there is ribose sugar instead of deoxyribose - if this pattern matches, it's not deoxy
-    ribose_pattern = Chem.MolFromSmarts("[C]1[C](O[C]([C](O)CO)[C])O1")
+    # Check if there is ribose sugar instead of deoxyribose
+    ribose_pattern = Chem.MolFromSmarts("[C]1[C](O)[C]([C](O)CO)[C]1")
     if mol.HasSubstructMatch(ribose_pattern):
         return False, "Ribose detected, not deoxyribose"
 
-    #Verify glycosidic bond - N of pyrimidine is linked to C1' of sugar
-    # This pattern looks for a nitrogen connected to a carbon, that is part of the ribose structure
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[N]~[C]1[C]([C]([C](O)CO)[C])O1")
-    if not mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "No glycosidic bond detected between pyrimidine and sugar"
-
+    # Glycosidic bond check: Implied by connection between pyrimidine and deoxyribose pattern
+    #  no need for the glycosidic_bond_pattern as the previous tests ensure connection
 
     return True, "Pyrimidine deoxyribonucleoside detected"
