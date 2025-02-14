@@ -1,8 +1,12 @@
 """
 Classifies: CHEBI:25608 nucleoside phosphate
 """
+"""
+Classifies: CHEBI:35489 nucleoside phosphate
+"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_nucleoside_phosphate(smiles: str):
     """
@@ -17,47 +21,38 @@ def is_nucleoside_phosphate(smiles: str):
         bool: True if molecule is a nucleoside phosphate, False otherwise
         str: Reason for classification
     """
+    
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define patterns for purine and pyrimidine bases
-    purine_pattern = Chem.MolFromSmarts("n1cnc2ncnc1[nH]2")
-    pyrimidine_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c(N)nc1")
-
-    # Check if molecule contains a nucleobase
-    purine_match = mol.HasSubstructMatch(purine_pattern)
-    pyrimidine_match = mol.HasSubstructMatch(pyrimidine_pattern)
-    if not purine_match and not pyrimidine_match:
+    
+    # Look for nucleobase pattern
+    nucleobase_pattern = Chem.MolFromSmarts("[nr3]1[nr3][nr3][nr3][nr3]1")
+    if not mol.HasSubstructMatch(nucleobase_pattern):
         return False, "No nucleobase found"
-
-    # Define pattern for sugar ring
-    sugar_pattern = Chem.MolFromSmarts("[OX2r3][CX4r3][CX4r3][CX4r3][CX4r3][OX2r3]")
-
-    # Check if molecule contains a sugar ring
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
+    
+    # Look for sugar ring pattern
+    sugar_ring_pattern = Chem.MolFromSmarts("[OX2r3][CX4r3][CX4r3][CX4r3][CX4r3][OX2r3]")
+    if not mol.HasSubstructMatch(sugar_ring_pattern):
         return False, "No sugar ring found"
-
-    # Check if a phosphate group is attached to the sugar ring
-    phosphate_attached = False
-    for sugar_match in sugar_matches:
-        for atom_idx in sugar_match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetSymbol() == "O" and atom.GetIsInRing():
-                neighbor_atoms = atom.GetNeighbors()
-                for neighbor in neighbor_atoms:
-                    if neighbor.GetAtomicNum() == 15:  # Phosphorus
-                        phosphate_attached = True
-                        break
-
-    if not phosphate_attached:
-        return False, "Nucleobase and sugar ring present, but no phosphate group attached"
-
-    # Check for additional phosphate groups (for poly-phosphates)
+    
+    # Look for phosphate group(s)
     phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) > 1:
-        return True, "Contains nucleobase, sugar ring, and poly-phosphate group"
-    else:
-        return True, "Contains nucleobase, sugar ring, and mono-phosphate group"
+    if not phosphate_matches:
+        return False, "No phosphate groups found"
+    
+    # Check if phosphate is attached to sugar hydroxy
+    sugar_oh_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1 and atom.IsInRing()]
+    phosphate_attached = False
+    for phosphate_match in phosphate_matches:
+        phosphate_atom = mol.GetAtomWithIdx(phosphate_match[0])
+        for neighbor in phosphate_atom.GetNeighbors():
+            if neighbor.GetIdx() in [atom.GetIdx() for atom in sugar_oh_atoms]:
+                phosphate_attached = True
+                break
+    if not phosphate_attached:
+        return False, "Phosphate not attached to sugar hydroxy"
+    
+    return True, "Contains a nucleobase, sugar ring, and one or more phosphate groups attached to sugar hydroxy"
