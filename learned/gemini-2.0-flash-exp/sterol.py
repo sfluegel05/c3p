@@ -3,12 +3,13 @@ Classifies: CHEBI:15889 sterol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_sterol(smiles: str):
     """
     Determines if a molecule is a sterol based on its SMILES string.
     A sterol is a steroid with a hydroxyl group at the 3-beta position.
-     It has a tetracyclic ring system closely related to cholestan-3-ol (additional carbon atoms may be present in the side chain).
+    It has a tetracyclic ring system closely related to cholestan-3-ol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,68 +22,39 @@ def is_sterol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Steroid core SMARTS pattern (tetracyclic ring system with 6-6-6-5 fusion)
-    # This pattern is more generic, focusing on the ring structure.
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C]2[C]3[C]([C]1)[C][C]4[C]([C]3[C]2)[C][C]5[C]([C]4)[C][C]5")
+    # Steroid core SMARTS pattern (simplified - does not enforce stereochemistry on ring fusion)
+    # The core is based on the perhydrophenanthrene ring system, three 6 membered rings and one 5 membered ring.
+    # The carbon on which the hydroxy group is attached is C3.
+    steroid_core_pattern = Chem.MolFromSmarts("[C]12[C]([C]3[C]([C]4[C]([C]([C]1)CC[C@@H]2C)[C](CC4)CC3)C)") # This SMARTS is much simpler than the previous version
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core found"
-
-
+    
+    # Check for a hydroxyl group at the 3-position (we have to find the 3-position and then check for an OH)
     core_match = mol.GetSubstructMatch(steroid_core_pattern)
-    if not core_match:
+    if core_match:
+        c3 = core_match[0] # This is the C connected to the hydroxy group, in core_match, this is the first C defined.
+        c3_atom = mol.GetAtomWithIdx(c3)
+        has_oh = False
+        for neighbor in c3_atom.GetNeighbors():
+             if neighbor.GetSymbol() == 'O' and neighbor.GetTotalNumHs() == 1:
+                has_oh = True
+                break
+        if not has_oh:
+            return False, "No hydroxyl group at the 3-position"
+    else:
         return False, "No match of steroid_core_pattern"
-
-
-    # Identify C3 atom - this may not be carbon 2 every time.  We now find the atoms that form the 4 rings, and check for the hydroxyl group on an atom in one of the outer rings.
-    c3_candidates = []
     
-    #We will have to identify our c3 by checking for a neighbor carbon that has two neighbors.
-    ring_atoms_idx = core_match
+    # Check for a side chain at position 17 (simplified SMARTS for a C attached to C17).
+    # It can have carbon chain attached to it. C17 is the carbon attached to the 5 membered ring in the core.
+    c17 = core_match[5] # C17 in the simplified core pattern
+    c17_atom = mol.GetAtomWithIdx(c17)
 
-    for atom_idx in ring_atoms_idx:
-        c_atom = mol.GetAtomWithIdx(atom_idx)
-        
-        if c_atom.GetSymbol() == 'C':
-          neighbors = c_atom.GetNeighbors()
-          if len(neighbors) == 3 and  all(n.GetSymbol() == "C" for n in neighbors):
-            c3_candidates.append(c_atom)
-
-    # Check for 3-beta hydroxyl group. Must be attached to a candidate of the 3 position and have one H.
-    has_3beta_oh = False
-    for c3 in c3_candidates:
-      for neighbor in c3.GetNeighbors():
-          if neighbor.GetSymbol() == 'O' and neighbor.GetTotalNumHs() == 1:
-            has_3beta_oh = True
-            break
-      if has_3beta_oh:
-        break
-    
-    if not has_3beta_oh:
-      return False, "No hydroxyl group at the 3-beta position"
-      
-    
-    # Identify a potential C17 atom.  We find an atom that has three other neighbors and two of those neighbors have 2 or less neighbors.
-    c17_candidates = []
-    for atom_idx in ring_atoms_idx:
-       c_atom = mol.GetAtomWithIdx(atom_idx)
-       if c_atom.GetSymbol() == 'C':
-          neighbors = c_atom.GetNeighbors()
-          if len(neighbors) == 3:
-             num_neighbors_two = sum([1 if len(n.GetNeighbors()) <=2 else 0 for n in neighbors])
-             if num_neighbors_two >= 2:
-              c17_candidates.append(c_atom)
-
-    # Check for side chain at a potential C17 (at least one carbon atom attached)
     has_sidechain = False
-    for c17 in c17_candidates:
-       for neighbor in c17.GetNeighbors():
-           if neighbor.GetSymbol() == 'C':
-               has_sidechain = True
-               break
-       if has_sidechain:
-          break
+    for neighbor in c17_atom.GetNeighbors():
+         if neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() < 3:
+             has_sidechain = True
+             break
     if not has_sidechain:
         return False, "No side chain at C17"
-
-
-    return True, "Contains a steroid core, a hydroxyl group at the 3-beta position, and a side chain at C17."
+        
+    return True, "Contains a steroid core, a hydroxyl group at the 3-position, and a side chain at C17."
