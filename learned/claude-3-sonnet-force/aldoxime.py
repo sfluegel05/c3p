@@ -33,14 +33,16 @@ def is_aldoxime(smiles: str):
     if not oxime_matches:
         return False, "No oxime functional group (-CH=N-O-) found"
 
-    # Check if oxime is attached to an aldehyde carbon
+    # Check if oxime is part of the main molecular scaffold
+    scaffold_atoms = set(range(mol.GetNumAtoms()))
     for match in oxime_matches:
         atom_idx = match[0]
         atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetDegree() == 1 and atom.GetHybridization() == Chem.HybridizationType.SP2:
-            neighbor = atom.GetNeighbors()[0]
-            if neighbor.GetDegree() == 1 and neighbor.GetAtomicNum() == 8:  # Check for C=O
-                return True, "Contains aldoxime functional group (-CH=N-O-)"
+        neighbors = atom.GetNeighbors()
+        scaffold_atoms.update(neighbor.GetIdx() for neighbor in neighbors)
+
+    if len(scaffold_atoms) != mol.GetNumAtoms():
+        return False, "Oxime group is not part of the main molecular scaffold"
 
     # Check for exceptional cases (e.g., oximes attached to heteroatoms or in conjugated systems)
     exceptional_pattern = Chem.MolFromSmarts("[CH]=[N][OH]~[cX3]")
@@ -48,4 +50,16 @@ def is_aldoxime(smiles: str):
     if exceptional_matches:
         return True, "Contains oxime functional group in an exceptional environment"
 
-    return False, "Oxime not attached to aldehyde carbon or in an exceptional environment"
+    # Check for common aldoxime environments
+    aldoxime_patterns = [
+        Chem.MolFromSmarts("[CH]=[N][OH]~[C](=O)"), # Acyl oximes
+        Chem.MolFromSmarts("[CH]=[N][OH]~[C](-[OH])=O"), # Hydroxy aldoximes
+        Chem.MolFromSmarts("[CH]=[N][OH]~[cX3](-[#6])~[#6]"), # Conjugated aldoximes
+        Chem.MolFromSmarts("[CH]=[N][OH]~[cX3](-[#7])~[#7]"), # Heteroatom-containing aldoximes
+        # Add more patterns as needed
+    ]
+    for pattern in aldoxime_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains aldoxime functional group in a common environment"
+
+    return False, "Oxime group is not in a typical aldoxime environment"
