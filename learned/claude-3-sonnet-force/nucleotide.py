@@ -7,7 +7,7 @@ A nucleotide is a nucleoside phosphate resulting from the condensation of the 3 
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdchem
+from rdkit.Chem import rdMolDescriptors
 
 def is_nucleotide(smiles: str):
     """
@@ -20,51 +20,46 @@ def is_nucleotide(smiles: str):
         bool: True if molecule is a nucleotide, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Look for nucleoside base
-    bases = ['Adenine', 'Guanine', 'Cytosine', 'Thymine', 'Uracil']
-    base_found = False
-    for base in bases:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(f'n{base}')):
-            base_found = True
-            break
-
-    # Look for alternative/modified nucleoside bases
-    if not base_found:
-        for atom in mol.GetAtoms():
-            if atom.GetIsAromatic() and atom.GetSymbol() == 'N':
-                env = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, atom.GetIdx())
-                if env.getIsNucleicAcidBase():
-                    base_found = True
-                    break
-
-    if not base_found:
+    base_pattern = Chem.MolFromSmarts("[nr5]1[nr5]c2nc[nr5]c2[nr5]1")
+    if not mol.HasSubstructMatch(base_pattern):
         return False, "No nucleoside base found"
 
     # Look for sugar moiety
-    sugar_found = False
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'O' and atom.GetIsAromatic():
-            env = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, atom.GetIdx())
-            if env.getIsSugar():
-                sugar_found = True
-                break
-
-    if not sugar_found:
+    sugar_pattern = Chem.MolFromSmarts("[OX2r5]1[Cr5][Cr5]([Or5])[Cr5]([Or5])[Cr5]1")
+    if not mol.HasSubstructMatch(sugar_pattern):
         return False, "No sugar moiety found"
 
-    # Look for phosphate groups
+    # Look for phosphate group(s)
     phosphate_pattern = Chem.MolFromSmarts("OP(=O)([O-,O])")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if not phosphate_matches:
         return False, "No phosphate group found"
 
-    # Additional checks for other structural features (if needed)
-    # ...
+    # Check for connectivity between components
+    base_atom = mol.GetSubstructMatch(base_pattern)[0]
+    sugar_atom = mol.GetSubstructMatch(sugar_pattern)[0]
+    phosphate_atom = phosphate_matches[0][0]
 
-    return True, "Contains a nucleoside base, sugar moiety, and phosphate group(s)"
+    # Check if base and sugar are connected
+    base_sugar_bond = mol.GetBondBetweenAtoms(base_atom, sugar_atom)
+    if base_sugar_bond is None:
+        return False, "Nucleoside base and sugar moiety not connected"
+
+    # Check if sugar and phosphate are connected
+    sugar_phosphate_bond = mol.GetBondBetweenAtoms(sugar_atom, phosphate_atom)
+    if sugar_phosphate_bond is None:
+        return False, "Sugar moiety and phosphate group not connected"
+
+    # Additional checks (optional)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 1000:
+        return False, "Molecular weight outside typical range for nucleotides"
+
+    return True, "Contains a nucleoside base, sugar moiety, and phosphate group(s) in the correct structural arrangement"
