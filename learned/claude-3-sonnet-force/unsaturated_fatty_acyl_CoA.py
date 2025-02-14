@@ -1,57 +1,32 @@
 """
 Classifies: CHEBI:51006 unsaturated fatty acyl-CoA
 """
-Here's a Python program to classify chemical entities as unsaturated fatty acyl-CoA:
+The previous program attempts to classify molecules as unsaturated fatty acyl-CoA by checking for the presence of a CoA backbone, an unsaturated alkyl chain of at least 6 carbons, and a molecular weight of at least 500 Da. Here are some observations and potential improvements:
 
-"""
-Classifies: CHEBI:35653 unsaturated fatty acyl-CoA
+1. **True positive and false negative cases**: Since there are no true positives or false negatives reported, it's possible that the program is too strict or has missed some valid cases. It would be helpful to review the examples provided and identify any molecules that should be classified as true positives but are currently missed by the program.
 
-A fatty acyl-CoA that results from the formal condensation of the thiol group of coenzyme A with the carboxy group of any unsaturated fatty acid.
-"""
+2. **False positive cases**: Without any false positives reported, it's difficult to assess whether the program is too lenient or not. However, there are some potential issues that could lead to false positives:
 
-from rdkit import Chem
-from rdkit.Chem import rdFMCS, AllChem, rdMolDescriptors
+   a. **Unsaturated non-fatty chains**: The program checks for the presence of an unsaturated alkyl chain, but it doesn't explicitly check if the chain is a fatty acid. It could potentially classify molecules with unsaturated non-fatty chains as positive cases.
 
-def is_unsaturated_fatty_acyl_CoA(smiles: str):
-    """
-    Determines if a molecule is an unsaturated fatty acyl-CoA based on its SMILES string.
+   b. **Multiple unsaturated chains**: The program doesn't seem to account for molecules with multiple unsaturated chains, which may or may not be desirable depending on the definition of the class.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Handling stereochemistry**: The program currently doesn't consider stereochemistry when checking for the unsaturated alkyl chain. Some of the provided examples have defined stereochemistry, which could be important for accurately classifying the molecules.
 
-    Returns:
-        bool: True if molecule is an unsaturated fatty acyl-CoA, False otherwise
-        str: Reason for classification
-    """
+4. **Molecular weight threshold**: The molecular weight threshold of 500 Da may need to be adjusted based on the examples provided. Some smaller unsaturated fatty acyl-CoA molecules could be missed with this strict cutoff.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the program, you could consider the following steps:
 
-    # Look for CoA backbone pattern
-    coa_pattern = Chem.MolFromSmarts("OP(OP(OCC(C(=O)NCCC(=O)NCCSC(=O))O)=O)(OP(O)(OC[C@H]1O[C@@H]([C@@H](O)[C@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N)(O)=O)(O)=O")
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "No CoA backbone found"
+1. Review the provided examples and identify any true positive cases that are currently missed by the program. Adjust the criteria accordingly to capture these cases.
 
-    # Look for unsaturated alkyl chain (at least one double bond)
-    alkyl_chain = rdFMCS.FragmentMolWrap(mol, pattern=Chem.MolFromSmarts("[C;H3,H2,H1]-[C]-[C;H2]=[C;H2]-[C]"), completeRingsOnly=False)
-    if not alkyl_chain:
-        return False, "No unsaturated alkyl chain found"
+2. Add additional checks to ensure that the unsaturated chain is specifically a fatty acid chain. This could involve checking for the presence of a terminal carboxylic acid group or other characteristic patterns.
 
-    # Check for alkyl chain length (>= 6 carbons)
-    alkyl_length = sum(1 for atom in alkyl_chain.mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if alkyl_length < 6:
-        return False, "Alkyl chain too short for fatty acyl-CoA (< 6 carbons)"
+3. Decide whether the program should allow for multiple unsaturated chains or not, and adjust the logic accordingly.
 
-    # Count double bonds in alkyl chain
-    num_double_bonds = sum(1 for bond in alkyl_chain.mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
-    if num_double_bonds == 0:
-        return False, "No double bonds found in alkyl chain"
+4. Incorporate stereochemistry checks when matching the unsaturated alkyl chain pattern. This could involve using more specific SMARTS patterns or alternative approaches.
 
-    # Check molecular weight (>= 500 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for unsaturated fatty acyl-CoA (< 500 Da)"
+5. Revisit the molecular weight threshold and adjust it based on the examples provided. You could also consider using a range instead of a strict cutoff.
 
-    return True, "Contains CoA backbone and an unsaturated alkyl chain (>= 6 carbons)"
+6. If there are any examples that you believe should be classified differently than the benchmark suggests, document your reasoning and make an informed decision on whether to adjust the program or treat those cases as outliers.
+
+By addressing these potential issues and incorporating feedback from the provided examples, you can iteratively improve the program's performance in classifying unsaturated fatty acyl-CoA molecules.
