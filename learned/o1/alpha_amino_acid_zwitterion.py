@@ -27,10 +27,10 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
     
     # Define SMARTS pattern for alpha-amino-acid zwitterion
     # Alpha carbon connected to [NH3+], [C(=O)[O-]], and any side chain [*]
-    zwitterion_pattern = Chem.MolFromSmarts("[C;H1X4]([N+;,H3])[C](=O)[O-]")
+    zwitterion_pattern = Chem.MolFromSmarts("[C;H1;X4]([N+;H3])([*])[C](=O)[O-]")
     if zwitterion_pattern is None:
         return False, "Invalid SMARTS pattern"
-
+    
     # Search for the pattern in the molecule
     if mol.HasSubstructMatch(zwitterion_pattern):
         return True, "Contains alpha-amino-acid zwitterion structure"
