@@ -19,20 +19,25 @@ def is_6_aminopurines(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the 6-aminopurine (adenine) SMARTS pattern
-    # Adenine's SMILES representation is: "c1ncnc2ncnc12"
-    # Adding the 6-amino group: "c1ncnc2nc(N)nc12"
-    adenine_pattern = Chem.MolFromSmarts("c1ncnc2nc(N)nc12")
+    
+    # Refined the 6-aminopurine SMARTS pattern for adenine
+    # Pay attention to bonds and possible variation in ring assemblies
+    adenine_pattern = Chem.MolFromSmarts("n1cnc2c(ncn2)n1")  # Core purine pattern with 6-amino consideration
+    
     if adenine_pattern is None:
         return False, "Failed to create 6-aminopurine pattern"
-
-    # Check if the molecule contains the adenine structure
+    
+    # Check if the molecule contains the adenine spine
     if mol.HasSubstructMatch(adenine_pattern):
-        return True, "Contains 6-aminopurine (adenine) structure"
-    else:
-        return False, "Does not contain 6-aminopurine (adenine) structure"
+        # Ensure the N at position 6 is bonded
+        matches = mol.GetSubstructMatches(adenine_pattern)
+        for match in matches:
+            if len(match) >= 6:
+                n_pos = match[4]  # The index for the nitrogen expected at position 6
+                n_atom = mol.GetAtomWithIdx(n_pos)
+                if n_atom.GetSymbol() == 'N':
+                    return True, "Contains 6-aminopurine (adenine) structure"
+    
+    return False, "Does not contain 6-aminopurine (adenine) structure"
 
-# Example usage for demonstration purposes
-# smiles_example = "C1=NC2=C(N1)N=C(NC2=N)N"  # SMILES for adenine
-# print(is_6_aminopurines(smiles_example))
+# Note: It's crucial to double-check this refined pattern with a variety of test cases to confirm accuracy.
