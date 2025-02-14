@@ -26,16 +26,20 @@ def is_aromatic_amino_acid(smiles: str):
         return False, "No aromatic ring found"
         
     # Check for amino acid moiety (carboxylic acid and amine group, not necessarily alpha)
-    # This pattern allows for a variety of linkers between the amine and the acid and also accounts for protonated amine.
+    # We use a more general pattern that is tolerant to various linkers
     amino_acid_pattern = Chem.MolFromSmarts("[NX3,NX4+]~*C(=O)O")
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No amino acid moiety found"
 
-    # Check if aromatic ring and amino acid moiety are on the same molecule
-    # If the two patterns were found separately it does not mean that they are necessarily part of the same molecule.
-    # For example, a molecule consisting of benzene and glycine would satisfy the conditions above but is not an aromatic amino acid.
-    combined_pattern = Chem.MolFromSmarts("[c]~*~[NX3,NX4+]~*C(=O)O")
-    if not mol.HasSubstructMatch(combined_pattern):
-      return False, "Aromatic ring and amino acid moiety not connected"
-      
+    # Check if the aromatic ring and amino acid moiety are connected through a linker.
+    # The linker can have a few atoms and can be any type. It also allows for a direct bond.
+    # This is now more flexible than before.
+    combined_pattern1 = Chem.MolFromSmarts("[c]~*~[NX3,NX4+]~*C(=O)O")
+    combined_pattern2 = Chem.MolFromSmarts("[c]~[NX3,NX4+]~*C(=O)O") # Amino group directly attached to aromatic ring
+    combined_pattern3 = Chem.MolFromSmarts("[c]~*~*~[NX3,NX4+]~*C(=O)O") # Amino separated by more than 1 atom from aromatic
+    
+    if not (mol.HasSubstructMatch(combined_pattern1) or mol.HasSubstructMatch(combined_pattern2) or mol.HasSubstructMatch(combined_pattern3)):
+        return False, "Aromatic ring and amino acid moiety not connected"
+
+
     return True, "Contains both an aromatic ring and an amino acid moiety"
