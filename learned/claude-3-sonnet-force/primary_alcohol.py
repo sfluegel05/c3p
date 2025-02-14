@@ -1,6 +1,8 @@
 """
 Classifies: CHEBI:15734 primary alcohol
 """
+Sure, here's a program to classify chemical entities as primary alcohols based on their SMILES string:
+
 """
 Classifies: CHEBI:15781 primary alcohol
 
@@ -22,35 +24,26 @@ def is_primary_alcohol(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES and handle tautomers
-    mol = Chem.MolFromSmiles(smiles, sanitize=True)
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    tautomer = Chem.MolFromSmiles(Chem.MolToSmiles(mol, isomericSmiles=True))
     
     # Find atoms with -OH group
-    oh_atoms = [atom for atom in tautomer.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetTotalNumHs() == 1]
+    oh_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetTotalNumHs() == 1]
     
     # Check if any of the -OH groups are attached to a primary carbon
     for oh_atom in oh_atoms:
         carbon = oh_atom.GetNeighbors()[0]
         if carbon.GetSymbol() == 'C':
-            # Check if carbon has three hydrogen neighbors or one carbon neighbor and two hydrogens
-            # Ignore other substituents like halogens, etc.
-            hydrogen_count = sum(1 for neighbor in carbon.GetNeighbors() if neighbor.GetSymbol() == 'H')
-            carbon_count = sum(1 for neighbor in carbon.GetNeighbors() if neighbor.GetSymbol() == 'C')
-            if (hydrogen_count == 3) or (carbon_count == 1 and hydrogen_count == 2):
-                # Check if carbon is part of a ring
-                is_in_ring = carbon.IsInRing()
-                # Check if molecule contains unsaturated bonds
-                has_unsaturated_bonds = any(bond.GetIsAromatic() or bond.GetBondType() == Chem.BondType.DOUBLE or bond.GetBondType() == Chem.BondType.TRIPLE for bond in mol.GetBonds())
-                
-                # If carbon is in a ring or molecule has unsaturated bonds, classify as primary alcohol
-                if is_in_ring or has_unsaturated_bonds:
-                    return True, "Contains a primary alcohol group (-OH attached to a saturated carbon atom with either three hydrogen atoms or one other carbon atom and two hydrogen atoms)"
-                # Otherwise, follow the original logic
-                else:
-                    return True, "Contains a primary alcohol group (-OH attached to a saturated carbon atom with either three hydrogen atoms or one other carbon atom and two hydrogen atoms)"
+            if sum(1 for neighbor in carbon.GetNeighbors() if neighbor.GetSymbol() == 'C') <= 1:
+                return True, "Contains a primary alcohol group (-OH attached to a saturated carbon atom with either three hydrogen atoms or one other carbon atom and two hydrogen atoms)"
     
     # If no primary alcohol groups found
     return False, "Does not contain a primary alcohol group"
+
+# Example usage
+print(is_primary_alcohol("OCCON1CCOCC1"))  # True, '2-(morpholin-4-yloxy)ethanol'
+print(is_primary_alcohol("C(CCCO)C/C=C\C/C=C\CC1C(C/C=C\CCCC(O)=O)O1"))  # True, '8,9-epoxy-20-hydroxy-(5Z,11Z,14Z)-icosatrienoic acid'
+print(is_primary_alcohol("CC\C=C/C\C=C/C\C=C/CCO"))  # True, '(3Z,6Z,9Z)-dodecatrienol'
+print(is_primary_alcohol("C(C(S)CCO)C"))  # True, '3-mercaptopentanol'
