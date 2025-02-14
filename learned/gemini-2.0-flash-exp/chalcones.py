@@ -26,34 +26,45 @@ def is_chalcones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the core chalcone SMARTS pattern
-    chalcone_core_pattern = Chem.MolFromSmarts("[c]~[C]=[C]~[C](=[O])~[c]")
+    chalcone_core_pattern = Chem.MolFromSmarts("[c;R]~[C]=[C]~[C](=[O])~[c;R]")
     core_matches = mol.GetSubstructMatches(chalcone_core_pattern)
 
     if not core_matches:
         return False, "Core chalcone structure (Ar-CH=CH-C(=O)-Ar) not found"
 
-    # Check for 2 different aryl groups attached to the core
-    for match in core_matches:
-      atom_indices = list(match)
-      aryl1_index = atom_indices[0]
-      aryl2_index = atom_indices[4]
-      aryl1_atom = mol.GetAtomWithIdx(aryl1_index)
-      aryl2_atom = mol.GetAtomWithIdx(aryl2_index)
-      
-      aryl1_ring = aryl1_atom.IsInRing()
-      aryl2_ring = aryl2_atom.IsInRing()
-      
-      if not (aryl1_ring and aryl2_ring):
-        return False, "At least one of the terminal groups aren't aromatic"
-        
-      aryl1_smiles = Chem.MolFragmentToSmiles(mol, [x.GetIdx() for x in mol.GetAtomNeighbors(aryl1_atom)])
-      aryl2_smiles = Chem.MolFragmentToSmiles(mol, [x.GetIdx() for x in mol.GetAtomNeighbors(aryl2_atom)])
-      if aryl1_smiles == aryl2_smiles:
-           return False, "Terminal aryl groups must be different"
 
-    # Additional substitution check - OH, OMe or prenyl
+    # Check for aromatic rings attached to the core
+    for match in core_matches:
+        atom_indices = list(match)
+        aryl1_index = atom_indices[0]
+        aryl2_index = atom_indices[4]
+        aryl1_atom = mol.GetAtomWithIdx(aryl1_index)
+        aryl2_atom = mol.GetAtomWithIdx(aryl2_index)
+        
+        # Check if the terminal groups are aromatic
+        if not (aryl1_atom.GetIsAromatic() and aryl2_atom.GetIsAromatic()):
+          return False, "At least one of the terminal groups aren't aromatic"
+
+
+        # Check if the aromatic rings are directly attached
+        
+        neighbor1 = mol.GetAtomWithIdx(atom_indices[1])
+        neighbor2 = mol.GetAtomWithIdx(atom_indices[3])
+        
+        bond1 = mol.GetBondBetweenAtoms(aryl1_index, neighbor1.GetIdx())
+        bond2 = mol.GetBondBetweenAtoms(aryl2_index, neighbor2.GetIdx())
+        
+        if not (bond1 and bond1.GetBondType() == Chem.BondType.SINGLE):
+            return False, "Aryl group 1 is not directly attached to the core"
+        
+        if not (bond2 and bond2.GetBondType() == Chem.BondType.SINGLE):
+            return False, "Aryl group 2 is not directly attached to the core"
+        
+
+    # Additional substitution check - OH, OMe or prenyl (not enforced)
     substituent_pattern = Chem.MolFromSmarts("[OH,Oc,CC=C(C)C]")
     substituent_matches = mol.GetSubstructMatches(substituent_pattern)
+
 
     # Check molecular weight - chalcones usually > 200 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
