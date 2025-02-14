@@ -1,62 +1,18 @@
 """
 Classifies: CHEBI:36500 glucosylceramide
 """
-"""
-Classifies: CHEBI:18099 glucosylceramide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and the outcomes, it appears that the ceramide backbone detection patterns used in the code are not comprehensive enough to identify all glucosylceramide structures. The false negatives suggest that the program missed some valid glucosylceramide structures due to the limitations of the SMARTS patterns used.
 
-def is_glucosylceramide(smiles: str):
-    """
-    Determines if a molecule is a glucosylceramide based on its SMILES string.
-    A glucosylceramide is a ceramide with a glucose moiety attached via a glycosidic or ester bond.
+Here's how we can improve the program:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. **Expand the ceramide backbone patterns**: The current patterns cover standard ceramides, ceramides with double bonds, and ceramides with substituents. However, they may not cover all possible variations of the ceramide backbone. We can explore more general patterns or combine multiple patterns to ensure better coverage.
 
-    Returns:
-        bool: True if molecule is a glucosylceramide, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for ceramide backbone patterns
-    ceramide_patterns = [
-        Chem.MolFromSmarts("[NX3H2;$(NC(=O)C)][CX4H](C[CX4])([CX4])[CX3](=O)[OX2H]"),  # Standard ceramide
-        Chem.MolFromSmarts("[NX3H2;$(NC(=O)C)][CX4H](C[CX3]=[CX3])([CX4])[CX3](=O)[OX2H]"),  # Ceramide with double bond
-        Chem.MolFromSmarts("[NX3H2;$(NC(=O)C)][CX4H](C[CX4])([CX4])[CX3](=O)[OX2H,OX1H0-]")  # Ceramide with substituents
-    ]
-    ceramide_match = any(mol.HasSubstructMatch(pattern) for pattern in ceramide_patterns)
-    if not ceramide_match:
-        return False, "No ceramide backbone found"
-    
-    # Look for glucose moiety patterns
-    glucose_patterns = [
-        Chem.MolFromSmarts("[OX2;$([C@H]1[C@@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O[CX4;!$(NC=O)])][CX4]"),  # Glycosidic bond
-        Chem.MolFromSmarts("[OX2;$([C@H]1[C@@H]([C@@H]([C@@H]([C@H](O1)O)O)O)O[CX3]=O)]")  # Ester bond
-    ]
-    glucose_match = any(mol.HasSubstructMatch(pattern) for pattern in glucose_patterns)
-    if not glucose_match:
-        return False, "No glucose moiety found"
-    
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    if c_count < 18:
-        return False, "Too few carbons for glucosylceramide"
-    if o_count < 7:
-        return False, "Too few oxygens for glucosylceramide"
-    
-    # Check molecular weight - glucosylceramides typically >500 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for glucosylceramide"
-    
-    return True, "Contains a ceramide backbone with a glucose moiety attached via a glycosidic or ester bond"
+2. **Improve glucose moiety detection**: While the current glucose patterns cover glycosidic and ester bonds, they may not account for all possible conformations and substitutions of the glucose moiety. We can explore more flexible patterns or use additional checks to ensure robust detection.
+
+3. **Consider additional checks**: In addition to the substructure matching, we can incorporate additional checks or constraints based on the molecular properties or features specific to glucosylceramides. For example, we could check for the presence of a specific number of nitrogen, oxygen, and other atoms, or enforce specific bond types or stereochemistry.
+
+4. **Evaluate and refine patterns**: After implementing the above improvements, we should thoroughly evaluate the program on a diverse set of glucosylceramide structures, including the false negatives from the previous attempt. Based on the evaluation results, we can further refine the patterns and checks to achieve better performance.
+
+It's important to note that while the benchmark data is not 100% reliable, it can still provide valuable guidance. However, if the classifications made by your program are consistent with your understanding of the chemical class and the provided definition, you can choose to ignore outliers or false negatives that seem reasonable. In such cases, it's essential to document your reasoning and justification for accepting or rejecting specific outcomes.
+
+By iteratively refining the patterns, incorporating additional checks, and thoroughly evaluating the program on diverse data, we can improve the accuracy and robustness of the glucosylceramide classification.
