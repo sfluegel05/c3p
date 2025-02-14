@@ -28,32 +28,32 @@ def is_wax(smiles: str):
     heteroatoms = [atom.GetAtomicNum() for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 8]]
     if len(heteroatoms) > 0:
         return False, "Contains heteroatoms other than C, H and O; not typical for wax"
-
-    # 1. Check for long continuous carbon chains (at least 16) - more specific check
     
+    # 1. Check for long continuous carbon chains (at least 10) - more specific check
     # Get all carbon atoms
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-
     longest_chain = 0
+    all_chains = []
     for start_atom in carbon_atoms:
         for end_atom in carbon_atoms:
             if start_atom == end_atom:
               continue
-            
-            path = Chem.GetShortestPath(mol, start_atom.GetIdx(), end_atom.GetIdx())
-            
-            if path is not None and len(path)>longest_chain: # path exists, and longer than longest
+            path = Chem.GetShortestPath(mol, start_atom.GetIdx(), end_atom.GetIdx())            
+            if path is not None : # path exists
                 is_all_carbon = all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in path)
                 if is_all_carbon:
-                    longest_chain = len(path)
-    
-    if longest_chain < 15:
-        return False, f"Too few carbons in the longest chain ({longest_chain}); typical waxes should have at least 15 contiguous C atoms"
+                    all_chains.append(path)
+                    if len(path)>longest_chain:
+                        longest_chain = len(path)
+
+
+    if longest_chain < 10:
+        return False, f"Too few carbons in the longest chain ({longest_chain}); typical waxes should have at least 10 contiguous C atoms"
     
     # Count total number of carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-     # 2. Check for ester linkages (or long-chain alcohols)
+    # 2. Check for ester linkages (or long-chain alcohols)
     ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]") # Ester next to a carbon
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2H1]") # long-chain alcohols check
@@ -65,13 +65,21 @@ def is_wax(smiles: str):
     # Check that the ester/alcohol group is part of the long chain. If it's an ester it must have another alkyl
     if len(ester_matches) > 0 :
         ester_match_ok = False
-        for match in ester_matches:
-           
+        for match in ester_matches:           
            ester_carbon1 = mol.GetAtomWithIdx(match[0])
            ester_carbon2 = mol.GetAtomWithIdx(match[3]) # carbon to which the ester oxygen is linked
-           if (ester_carbon1 in carbon_atoms and ester_carbon2 in carbon_atoms):
-              ester_match_ok = True
-              break
+
+           found_chain1=False
+           found_chain2=False
+           for chain in all_chains:
+                if ester_carbon1.GetIdx() in chain:
+                   found_chain1 = True
+                if ester_carbon2.GetIdx() in chain:
+                   found_chain2 = True
+
+           if found_chain1 and found_chain2:
+               ester_match_ok = True
+               break
         if not ester_match_ok:
              return False, "Ester group is not part of long carbon chain"
             
@@ -79,7 +87,13 @@ def is_wax(smiles: str):
         alcohol_match_ok = False
         for match in alcohol_matches:
             alcohol_carbon = mol.GetAtomWithIdx(match[0])
-            if (alcohol_carbon in carbon_atoms):
+            
+            found_chain = False
+            for chain in all_chains:
+                if alcohol_carbon.GetIdx() in chain:
+                    found_chain = True
+                    break
+            if found_chain:
                 alcohol_match_ok = True
                 break
         if not alcohol_match_ok:
@@ -104,14 +118,14 @@ def is_wax(smiles: str):
     if n_rotatable < 8:
         return False, f"Too few rotatable bonds ({n_rotatable}). Should be at least 8"
 
-    # 5. Check molecular weight (approx range 300-1000)
+    # 5. Check molecular weight (approx range 250-1200)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 1000:
-        return False, f"Molecular weight out of range ({mol_wt}). Should be between 300 and 1000"
+    if mol_wt < 250 or mol_wt > 1200:
+        return False, f"Molecular weight out of range ({mol_wt}). Should be between 250 and 1200"
 
     # 6. Check the carbon ratio
     chain_ratio = longest_chain / c_count
-    if chain_ratio < 0.7:
+    if chain_ratio < 0.5:
         return False, "Ratio of carbons in longest chain to total carbons is too low"
     
     return True, "Meets the criteria for a wax (long, largely saturated chains, ester or alcohol, flexible, good MW)."
