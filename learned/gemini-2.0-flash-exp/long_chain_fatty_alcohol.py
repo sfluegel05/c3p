@@ -20,22 +20,46 @@ def is_long_chain_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a single terminal alcohol group
-    # The [CH2X4,CHX4] specifies the carbon must be sp3 hybridized to prevent aromatic or other types of OH groups
-    terminal_alcohol_pattern = Chem.MolFromSmarts("[CH2X4,CHX4][OX2H]")
-    alcohol_matches = mol.GetSubstructMatches(terminal_alcohol_pattern)
-    if len(alcohol_matches) != 1:
-        return False, f"Molecule has {len(alcohol_matches)} terminal alcohol groups, should have exactly 1."
+    # Check for at least one alcohol group
+    alcohol_pattern = Chem.MolFromSmarts("[CX4,CX3][OX2H]")
+    if alcohol_pattern is None:
+        return False, "Could not parse alcohol SMARTS pattern"
 
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    if len(alcohol_matches) == 0:
+        return False, "Molecule does not have an alcohol group"
 
-    # Define SMARTS for a linear alkyl chain attached to the terminal alcohol, with 12 to 21 carbons.
-    # This covers C13 to C22.
-    # The ~[CH2X4] means that the chain can contain any number of CH2 groups
-    # The {11,20} denotes the range for the number of repetition of the preceding atom pattern.
-    chain_smarts = "[CH2X4,CHX4]([OX2H])~[CH2X4]{11,20}[CH3X4]"
+    # Identify a long chain (at least 12 carbons) using SMARTS
+    # Use a more flexible pattern to identify a chain within the molecule
+    chain_smarts = "[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"
     chain_pattern = Chem.MolFromSmarts(chain_smarts)
+    if chain_pattern is None:
+        return False, "Could not parse chain SMARTS pattern"
 
     if not mol.HasSubstructMatch(chain_pattern):
-      return False, f"Molecule does not have a linear alkyl chain (C13-C22) with a terminal alcohol."
+        return False, "Molecule does not contain a chain with at least 12 carbons."
 
-    return True, "Molecule is a long-chain fatty alcohol (C13-C22) with one alcohol group at the end of the chain."
+
+    # Iterate through all atoms and check for carbon chain length and ensure that it is
+    # between 13 and 22 and that it contains a hydroxyl group.
+    
+    chain_carbon_count = 0
+    has_oh = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:
+            # Find all non-ring atoms
+            if not atom.IsInRing():
+                chain_carbon_count += 1
+        if atom.GetAtomicNum() == 8 and atom.HasProp('molAtomMapNumber') == False:
+            has_oh = True
+
+    if not has_oh:
+            return False, "Molecule has no hydroxyl group"
+
+
+    if chain_carbon_count < 13:
+          return False, f"Molecule has a carbon chain less than 13 carbons ({chain_carbon_count})"
+    if chain_carbon_count > 22:
+         return False, f"Molecule has a carbon chain more than 22 carbons ({chain_carbon_count})"
+
+    return True, f"Molecule is a long-chain fatty alcohol (C13-C22) with {chain_carbon_count} carbon atoms."
