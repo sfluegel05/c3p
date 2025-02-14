@@ -23,14 +23,15 @@ def is_flavonoid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS for the 1-benzopyran core with aryl substituent at position 2
-    # This pattern captures a 6-membered ring fused to a 6-membered ring via an oxygen atom with a substituent at the position next to the O
-    flavonoid_smarts = '[c]1[c](~[c]2[c]([c][c][c][c]2)[o][c]3[c][c][c][c][c]3)[c][c][c][c]1'
-
+    # Modified pattern to be more general:
+    flavonoid_smarts = '[c]1~[c](-[c])~[c][c]2[o][c]1[c][c]2'
 
     # Convert SMARTS to Mol object
     flavonoid_mol = Chem.MolFromSmarts(flavonoid_smarts)
 
     # Check if the molecule matches the pattern
+    if flavonoid_mol is None:
+        return False, "Invalid SMARTS pattern"
     if mol.HasSubstructMatch(flavonoid_mol):
         return True, "Has 1-benzopyran core with aryl substituent at position 2"
     else:
