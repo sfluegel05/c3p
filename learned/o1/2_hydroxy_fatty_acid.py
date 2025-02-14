@@ -24,18 +24,31 @@ def is_2_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for carboxylic acid group
-    carboxy_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H]')
+    # Define SMARTS pattern for carboxylic acid group (protonated or deprotonated)
+    carboxy_pattern = Chem.MolFromSmarts('[CX3](=O)[O;H1,-1]')
     carboxy_matches = mol.GetSubstructMatches(carboxy_pattern)
-
     if not carboxy_matches:
         return False, "No carboxylic acid group found"
-    
-    # Define SMARTS pattern for alpha-hydroxy group adjacent to carboxylic acid
-    alpha_hydroxy_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H]-[CX4]-[OX2H]')
-    alpha_hydroxy_matches = mol.GetSubstructMatches(alpha_hydroxy_pattern)
-    
-    if alpha_hydroxy_matches:
-        return True, "Contains carboxylic acid group with hydroxy on alpha carbon (2-hydroxy fatty acid)"
-    else:
-        return False, "No hydroxy group found on alpha carbon adjacent to carboxylic acid group"
+
+    # For each carboxylic acid carbon, check for 2-hydroxy group
+    for match in carboxy_matches:
+        c_idx = match[0]  # Carbonyl carbon atom index
+        # Get the alpha carbon(s) connected to the carboxylic acid carbon
+        carboxy_c_atom = mol.GetAtomWithIdx(c_idx)
+        alpha_carbons = [nbr for nbr in carboxy_c_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+
+        for alpha_c in alpha_carbons:
+            # Check if alpha carbon has a hydroxy group attached
+            has_hydroxy = False
+            for nbr in alpha_c.GetNeighbors():
+                if nbr.GetAtomicNum() == 8:  # oxygen atom
+                    bond = mol.GetBondBetweenAtoms(alpha_c.GetIdx(), nbr.GetIdx())
+                    if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                        # Check if oxygen is a hydroxy group (attached hydrogen or implicit hydrogen)
+                        if nbr.GetTotalDegree() == 1:
+                            has_hydroxy = True
+                            break
+            if has_hydroxy:
+                return True, "Contains 2-hydroxy group adjacent to carboxylic acid group"
+
+    return False, "No 2-hydroxy group found adjacent to carboxylic acid group"
