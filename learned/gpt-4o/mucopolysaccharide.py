@@ -18,31 +18,24 @@ def is_mucopolysaccharide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Enhanced check for uronic acid-like features
-    uronic_acid_patterns = [
-        Chem.MolFromSmarts("[C;R0](=O)[O;R0]"),  # Carboxyl group, often in uronic acids
-        Chem.MolFromSmarts("[C;R0](=O)O[CH1][CH2]")  # Sugars leading to uronic acids often have this attachment
-    ]
-    
-    # Check for some nitrogen functionalities hinting glycosamines (fairly generalized)
-    glycosamine_patterns = [
-        Chem.MolFromSmarts("[*][NX3][CX4]"),
-        Chem.MolFromSmarts("[*][NX3][CX3]=O")
-    ]
-    
-    # Check for sulfate esterification
-    sulfate_pattern = Chem.MolFromSmarts("[SX4](=[OX1])(=[OX1])([OX2])")
 
-    # Checking for individual and alternating patterns
-    has_uronic_acid = any(mol.HasSubstructMatch(pat) for pat in uronic_acid_patterns)
-    has_glycosamine = any(mol.HasSubstructMatch(pat) for pat in glycosamine_patterns)
-    has_sulfate = mol.HasSubstructMatch(sulfate_pattern)
+    # Define uronic acid patterns
+    uronic_acid_pattern = Chem.MolFromSmarts("[C;R0](=O)[O;R0][CH][CH]")  # Carboxyl group on non-ring C adjacent to sugars
+    # Define glycosamine patterns
+    glycosamine_pattern = Chem.MolFromSmarts("[CH][CH][NX3][CH2]")  # Nitrogen attached to sugar-like structure
+    
+    # Define sulfate esterification pattern
+    sulfate_pattern = Chem.MolFromSmarts("[#6][O,SX4](=O)(=O)[O,S][#6]")  # Consider sulfate attached to sugars
 
-    if has_uronic_acid and has_glycosamine:
-        if has_sulfate:
+    # Check for the presence of patterns
+    uronic_acid_matches = mol.HasSubstructMatch(uronic_acid_pattern)
+    glycosamine_matches = mol.HasSubstructMatch(glycosamine_pattern)
+    sulfate_matches = mol.HasSubstructMatch(sulfate_pattern)
+
+    if uronic_acid_matches and glycosamine_matches:
+        if sulfate_matches:
             return True, "Characteristics of mucopolysaccharide, including sulfate esterification"
         else:
             return True, "Characteristics of mucopolysaccharide without detectable sulfate groups"
-        
+    
     return False, "Missing key features of a mucopolysaccharide"
