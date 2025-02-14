@@ -13,8 +13,8 @@ def is_glycolipid(smiles: str):
     Determines if a molecule is a glycolipid based on its SMILES string.
     A glycolipid is defined as any molecule consisting of a glycosidic linkage
     between a carbohydrate moiety (usually a mono-, di-, or trisaccharide)
-    and a lipid moiety (such as fatty acids or glycerolipids). In some cases,
-    the glycerol backbone may be absent, and the sugar part may be acylated.
+    and a lipid moiety (such as fatty acids, sphingolipids, or glycerolipids).
+    In some cases, the glycerol backbone may be absent, and the sugar part may be acylated.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,47 +29,92 @@ def is_glycolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for carbohydrates (pyranose rings)
-    sugar_pattern = Chem.MolFromSmarts("OC1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1")  # Generic hexose
-    if sugar_pattern is None:
-        return None, "Error in sugar SMARTS pattern"
-
-    # Search for carbohydrate moiety
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if len(sugar_matches) == 0:
+    # Identify carbohydrate moiety
+    has_sugar = False
+    sugar_atoms = set()
+    # Define general patterns for pyranose and furanose rings
+    pyranose_pattern = Chem.MolFromSmarts("C1C[C@H]([O])[C@@H](O)[C@@H](O)O1")
+    furanose_pattern = Chem.MolFromSmarts("C1C[C@H](O)[C@@H](O)O1")
+    # Search for rings matching the sugar patterns
+    matches = mol.GetSubstructMatches(pyranose_pattern) + mol.GetSubstructMatches(furanose_pattern)
+    if matches:
+        has_sugar = True
+        for match in matches:
+            sugar_atoms.update(match)
+    else:
+        # Alternatively, identify rings with oxygen and multiple hydroxyl groups
+        ri = mol.GetRingInfo()
+        for ring in ri.AtomRings():
+            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+            if len(ring_atoms) in (5, 6):  # Five or six-membered rings
+                o_in_ring = any(atom.GetSymbol() == 'O' for atom in ring_atoms)
+                if o_in_ring:
+                    # Count number of hydroxyl groups attached to ring carbons
+                    num_oh = 0
+                    for atom in ring_atoms:
+                        if atom.GetSymbol() == 'C':
+                            for neighbor in atom.GetNeighbors():
+                                if neighbor.GetSymbol() == 'O' and neighbor.GetIdx() not in ring:
+                                    # Check if oxygen is a hydroxyl group
+                                    if neighbor.GetTotalDegree() == 1:
+                                        num_oh += 1
+                    if num_oh >= 2:
+                        has_sugar = True
+                        for atom in ring_atoms:
+                            sugar_atoms.add(atom.GetIdx())
+                        break
+    if not has_sugar:
         return False, "No carbohydrate moiety found"
 
-    # Define SMARTS pattern for long aliphatic chain (lipid moiety)
-    lipid_pattern = Chem.MolFromSmarts("C(CCCCCCCCCCCCCCCC)(CCCCCCCCCCCCCCCC)")  # Generic long chain
-    if lipid_pattern is None:
-        return None, "Error in lipid SMARTS pattern"
-
-    # Search for lipid moiety
-    lipid_matches = mol.GetSubstructMatches(lipid_pattern)
-    if len(lipid_matches) == 0:
+    # Identify lipid moiety
+    has_lipid = False
+    lipid_atoms = set()
+    # Define a pattern for long aliphatic chains (length >=8)
+    aliphatic_chain_pattern = Chem.MolFromSmarts("[C&R0][C&R0][C&R0][C&R0][C&R0][C&R0][C&R0][C&R0]")
+    chain_matches = mol.GetSubstructMatches(aliphatic_chain_pattern)
+    if chain_matches:
+        has_lipid = True
+        for match in chain_matches:
+            lipid_atoms.update(match)
+    else:
+        # Also check for sphingoid bases
+        sphingoid_pattern = Chem.MolFromSmarts("NC[C@H](O)CC=C[C@H](O)CC[C@H](O)CC")
+        sphingoid_matches = mol.GetSubstructMatches(sphingoid_pattern)
+        if sphingoid_matches:
+            has_lipid = True
+            for match in sphingoid_matches:
+                lipid_atoms.update(match)
+    if not has_lipid:
         return False, "No lipid moiety found"
 
-    # Check for glycosidic linkage between sugar and lipid
-    # Find bonds connecting sugar and lipid moieties
-    sugar_atoms = set()
-    for match in sugar_matches:
-        sugar_atoms.update(match)
-    lipid_atoms = set()
-    for match in lipid_matches:
-        lipid_atoms.update(match)
-
+    # Check for linkage between carbohydrate and lipid moieties
     linked = False
-    for bond in mol.GetBonds():
-        begin_atom = bond.GetBeginAtomIdx()
-        end_atom = bond.GetEndAtomIdx()
-        if (begin_atom in sugar_atoms and end_atom in lipid_atoms) or \
-           (begin_atom in lipid_atoms and end_atom in sugar_atoms):
-            # Check if the bond is an ether linkage (glycosidic bond)
-            if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+    for s_atom_idx in sugar_atoms:
+        s_atom = mol.GetAtomWithIdx(s_atom_idx)
+        for neighbor in s_atom.GetNeighbors():
+            n_idx = neighbor.GetIdx()
+            if n_idx in lipid_atoms:
                 linked = True
                 break
+        if linked:
+            break
 
     if linked:
-        return True, "Contains carbohydrate and lipid moieties linked via glycosidic bond"
+        return True, "Contains carbohydrate and lipid moieties linked together"
     else:
-        return False, "No glycosidic linkage between carbohydrate and lipid moieties found"
+        # Also check for acylated sugars (sugar part acylated by fatty acids)
+        for s_atom_idx in sugar_atoms:
+            s_atom = mol.GetAtomWithIdx(s_atom_idx)
+            if s_atom.GetSymbol() == 'O':
+                for neighbor in s_atom.GetNeighbors():
+                    if neighbor.GetSymbol() == 'C':
+                        # Check if this carbon is part of a lipid chain
+                        path = Chem.rdmolops.GetShortestPath(mol, neighbor.GetIdx(), list(lipid_atoms))
+                        if path:
+                            linked = True
+                            break
+                if linked:
+                    break
+        if linked:
+            return True, "Contains carbohydrate moiety acylated by fatty acid"
+        return False, "No linkage between carbohydrate and lipid moieties found"
