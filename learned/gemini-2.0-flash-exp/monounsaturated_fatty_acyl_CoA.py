@@ -2,6 +2,7 @@
 Classifies: CHEBI:139575 monounsaturated fatty acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_monounsaturated_fatty_acyl_CoA(smiles: str):
@@ -21,27 +22,26 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for the CoA moiety using a simplified SMARTS focusing on the core.
-    coa_pattern = Chem.MolFromSmarts("C[C@H](O)[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]1[C@@H]([C@@H]([C@H](O1)n2cnc3c(N)ncnc23)O)O)C(=O)NCCS") # Simplified CoA pattern, without stereochemistry at the phosphates and the ribose
+    # 1. Check for the CoA moiety with thioester bond (S-C=O)
+    coa_pattern = Chem.MolFromSmarts('CC(C)(COP(=O)([OX1])OP(=O)([OX1])OCC[C@H]1[C@H]([C@H]([C@H](O1)OP(=O)(O)[OX1])O)n2c3ncnc(n3)c2N)[C@@H](O)C(=O)NCCSC(=O)')
     if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA moiety not found"
+        return False, "CoA moiety with thioester bond not found"
 
-    # 2. Check for the thioester bond (S-C=O) - this should be connected to the acyl chain
-    thioester_pattern = Chem.MolFromSmarts("SC(=O)")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "Thioester bond not found"
-
-    # 3. Check for exactly one carbon-carbon double bond
+    # 2. Check for a carbon-carbon double bond
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
     if len(double_bond_matches) != 1:
         return False, f"Molecule has {len(double_bond_matches)} carbon-carbon double bonds, expected 1"
-    
-    # 4. Check for a long carbon chain attached to the thioester
-    fatty_acid_chain_pattern = Chem.MolFromSmarts("SC(=O)[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+
+    # 3. Check for a long carbon chain
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain_pattern)
     if len(fatty_acid_matches) < 1:
-        return False, "Missing a fatty acid chain attached to the thioester"
+        return False, "Missing a fatty acid chain"
 
+    # 4. Check for number of rotatable bonds - should be relatively long
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 5:
+        return False, "Fatty acid chain too short"
 
     return True, "Molecule is a monounsaturated fatty acyl-CoA"
