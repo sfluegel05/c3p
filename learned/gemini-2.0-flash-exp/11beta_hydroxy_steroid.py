@@ -20,24 +20,18 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more specific SMARTS for the 11beta-hydroxy group, anchored to part of the steroid core.
-    # This pattern looks for a C-C-C chain where the middle C is beta and has a hydroxyl.
-    # It also requires that part of the steroid core ring system be present
-    hydroxy_11beta_pattern = Chem.MolFromSmarts("[C]([C])([C@H]1[C@@](O)([C])~[C]~[C]1)")
-
-
-    if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
-        return False, "No 11-beta-hydroxy group found in the context of a steroid ring"
-
-    # Define a more flexible SMARTS for the steroid core
-    # This SMARTS describes the four fused rings with some flexibility using ~ for any bond
-    steroid_core_pattern = Chem.MolFromSmarts("[C,CH,CH2,CH3]~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]1~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]2~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]1~[C,CH,CH2,CH3]~[C,CH,CH2,CH3]2")
+    # Define the steroid core as a SMARTS pattern, using X4 for C and specifying ring fusion
+    steroid_core_pattern = Chem.MolFromSmarts("[CX4]1[CX4]2[CX4]3[CX4]4[CX4]1[CX4]5[CX4]2[CX4]([CX4]3)[CX4]45")
     if not mol.HasSubstructMatch(steroid_core_pattern):
-         return False, "No steroid core structure detected (no 4 fused rings)"
+          return False, "No steroid core structure detected"
 
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 17:
-         return False, f"Too few carbons, expected 17 in core, got {carbon_count}"
+    # Define the 11-beta hydroxyl group SMARTS pattern, using the specific stereo bond
+    # [C@H] indicates beta (up) config (it depends on the specific molecule, but in all examples, beta
+    # is represented with this stereochemistry)
+    hydroxy_11beta_pattern = Chem.MolFromSmarts("[CX4]1[CX4]2[CX4]3[C@H](O)[CX4]4[CX4]1[CX4]5[CX4]2[CX4]([CX4]3)[CX4]45")
+    
+    if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
+        return False, "No 11-beta-hydroxy group found"
 
 
     return True, "Molecule has a steroid core with an 11-beta-hydroxyl group"
