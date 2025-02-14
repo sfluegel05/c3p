@@ -6,17 +6,16 @@ Classifies: Bile Acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_bile_acid(smiles: str):
     """
     Determines if a molecule is a bile acid based on its SMILES string.
     A bile acid is a hydroxy-5beta-cholanic acid with a steroid backbone,
     hydroxyl groups at specific positions, and a carboxylic acid side chain.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a bile acid, False otherwise
         str: Reason for classification
@@ -26,49 +25,30 @@ def is_bile_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Add hydrogens (explicit)
+    mol = Chem.AddHs(mol)
     
-    # Standardize molecule (tautomeric forms, charges, etc.)
-    try:
-        # Add hydrogens
-        mol = Chem.AddHs(mol)
-    except:
-        return False, "Error processing molecule"
-    
-    # Define steroid backbone (four fused rings with specific ring sizes)
-    steroid_pattern = Chem.MolFromSmarts("""
-        [#6]1[#6][#6][#6]2[#6](=[#6]1)[#6][#6]3[#6](=[#6]2)[#6][#6]4[#6](=[#6]3)[#6][#6][#6]4
-    """)
-    # The above SMARTS is a simplified pattern for the steroid skeleton
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
-    
-    # Check for 5beta-configuration
-    # In practice, stereochemistry can be complex to verify; we'll check for correct chirality centers
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    required_centers = {
-        5: 'S'  # Carbon 5 with beta configuration (stereochemistry)
-    }
-    for atom_idx, chirality in chiral_centers:
-        atom_number = mol.GetAtomWithIdx(atom_idx).GetAtomicNum()
-        if atom_number == 6 and atom_idx in required_centers:
-            if chirality != required_centers[atom_idx]:
-                return False, "Incorrect 5beta-configuration"
-    
-    # Check for hydroxyl groups at positions 3, 7, 12 (optional)
-    hydroxy_positions = [3, 7, 12]
-    hydroxy_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1:
-            neighbor = atom.GetNeighbors()[0]
-            if neighbor.GetAtomicNum() == 6:
-                # Could check for specific atom indices corresponding to positions
-                hydroxy_count +=1
-    if hydroxy_count < 1:
+    # Define the 5beta-cholanic acid skeleton using SMILES
+    # The SMILES represents the steroid nucleus with the 5beta-configuration
+    cholanic_acid_smiles = "C[C@H](CCC(=O)O)[C@H]1CC[C@@H]2[C@@H]3CC[C@@H]4C[C@@H](O)CC[C@]4(C)[C@H]3CC[C@]12C"
+    skeleton_pattern = Chem.MolFromSmiles(cholanic_acid_smiles)
+    if skeleton_pattern is None:
+        return False, "Error in skeleton pattern"
+
+    # Match the steroid skeleton with correct stereochemistry
+    if not mol.HasSubstructMatch(skeleton_pattern, useChirality=True):
+        return False, "Molecule does not match 5beta-cholanic acid skeleton"
+
+    # Check for at least one hydroxyl group
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    num_hydroxyls = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    if num_hydroxyls == 0:
         return False, "No hydroxyl groups found"
-    
-    # Check for carboxylic acid side chain
-    carboxylic_acid = Chem.MolFromSmarts("C(=O)[O;H1]")
-    if not mol.HasSubstructMatch(carboxylic_acid):
-        return False, "No carboxylic acid side chain found"
-    
+
+    # Check for carboxylic acid group (COOH)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "No carboxylic acid group found"
+
     return True, "Molecule matches bile acid structural features"
