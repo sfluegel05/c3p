@@ -1,26 +1,62 @@
 """
 Classifies: CHEBI:59644 oxo fatty acid
 """
-Based on the outcomes and the previous code, it seems that the program is generally able to identify oxo fatty acids correctly, but there are a few issues that need to be addressed:
+"""
+Classifies: CHEBI:35638 oxo fatty acid
 
-1. **False positives**: The program is incorrectly classifying some molecules as oxo fatty acids, even though they do not belong to this class. This could be due to the program not checking for specific structural features that are characteristic of oxo fatty acids, such as the presence of a long aliphatic chain with an oxo group and a carboxylic acid group at the terminal positions.
+An oxo fatty acid is any fatty acid containing at least one aldehydic or ketonic group 
+in addition to the carboxylic acid group.
 
-2. **False negatives**: The program is missing some valid oxo fatty acids, particularly those with shorter carbon chains (fewer than 4 carbons). This is because the current implementation checks for the presence of a carbon chain with at least 4 carbons, which may be too restrictive.
+Typical features:
+- Long aliphatic chain (6-24 carbons)
+- Terminal carboxylic acid group (-C(=O)O)
+- At least one aldehydic (-C(=O)H) or ketonic (-C(=O)-) group
+- Molecular weight typically between 100-350 Da
+"""
 
-3. **Molecular weight check**: The molecular weight check for fatty acids (> 100 Da) may be too lenient, as some smaller molecules are being falsely classified as oxo fatty acids.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-To improve the program, we can consider the following steps:
+def is_oxo_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is an oxo fatty acid based on its SMILES string.
 
-1. **Tighten the structural pattern**: Instead of checking for individual substructures (carboxylic acid, oxo group, and carbon chain), we can define a more specific SMARTS pattern that captures the overall structure of an oxo fatty acid. This pattern should include the presence of a long aliphatic chain with an oxo group and a carboxylic acid group at the terminal positions.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Adjust the carbon chain length**: Instead of using a strict cutoff of 4 carbons for the carbon chain, we can consider a range of carbon chain lengths that are typical for fatty acids, such as 6 to 24 carbons.
-
-3. **Adjust the molecular weight range**: We can adjust the molecular weight range to be more specific to oxo fatty acids, based on the observed range in the data.
-
-4. **Investigate false positives and negatives**: Carefully analyze the false positives and false negatives to identify any systematic issues or exceptions that need to be addressed in the program.
-
-5. **Consider additional checks**: If necessary, we can introduce additional checks for specific structural features or properties that are characteristic of oxo fatty acids, such as the presence of double bonds, cyclic structures, or specific substituents.
-
-By addressing these issues, we can improve the accuracy and robustness of the program in classifying oxo fatty acids based on their SMILES strings.
-
-Note: If you believe that the benchmark data contains systematic errors or inconsistencies, you can explain your reasoning and propose alternative approaches based on your understanding of the chemical class. However, it is important to clearly justify any deviations from the provided benchmark.
+    Returns:
+        bool: True if molecule is an oxo fatty acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define SMARTS pattern for oxo fatty acid
+    oxo_fatty_acid_pattern = Chem.MolFromSmarts("[C;$(C(=O)O)][-;!$(C=O)]" +  # Terminal carboxyl group
+                                                 "[C;$(C(=O)[C,H])]" +         # Oxo group (aldehyde or ketone)
+                                                 "[C;$(CC(=O)[C,H])]" +        # One carbon away from the oxo group
+                                                 "[C;$(CCCC)]")                # At least 4 carbons away from the carboxyl group
+    
+    # Check if the molecule matches the pattern
+    matches = mol.GetSubstructMatches(oxo_fatty_acid_pattern)
+    
+    if not matches:
+        return False, "Molecule does not match the oxo fatty acid pattern"
+    
+    # Count carbon chain length
+    carbon_chain_length = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    # Check carbon chain length
+    if carbon_chain_length < 6 or carbon_chain_length > 24:
+        return False, f"Carbon chain length ({carbon_chain_length}) outside typical range for fatty acids (6-24)"
+    
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100 or mol_wt > 350:
+        return False, f"Molecular weight ({mol_wt:.2f} Da) outside typical range for oxo fatty acids (100-350 Da)"
+    
+    return True, "Molecule matches the structure of an oxo fatty acid"
