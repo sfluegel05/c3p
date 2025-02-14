@@ -23,51 +23,63 @@ def is_olefinic_fatty_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for carboxylic acid group using SMARTS
-    acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
-    if not mol.HasSubstructMatch(acid_pattern):
-         # Try finding the carboxylic group via atom matching, needed to identify structures where the OH group is represented as O
-        acid_atom_match = False
-        for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 6:
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 8 and neighbor.GetBond().GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        for neighbor2 in atom.GetNeighbors():
-                            if neighbor2.GetAtomicNum() == 8 and neighbor2.GetBond().GetBondType() == Chem.rdchem.BondType.SINGLE:
-                                acid_atom_match = True
-                                break
-                    if acid_atom_match:
-                        break
-                if acid_atom_match:
-                    break
-        if not acid_atom_match:
-            return False, "No carboxylic acid group found"
-
-    # Look for at least one C=C double bond
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "No C=C double bond found"
     
-    # Check for a reasonable number of carbons to be considered a fatty acid (at least 8)
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons < 8:
-         return False, "Too few carbons to be a fatty acid."
+    if not _check_carboxylic_acid(mol):
+        return False, "No carboxylic acid group found"
     
-     # Check for a reasonable number of rotatable bonds for a long aliphatic chain
-    num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if num_rotatable_bonds < 4:
-        return False, "Too few rotatable bonds, not a long fatty acid chain."
+    if not _check_double_bond(mol):
+         return False, "No C=C double bond found"
 
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 100:
-        return False, "Molecular weight too low for fatty acid"
-    
-    # Check number of oxygens
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count > 4:
-        return False, "Too many oxygens, not a simple fatty acid."
-
+    if not _check_fatty_acid_properties(mol):
+        return False, "Molecule does not meet fatty acid property requirements"
 
     return True, "Contains a carboxylic acid group and at least one C=C double bond and has 8 or more carbons, enough rotatable bonds and a reasonable weight."
+
+def _check_carboxylic_acid(mol):
+    """
+    Checks if the molecule contains a carboxylic acid group, accounting for implicit hydrogens
+    """
+    acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    if mol.HasSubstructMatch(acid_pattern):
+        return True
+    
+    #check for O=C-O without H
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    for neighbor2 in atom.GetNeighbors():
+                        if neighbor2.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(atom.GetIdx(),neighbor2.GetIdx()).GetBondType() == Chem.rdchem.BondType.SINGLE:
+                            return True
+    return False
+
+
+def _check_double_bond(mol):
+    """
+    Checks if the molecule contains at least one C=C double bond.
+    """
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    return mol.HasSubstructMatch(double_bond_pattern)
+
+
+def _check_fatty_acid_properties(mol):
+    """
+    Checks molecule properties to ensure it looks like a fatty acid, such as carbon count, rotatable bonds, weight, and oxygen count.
+    """
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 8:
+         return False
+    
+    num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if num_rotatable_bonds < 4:
+        return False
+    
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100:
+        return False
+    
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count > 4:
+        return False
+    
+    return True
