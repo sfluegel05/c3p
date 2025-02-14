@@ -5,7 +5,7 @@ Classifies: CHEBI:143004 ultra-long-chain fatty acid
 Classifies: CHEBI:36977 ultra-long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdmolops
 
 def is_ultra_long_chain_fatty_acid(smiles: str):
     """
@@ -45,9 +45,19 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     if mol.HasSubstructMatch(substituted_pattern):
         return False, "Carbon chain is substituted"
     
-    # Check for unsaturation
-    unsaturation = rdMolDescriptors.CalcNumUnsaturatedCarbons(mol)
-    if unsaturation > 0:
-        return True, f"Ultra-long-chain fatty acid with {c_count} carbons and {unsaturation} unsaturations"
+    # Count unsaturated carbons
+    adjacency_matrix = rdmolops.GetAdjacencyMatrix(mol)
+    unsaturated_carbons = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon
+            neighbors = [mol.GetAtomWithIdx(idx) for idx in adjacency_matrix[atom.GetIdx()].GetNonzeroIndices()]
+            for neighbor in neighbors:
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                if bond.GetBondType() in (Chem.BondType.DOUBLE, Chem.BondType.TRIPLE):
+                    unsaturated_carbons += 1
+                    break
+    
+    if unsaturated_carbons > 0:
+        return True, f"Ultra-long-chain fatty acid with {c_count} carbons and {unsaturated_carbons} unsaturations"
     else:
         return True, f"Ultra-long-chain saturated fatty acid with {c_count} carbons"
