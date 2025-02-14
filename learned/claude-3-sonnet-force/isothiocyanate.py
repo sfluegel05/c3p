@@ -26,16 +26,25 @@ def is_isothiocyanate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for isothiocyanate functional group pattern (N=C=S)
-    isothiocyanate_pattern = Chem.MolFromSmarts("N=C=S")
-    if not mol.HasSubstructMatch(isothiocyanate_pattern):
-        return False, "No isothiocyanate functional group (N=C=S) found"
+    # Look for isothiocyanate functional group patterns
+    isothiocyanate_patterns = [
+        Chem.MolFromSmarts("N=C=S"),        # Standard representation
+        Chem.MolFromSmarts("[N;X2](=C=S)"), # Alternative representation
+        Chem.MolFromSmarts("N(=C=S)")       # Alternative representation
+    ]
     
-    # Check for carbon-nitrogen bond (R-N=C=S)
-    has_c_n_bond = any(bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 7
-                       for bond in mol.GetBonds())
-    if not has_c_n_bond:
-        return False, "No carbon-nitrogen bond found (R-N=C=S)"
+    has_isothiocyanate_group = any(mol.HasSubstructMatch(pattern) for pattern in isothiocyanate_patterns)
+    if not has_isothiocyanate_group:
+        return False, "No isothiocyanate functional group found"
+    
+    # Check for carbon-nitrogen bond directly attached to isothiocyanate group
+    has_direct_c_n_bond = any(bond.GetBeginAtom().GetAtomicNum() == 6 and
+                               bond.GetEndAtom().GetAtomicNum() == 7 and
+                               bond.GetEndAtom().HasQuery("N=C=S")
+                               for bond in mol.GetBonds())
+    
+    if not has_direct_c_n_bond:
+        return False, "No carbon-nitrogen bond directly attached to isothiocyanate group"
     
     return True, "Contains isothiocyanate functional group (R-N=C=S)"
 
@@ -65,12 +74,12 @@ __metadata__ = {
     'error': '',
     'stdout': None,
     'num_true_positives': 175,
-    'num_false_positives': 1,
-    'num_true_negatives': 182414,
+    'num_false_positives': 0,
+    'num_true_negatives': 182415,
     'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.9942857142857143,
+    'precision': 1.0,
     'recall': 1.0,
-    'f1': 0.9971098265895953,
-    'accuracy': 0.9999994547617611
+    'f1': 1.0,
+    'accuracy': 1.0
 }
