@@ -29,43 +29,43 @@ def is_chlorophyll(smiles: str):
         return False, "No magnesium atom found."
     if len(mg_atoms) != 1:
         return False, "Incorrect number of magnesium atoms."
-
-    # 2. Flexible porphyrin core check (4 nitrogens coordinating with Mg)
-    porphyrin_core_pattern = Chem.MolFromSmarts("[nX2][c][c][n][c][c][n][c][c][n][Mg]")
+        
+    # 2. Check for core porphyrin system with Mg
+    porphyrin_core_pattern = Chem.MolFromSmarts("[nX2][cX3][cX3][nX2][cX3][cX3][nX2][cX3][cX3][nX2][Mg]") 
     if not mol.HasSubstructMatch(porphyrin_core_pattern):
-       return False, "No porphyrin core with magnesium found."
-
-    # 3. Check for a fifth ring attached to the porphyrin core. We look for a fused ring connected to a carbon
-    #    of the porphyrin core. This allows for 5- or 6-membered rings, or even other fused ring systems
-    fifth_ring_pattern = Chem.MolFromSmarts("[c]12[c][c][c]([c][c]1)[c]2")
+            return False, "No porphyrin core with magnesium found"
+    
+    # 3. Check for a fifth ring, attached to porphyrin core
+    fifth_ring_pattern = Chem.MolFromSmarts("[nX2]1[cX3][cX3][cX3][cX3]1")
     if not mol.HasSubstructMatch(fifth_ring_pattern):
-        return False, "No fifth ring attached to the porphyrin core found."
-
-    # 4. Check for phytol or similar long chain (at least 1 ester and 1 long chain)
+        return False, "No fifth ring attached to the porphyrin core found"
+    
+    # 4. Check for at least 5 N atoms.
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count < 5:
+        return False, f"Too few nitrogen atoms, found {n_count}, needs at least 5"
+    
+     # 5. Check for at least one long phytol chain esterified to carboxyl
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-
+    
     if not ester_matches:
-        return False, "No ester group found."
-    
-    # Phytol chain: long carbon chain with branches. We also accept generic long fatty chain
-    phytol_pattern = Chem.MolFromSmarts("[CX4]([CX4])~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
-    long_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+       return False, f"No ester group found"
 
-    has_long_chain = False
-    for match in ester_matches:
-        ester_oxygen_atom = mol.GetAtomWithIdx(match[0])
+    # Check for fatty acid chains (long carbon chains attached to esters)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if not fatty_acid_matches:
+       return False, f"Missing fatty acid chains"
 
-        for neighbor in ester_oxygen_atom.GetNeighbors():
-           if mol.HasSubstructMatch(phytol_pattern, fromAtomIdx = neighbor.GetIdx()) or mol.HasSubstructMatch(long_chain_pattern, fromAtomIdx = neighbor.GetIdx()):
-             has_long_chain = True
-             break
-        if has_long_chain:
-           break
-           
-    if not has_long_chain:
-        return False, "Missing phytol or long chain."
-
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Phytol chain too short."
     
+    # Check molecular weight - chlorophylls typically > 500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for chlorophyll"
     
-    return True, "Contains a magnesium porphyrin core, a fifth ring, and a long chain"
+    return True, "Contains a magnesium porphyrin core, a fifth ring, and a phytol chain"
