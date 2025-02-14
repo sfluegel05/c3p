@@ -8,7 +8,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_icosanoid(smiles: str):
     """
     Determines if a molecule is an icosanoid based on its SMILES string.
-    Icosanoids are signalling molecules arising from the oxidation of C20 EFAs.
+    Icosanoids are signaling molecules arising from the oxidation of C20 EFAs.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,73 +17,62 @@ def is_icosanoid(smiles: str):
         bool: True if molecule is an icosanoid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for C20 Carbon Backbone: Look for a chain of at least 18 C atoms to allow for branching and cyclic structures
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18:
-        return False, f"Too few carbon atoms. Found: {c_count}, require at least 18"
+    # 1. Check for C20 backbone: Look for a chain of at least 18 C atoms, with 20 being more common.
+    #   Allow for branching. Must contain at least 1 double bond or ring.
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No C18+ backbone found."
 
-    # 2. Check for at least 2 double bonds
-    double_bond_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
-    if double_bond_count < 2:
-        return False, f"Too few double bonds. Found: {double_bond_count}, require at least 2"
-    
-    # 3. Check for Carboxylic Acid Group:
+    has_double_bond_or_ring =  mol.HasSubstructMatch(Chem.MolFromSmarts("C=C")) or mol.HasSubstructMatch(Chem.MolFromSmarts("C1CCCC1")) or mol.HasSubstructMatch(Chem.MolFromSmarts("C1CCOC1")) or mol.HasSubstructMatch(Chem.MolFromSmarts("C1CO[C]1"))
+
+    if not has_double_bond_or_ring:
+        return False, "No double bonds or rings found in backbone"
+
+    # 2. Check for Carboxylic Acid or Ester Group
     carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_pattern = Chem.MolFromSmarts("C(=O)O[C]")
     if not (mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(ester_pattern)):
-       return False, "No carboxylic acid or ester group found."
-
-    # 4. Check for Oxygen Atoms
+        return False, "No carboxylic acid or ester group found."
+    
+    # 3. Check for oxygenation in addition to the ester/acid
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 2:
-      return False, f"Too few oxygen atoms. Found {o_count}, require at least 2."
+        return False, f"Too few oxygen atoms. Found {o_count}, require at least 2 (for oxidation)"
 
-    # 5 & 6. Specific Substructures and pattern matching.
-    # Check for cyclopentane ring
-    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
-    if mol.HasSubstructMatch(cyclopentane_pattern):
-        
-        # If it is a prostaglandin or thromboxane, it must have at least one -OH group on that ring.
-        hydroxyl_on_ring = Chem.MolFromSmarts("[C]1[C]([O])[C][C][C]1")
-        if not mol.HasSubstructMatch(hydroxyl_on_ring):
-            # Check for a THF ring for thromboxanes
-            thf_ring_pattern = Chem.MolFromSmarts("C1CCOC1")
-            if not mol.HasSubstructMatch(thf_ring_pattern):
-                return False, "Has cyclopentane ring but does not match prostaglandin/thromboxane pattern"
 
-    # Check for epoxide pattern: C-O-C
-    epoxide_pattern = Chem.MolFromSmarts("C1OC1")
-    if mol.HasSubstructMatch(epoxide_pattern):
-         pass # We've already checked for double bonds
-        
-    #Check for hydroperoxide
+    # 4. Check for Prostane ring pattern with side chains and oxygenation:
+    #   This is a more robust way of identifying the core structure of many icosanoids
+    prostane_pattern = Chem.MolFromSmarts("[C]1[C]([C])[C]([O])[C]([C])C1")
+    prostane_ring_match = mol.GetSubstructMatches(prostane_pattern)
+    if prostane_ring_match:
+        # Check for hydroxyl on the cyclopentane ring or other icosanoid structure:
+            hydroxyl_on_ring = Chem.MolFromSmarts("[C]1[C]([O])[C][C][C]1")
+            if not mol.HasSubstructMatch(hydroxyl_on_ring):
+                # Check for THF or epoxide rings for thromboxanes
+                thf_ring_pattern = Chem.MolFromSmarts("C1CCOC1")
+                epoxide_pattern = Chem.MolFromSmarts("C1OC1")
+                if not (mol.HasSubstructMatch(thf_ring_pattern) or mol.HasSubstructMatch(epoxide_pattern)):
+                      return False, "Has prostane-like ring but no required oxygenation on the ring"
+            return True, "Matches Icosanoid criteria (C20 backbone with prostane like ring with required oxygenation)"
+
+    # 5. Check for Leukotriene-like conjugated system
+    # A more specific pattern. Includes a thioether.
+    leukotriene_pattern = Chem.MolFromSmarts("[C][S][C][C](O)[C]=C[C]=C[C]=C[C]") # includes a thioether
+    conjugated_pattern = Chem.MolFromSmarts("[C]=C[C]=C[C]")  # conjugated double bond system
+    if mol.HasSubstructMatch(leukotriene_pattern) or mol.HasSubstructMatch(conjugated_pattern):
+      return True, "Matches Icosanoid criteria (C20 backbone with conjugated double bonds and oxygenation)"
+
+
+    # Check for hydroperoxide
     hydroperoxide_pattern = Chem.MolFromSmarts("[O]-[O]")
     if mol.HasSubstructMatch(hydroperoxide_pattern):
-        pass
-    
-    # Check for Leukotriene structures.
-    # Look for conjugated double bonds and an alcohol function or epoxy in a chain
-    # leukotriene_pattern = Chem.MolFromSmarts("C=CC=CC[C](O)")
-    # if mol.HasSubstructMatch(leukotriene_pattern):
-    #      pass
-    # A more specific pattern. Includes a thioether.
-    #leukotriene_pattern = Chem.MolFromSmarts("[C][S][C][C](O)[C]=C[C]=C[C]=C[C]")
-    #if mol.HasSubstructMatch(leukotriene_pattern):
-    #     pass
-    
-    
-    # Special Case handling: Some very specific structures like latanoprost or some of the diglycerides are hard to match generically.
-    # if smiles == "O[C@H]1[C@@H]([C@H]([C@@H](O)C1)C/C=C\C(C(CC(O)=O)([2H])[2H])([2H])[2H])CC[C@@H](O)CCC2=CC=CC=C2": # latanoprost-d4
-    #    return True, "Matches Latanoprost-d4 (special case)"
-    # if smiles == "O[C@H](CC[C@H]1[C@H](O)C[C@H](O)[C@@H]1C\C=C/CCCC(O)=O)CCc1ccccc1": # latanoprost
-    #    return True, "Matches Latanoprost (special case)"
-    # if smiles == "S1C=C(OCC(O)\C=C\[C@@H]2[C@H]([C@@H](O)C[C@H]2O)C/C=C\CCCC(O)=O)C=C1": # Tiaprost
-    #    return True, "Matches Tiaprost (special case)"
+      return True, "Matches Icosanoid criteria (C20 backbone with hydroperoxide)"
 
-    return True, "Matches Icosanoid criteria (C20 backbone with double bonds and oxygenation)"
+
+    return False, "Does not match Icosanoid criteria"
