@@ -9,7 +9,7 @@ def is_long_chain_fatty_acid(smiles: str):
     Determines if a molecule is a long-chain fatty acid based on its SMILES string.
 
     A long-chain fatty acid is defined as a fatty acid with a carbon chain length from C13 to C22.
-
+    
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -18,24 +18,30 @@ def is_long_chain_fatty_acid(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string into an RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for carboxylic acid group (-C(=O)O)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    
+    # Check for the presence of a carboxylic acid group
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "No carboxylic acid group found"
     
-    # Count total number of carbons
+    # Calculate total number of carbons in the molecule
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    # Ensure carbon chain length is between C13 and C22
-    if carbon_count < 14 or carbon_count > 23:
-        return False, f"Total carbon count {carbon_count} is not within the long-chain fatty acid range (14-23 considering COOH group)"
-
-    # Check for a ring structure which is typically not part of long-chain fatty acids
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Contains ring(s), not a typical structure for long-chain fatty acids"
-
+    # Verify the carbon chain length from C13 to C22 (considering COOH group)
+    if carbon_count < 13 or carbon_count > 22:
+        return False, f"Total carbon count {carbon_count} is not within the long-chain fatty acid range (considering COOH group)"
+    
+    # Using the calculated exact molecular weight to cross-validate
+    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
+    if not (200 < mol_weight < 400):  # Typical range for long-chain fatty acids
+        return False, "Molecular weight not typical for long-chain fatty acid"
+    
+    # Check the existence of a large linear sequence of carbons
+    large_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(large_chain_pattern):
+        return False, "Insufficient chain length or incorrect structure for fatty acid"
+    
     return True, f"Valid long-chain fatty acid with {carbon_count} carbon atoms"
