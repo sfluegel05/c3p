@@ -23,53 +23,28 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
 
     # Define SMARTS patterns for CoA fragments
     # Flexible pyrophosphate SMARTS
-    pyrophosphate_smarts = "[P](=O)([O-])[O]-[P](=O)([O-])[O-]"
+    pyrophosphate_smarts = "[P](=O)-[O]-[P](=O)"
     pyrophosphate_pattern = Chem.MolFromSmarts(pyrophosphate_smarts)
     pyrophosphate_matches = mol.GetSubstructMatches(pyrophosphate_pattern)
+    if not pyrophosphate_matches:
+        return False, "Missing pyrophosphate fragment"
 
 
-    # Ribose SMARTS - modified to also find the ribose when connected to the phosphate.
-    ribose_smarts = "C1[CH](O)[CH]([CH](O)[CH](O)C1)-O-[P]"
+    # Ribose SMARTS
+    ribose_smarts = "[C]1[CH](O)[CH]([CH](O)[CH](O)[C]1)-[O]-[P]"
     ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
     ribose_matches = mol.GetSubstructMatches(ribose_pattern)
+    if not ribose_matches:
+        return False, "Missing ribose fragment"
 
 
     # Pantetheine fragment SMARTS
     pantetheine_smarts = "[CX4]-C(C)(C)-[CX4]-[NX3]-[CX3](=[OX1])-[NX3]-[CX2]-[CX2]-S"
     pantetheine_pattern = Chem.MolFromSmarts(pantetheine_smarts)
     pantetheine_matches = mol.GetSubstructMatches(pantetheine_pattern)
+    if not pantetheine_matches:
+       return False, "Missing pantetheine fragment"
 
-
-    if not pyrophosphate_matches or not ribose_matches or not pantetheine_matches:
-         return False, "Missing CoA core fragment(s)"
-
-    # Check if fragments are connected, this could be enhanced with bond tracing
-    # Get the index of the phosphate connecting the ribose and pyrophosphate
-    ribose_phosphate_index = -1
-    for match in ribose_matches:
-        for atom_index in match:
-            atom = mol.GetAtomWithIdx(atom_index)
-            if atom.GetSymbol() == "P":
-                ribose_phosphate_index = atom_index
-                break
-        if ribose_phosphate_index != -1:
-            break
-    
-    connected_to_pyrophosphate = False
-    for match in pyrophosphate_matches:
-        for atom_index in match:
-             atom = mol.GetAtomWithIdx(atom_index)
-             if atom.GetSymbol() == "O":
-               for neighbor in atom.GetNeighbors():
-                  if neighbor.GetIdx() == ribose_phosphate_index:
-                      connected_to_pyrophosphate = True
-                      break
-        if connected_to_pyrophosphate:
-              break
-
-    if not connected_to_pyrophosphate:
-      return False, "Ribose not connected to the pyrophosphate"
-      
     # Define the thioester bond
     thioester_smarts = "[CX3](=[OX1])[SX2]"
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
@@ -92,11 +67,27 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
                break
       if attached_to_pantetheine:
               break
-
-
     if not attached_to_pantetheine:
        return False, "Thioester not attached to pantetheine fragment"
 
+    # Check if ribose and pyrophosphate are connected
+    connected_to_pyrophosphate = False
+    for ribose_match in ribose_matches:
+       for atom_index in ribose_match:
+           atom = mol.GetAtomWithIdx(atom_index)
+           if atom.GetSymbol() == "P":
+              for neighbor in atom.GetNeighbors():
+                 for pyrophosphate_match in pyrophosphate_matches:
+                     if neighbor.GetIdx() in pyrophosphate_match:
+                        connected_to_pyrophosphate = True
+                        break
+              if connected_to_pyrophosphate:
+                   break
+       if connected_to_pyrophosphate:
+            break
+
+    if not connected_to_pyrophosphate:
+        return False, "Ribose not connected to pyrophosphate"
 
 
     # Find the acyl chain and count carbons.
@@ -110,25 +101,11 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
                 break
 
         if carbonyl_carbon_index != -1:
-             carbonyl_atom = mol.GetAtomWithIdx(carbonyl_carbon_index)
-             chain_atoms = set()
-             queue = [carbonyl_carbon_index]
-             
-             while queue:
-                 current_index = queue.pop(0)
-                 if current_index in chain_atoms:
-                     continue
-                 chain_atoms.add(current_index)
-                 current_atom = mol.GetAtomWithIdx(current_index)
-                 if current_atom.GetSymbol() == "C" :
-                    acyl_carbon_count += 1
-                    for neighbor in current_atom.GetNeighbors():
-                        if neighbor.GetSymbol() == "C" and neighbor.GetIdx() not in chain_atoms and neighbor.GetIdx() != carbonyl_carbon_index:
-                            queue.append(neighbor.GetIdx())
-
-
-    # Remove the carbonyl carbon itself
-    acyl_carbon_count -= 1
+            carbonyl_atom = mol.GetAtomWithIdx(carbonyl_carbon_index)
+            # count non-hydrogen neighbors of carbonyl carbon
+            acyl_carbon_count = sum(1 for neighbor in carbonyl_atom.GetNeighbors() if neighbor.GetSymbol() != "H")
+            # remove the carbonyl oxygen
+            acyl_carbon_count -= 1
 
     if acyl_carbon_count < 1 or acyl_carbon_count > 7:
         return False, f"Fatty acid chain has {acyl_carbon_count} carbons, must be between 1 and 7"
