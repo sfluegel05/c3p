@@ -29,14 +29,13 @@ def is_L_alpha_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No alpha-amino acid pattern found"
 
-    # Check for L-configuration at alpha-carbon
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnspec=True)
-    if len(chiral_centers) == 0:
-        return False, "No chiral centers found"
+    # Find chiral centers in the molecule
+    chiral_centers = Chem.FindMolChiralCenters(mol)
 
+    # Identify the alpha-carbon
     alpha_carbon = None
     for center in chiral_centers:
-        atom = mol.GetAtomWithIdx(center[0])
+        atom = mol.GetAtomWithIdx(center)
         if atom.GetSymbol() == "C" and len(atom.GetNeighbors()) == 3:
             alpha_carbon = atom
             break
@@ -45,10 +44,13 @@ def is_L_alpha_amino_acid(smiles: str):
         return False, "No alpha-carbon found"
 
     # Determine chirality at alpha-carbon
-    conf = alpha_carbon.GetProp("_ChiralityPossible")
-    if conf == "CDW":
-        return True, "L-configuration at alpha-carbon"
-    elif conf == "CCW":
-        return False, "D-configuration at alpha-carbon"
-    else:
+    try:
+        conf = alpha_carbon.GetProp("_CIPCode")
+        if conf == "R":
+            return True, "L-configuration at alpha-carbon"
+        elif conf == "S":
+            return False, "D-configuration at alpha-carbon"
+        else:
+            return False, "Unable to determine chirality at alpha-carbon"
+    except KeyError:
         return False, "Unable to determine chirality at alpha-carbon"
