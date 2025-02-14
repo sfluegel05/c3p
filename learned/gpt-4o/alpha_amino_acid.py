@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_alpha_amino_acid(smiles: str):
     """
     Determines if a molecule is an alpha-amino acid based on its SMILES string.
-    An alpha-amino acid has an amino group (NH2 or a derivative) on the carbon atom adjacent to (alpha to) the carboxylic acid (COOH or COO-) group.
+    An alpha-amino acid has an amino group on the carbon atom adjacent to (alpha to) the carboxylic acid group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,14 +21,17 @@ def is_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Alpha-amino acid generic patterns:
-    # 1. [NX3][CX4](C)C(=O)O - matches typical alpha amino acids and considers charged states (-COO-)
-    # 2. Include patterns for derivatives or more complex stereo-centers
+    # Improved pattern recognizing diverse alpha-amino acid structures:
+    # Account for stereochemistry, ring structures, and complex side chains
+    patterns = [
+        Chem.MolFromSmarts("[$([NX3R][C@@H1R][CX3](=O)[OX1-,OX2H1])]"),  # Stereochemistry + typical alpha-amino (COOH/COO-)
+        Chem.MolFromSmarts("[CX3H1](N)[CX3](=O)[OX1-,OX2H1]"),            # Simple backbone with variations
+        Chem.MolFromSmarts("[NX3H,NX4H2]-[CX4H]([*])[CX3](=O)[OX1-,OX2H1]"),  # Generic flexibility for various configurations
+    ]
     
-    # Comprehensive alpha-amino pattern to cover common cases:
-    alpha_amino_acid_pattern = Chem.MolFromSmarts("[$([NX3][CX4H1R][CX3](=O)[O,H1,-1])]")
+    # Check for matches with any of the defined patterns
+    for pattern in patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains alpha-amino acid structure"
 
-    if mol.HasSubstructMatch(alpha_amino_acid_pattern):
-        return True, "Contains alpha-amino acid structure"
-    else:
-        return False, "No alpha-amino acid pattern found"
+    return False, "No alpha-amino acid pattern found"
