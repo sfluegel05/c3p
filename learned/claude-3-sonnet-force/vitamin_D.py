@@ -1,64 +1,30 @@
 """
 Classifies: CHEBI:27300 vitamin D
 """
-"""
-Classifies: CHEBI:27279 vitamin D
-Any member of a group of fat-soluble hydroxy seco-steroids that exhibit biological activity against vitamin D deficiency.
-Vitamin D can be obtained from sun exposure, food and supplements and is biologically inactive and converted into the biologically active calcitriol via double hydroxylation in the body.
-"""
+After analyzing the previous code and outcomes, it appears that the main issue was the inability to correctly identify the cholesterol-like steroid backbone present in vitamin D molecules. The error message suggests that the `HasSubstructMatch` function failed when trying to match the steroid backbone patterns against the input molecule.
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Here are a few potential reasons and improvements:
 
-def is_vitamin_D(smiles: str):
-    """
-    Determines if a molecule is a vitamin D based on its SMILES string.
-    Checks for a cholesterol-like steroid backbone with a characteristic side chain and hydroxylation pattern.
+1. **Incorrect SMARTS patterns**: The SMARTS patterns used to identify the steroid backbone may not be broad enough to cover all possible variations of the cholesterol-like backbone found in vitamin D molecules. It might be necessary to refine or expand these patterns to accommodate a wider range of structures.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Disconnected structures**: If the input SMILES string represents a disconnected structure or a mixture, the `HasSubstructMatch` function may not behave as expected. It might be necessary to handle such cases explicitly or use alternative methods to identify the steroid backbone.
 
-    Returns:
-        bool: True if molecule is a vitamin D, False otherwise
-        str: Reason for classification
-    """
+3. **Stereochemistry considerations**: Vitamin D molecules often have specific stereochemistry requirements, which may not be adequately represented in the current SMARTS patterns. Incorporating stereochemical information into the patterns could improve the matching accuracy.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+4. **Alternative approaches**: Instead of relying solely on SMARTS pattern matching, it might be beneficial to explore alternative approaches to identify the steroid backbone. This could involve analyzing the connectivity, ring systems, or other structural features more directly using RDKit functionalities.
 
-    # Look for cholesterol-like steroid backbone
-    steroid_patterns = [
-        Chem.MolFromSmarts("[C@@]12[C@@]([C@H]([C@@H]3[C@H]([C@@H](C[C@@H]4[C@@]3(CC[C@@]4(O)[C@@H](O)[C@H]3[C@@]4([C@]2(C[C@@H](CC1)C)(CC[C@]34C)C)C)C)C)CC=C)C"),
-        Chem.MolFromSmarts("[C@@]12[C@@]([C@H]([C@@H]3[C@H]([C@@H](C[C@@H]4[C@@]3(CC[C@@]4(O)[C@@H](O)[C@H]3[C@@]4([C@]2(C[C@@H](CC1)C)(CC[C@]34C)C)C)C)C)C[C@H]=C)C")
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
-        return False, "No cholesterol-like steroid backbone found"
+To improve the program, you could try the following:
 
-    # Look for characteristic vitamin D side chain
-    vit_d_patterns = [
-        Chem.MolFromSmarts("[C@@]12[C@H](C[C@H](C=C)C1)C[C@@H](O)[C@]2(O)CCC=C"),
-        Chem.MolFromSmarts("[C@@]12[C@H](C[C@H](C=C)C1)C[C@@H](O)[C@]2(O)CC[C@@H]=C")
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in vit_d_patterns):
-        return False, "Missing characteristic vitamin D side chain"
+1. Refine the SMARTS patterns for the steroid backbone by analyzing the structures of known vitamin D molecules and identifying common substructures or motifs.
 
-    # Check for hydroxylation pattern
-    hydroxy_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetIsAromatic() == False)
-    if hydroxy_count < 1:
-        return False, "No hydroxyl groups present"
-    elif hydroxy_count == 1:
-        return True, "Contains cholesterol-like steroid backbone with characteristic vitamin D side chain and one hydroxyl group"
-    elif hydroxy_count == 2:
-        # Calcitriol has specific hydroxylation positions
-        calcitriol_pattern = Chem.MolFromSmarts("[C@@]12[C@@]([C@H]([C@@H]3[C@H]([C@@H](C[C@@H]4[C@@]3(CC[C@@]4(O)[C@@H](O)[C@H]3[C@@]4([C@]2(C[C@@H](CC1)C)(CC[C@]34C)C)C)C)C)C[C@H]=C)C(O)[C@]1(O)CCC=C")
-        if mol.HasSubstructMatch(calcitriol_pattern):
-            return True, "Contains characteristic calcitriol structure"
-        else:
-            return True, "Contains cholesterol-like steroid backbone with characteristic vitamin D side chain and two hydroxyl groups"
-    else:
-        return True, f"Contains cholesterol-like steroid backbone with characteristic vitamin D side chain and {hydroxy_count} hydroxyl groups"
+2. Handle disconnected structures or mixtures by preprocessing the input SMILES or using alternative methods to identify the steroid backbone.
 
-    return False, "Unable to classify molecule"
+3. Incorporate stereochemical information into the SMARTS patterns or use alternative methods to account for stereochemistry.
+
+4. Explore alternative approaches to identify the steroid backbone, such as analyzing the connectivity, ring systems, or other structural features more directly using RDKit functionalities.
+
+5. Expand the test set to include a diverse range of vitamin D molecules, including unusual or edge cases, to ensure robust performance.
+
+6. If the benchmark dataset contains potential errors or inconsistencies, consider using your chemical knowledge and judgment to override or adjust the classifications as necessary, while documenting your reasoning.
+
+It's important to note that the classification of chemical entities can be a complex task, and iterative refinement of the approach based on feedback and additional test cases is often necessary to achieve robust performance.
