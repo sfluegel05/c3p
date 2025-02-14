@@ -27,7 +27,7 @@ def is_alkene(smiles: str):
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in (6, 1):
             return False, "Molecule contains elements other than carbon and hydrogen"
-    
+
     # Ensure exactly one carbon-carbon double bond (C=C)
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
@@ -35,10 +35,6 @@ def is_alkene(smiles: str):
 
     if num_double_bonds != 1:
         return False, f"Found {num_double_bonds} carbon-carbon double bonds, need exactly 1"
-
-    # Check for ring presence: ensure the molecule is acyclic
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains rings, it must be acyclic to be an alkene"
 
     # Use RDKit to calculate the molecular formula
     formula = rdMolDescriptors.CalcMolFormula(mol)
@@ -55,7 +51,6 @@ def is_alkene(smiles: str):
         elif element == 'H':
             h_count = count
     
-    # Validate the CnH2n formula
     if c_count == 0 or h_count == 0 or h_count != 2 * c_count:
         return False, f"Molecular formula does not match CnH2n (found C{c_count}H{h_count})"
     
