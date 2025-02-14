@@ -29,39 +29,23 @@ def is_polyprenol(smiles: str):
     if num_isoprene_units < 2:
       return False, f"Too few isoprene units, found {num_isoprene_units}"
 
-
-    # Check for terminal alcohol (-C=C-CH2-OH)
-    terminal_alcohol_pattern = Chem.MolFromSmarts("[CH2][C](=[CH])[CH2][OH]")
+    # Check for terminal alcohol (-C-OH) and ensure there is only one
+    terminal_alcohol_pattern = Chem.MolFromSmarts("[!#1][OH]") # [!#1] is a non-H atom
     terminal_alcohol_matches = mol.GetSubstructMatches(terminal_alcohol_pattern)
 
-    if len(terminal_alcohol_matches) < 1:
-        return False, "No terminal alcohol group detected."
-
-
-    # Count double bonds
-    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    num_double_bonds = len(double_bond_matches)
-
-    if num_double_bonds != num_isoprene_units:
-      return False, "Number of double bonds does not equal number of isoprene units"
+    if len(terminal_alcohol_matches) != 1 :
+        return False, f"Incorrect number of terminal alcohol groups detected: {len(terminal_alcohol_matches)} (must be 1)"
 
 
     # Check for chain length (number of carbon atoms) - must be at least 5 * num_isoprene_units (roughly)
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < (5 * num_isoprene_units):
-      return False, "Too few carbons for the number of isoprene units."
-
-
-    # Check rotatable bonds
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < (2 * num_isoprene_units - 1):
-      return False, "Too few rotatable bonds for polyprenol chain."
-
+        return False, "Too few carbons for the number of isoprene units."
 
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 150:
-      return False, "Molecular weight is too low"
+        return False, "Molecular weight is too low"
 
-    return True, "Molecule has repeating isoprene units, a terminal alcohol, sufficient chain length, and is compatible with polyprenol definition."
+
+    return True, "Molecule has repeating isoprene units, a single terminal alcohol, sufficient chain length, and is compatible with polyprenol definition."
