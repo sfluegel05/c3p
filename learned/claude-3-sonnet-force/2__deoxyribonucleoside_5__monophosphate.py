@@ -26,18 +26,20 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     # Define SMARTS patterns for components
     deoxyribose_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@H]([C@H](CO)O)O)O)[C@@H]1[CH]O1")
     phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O")
-    adenine_pattern = Chem.MolFromSmarts("nc1ncnc2n(cnc12)N")
-    guanine_pattern = Chem.MolFromSmarts("Nc1nc2nc([nH]c2c(=O)[nH]1)N")
+    adenine_pattern = Chem.MolFromSmarts("nc1nc[nH]c2ncnc12")
+    guanine_pattern = Chem.MolFromSmarts("Nc1nc2[nH]cnc2c(=O)[nH]1")
     cytosine_pattern = Chem.MolFromSmarts("Nc1cc[nH]c(=O)n1")
-    thymine_pattern = Chem.MolFromSmarts("Cc1cn([C@H]2C[C@H](O)[C@@H](COP(O)(O)=O)O2)c(=O)[nH]c1=O")
+    thymine_pattern = Chem.MolFromSmarts("Cc1cn([C@@H]2C[C@@H](O)[C@@H](COP(O)(O)=O)O2)c(=O)[nH]c1=O")
     uracil_pattern = Chem.MolFromSmarts("O=c1cc[nH]c(=O)[nH]1")
 
     # Check for 2'-deoxyribose sugar
-    if not mol.HasSubstructMatch(deoxyribose_pattern):
+    deoxyribose_matches = mol.GetSubstructMatches(deoxyribose_pattern)
+    if not deoxyribose_matches:
         return False, "No 2'-deoxyribose sugar found"
 
     # Check for phosphate group
-    if not mol.HasSubstructMatch(phosphate_pattern):
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
         return False, "No phosphate group found"
 
     # Check for nucleobase
@@ -49,14 +51,33 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if not nucleobase_found:
         return False, "No valid nucleobase found"
 
-    # Check for connection between deoxyribose and phosphate
+    # Check for connectivity between deoxyribose and phosphate
     deoxyribose_phosphate_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@H]([C@H](CO)O)O)O)[C@@H]1[CH]O1OP(O)(=O)O")
-    if not mol.HasSubstructMatch(deoxyribose_phosphate_pattern):
+    deoxyribose_phosphate_matches = mol.GetSubstructMatches(deoxyribose_phosphate_pattern)
+    if not deoxyribose_phosphate_matches:
         return False, "Deoxyribose and phosphate not connected"
 
-    # Check for connection between deoxyribose and nucleobase
+    # Check for connectivity between deoxyribose and nucleobase
     deoxyribose_nucleobase_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@H]([C@H](CO)O)O)O)[C@@H]1[CH]O1~*")
-    if not mol.HasSubstructMatch(deoxyribose_nucleobase_pattern):
+    deoxyribose_nucleobase_matches = mol.GetSubstructMatches(deoxyribose_nucleobase_pattern)
+    if not deoxyribose_nucleobase_matches:
         return False, "Deoxyribose and nucleobase not connected"
+
+    # Check for correct stereochemistry
+    deoxyribose_stereo_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@H]([C@H](CO)O)O)O)[C@@H]1[CH]O1")
+    if not mol.HasSubstructMatch(deoxyribose_stereo_pattern):
+        return False, "Incorrect stereochemistry for 2'-deoxyribose sugar"
+
+    # Check for single 5'-phosphate group
+    phosphate_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == "P"]
+    if len(phosphate_atoms) != 1:
+        return False, "Multiple or no phosphate groups found"
+
+    # Check that the phosphate is in the 5' position
+    phosphate_atom = phosphate_atoms[0]
+    deoxyribose_atoms = mol.GetSubstructMatches(deoxyribose_pattern)[0]
+    deoxyribose_oxygen = [atom for atom in deoxyribose_atoms if atom.GetSymbol() == "O"][2]
+    if phosphate_atom.GetIdx() != deoxyribose_oxygen.GetNeighbors()[0].GetIdx():
+        return False, "Phosphate group is not in the 5' position"
 
     return True, "Contains 2'-deoxyribose sugar with 5'-phosphate group and a valid nucleobase"
