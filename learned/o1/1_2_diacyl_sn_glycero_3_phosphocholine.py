@@ -23,6 +23,7 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
         bool: True if molecule is a 1,2-diacyl-sn-glycero-3-phosphocholine, False otherwise
         str: Reason for classification
     """
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -34,23 +35,31 @@ def is_1_2_diacyl_sn_glycero_3_phosphocholine(smiles: str):
     except Chem.rdchem.KekulizeException:
         return False, "Unable to sanitize molecule"
 
-    # Pattern for phosphocholine group (allowing for various protonation states)
-    phosphocholine_pattern = Chem.MolFromSmarts("O[P](=O)([O-])[O]CC[N+](C)(C)C")
-    if not mol.HasSubstructMatch(phosphocholine_pattern):
-        phosphocholine_pattern_protonated = Chem.MolFromSmarts("O[P](=O)(O)OCC[N+](C)(C)C")
-        if not mol.HasSubstructMatch(phosphocholine_pattern_protonated):
-            return False, "Phosphocholine group not found"
+    # Pattern for phosphocholine group (including protonated and deprotonated forms)
+    phosphocholine_patterns = [
+        Chem.MolFromSmarts("O[P](=O)([O-])OCC[N+](C)(C)C"),  # Deprotonated phosphate
+        Chem.MolFromSmarts("O[P](=O)(O)OCC[N+](C)(C)C")      # Protonated phosphate
+    ]
+
+    if not any(mol.HasSubstructMatch(pat) for pat in phosphocholine_patterns):
+        return False, "Phosphocholine group not found"
 
     # Pattern for glycerol backbone with esterified sn-1 and sn-2 positions
-    glycerol_pattern = Chem.MolFromSmarts("C(COC(=O)[#6])(COC(=O)[#6])CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    # Accounts for chiral centers at the central carbon
+    glycerol_patterns = [
+        Chem.MolFromSmarts("[CH2][C@H](OC(=O)[#6])COC(=O)[#6]"),  # Chiral center
+        Chem.MolFromSmarts("[CH2][C@@H](OC(=O)[#6])COC(=O)[#6]"), # Opposite chirality
+        Chem.MolFromSmarts("[CH2][CH](OC(=O)[#6])COC(=O)[#6]")    # Achiral
+    ]
+
+    if not any(mol.HasSubstructMatch(pat) for pat in glycerol_patterns):
         return False, "Glycerol backbone with two ester groups not found"
 
-    # Check for two esterified fatty acid chains
+    # Check for exactly two esterified fatty acid chains
     ester_pattern = Chem.MolFromSmarts("OC(=O)[#6]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups, need at least 2"
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
     # Check for deprotonated phosphate group
     phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O]")
