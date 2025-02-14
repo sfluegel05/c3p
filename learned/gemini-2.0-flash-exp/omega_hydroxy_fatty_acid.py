@@ -8,6 +8,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
     Determines if a molecule is an omega-hydroxy fatty acid based on its SMILES string.
+    A omega-hydroxy fatty acid is defined as a straight-chain fatty acid with a carboxyl group at position 1
+    and a hydroxyl group at the omega (last) position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,63 +23,49 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for carboxyl group (C(=O)O or C(O)=O)
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        carboxyl_pattern = Chem.MolFromSmarts("C(O)=O")
-        if not mol.HasSubstructMatch(carboxyl_pattern):
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_matches:
+         carboxyl_pattern = Chem.MolFromSmarts("[C;X3]([OH1])[OH0]")  # Handles tautomer
+         carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+         if not carboxyl_matches:
             return False, "No carboxyl group found"
 
-    # Check for at least one hydroxyl group (OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH1]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-         return False, "No hydroxyl group found"
-    
-    # Find position of the carbonyl carbon in the COOH
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    
-    if not carboxyl_matches:
-        return False, "Could not determine carbonyl position"
-    
-    carbonyl_atom_idx = carboxyl_matches[0][0] 
+    # Get the index of the carboxyl carbon
+    carbonyl_carbon_idx = carboxyl_matches[0][0]
+
 
     # Get atoms
     atoms = mol.GetAtoms()
-    n_atoms = len(atoms)
-    if n_atoms < 3:
-        return False, "Too few atoms to be an omega-hydroxy fatty acid"
     
-    # Count total number of carbons
+    # Check if the molecule has at least 3 carbons. If not, it cannot be a fatty acid
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if carbon_count < 3:
-        return False, "Too few carbon atoms"
+       return False, "Too few carbon atoms"
+
+    # Start from the carboxyl carbon and traverse the chain, getting the last carbon of the chain
+    current_atom_idx = carbonyl_carbon_idx
+    previous_atom_idx = -1 #Initialize to not be any real atom index
+
+    # Traverse until a terminal carbon is reached
+    while True:
+        current_atom = atoms[current_atom_idx]
+        neighbors = [n.GetIdx() for n in current_atom.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != previous_atom_idx] #Get only carbon neighbors
+        
+        if len(neighbors) == 0:
+          omega_carbon_idx = current_atom_idx
+          break  # Terminal carbon reached
+        elif len(neighbors) == 1:
+           previous_atom_idx = current_atom_idx
+           current_atom_idx = neighbors[0]
+        else: #Branching, therefore not a straight chain fatty acid
+            return False, "Not a straight-chain fatty acid"
+
+    #Check if an -OH group is present at the omega position
+    omega_carbon = atoms[omega_carbon_idx]
     
+    for neighbor in omega_carbon.GetNeighbors():
+       if neighbor.GetAtomicNum() == 8 and (neighbor.GetTotalNumHs() == 1):
+           return True, "Omega hydroxyl group found"
 
-    #Find all terminal carbon atoms with no branching.
-    terminal_carbon_pattern = Chem.MolFromSmarts("[CX4]([CX4])[#6]")
-    terminal_carbon_matches = mol.GetSubstructMatches(terminal_carbon_pattern)
-
-    valid_omega = False
-    reason = "No omega-hydroxyl group found"
-    
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-
-    #Get the indices of the terminal carbon atoms
-    terminal_carbons_indices = [match[2] for match in terminal_carbon_matches if match[2] != carbonyl_atom_idx ]
-
-
-    for match in hydroxyl_matches:
-            
-            hydroxy_atom_idx = match[0]
-            
-            #Check if the hydroxy group is directly connected to one of the terminal carbon atoms
-            hydroxy_atom = atoms[hydroxy_atom_idx]
-            
-            for neighbor in hydroxy_atom.GetNeighbors():
-                if neighbor.GetIdx() in terminal_carbons_indices:
-                  valid_omega = True
-                  reason = "Omega hydroxyl group found"
-                  break
-            if valid_omega:
-                break
-
-    return valid_omega, reason
+    return False, "No omega-hydroxyl group found"
