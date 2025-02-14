@@ -34,19 +34,27 @@ def is_macromolecule(smiles: str):
     if mol_wt < 1000:
         return False, f"Molecular weight {mol_wt:.2f} Da is too low for a macromolecule"
     
-    # Check for repetitive units (fingerprint-based)
-    fp = Chem.RDKFingerprint(mol, maxPath=7, fpSize=2048)
-    n_bits_set = len(fp.GetNonzeroElements())
-    
-    # Macromolecules tend to have a smaller number of unique substructures
-    if n_bits_set > 100:
-        return False, "Too many unique substructures for a macromolecule"
-    
-    # Look for polymeric repeat units (e.g., peptides, polysaccharides)
-    repeat_units = ['C(=O)N', 'OCC', 'OC=O', 'NC=O']
+    # Look for polymeric repeat units (e.g., peptides, polysaccharides, polynucleotides)
+    repeat_units = ['C(=O)N', 'OCC', 'OC=O', 'NC=O', 'OP(O)(=O)OC']
     for pattern in repeat_units:
         patt = Chem.MolFromSmarts(pattern)
         if mol.HasSubstructMatch(patt):
-            return True, "Contains repetitive units derived from smaller molecules"
+            n_matches = len(mol.GetSubstructMatches(patt))
+            if n_matches > 10:  # Arbitrary threshold, adjust as needed
+                return True, f"Contains {n_matches} repetitive units derived from smaller molecules"
     
-    return None, None
+    # Check for long carbon chains
+    chain_length = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.SINGLE:
+            atoms = [bond.GetBeginAtom(), bond.GetEndAtom()]
+            if all(atom.GetAtomicNum() == 6 for atom in atoms):
+                chain_length += 1
+            else:
+                chain_length = 0
+        else:
+            chain_length = 0
+        if chain_length > 20:
+            return True, "Contains a long carbon chain characteristic of a macromolecule"
+    
+    return False, "No characteristic macromolecular features found"
