@@ -20,14 +20,28 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS for amino group (nitrogen with 0, 1 or 2 hydrogens) and 3 bonds
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]")
-    
-    # Find all amino groups
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    
-    # Count the number of amino groups and return accordingly
-    if len(amino_matches) >= 2:
-      return True, "Contains two or more amino groups"
+    # SMARTS patterns for different types of amino groups
+    amino_patterns = [
+        Chem.MolFromSmarts("[NX3;H2,H1,H0]"),  # Neutral amines
+        Chem.MolFromSmarts("[NH3+]"),         # Primary protonated amines
+        Chem.MolFromSmarts("[NH2+]")          # Secondary protonated amines
+    ]
+
+    total_amino_count = 0
+    matched_atoms = set()
+
+    for pattern in amino_patterns:
+        if pattern is None: continue
+        matches = mol.GetSubstructMatches(pattern)
+
+        for match in matches:
+            for atom_index in match:
+                if atom_index not in matched_atoms:
+                    total_amino_count += 1
+                    matched_atoms.add(atom_index)
+
+
+    if total_amino_count >= 2:
+        return True, "Contains two or more amino groups"
     else:
         return False, "Does not contain two or more amino groups"
