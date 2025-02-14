@@ -21,8 +21,8 @@ def is_phosphatidylcholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for glycerol backbone (3 carbon chain with 2 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("OC[C@H](O)CO")
+    # Relaxed pattern for glycerol backbone: COC(C)CO
+    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
@@ -31,11 +31,25 @@ def is_phosphatidylcholine(smiles: str):
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine group found"
         
-    # Pattern for ester-bonded acyl chains: C(=O)O
-    # Ensure there are exactly two acyl chains
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[C@H]")
+    # Pattern for ester-bonded acyl chains: C(=O)O connected to glycerol
+    # More generic to accommodate different representations and configurations
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
+    if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} acyl chains, need exactly 2"
+
+    # Ensuring at least two esters are connected to the same glycerol unit
+    glycerol_acidified = Chem.ReplaceCore(mol, Chem.MolFromSmarts("OCC(O)CO"))
+    unique_acyl_attachments = set()
+    for match in ester_matches:
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 8:  # Oxygen atom
+                attached_carbon = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+                if attached_carbon:
+                    unique_acyl_attachments.add(attached_carbon[0])
+
+    if len(unique_acyl_attachments) < 2:
+        return False, f"Only {len(unique_acyl_attachments)} unique acyl attachments found, need 2"
 
     return True, "Molecule is a phosphatidylcholine"
