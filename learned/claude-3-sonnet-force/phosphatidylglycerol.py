@@ -37,11 +37,11 @@ def is_phosphatidylglycerol(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
     
-    # Look for 2 ester groups (-O-C(=O)-)
+    # Look for ester groups (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+    if len(ester_matches) < 2:
+        return False, f"Found fewer than 2 ester groups"
     
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -57,7 +57,7 @@ def is_phosphatidylglycerol(smiles: str):
     # Check molecular weight - phosphatidylglycerols typically >500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 500:
-        return False, "Molecular weight too low for phosphatidylglycerol"
+        return None, "Molecular weight may be too low for phosphatidylglycerol"
     
     # Count carbons, oxygens, and phosphorus
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -70,5 +70,11 @@ def is_phosphatidylglycerol(smiles: str):
         return False, "Too few oxygens for phosphatidylglycerol"
     if p_count != 1:
         return False, "Must have exactly 1 phosphorus atom"
+    
+    # Rule out phosphatidylcholines (PCs) and phosphatidylethanolamines (PEs)
+    pc_pattern = Chem.MolFromSmarts("[N+](C)(C)(C)")
+    pe_pattern = Chem.MolFromSmarts("OCCN")
+    if mol.HasSubstructMatch(pc_pattern) or mol.HasSubstructMatch(pe_pattern):
+        return False, "Molecule appears to be a phosphatidylcholine or phosphatidylethanolamine"
     
     return True, "Contains glycerol backbone with 2 fatty acid chains and a phosphate group"
