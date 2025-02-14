@@ -1,28 +1,70 @@
 """
 Classifies: CHEBI:48024 3'-hydroxyflavanones
 """
-After analyzing the previous program and the outcomes, it appears that the approach taken was not successful in classifying the 3'-hydroxyflavanone class accurately. The program attempted to identify the flavanone scaffold and the presence of a hydroxy group at the 3' position of the phenyl ring, along with potential prenyl or glycosidic substituents. However, this approach seems to have missed some key structural features or failed to account for certain edge cases.
+"""
+Classifies: CHEBI:25657 3'-hydroxyflavanone
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from typing import Tuple
 
-Here are some potential reasons for the failure and suggestions for improvement:
+def is_3__hydroxyflavanones(smiles: str) -> Tuple[bool, str]:
+    """
+    Determines if a molecule is a 3'-hydroxyflavanone based on its SMILES string.
+    A 3'-hydroxyflavanone is a flavanone with a hydroxy substituent at position 3' of the phenyl ring.
 
-1. **Structural Pattern Recognition**: The program relied on SMARTS patterns to identify the flavanone scaffold and the presence of a hydroxy group at the 3' position. While this approach can work in some cases, it may not be robust enough to handle the diversity of structures within this chemical class. Some structures may have additional substituents or conformational variations that prevent the SMARTS patterns from matching correctly.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Stereochemistry Handling**: The program attempted to enumerate stereoisomers using the `EnumerateStereoisomers` function from RDKit. However, this function only enumerates unassigned stereochemistry, and it may not handle complex stereochemical configurations present in some of the examples provided.
+    Returns:
+        bool: True if molecule is a 3'-hydroxyflavanone, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Enumerate tautomers and stereoisomers
+    tautomers = [Chem.MolFromSmiles(Chem.MolToSmiles(taut, isomericSmiles=True)) for taut in AllChem.EnumerateTautomers(mol)]
+    stereoisomers = list({Chem.MolToSmiles(Chem.MolFromSmiles(Chem.MolToSmiles(isomer, isomericSmiles=True)), isomericSmiles=True)
+                          for isomer in AllChem.EnumerateStereoisomers(mol)})
+    
+    # Check if any tautomer/stereoisomer matches the 3'-hydroxyflavanone pattern
+    for tautomer in tautomers:
+        for stereoisomer in stereoisomers:
+            if _is_3__hydroxyflavanone(stereoisomer):
+                return True, "Matches the 3'-hydroxyflavanone structural pattern"
+    
+    return False, "Does not match the 3'-hydroxyflavanone structural pattern"
 
-3. **Tautomer Enumeration**: While the program enumerated tautomers, it did not consider potential keto-enol tautomerism or other tautomeric forms that could affect the recognition of the flavanone scaffold or the position of the hydroxy group.
+def _is_3__hydroxyflavanone(mol: Chem.Mol) -> bool:
+    """
+    Checks if a molecule matches the 3'-hydroxyflavanone structural pattern.
 
-4. **Ring Recognition**: The program relied on the presence of a phenyl ring to identify the 3' position. However, some structures may have additional fused rings or heterocyclic rings that could complicate the recognition of the phenyl ring and the correct position of the hydroxy group.
+    Args:
+        mol (Chem.Mol): RDKit molecule object
 
-To improve the classification accuracy, here are some suggestions:
-
-1. **Utilize Molecular Fingerprints and Machine Learning**: Instead of relying solely on SMARTS patterns, consider using molecular fingerprints (e.g., Morgan fingerprints, ECFP) and machine learning techniques (e.g., random forests, support vector machines) to train a classifier on known examples of 3'-hydroxyflavanones and non-examples. This approach can capture more complex structural patterns and handle variations more effectively.
-
-2. **Incorporate Substructure Matching with Canonicalization**: Use RDKit's substructure matching capabilities with canonicalization to identify the flavanone scaffold and the position of the hydroxy group relative to the scaffold. This can help handle conformational variations and stereochemical complexities.
-
-3. **Consider Aromaticity Perception**: Ensure that the aromaticity perception in RDKit is correctly identifying the aromatic rings and their substitution patterns, as this can affect the recognition of the 3' position.
-
-4. **Analyze Counterexamples and Edge Cases**: Carefully analyze the false positives and false negatives from your previous attempts to identify any edge cases or structural patterns that were not accounted for. This can provide insights for improving the classification algorithm.
-
-5. **Consult Additional Resources and Expert Knowledge**: Chemical classification can be complex, and it may be helpful to consult additional resources, such as literature or expert knowledge in the field, to gain a deeper understanding of the structural variations and nuances within the 3'-hydroxyflavanone class.
-
-It's important to note that while the benchmark you're using may have occasional mistakes, the consistent failure to achieve a reasonable F1 score suggests that the current approach needs further refinement or a different strategy. Additionally, if you believe that the classifications made by your program are consistent with your understanding of the chemical class, you can provide a detailed explanation justifying your approach and classifications.
+    Returns:
+        bool: True if the molecule matches the 3'-hydroxyflavanone pattern, False otherwise
+    """
+    
+    # Check for flavanone scaffold
+    flavanone_pattern = Chem.MolFromSmarts("[O;R]c1ccc(cc1)[C@H]2CC(=O)Oc2")
+    if not mol.HasSubstructMatch(flavanone_pattern):
+        return False
+    
+    # Check for hydroxy group at 3' position
+    hydroxy_3__pattern = Chem.MolFromSmarts("c1ccc(cc1O)c2ccc(cc2)")
+    if not mol.HasSubstructMatch(hydroxy_3__pattern):
+        return False
+    
+    # Additional checks for common substituents (prenyl, glycosidic)
+    prenyl_pattern = Chem.MolFromSmarts("[CH2]=[CH][CH2]=[CH][CH3]")
+    glycosidic_pattern = Chem.MolFromSmarts("[OX2]C[C@@H]([C@H]([C@@H]([C@H](O[C@@H]1[C@H]([C@@H]([C@@H](O1)O)O)O)O)O)O")
+    
+    if mol.HasSubstructMatch(prenyl_pattern) or mol.HasSubstructMatch(glycosidic_pattern):
+        return True
+    
+    return True
