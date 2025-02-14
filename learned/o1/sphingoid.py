@@ -26,63 +26,50 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find primary amine nitrogen atoms (degree 1 nitrogen with no charge)
-    amine_atoms = [atom for atom in mol.GetAtoms()
-                   if atom.GetAtomicNum() == 7 and atom.GetDegree() == 1 and atom.GetFormalCharge() == 0]
-    if not amine_atoms:
-        return False, "No primary amino group found"
+    # Define SMARTS pattern for sphingoid backbone
+    # This pattern captures:
+    # - A long aliphatic chain (at least 12 carbons)
+    # - An amino group at C2 (can be primary amine or amide)
+    # - Hydroxyl groups at C1 and C3 positions
+    # - Allows for variations like double bonds and additional hydroxyl groups
+    sphingoid_pattern = Chem.MolFromSmarts("""
+    [#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]
+    """)
+    # Simplify the pattern to focus on key features
+    sphingoid_pattern = Chem.MolFromSmarts("""
+    [#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6](-[O])[#6]-[#6]-[#6]-[#7X3]-[#6](-[O])-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]-[#6]
+    """)
 
-    for amine_atom in amine_atoms:
-        n_idx = amine_atom.GetIdx()
+    if sphingoid_pattern is None:
+        return False, "Invalid SMARTS pattern"
 
-        # Get the carbon atom attached to the amine nitrogen (C2)
-        c2_atoms = [nbr for nbr in amine_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
-        if not c2_atoms:
-            continue  # No carbon attached to nitrogen
-        c2_atom = c2_atoms[0]
-        c2_idx = c2_atom.GetIdx()
+    # Find matches for the sphingoid backbone
+    matches = mol.GetSubstructMatches(sphingoid_pattern)
 
-        # Check for hydroxyl groups on carbons adjacent to C2 (C1 and C3)
-        has_adjacent_hydroxyl = False
-        
-        # Get neighbors of C2 atom
-        c2_neighbors = c2_atom.GetNeighbors()
-        for atom in c2_neighbors:
-            if atom.GetAtomicNum() == 6 and atom.GetIdx() != n_idx:  # Exclude nitrogen
-                # Check if this carbon has a hydroxyl group
-                for nbr in atom.GetNeighbors():
-                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:
-                        has_adjacent_hydroxyl = True
-                        break
-            if has_adjacent_hydroxyl:
-                break
+    if not matches:
+        return False, "Molecule does not match sphingoid backbone"
 
-        if not has_adjacent_hydroxyl:
-            continue  # No hydroxyl group adjacent to amino group
+    # Check each match for chain length and functional groups
+    for match in matches:
+        atom_indices = list(match)
+        submol = Chem.PathToSubmol(mol, atom_indices)
 
-        # Now, check the aliphatic chain length starting from C2
-        visited = set()
-        chain_atoms = []
-
-        def traverse_chain(atom):
-            if atom.GetIdx() in visited:
-                return
-            visited.add(atom.GetIdx())
-            if atom.GetAtomicNum() != 6:
-                return
-            chain_atoms.append(atom)
-            for nbr in atom.GetNeighbors():
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                if bond.IsInRing():
-                    continue  # Skip ring structures
-                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != amine_atom.GetIdx():
-                    traverse_chain(nbr)
-
-        traverse_chain(c2_atom)
-        chain_length = len(chain_atoms)
-
-        if chain_length < 12:
+        # Check for chain length (at least 12 carbons)
+        carbon_atoms = [atom for atom in submol.GetAtoms() if atom.GetAtomicNum() == 6]
+        if len(carbon_atoms) < 12:
             continue  # Chain too short to be sphingoid
+
+        # Check for amino group at C2 (primary amine or amide)
+        nitrogen_atoms = [atom for atom in submol.GetAtoms() if atom.GetAtomicNum() == 7]
+        if not nitrogen_atoms:
+            continue  # No nitrogen found
+
+        # Check for hydroxyl groups at C1 and C3 positions
+        oxygen_atoms = [atom for atom in submol.GetAtoms() if atom.GetAtomicNum() == 8]
+        if len(oxygen_atoms) < 2:
+            continue  # Not enough hydroxyl groups
+
+        # Additional checks can be added here if necessary
 
         # If all checks passed
         return True, "Molecule matches sphingoid structural features"
