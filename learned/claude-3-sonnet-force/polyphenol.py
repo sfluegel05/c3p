@@ -8,7 +8,7 @@ Polyphenols are defined as members of the class of phenols that contain 2 or mor
 each of which is substituted by at least one hydroxy group.
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, rdchem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polyphenol(smiles: str):
     """
@@ -28,7 +28,8 @@ def is_polyphenol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Identify largest aromatic ring system
-    aromatic_rings = [ring for ring in rdchem.GetSymmSSSR(mol) if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
+    ring_info = mol.GetRingInfo()
+    aromatic_rings = [ring_info.AtomRings(i) for i in range(ring_info.NumRings()) if ring_info.IsBondRingAromatic(i)]
     largest_aromatic_ring_system = max(aromatic_rings, key=len, default=[])
 
     # Check if largest aromatic ring system contains at least 2 benzene rings
