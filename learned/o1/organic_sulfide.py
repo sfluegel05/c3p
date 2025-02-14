@@ -1,15 +1,13 @@
 """
 Classifies: CHEBI:16385 organic sulfide
 """
-"""
-Classifies: CHEBI:25698 organic sulfide
-"""
 from rdkit import Chem
 
 def is_organic_sulfide(smiles: str):
     """
-    Determines if a molecule is an organic sulfide based on its SMILES string.
-    An organic sulfide is defined as R-S-R, where R is not H (sulfur atom bonded to two carbon atoms via single bonds).
+    Determines if a molecule is an organic sulfide (thioether) based on its SMILES string.
+    An organic sulfide has the structure R-S-R', where R and R' are organic groups (not hydrogen).
+    The sulfur atom is bonded to two carbon atoms and no other atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -18,25 +16,19 @@ def is_organic_sulfide(smiles: str):
         bool: True if molecule is an organic sulfide, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate over sulfur atoms in the molecule
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 16:  # Atomic number of sulfur is 16
-            # Check if sulfur has exactly two neighbors (degree 2)
-            neighbor_atoms = atom.GetNeighbors()
-            if len(neighbor_atoms) == 2:
-                # Check if both neighbors are carbons
-                if all(neighbor.GetAtomicNum() == 6 for neighbor in neighbor_atoms):
-                    # Check that the bonds are single bonds
-                    bonds = [mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx()) for neighbor in neighbor_atoms]
-                    if all(bond.GetBondType() == Chem.rdchem.BondType.SINGLE for bond in bonds):
-                        # Check that sulfur has no formal charge and a total valence of 2
-                        if atom.GetFormalCharge() == 0 and atom.GetTotalValence() == 2:
-                            return True, "Contains sulfur atom bonded to two carbons via single bonds (organic sulfide)"
+    # Define the organic sulfide pattern: sulfur atom (S) with degree 2 bonded to two carbons (C)
+    sulfide_pattern = Chem.MolFromSmarts('[S;D2]([#6])([#6])')
+    if sulfide_pattern is None:
+        return False, "Invalid sulfide SMARTS pattern"
 
-    return False, "No sulfur atom bonded to two carbons via single bonds found"
+    # Search for the pattern in the molecule
+    matches = mol.GetSubstructMatches(sulfide_pattern)
+    if matches:
+        return True, "Contains sulfur atom bonded to two carbon atoms (organic sulfide)"
+    else:
+        return False, "No sulfur atom bonded to two carbon atoms found"
