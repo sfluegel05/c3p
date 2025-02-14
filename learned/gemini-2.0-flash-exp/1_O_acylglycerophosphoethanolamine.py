@@ -24,9 +24,6 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS for the glycerol backbone with phosphate and ethanolamine at 3-position
-    # The key difference with the previous approach is that the ester substituent is not defined
-    # using [CX3](=[OX1])[#6], instead it's defined as a single oxygen
-    # and the fatty acid chain will be checked in the next step.
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4](O)[CH2X4]OP(=O)(O)OCCN")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone with phosphate and ethanolamine at 3-position not found"
@@ -53,8 +50,15 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[#6]")
     acyl_matches = []
     for neighbor in ester_oxygen.GetNeighbors():
-      if mol.HasSubstructMatch(acyl_pattern, [neighbor.GetIdx()]):
-         acyl_matches.append(neighbor.GetIdx())
+        temp_mol = Chem.MolFromSmiles(Chem.MolToSmiles(mol))
+        #Create a new molecule and select only the neighbor.
+        temp_mol_atoms = [atom for atom in temp_mol.GetAtoms()]
+        to_remove = [atom for atom in temp_mol_atoms if atom.GetIdx() != neighbor.GetIdx()]
+        for atom in to_remove:
+           temp_mol.RemoveAtom(atom.GetIdx())
+        
+        if temp_mol.HasSubstructMatch(acyl_pattern):
+            acyl_matches.append(neighbor.GetIdx())
     if len(acyl_matches) != 1:
         return False, "Could not find an acyl group connected to the ester oxygen"
 
