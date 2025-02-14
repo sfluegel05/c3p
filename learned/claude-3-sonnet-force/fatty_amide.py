@@ -33,18 +33,18 @@ def is_fatty_amide(smiles: str):
     if not amide_matches:
         return False, "No amide group found"
     
-    # Look for fatty acid chain
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Look for fatty acid chain (long carbon chain)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = []
     for amide_idx in amide_matches:
         amide_atom = mol.GetAtomWithIdx(amide_idx)
         for bond in amide_atom.GetBonds():
-            if bond.GetOtherAtomIdx(amide_idx) != -1:
-                start_atom_idx = bond.GetOtherAtomIdx(amide_idx)
-                fatty_acid_match = mol.GetAtomWithIdx(start_atom_idx).GetAtomicNum() == 6 and \
-                                   mol.HasSubstructMatch(fatty_acid_pattern, AtomIds=[start_atom_idx])
+            neighbor_idx = bond.GetOtherAtomIdx(amide_idx)
+            if neighbor_idx != -1 and mol.GetAtomWithIdx(neighbor_idx).GetAtomicNum() == 6:
+                fatty_acid_match = mol.GetAtomWithIdx(neighbor_idx).IsInRingSize(0) and \
+                                   mol.HasSubstructMatch(fatty_acid_pattern, AtomIds=[neighbor_idx])
                 if fatty_acid_match:
-                    fatty_acid_matches.append((amide_idx, start_atom_idx))
+                    fatty_acid_matches.append((amide_idx, neighbor_idx))
                     break
     
     if not fatty_acid_matches:
@@ -56,10 +56,24 @@ def is_fatty_amide(smiles: str):
     if mol_wt < 200 or n_rotatable < 5:
         return False, "Fatty acid chain is too short"
     
-    # Additional check to exclude false positives
+    # Additional checks to exclude false positives
     unwanted_patterns = ['c1ccccc1', 'O=C(O)C', 'C(=O)O', 'N#C', 'S(=O)(=O)', 'P']
     for pattern in unwanted_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
             return False, "Contains unwanted substructure"
+    
+    # Check the length of the fatty acid chain
+    for amide_idx, chain_start_idx in fatty_acid_matches:
+        chain_length = 0
+        curr_atom_idx = chain_start_idx
+        while mol.GetAtomWithIdx(curr_atom_idx).GetAtomicNum() == 6:
+            chain_length += 1
+            for bond in mol.GetAtomWithIdx(curr_atom_idx).GetBonds():
+                neighbor_idx = bond.GetOtherAtomIdx(curr_atom_idx)
+                if neighbor_idx != -1 and mol.GetAtomWithIdx(neighbor_idx).GetAtomicNum() == 6:
+                    curr_atom_idx = neighbor_idx
+                    break
+        if chain_length < 8:
+            return False, "Fatty acid chain is too short"
     
     return True, "Contains amide group with a fatty acid chain attached"
