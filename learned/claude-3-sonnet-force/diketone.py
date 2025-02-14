@@ -1,28 +1,57 @@
 """
 Classifies: CHEBI:46640 diketone
 """
-The previous program attempted to classify diketones by counting the number of ketone groups in the molecule using a SMARTS pattern. However, based on the outcomes, it appears that the program has several shortcomings:
+"""
+Classifies: CHEBI:51130 diketone
+A compound that contains two ketone functionalities.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. **False positives**: The program incorrectly classified several molecules as diketones, even though they do not contain exactly two ketone groups. This could be due to:
-   - The SMARTS pattern not being specific enough and matching other functional groups or substructures.
-   - The program not accounting for other factors that could disqualify a molecule from being a diketone, such as the presence of specific substructures or functional groups.
+def is_diketone(smiles: str):
+    """
+    Determines if a molecule is a diketone based on its SMILES string.
 
-2. **False negatives**: The program missed several true diketones, classifying them as non-diketones. This could be due to:
-   - The SMARTS pattern being too restrictive and not matching certain types of ketone groups.
-   - The program not considering tautomeric forms or resonance structures that could contain ketone groups.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Enol forms**: The program attempts to exclude enol forms of ketones by using a negated SMARTS pattern (`!@[OX2H1]`). However, this may not be sufficient to cover all possible enol forms, leading to incorrect classifications.
+    Returns:
+        bool: True if molecule is a diketone, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we could consider the following approaches:
+    # Generate tautomers and resonance structures
+    tautomers = list(AllChem.ResonanceMolSupplier(mol, AllChem.KЕКULE_ALL))
+    tautomers.append(mol)
 
-1. **Refine the SMARTS pattern**: Analyze the false positives and false negatives to understand the limitations of the current SMARTS pattern. Modify the pattern or use multiple patterns to cover a wider range of ketone groups while avoiding matching other functional groups or substructures.
+    # Check for exactly two ketone groups across all tautomers
+    ketones_found = 0
+    for tautomer in tautomers:
+        ketone_pattern = Chem.MolFromSmarts("[C;$(C=O)]~[#6]")  # Ketone group attached to carbon
+        ketone_matches = tautomer.GetSubstructMatches(ketone_pattern)
+        ketones_found += len(ketone_matches)
 
-2. **Incorporate additional checks**: In addition to counting the number of ketone groups, incorporate additional checks to ensure that the molecule meets other criteria for being a diketone. This could include checking for specific substructures, functional groups, or structural features that are incompatible with diketones.
+    if ketones_found == 2:
+        # Check for incompatible functional groups
+        incompatible_pattern = Chem.MolFromSmarts("[N;$(N#C),$(N=O),$(N=S),$(N=P),O;$(O=N),O;$(O=P),S;$(S=O),S;$(S=P)]")
+        if mol.HasSubstructMatch(incompatible_pattern):
+            return False, "Contains incompatible functional groups for diketone"
+        else:
+            return True, "Contains exactly two ketone groups"
+    else:
+        return False, f"Found {ketones_found} ketone groups, expecting exactly 2"
 
-3. **Handle tautomeric forms and resonance structures**: Consider generating tautomeric forms and resonance structures of the input molecule and checking for the presence of ketone groups in these alternative representations.
-
-4. **Use machine learning or rule-based approaches**: Instead of relying solely on a SMARTS pattern, you could explore machine learning approaches or more complex rule-based systems that can learn from the provided examples and generalize better to new cases.
-
-5. **Manually curate the benchmark data**: Since there may be systematic mistakes in the benchmark data, it would be helpful to manually curate the data, cross-checking the classifications with other sources or expert knowledge. This could help identify and correct any errors in the benchmark, leading to more accurate assessments of the program's performance.
-
-It's important to note that the classification of chemical entities can be a complex task, and a single approach may not be sufficient to cover all cases accurately. Combining multiple techniques and incorporating domain knowledge may be necessary to achieve robust and reliable classifications.
+# Examples:
+print(is_diketone("CC1(C)C2CC(=O)C1(C)C(=O)C2"))  # True, "Contains exactly two ketone groups"
+print(is_diketone("O[C@@H]1CC(=O)[C@H](CCC(O)=O)[C@H]1CCC(=O)CCCCC(O)=O"))  # True, "Contains exactly two ketone groups"
+print(is_diketone("OC(=O)\C=C\C(=O)CC(=O)C(O)=O"))  # False, "Found 3 ketone groups, expecting exactly 2"
+print(is_diketone("COc1ccc(cc1)C1C(=O)c2ccccc2C1=O"))  # True, "Contains exactly two ketone groups"
+print(is_diketone("O=C1C(C(=O)c2ccccc12)c1ccccc1"))  # True, "Contains exactly two ketone groups"
+print(is_diketone("CC(=O)C1=CN(C=C(C1c1ccccc1)C(C)=O)c1ccccc1"))  # True, "Contains exactly two ketone groups"
+print(is_diketone("C1=2C(=CC(C(C1=O)(OC(C(CC(CC)C)C)=O)C)=O)C=C(OC2)CC(O)C"))  # True, "Contains exactly two ketone groups"
+print(is_diketone("Nc1ccccc1C(=O)CC(=O)C(O)=O"))  # False, "Contains incompatible functional groups for diketone"
