@@ -25,45 +25,62 @@ def is_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify hydroxyl groups (OH) attached to carbon atoms
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4,CX3H1,CX2H2,CX1H3]-[OX2H]")
-    matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    # Remove hydrogens for efficiency
+    mol = Chem.RemoveHs(mol)
     
-    if not matches:
-        return False, "No hydroxyl group attached to carbon found"
-    
-    # Check each hydroxyl group
-    for match in matches:
-        carbon_idx = match[0]
-        oxygen_idx = match[1]
-        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
-        
-        # Perform DFS to count connected aliphatic carbons
+    # Identify all carbon atoms
+    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+
+    if not carbon_atoms:
+        return False, "No carbon atoms found"
+
+    # Find all chains starting from carbon atoms
+    from collections import deque
+
+    longest_chain_length = 0
+    longest_chain = []
+
+    for atom in carbon_atoms:
         visited = set()
-        stack = [carbon_idx]
-        carbon_count = 0
-
-        while stack:
-            atom_idx = stack.pop()
-            if atom_idx in visited:
-                continue
-            visited.add(atom_idx)
-            atom = mol.GetAtomWithIdx(atom_idx)
+        queue = deque()
+        queue.append([atom.GetIdx()])
+        
+        while queue:
+            path = queue.popleft()
+            current_atom_idx = path[-1]
+            current_atom = mol.GetAtomWithIdx(current_atom_idx)
+            visited.add(current_atom_idx)
             
-            # Consider only aliphatic carbons
-            if atom.GetAtomicNum() == 6 and not atom.GetIsAromatic():
-                carbon_count += 1
-                # Add neighboring atoms to stack
-                for neighbor in atom.GetNeighbors():
-                    neighbor_idx = neighbor.GetIdx()
-                    if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6 and not neighbor.GetIsAromatic():
-                        stack.append(neighbor_idx)
+            # Extend path
+            neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited]
+            for nbr in neighbors:
+                new_path = path + [nbr.GetIdx()]
+                queue.append(new_path)
+                if len(new_path) > longest_chain_length:
+                    longest_chain_length = len(new_path)
+                    longest_chain = new_path
 
-        # Check if the carbon chain length is at least 3
-        if carbon_count >= 3:
-            return True, f"Contains aliphatic alcohol group with a chain of {carbon_count} carbons"
+    if longest_chain_length < 3:
+        return False, f"Longest carbon chain has {longest_chain_length} carbons, less than 3"
 
-    return False, "No aliphatic chain with at least 3 carbons attached to hydroxyl group"
+    # Check for hydroxyl group attached to any carbon in the longest chain
+    found = False
+    for idx in longest_chain:
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() == 6 and not atom.IsInRing():
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() == 1:
+                    # Check that oxygen is hydroxyl group (OH)
+                    if nbr.GetDegree() == 1 and not nbr.IsInRing():
+                        found = True
+                        break
+            if found:
+                break
+
+    if not found:
+        return False, "No hydroxyl group attached to carbon in the longest chain"
+
+    return True, f"Contains aliphatic alcohol with a chain of {longest_chain_length} carbons"
 
 # Example usage:
 # smiles = "CCCCCCCCCCCCCC(O)CCC"  # tetradecan-5-ol
