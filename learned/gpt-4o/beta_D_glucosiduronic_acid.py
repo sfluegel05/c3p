@@ -19,23 +19,22 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return (None, "Invalid SMILES string")
+        return False, "Invalid SMILES string"
 
-    # Define a more general SMARTS for glucuronic acid backbone
-    glucuronic_acid_smarts = "OC[C@@H]1OC(O)[C@H](O[C@H]1O)C(=O)O"
+    # Define a more general SMARTS pattern for glucuronic acid backbone
+    # Pattern: C1(OC(C)[O])OC(O)[C@@H](O)C1C(=O)O
+    glucuronic_acid_smarts = "OC1C(O)C(O[C@H]1O)COC(=O)[CH2]"
     glucuronic_acid_pattern = Chem.MolFromSmarts(glucuronic_acid_smarts)
 
     if not mol.HasSubstructMatch(glucuronic_acid_pattern):
         return False, "No beta-D-glucuronic acid substructure found"
 
-    # Flexible pattern for glycosidic linkage
-    glycosidic_linkage_smarts = "O[C@H]"
-    glycosidic_pattern = Chem.MolFromSmarts(glycosidic_linkage_smarts)
+    # Look for the glycosidic linkage with at least one C-O-C connection
+    # Custom pattern to check for likely glycosidic linkage
+    connection_smarts = "O-[C@@H]"
+    connection_pattern = Chem.MolFromSmarts(connection_smarts)
 
-    if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "No glycosidic linkage found"
+    if not mol.HasSubstructMatch(connection_pattern):
+        return False, "No suitable glycosidic linkage found"
     
     return True, "Detected beta-D-glucuronic acid with a glycosidic linkage"
-
-# Example usage:
-# is_beta_D_glucosiduronic_acid("...")
