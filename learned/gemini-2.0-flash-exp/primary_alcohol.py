@@ -24,34 +24,33 @@ def is_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Modified SMARTS pattern that matches -C-OH,
-    # where the carbon has to be saturated
-    # and it has 0 or 1 carbon neighbor only
-    primary_alcohol_pattern = Chem.MolFromSmarts("[CX4H0-3;!$(C=[C,N,O,S]);!$(C#[C,N])][OH]")
-    carbon_pattern=Chem.MolFromSmarts("[CH0-3][OH]") #to identify the alcohol bond
+    # SMARTS pattern to match any alcohol bond
+    alcohol_pattern = Chem.MolFromSmarts("[CH0-3][OH]")
     
-    matches= mol.GetSubstructMatches(carbon_pattern)
+    matches = mol.GetSubstructMatches(alcohol_pattern)
     
-    
-    # Check if any matches are found
     if not matches:
-        return False, "No alcohol group found"
-
-    # Check each carbon to see if it's primary
+      return False, "No alcohol group found"
+    
     for match in matches:
-      carbon_index = match[0]
-      carbon = mol.GetAtomWithIdx(carbon_index)
-      
-      # count the number of carbon neighbors
-      carbon_neighbors=0
-      for neighbor in carbon.GetNeighbors():
-        if neighbor.GetAtomicNum()==6:
-          carbon_neighbors=carbon_neighbors+1
-
-      if carbon_neighbors > 1:
-            continue #not primary
-      
-      # now we verify that the matched carbon also has the pattern 
-      if mol.HasSubstructMatch(primary_alcohol_pattern):
-        return True, "Primary alcohol group found"
-    return False, "No primary alcohol group found"
+        carbon_index = match[0]
+        carbon = mol.GetAtomWithIdx(carbon_index)
+        
+        carbon_neighbors = 0
+        
+        for neighbor in carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:
+                carbon_neighbors += 1
+            
+        hydrogens_count = carbon.GetTotalNumHs()
+        
+        if carbon_neighbors == 1:
+          if hydrogens_count != 2:
+            return False, "Not a primary alcohol: Has one carbon neighbor but not 2 hydrogens"
+        elif carbon_neighbors == 0:
+          if hydrogens_count != 3:
+              return False, "Not a primary alcohol: Has no carbon neighbors but not 3 hydrogens"
+        elif carbon_neighbors > 1:
+          return False, "Not a primary alcohol: Has more than one carbon neighbor"
+        
+    return True, "All alcohol groups are primary"
