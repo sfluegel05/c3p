@@ -26,10 +26,10 @@ def is_hemiaminal(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for atoms with both amino (-NH2/-NH-) and hydroxy (-OH) groups attached to the same carbon
-    hemiaminal_pattern = Chem.MolFromSmarts("[NH2,NH1][CX4;H1]([OH1])")
+    hemiaminal_pattern = Chem.MolFromSmarts("[NH2,NH1][CX4;H1]([OH1])[#6,#1]") # Allow additional substituents
     hemiaminal_atoms = mol.GetSubstructMatches(hemiaminal_pattern)
     
     if hemiaminal_atoms:
-        return True, "Contains amino and hydroxy groups attached to the same carbon atom"
+        return True, "Contains amino and hydroxy groups attached to the same carbon atom, possibly with additional substituents"
     else:
         return False, "Does not contain amino and hydroxy groups attached to the same carbon atom"
