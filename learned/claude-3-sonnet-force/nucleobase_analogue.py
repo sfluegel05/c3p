@@ -5,8 +5,8 @@ Classifies: CHEBI:67142 nucleobase analogue
 Classifies: CHEBI:37585 nucleobase analogue
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
-from rdkit.Chem.AromaticRings import AromaticRings
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_nucleobase_analogue(smiles: str):
     """
@@ -26,30 +26,26 @@ def is_nucleobase_analogue(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for aromatic rings
-    aromatic_rings = AromaticRings.IdentifyAromaticRings(mol)
-    if not aromatic_rings:
-        return False, "No aromatic rings found"
+    # Check for heteroaromatic rings (pyrimidines, purines)
+    heteroaromatic_rings = mol.GetAromaticRings(includeExocyclic=True, includeEndocyclic=True, includeEndocyclicHeteroAtoms=True, includeExoEndoCyclic=True)
+    heteroaromatic_rings = [ring for ring in heteroaromatic_rings if any(atom.GetAtomicNum() in [7, 8] for atom in ring)]
+    if not heteroaromatic_rings:
+        return False, "No heteroaromatic rings found"
     
-    # Check for planarity
-    if not AllChem.PlanarityAtomsSelfIter(mol):
-        return False, "Molecule is not planar"
+    # Check for common functional groups (amino, oxo, hydroxyl)
+    atoms = set(atom.GetAtomicNum() for atom in mol.GetAtoms())
+    if 7 not in atoms or 8 not in atoms:  # Must have N and O
+        return False, "Missing N or O atoms"
     
-    # Check for typical heteroatoms and functional groups
-    allowed_atoms = set([6, 7, 8, 9, 16, 17])  # C, N, O, F, S, Cl
-    atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
-    if not all(atom in allowed_atoms for atom in atoms):
-        return False, "Molecule contains unusual atoms for a nucleobase analogue"
+    # Check for planar structure
+    calc = AllChem.MMFFGetMoleculeProperties(mol)
+    if calc is None or calc.PMIBondCount < 5:  # Arbitrary threshold for planarity
+        return False, "Structure is not sufficiently planar"
     
-    # Check for typical size range
+    # Check for typical nucleobase size
     n_heavy_atoms = mol.GetNumHeavyAtoms()
-    if n_heavy_atoms < 5 or n_heavy_atoms > 25:
+    if n_heavy_atoms < 5 or n_heavy_atoms > 20:
         return False, "Size deviates too much from typical nucleobases"
     
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 50 or mol_wt > 300:
-        return False, "Molecular weight deviates too much from typical nucleobase analogues"
-    
     # If all conditions are met, classify as nucleobase analogue
-    return True, "Contains aromatic rings, is planar, and has typical structure and size of a nucleobase analogue"
+    return True, "Contains heteroaromatic rings and functional groups typical of nucleobases"
