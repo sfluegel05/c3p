@@ -5,7 +5,6 @@ Classifies: CHEBI:46874 alpha-amino acid ester
 Classifies: alpha-amino acid ester
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alpha_amino_acid_ester(smiles: str):
     """
@@ -27,7 +26,9 @@ def is_alpha_amino_acid_ester(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the ester functional group pattern (ester linkage)
-    ester_pattern = Chem.MolFromSmarts("[$([CX3](=O)[OX2H0][#6])]")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0][#6]")
+    if ester_pattern is None:
+        return False, "Invalid ester SMARTS pattern"
 
     # Find all ester groups in the molecule
     ester_matches = mol.GetSubstructMatches(ester_pattern)
@@ -35,14 +36,10 @@ def is_alpha_amino_acid_ester(smiles: str):
         return False, "No ester functional group found"
 
     # Define the alpha-amino acid ester pattern
-    amino_acid_ester_pattern = Chem.MolFromSmarts("""
-        [
-            $([NX3;H2,H1;!$(N=*);!$(N-C(=O))])    # Amino nitrogen (not amide, not charged)
-            ][C@@H]?                               # Alpha carbon, chiral or achiral
-            [CH0-3X4]                              # Carbon (could be connected to hydrogens or side chains)
-            [C](=O)[O][#6]                         # Ester functional group
-    ]
-    """)
+    # Nitrogen attached to alpha carbon, which is attached to carbonyl carbon of ester
+    amino_acid_ester_pattern = Chem.MolFromSmarts("[NX3;H2,H1][CH1,CH2][CX3](=O)[OX2H0][#6]")
+    if amino_acid_ester_pattern is None:
+        return False, "Invalid amino acid ester SMARTS pattern"
 
     # Check for the alpha-amino acid ester pattern
     if mol.HasSubstructMatch(amino_acid_ester_pattern):
@@ -57,9 +54,8 @@ def is_alpha_amino_acid_ester(smiles: str):
         alpha_carbons = [atom for atom in ester_carbon.GetNeighbors() if atom.GetAtomicNum() == 6]
         for alpha_carbon in alpha_carbons:
             # Check if alpha carbon is connected to an amino group
-            neighbors = alpha_carbon.GetNeighbors()
             has_amino_group = False
-            for neighbor in neighbors:
+            for neighbor in alpha_carbon.GetNeighbors():
                 if neighbor.GetAtomicNum() == 7:
                     # Ensure the nitrogen is an amino nitrogen (not part of an amide or other group)
                     if neighbor.GetDegree() <= 3 and not neighbor.IsInRing():
