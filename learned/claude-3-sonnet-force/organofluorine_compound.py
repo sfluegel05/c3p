@@ -6,7 +6,7 @@ Classifies: CHEBI:35322 organofluorine compound
 An organofluorine compound is a compound containing at least one carbon-fluorine bond.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
 
 def is_organofluorine_compound(smiles: str):
     """
@@ -25,24 +25,12 @@ def is_organofluorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for carbon-fluorine bonds using SMARTS pattern
-    c_f_pattern = Chem.MolFromSmarts("[C-F]")
-    matches = mol.GetSubstructMatches(c_f_pattern)
+    # Check for carbon-fluorine bonds using RDKit's built-in functionality
+    n_c_f_bonds = Descriptors.Fr_C_F(mol)
     
     # If any carbon-fluorine bond is found, classify as organofluorine compound
-    if matches:
-        return True, "Contains at least one carbon-fluorine bond"
-    
-    # Check for special cases: trifluoromethyl and other fluorine-containing groups not bonded to carbon
-    excluded_patterns = [
-        Chem.MolFromSmarts("[C-N-F]"),      # Fluorine bonded to nitrogen
-        Chem.MolFromSmarts("[C-O-F]"),      # Fluorine bonded to oxygen
-        Chem.MolFromSmarts("[$(C(F)(F)F)]") # Trifluoromethyl group
-    ]
-    
-    for pattern in excluded_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return False, "Contains non-carbon-fluorine bonds or functional groups"
+    if n_c_f_bonds > 0:
+        return True, f"Contains {n_c_f_bonds} carbon-fluorine bond(s)"
     
     # If no carbon-fluorine bond is found, classify as non-organofluorine compound
     return False, "No carbon-fluorine bond found"
