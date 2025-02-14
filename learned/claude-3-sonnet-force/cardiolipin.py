@@ -32,13 +32,13 @@ def is_cardiolipin(smiles: str):
         return False, "No glycerol backbone found"
 
     # Check for 2 phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("[P+](=O)([O-])[O-]")
+    phosphate_pattern = Chem.MolFromSmarts("[P]([O])([O])([O])([O])")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) != 2:
         return False, f"Found {len(phosphate_matches)} phosphate groups, need exactly 2"
 
-    # Check for 4 fatty acid chains of appropriate length and unsaturation
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check for 4 fatty acid chains of appropriate length
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 4:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
@@ -48,21 +48,10 @@ def is_cardiolipin(smiles: str):
     if n_rotatable < 10:
         return False, "Chains too short to be fatty acids"
 
-    # Check for double bonds in fatty acid chains
-    has_double_bonds = any(bond.GetIsAromatic() and bond.GetBondType() == Chem.BondType.DOUBLE for bond in mol.GetBonds())
-    if not has_double_bonds:
-        return False, "No double bonds found in fatty acid chains"
-
-    # Check molecular weight and composition
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 1000 or mol_wt > 2000:
-        return False, "Molecular weight outside the expected range for cardiolipins"
-
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-
-    if c_count < 50 or o_count < 15 or p_count != 4:
-        return False, "Composition inconsistent with cardiolipins"
+    # Additional check for phosphatidic acid moieties
+    phosphatidic_acid_pattern = Chem.MolFromSmarts("[P]([O])([O])([O])[C]([O])[C]")
+    phosphatidic_acid_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
+    if len(phosphatidic_acid_matches) != 2:
+        return False, "Missing or incorrect phosphatidic acid moieties"
 
     return True, "Contains glycerol backbone with 2 phosphatidic acid moieties attached"
