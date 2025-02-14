@@ -31,21 +31,14 @@ def is_beta_D_glucosiduronate(smiles: str):
     if not mol.HasSubstructMatch(glucuronide_pattern):
         return False, "No glucuronide substructure found"
     
-    # Check for ring strain (glucuronides typically have pyranose ring)
-    ring_atoms = mol.GetRingInfo().AtomRings()[0]
-    ring_bond_orders = [mol.GetBondBetweenAtoms(ring_atoms[i], ring_atoms[i-1]).GetBondType() 
-                        for i in range(len(ring_atoms))]
-    if 1.0 not in ring_bond_orders:  # No single bonds in ring
-        return False, "Abnormal ring structure for glucuronide"
-    
-    # Count hydroxy groups (should be 4)
+    # Check for minimum number of hydroxy groups (at least 3)
     num_hydroxy = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
-    if num_hydroxy != 4:
-        return False, f"Expected 4 hydroxy groups, got {num_hydroxy}"
+    if num_hydroxy < 3:
+        return False, f"Expected at least 3 hydroxy groups, got {num_hydroxy}"
     
-    # Check molecular weight (typically 200-400 Da)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 400:
-        return False, "Molecular weight outside typical range for glucuronide"
+    # Ensure glucuronide substructure is part of a larger glucose-like structure
+    glucose_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H]([C@@H](O1)O)O)O)O)[C@@H]([C@H]([C@@H]([C@H](O)O)O)O)O")
+    if not mol.HasSubstructMatch(glucose_pattern):
+        return False, "Glucuronide substructure not part of a larger glucose-like structure"
     
     return True, "Contains glucuronide substructure (glucose with carboxylate group)"
