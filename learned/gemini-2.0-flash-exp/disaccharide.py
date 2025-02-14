@@ -4,7 +4,6 @@ Classifies: CHEBI:36233 disaccharide
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-
 def is_disaccharide(smiles: str):
     """
     Determines if a molecule is a disaccharide based on its SMILES string.
@@ -22,54 +21,64 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for glycosidic bonds (C-O-C connecting two anomeric carbons)
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[C;H1,H2](-[OX2])-[OX2]-[C;H1,H2](-[OX2])")
+    # 1. Check for glycosidic bond (C-O-C connecting two anomeric carbons)
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C;H1](-[OX2])-[OX2]-[C;H1](-[OX2])")
     glycosidic_bonds = mol.GetSubstructMatches(glycosidic_bond_pattern)
-
     if not glycosidic_bonds:
-        return False, "No glycosidic bond found"
+       return False, "No glycosidic bond found"
+    if len(glycosidic_bonds) > 1:
+        return False, "More than one glycosidic bond found"
 
-    # 2. Check for two monosaccharide rings
-    pyranose_pattern = Chem.MolFromSmarts("[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-O")
-    furanose_pattern = Chem.MolFromSmarts("[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-O")
-    
+
+    # 2. Check for monosaccharide rings (pyranose and furanose) including the hydroxyl groups
+    pyranose_pattern = Chem.MolFromSmarts("[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[O;H0]")
+    furanose_pattern = Chem.MolFromSmarts("[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[C;H1,H2](-[OX2])-[O;H0]")
+    hydroxyl_pattern = Chem.MolFromSmarts("[O;H1]-[C]")
+
     pyranose_matches = mol.GetSubstructMatches(pyranose_pattern)
     furanose_matches = mol.GetSubstructMatches(furanose_pattern)
 
-    if len(pyranose_matches) + len(furanose_matches) < 2:
-        return False, "Less than two monosaccharide rings found"
+    if len(pyranose_matches) + len(furanose_matches) != 2:
+       return False, "Incorrect number of monosaccharide rings found"
+    
+    #3. Count total rings
+    ring_pattern = Chem.MolFromSmarts("[C;!H0]1-[C;!H0]-[C;!H0]-[C;!H0]-[C;!H0]-1")
+    rings = mol.GetSubstructMatches(ring_pattern)
+    if len(rings) > 10:
+        return False, "Too many rings, likely not a disaccharide"
 
-    # 3. Check if the glycosidic bond connect the two monosaccharide units. 
-    # Here we're using the indexes from matches, and checking if a glycosidic bond is between two different sugar rings
+    # 4. Check if the glycosidic bond connects the two monosaccharide units.
     
     ring_atoms = set()
     for match in pyranose_matches:
         ring_atoms.update(match)
     for match in furanose_matches:
-        ring_atoms.update(match)
+         ring_atoms.update(match)
+
+    atom1_idx = glycosidic_bonds[0][0]
+    atom2_idx = glycosidic_bonds[0][2]
     
     
-    valid_glycosidic_bonds = 0
+    #Check if both atoms of glycosidic bond are in a ring:
+    if not((atom1_idx in ring_atoms) and (atom2_idx in ring_atoms)):
+         return False, "Glycosidic bond not connecting two monosaccharide rings"
+    
+    #Check if they belong to two *different* rings
+    
+    found_connection=False
+    for ring_match in pyranose_matches:
+        if (atom1_idx in ring_match and atom2_idx not in ring_match) or (atom2_idx in ring_match and atom1_idx not in ring_match):
+          found_connection = True
+          break
 
-    for match in glycosidic_bonds:
-        atom1_idx = match[0]
-        atom2_idx = match[2]
-        if (atom1_idx in ring_atoms) and (atom2_idx in ring_atoms):
-                
-            #Check if they belong to two *different* rings
-            for ring_match in pyranose_matches:
-               if (atom1_idx in ring_match and atom2_idx not in ring_match) or (atom2_idx in ring_match and atom1_idx not in ring_match):
-                   valid_glycosidic_bonds += 1
-                   break
-            
-            if valid_glycosidic_bonds > 0:
-              continue
-            for ring_match in furanose_matches:
-               if (atom1_idx in ring_match and atom2_idx not in ring_match) or (atom2_idx in ring_match and atom1_idx not in ring_match):
-                   valid_glycosidic_bonds += 1
-                   break
+    if found_connection:
+      return True, "Contains two monosaccharide units linked by a glycosidic bond"
 
-    if valid_glycosidic_bonds == 0:
-        return False, "No glycosidic bond connecting two monosaccharide rings found."
-
+    for ring_match in furanose_matches:
+        if (atom1_idx in ring_match and atom2_idx not in ring_match) or (atom2_idx in ring_match and atom1_idx not in ring_match):
+            found_connection = True
+            break
+    if not found_connection:
+        return False, "Glycosidic bond not connecting two different monosaccharide rings"
+    
     return True, "Contains two monosaccharide units linked by a glycosidic bond"
