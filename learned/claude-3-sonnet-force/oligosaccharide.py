@@ -26,33 +26,29 @@ def is_oligosaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for monosaccharide rings
-    ring_atoms = mol.GetRingInfo().AtomRings()
-    monosaccharide_rings = []
-    for ring in ring_atoms:
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        if all(atom.GetAtomicNum() in [6, 8] for atom in ring_atoms):  # Carbon and oxygen atoms
-            monosaccharide_rings.append(ring)
+    # Look for monosaccharide rings using SMARTS pattern
+    monosaccharide_pattern = Chem.MolFromSmarts("[OC1C(O)C(O)C(O)C(O)C1]")
+    monosaccharide_rings = mol.GetSubstructMatches(monosaccharide_pattern)
     
     if not monosaccharide_rings:
         return False, "No monosaccharide rings found"
     
-    # Look for glycosidic linkages (acetal bonds between rings)
-    for i, ring1 in enumerate(monosaccharide_rings):
-        for j, ring2 in enumerate(monosaccharide_rings):
-            if i >= j:
-                continue
-            for atom1 in ring1:
-                for atom2 in ring2:
-                    if mol.GetBondBetweenAtoms(atom1, atom2):
-                        bond = mol.GetBondBetweenAtoms(atom1, atom2)
-                        if bond.GetBondType() == Chem.BondType.SINGLE:
-                            # Potential glycosidic linkage
-                            continue
+    # Look for glycosidic linkages (acetal bonds between rings) using SMARTS pattern
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[OC1C(O)C(O)C(O[C2C(O)C(O)C(O)C(O)C2])C(O)C1]")
+    glycosidic_linkages = mol.GetSubstructMatches(glycosidic_linkage_pattern)
+    
+    if not glycosidic_linkages:
+        return False, "No glycosidic linkages found"
     
     # Count rotatable bonds (oligosaccharides typically have few rotatable bonds)
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable > 10:
-        return False, "Too many rotatable bonds for an oligosaccharide"
+    n_monosaccharide_rings = len(monosaccharide_rings)
+    n_glycosidic_linkages = len(glycosidic_linkages)
     
-    return True, "Contains monosaccharide rings connected by glycosidic linkages"
+    # Adjust rotatable bond threshold based on the size of the oligosaccharide
+    rotatable_bond_threshold = 10 + (n_monosaccharide_rings + n_glycosidic_linkages - 2) * 2
+    
+    if n_rotatable > rotatable_bond_threshold:
+        return False, f"Too many rotatable bonds ({n_rotatable}) for an oligosaccharide with {n_monosaccharide_rings} monosaccharide rings and {n_glycosidic_linkages} glycosidic linkages"
+    
+    return True, f"Contains {n_monosaccharide_rings} monosaccharide rings connected by {n_glycosidic_linkages} glycosidic linkages"
