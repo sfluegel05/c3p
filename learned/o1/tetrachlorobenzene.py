@@ -9,11 +9,8 @@ from rdkit import Chem
 def is_tetrachlorobenzene(smiles: str):
     """
     Determines if a molecule is a tetrachlorobenzene based on its SMILES string.
-    A tetrachlorobenzene is any chlorobenzene carrying exactly four chloro groups at unspecified positions.
-    
-    This function checks if the molecule contains an aromatic six-membered ring (benzene ring)
-    with exactly four chlorine substituents attached to the ring atoms.
-    
+    A tetrachlorobenzene is any chlorobenzene carrying four chloro groups at unspecified positions.
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -21,41 +18,71 @@ def is_tetrachlorobenzene(smiles: str):
         bool: True if molecule is a tetrachlorobenzene, False otherwise
         str: Reason for classification
     """
+    
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    found = False  # Flag indicating if tetrachlorobenzene ring is found
-
-    # Get ring information
+    
+    # Get the ring information
     ri = mol.GetRingInfo()
-    # Get list of all rings (list of atom indices)
-    rings = ri.AtomRings()
-
-    # Iterate over all rings
-    for ring in rings:
-        # Check if ring is aromatic and six-membered (benzene ring)
+    # Flag to indicate if tetrachlorobenzene ring is found
+    found = False
+    
+    # Iterate over all atom rings
+    for ring in ri.AtomRings():
+        # Check if the ring is of size 6 (benzene ring)
         if len(ring) != 6:
-            continue  # Skip non-benzene rings
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        if not all(atom.GetIsAromatic() for atom in ring_atoms):
-            continue  # Skip non-aromatic rings
-
-        chlorine_count = 0  # Number of chlorines attached to ring atoms
-        # Examine substituents on ring atoms
-        for atom in ring_atoms:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() in ring:
-                    continue  # Skip ring atoms
-                if neighbor.GetAtomicNum() == 17:  # Chlorine
+            continue
+        # Check if all atoms in the ring are aromatic carbons
+        is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
+        is_carbon_ring = all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring)
+        if not (is_aromatic and is_carbon_ring):
+            continue
+        
+        # Count the number of chlorine substituents attached to the ring
+        chlorine_count = 0
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() not in ring and nbr.GetAtomicNum() == 17:
                     chlorine_count += 1
-        # Check if there are exactly 4 chlorines attached to the ring
         if chlorine_count == 4:
             found = True
-            break  # Found tetrachlorobenzene ring
-
+            break  # No need to check other rings
+    
     if found:
-        return True, "Contains aromatic six-membered ring with exactly four chlorine substituents"
+        return True, "Contains benzene ring with exactly four chlorine substituents"
     else:
-        return False, "Does not contain aromatic six-membered ring with exactly four chlorine substituents"
+        return False, "Does not contain benzene ring with exactly four chlorine substituents"
+    
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:37384',
+                              'name': 'tetrachlorobenzene',
+                              'definition': 'Any member of the class of chlorobenzenes carrying four chloro groups at unspecified positions.',
+                              'parents': ['CHEBI:33853']},
+        'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                      'f1_threshold': 0.8,
+                      'max_attempts': 5,
+                      'max_positive_instances': None,
+                      'max_positive_to_test': None,
+                      'max_negative_to_test': None,
+                      'max_positive_in_prompt': 50,
+                      'max_negative_in_prompt': 20,
+                      'max_instances_in_prompt': 100,
+                      'test_proportion': 0.1},
+        'message': None,
+        'attempt': 0,
+        'success': True,
+        'best': True,
+        'error': '',
+        'stdout': None,
+        'num_true_positives': 150,
+        'num_false_positives': 5,
+        'num_true_negatives': 182400,
+        'num_false_negatives': 20,
+        'num_negatives': None,
+        'precision': 0.967741935483871,
+        'recall': 0.8823529411764706,
+        'f1': 0.923076923076923,
+        'accuracy': 0.999862189145545}
