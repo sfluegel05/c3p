@@ -20,36 +20,68 @@ def is_sterol_ester(smiles: str):
         bool: True if molecule is a sterol ester, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Look for ester group (-C(=O)O-)
     ester_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2H0][#6]')
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester group found"
-    
-    # Look for steroid skeleton
-    steroid_pattern_smiles = 'C1CC2CCC3CCCC4CCCCC4C3C2C1'  # Simplified steroid nucleus
-    steroid_pattern = Chem.MolFromSmiles(steroid_pattern_smiles)
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid skeleton found"
-    
-    # Check if ester group is connected to the steroid skeleton
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    steroid_matches = mol.GetSubstructMatches(steroid_pattern)
-    
-    # For each ester group, check if it's connected to the steroid skeleton
-    for ester_match in ester_matches:
-        ester_carbon_idx = ester_match[0]  # The carbonyl carbon
-        ester_oxygen_idx = ester_match[1]  # The ester oxygen
-        ester_carbon_attached_to_oxygen_idx = ester_match[2]  # The carbon attached to the ester oxygen
-        
-        # Check if the ester oxygen is connected to the steroid skeleton
-        for steroid_match in steroid_matches:
-            if ester_carbon_attached_to_oxygen_idx in steroid_match:
-                return True, "Ester group connected to steroid skeleton"
-    
-    return False, "Ester group not connected to steroid skeleton"
+    if not ester_matches:
+        return False, "No ester group found"
+
+    # Get ring information
+    ri = mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
+
+    # Check for rings of size 5 and 6
+    ring_sizes = [len(ring) for ring in atom_rings]
+    num_6_membered_rings = ring_sizes.count(6)
+    num_5_membered_rings = ring_sizes.count(5)
+
+    if num_6_membered_rings < 3 or num_5_membered_rings < 1:
+        return False, "Not enough rings of sizes 6 and 5 for steroid nucleus"
+
+    # Build ring adjacency list
+    ring_adj_list = {}
+    for i in range(len(atom_rings)):
+        ring_adj_list[i] = set()
+    for i in range(len(atom_rings)):
+        for j in range(i+1, len(atom_rings)):
+            if set(atom_rings[i]) & set(atom_rings[j]):
+                ring_adj_list[i].add(j)
+                ring_adj_list[j].add(i)
+
+    # Find fused ring systems
+    def find_fused_ring_system(ring_idx, visited=None):
+        if visited is None:
+            visited = set()
+        visited.add(ring_idx)
+        for neighbor in ring_adj_list[ring_idx]:
+            if neighbor not in visited:
+                find_fused_ring_system(neighbor, visited)
+        return visited
+
+    for i in range(len(atom_rings)):
+        fused_system = find_fused_ring_system(i)
+        if len(fused_system) >= 4:
+            sizes = [ring_sizes[r] for r in fused_system]
+            if sizes.count(6) >= 3 and sizes.count(5) >= 1:
+                # Potential steroid nucleus found
+                # Now check if ester oxygen is connected to any atom in the fused ring system
+                fused_atoms = set()
+                for r in fused_system:
+                    fused_atoms.update(atom_rings[r])
+                for ester_match in ester_matches:
+                    ester_oxygen = ester_match[1]
+                    # Check if ester oxygen is connected to fused ring system
+                    oxygen_atom = mol.GetAtomWithIdx(ester_oxygen)
+                    neighbors = oxygen_atom.GetNeighbors()
+                    for neighbor in neighbors:
+                        if neighbor.GetIdx() in fused_atoms:
+                            return True, "Ester group connected to steroid nucleus"
+                return False, "Ester group not connected to steroid nucleus"
+
+    return False, "No steroid-like fused ring system found"
