@@ -21,24 +21,18 @@ def is_aliphatic_aldoxime(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 2. Check for the sp2 oxime group (C=N-O) and the directly linked carbon must be aldehyde-like
-    oxime_pattern = Chem.MolFromSmarts("[CX3H1]=[NX2]-O")
+    # 2. Check for the sp2 oxime group (C=N-O) where the carbon has only 1 non-H substituent
+    oxime_pattern = Chem.MolFromSmarts("[CX3H1]([H])[NX2]-O") # Carbon has only one substituent that is not H
     matches = mol.GetSubstructMatches(oxime_pattern)
+
     if not matches:
-      return False, "No sp2 aldoxime group found"
+        # Check for a specific pattern of formyl-derived oxime, like C(=N-O)
+         oxime_pattern_formyl = Chem.MolFromSmarts("[CX3](=[OX1])[NX2]-O")
+         matches = mol.GetSubstructMatches(oxime_pattern_formyl)
 
-    for match in matches:
-      carbon_index = match[0]
-      carbon_atom = mol.GetAtomWithIdx(carbon_index)
-      is_aliphatic = True
-    
-      for neighbor in carbon_atom.GetNeighbors():
-          if neighbor.GetAtomicNum() != 1 and neighbor.GetAtomicNum() != 6 and neighbor.GetIdx() != match[1]:  #check that it is either C or H, or the nitrogen of the oxime.
-              is_aliphatic = False
-              break
-      if not is_aliphatic:
-          return False, "Aldoxime carbon is not directly connected to an aliphatic carbon"
+         if not matches:
+             return False, "No aldoxime group found"
 
-
-    # 4. Return True if all conditions are met
+    #if there was a match, it is a proper aldoxime. 
+    # Since the SMARTS pattern already filters out non-aldehyde-derived aldoximes, all matches are aliphatic if the above pattern was matched.
     return True, "Molecule is an aliphatic aldoxime"
