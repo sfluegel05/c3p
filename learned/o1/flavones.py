@@ -20,27 +20,34 @@ def is_flavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the chromone core (1-benzopyran-4-one)
-    chromone_smarts = 'c1cc2oc(=O)cc2cc1'  # Chromone core pattern
-    chromone_mol = Chem.MolFromSmarts(chromone_smarts)
+    # Define the flavone core SMARTS pattern
+    # This pattern represents a chromen-4-one core with a 2-aryl substitution
+    flavone_smarts = '''
+    [$([cH]1[cH][cH][cH][cH][cH]1)]    # Benzene ring fused to pyran ring
+    -c2cc(=O)                          # Connection to pyran ring with ketone at position 4
+    oc3ccccc23                         # Pyran ring fused to another benzene ring (chromen-4-one)
+    '''
+    flavone_smarts = flavone_smarts.replace('\n', '').replace(' ', '')
+    flavone_mol = Chem.MolFromSmarts(flavone_smarts)
 
-    if chromone_mol is None:
-        return False, "Invalid SMARTS pattern for chromone core"
+    if flavone_mol is None:
+        return False, "Invalid SMARTS pattern for flavone core"
 
-    # Find matches for the chromone core
-    matches = mol.GetSubstructMatches(chromone_mol)
-    if not matches:
-        return False, "Does not contain chromone core"
+    # Check for flavone core match
+    if not mol.HasSubstructMatch(flavone_mol):
+        return False, "Does not contain flavone core structure"
 
-    # For each match, check if carbon at position 2 is attached to an aryl group
+    # Now, ensure that the aryl group at position 2 is present
+    # Get the matches of the flavone core
+    matches = mol.GetSubstructMatches(flavone_mol)
     for match in matches:
-        chromone_atoms = match
-        # Atom at position 2 is the third atom in the chromone core pattern
-        position2_atom_idx = chromone_atoms[2]
+        # In the SMARTS pattern, the atom index of position 2 (the carbon connected to the aryl group) is 6
+        position2_atom_idx = match[6]
         position2_atom = mol.GetAtomWithIdx(position2_atom_idx)
 
-        # Get neighbors of position 2 atom not in chromone core
-        neighbors = [nbr for nbr in position2_atom.GetNeighbors() if nbr.GetIdx() not in chromone_atoms]
+        # Get neighbors of position 2 atom not in the flavone core
+        flavone_core_atom_idxs = set(match)
+        neighbors = [nbr for nbr in position2_atom.GetNeighbors() if nbr.GetIdx() not in flavone_core_atom_idxs]
 
         # Check if any neighbor is part of an aromatic ring (aryl group)
         for nbr in neighbors:
