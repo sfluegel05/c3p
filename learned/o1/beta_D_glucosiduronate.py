@@ -10,7 +10,7 @@ def is_beta_D_glucosiduronate(smiles: str):
     """
     Determines if a molecule is a beta-D-glucosiduronate based on its SMILES string.
     A beta-D-glucosiduronate is a compound containing a beta-D-glucuronic acid moiety
-    attached via a glycosidic bond, with a deprotonated carboxyl group.
+    attached via a glycosidic bond, with a deprotonated carboxy group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,24 +19,25 @@ def is_beta_D_glucosiduronate(smiles: str):
         bool: True if molecule is a beta-D-glucosiduronate, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for beta-D-glucuronic acid moiety connected via beta-glycosidic bond
-    # Anomeric carbon (C1) has beta configuration ([C@H]) and is connected via oxygen to any carbon ([O][#6])
-    # The ring is a pyranose with hydroxyl groups at positions 2,3,4
-    # The C6 position is oxidized to a carboxylate (C(=O)[O-] or C(=O)O)
-    beta_D_glucuronide_smarts = '[C@H]1([O][#6])O[C@@H]([C@@H](O)[C@@H](O)[C@H](O1)C(=O)[O-,O])'
+    # Define SMARTS pattern for the beta-D-glucuronic acid moiety attached via glycosidic bond
+    # The pattern represents the beta-D-glucuronic acid residue with correct stereochemistry
+    beta_D_glucuronide_smarts = '''
+    [C@@H]1([O][#6])O[C@H]([C@@H](O)[C@@H](O)[C@H](O1)C(=O)[O-])
+    '''
 
-    pattern = Chem.MolFromSmarts(beta_D_glucuronide_smarts)
+    pattern = Chem.MolFromSmarts(beta_D_glucuronide_smarts.strip())
     if pattern is None:
         return False, "Invalid SMARTS pattern"
 
-    # Check for substructure match
-    if not mol.HasSubstructMatch(pattern):
+    # Perform substructure search with stereochemistry consideration
+    matches = mol.GetSubstructMatches(pattern, useChirality=True)
+    if not matches:
         return False, "Beta-D-glucuronic acid moiety not found with correct stereochemistry"
 
     return True, "Contains beta-D-glucuronic acid moiety connected via beta-glycosidic bond"
@@ -62,7 +63,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
