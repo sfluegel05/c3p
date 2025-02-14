@@ -2,7 +2,6 @@
 Classifies: CHEBI:26167 polar amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_polar_amino_acid(smiles: str):
     """
@@ -22,26 +21,31 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Generalized amino acid backbone pattern: amino group -> alpha carbon -> carboxyl group
-    aa_backbone = Chem.MolFromSmarts("[NX3][C][C](=O)[O]")
+    # Generalized amino acid backbone pattern including isotopic versions
+    aa_backbone = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")  # Using chirality to ensure alpha-carbon is included
     if not mol.HasSubstructMatch(aa_backbone):
         return False, "No amino acid backbone found"
-
-    # Potential polar side chain patterns. Restricting to real side chains by excluding main groups
+    
+    # Potential polar side chain patterns including exclusions of backbone components
     polar_side_chain_patterns = [
-        "[CX4][OX2H1]",  # Alcohol/hydroxyl, e.g., serine, threonine
-        "[CX3]=[NX3]",   # Carboxamide, e.g., asparagine, glutamine
-        "[CX3](=O)[OX1H1]", # Carboxylate as part of side chain, e.g., aspartate
-        "[OX2H1][CX4]",  # Phenols, e.g., tyrosine
-        "[nH]",          # Imidazole or heterocyclic nitrogen, e.g., histidine, tryptophan
-        "[SH]",          # Thiol, e.g., cysteine
-        "[CX4][NX3]"     # Primary and secondary amines in side chain
+        "[CX4][CX3](O)[OH2]",  # Alcohol/hydroxyl, e.g., serine
+        "[NX3][CX3]=[OX1]",    # Amide, e.g., asparagine
+        "[S][CX4]",            # Thiol, e.g., cysteine
+        "[nH]",                # Imidazole, e.g., histidine
+        "[OX1][CX3]=O",        # Carboxylate, e.g., aspartic acid, in context of side chain
+        "[CX4][CX4][NX3]",     # Amine group in side chain, e.g., lysine
     ]
 
-    # Check if side chain contains any polar functional groups while avoiding false positives from backbone
-    for pattern in polar_side_chain_patterns:
-        polar_group = Chem.MolFromSmarts(pattern)
-        if mol.HasSubstructMatch(polar_group):
-            return True, f"Polar group '{pattern}' found in side chain"
+    # Check out side chain functionality
+    mol_fragments = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
+
+    for frag in mol_fragments:
+        if frag.HasSubstructMatch(aa_backbone):
+            continue
+
+        for pattern in polar_side_chain_patterns:
+            polar_group = Chem.MolFromSmarts(pattern)
+            if frag.HasSubstructMatch(polar_group):
+                return True, f"Polar group '{pattern}' found in side chain"
 
     return False, "No polar groups found in side chain"
