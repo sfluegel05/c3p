@@ -1,51 +1,31 @@
 """
 Classifies: CHEBI:4986 fatty acid methyl ester
 """
-"""
-Classifies: CHEBI:35473 fatty acid methyl ester
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the outcomes and the previous code, it seems that the program is able to correctly classify many fatty acid methyl esters, but there are some false positives and false negatives that need to be addressed.
 
-def is_fatty_acid_methyl_ester(smiles: str):
-    """
-    Determines if a molecule is a fatty acid methyl ester based on its SMILES string.
-    A fatty acid methyl ester is a carboxylic ester obtained by the formal condensation
-    of a fatty acid with methanol.
+False Positives:
+The false positives mainly seem to be complex natural products or synthetic molecules that contain a methyl ester group and a long carbon chain, but are not necessarily fatty acid methyl esters. Some examples include:
 
-    Args:
-        smiles (str): SMILES string of the molecule
+1. Complex terpenoids or polyketides with a methyl ester group and a long aliphatic chain.
+2. Compounds with multiple ring systems and ester groups, where one of the esters is a methyl ester, and there is a long aliphatic chain attached to another part of the molecule.
 
-    Returns:
-        bool: True if molecule is a fatty acid methyl ester, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To address these false positives, we could add additional checks or filters to the program. For example:
 
-    # Look for methyl ester group (-C(=O)-O-C)
-    methyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CH3]")
-    if not mol.HasSubstructMatch(methyl_ester_pattern):
-        return False, "No methyl ester group found"
+1. Check for the presence of multiple ring systems or aromatic rings, which are less common in fatty acid methyl esters.
+2. Check for the presence of other functional groups or heteroatoms (e.g., N, S, P) that are not typically found in fatty acid methyl esters.
+3. Check for the presence of multiple ester groups or other carbonyl groups, which could indicate a more complex molecule.
 
-    # Look for long carbon chain (at least 6 carbons)
-    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "No long carbon chain found"
+False Negatives:
+The false negatives seem to be mostly cases where the program fails to recognize shorter or branched-chain fatty acid methyl esters. Some examples include:
 
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
-        return False, "Carbon chain too short for fatty acid"
+1. Methyl esters of shorter-chain fatty acids (e.g., methyl isobutyrate, methyl 4-methylpentanoate).
+2. Methyl esters of branched-chain fatty acids or fatty acids with additional functional groups.
 
-    # Check molecular formula for expected elements (C, H, O)
-    allowed_atoms = set([6, 1, 8])  # C, H, O
-    atom_nums = set(atom.GetAtomicNum() for atom in mol.GetAtoms())
-    if not atom_nums.issubset(allowed_atoms):
-        return False, "Unexpected atoms present, should only contain C, H, O"
+To address these false negatives, we could relax some of the criteria or add additional checks. For example:
 
-    return True, "Contains a methyl ester group and a long carbon chain (fatty acid)"
+1. Lower the threshold for the minimum number of rotatable bonds or carbon chain length to include shorter-chain fatty acid methyl esters.
+2. Add additional SMARTS patterns to recognize branched-chain or substituted fatty acid methyl esters.
+
+Additionally, there are a few cases where the benchmark itself may be inconsistent or incorrect. For example, the compound "Anapear" (SMILES: O(C(=O)CC/C=C/CC=C)C) is classified as a false negative, but it appears to be a fatty acid methyl ester (methyl 2,4-hexadienoate). In such cases, it may be reasonable to ignore these outliers, especially if the classifications made by the program align with our understanding of the chemical class.
+
+Overall, the program has a good foundation for classifying fatty acid methyl esters, but it could benefit from additional refinements to improve its accuracy and handle a wider range of structures within this class.
