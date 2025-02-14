@@ -12,7 +12,7 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an N-acyl-L-alpha-amino acid, False otherwise
+        bool: True if the molecule is an N-acyl-L-alpha-amino acid, False otherwise
         str: Reason for classification
     """
     
@@ -21,23 +21,29 @@ def is_N_acyl_L_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for L-alpha-amino acid backbone with specific stereochemistry:
-    # Needs to accentuate L-stereochemistry
-    amino_acid_pattern = Chem.MolFromSmarts("[C@@H](N)[C](=O)[O]")  # Re-evaluate based on L-config
+    # Improved pattern for L-alpha-amino acids (include stereophysical details ensuring L-config):
+    amino_acid_pattern = Chem.MolFromSmarts("[C@@H](N)[CH]C(=O)O")  # General pattern with focus on L-stereochemistry
     
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "No L-alpha-amino acid backbone (with proper stereochemistry) found"
 
-    # Pattern for N-acyl substituent: structure ensuring linkage to the N atom
-    acyl_pattern = Chem.MolFromSmarts("N[C](=O)")
+    # Improved pattern for N-acyl substituent:
+    acyl_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
 
-    # Ensure N-acyl is the direct modification
-    if not any(mol.GetSubstructMatch(acyl_pattern)):
-        return False, "No direct N-acyl substituent found"
+    # Ensure N-acyl is directly bound to the amino nitrogen atom
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "No N-acyl substituent found attached to the Nitrogen of the amino acid"
 
-    # Verify that acyl linkage conforms to N-acyl criteria with amino group linkage
+    # Collecting additional evidence on exact positioning
+    # Assume it must check if N-acyl is a substituent of the nitrogen in the core alpha-amino acid
     acyl_linkages = mol.GetSubstructMatches(acyl_pattern)
-    if len(acyl_linkages) == 0:
-        return False, "N-acyl linkage not correctly established"
+    amino_linkages = mol.GetSubstructMatches(amino_acid_pattern)
+    
+    # Check if the acyl part is specifically attached to the L-alpha amino component of nitrogen
+    for acyl in acyl_linkages:
+        for amino in amino_linkages:
+            # Ensure the N of N-acyl is the same as the N in the amino acid pattern
+            if mol.GetAtomWithIdx(acyl[0]).GetIdx() == mol.GetAtomWithIdx(amino[1]).GetIdx():
+                return True, "Contains valid L-alpha-amino acid backbone with an N-acyl substituent"
 
-    return True, "Contains valid L-alpha-amino acid backbone with an N-acyl substituent"
+    return False, "N-acyl substituent not correctly linked to the L-alpha-amino acid backbone"
