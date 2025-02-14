@@ -27,23 +27,35 @@ def is_N_acetyl_amino_acid(smiles: str):
     
     # Look for acetyl group attached to nitrogen
     acetyl_pattern = Chem.MolFromSmarts("CC(=O)N")
-    if not mol.HasSubstructMatch(acetyl_pattern):
+    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
+    if not acetyl_matches:
         return False, "No acetyl group attached to nitrogen"
     
-    # Look for amino group (attached to the nitrogen with the acetyl group)
+    # Look for amino group
     amino_pattern = Chem.MolFromSmarts("[N;X3][C;X4]")
-    if not mol.HasSubstructMatch(amino_pattern):
+    amino_matches = mol.GetSubstructMatches(amino_pattern)
+    if not amino_matches:
         return False, "No amino group found"
+    
+    # Check if the nitrogen attached to the acetyl group is also part of the amino group
+    for acetyl_N in [match[1] for match in acetyl_matches]:
+        for amino_N in [match[0] for match in amino_matches]:
+            if acetyl_N == amino_N:
+                break
+        else:
+            continue
+        break
+    else:
+        return False, "Acetyl group not attached to amino nitrogen"
     
     # Look for carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check if the nitrogen attached to the acetyl group is also part of the amino group
-    acetyl_N = mol.GetSubstructMatches(acetyl_pattern)[0][1]
-    amino_N = mol.GetSubstructMatches(amino_pattern)[0][1]
-    if acetyl_N != amino_N:
-        return False, "Acetyl group not attached to amino nitrogen"
+    # Check if the amino group is not part of a ring (to exclude proline)
+    amino_atom = mol.GetAtomWithIdx(amino_N)
+    if amino_atom.IsInRing():
+        return False, "Amino group is part of a ring structure"
     
     return True, "Contains acetyl group attached to nitrogen of an amino acid"
