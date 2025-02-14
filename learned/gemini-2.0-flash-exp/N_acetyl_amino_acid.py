@@ -20,26 +20,21 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Relaxed SMARTS pattern for N-acetyl amino acid core. The pattern uses a single bond (`~`)
-    # to connect to groups to the core structure.
-    acetyl_amino_acid_core_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3]~[CX4]~[CX3](=[OX1])[OX1,OX2-]")
+    # SMARTS pattern for N-acetyl amino acid with more flexible matching of N and carboxylic acid
+    acetyl_amino_acid_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3][CX4][CX3](=[OX1])[OX1,OX2]")
 
-    # Check for the presence of the relaxed core substructure
-    if not mol.HasSubstructMatch(acetyl_amino_acid_core_pattern):
-        return False, "Molecule does not match the N-acetyl-amino acid core pattern"
+    if mol.HasSubstructMatch(acetyl_amino_acid_pattern):
+        # Further check: there should be one N-acetyl and one amino acid core
+        acetyl_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3]")
+        amino_acid_core = Chem.MolFromSmarts("[NX3][CX4][CX3](=[OX1])[OX1,OX2]")
+        
+        acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
+        amino_matches  = mol.GetSubstructMatches(amino_acid_core)
 
-    # Check for the number of acetyl groups to be one and only one
-    acetyl_pattern = Chem.MolFromSmarts("[CH3][CX3](=[OX1])[NX3]")
-    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
 
-    if len(acetyl_matches) != 1:
-        return False, f"Molecule has {len(acetyl_matches)} acetyl groups, must have only 1"
-
-    # Check for a carboxylic acid group somewhere in the structure.  This check is done separately because
-    # the core pattern has already found the required carboxylate, and not necessarily at the end of
-    # the chain.
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH,O-]")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-       return False, "Molecule does not contain a carboxylic acid group"
-
-    return True, "Molecule matches the N-acetyl-amino acid pattern."
+        if len(acetyl_matches) == 1 and len(amino_matches) == 1:
+            return True, "Molecule matches the N-acetyl-amino acid pattern."
+        else:
+            return False, f"Molecule has {len(acetyl_matches)} acetyl group and {len(amino_matches)} amino acid core."
+    else:
+        return False, "Molecule does not match the N-acetyl-amino acid pattern."
