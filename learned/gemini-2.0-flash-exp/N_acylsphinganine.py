@@ -23,27 +23,26 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Combined SMARTS pattern for sphinganine backbone AND the N-acyl group
-    # Includes explicit chain length for fatty acid of 7 C atoms
-    sphinganine_acyl_pattern = Chem.MolFromSmarts("[CH2X4][CHX4](O)[CHX4]([CH2X4]O)N[CX3](=[OX1])-[CX4,CX3](-[CX4,CX3])-[CX4,CX3]-[CX4,CX3]-[CX4,CX3]-[CX4,CX3]-[CX4,CX3]")
+    # SMARTS pattern for sphinganine backbone and N-acyl group (amide bond)
+    # the fatty acyl chain can be of any length
+    sphinganine_acyl_pattern = Chem.MolFromSmarts("[CH2X4][CHX4](O)[CHX4]([CH2X4]O)N[CX3](=[OX1])-[CX4,CX3]")
     if not mol.HasSubstructMatch(sphinganine_acyl_pattern):
         return False, "No N-acylsphinganine substructure found (sphinganine directly connected to acyl group)"
-    
-    # check that only one such substructure is present.
-    matches = mol.GetSubstructMatches(sphinganine_acyl_pattern)
-    if len(matches) != 1:
-        return False, f"Found {len(matches)} N-acylsphinganine substructures, need exactly 1."
 
-    # Count Carbons
+    # Count Carbons - sphinganine has 18 and acyl has at least 2 (acyl C=O and CH2)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 14: # a minimum number of carbons in sphinganine backbone
+    if c_count < 18 + 2: # minimum carbons for sphinganine + 2 carbons in acyl group
         return False, "Too few carbons for a N-acylsphinganine"
     
-    # Count Oxygens
+    # Count Oxygens - sphinganine has 2, amide has 1, and acyl has at least 1
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3:
-      return False, "Too few oxygens"
-    if o_count > 8:
-        return False, "Too many oxygens"
+    if o_count < 3: # minimum oxygens for sphinganine and amide
+        return False, "Too few oxygens for a N-acylsphinganine"
+
+    # check molecular weight - N-acylsphinganine is relatively large
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 350:
+       return False, "Molecular weight too low for N-acylsphinganine"
+
 
     return True, "Contains sphinganine backbone with a fatty acyl group attached to the nitrogen"
