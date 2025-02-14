@@ -26,16 +26,18 @@ def is_macrolide(smiles: str):
     lactone_matches = mol.GetSubstructMatches(lactone_pattern)
 
     if not lactone_matches:
-          return False, "No lactone group found"
-    
-    for match in lactone_matches:
-        lactone_carbon_index = match[0]
-        
-        # Find rings containing the lactone carbon
-        rings = mol.GetAtomWithIdx(lactone_carbon_index).GetOwningRings()
+        return False, "No lactone group found"
 
-        for ring in rings:
-            if len(ring) >= 12:
-                return True, f"Macrocyclic lactone ring (size: {len(ring)}) found."
-            
-    return False, "No macrocyclic lactone ring (12+ atoms) found."
+    # Check for rings and if any ring contains a lactone group and has size 12+
+    ring_info = mol.GetRingInfo()
+    for ring_atom_ids in ring_info.AtomRings():
+        if len(ring_atom_ids) >= 12:
+            for lactone_match in lactone_matches:
+                lactone_carbon_index = lactone_match[0]
+                if lactone_carbon_index in ring_atom_ids:
+                    # Count carbons in ring
+                    carbon_count = sum(1 for atom_index in ring_atom_ids if mol.GetAtomWithIdx(atom_index).GetAtomicNum() == 6)
+                    if carbon_count >= 10:
+                        return True, f"Macrocyclic lactone ring (size: {len(ring_atom_ids)}, carbon count: {carbon_count}) found."
+
+    return False, "No macrocyclic lactone ring (12+ atoms) containing a lactone group found with minimum 10 carbon atoms."
