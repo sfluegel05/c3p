@@ -20,26 +20,43 @@ def is_iridoid_monoterpenoid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return None, None #Invalid input
     
-    # More specific SMARTS for iridoid core
-    iridoid_core_pattern = Chem.MolFromSmarts("[CH2]1[CH]=[CH][CH2][C]2([O][CH2]1)[CH]=[CH][CH2]2") # Core ring with typical double bonds
-    iridoid_core_pattern2 = Chem.MolFromSmarts("[CH2]1[CH][CH][CH2][C]2([O][CH2]1)[CH]=[CH][CH2]2") # Core ring with one double bonds
-    iridoid_core_pattern3 = Chem.MolFromSmarts("[CH2]1[CH]=[CH][CH2][C]2([O][CH2]1)[CH][CH][CH2]2")  # Core ring with one double bonds
-    iridoid_core_pattern4 = Chem.MolFromSmarts("[CH2]1[CH][CH][CH2][C]2([O][CH2]1)[CH][CH][CH2]2") # Core ring without double bonds
-    # Secoiridoid core structure (cleaved bond in the cyclopentane ring)
-    secoiridoid_core_pattern = Chem.MolFromSmarts("[CX4]1[CX4]~[CX4]~[OX2]~[CX4]2[CX4]([CX4]1)~[CX4]~[CX4]2")
+    # Basic Iridoid core structure (cyclopentane fused with pyran)
+    iridoid_core_pattern1 = Chem.MolFromSmarts("[CH2X4][CHX4]1[CH2X4][OX2][CHX4]2[CHX4]1[CH2X4][CH2X4]2") # basic fused ring
+    iridoid_core_pattern2 = Chem.MolFromSmarts("[CHX4]1[CHX4][CHX4][OX2][CHX4]2[CHX4]1[CH2X4][CH2X4]2") #Allow CH at the ring junction
+    iridoid_core_pattern3 = Chem.MolFromSmarts("[CH2X4][CHX4]1[CH2X4][OX2][CHX4]2[CHX4]1[CHX4]=[CHX4]2") # one double bond on ring
+    iridoid_core_pattern4 = Chem.MolFromSmarts("[CHX4]1[CHX4][CHX4][OX2][CHX4]2[CHX4]1[CHX4]=[CHX4]2") # one double bond on ring
+    # Secoiridoid (cleaved cyclopentane ring, pyran) - some flexibility in cleavage location
+    secoiridoid_core_pattern1 = Chem.MolFromSmarts("[CH2X4]1[CH2X4][CHX4][OX2][CHX4]2[CHX4]1[CHX4]2") #basic seco, 1 bond broken
+    secoiridoid_core_pattern2 = Chem.MolFromSmarts("[CH2X4]1[CHX4][CHX4][OX2][CHX4]2[CHX4]1[CHX4]2") #basic seco, 1 bond broken
+    secoiridoid_core_pattern3 = Chem.MolFromSmarts("[CH2X4]1[CHX4][CHX4][OX2][CHX4]2[CHX4]1[CHX4]=[CHX4]2") #basic seco, 1 bond broken, one double bond
+    secoiridoid_core_pattern4 = Chem.MolFromSmarts("[CH2X4]1[CHX4]=[CHX4][OX2][CHX4]2[CHX4]1[CHX4]2") #basic seco, 1 bond broken, one double bond
 
-    if not (mol.HasSubstructMatch(iridoid_core_pattern) or
+    if not (mol.HasSubstructMatch(iridoid_core_pattern1) or
             mol.HasSubstructMatch(iridoid_core_pattern2) or
-             mol.HasSubstructMatch(iridoid_core_pattern3) or
-             mol.HasSubstructMatch(iridoid_core_pattern4) or
-            mol.HasSubstructMatch(secoiridoid_core_pattern)):
+            mol.HasSubstructMatch(iridoid_core_pattern3) or
+            mol.HasSubstructMatch(iridoid_core_pattern4) or
+            mol.HasSubstructMatch(secoiridoid_core_pattern1) or
+            mol.HasSubstructMatch(secoiridoid_core_pattern2) or
+            mol.HasSubstructMatch(secoiridoid_core_pattern3) or
+            mol.HasSubstructMatch(secoiridoid_core_pattern4) ):
         return False, "No core iridoid or secoiridoid structure found"
 
-    # Check for 10 carbon atoms, as a monoterpenoid.
+    # Count carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 10:
-        return False, f"Fewer than 10 carbon atoms found ({c_count})"
     
-    return True, "Iridoid or secoiridoid core structure found with at least 10 carbons"
+    # Check for carbon count of 10 (ignoring glycosidic parts)
+    # Need to try to exclude carbohydrates from the count.
+    # The most common glycosidic linkages should be removed from the count.
+    # Glucose is a good starting point
+    glucose_pattern = Chem.MolFromSmarts("C[C@H]1[C@H]([C@H]([C@@H]([C@H](O1)O)O)O)O")
+    glucose_matches = mol.GetSubstructMatches(glucose_pattern)
+    n_glucose_carbons = len(glucose_matches) * 6
+    modified_c_count = c_count - n_glucose_carbons
+
+    if modified_c_count < 9 or modified_c_count > 14:  # 10 C +/- a couple of carbons for extra methyls/etc.
+         return False, f"Incorrect carbon count {modified_c_count} (glycoside C removed)"
+    
+    
+    return True, "Iridoid or secoiridoid core structure with correct carbon count found"
