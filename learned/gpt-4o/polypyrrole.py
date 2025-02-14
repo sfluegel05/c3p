@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
-    A polypyrrole consists of two or more pyrrole units, often manifesting in
-    complex ring structures.
+    A polypyrrole is characterized by two or more pyrrole units,
+    which are five-membered rings with nitrogen.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,15 +22,18 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define pyrrole-like patterns for complex systems (fused or extended conjugated systems)
-    # More general pyrrole pattern to cover fused systems
-    general_pyrrole_pattern = Chem.MolFromSmarts('[nH1]1cccc1 | [n]1ccccc1') 
-
-    # Find matches for pyrrole units
-    pyrrole_matches = mol.GetSubstructMatches(general_pyrrole_pattern)
-    unique_matches = {tuple(sorted(match)) for match in pyrrole_matches}
+    # Define the pyrrole pattern
+    pyrrole_pattern = Chem.MolFromSmarts('[nH]1cccc1')
+    if not pyrrole_pattern:
+        return None, "Invalid pyrrole SMARTS pattern"
     
-    # Check if there are two or more distinct pyrrole units
+    # Find matches for pyrrole units
+    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
+    
+    # Check if there are two or more distinct pyrrole units.
+    # Avoid multiple matches for the same pyrrole by using unique atom indices.
+    unique_matches = set(tuple(sorted(match)) for match in pyrrole_matches)
+    
     if len(unique_matches) >= 2:
         return True, f"Contains {len(unique_matches)} pyrrole units"
 
