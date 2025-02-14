@@ -21,18 +21,29 @@ def is_peptide_antibiotic(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for peptide bond pattern (O=C-N)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)[NH]")
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(peptide_bond_pattern):
         return False, "No peptide bonds found"
     
-    # Check for overall structural complexity - proxy using heavy atom count
-    heavy_atom_count = mol.GetNumHeavyAtoms()
-    if heavy_atom_count < 30:
-        return False, f"Too few heavy atoms ({heavy_atom_count}) for typical peptide antibiotic"
-    
-    # Additional feature patterns can be included here as identified
-    # For simplicity, return True based on basic checks, but real-world would require complex patterns
+    # Check for cyclic peptide structures
+    cycle_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[NX3][CX3](=O)@[NX3][CX3](=O)")
+    if mol.HasSubstructMatch(cycle_pattern):
+        return True, "Contains cyclic peptide bonds, a hallmark of many peptide antibiotics"
 
-    return True, "Contains peptide bonds with a complex structure typical of peptide antibiotics"
+    # Check for sulfur present, common in peptide antibiotics like daptomycin
+    contains_sulfur = any(atom.GetAtomicNum() == 16 for atom in mol.GetAtoms())
+    if contains_sulfur:
+        return True, "Contains sulfur, common in peptide antibiotics"
 
-# Note: Real detailed classification would require specific functional group and motif checks
+    # Assess overall complexity through various factors
+    heavy_atoms = mol.GetNumHeavyAtoms()
+    num_rings = Chem.GetSSSR(mol)
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+
+    # Adjusted threshold and complexity factors
+    if heavy_atoms > 25 and num_rings >= 1 and len(chiral_centers) > 0:
+        return True, "Has sufficient complexity in structure typical of peptide antibiotics"
+
+    return False, "Structure does not match typical peptide antibiotics patterns"
+
+# Note: Further specific pattern detection may improve the accuracy.
