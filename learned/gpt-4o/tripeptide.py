@@ -20,28 +20,22 @@ def is_tripeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved alpha carbon chiral centers with side chains
-    # This pattern aims to be more flexible regarding alpha carbon configuration
-    alpha_carbon_patterns = [
-        Chem.MolFromSmarts("NC[C@H]"),
-        Chem.MolFromSmarts("NC[C@@H]"),
-        Chem.MolFromSmarts("N[C@]C"),
-        Chem.MolFromSmarts("N[C@@]C")
-    ]
-    
-    # Peptide bond pattern: -C(=O)N- (amide linkage)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    # Pattern for alpha amino acids - more generalized to include non-chiral carbons
+    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3][CX4](C)C=O")
+    if alpha_carbon_pattern is None:
+        return False, "Failed to create alpha carbon pattern"
 
-    # Check for valid patterns
-    if peptide_bond_pattern is None or any(pat is None for pat in alpha_carbon_patterns):
-        return False, "Pattern creation failed"
+    # Peptide bond pattern: -C(=O)N-, generalized more to capture broader peptide linkage configuration
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    if peptide_bond_pattern is None:
+        return False, "Failed to create peptide bond pattern"
 
     # Finding matches
-    alpha_matches = sum([len(mol.GetSubstructMatches(pat)) for pat in alpha_carbon_patterns])
+    alpha_matches = len(mol.GetSubstructMatches(alpha_carbon_pattern))
     peptide_bonds = len(mol.GetSubstructMatches(peptide_bond_pattern))
 
-    # Tripeptides have 3 residues and exactly 2 peptide bonds
-    if alpha_matches == 3 and peptide_bonds == 2:
-        return True, "Contains three alpha carbon chiral centers with two peptide linkages indicating a tripeptide"
+    # Tripeptides have exactly 3 residues which translates to 2 peptide bonds
+    if alpha_matches >= 3 and peptide_bonds == 2:
+        return True, "Contains three alpha carbons with two peptide linkages indicating a tripeptide"
     else:
         return False, f"Contains {alpha_matches} alpha carbons and {peptide_bonds} peptide bonds, insufficient or excess for a tripeptide"
