@@ -10,8 +10,9 @@ from rdkit.Chem import rdMolDescriptors
 def is_vitamin_D(smiles: str):
     """
     Determines if a molecule is a vitamin D compound based on its SMILES string.
-    Vitamin D compounds are secosteroids with a broken B-ring, a conjugated triene system,
-    hydroxyl groups at specific positions, and a hydrocarbon side chain.
+    Vitamin D compounds are secosteroids with an open B-ring, fused rings C and D,
+    a conjugated triene system in the A-ring, hydroxyl groups at specific positions, 
+    and a hydrocarbon side chain.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,43 +27,51 @@ def is_vitamin_D(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for secosteroid core (rings C and D fused together)
-    # Vitamin D compounds have fused cyclohexane (ring C) and cyclopentane (ring D)
-    rings = mol.GetRingInfo()
-    atom_rings = rings.AtomRings()
-    ring_sizes = [len(ring) for ring in atom_rings]
+    # Define SMARTS patterns for vitamin D features
 
-    # Look for one ring of size 6 (ring C) and one ring of size 5 (ring D)
-    if ring_sizes.count(5) < 1 or ring_sizes.count(6) < 1:
-        return False, "Secosteroid core not found (missing fused rings C and D)"
+    # Secosteroid core with open B-ring and fused rings C and D
+    secosteroid_core_smarts = """
+    [
+        C;R2;!R3]1
+        [C;R2;!R3][C;R2;!R3][C;R2;!R3][C;R2;!R3][C;R2;!R3]1
+        [C;R2;!R3]
+    ]"""
+    secosteroid_core_pattern = Chem.MolFromSmarts("""
+    [#6]1-[#6]-[#6]-[#6]-[#6]-1-[#6]
+    """)
 
-    # Check if rings C and D are fused (share two atoms)
-    fused = False
-    for i, ring1 in enumerate(atom_rings):
-        for j, ring2 in enumerate(atom_rings):
-            if i >= j:
-                continue
-            if len(ring1) == 6 and len(ring2) == 5:
-                shared_atoms = set(ring1) & set(ring2)
-                if len(shared_atoms) >= 2:
-                    fused = True
-                    break
-    if not fused:
-        return False, "Rings C and D are not fused"
+    # Open B-ring (missing in vitamin D)
+    B_ring_smarts = 'C1CCC1'  # Cyclobutane ring (should not be present)
+    B_ring_pattern = Chem.MolFromSmarts(B_ring_smarts)
+    if mol.HasSubstructMatch(B_ring_pattern):
+        return False, "B-ring (cyclobutane) is present, not a secosteroid"
 
-    # Check for conjugated triene system in the open A-ring
+    # Fused rings C (cyclehexane) and D (cyclopentane)
+    fused_ring_pattern = Chem.MolFromSmarts('[#6]1-[#6]-[#6]-[#6]-[#6]-[#6]-1-[#6]2-[#6]-[#6]-[#6]-[#6]-2')
+    if not mol.HasSubstructMatch(fused_ring_pattern):
+        return False, "Fused rings C and D not found"
+
+    # Conjugated triene system in the A-ring
     triene_smarts = 'C=C-C=C-C=C'  # Conjugated triene system
     triene_pattern = Chem.MolFromSmarts(triene_smarts)
     if not mol.HasSubstructMatch(triene_pattern):
-        return False, "No conjugated triene system found"
+        return False, "No conjugated triene system found in the A-ring"
 
-    # Check for at least two hydroxyl groups
+    # Check for hydroxyl groups
     hydroxyl_smarts = '[OX2H]'  # Hydroxyl group
-    hydroxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts(hydroxyl_smarts)))
+    hydroxyl_pattern = Chem.MolFromSmarts(hydroxyl_smarts)
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    hydroxyl_count = len(hydroxyl_matches)
     if hydroxyl_count < 2:
         return False, f"Found {hydroxyl_count} hydroxyl group(s), need at least 2"
 
-    # Estimate molecular weight for a vitamin D range (approximately 380-450 Da)
+    # Check for hydrocarbon side chain (aliphatic chain attached to ring D)
+    side_chain_smarts = '[C]-[CH2]-[C](C)(C)O'  # Simplified side chain pattern
+    side_chain_pattern = Chem.MolFromSmarts(side_chain_smarts)
+    if not mol.HasSubstructMatch(side_chain_pattern):
+        return False, "Hydrocarbon side chain not found"
+
+    # Estimate molecular weight for vitamin D range (approximately 380-450 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 350 or mol_wt > 500:
         return False, f"Molecular weight {mol_wt:.2f} Da not in typical range for vitamin D"
