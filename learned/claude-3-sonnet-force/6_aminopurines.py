@@ -4,7 +4,7 @@ Classifies: CHEBI:20706 6-aminopurines
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_6_aminopurine(smiles: str):
+def is_6_aminopurines(smiles: str):
     """
     Determines if a molecule is a 6-aminopurine based on its SMILES string.
     A 6-aminopurine is any compound having 6-aminopurine (adenine) as part of its structure.
@@ -56,7 +56,7 @@ smiles2 = "CCc1ccccc1"  # Ethylbenzene
 smiles3 = "Nc1ncnc2[nH]cnc12"  # 6-methyladenine
 smiles4 = "OC(CN1C2=NC=NC(N)=C2N=C1)C(O)C(O)=O"  # D-erythro-Eritadenine
 
-print(is_6_aminopurine(smiles1))  # Output: (True, 'Meets the structural requirements of a 6-aminopurine')
-print(is_6_aminopurine(smiles2))  # Output: (False, 'Does not contain 6-aminopurine (adenine) moiety')
-print(is_6_aminopurine(smiles3))  # Output: (True, 'Meets the structural requirements of a 6-aminopurine')
-print(is_6_aminopurine(smiles4))  # Output: (True, 'Meets the structural requirements of a 6-aminopurine')
+print(is_6_aminopurines(smiles1))  # Output: (True, 'Meets the structural requirements of a 6-aminopurine')
+print(is_6_aminopurines(smiles2))  # Output: (False, 'Does not contain 6-aminopurine (adenine) moiety')
+print(is_6_aminopurines(smiles3))  # Output: (True, 'Meets the structural requirements of a 6-aminopurine')
+print(is_6_aminopurines(smiles4))  # Output: (True, 'Meets the structural requirements of a 6-aminopurine')
