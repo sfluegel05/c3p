@@ -2,13 +2,11 @@
 Classifies: CHEBI:26208 polyunsaturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_polyunsaturated_fatty_acid(smiles: str):
     """
     Determines if a molecule is a polyunsaturated fatty acid based on its SMILES string.
-    A polyunsaturated fatty acid is a carboxylic acid with a carbon chain containing more than one
-    aliphatic (non-aromatic) double bond. The chain may have minor branching or functional groups.
+    A polyunsaturated fatty acid is an unbranched aliphatic carboxylic acid containing more than one double bond.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,69 +24,53 @@ def is_polyunsaturated_fatty_acid(smiles: str):
     carboxylic_acid = Chem.MolFromSmarts('C(=O)[O;H1]')
     carb_matches = mol.GetSubstructMatches(carboxylic_acid)
     if not carb_matches:
-        return False, "No carboxylic acid group found"
+        return False, "No terminal carboxylic acid group found"
 
-    # Assume the first match is the carboxylic acid group
+    # Assume the first match is the terminal carboxylic acid
     carb_atom_idx = carb_matches[0][0]  # Index of the carbonyl carbon
 
-    # Check if the carboxyl carbon is connected to a carbon chain (aliphatic chain)
+    # Find alpha carbon (carbon connected to the carboxyl carbon)
     carboxyl_carbon = mol.GetAtomWithIdx(carb_atom_idx)
-    connected_carbons = [neighbor for neighbor in carboxyl_carbon.GetNeighbors() if neighbor.GetAtomicNum() == 6]
-    if not connected_carbons:
-        return False, "Carboxyl carbon is not connected to carbon chain"
+    alpha_carbons = [neighbor for neighbor in carboxyl_carbon.GetNeighbors() if neighbor.GetAtomicNum() == 6]
+    if not alpha_carbons:
+        return False, "No alpha carbon connected to carboxyl group"
+    alpha_carbon_idx = alpha_carbons[0].GetIdx()
 
-    # Use BFS to traverse the entire carbon chain connected to the carboxyl carbon
-    visited = set()
-    queue = []
-    double_bond_count = 0
-    carbon_chain_length = 0
-    aromatic_atoms = set()
-    
-    # Initialize BFS with carbons connected to carboxyl carbon
-    for neighbor in connected_carbons:
-        if neighbor.GetAtomicNum() == 6:
-            queue.append((neighbor, carboxyl_carbon.GetIdx()))
-            visited.add(neighbor.GetIdx())
+    # Recursive function to traverse the unbranched chain
+    def traverse_chain(atom_idx, visited):
+        visited.add(atom_idx)
+        atom = mol.GetAtomWithIdx(atom_idx)
+        chain_length = 1  # Count current atom
+        double_bond_count = 0
+        for bond in atom.GetBonds():
+            neighbor = bond.GetOtherAtom(atom)
+            n_idx = neighbor.GetIdx()
+            if n_idx == carb_atom_idx:
+                continue  # Skip back to carboxyl carbon
+            # Avoid cycles and ensure unbranched chain
+            if neighbor.GetAtomicNum() == 6 and n_idx not in visited:
+                # Ensure neighbor carbon is not in a ring
+                if not neighbor.IsInRing():
+                    # Ensure the neighbor carbon is only connected to max 2 carbons (unbranched)
+                    carbon_neighbors = [n for n in neighbor.GetNeighbors() if n.GetAtomicNum() == 6]
+                    if len(carbon_neighbors) <= 2:
+                        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                            bond_double = 1
+                        else:
+                            bond_double = 0
+                        sub_chain_length, sub_double_bond_count = traverse_chain(n_idx, visited)
+                        chain_length += sub_chain_length
+                        double_bond_count += bond_double + sub_double_bond_count
+                    else:
+                        return chain_length, double_bond_count  # Branching detected, stop traversal
+        return chain_length, double_bond_count
 
-    while queue:
-        current_atom, previous_atom_idx = queue.pop(0)
-        carbon_chain_length += 1  # Count the carbons in the chain
-
-        # Check if the atom is in an aromatic ring
-        if current_atom.GetIsAromatic():
-            aromatic_atoms.add(current_atom.GetIdx())
-
-        # Iterate over neighbors
-        for bond in current_atom.GetBonds():
-            neighbor = bond.GetOtherAtom(current_atom)
-            neighbor_idx = neighbor.GetIdx()
-
-            # Ignore hydrogen atoms
-            if neighbor.GetAtomicNum() != 6:
-                continue
-
-            # Avoid going back to the previous atom
-            if neighbor_idx == previous_atom_idx:
-                continue
-
-            # If we have already visited this atom, skip it
-            if neighbor_idx in visited:
-                continue
-
-            # Add neighbor to queue
-            queue.append((neighbor, current_atom.GetIdx()))
-            visited.add(neighbor_idx)
-
-            # Check if the bond is a double bond and non-aromatic
-            if bond.GetBondType() == rdchem.BondType.DOUBLE and not bond.GetIsAromatic():
-                double_bond_count += 1
-
-    # Exclude molecules with aromatic rings
-    if aromatic_atoms:
-        return False, "Molecule contains aromatic rings"
+    # Start traversal from alpha carbon
+    visited_atoms = set([carb_atom_idx])  # Exclude carboxyl carbon
+    chain_length, double_bond_count = traverse_chain(alpha_carbon_idx, visited_atoms)
 
     # Check if there are more than one double bond
     if double_bond_count > 1:
-        return True, f"Contains {double_bond_count} aliphatic double bonds in carbon chain"
+        return True, f"Contains {double_bond_count} double bonds in unbranched aliphatic chain"
     else:
-        return False, f"Contains {double_bond_count} aliphatic double bond(s); requires more than one"
+        return False, f"Contains {double_bond_count} double bond(s); requires more than one"
