@@ -23,22 +23,28 @@ def is_phosphatidylcholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Glycerol Backbone (correct stereochemistry)
-    glycerol_pattern = Chem.MolFromSmarts("[C@H]([OX2])[C]([OX2])[CH2][OX2]")
+    # 1. Glycerol Backbone (3 carbons, each connected to oxygen)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
-    
-    # 2. Phosphate Group and Choline Head Group
-    phosphate_choline_pattern = Chem.MolFromSmarts("[CH2][O][P](=[O])([O-])OCC[N+](C)(C)C")
+
+    # 2.  Phosphate group and choline head group
+    phosphate_choline_pattern = Chem.MolFromSmarts("[CH2X4][OX2][PX4](=[OX1])([OX2-])OCC[N+](C)(C)C")
     if not mol.HasSubstructMatch(phosphate_choline_pattern):
         return False, "No phosphate and/or choline head group found"
 
-    # 3. Two ester groups attached to the glycerol at positions 1 and 2 and the complete structure
-    complete_pattern = Chem.MolFromSmarts("[C@H]([OX2][CX3](=[OX1]))([OX2][CX3](=[OX1]))[CH2X4][OX2][PX4](=[OX1])([OX2-])OCC[N+](C)(C)C")
+    # 3. Two ester groups, attached to glycerol carbons
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+    
+     # 4. Complete Glycerol with 2 esters, and phosphate/choline
+    complete_pattern = Chem.MolFromSmarts("[CH2X4]([OX2][CX3](=[OX1]))([CHX4]([OX2][CX3](=[OX1])))([CH2X4][OX2][PX4](=[OX1])([OX2-])OCC[N+](C)(C)C)")
     if not mol.HasSubstructMatch(complete_pattern):
          return False, "Ester groups are not on the 1 and 2 positions of the glycerol backbone and/or missing components"
-
-    # Check for fatty acid chains (long carbon chains attached to esters)
+    
+    # 5. Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
