@@ -51,20 +51,19 @@ def is_2_monoglyceride(smiles: str):
 
     # Verify that the other 2 hydroxyls are free
     free_OH_count = 0
-    glycerol_carbons = [mol.GetAtomWithIdx(glycerol_atoms[0]), mol.GetAtomWithIdx(glycerol_atoms[1]), mol.GetAtomWithIdx(glycerol_atoms[2])]
+    glycerol_carbons = [mol.GetAtomWithIdx(glycerol_atoms[0]), mol.GetAtomWithIdx(glycerol_atoms[2])] # only check 1 and 3 carbons
     for carbon in glycerol_carbons:
-        if carbon.GetIdx() != glycerol_atoms[1]: #Skip the center one, as this connects to ester
-            for neighbor in carbon.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:
-                  free_OH_count +=1
+        for neighbor in carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8: # found an oxygen
+                h_count = 0
+                for n2 in neighbor.GetNeighbors():
+                    if n2.GetAtomicNum() == 1: # found hydrogen connected to oxygen
+                        h_count += 1
+                if h_count ==1:
+                   free_OH_count +=1
     
     if free_OH_count != 2:
         return False, "Did not find two free hydroxyl groups at the 1 and 3 positions of the glycerol"
 
-
-    # Check if all oxygen are part of OH or ester linkages
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count != 4:
-      return False, "Must have exactly four oxygens (2 hydroxyl, 1 ester)"
 
     return True, "Contains a glycerol backbone with one fatty acid attached at the 2nd carbon via ester bond"
