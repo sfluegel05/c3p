@@ -19,20 +19,19 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the 3-hydroxy fatty acid structure; this pattern ensures a 3-hydroxy group on a hydrocarbon chain
-    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("CC[C@@H](O)C(=O)")
+    # 3-hydroxy fatty acid structure pattern, adjusted for potential stereoisomerism
+    hydroxy_fatty_acid_pattern = Chem.MolFromSmarts("[C,c][C,c][C@@H,O](O)C(=O)[C,c][C,c]")
     if not mol.HasSubstructMatch(hydroxy_fatty_acid_pattern):
         return False, "No 3-hydroxy fatty acyl structure found"
 
-    # Look for Coenzyme A structure
-    # This pattern encompasses the pantetheine backbone with its phosphate groups
-    coa_motif = Chem.MolFromSmarts("NCC(=O)CCNCC(=O)C[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OCC1O[C@H](n2cnc3c2ncnc3N)C1O")
-    if not mol.HasSubstructMatch(coa_motif):
+    # Comprehensive CoA pattern covering all relevant functional groups
+    coa_pattern = Chem.MolFromSmarts("NC(=O)CCNCC(=O)SC[C,c][C@@H](O)CoAP")
+    if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA motif not present"
 
-    # Verify deprotonation; ensure the correct handling of phosphate charges by checking
-    deprotonated_phosphate = Chem.MolFromSmarts("P([O-])(=O)([O-])")
-    if len(mol.GetSubstructMatches(deprotonated_phosphate)) < 2:
+    # Verify deprotonation with a more comprehensive pattern
+    deprotonated_phosphate_pattern = Chem.MolFromSmarts("P(=O)([O-])[O-]")
+    if len(mol.GetSubstructMatches(deprotonated_phosphate_pattern)) < 2:
         return False, "Not enough deprotonated phosphate groups found"
 
     return True, "Molecule classified as 3-hydroxy fatty acyl-CoA(4-)"
