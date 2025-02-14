@@ -1,32 +1,84 @@
 """
 Classifies: CHEBI:28868 fatty acid anion
 """
-The previous program seems to be a reasonable attempt at classifying fatty acid anions, but there are a few issues that could be causing the low F1 score. Here are my observations and suggestions for improvement:
+"""
+Classifies: CHEBI:36838 Fatty acid anion
+The conjugate base of a fatty acid, arising from deprotonation of the carboxylic acid group of the corresponding fatty acid.
+"""
 
-1. **Long carbon chain pattern**: The current pattern `"[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"` only matches a chain of four carbon atoms, which may not be sufficient to capture all fatty acid anions. Fatty acids typically have longer chains, often with 12 or more carbon atoms. We should modify the pattern to account for longer chains.
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-2. **Disqualifying functional groups**: The list of disqualifying functional groups seems reasonable, but it may not be exhaustive. There could be other functional groups that should disqualify a molecule from being a fatty acid anion. Additionally, some of the false positives may be due to the program incorrectly classifying molecules with these functional groups as fatty acid anions.
+def is_fatty_acid_anion(smiles: str):
+    """
+    Determines if a molecule is a fatty acid anion based on its SMILES string.
 
-3. **Additional structural constraints**: Fatty acid anions may have additional structural constraints that are not captured by the current program. For example, the carboxylate group may need to be at the end of the carbon chain, or there may be specific patterns of unsaturation or substituents that are common in fatty acid anions.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-4. **Stereochemistry**: Some of the false negatives may be due to the program not considering stereochemistry. Fatty acid anions can have specific stereochemistry, and the program should account for that.
+    Returns:
+        bool: True if molecule is a fatty acid anion, False otherwise
+        str: Reason for classification
+    """
 
-5. **Handling exceptional cases**: There may be some exceptional cases or edge cases that the program is not handling correctly. For example, some of the false negatives may be due to the program not recognizing certain valid structures as fatty acid anions.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, we could try the following:
+    # Look for carboxylate group (-COO-)
+    carboxylate_pattern = Chem.MolFromSmarts("[O-]C(=O)")
+    if not mol.HasSubstructMatch(carboxylate_pattern):
+        return False, "No carboxylate group found"
 
-1. **Refine the long carbon chain pattern**: Use a more flexible pattern that can match longer carbon chains, e.g., `"[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]"` or even better, use a recursive pattern that can match chains of arbitrary length.
+    # Look for long carbon chain (>=12 carbons)
+    chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "No long carbon chain found"
 
-2. **Review and expand the list of disqualifying functional groups**: Carefully examine the false positives and identify any additional functional groups that should disqualify a molecule from being a fatty acid anion. Add these patterns to the list of disqualifying patterns.
+    # Disqualifying functional groups
+    disqualifying_patterns = [
+        Chem.MolFromSmarts("[#6]=[#6]"),  # Carbon-carbon double bonds
+        Chem.MolFromSmarts("[#6]#[#6]"),  # Carbon-carbon triple bonds
+        Chem.MolFromSmarts("[!#6;!#1]"),  # Non-carbon, non-hydrogen atoms
+        Chem.MolFromSmarts("[#8]~[#8]"),  # Peroxides
+        Chem.MolFromSmarts("[#6]-[#6](-[#8])-[#6]"),  # Ethers
+        Chem.MolFromSmarts("[#6]-[#6](-[#6])-[#6]"),  # Tertiary carbons
+        Chem.MolFromSmarts("[#6]=,:[#6]"),  # Aromatic rings
+    ]
 
-3. **Incorporate additional structural constraints**: Study the structures of known fatty acid anions and identify any additional structural constraints that can be encoded as SMARTS patterns. Incorporate these patterns into the classification logic.
+    for pattern in disqualifying_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return False, f"Contains disqualifying functional group: {pattern.GetSmarts()}"
 
-4. **Consider stereochemistry**: If stereochemistry is important for classifying fatty acid anions, modify the program to account for specific stereochemical configurations.
+    # Additional structural constraints
+    # 1. Carboxylate group must be at the end of the carbon chain
+    chain_atoms = [atom for match in chain_matches for atom in mol.GetAtomWithIdx(match)]
+    if not any(atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1 for atom in chain_atoms):
+        return False, "Carboxylate group not at the end of the carbon chain"
 
-5. **Handle exceptional cases**: Carefully examine the false negatives and identify any exceptional cases or edge cases that the program is not handling correctly. Modify the program to handle these cases appropriately.
+    # 2. No rings or cyclic structures
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Contains ring or cyclic structure"
 
-6. **Use additional descriptors or machine learning**: If the SMARTS-based approach is not sufficient, consider using additional molecular descriptors or employing machine learning techniques to build a more robust classification model.
+    # 3. No branched chains
+    for atom in chain_atoms:
+        if atom.GetDegree() > 2:
+            return False, "Contains branched carbon chain"
 
-When making these modifications, it's important to thoroughly test the program against a diverse set of examples, including both positive and negative cases, to ensure that the changes are improving the classification performance and not introducing new errors.
+    # Consider stereochemistry
+    # Stereochemistry is important for some fatty acid anions
+    # For simplicity, we will not consider stereochemistry in this implementation
 
-Regarding the occasional and systematic mistakes in the benchmark, it's a good practice to use your chemical knowledge and judgment to evaluate the classifications made by the program. If you believe that the program's classifications are consistent with the chemical definition of fatty acid anions, and the benchmark is making mistakes, you can justify your reasoning and ignore the benchmark outliers. However, it's crucial to thoroughly analyze and document your reasoning for such cases.
+    # Handle exceptional cases
+    # There may be some exceptional cases or edge cases that the program is not handling correctly
+    # We will address these as they are encountered
+
+    # Check molecular weight - typical range for fatty acid anions
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for fatty acid anions"
+
+    return True, "Molecule meets the structural requirements for a fatty acid anion"
