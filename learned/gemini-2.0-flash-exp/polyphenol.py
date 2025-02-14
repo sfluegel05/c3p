@@ -21,34 +21,15 @@ def is_polyphenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define benzene and hydroxyl group substructure
-    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
-    hydroxyl_pattern = Chem.MolFromSmarts("[c]O")
+    # Define the SMARTS pattern for a benzene ring with a directly attached hydroxyl group
+    polyphenol_pattern = Chem.MolFromSmarts("c1([c](O)ccccc1)")
 
-    # Find all benzene rings
-    benzene_rings = mol.GetSubstructMatches(benzene_pattern)
-    if not benzene_rings:
-         return False, "Molecule does not contain any benzene rings."
+    # Count the number of times the pattern is found
+    matches = mol.GetSubstructMatches(polyphenol_pattern)
+    num_matches = len(matches)
 
-    valid_ring_count = 0
-    for ring in benzene_rings:
-        # Create a query to search for a hydroxyl directly attached to specific atoms of the ring
-        benzene_atoms = [mol.GetAtomWithIdx(i) for i in ring]
-        ring_has_oh = False
-        for atom in benzene_atoms:
-          if mol.HasSubstructMatch(hydroxyl_pattern, useChirality=False):
-            for match in mol.GetSubstructMatches(hydroxyl_pattern, useChirality=False):
-                if mol.GetAtomWithIdx(match[0]).GetNeighbors()[0].GetIdx() == atom.GetIdx():
-                  ring_has_oh = True
-                  break
-          if ring_has_oh:
-            break
-        if ring_has_oh:
-          valid_ring_count += 1
-
-
-    # Classify based on ring count
-    if valid_ring_count >= 2:
+    # Classify based on the number of matches
+    if num_matches >= 2:
         return True, "Contains two or more benzene rings, each with at least one directly attached -OH group."
     else:
-        return False, f"Found {len(benzene_rings)} benzene rings, but only {valid_ring_count} have at least one -OH attached, needs at least two."
+      return False, f"Found {num_matches} benzene rings with directly attached -OH groups, needs at least two."
