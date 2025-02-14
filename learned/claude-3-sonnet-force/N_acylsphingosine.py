@@ -33,13 +33,16 @@ def is_N_acylsphingosine(smiles: str):
     # 1. Double bond in the middle of a long carbon chain
     # 2. Primary alcohol (-CH2-OH) at one end
     # 3. Secondary amine (-NH-) at the other end
+    # 4. Specific stereochemistry (2S, 3R)
     double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
     primary_alcohol_pattern = Chem.MolFromSmarts("[CH2][OH]")
     secondary_amine_pattern = Chem.MolFromSmarts("[NX3H]")
+    stereochemistry_pattern = Chem.MolFromSmarts("[C@H]([C@H]([CH2][OH])[NH])[CH2][CH2]")
 
     if (not mol.HasSubstructMatch(double_bond_pattern) or
         not mol.HasSubstructMatch(primary_alcohol_pattern) or
-        not mol.HasSubstructMatch(secondary_amine_pattern)):
+        not mol.HasSubstructMatch(secondary_amine_pattern) or
+        not mol.HasSubstructMatch(stereochemistry_pattern)):
         return False, "No sphingosine backbone found"
 
     # Look for amide group (-N-C(=O)-)
@@ -49,14 +52,25 @@ def is_N_acylsphingosine(smiles: str):
         return False, f"Found {len(amide_matches)} amide groups, need exactly 1"
 
     # Look for fatty acid chain (long carbon chain attached to amide)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern, maxMatches=1)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if not fatty_acid_matches:
         return False, "No fatty acid chain found"
 
     # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
+    if n_rotatable < 3:
         return False, "Fatty acid chain too short"
+
+    # Check for uncommon substituents or functional groups
+    uncommon_substituents = ["[Br]", "[I]", "[Cl]", "[F]", "[N+]", "[S+]", "[P+]"]
+    for pattern in uncommon_substituents:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, f"Contains uncommon substituent {pattern}"
+
+    # Check molecular weight range
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300 or mol_wt > 800:
+        return False, "Molecular weight outside typical range for N-acylsphingosines"
 
     return True, "Contains sphingosine backbone with fatty acyl chain attached via amide bond"
