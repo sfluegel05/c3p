@@ -19,33 +19,43 @@ def is_sulfolipid(smiles: str):
         bool: True if molecule is a sulfolipid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for sulfonic acid residue connected via C-S bond
-    # Sulfonic acid group: S(=O)(=O)-O
-    # Connected via sulfur to a carbon atom
-    sulfonic_acid_pattern = Chem.MolFromSmarts("[#6]-S(=O)(=O)-[O;H1]")
+    # Define SMARTS pattern for sulfonic acid residue connected via C-S bond
+    # Sulfonic acid group: S(=O)(=O)-O[H]
+    # Carbon-Sulfur bond: C-S(=O)(=O)-O[H]
+    sulfonic_acid_pattern = Chem.MolFromSmarts("C-S(=O)(=O)-O")
     if sulfonic_acid_pattern is None:
         return False, "Invalid SMARTS pattern for sulfonic acid residue"
 
     # Check for the sulfonic acid group connected via C-S bond
-    if not mol.HasSubstructMatch(sulfonic_acid_pattern):
+    sulfonic_matches = mol.GetSubstructMatches(sulfonic_acid_pattern)
+    if not sulfonic_matches:
         return False, "No sulfonic acid residue connected via carbon-sulfur bond found"
 
-    # Optionally, check for lipid-like characteristics (long hydrocarbon chains)
-    # Count the number of carbons in aliphatic chains (excluding rings and aromatic carbons)
-    aliphatic_carbons = [atom for atom in mol.GetAtoms() 
-                         if atom.GetAtomicNum() == 6 and not atom.IsInRing() and not atom.GetIsAromatic()]
-    if len(aliphatic_carbons) < 10:
-        return False, "Too few aliphatic carbons for a lipid"
+    # Detect long aliphatic chains (lipid chains)
+    # Define a function to find aliphatic chains of length >=10
+    def has_long_aliphatic_chain(mol, min_length=10):
+        chains = []
+        for bond in mol.GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                atom1 = bond.GetBeginAtom()
+                atom2 = bond.GetEndAtom()
+                if all(atom.GetAtomicNum() == 6 and not atom.IsInRing() for atom in (atom1, atom2)):
+                    chains.append((atom1.GetIdx(), atom2.GetIdx()))
+        # Build the graph of aliphatic carbons
+        aliph_graph = Chem.GetMolFragment(mol, [idx for chain in chains for idx in chain])
+        # Find the longest path in the graph
+        paths = Chem.FindAllPathsOfLengthN(aliph_graph, min_length)
+        return len(paths) > 0
 
-    # Check for the presence of long carbon chains (length >= 10)
-    chains = Chem.rdmolops.GetLongestAliphaticChain(mol)
-    if chains < 10:
-        return False, "No long hydrocarbon chains found"
+    # Check if the molecule has at least one long aliphatic chain
+    has_lipid_chain = has_long_aliphatic_chain(mol, min_length=10)
+    if not has_lipid_chain:
+        return False, "No long aliphatic carbon chains (lipid) found"
 
     return True, "Contains sulfonic acid residue connected via carbon-sulfur bond to a lipid"
