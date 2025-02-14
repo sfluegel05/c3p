@@ -6,13 +6,13 @@ Classifies: 3-hydroxy fatty acyl-CoA
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acyl-CoA based on its SMILES string.
-    A 3-hydroxy fatty acyl-CoA results from the condensation of Coenzyme A (CoA) with a 3-hydroxy fatty acid via a thioester linkage.
+    A 3-hydroxy fatty acyl-CoA is a hydroxy fatty acyl-CoA that results from the formal condensation 
+    of the thiol group of coenzyme A with the carboxy group of any 3-hydroxy fatty acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,32 +27,65 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for pantetheine moiety (part of CoA)
-    pantetheine_smarts = 'SCCNC(=O)CCNC(=O)'
-    pantetheine_pattern = Chem.MolFromSmarts(pantetheine_smarts)
-    if pantetheine_pattern is None:
-        return False, "Error parsing pantetheine SMARTS pattern"
+    # Look for thioester linkage C(=O)S
+    thioester_pattern = Chem.MolFromSmarts('C(=O)S')
+    matches = mol.GetSubstructMatches(thioester_pattern)
 
-    if not mol.HasSubstructMatch(pantetheine_pattern):
-        return False, "Pantetheine moiety (part of CoA) not found"
+    if not matches:
+        return False, "No thioester linkage found"
 
-    # Define SMARTS pattern for adenine ring (part of CoA)
-    adenine_smarts = 'n1cnc2c(n1)ncnc2'
-    adenine_pattern = Chem.MolFromSmarts(adenine_smarts)
-    if adenine_pattern is None:
-        return False, "Error parsing adenine SMARTS pattern"
+    # Iterate over all thioester matches
+    for match in matches:
+        carbonyl_carbon_idx = match[0]
+        sulfur_idx = match[2]
 
-    if not mol.HasSubstructMatch(adenine_pattern):
-        return False, "Adenine moiety (part of CoA) not found"
+        carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_carbon_idx)
+        sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
 
-    # Define SMARTS pattern for 3-hydroxy fatty acyl chain attached via thioester linkage
-    # Looking for C(=O)S-C-C(OH)-C, where the OH is on the third carbon from the carbonyl
-    thioester_hydroxy_smarts = 'C(=O)SCC[CH](O)'
-    thioester_hydroxy_pattern = Chem.MolFromSmarts(thioester_hydroxy_smarts)
-    if thioester_hydroxy_pattern is None:
-        return False, "Error parsing thioester hydroxy SMARTS pattern"
+        # Check if sulfur is connected to CoA moiety (simplified check)
+        # We assume that sulfur connected to nitrogen atoms is indicative of CoA
+        sulfur_neighbors = sulfur_atom.GetNeighbors()
+        is_connected_to_coa = False
+        for neighbor in sulfur_neighbors:
+            if neighbor.GetAtomicNum() == 6:  # Carbon atom
+                # Check if this carbon is connected to nitrogen atoms
+                carbon_neighbors = neighbor.GetNeighbors()
+                nitrogen_count = sum(1 for atom in carbon_neighbors if atom.GetAtomicNum() == 7)
+                if nitrogen_count >= 1:
+                    is_connected_to_coa = True
+                    break
+        if not is_connected_to_coa:
+            continue  # Not connected to CoA, check next match
 
-    if not mol.HasSubstructMatch(thioester_hydroxy_pattern):
-        return False, "No 3-hydroxy group on acyl chain attached via thioester linkage found"
+        # Identify C2 atom in acyl chain (attached to carbonyl carbon and not sulfur)
+        c2_atom = None
+        for neighbor in carbonyl_carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != sulfur_idx:
+                c2_atom = neighbor
+                break
+        if c2_atom is None:
+            continue  # No acyl chain found
 
-    return True, "Contains 3-hydroxy fatty acyl-CoA structure"
+        # Identify C3 atom (next carbon in the chain)
+        c3_atom = None
+        for neighbor in c2_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != carbonyl_carbon_idx:
+                c3_atom = neighbor
+                break
+        if c3_atom is None:
+            continue  # Acyl chain too short
+
+        # Check for hydroxy group on C3 atom
+        has_hydroxy = False
+        for neighbor in c3_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen atom
+                if neighbor.GetDegree() == 1:
+                    # Check bond type (should be single bond)
+                    bond = mol.GetBondBetweenAtoms(c3_atom.GetIdx(), neighbor.GetIdx())
+                    if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                        has_hydroxy = True
+                        break
+        if has_hydroxy:
+            return True, "Contains 3-hydroxy group on acyl chain attached to CoA via thioester linkage"
+
+    return False, "Does not contain 3-hydroxy group on acyl chain attached to CoA via thioester linkage"
