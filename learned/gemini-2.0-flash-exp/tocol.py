@@ -23,24 +23,60 @@ def is_tocol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for the chroman-6-ol core.
-    chromanol_pattern = Chem.MolFromSmarts('[OX2]1[c]2[c]([c]([#6])[c]3[O][C]([#6])[C]3[c]2)[c]([#6])[c]1')
-    if not mol.HasSubstructMatch(chromanol_pattern):
+    # This pattern looks for a benzene ring fused to a dihydrofuran ring (ether), and a hydroxyl group at position 6.
+    # The 6-membered ring is connected to the 2 position through a carbon atom.
+    chromanol_pattern = Chem.MolFromSmarts('[c]1[c]([OX2])[c]([c])[c]2[O][CH2][CH2][c]2[c]1')
+    core_matches = mol.GetSubstructMatches(chromanol_pattern)
+    if not core_matches:
         return False, "Chroman-6-ol core not found"
     
-    # SMARTS pattern for a 15 carbon chain with single or double bonds (isoprenoid units) attached to position 2.
-    isoprenoid_chain_pattern = Chem.MolFromSmarts('[#6][CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]')
+    # Get the 2-position of the core.
+    chromanol_match = core_matches[0]
+    
+    #Get the position 2 carbon
+    position_2_carbon = None
+    for atom_idx in chromanol_match:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetSymbol() == "C" and atom.GetExplicitValence() == 4:
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetSymbol() == "C" and neighbor.GetExplicitValence() == 4:
+                     for next_neighbor in neighbor.GetNeighbors():
+                        if next_neighbor.GetSymbol() == 'O':
+                            position_2_carbon = atom
+                            break
+        if position_2_carbon is not None:
+            break
 
-    #Check that the position 2 carbon is linked to the isoprenoid chain, by verifying that there is a match to the isoprenoid chain in the mol.
-    isoprenoid_matches = mol.GetSubstructMatches(isoprenoid_chain_pattern)
-    if len(isoprenoid_matches) == 0:
-       return False, "No isoprenoid chain found"
+    if position_2_carbon is None:
+          return False, "Could not identify carbon at position 2."
+    
+    # Check for the isoprenoid chain and its length
+    isoprenoid_chain_carbons = []
+    visited_atoms = set()
 
-    # Check the number of carbon atoms in the isoprenoid chain (expecting 15)
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    core_carbon_count = 9 # based on the core SMARTS, excluding the carbon attached to position 2
-    isoprenoid_carbon_count = carbon_count - core_carbon_count
-    if isoprenoid_carbon_count != 15:
-       return False, f"Isoprenoid chain does not have 15 carbons. Found {isoprenoid_carbon_count} carbon atoms in the chain."
+    def traverse_chain(current_atom, chain):
+        if current_atom.GetIdx() in visited_atoms:
+            return
+        
+        visited_atoms.add(current_atom.GetIdx())
+        if current_atom.GetSymbol() == "C":
+          chain.append(current_atom)
+
+        
+        neighbors = current_atom.GetNeighbors()
+
+        for neighbor in neighbors:
+           if neighbor.GetSymbol() == "C" and neighbor.GetIdx() != position_2_carbon.GetIdx():
+               traverse_chain(neighbor, chain)
+
+
+    traverse_chain(position_2_carbon, isoprenoid_chain_carbons)
+
+    isoprenoid_count = len(isoprenoid_chain_carbons)
+
+    if isoprenoid_count != 15:
+        return False, f"Isoprenoid chain does not have 15 carbons. Found {isoprenoid_count} carbon atoms in the chain."
+
 
     #Check the molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
