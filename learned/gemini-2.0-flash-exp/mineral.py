@@ -18,79 +18,52 @@ def is_mineral(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for common mineral-forming metals (including metalloids).
-    # We are looking for a metal connected to non-C or non-H atom.
-    metal_pattern = Chem.MolFromSmarts("[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]~[!C;!H]")
-    has_metal = mol.HasSubstructMatch(metal_pattern)
-    
-    # Define common mineral anion patterns, this time considering the bonding
+
+    # Check for presence of charged atoms
+    has_charge = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
+    if not has_charge:
+        return False, "No charged atoms, unlikely to be mineral"
+
+    # Check for metal presence
+    metal_pattern = Chem.MolFromSmarts("[Li,Na,K,Rb,Cs,Fr,Be,Mg,Ca,Sr,Ba,Ra,Sc,Y,La,Ce,Pr,Nd,Pm,Sm,Eu,Gd,Tb,Dy,Ho,Er,Tm,Yb,Lu,Ac,Th,Pa,U,Np,Pu,Am,Cm,Bk,Cf,Es,Fm,Md,No,Lr,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Tc,Re,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Sn,Pb,Sb,Bi,Po,Ge,As,Sb,Se,Te,B,Si]")
+    if not mol.HasSubstructMatch(metal_pattern):
+        return False, "No metals detected, unlikely to be mineral"
+
+    # Check for common anions (oxide, hydroxide, carbonate, sulfate, phosphate, halides)
     anion_patterns = [
-        Chem.MolFromSmarts("[O-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # oxide
-        Chem.MolFromSmarts("[OH-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # hydroxide
-        Chem.MolFromSmarts("[C](=[O])([O-])[O-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # carbonate
-        Chem.MolFromSmarts("[S](=[O])(=[O])([O-])[O-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # sulfate
-        Chem.MolFromSmarts("[P](=[O])([O-])([O-])[O-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # phosphate
-        Chem.MolFromSmarts("[Si]([O-])([O-])[O-][O-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"), #silicate
-        Chem.MolFromSmarts("[F-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # fluoride
-        Chem.MolFromSmarts("[Cl-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # chloride
-        Chem.MolFromSmarts("[Br-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # bromide
-        Chem.MolFromSmarts("[I-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # iodide
-        Chem.MolFromSmarts("[S--]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"),  # sulfide
-        Chem.MolFromSmarts("[As-]~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"), # arsenide
-         Chem.MolFromSmarts("[B]([O-])([O-])([O-])~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"), #borate
-        Chem.MolFromSmarts("[H]C([O-])=O~[Li,Na,K,Rb,Cs,Be,Mg,Ca,Sr,Ba,Sc,Y,La,Ti,Zr,Hf,V,Nb,Ta,Cr,Mo,W,Mn,Fe,Ru,Os,Co,Rh,Ir,Ni,Pd,Pt,Cu,Ag,Au,Zn,Cd,Hg,Al,Ga,In,Tl,Ge,Sn,Pb,Sb,Bi]"), #formate
-        Chem.MolFromSmarts("[O-]~[Si]~[O-]"), #silicate (partial)
-         Chem.MolFromSmarts("[O-]~[P]~[O-]"), #phosphate (partial)
-          Chem.MolFromSmarts("[O-]~[S]~[O-]"), #sulfate (partial)
+        Chem.MolFromSmarts("[O-]"),      # oxide
+        Chem.MolFromSmarts("[OH-]"),    # hydroxide
+        Chem.MolFromSmarts("C(=O)([O-])[O-]"),   # carbonate
+        Chem.MolFromSmarts("S(=O)(=O)([O-])[O-]"), # sulfate
+        Chem.MolFromSmarts("P(=O)([O-])([O-])[O-]"), # phosphate
+        Chem.MolFromSmarts("[F-]"),      # fluoride
+        Chem.MolFromSmarts("[Cl-]"),    # chloride
+        Chem.MolFromSmarts("[Br-]"),    # bromide
+        Chem.MolFromSmarts("[I-]"),      # iodide
+
     ]
     has_anion = any(mol.HasSubstructMatch(pattern) for pattern in anion_patterns)
+    if not has_anion:
+        return False, "No common mineral anions detected"
 
-   # Check for the presence of charged atoms
-    has_charge = any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms())
+    #check charge balance, it's OK if it's an integer
+    charge = sum([atom.GetFormalCharge() for atom in mol.GetAtoms()])
+    if abs(charge) > 2:
+        return False, "Net charge is not likely for a mineral"
 
-
-    if not has_metal and not has_charge:
-        return False, "No metal or charged atoms, unlikely a mineral"
-
-
-    if not has_anion and has_charge and has_metal:
-        num_charged_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetFormalCharge() != 0)
-        if num_charged_atoms > 4:
-              return False, "No common mineral anions detected and complex charge"
-        else:
-            pass #it may be mineral
-
-    elif not has_anion and not has_charge: #some minerals are neutral molecules, like heazlewoodite
-        pass #it may be a mineral
-
-    # Count water molecules
+    # Check for water molecules if there are any separate water molecules
     water_pattern = Chem.MolFromSmarts("[O]")
     water_count = len(mol.GetSubstructMatches(water_pattern))
+    if water_count > 0 :
+      # If there are any 'O' atoms, and there are also charged species it could be a hydrated mineral
+      if not has_charge:
+          return False, "Contains neutral water but no charged species."
 
 
-    # Check for elements that are unlikely to form minerals, avoid counting C, N, P, S as part of the mineral anions
-    other_elements = Chem.MolFromSmarts("[C,N,P]")
-    if mol.HasSubstructMatch(other_elements):
-          valid_organic = False
-          for pattern in anion_patterns:
-            matches = mol.GetSubstructMatches(pattern)
-            if len(matches) > 0:
-               valid_organic = True
-               break
-          if not valid_organic:
-              carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-              nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-              phosphorus_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-              sulfur_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16)
-              if carbon_count > 2 or nitrogen_count > 2 or phosphorus_count > 1 or sulfur_count > 3:
-                  return False, "Contains carbon/nitrogen/phosphorus not part of common mineral anions"
+    # Check for long carbon chains
+    carbon_chain_pattern = Chem.MolFromSmarts("[C]([C])[C]") #detect 3+ carbon chain
+    if mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "Contains carbon chains, unlikely to be mineral"
 
-
-    # Check for charge balance, it should be close to 0
-    charge = sum([atom.GetFormalCharge() for atom in mol.GetAtoms()])
-    if abs(charge) > 2:  # allow for charge 1 or 2. 0 is much more common.
-      return False, f"Net charge ({charge}) is not likely for a mineral"
-    
 
     return True, "Likely a mineral (contains metal, common anions and is charge balanced)"
