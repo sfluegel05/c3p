@@ -28,19 +28,12 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "1D-myo-inositol ring not found"
 
-    # 2. Check for Phosphate
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) != 1:
-        return False, "Incorrect number of phosphate groups, need 1"
-    
-    # 3. Check for Glycerol
-    glycerol_pattern = Chem.MolFromSmarts("COC(C)O")
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    if len(glycerol_matches) == 0:
-         return False, "Glycerol group not found."
+    # 2. Check for Phosphate connecting to glycerol and inositol
+    phosphate_link_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)OP([OX2][CX4])(=O)[OX1]") #The [CX4] is to indicate glycerol
+    if not mol.HasSubstructMatch(phosphate_link_pattern):
+         return False, "Phosphate group is not correctly connected to both the inositol and the glycerol"
 
-    #4. check for two ester groups attached to the glycerol backbone.
+    #3. check for two ester groups attached to the glycerol backbone.
     ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 2:
@@ -51,11 +44,6 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
-        
-    #5. Check for the connection of the phosphate to the inositol
-    inositol_phospho_link_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)OP")
-    if not mol.HasSubstructMatch(inositol_phospho_link_pattern):
-        return False, "Phosphate group is not correctly connected to the inositol ring"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
