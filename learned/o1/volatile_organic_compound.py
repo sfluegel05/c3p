@@ -5,12 +5,14 @@ Classifies: CHEBI:134179 volatile organic compound
 Classifies: volatile organic compound (VOC)
 Definition: Any organic compound having an initial boiling point less than or equal to 250°C measured at a standard atmospheric pressure of 101.3 kPa.
 """
+
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_volatile_organic_compound(smiles: str):
     """
     Determines if a molecule is a volatile organic compound (VOC) based on its SMILES string.
-    Estimates the boiling point using an improved Joback method.
+    Uses the Joback method to estimate the boiling point.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,131 +21,87 @@ def is_volatile_organic_compound(smiles: str):
         bool: True if molecule is a VOC, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
-    mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define Joback group contributions for boiling point estimation
+    # Check if molecule is organic (contains carbon and hydrogen)
+    atom_nums = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
+    if 6 not in atom_nums:
+        return False, "Molecule does not contain carbon"
+    if 1 not in atom_nums:
+        return False, "Molecule does not contain hydrogen"
+
+    # Estimate boiling point using Joback method
+    try:
+        boiling_point = estimate_boiling_point_joback(mol)
+    except Exception as e:
+        return False, f"Boiling point estimation failed: {e}"
+
+    if boiling_point <= 250:
+        return True, f"Estimated boiling point is {boiling_point:.1f}°C which is ≤ 250°C"
+    else:
+        return False, f"Estimated boiling point is {boiling_point:.1f}°C which is > 250°C"
+
+def estimate_boiling_point_joback(mol):
+    """
+    Estimates the boiling point of a molecule using the Joback method.
+
+    Args:
+        mol (rdkit.Chem.Mol): RDKit molecule object
+
+    Returns:
+        float: Estimated boiling point in °C
+    """
+    # Joback group contributions for boiling point
     joback_groups = {
-        # Alkanes
-        "CH3": {"smarts": "[C;H3]", "delta_tb": -23.58},
-        "CH2": {"smarts": "[C;H2]", "delta_tb": -7.24},
-        "CH": {"smarts": "[C;H1]", "delta_tb": 9.17},
-        "C_alkane": {"smarts": "[C;H0]", "delta_tb": 21.87},
-        
-        # Alkenes
-        "C=C": {"smarts": "[C]=[C]", "delta_tb": 14.70},
-        "CH2=CH2": {"smarts": "[C;H2]=[C;H2]", "delta_tb": -10.35},
-        "CH=CH": {"smarts": "[C;H1]=[C;H1]", "delta_tb": 5.40},
-        "C=CH2": {"smarts": "[C;H1]=[C;H2]", "delta_tb": -10.35},
-
-        # Alkynes
-        "C#C": {"smarts": "[C]#[C]", "delta_tb": 5.15},
-
-        # Aromatics
-        "Carom_H": {"smarts": "[cH]", "delta_tb": -12.51},
-        "Carom": {"smarts": "[c;H0]", "delta_tb": 4.01},
-
-        # Alcohols
-        "OH(alcohol)": {"smarts": "[OX2H][C]", "delta_tb": 26.86},
-        "OH(phenol)": {"smarts": "[OX2H][c]", "delta_tb": 9.27},
-
-        # Ethers
-        "Ether(aliphatic)": {"smarts": "[OD2]([C])[C]", "delta_tb": 13.60},
-        "Ether(aromatic)": {"smarts": "[OD2R][c]", "delta_tb": 13.60},
-
-        # Aldehydes and Ketones
-        "Carbonyl(aldehyde)": {"smarts": "[CX3H1](=O)[#6]", "delta_tb": 11.70},
-        "Carbonyl(ketone)": {"smarts": "[#6][CX3](=O)[#6]", "delta_tb": 7.78},
-
-        # Carboxylic Acids and Esters
-        "COOH": {"smarts": "[CX3](=O)[OX2H1]", "delta_tb": 20.00},
-        "Ester": {"smarts": "[CX3](=O)[OX2][#6]", "delta_tb": 7.43},
-
-        # Amines
-        "PrimaryAmine": {"smarts": "[NX3;H2][#6]", "delta_tb": 48.50},
-        "SecondaryAmine": {"smarts": "[NX3;H1]([#6])[#6]", "delta_tb": 9.92},
-        "TertiaryAmine": {"smarts": "[NX3;H0]([#6])([#6])[#6]", "delta_tb": 21.60},
-
-        # Halides
-        "Fluorine": {"smarts": "[F]", "delta_tb": -18.95},
-        "Chlorine": {"smarts": "[Cl]", "delta_tb": 26.86},
-        "Bromine": {"smarts": "[Br]", "delta_tb": 68.10},
-        "Iodine": {"smarts": "[I]", "delta_tb": 98.72},
-
-        # Nitro
-        "Nitro": {"smarts": "[NX3](=O)=O", "delta_tb": 33.60},
-
-        # Thiols
-        "Thiol": {"smarts": "[SX2H]", "delta_tb": 21.00},
-
-        # Sulfides
-        "Sulfide": {"smarts": "[#16X2]([#6])[#6]", "delta_tb": 21.00},
-
-        # Rings (approximate contribution)
-        "Ring": {"smarts": "[R]", "delta_tb": 19.81},
-        
-        # Others can be added as needed
+        # Format: SMARTS pattern: (Delta Tb term, group description)
+        "[CX4H3]":      (23.58, 'CH3'),
+        "[CX4H2][!#1]": (22.88, 'CH2'),
+        "[CX4H][!#1][!#1]": (21.74, 'CH'),
+        "[CX4][!#1][!#1][!#1]": (20.23, 'C'),
+        "[OX2H]":       (9.88, 'OH (alcohol)'),
+        "[NX3H2]":      (16.54, 'NH2'),
+        "[NX3H][!#1]":  (14.68, 'NH'),
+        "[NX3][!#1][!#1]": (12.85, 'N'),
+        "[$([CX3]=[OX1])][#6]": (7.73, 'C=O (ketone)'),
+        "[$([CX3]=[OX1])][OX2H1]": (7.73, 'C=O (carboxylic acid)'),
+        "[OX2][CX3](=O)[#6]": (7.73, 'C-O (ester)'),
+        "[#6][OX2][#6]": (9.44, 'C-O-C (ether)'),
+        "[#6][SX2][#6]": (9.44, 'C-S-C (thioether)'),
+        "[SX2H]":       (9.44, 'S-H'),
+        "[#6][F]":      (-10.44, 'C-F'),
+        "[#6][Cl]":     (6.96, 'C-Cl'),
+        "[#6][Br]":     (8.68, 'C-Br'),
+        "[#6][I]":      (10.40, 'C-I'),
+        # Add more group contributions as needed
     }
 
-    # Initialize delta_tb sum
-    delta_tb_sum = 0.0
-    groups_found = []
+    # Sum of group contributions
+    delta_tb = 198.0  # Base value for Tb calculation
+    for smarts, (contribution, desc) in joback_groups.items():
+        patt = Chem.MolFromSmarts(smarts)
+        matches = mol.GetSubstructMatches(patt)
+        n_matches = len(matches)
+        delta_tb += contribution * n_matches
 
-    # Keep track of matched atoms
-    matched_atoms = set()
+    return delta_tb  # Boiling point in °C
 
-    # Loop over Joback groups to find matches and sum delta_tb
-    for group_name, group_info in joback_groups.items():
-        pattern = Chem.MolFromSmarts(group_info["smarts"])
-        if pattern is None:
-            continue
-        matches = mol.GetSubstructMatches(pattern, uniquify=True)
-        num_matches = 0
-        for match in matches:
-            # Check if atoms have been matched already
-            if not any(atom_idx in matched_atoms for atom_idx in match):
-                num_matches += 1
-                matched_atoms.update(match)
-        if num_matches > 0:
-            delta_tb = group_info["delta_tb"]
-            delta_tb_sum += delta_tb * num_matches
-            groups_found.append((group_name, num_matches, delta_tb))
+# Example usage:
+if __name__ == "__main__":
+    smiles_list = [
+        "CCCCCCCCC(O)CCCCC",  # octadecan-6-ol
+        "ClC=C(Cl)Cl",        # trichloroethene
+        "CCCCCCC",            # heptane
+        "CC1CCCC1",           # methylcyclopentane
+        "CCC(O)CC",           # pentan-3-ol
+        "ClC(Cl)([H])[H]",    # dichloromethane-d2
+    ]
 
-    # Account for any unmatched carbon atoms (as CH, CH2, or CH3)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6 and atom.GetIdx() not in matched_atoms:
-            hydrogen_count = atom.GetTotalNumHs()
-            if hydrogen_count == 3:
-                group_name = "CH3"
-                delta_tb = -23.58
-            elif hydrogen_count == 2:
-                group_name = "CH2"
-                delta_tb = -7.24
-            elif hydrogen_count == 1:
-                group_name = "CH"
-                delta_tb = 9.17
-            else:
-                group_name = "C_alkane"
-                delta_tb = 21.87
-            delta_tb_sum += delta_tb
-            groups_found.append((group_name, 1, delta_tb))
-            matched_atoms.add(atom.GetIdx())
-
-    # Base boiling point
-    Tb_K = 198.0 + delta_tb_sum  # in Kelvin
-
-    # Convert to Celsius
-    Tb_C = Tb_K - 273.15
-
-    # Classify based on boiling point
-    if Tb_C <= 250:
-        result = True
-        reason = f"Estimated boiling point is {Tb_C:.2f}°C, which is ≤ 250°C"
-    else:
-        result = False
-        reason = f"Estimated boiling point is {Tb_C:.2f}°C, which is > 250°C"
-
-    return result, reason
+    for smiles in smiles_list:
+        result, reason = is_volatile_organic_compound(smiles)
+        print(f"SMILES: {smiles}")
+        print(f"Is VOC: {result}")
+        print(f"Reason: {reason}")
+        print("-" * 40)
