@@ -25,26 +25,32 @@ def is_spiroketal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for spiro pattern (two rings sharing a single atom)
-    spiro_pattern = Chem.MolFromSmarts("[R1,R2]@[R3,R4]")
-    spiro_matches = mol.GetSubstructMatches(spiro_pattern)
-    if not spiro_matches:
-        return False, "No spiro atom found"
-    
-    # Check if spiro atom is a ketal
+    # Look for ketal pattern
     ketal_pattern = Chem.MolFromSmarts("[OX2][CX4]([OX2])([OX2])")
-    for match in spiro_matches:
-        spiro_atom_idx = match[0]  # Extract the atom index from the match tuple
-        spiro_atom = mol.GetAtomWithIdx(spiro_atom_idx)
-        match_ketal = mol.GetSubstructMatch(ketal_pattern, spiro_atom_idx)
-        if match_ketal:
-            # Check if the ketal carbon is part of two rings
-            ring_info = mol.GetRingInfo()
-            ketal_carbon_rings = ring_info.AtomRings()[spiro_atom_idx]
-            if len(ketal_carbon_rings) == 2:
-                # Check if the two rings share only the ketal carbon
-                ring1, ring2 = [set(ring) for ring in ketal_carbon_rings]
-                if len(ring1.intersection(ring2)) == 1:
-                    return True, "Contains a spiroketal moiety with two rings sharing a ketal carbon"
+    ketal_matches = mol.GetSubstructMatches(ketal_pattern)
+    
+    for match in ketal_matches:
+        ketal_carbon_idx = match[1]  # Index of the ketal carbon
+        ketal_carbon = mol.GetAtomWithIdx(ketal_carbon_idx)
+        
+        # Get the rings containing the ketal carbon
+        ring_info = mol.GetRingInfo()
+        ketal_carbon_rings = ring_info.AtomRings()[ketal_carbon_idx]
+        
+        # Check if the ketal carbon is part of exactly two rings
+        if len(ketal_carbon_rings) == 2:
+            ring1, ring2 = [set(ring) for ring in ketal_carbon_rings]
+            
+            # Check if the two rings share only the ketal carbon
+            if len(ring1.intersection(ring2)) == 1:
+                
+                # Check if the rings are of appropriate size (4-8 atoms)
+                ring_sizes = [len(ring) for ring in ketal_carbon_rings]
+                if all(4 <= size <= 8 for size in ring_sizes):
+                    
+                    # Check if the ketal oxygen atoms are part of the rings
+                    ketal_oxygens = [mol.GetAtomWithIdx(idx) for idx in match if idx != ketal_carbon_idx]
+                    if all(atom.IsInRing() for atom in ketal_oxygens):
+                        return True, "Contains a spiroketal moiety with two rings sharing a ketal carbon"
     
     return False, "No spiroketal moiety found"
