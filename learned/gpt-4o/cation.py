@@ -21,26 +21,11 @@ def is_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS patterns for known cationic groups
-    cation_patterns = [
-        '[N+]',     # Quaternary ammonium
-        '[P+]',     # Phosphonium
-        '[S+]',     # Sulfonium
-        '[O+]',     # Oxonium
-        '[C+]',     # Carbocation
-        '[H+]',     # Proton, hydronium
-        '[Fe+3]',   # Ferric ion example
-        # Add more patterns as needed for specific cationic substructures
-    ]
-    
-    # Check for any cationic substructures
-    for pattern in cation_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return True, f"Positive charge of {pattern} detected"
-
-    # If no specific patterns matched, check the net positive formal charge
+    # Calculate net charge of the molecule
     net_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
-    if net_charge > 0:
-        return True, "Net positive charge detected but no specific cation group identified"
 
-    return False, "No cationic groups found"
+    # Check if net charge is positive
+    if net_charge > 0:
+        return True, f"Net positive charge of {net_charge} detected"
+
+    return False, "No net positive charge found"
