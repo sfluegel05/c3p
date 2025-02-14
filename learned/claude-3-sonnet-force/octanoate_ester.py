@@ -2,7 +2,7 @@
 Classifies: CHEBI:87657 octanoate ester
 """
 """
-Classifies: CHEBI:38145 octanoate ester
+Classifies: CHEBI:35930 octanoate ester
 Any fatty acid ester in which the carboxylic acid component is octanoic acid (caprylic acid).
 """
 from rdkit import Chem
@@ -25,28 +25,15 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find all carboxylic acid groups
-    acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    acid_matches = mol.GetSubstructMatches(acid_pattern)
+    # Look for octanoate group (CCCCCCCC(=O)O-)
+    octanoate_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)[O-]")
+    octanoate_matches = mol.GetSubstructMatches(octanoate_pattern)
     
-    # Check if any carboxylic acid group has an 8-carbon chain attached
-    for match in acid_matches:
-        acid_atom = mol.GetAtomWithIdx(list(match)[0])
-        neighbor_atoms = [mol.GetAtomWithIdx(nbr_idx) for nbr_idx in acid_atom.GetNeighbors()]
-        
-        # Check if any neighbor is part of an 8-carbon chain
-        for nbr_atom in neighbor_atoms:
-            if nbr_atom.GetAtomicNum() == 6:  # Carbon
-                chain = Chem.FindAllPathsOfLengthN(mol, nbr_atom.GetIdx(), 8, useBonds=True)
-                if chain:
-                    # Check if the carboxylic acid is part of an ester linkage
-                    for path in chain:
-                        if any(mol.GetBondBetweenAtoms(path[i], path[i+1]).GetBondType() == Chem.BondType.DOUBLE for i in range(len(path)-1)):
-                            continue  # Double bond present, not an ester
-                        elif any(mol.GetAtomWithIdx(idx).GetAtomicNum() != 6 and mol.GetAtomWithIdx(idx).GetAtomicNum() != 8 for idx in path):
-                            continue  # Non-carbon/oxygen atom in chain
-                        else:
-                            # Found an octanoate ester
-                            return True, "Molecule contains an octanoic acid component attached via an ester linkage"
+    # Look for ester bond (CCCCCCCC(=O)O-C)
+    ester_pattern = Chem.MolFromSmarts("CCCCCCCC(=O)OC")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
     
-    return False, "No octanoate ester group found"
+    if len(octanoate_matches) > 0 or len(ester_matches) > 0:
+        return True, "Contains octanoate group and ester bond"
+    else:
+        return False, "Does not contain octanoate group or ester bond"
