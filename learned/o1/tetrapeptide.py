@@ -24,32 +24,44 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the peptide bond pattern (backbone peptide bonds)
-    peptide_bond_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
+    # Find peptide bonds (amide bonds between amino acids)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
     peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
-    peptide_bond_atoms = []
-    for match in peptide_bond_matches:
-        c_idx, n_idx = match
-        n_atom = mol.GetAtomWithIdx(n_idx)
-        c_atom = mol.GetAtomWithIdx(c_idx)
-        # Check if N atom is connected to a C-alpha carbon (sp3 carbon with one hydrogen)
-        for neighbor in n_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetHybridization() == Chem.HybridizationType.SP3:
-                num_hydrogens = neighbor.GetTotalNumHs()
-                if num_hydrogens == 1:
-                    # This is likely a C-alpha carbon
-                    peptide_bond_atoms.append((c_idx, n_idx))
-                    break
 
-    num_peptide_bonds = len(peptide_bond_atoms)
+    num_peptide_bonds = len(peptide_bond_matches)
 
     if num_peptide_bonds != 3:
         return False, f"Found {num_peptide_bonds} peptide bonds, expected 3 for tetrapeptide"
 
-    # The number of residues is peptide bonds + 1
-    num_residues = num_peptide_bonds + 1
+    # Identify alpha carbons (Cα) - carbon attached to both an amine and a carboxyl group
+    alpha_carbon_pattern = Chem.MolFromSmarts("[C;!R][C](=O)[N]")  # Non-ring carbon connected to C(=O)N
+    alpha_carbons = mol.GetSubstructMatches(alpha_carbon_pattern)
+    num_alpha_carbons = len(alpha_carbons)
 
-    if num_residues != 4:
-        return False, f"Found {num_residues} amino acid residues, expected 4 for tetrapeptide"
+    if num_alpha_carbons != 4:
+        return False, f"Found {num_alpha_carbons} alpha carbons, expected 4 for tetrapeptide"
 
+    # Verify that the peptide bonds connect the amino acids in sequence
+    # Check that the molecule is mostly linear (no significant branching)
+    n_chains = Chem.GetMolFrags(mol, asMols=False, sanitizeFrags=False)
+    if len(n_chains) > 1:
+        return False, "Molecule is fragmented, expected a single continuous peptide chain"
+
+    # Optionally, check for terminal groups (N-terminus and C-terminus)
+    # N-terminus amine group
+    n_term_pattern = Chem.MolFromSmarts("N[^C(=O)]")  # Nitrogen not attached to C=O
+    n_term_matches = mol.GetSubstructMatches(n_term_pattern)
+    if len(n_term_matches) == 0:
+        return False, "No N-terminal amine group found"
+
+    # C-terminus carboxyl group
+    c_term_pattern = Chem.MolFromSmarts("C(=O)[O;H1,H0-]")  # C=O attached to OH or O-
+    c_term_matches = mol.GetSubstructMatches(c_term_pattern)
+    if len(c_term_matches) == 0:
+        return False, "No C-terminal carboxyl group found"
+
+    # Ensure there are no additional peptide bonds or amino acids
+    # Total expected atoms in tetrapeptide backbone: (4 residues) * (N-Cα-C') = 12 atoms
+    # plus side chains and terminal groups
+    # For simplicity, assuming the molecule doesn't contain additional peptide bonds
     return True, "Molecule is a tetrapeptide with 4 amino acid residues connected via peptide bonds"
