@@ -24,13 +24,13 @@ def is_hopanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the hopane skeleton without substituents and stereochemistry
-    hopane_smiles = "C1CC2CCC3CCCC4CCCC5CCCCC5C4C3C2C1"  # Simplified hopane skeleton
+    # Define the hopane skeleton without stereochemistry
+    hopane_smiles = "CC(C)C1CCC2(C)C1CCC3(C)C2CCC4(C)C3CCCC5C4CCCCC5"
     hopane_mol = Chem.MolFromSmiles(hopane_smiles)
     if hopane_mol is None:
-        return None, "Invalid hopane skeleton SMILES"
+        return False, "Invalid hopane skeleton SMILES"
 
-    # Check for the hopane skeleton in the molecule
+    # Use substructure matching without considering stereochemistry
     if not mol.HasSubstructMatch(hopane_mol):
         return False, "No hopane skeleton found"
 
