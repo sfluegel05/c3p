@@ -11,8 +11,10 @@ def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
     Cannabinoids are characterized by specific structural features such as
-    a resorcinol moiety with an alkyl side chain, dibenzopyran ring system,
-    or long-chain polyunsaturated fatty acid derivatives linked to ethanolamine or glycerol.
+    the alkylresorcinol moiety linked to a terpene unit (e.g., in THC and CBD),
+    long-chain polyunsaturated fatty acid derivatives linked to ethanolamine
+    or glycerol (e.g., in endocannabinoids), and synthetic cannabinoids with
+    varied core structures but common pharmacophores.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,66 +28,88 @@ def is_cannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define patterns for phytocannabinoids (e.g., THC, CBD)
-    # Resorcinol moiety with alkyl side chain
-    resorcinol_alkyl_pattern = Chem.MolFromSmarts('Oc1cc(O)ccc1CCCC')
-    # Dibenzopyran ring system
-    dibenzopyran_pattern = Chem.MolFromSmarts('c1cc2ccc(O)cc2oc1')
+    # Define pattern for phytocannabinoids like THC, CBD (alkylresorcinol linked to a terpene unit)
+    phytocannabinoid_pattern = Chem.MolFromSmarts('Oc1cc(ccc1CCCCC)C2=C(C)C=CC=C2C')
+    # Include variation in side chain length and saturation
+    phytocannabinoid_variations = Chem.MolFromSmarts('Oc1cc(ccc1CCCC)C2=C(C)C=CC=C2C')
+    
+    # Define pattern for endocannabinoids like anandamide (fatty acid amide linked to ethanolamine)
+    endocannabinoid_amide_pattern = Chem.MolFromSmarts('C(=O)NCCO')
+    # Define pattern for endocannabinoids like 2-AG (fatty acid ester linked to glycerol)
+    endocannabinoid_ester_pattern = Chem.MolFromSmarts('C(=O)OCC(O)CO')
 
-    # Define patterns for endocannabinoids (e.g., anandamide, 2-AG)
-    # Long-chain fatty acid amide linked to ethanolamine
-    fatty_acid_amide_pattern = Chem.MolFromSmarts('C(=O)NCCO')
-    # Long-chain fatty acid ester linked to glycerol
-    fatty_acid_glycerol_pattern = Chem.MolFromSmarts('C(=O)OCC(O)CO')
+    # Define pattern for synthetic cannabinoids (e.g., CP-55,940)
+    synthetic_cannabinoid_pattern = Chem.MolFromSmarts('c1cc(CC(C)(C)C)ccc1C2CCC(CC2)O')
 
     # Check for phytocannabinoid features
-    if mol.HasSubstructMatch(resorcinol_alkyl_pattern):
-        return True, "Contains resorcinol moiety with alkyl side chain characteristic of phytocannabinoids"
-
-    if mol.HasSubstructMatch(dibenzopyran_pattern):
-        return True, "Contains dibenzopyran ring system characteristic of phytocannabinoids"
+    if mol.HasSubstructMatch(phytocannabinoid_pattern) or mol.HasSubstructMatch(phytocannabinoid_variations):
+        return True, "Contains alkylresorcinol moiety linked to a terpene unit characteristic of phytocannabinoids"
 
     # Check for endocannabinoid features
-    if mol.HasSubstructMatch(fatty_acid_amide_pattern):
-        # Check for long-chain fatty acid (at least 18 carbons)
-        chain_lengths = []
-        for amide_match in mol.GetSubstructMatches(fatty_acid_amide_pattern):
-            carbon_chain = []
-            amide_carbon = amide_match[0]
-            atom = mol.GetAtomWithIdx(amide_carbon)
-            # Traverse the carbon chain
-            while True:
-                neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() not in carbon_chain]
-                if neighbors:
-                    atom = neighbors[0]
-                    carbon_chain.append(atom.GetIdx())
-                else:
-                    break
-            chain_lengths.append(len(carbon_chain))
-        if chain_lengths and max(chain_lengths) >= 16:
-            return True, "Contains long-chain fatty acid amide characteristic of endocannabinoids"
+    if mol.HasSubstructMatch(endocannabinoid_amide_pattern):
+        # Verify long-chain fatty acid (at least 16 carbons in chain)
+        chain_length = _get_fatty_acid_chain_length(mol, endocannabinoid_amide_pattern)
+        if chain_length >= 16:
+            return True, "Contains long-chain fatty acid amide linked to ethanolamine characteristic of endocannabinoids"
         else:
             return False, "Amide group found but fatty acid chain too short"
 
-    if mol.HasSubstructMatch(fatty_acid_glycerol_pattern):
-        # Check for long-chain fatty acid (at least 18 carbons)
-        chain_lengths = []
-        for ester_match in mol.GetSubstructMatches(fatty_acid_glycerol_pattern):
-            carbon_chain = []
-            ester_carbon = ester_match[0]
-            atom = mol.GetAtomWithIdx(ester_carbon)
-            # Traverse the carbon chain
-            while True:
-                neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() not in carbon_chain]
-                if neighbors:
-                    atom = neighbors[0]
-                    carbon_chain.append(atom.GetIdx())
-                else:
-                    break
-            chain_lengths.append(len(carbon_chain))
-        if chain_lengths and max(chain_lengths) >= 16:
-            return True, "Contains long-chain fatty acid ester characteristic of endocannabinoids"
+    if mol.HasSubstructMatch(endocannabinoid_ester_pattern):
+        # Verify long-chain fatty acid (at least 16 carbons in chain)
+        chain_length = _get_fatty_acid_chain_length(mol, endocannabinoid_ester_pattern)
+        if chain_length >= 16:
+            return True, "Contains long-chain fatty acid ester linked to glycerol characteristic of endocannabinoids"
         else:
             return False, "Ester group found but fatty acid chain too short"
 
+    # Check for synthetic cannabinoid features
+    if mol.HasSubstructMatch(synthetic_cannabinoid_pattern):
+        return True, "Contains structural features characteristic of synthetic cannabinoids"
+
     return False, "No characteristic cannabinoid structural features found"
+
+def _get_fatty_acid_chain_length(mol, pattern):
+    """
+    Helper function to determine the length of the fatty acid chain
+    in endocannabinoids.
+
+    Args:
+        mol: RDKit Mol object
+        pattern: Substructure pattern to match (amide or ester group)
+
+    Returns:
+        int: Length of the carbon chain attached to the carbonyl carbon
+    """
+    chain_lengths = []
+    for match in mol.GetSubstructMatches(pattern):
+        carbonyl_carbon_idx = match[0]  # Index of the carbonyl carbon
+        chain_length = _traverse_chain(mol, carbonyl_carbon_idx)
+        chain_lengths.append(chain_length)
+    return max(chain_lengths) if chain_lengths else 0
+
+def _traverse_chain(mol, start_idx):
+    """
+    Traverses a carbon chain starting from the given atom index.
+
+    Args:
+        mol: RDKit Mol object
+        start_idx: Starting atom index
+
+    Returns:
+        int: Length of the carbon chain
+    """
+    visited = set()
+    to_visit = [start_idx]
+    chain_length = 0
+
+    while to_visit:
+        current_idx = to_visit.pop()
+        if current_idx in visited:
+            continue
+        visited.add(current_idx)
+        atom = mol.GetAtomWithIdx(current_idx)
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            chain_length += 1
+            neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited]
+            to_visit.extend(neighbors)
+    return chain_length
