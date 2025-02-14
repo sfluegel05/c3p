@@ -11,7 +11,7 @@ from rdkit.Chem import AllChem
 def is_secondary_ammonium_ion(smiles: str):
     """
     Determines if a molecule is a secondary ammonium ion based on its SMILES string.
-    A secondary ammonium ion contains an NH2+ group attached to two carbon atoms.
+    A secondary ammonium ion contains an NH2+ group attached to two carbon atoms and no other heteroatoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,20 +26,30 @@ def is_secondary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for NH2+ pattern
-    ammonium_pattern = Chem.MolFromSmarts("[NH2+]")
+    # Look for secondary ammonium ion pattern
+    ammonium_pattern = Chem.MolFromSmarts("[NH2+][CX4,CX3]([#6])[CX4,CX3]([#6])[#6]")
     ammonium_matches = mol.GetSubstructMatches(ammonium_pattern)
     
     if not ammonium_matches:
-        return False, "No NH2+ group found"
+        return False, "No secondary ammonium ion pattern found"
     
-    # Check if NH2+ is attached to two carbon atoms
+    # Check if NH2+ is not attached to heteroatoms other than carbon
     for match in ammonium_matches:
         nitrogen = mol.GetAtomWithIdx(match)
         neighbors = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in nitrogen.GetNeighbors()]
-        carbon_neighbors = [neighbor for neighbor in neighbors if neighbor.GetAtomicNum() == 6]
+        hetero_neighbors = [neighbor for neighbor in neighbors if neighbor.GetAtomicNum() != 6]
         
-        if len(carbon_neighbors) == 2:
-            return True, "Contains an NH2+ group attached to two carbon atoms (secondary ammonium ion)"
+        if hetero_neighbors:
+            continue  # Skip this match if nitrogen is attached to heteroatoms
+        
+        # Check if NH2+ is not part of a ring
+        if nitrogen.IsInRing():
+            continue  # Skip this match if nitrogen is part of a ring
+        
+        # Check if nitrogen has a formal charge of +1
+        if nitrogen.GetFormalCharge() != 1:
+            continue  # Skip this match if nitrogen is not protonated
+        
+        return True, "Contains a secondary ammonium ion (NH2+ attached to two carbon atoms and no other heteroatoms)"
     
-    return False, "NH2+ group not attached to two carbon atoms"
+    return False, "No valid secondary ammonium ion found in the molecule"
