@@ -26,53 +26,42 @@ def is_aldose(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure molecule contains only C, H, O atoms
+    # Ensure molecule contains only C, H, and O atoms
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in (6, 1, 8):
             return False, "Contains elements other than C, H, and O"
 
-    # Check number of carbon atoms (aldoses typically have 3 to 7 carbons)
+    # Check number of carbon atoms (aldoses typically have 3 or more carbons)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 2:
+    if c_count < 3:
         return False, f"Too few carbons ({c_count}) for an aldose"
 
     # Define patterns
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")  # Aldehyde group
-    hemiacetal_pattern = Chem.MolFromSmarts("[OX2H][CX4H1][OX2][CX4H][CX4H][OX2H]")  # Simplified hemiacetal pattern
-    ring_5_or_6 = Chem.MolFromSmarts("[OX2H][C][C][C][O,C]")  # 5 or 6 membered ring with oxygen
+    ketone_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6]")  # Ketone group (exclude ketoses)
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1H0-,OX2H1]")  # Carboxylic acid group
+    hemiacetal_oxygen_pattern = Chem.MolFromSmarts("[OX2H][CX4H]")  # Hydroxyl oxygen attached to carbon
+
+    # Exclude molecules with ketone groups (ketoses) or carboxylic acids (uronic acids)
+    if mol.HasSubstructMatch(ketone_pattern):
+        return False, "Contains ketone group, likely a ketose"
+    if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "Contains carboxylic acid group, likely a uronic acid or aldonic acid"
 
     # Check for aldehyde group (open-chain form)
     if mol.HasSubstructMatch(aldehyde_pattern):
         # Open-chain aldose
-        # Check that all carbons except aldehyde carbon have hydroxyl groups
-        aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
-        aldehyde_c_idx = aldehyde_matches[0][0]
-        aldehyde_c = mol.GetAtomWithIdx(aldehyde_c_idx)
+        # Count hydroxyl groups attached to carbons (excluding aldehyde carbon)
+        hydroxyl_pattern = Chem.MolFromSmarts("[CX4;$([CH0,CH1,CH2][OH])]")  # Carbon with hydroxyl
+        hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+        num_hydroxyls = len(hydroxyl_matches)
 
-        # Get chain carbons starting from aldehyde carbon
-        visited = set()
-        to_visit = [aldehyde_c]
-        while to_visit:
-            atom = to_visit.pop()
-            if atom.GetIdx() in visited:
-                continue
-            visited.add(atom.GetIdx())
-            if atom.GetAtomicNum() != 6:
-                return False, "Chain contains non-carbon atoms"
-            # For carbons other than aldehyde carbon, check for hydroxyl group
-            if atom.GetIdx() != aldehyde_c_idx:
-                hydroxyls = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() == 1]
-                if len(hydroxyls) < 1:
-                    return False, "A carbon in the chain does not have a hydroxyl group"
+        # Require at least two hydroxyl groups for aldoses with three carbons
+        min_hydroxyls = max(2, c_count - 2)  # Allow for deoxy sugars
+        if num_hydroxyls < min_hydroxyls:
+            return False, f"Too few hydroxyl groups ({num_hydroxyls}) for an aldose"
 
-            # Add neighboring carbons
-            for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited:
-                    to_visit.append(nbr)
-
-        if len(visited) != c_count:
-            return False, "Not all carbons are part of a single chain"
-        return True, "Open-chain aldose with aldehyde group and hydroxylated carbons"
+        return True, "Open-chain aldose with aldehyde group and sufficient hydroxylated carbons"
 
     else:
         # Check for cyclic hemiacetal forms (furanose or pyranose rings)
@@ -80,7 +69,7 @@ def is_aldose(smiles: str):
         if ring_info.NumRings() == 0:
             return False, "Does not contain aldehyde group or cyclic hemiacetal ring"
 
-        # Find rings of size 5 or 6 containing one oxygen
+        # Find rings of size 5 or 6 containing one oxygen (hemiacetal form)
         found_ring = False
         rings = ring_info.AtomRings()
         for ring in rings:
@@ -88,40 +77,46 @@ def is_aldose(smiles: str):
             ring_size = len(ring)
             if ring_size not in (5, 6):
                 continue
-            o_count = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
-            if o_count != 1:
+            o_atoms = [atom for atom in ring_atoms if atom.GetAtomicNum() == 8]
+            if len(o_atoms) != 1:
                 continue
-            # Check that the rest of the ring atoms are carbons
-            if not all(atom.GetAtomicNum() == 6 for atom in ring_atoms if atom.GetAtomicNum() != 8):
+            o_atom = o_atoms[0]
+            # Check if oxygen is connected to anomeric carbon
+            o_neighbors = o_atom.GetNeighbors()
+            if len(o_neighbors) != 2:
                 continue
-            found_ring = True
-            break  # Found suitable ring
-
-        if not found_ring:
-            return False, "No suitable furanose or pyranose ring found"
-
-        # Check that most carbons have hydroxyl groups
-        hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
-        num_hydroxyls = len(mol.GetSubstructMatches(hydroxyl_pattern))
-        if num_hydroxyls < (c_count - 2):  # Allowing for anomeric carbon and possible deoxy sugars
-            return False, f"Too few hydroxyl groups ({num_hydroxyls}) for an aldose"
-
-        # Optionally check for exocyclic hydroxymethyl group
-        # (common in aldoses forming pyranose rings)
-        exocyclic_carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and not atom.IsInRing()]
-        valid_exocyclic = False
-        for atom in exocyclic_carbons:
-            # Check if carbon is CH2OH group
-            neighbors = atom.GetNeighbors()
-            if len(neighbors) != 3:
-                continue
-            attached_to_ring = any(nbr.IsInRing() for nbr in neighbors if nbr.GetAtomicNum() == 6)
-            hydroxyls = [nbr for nbr in neighbors if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() == 1]
-            if attached_to_ring and len(hydroxyls) == 1:
-                valid_exocyclic = True
+            # Anomeric carbon is connected to two oxygens
+            for nbr in o_neighbors:
+                if nbr.GetAtomicNum() == 6:
+                    o_nb = [a for a in nbr.GetNeighbors() if a.GetAtomicNum() == 8 and a.GetIdx() != o_atom.GetIdx()]
+                    if len(o_nb) >= 1:
+                        anomeric_c = nbr
+                        found_ring = True
+                        break
+            if found_ring:
                 break
 
-        # If no exocyclic CH2OH group, still acceptable
+        if not found_ring:
+            return False, "No suitable furanose or pyranose ring with hemiacetal found"
+
+        # Ensure no ketone groups are present
+        if mol.HasSubstructMatch(ketone_pattern):
+            return False, "Contains ketone group, likely a ketose"
+
+        # Exclude molecules with carboxylic acids
+        if mol.HasSubstructMatch(carboxylic_acid_pattern):
+            return False, "Contains carboxylic acid group, likely a uronic acid"
+
+        # Count hydroxyl groups attached to carbons (excluding ring oxygen)
+        hydroxyl_pattern = Chem.MolFromSmarts("[CX4H][OH]")
+        hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+        num_hydroxyls = len(hydroxyl_matches)
+
+        # Require at least two hydroxyl groups for cyclic aldoses
+        min_hydroxyls = max(2, c_count - 3)  # Allow for deoxy sugars and ring closure
+        if num_hydroxyls < min_hydroxyls:
+            return False, f"Too few hydroxyl groups ({num_hydroxyls}) for a cyclic aldose"
+
         return True, f"Cyclic aldose (hemiacetal form) with ring size {ring_size} and sufficient hydroxyl groups"
 
     return False, "Does not match aldose criteria"
