@@ -1,89 +1,28 @@
 """
 Classifies: CHEBI:36141 quinone
 """
-"""
-Classifies: CHEBI:36737 quinone
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous attempt at classifying quinones has a good overall approach, but there are a few potential issues that could lead to the observed low F1 score and the error encountered.
 
-def is_quinone(smiles: str):
-    """
-    Determines if a molecule is a quinone based on its SMILES string.
-    A quinone is defined as having a fully conjugated cyclic dione structure.
+1. **Error in `HasSubstructMatch`**: The error "Python argument types in `Mol.HasSubstructMatch(Mol, NoneType)` did not match C++ signature" suggests that the `quinone_pattern` variable is `None`, likely due to an invalid SMARTS pattern. Double-check the SMARTS pattern for correctness and consider using a more specific pattern to match the quinone structure.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Overspecificity of the pattern**: The current SMARTS pattern `"[$(C=C)$(C(=O)C=C),$(C=C)$(C=C(=O))&$(RingMembership)]"` may be too specific, potentially missing some valid quinone structures. Consider a more general pattern that captures the essence of a quinone structure (a conjugated cyclic dione).
 
-    Returns:
-        bool: True if molecule is a quinone, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Aromaticity check**: The current code checks for aromaticity using the `IsAromaticRing` method from `AllChem.GetSSSR`. However, not all quinone structures are necessarily aromatic. Consider removing this check or modifying it to accommodate non-aromatic quinone structures as well.
 
-    # Look for a fully conjugated cyclic dione pattern
-    quinone_pattern = Chem.MolFromSmarts("[$(C=C)$(C(=O)C=C),$(C=C)$(C=C(=O))&$(RingMembership)]")
-    if not mol.HasSubstructMatch(quinone_pattern):
-        return False, "No fully conjugated cyclic dione structure found"
+4. **Additional checks**: The additional checks for the number of oxygens and carbonyl groups may be too strict or too lenient, depending on the actual distribution of these features in the dataset. Consider adjusting these checks based on the observed patterns in the data.
 
-    # Check if the dione is part of a larger conjugated system
-    conjugated_system = AllChem.GetConnectedBnds(mol, asMerge=True)
-    if len(conjugated_system) < 6:
-        return False, "Dione not part of a larger conjugated system"
-    
-    # Check if the conjugated system is cyclic
-    if not any(ring.IsAromaticRing() for ring in AllChem.GetSSSR(mol)):
-        return False, "Conjugated system is not cyclic"
+To improve the program, here are some suggestions:
 
-    # Check for other common quinone features (optional)
-    n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if n_oxygens < 2:
-        return False, "Fewer than 2 oxygens in the molecule"
+1. **Refine the SMARTS pattern**: Try a more general pattern that captures the essence of a quinone structure, such as `"[#6]1([#6]=[#6])([#8])=[#6][#6]=[#6][#6]1=[#8]"`. This pattern matches a six-membered ring with two conjugated carbonyl groups and four carbon atoms.
 
-    n_carbonyls = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[C=O]")))
-    if n_carbonyls < 2:
-        return False, "Fewer than 2 carbonyl groups in the molecule"
+2. **Remove or modify the aromaticity check**: If non-aromatic quinone structures are expected in the dataset, consider removing the aromaticity check or modifying it to accommodate both aromatic and non-aromatic cases.
 
-    return True, "Contains a fully conjugated cyclic dione structure (quinone)"
+3. **Adjust additional checks**: Analyze the distribution of features like the number of oxygens and carbonyl groups in the dataset, and adjust the corresponding checks accordingly.
 
+4. **Consider additional structural features**: Depending on the complexity of the dataset, you may need to incorporate additional structural features or constraints to improve the classification accuracy.
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:36737',
-        'name': 'quinone',
-        'definition': 'Compounds having a fully conjugated cyclic dione structure, such as that of benzoquinones, derived from aromatic compounds by conversion of an even number of -CH= groups into -C(=O)- groups with any necessary rearrangement of double bonds (polycyclic and heterocyclic analogues are included).',
-        'parents': ['CHEBI:24631', 'CHEBI:33567']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 81,
-    'num_false_positives': 3,
-    'num_true_negatives': 182688,
-    'num_false_negatives': 6,
-    'num_negatives': None,
-    'precision': 0.9641691611886184,
-    'recall': 0.9310344827586207,
-    'f1': 0.9473684210526315,
-    'accuracy': 0.9998547739944285
-}
+5. **Analyze false positives and false negatives**: Carefully examine the false positives and false negatives to identify any systematic errors or edge cases that the program may be missing. Use this information to refine the rules and patterns accordingly.
+
+6. **Leverage more advanced techniques**: If the structural patterns alone are not sufficient, consider incorporating machine learning techniques or more advanced cheminformatics tools for better classification performance.
+
+It's important to note that the definition of a quinone structure can be complex, and there may be ambiguities or edge cases that require careful consideration. If you encounter cases where your understanding of the chemical class differs from the benchmark, it's reasonable to prioritize your chemical intuition and explain your reasoning accordingly.
