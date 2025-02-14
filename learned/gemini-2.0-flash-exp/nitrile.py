@@ -21,26 +21,20 @@ def is_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a nitrile group.
-    nitrile_pattern = Chem.MolFromSmarts("[CX4;!H0]#[N]")
-
+    # Define the SMARTS pattern for a nitrile group, ensure the carbon is not hydrogenated and is not a metal.
+    nitrile_pattern = Chem.MolFromSmarts("[!H;!#1]C#N")
+    
     # Find matches of the nitrile pattern
     matches = mol.GetSubstructMatches(nitrile_pattern)
     if not matches:
-        return False, "Does not contain a nitrile group (C#N) where the carbon is not attached to a hydrogen atom"
+        return False, "Does not contain a terminal nitrile group (C#N)"
 
-    # Check for at least one non-hydrogen atom attached to the carbon. We can check the neighbor atoms
+    # Confirm that the C in the nitrile is not bonded to any metal atoms
     for match in matches:
-        nitrile_carbon_index = match[0]
-        nitrile_carbon = mol.GetAtomWithIdx(nitrile_carbon_index)
-        
-        #If all the neighbors are hydrogens, then this is not a proper nitrile.
-        is_valid_nitrile = False
-        for neighbor in nitrile_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() != 1:
-                is_valid_nitrile = True
-                break
-        if not is_valid_nitrile:
-           return False, "Does not contain a nitrile group (C#N) where the carbon is not attached to a non-hydrogen atom"
+        carbon_index = match[0]
+        carbon = mol.GetAtomWithIdx(carbon_index)
+        for neighbor in carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() > 12: #Check for metals
+                return False, "Nitrile carbon is bonded to a metal"
 
-    return True, "Contains a nitrile group (C#N) where the carbon is not attached to hydrogen(s)."
+    return True, "Contains a terminal nitrile group (C#N)"
