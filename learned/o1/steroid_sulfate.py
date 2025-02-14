@@ -6,6 +6,7 @@ Classifies: steroid sulfate
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_steroid_sulfate(smiles: str):
     """
@@ -27,16 +28,15 @@ def is_steroid_sulfate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define steroid core pattern (cyclopenta[a]phenanthrene skeleton)
-    steroid_core_smarts = '[#6]1~[#6]~[#6]2~[#6](~[#6]~[#6]~[#6]~2)~[#6]3~[#6]~[#6]~[#6]~[#6]~[#6]~3~[#6]1'
-    steroid_core = Chem.MolFromSmarts(steroid_core_smarts)
+    steroid_smarts = '[#6]12[#6][#6][#6]3[#6]([#6][#6][#6]([#6]4[#6][#6][#6]([#6]1)[#6]([#6]4)[#6]([#6]2)[#6]3)[#6]([#6]([#6][#6][#6][#6])[#6][#6])'
+    steroid_core = Chem.MolFromSmarts(steroid_smarts)
 
     # Check for steroid core
-    steroid_matches = mol.GetSubstructMatches(steroid_core)
-    if not steroid_matches:
+    if not mol.HasSubstructMatch(steroid_core):
         return False, "No steroid core found"
 
     # Define sulfate ester group pattern (attached via oxygen)
-    sulfate_ester_smarts = 'OS(=O)(=O)[O]'
+    sulfate_ester_smarts = '[O;D2]-S(=O)(=O)-[O;D1]'
     sulfate_ester = Chem.MolFromSmarts(sulfate_ester_smarts)
 
     # Find sulfate ester groups
@@ -44,23 +44,23 @@ def is_steroid_sulfate(smiles: str):
     if not sulfate_matches:
         return False, "No sulfate ester group found"
 
-    # For each sulfate group, check if it's connected to the steroid core via oxygen
-    for sulfate_match in sulfate_matches:
-        ester_oxygen_idx = sulfate_match[0]  # Oxygen attached to sulfur
-        ester_oxygen_atom = mol.GetAtomWithIdx(ester_oxygen_idx)
-        connected_to_steroid = False
+    # Check that sulfate group is connected to steroid core via oxygen
+    steroid_match_atoms = mol.GetSubstructMatch(steroid_core)
+    steroid_atom_indices = set(steroid_match_atoms)
 
+    for match in sulfate_matches:
+        # The first oxygen in the pattern is connected to the steroid
+        ester_oxygen_idx = match[0]
+        ester_oxygen_atom = mol.GetAtomWithIdx(ester_oxygen_idx)
+
+        connected = False
         for neighbor in ester_oxygen_atom.GetNeighbors():
             neighbor_idx = neighbor.GetIdx()
-            # Check if neighbor atom is part of steroid core
-            for steroid_match in steroid_matches:
-                if neighbor_idx in steroid_match:
-                    connected_to_steroid = True
-                    break
-            if connected_to_steroid:
+            if neighbor_idx in steroid_atom_indices:
+                connected = True
                 break
 
-        if connected_to_steroid:
+        if connected:
             return True, "Contains steroid core with sulfate ester group attached via oxygen"
 
     return False, "Sulfate group not attached to steroid core via ester linkage"
