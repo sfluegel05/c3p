@@ -6,7 +6,8 @@ from rdkit import Chem
 def is_sphingomyelin(smiles: str):
     """
     Determines if a molecule is a sphingomyelin based on its SMILES string.
-    Sphingomyelin is characterized by a sphingoid base linked to a fatty acid and phosphorylcholine.
+    Sphingomyelin is characterized by a sphingoid base linked to a fatty acid
+    via an amide bond and a phosphorylcholine headgroup.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,8 +23,12 @@ def is_sphingomyelin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for key structural features of sphingomyelin
-    amide_bond_pattern = Chem.MolFromSmarts("N-C(=O)-C")
-    phosphorylcholine_pattern = Chem.MolFromSmarts("COP(OCC[N+](C)(C)C)(=O)[O-]")
+    # Amide bond with a fatty acid
+    amide_bond_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)C")
+    # Phosphorylcholine group
+    phosphorylcholine_pattern = Chem.MolFromSmarts("COP([O-])(=O)OCC[N+](C)(C)C")
+    # Sphingoid base
+    sphingoid_base_pattern = Chem.MolFromSmarts("C[C@@H](O)[C@H](O)")
 
     # Check for amide bond
     if not mol.HasSubstructMatch(amide_bond_pattern):
@@ -32,5 +37,9 @@ def is_sphingomyelin(smiles: str):
     # Check for phosphorylcholine
     if not mol.HasSubstructMatch(phosphorylcholine_pattern):
         return False, "No phosphorylcholine headgroup found"
+    
+    # Check for sphingoid base
+    if not mol.HasSubstructMatch(sphingoid_base_pattern):
+        return False, "No sphingoid base found"
 
-    return True, "Contains amide-linked fatty acid and phosphorylcholine headgroup"
+    return True, "Contains sphingoid base, amide-linked fatty acid, and phosphorylcholine headgroup"
