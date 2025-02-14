@@ -16,7 +16,6 @@ def is_branched_chain_fatty_acid(smiles: str):
         bool: True if molecule is a branched-chain fatty acid, False otherwise
         str: Reason for classification
     """
-
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -27,21 +26,21 @@ def is_branched_chain_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for at least 5 carbons.
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 5:
-        return False, "Too few carbons for a fatty acid"
-
     # Check for branching point (carbon connected to at least 3 other non-hydrogen atoms)
-    branch_pattern = Chem.MolFromSmarts("C([CX4])([CX4])[CX4]")
-    if not mol.HasSubstructMatch(branch_pattern):
-        branch_pattern = Chem.MolFromSmarts("C([CX4])([CX4])([CX3,CX2])") #allows for double/triple bonds
-        if not mol.HasSubstructMatch(branch_pattern):
-            return False, "No branching point found"
+    branch_found = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6: # Check only carbon atoms
+             degree = len([neighbor for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() != 1]) #exclude H
+             if degree >= 3:
+                branch_found = True
+                break
 
-    #check for long chain - add minimum number of rotatable bonds
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 3:
-        return False, "Chains too short to be a fatty acid"
+    if not branch_found:
+        return False, "No branching point found"
+    
+    # Check molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 130: # Fatty acids usually have > 6 carbons (minimum MW ~130)
+         return False, "Molecular weight too low for fatty acid"
     
     return True, "Contains a carboxylic acid group, a long chain and one or more branching points"
