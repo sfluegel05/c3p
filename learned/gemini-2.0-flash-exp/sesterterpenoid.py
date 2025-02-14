@@ -25,39 +25,39 @@ def is_sesterterpenoid(smiles: str):
 
     # Count the number of carbon atoms
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    carbon_check =  20 <= carbon_count <= 70
+    carbon_check =  23 <= carbon_count <= 70
     
-    # Check for isoprene units (C5H8)
-    isoprene_pattern = Chem.MolFromSmarts("CC(C)=CC")
+    # Check for isoprene units using a more general pattern
+    isoprene_pattern = Chem.MolFromSmarts("[C]([C])([C])C")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     isoprene_count = len(isoprene_matches)
     isoprene_check = isoprene_count >= 3
 
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    mol_wt_check = 300 <= mol_wt <= 900
+    mol_wt_check = 300 <= mol_wt <= 1400
     
-    # Check number of rings
-    ring_count = Descriptors.RingCount(mol)
-    ring_check = ring_count >= 2
+    # Check for branching (quaternary carbons with methyl groups)
+    branching_pattern = Chem.MolFromSmarts("[C]([CH3])([CH3])([!H])")
+    branching_matches = mol.GetSubstructMatches(branching_pattern)
+    branching_check = len(branching_matches) >= 2
 
-    #check for a core skeleton
-    #core_pattern = Chem.MolFromSmarts("[C]1[C]([C])([C])[C]([C])([C])[C]2[C]1[C]([C])([C])[C]([C])([C])[C]3[C]2[C]([C])([C])[C]([C])([C])[C]3")
-    #core_match = mol.HasSubstructMatch(core_pattern)
+     # Check for a core substructure
+    core_pattern = Chem.MolFromSmarts("C1CC(C)(C)CC2C(C)(C)CC3C(C)(C)CC(C)(C)C(C)(C)C(C)(C)C3CC2CC1")
+    core_match = mol.HasSubstructMatch(core_pattern)
 
     # Combine criteria
-    if carbon_check and isoprene_check and mol_wt_check and ring_check:
-        return True, "Matches criteria for a sesterterpenoid based on number of carbons, isoprene units, molecular weight, and ring count."
+    if carbon_check and mol_wt_check and branching_check and (isoprene_check or core_match):
+        return True, "Matches criteria for a sesterterpenoid based on number of carbons, molecular weight, branching and isoprene units."
     else:
         reasons = []
         if not carbon_check:
-             reasons.append(f"Number of carbons is {carbon_count}, expected between 20 and 70.")
-        if not isoprene_check:
-             reasons.append(f"Too few isoprene units ({isoprene_count}). Expected at least 3.")
+             reasons.append(f"Number of carbons is {carbon_count}, expected between 23 and 70.")
         if not mol_wt_check:
-            reasons.append(f"Molecular weight is {mol_wt}, expected between 300 and 900.")
-        if not ring_check:
-            reasons.append(f"Ring count is {ring_count}, expected at least 2.")
-
+            reasons.append(f"Molecular weight is {mol_wt}, expected between 300 and 1400.")
+        if not branching_check:
+            reasons.append(f"Too few branching points ({len(branching_matches)}), expected at least 2.")
+        if not (isoprene_check or core_match):
+             reasons.append(f"Too few isoprene units ({isoprene_count}) or core substructure was not found.")
 
         return False, "Does not match sesterterpenoid criteria: " + " ".join(reasons)
