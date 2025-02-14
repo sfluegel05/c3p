@@ -19,42 +19,40 @@ def is_primary_amine(smiles: str):
         bool: True if molecule is a primary amine, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS pattern for primary amine: Nitrogen bonded to two hydrogens and one carbon
-    primary_amine_pattern = Chem.MolFromSmarts("[#7H2][#6]")
-    
-    # Find matches in the molecule
-    matches = mol.GetSubstructMatches(primary_amine_pattern)
-    if not matches:
-        return False, "No primary amine group found"
-    
-    # Check if nitrogen is only bonded to one carbon and two hydrogens
-    for match in matches:
-        nitrogen_idx = match[0]
-        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
-        
-        # Check the total number of bonds (degree)
-        if nitrogen.GetDegree() != 3:
-            continue
-        
-        # Check that nitrogen is only bonded to one carbon and two hydrogens
-        num_carbons = 0
-        num_hydrogens = 0
-        for neighbor in nitrogen.GetNeighbors():
-            atomic_num = neighbor.GetAtomicNum()
-            if atomic_num == 6:
-                num_carbons += 1
-            elif atomic_num == 1:
-                num_hydrogens += 1
-            else:
-                break  # Nitrogen is bonded to another heteroatom
-        else:
-            if num_carbons == 1 and num_hydrogens == 2:
+
+    # Iterate over all nitrogen atoms in the molecule
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:  # Atomic number for nitrogen
+            if atom.GetFormalCharge() != 0:
+                continue  # Skip if nitrogen has a formal charge
+                
+            # Total number of hydrogens (implicit + explicit)
+            total_hydrogens = atom.GetTotalNumHs()
+            
+            # Continue if nitrogen has exactly two hydrogens
+            if total_hydrogens != 2:
+                continue
+
+            # Get neighbors of the nitrogen atom
+            neighbors = atom.GetNeighbors()
+            
+            # Initialize counters
+            num_carbon = 0
+            num_heteroatoms = 0
+            
+            for neighbor in neighbors:
+                atomic_num = neighbor.GetAtomicNum()
+                if atomic_num == 6:
+                    num_carbon += 1
+                elif atomic_num != 1:  # Not hydrogen
+                    num_heteroatoms += 1
+
+            # Check if nitrogen is bonded to exactly one carbon and no other heteroatoms
+            if num_carbon == 1 and num_heteroatoms == 0:
                 return True, "Primary amine group found"
-    
-    return False, "Primary amine group not found or nitrogen bonded to other atoms"
+
+    return False, "No primary amine group found"
