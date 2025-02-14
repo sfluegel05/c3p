@@ -10,6 +10,7 @@ but is now also used to describe semi-synthetic and fully synthetic compounds.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdFMCS
 
 def is_flavonoid(smiles: str):
     """
@@ -23,20 +24,29 @@ def is_flavonoid(smiles: str):
         str: Reason for classification
     """
 
-    try:
-        # Parse SMILES
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return False, "Invalid SMILES string"
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-        # Define flavonoid scaffold pattern
-        scaffold_pattern = Chem.MolFromSmarts("[c&r1]1[c&r2]c2c(cc1)oc(c2)-[c&r3]")
+    # Define flavonoid scaffold pattern
+    scaffold_pattern = Chem.MolFromSmarts("[c&r1]1[c&r2]c2c(cc1)oc(c2)-c1ccccc1")
 
-        # Check if scaffold is present
-        if mol.HasSubstructMatch(scaffold_pattern):
-            return True, "Contains flavonoid scaffold"
-        else:
-            return False, "Flavonoid scaffold not present"
+    # Find maximum common substructure with flavonoid scaffold
+    mcs = rdFMCS.FindMCS([mol, scaffold_pattern], ringMatchesRingOnly=True)
 
-    except Exception as e:
-        return False, f"Error: {str(e)}"
+    # Check if scaffold is present
+    if mcs.numAtoms < scaffold_pattern.GetNumAtoms():
+        return False, "Flavonoid scaffold not present"
+
+    # Check for aryl substituent at position 2
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == "C" and atom.GetTotalNumHs() == 1:
+            neighbors = [mol.GetAtomWithIdx(n).GetSymbol() for n in atom.GetNeighbors()]
+            if "O" in neighbors and "C" in neighbors:
+                aryl_sub = True
+                break
+    else:
+        return False, "No aryl substituent at position 2"
+
+    return True, "Contains flavonoid scaffold with aryl substituent at position 2"
