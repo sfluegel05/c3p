@@ -18,14 +18,14 @@ def is_nitrile(smiles: str):
         bool: True if the molecule is a nitrile, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define nitrile SMARTS pattern:
-    # [#6]-[#6]#[#7]: Carbon single-bonded to nitrile carbon, which is triple-bonded to nitrogen
-    nitrile_pattern = Chem.MolFromSmarts("[#6]-[#6]#[#7]")
+    # Define the nitrile SMARTS pattern:
+    # [#6][C]#[N]: Carbon atom (R) connected to nitrile carbon which is triple-bonded to nitrogen
+    nitrile_pattern = Chem.MolFromSmarts("[#6][C]#[N]")
     if nitrile_pattern is None:
         return False, "Invalid nitrile SMARTS pattern"
 
