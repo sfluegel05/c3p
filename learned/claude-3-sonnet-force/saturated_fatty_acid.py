@@ -34,13 +34,12 @@ def is_saturated_fatty_acid(smiles: str):
 
     # Check for saturated carbon chain
     chain_atoms = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:
-            neighbors = [mol.GetBondWithAtomIdx(neighbor_idx).GetBondType()
-                         for neighbor_idx in atom.GetNeighbors()]
-            if Chem.BondType.DOUBLE not in neighbors and Chem.BondType.TRIPLE not in neighbors:
-                chain_atoms.append(atom.GetIdx())
-    chain = Chem.PathToSubmol(mol, chain_atoms, atomIdxs=chain_atoms)
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.SINGLE:
+            chain_atoms.extend([bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()])
+    # Remove duplicates and keep only carbon atoms
+    chain_atoms = set(atom_idx for atom_idx in chain_atoms if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 6)
+    chain = Chem.PathToSubmol(mol, list(chain_atoms), atomIdxs=chain_atoms)
     if chain.GetNumAtoms() < 4:
         return False, "Carbon chain too short"
 
