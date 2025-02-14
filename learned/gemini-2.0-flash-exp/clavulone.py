@@ -25,8 +25,8 @@ def is_clavulone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Core prostanoid pattern (5 membered ring with =O and =C
-    prostanoid_core_pattern = Chem.MolFromSmarts("[C]1[C](=O)[C]=[C]1")
+    # Core prostanoid pattern (5 membered ring with =O )
+    prostanoid_core_pattern = Chem.MolFromSmarts("[C]1[C](=O)[C]([#6])[#6]1")
     if not mol.HasSubstructMatch(prostanoid_core_pattern):
         return False, "No prostanoid core found"
 
