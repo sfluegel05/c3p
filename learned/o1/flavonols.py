@@ -25,9 +25,10 @@ def is_flavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the 3-hydroxyflavone core SMARTS pattern
-    # This pattern represents the flavone skeleton with a hydroxyl group at position 3
-    flavonol_pattern = Chem.MolFromSmarts('O=C1C=C(O)c2ccccc2O1')
+    # Define the 3-hydroxyflavone core SMARTS pattern with aromatic bonds
+    flavonol_smarts = 'c1cc2c(c(c1)O)oc(=O)cc2'  # Aromatic rings with OH at position 3 and ketone at position 4
+
+    flavonol_pattern = Chem.MolFromSmarts(flavonol_smarts)
     if flavonol_pattern is None:
         return False, "Invalid SMARTS pattern for flavonol core"
 
