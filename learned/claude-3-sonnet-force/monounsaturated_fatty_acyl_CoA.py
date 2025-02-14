@@ -44,7 +44,7 @@ def is_monounsaturated_fatty_acyl_CoA(smiles: str):
         return False, "No fatty acyl chain found"
     
     # Count double bonds
-    num_double_bonds = Chem.rdMolDescriptors.CalcNumRotatableBonds(mol) - sum(1 for b in mol.GetBonds() if b.GetBondType() == Chem.BondType.SINGLE)
+    num_double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
     if num_double_bonds != 1:
         return False, f"Found {num_double_bonds} double bonds, expected 1"
     
