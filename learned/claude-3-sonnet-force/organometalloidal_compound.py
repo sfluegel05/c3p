@@ -1,32 +1,57 @@
 """
 Classifies: CHEBI:143084 organometalloidal compound
 """
-The previous program seems to have a reasonable approach to identifying organometalloidal compounds, but it appears to have some flaws that lead to incorrect classifications.
+"""
+Classifies: CHEBI:35498 organometalloidal compound
 
-Reasoning:
+A compound having bonds between one or more metalloid atoms and one or more carbon atoms of an organyl group.
+"""
 
-1. The program correctly identifies the presence of metalloid atoms and checks for bonds between metalloid atoms and carbon atoms, which is the key criterion for organometalloidal compounds.
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-2. However, there are a few issues that could lead to incorrect classifications:
+# List of metalloid atomic numbers
+METALLOID_ATOMIC_NUMBERS = [5, 14, 32, 33, 51, 52, 83, 84]  # B, Si, Ge, As, Sb, Te, Bi, Po
 
-   a. The list of metalloid atomic numbers may not be complete or accurate. The program considers only 8 elements (B, Si, Ge, As, Sb, Te, Bi, and Po) as metalloids, but there are other elements that can exhibit metalloid behavior depending on their chemical environment, such as Al, Ga, In, Tl, and At.
+def is_organometalloidal_compound(smiles: str):
+    """
+    Determines if a molecule is an organometalloidal compound based on its SMILES string.
 
-   b. The program does not consider the possibility of multiple bonds between metalloid and carbon atoms. For example, in the case of oxophenarsine (SMILES: [As](=O)C1=CC(N)=C(C=C1)O), the arsenic atom has a double bond with a carbon atom, but the program would not classify this as an organometalloidal compound.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   c. The program does not consider the possibility of organometallic compounds, which are compounds containing bonds between metal atoms and carbon atoms. These compounds should not be classified as organometalloidal compounds, but the program may incorrectly classify them as such.
+    Returns:
+        bool: True if molecule is an organometalloidal compound, False otherwise
+        str: Reason for classification
+    """
 
-3. Based on the outcomes provided, it seems that the program has a relatively high false positive rate, classifying some compounds as organometalloidal compounds when they should not be. This could be due to the issues mentioned above, or potentially other issues with the program's logic.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Improvements:
+    # Check for metalloid atoms
+    has_metalloid = any(atom.GetAtomicNum() in METALLOID_ATOMIC_NUMBERS for atom in mol.GetAtoms())
+    if not has_metalloid:
+        return False, "No metalloid atoms present"
 
-1. Expand the list of metalloid atomic numbers to include other elements that can exhibit metalloid behavior, such as Al, Ga, In, Tl, and At.
+    # Check for bonds between metalloid and carbon atoms
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        if (atom1.GetAtomicNum() in METALLOID_ATOMIC_NUMBERS and atom2.GetAtomicNum() == 6) or \
+           (atom2.GetAtomicNum() in METALLOID_ATOMIC_NUMBERS and atom1.GetAtomicNum() == 6):
+            # Check for multiple bonds
+            if bond.GetBondType() != Chem.BondType.SINGLE:
+                return True, "Contains bond(s) between metalloid and carbon atoms, including multiple bonds"
+            else:
+                return True, "Contains bond(s) between metalloid and carbon atoms"
 
-2. Modify the program to consider multiple bonds between metalloid and carbon atoms. This could be done by checking the bond order between the atoms, or by using a more sophisticated pattern-matching approach.
+    # Check for organometallic compounds (exclude from organometalloidal)
+    metal_pattern = Chem.MolFromSmarts("[!#6;!#5;!#14;!#32;!#33;!#51;!#52;!#83;!#84]")
+    if mol.HasSubstructMatch(metal_pattern):
+        for atom in mol.GetSubstructMatches(metal_pattern):
+            if any(mol.GetBondBetweenAtoms(atom, neighbor).GetBondType() != Chem.BondType.SINGLE for neighbor in atom.GetNeighbors()):
+                return False, "Organometallic compound detected (contains bonds between metal and carbon atoms)"
 
-3. Add a check to exclude organometallic compounds from being classified as organometalloidal compounds. This could be done by checking for the presence of metal atoms (excluding metalloids) and verifying that they are not bonded to carbon atoms.
-
-4. Consider using a more sophisticated approach, such as machine learning or pattern-matching techniques, to improve the accuracy of the classification. However, this would require a larger and more diverse dataset for training and testing.
-
-5. Carefully review the false positive and false negative examples provided in the outcomes and analyze the specific cases where the program fails. This could provide insights into additional improvements or edge cases that need to be handled.
-
-Overall, while the previous program has a reasonable approach, there is room for improvement in terms of handling edge cases, considering different bonding scenarios, and potentially using more advanced techniques for improved accuracy.
+    return False, "No bond found between metalloid and carbon atoms"
