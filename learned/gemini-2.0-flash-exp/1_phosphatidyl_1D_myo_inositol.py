@@ -22,24 +22,23 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # 1. Check for 1D-myo-inositol with correct stereochemistry
-    inositol_pattern = Chem.MolFromSmarts("C1([C@H]([C@@H]([C@H]([C@@H]([C@H]1O)O)O)O)O)O")
+        
+    # 1. Check for 1D-myo-inositol
+    inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)O")
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "1D-myo-inositol ring not found or wrong stereochemistry"
-    
-    # 2. Check for Phosphate connecting to glycerol and inositol
-    phosphate_link_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX1])([OX1])O[CX4]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_link_pattern)
+        return False, "1D-myo-inositol ring not found"
 
-    if not phosphate_matches:
-         return False, "Phosphate group not found connected to glycerol"
-
-    #3 Check if the phosphate group connects to the inositol at position 1
-    inositol_phosphate_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)OP")
-    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
-      return False, "Phosphate is not attached to the inositol at position 1"
+    # 2. Check for Phosphate
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) != 1:
+        return False, "Incorrect number of phosphate groups, need 1"
     
+    # 3. Check for Glycerol
+    glycerol_pattern = Chem.MolFromSmarts("COC(C)O")
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    if len(glycerol_matches) == 0:
+         return False, "Glycerol group not found."
 
     #4. check for two ester groups attached to the glycerol backbone.
     ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2]")
@@ -52,6 +51,11 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+        
+    #5. Check for the connection of the phosphate to the inositol
+    inositol_phospho_link_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)OP")
+    if not mol.HasSubstructMatch(inositol_phospho_link_pattern):
+        return False, "Phosphate group is not correctly connected to the inositol ring"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -60,13 +64,12 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     if c_count < 15: # Minimum number of carbons including the glycerol
         return False, "Too few carbons for this type of molecule"
 
-    if o_count < 13: #Should be at least 6 from inositol, 4 from phosphate, 2 from each ester
+    if o_count < 10:
        return False, "Too few oxygens for this type of molecule"
 
     # Check molecular weight - phospholipids typically >700 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 700:
         return False, "Molecular weight too low for phosphatidylinositol"
-
 
     return True, "Molecule is a 1-phosphatidyl-1D-myo-inositol"
