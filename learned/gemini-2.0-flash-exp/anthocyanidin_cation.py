@@ -22,11 +22,10 @@ def is_anthocyanidin_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavylium core SMARTS pattern, allowing for substitutions
-    # The pattern is [O+]=C1c2ccccc2Cc3cc(O)cc(O)c13 to allow for substitutions,
-    # This is a 2-phenylchromenylium ion with two OH substitutions.
-    # This is a more flexible pattern to capture the core structure of anthocyanidins
-    flavylium_core_pattern = Chem.MolFromSmarts("[O+]=C1c2ccccc2Cc3cc(O)cc(O)c13")
+    # Define the flavylium core SMARTS pattern
+    # A simpler pattern is used: [O+]=C1c2ccccc2Cc3ccccc13 to match the core more broadly
+    # This pattern covers the core 2-phenylchromenylium structure, without needing specific OH substitution
+    flavylium_core_pattern = Chem.MolFromSmarts("[O+]=C1c2ccccc2Cc3ccccc13")
 
 
     # Check for the flavylium core
