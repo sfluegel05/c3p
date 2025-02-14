@@ -19,27 +19,23 @@ def is_aralkylamine(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # 1. Check for a basic amine (primary, secondary, or tertiary, but not quaternary)
-    amine_pattern = Chem.MolFromSmarts("[N;H0,H1,H2]") # N with 0, 1 or 2 H
+    amine_pattern = Chem.MolFromSmarts("[N]")
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No amine group found"
 
-    # 2. Check for an aromatic ring (specifically, benzene ring)
-    aromatic_ring_pattern = Chem.MolFromSmarts("c1ccccc1")
+    # 2. Check for at least one aromatic ring
+    aromatic_ring_pattern = Chem.MolFromSmarts("[c]")
     if not mol.HasSubstructMatch(aromatic_ring_pattern):
-        return False, "No aromatic ring found"
+          return False, "No aromatic ring found"
 
-    # 3. Check for an alkyl bridge (chain of at least 1 carbon between amine and aromatic)
-    # We need to make sure there's a chain of carbons between the N and aromatic carbons
-    alkyl_bridge_pattern1 = Chem.MolFromSmarts("[N;H0,H1,H2]-[CX4]-[c]")
-    alkyl_bridge_pattern2 = Chem.MolFromSmarts("[N;H0,H1,H2]-[CX4]-[CX4]-[c]")
-    alkyl_bridge_pattern3 = Chem.MolFromSmarts("[N;H0,H1,H2]-[CX4]-[CX4]-[CX4]-[c]")
-    # We can check for bridges from length 1 to 3, might be necessary to check for more
 
-    if not (mol.HasSubstructMatch(alkyl_bridge_pattern1) or mol.HasSubstructMatch(alkyl_bridge_pattern2) or mol.HasSubstructMatch(alkyl_bridge_pattern3)):
+    # 3. Check for an alkyl bridge connecting the amine and an aromatic ring
+    #  [N]-([C])*-[c] means: an amine connected to at least one carbon, followed by zero or more other carbons and then an aromatic carbon.
+    alkyl_bridge_pattern = Chem.MolFromSmarts("[N]-[CX4](-[CX4])*-[c]")
+
+    if not mol.HasSubstructMatch(alkyl_bridge_pattern):
         return False, "No alkyl chain connecting amine and aromatic ring"
-        
-    
-    # If all conditions are met, then it is an aralkylamine
+
     return True, "Contains an amine group connected to an aromatic ring via an alkyl chain"
