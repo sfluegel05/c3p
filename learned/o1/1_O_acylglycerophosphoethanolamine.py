@@ -7,9 +7,10 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     """
     Determines if a molecule is a 1-O-acylglycerophosphoethanolamine based on its SMILES string.
     This class of molecules has a glycerol backbone with:
-    - An acyl chain attached via ester bond at position 1
+    - An acyl chain attached via an ester bond at position 1
     - A free hydroxyl group at position 2
-    - A phosphoethanolamine group at position 3
+    - A phosphoethanolamine group attached at position 3
+    - No other acyl chains or substitutions on the glycerol backbone
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,20 +24,40 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns without chiral specifications
-    # Phosphoethanolamine group (allowing for variable protonation states)
-    phosphoethanolamine_pattern = Chem.MolFromSmarts('O[P](=O)(O)OCCN')
-    if not mol.HasSubstructMatch(phosphoethanolamine_pattern):
-        return False, "No phosphoethanolamine group found"
+    # Define the SMARTS pattern for 1-O-acylglycerophosphoethanolamine
+    pattern = Chem.MolFromSmarts("""
+    [C@@H]1([O][P](=O)([O])[O][C][C][N])  # Chiral carbon at position 3 with phosphoethanolamine
+    [C@@H](O)[C@@H](O[C](=O)[C])O1        # Ring closure to represent glycerol with acyl group at position 1
+    """)
 
-    # Glycerol backbone with acyl group at position 1 via ester bond
-    acyl_glycerol_pattern = Chem.MolFromSmarts('OCC(O)COC(=O)[C]')
-    if not mol.HasSubstructMatch(acyl_glycerol_pattern):
-        return False, "No glycerol backbone with acyl group at position 1 found"
+    # If chiral specification causes issues, use a more general pattern without chiral tags
+    if pattern is None:
+        # Simplified pattern without chiral centers
+        pattern = Chem.MolFromSmarts("""
+        O[C@@H](COP(O)(O)OCCN)COC(=O)C
+        """)
 
-    # Free hydroxyl group at position 2
-    free_oh_pattern = Chem.MolFromSmarts('OC[C](O)CO[P](=O)(O)OCCN')
+    if pattern is None:
+        return False, "Error in SMARTS pattern"
+
+    # Check for substructure match
+    if not mol.HasSubstructMatch(pattern):
+        return False, "Molecule does not match 1-O-acylglycerophosphoethanolamine pattern"
+
+    # Ensure there is only one acyl chain attached via ester bond
+    ester_pattern = Chem.MolFromSmarts('OC(=O)[C]')
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, expected exactly 1 at position 1"
+
+    # Check for free hydroxyl group at position 2
+    free_oh_pattern = Chem.MolFromSmarts('[C@H](O)[C@H](O)CO[P](=O)(O)OCCN')
     if not mol.HasSubstructMatch(free_oh_pattern):
         return False, "No free hydroxyl group at position 2 found"
+
+    # Ensure there are no other acyl chains
+    total_ester_groups = len(ester_matches)
+    if total_ester_groups > 1:
+        return False, "Additional ester groups found on the molecule"
 
     return True, "Molecule is a 1-O-acylglycerophosphoethanolamine"
