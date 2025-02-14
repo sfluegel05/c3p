@@ -6,7 +6,23 @@ Classifies: CHEBI:33121 organoiodine compound
 An organoiodine compound is a compound containing at least one carbon-iodine bond.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+
+def has_carbon_iodine_bond(mol):
+    """
+    Checks if a molecule contains at least one carbon-iodine bond.
+
+    Args:
+        mol (rdkit.Chem.rdchem.Mol): RDKit molecule object
+
+    Returns:
+        bool: True if the molecule contains at least one carbon-iodine bond, False otherwise
+    """
+    for bond in mol.GetBonds():
+        begin_atom = mol.GetAtomWithIdx(bond.GetBeginAtomIdx())
+        end_atom = mol.GetAtomWithIdx(bond.GetEndAtomIdx())
+        if (begin_atom.GetAtomicNum() == 6 and end_atom.GetAtomicNum() == 53) or (begin_atom.GetAtomicNum() == 53 and end_atom.GetAtomicNum() == 6):
+            return True
+    return False
 
 def is_organoiodine_compound(smiles: str):
     """
@@ -26,17 +42,8 @@ def is_organoiodine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for iodine atoms
-    iodine_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 53]
-    if not iodine_atoms:
-        return False, "No iodine atoms found"
-    
     # Check for carbon-iodine bonds
-    c_i_bonds = [bond for bond in mol.GetBonds() if bond.GetBeginAtomIdx() in [atom.GetIdx() for atom in iodine_atoms] and
-                 bond.GetEndAtomIdx() in [atom.GetIdx() for atom in mol.GetAromaticAtoms()] or
-                 bond.GetEndAtomIdx() in [atom.GetIdx() for atom in iodine_atoms] and
-                 bond.GetBeginAtomIdx() in [atom.GetIdx() for atom in mol.GetAromaticAtoms()]]
-    if not c_i_bonds:
+    if has_carbon_iodine_bond(mol):
+        return True, "Contains at least one carbon-iodine bond"
+    else:
         return False, "No carbon-iodine bonds found"
-    
-    return True, "Contains at least one carbon-iodine bond"
