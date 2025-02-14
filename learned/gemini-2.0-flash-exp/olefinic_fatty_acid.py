@@ -32,6 +32,9 @@ def is_olefinic_fatty_acid(smiles: str):
 
     if not _check_fatty_acid_properties(mol):
         return False, "Molecule does not meet fatty acid property requirements"
+    
+    if not _check_carbon_chain(mol):
+        return False, "Molecule does not have a significant carbon chain"
 
     return True, "Contains a carboxylic acid group and at least one C=C double bond and has 8 or more carbons, enough rotatable bonds and a reasonable weight."
 
@@ -69,17 +72,57 @@ def _check_fatty_acid_properties(mol):
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if num_carbons < 8:
          return False
-    
+
+    # Allow rotatable bonds, lower bounds dependent on carbon number
     num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if num_rotatable_bonds < 4:
-        return False
+    if num_carbons > 12 and num_rotatable_bonds < 4:
+         return False
     
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 100:
         return False
-    
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count > 4:
+    if mol_wt > (num_carbons * 20) + 100: # upper bound based on carbon count.
         return False
+
+    # check oxygen atoms. Allow oxygen in carboxylic acid and alcohols, epoxides etc
+    for atom in mol.GetAtoms():
+       if atom.GetAtomicNum() == 8: # oxygen
+            is_ok = False
+            for neighbor in atom.GetNeighbors(): # check single bonds to carbons
+                if neighbor.GetAtomicNum() == 6:
+                    if mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.rdchem.BondType.SINGLE:
+                        is_ok = True
+            if not is_ok: # not single bond to C
+                
+                # check if this O is part of carboxylic acid.
+                is_carboxylic = False
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6:
+                        for neighbor2 in neighbor.GetNeighbors():
+                             if neighbor2.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(neighbor.GetIdx(),neighbor2.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                    is_carboxylic = True
+                if not is_carboxylic:
+                    return False
     
     return True
+
+
+def _check_carbon_chain(mol):
+    """
+    Check that there is a carbon chain of at least length 4 and without direct bonding to heteroatoms (except for hydrogen).
+    """
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:
+                    for neighbor2 in neighbor.GetNeighbors():
+                         if neighbor2.GetAtomicNum() == 6:
+                            for neighbor3 in neighbor2.GetNeighbors():
+                                if neighbor3.GetAtomicNum() == 6:
+                                    # check that none of these atoms is bonded to a non-C or H
+                                    for c in [atom, neighbor, neighbor2, neighbor3]:
+                                         for n in c.GetNeighbors():
+                                            if n.GetAtomicNum() > 1 and n.GetAtomicNum() != 6: # not H or C
+                                                return False
+                                    return True 
+    return False
