@@ -2,7 +2,6 @@
 Classifies: CHEBI:61051 lipid hydroperoxide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_lipid_hydroperoxide(smiles: str):
@@ -21,20 +20,40 @@ def is_lipid_hydroperoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for hydroperoxy group (-OOH)
-    hydroperoxy_pattern = Chem.MolFromSmarts("[OX2][OX2H1]")
+    # 1. Check for hydroperoxy group (-OOH or -OO-)
+    hydroperoxy_pattern = Chem.MolFromSmarts("[OX2][OX1]")  # Matches -OOH and -OO-
     hydroperoxy_matches = mol.GetSubstructMatches(hydroperoxy_pattern)
     if not hydroperoxy_matches:
         return False, "No hydroperoxy group found"
 
-    # 2. Check for a long carbon chain (at least 8 carbons)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 8:
-         return False, "Too few carbons for a lipid"
+    # 2. Check for a fatty acid chain (at least 12 carbons with a carboxyl group or OH)
     
-    # 3. Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
-         return False, "Molecular weight too low for a lipid"
+    # Check for a carbonyl group (C=O)
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
+    if not mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "No carbonyl group found, not a lipid."
 
-    return True, "Contains at least one hydroperoxy group and a long carbon chain"
+    # Check for a carboxyl group or another OH
+    carboxyl_or_oh_pattern = Chem.MolFromSmarts("C(=O)[O,OH]")
+    oh_pattern = Chem.MolFromSmarts("[OH1]")
+    if not (mol.HasSubstructMatch(carboxyl_or_oh_pattern) or mol.HasSubstructMatch(oh_pattern)):
+            return False, "No carboxyl group or OH found, not a lipid."
+
+
+    # Check for a long carbon chain
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") # 10 C
+    
+    if not mol.HasSubstructMatch(fatty_acid_chain_pattern):
+         return False, "Too short chain, not a fatty acid"
+
+    # Check for a sufficient number of rotatable bonds to ensure long chain
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Too few rotatable bonds, not a long enough chain"
+
+    # 3. Check for rings. Fatty acid derived hydroperoxides are typically acyclic
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    if n_rings > 0:
+        return False, "Contains rings, not a typical fatty acid hydroperoxide"
+
+    return True, "Contains at least one hydroperoxy group and a fatty acid chain"
