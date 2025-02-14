@@ -7,8 +7,8 @@ from rdkit.Chem import AllChem
 def is_nucleoside_phosphate(smiles: str):
     """
     Determines if a molecule is a nucleoside phosphate based on its SMILES string.
-    A nucleoside phosphate is a nucleoside where one or more sugar hydroxy groups
-    are converted into a mono- or poly-phosphate.
+    A nucleoside phosphate is a nucleobase-containing molecular entity that is a nucleoside
+    in which one or more of the sugar hydroxy groups has been converted into a mono- or poly-phosphate.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -39,17 +39,25 @@ def is_nucleoside_phosphate(smiles: str):
     if not sugar_matches:
         return False, "No sugar ring found"
 
-    # Define pattern for phosphate group
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
-
-    # Check if phosphate group is attached to sugar hydroxy
+    # Check if a phosphate group is attached to the sugar ring
+    phosphate_attached = False
     for sugar_match in sugar_matches:
         for atom_idx in sugar_match:
             atom = mol.GetAtomWithIdx(atom_idx)
             if atom.GetSymbol() == "O" and atom.GetIsInRing():
                 neighbor_atoms = atom.GetNeighbors()
                 for neighbor in neighbor_atoms:
-                    if neighbor.HasSubstructMatch(phosphate_pattern):
-                        return True, "Contains nucleobase, sugar ring, and phosphate group"
+                    if neighbor.GetAtomicNum() == 15:  # Phosphorus
+                        phosphate_attached = True
+                        break
 
-    return False, "Nucleobase and sugar ring present, but no phosphate group attached"
+    if not phosphate_attached:
+        return False, "Nucleobase and sugar ring present, but no phosphate group attached"
+
+    # Check for additional phosphate groups (for poly-phosphates)
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(O)=O")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) > 1:
+        return True, "Contains nucleobase, sugar ring, and poly-phosphate group"
+    else:
+        return True, "Contains nucleobase, sugar ring, and mono-phosphate group"
