@@ -2,7 +2,6 @@
 Classifies: CHEBI:39418 straight-chain saturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_straight_chain_saturated_fatty_acid(smiles: str):
@@ -30,23 +29,18 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     for atom in mol.GetAtoms():
        if atom.GetAtomicNum() not in allowed_elements:
            return False, "Molecule contains disallowed elements"
-
-    # Verify Carboxylic Acid group (must be exactly one)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    
+    # Verify Carboxylic Acid group (must be exactly one with a protonated OH).
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH1]")
     carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
     if len(carboxylic_acid_matches) != 1:
-        return False, "Molecule does not contain exactly one carboxylic acid group"
+         return False, "Molecule does not contain exactly one carboxylic acid group"
     
     #label carboxyl carbon
     carbonyl_carbon = mol.GetAtomWithIdx(carboxylic_acid_matches[0][0])
     carbonyl_carbon.SetProp('carbonyl', 'True')
-    
-    #Check for ester groups
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[OX2]")
-    if mol.HasSubstructMatch(ester_pattern):
-        return False, "Molecule contains ester group"
 
-    # Check for saturation of carbons in the chain. The oxygen in carboxyl group is not considered.
+    # Check for saturation of carbons in the chain.
     for bond in mol.GetBonds():
         if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
             if bond.GetBondType() != Chem.BondType.SINGLE:
@@ -118,15 +112,8 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     
     # Check for other functional groups
     for atom in mol.GetAtoms():
-       if atom.GetAtomicNum() != 1 and atom.GetAtomicNum() != 6: # not hydrogen or carbon
-           if atom.GetAtomicNum() == 8: # if oxygen
-              if not any(neighbor.GetAtomicNum() == 6 and neighbor.HasProp('carbonyl') and neighbor.GetProp('carbonyl') == 'True' for neighbor in atom.GetNeighbors()): #is not the oxygen in a carboxyl group
-                 if not any(neighbor.GetAtomicNum() == 1 for neighbor in atom.GetNeighbors()): #is not the oxygen in a hydroxy group
-                    return False, "Other functional groups detected"
-           else:
-               return False, "Other functional groups detected"
-
-
+       if atom.GetAtomicNum() != 1 and atom.GetAtomicNum() != 6 and atom.GetAtomicNum() != 8:  # not hydrogen, carbon or oxygen. 
+           return False, "Other functional groups detected"
 
     # Check number of carbon atoms (must be at least 4)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
