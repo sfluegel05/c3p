@@ -21,27 +21,33 @@ def is_bile_acid_conjugate(smiles: str):
         bool: True if molecule is a bile acid conjugate, False otherwise
         str: Reason for classification
     """
-    
+        
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+        
     # Define a general pattern for the steroid nucleus (four fused rings)
-    steroid_pattern = Chem.MolFromSmarts("""
-    [#6]1[#6][#6][#6]2[#6]([#6]1)[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6][#6]4
-    """)
+    steroid_pattern_smarts = '[#6]12CC[C@H]3[C@@H](C1)CCC4=C3C=CC=C4C2'
+    steroid_pattern = Chem.MolFromSmarts(steroid_pattern_smarts)
+    if steroid_pattern is None:
+        return False, "Invalid steroid nucleus SMARTS pattern"
     
-    # Define a pattern for the bile acid side chain ending with carboxylic acid at C24
-    side_chain_pattern = Chem.MolFromSmarts("""
-    [#6]-[#6]-[#6]-[#6]-C(=O)[O;H,–]
-    """)
+    # Check for steroid nucleus
+    if not mol.HasSubstructMatch(steroid_pattern):
+        return False, "No steroid nucleus found"
+    
+    # Define a pattern for the bile acid side chain ending with carboxylic acid or derivative
+    side_chain_smarts = '[C@H](CCC(=O)[O;H,-])[C@@H](C)CC(=O)[O;H,-]'
+    side_chain_pattern = Chem.MolFromSmarts(side_chain_smarts)
+    if side_chain_pattern is None:
+        return False, "Invalid side chain SMARTS pattern"
     
     # Combine steroid nucleus and side chain to define bile acid core
-    bile_acid_pattern = Chem.MolFromSmarts("""
-    [$([#6]1[#6][#6][#6]2[#6]([#6]1)[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6][#6]4),R]
-    -[*]-[*]-[*]-C(=O)[O;H,–]
-    """)
+    bile_acid_smarts = steroid_pattern_smarts + side_chain_smarts
+    bile_acid_pattern = Chem.MolFromSmarts(bile_acid_smarts)
+    if bile_acid_pattern is None:
+        return False, "Invalid bile acid core SMARTS pattern"
     
     # Check for bile acid core
     if not mol.HasSubstructMatch(bile_acid_pattern):
@@ -49,25 +55,27 @@ def is_bile_acid_conjugate(smiles: str):
 
     # Define SMARTS patterns for conjugated groups attached via amide or ester linkage
     conjugates = {
-        "glycine": Chem.MolFromSmarts("C(=O)NCC(=O)[O;H]"),
-        "taurine": Chem.MolFromSmarts("C(=O)NCCS(=O)(=O)[O;H]"),
-        "amino_acid": Chem.MolFromSmarts("C(=O)N[C@@H]([#6])[#6]C(=O)[O;H]"),  # General amino acid
-        "sulfate": Chem.MolFromSmarts("OS(=O)(=O)[O;H]"),
-        "glucuronic_acid": Chem.MolFromSmarts("""
-        [#6]-1(-[#8]-[#6]-[#8]C(=O)[O;H])[#6]([#8])-[#6]([#8])-[#6]([#8])-[#6]-1
-        """),
-        "glucose": Chem.MolFromSmarts("""
-        [#6]-1(-[#8]-[#6])[#6]([#8])-[#6]([#8])-[#6]([#8])-[#6]-1
-        """),
-        "coenzyme_A": Chem.MolFromSmarts("NC(=O)CCNC(=O)CC(=O)NCCS"),
+        "glycine": 'C(=O)NCC(=O)[O;H,-]',
+        "taurine": 'C(=O)NCCS(=O)(=O)[O;H,-]',
+        "amino_acid": 'C(=O)N[C@@H]([#6])C(=O)[O;H,-]',  # General amino acid
+        "sulfate": 'OS(=O)(=O)[O;H,-]',
+        "glucuronic_acid": '[#6]-1(-[#8]-[#6]-[#8]C(=O)[O;H,-])-[#6]([#8])-[#6]([#8])-[#6]([#8])-[#6]-1',
+        "glucose": '[#6]-1(-[#8]-[#6])-[#6]([#8])-[#6]([#8])-[#6]([#8])-[#6]-1',
+        "coenzyme_A": 'NC(=O)CCNC(=O)CC(=O)NCCS',
     }
-    
+
     # Check for conjugation with any of the specified groups
     conjugated = False
     conjugate_name = ""
-    for name, pattern in conjugates.items():
+    for name, smarts in conjugates.items():
+        conjugate_pattern = Chem.MolFromSmarts(smarts)
+        if conjugate_pattern is None:
+            continue  # Skip invalid pattern
         # Attachment via an amide or ester bond to the bile acid carboxyl group
-        linker_pattern = Chem.MolFromSmarts(f"C(=O)[O,N]*{pattern}")
+        linker_smarts = 'C(=O)[O,N]-' + smarts
+        linker_pattern = Chem.MolFromSmarts(linker_smarts)
+        if linker_pattern is None:
+            continue  # Skip invalid linker pattern
         if mol.HasSubstructMatch(linker_pattern):
             conjugated = True
             conjugate_name = name
