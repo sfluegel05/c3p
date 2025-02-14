@@ -1,24 +1,75 @@
 """
 Classifies: CHEBI:75769 B vitamin
 """
-After analyzing the previous code and the outcomes, I can make the following observations:
+"""
+Classifies: B Vitamins
+Any member of the group of eight water-soluble vitamins originally thought to be a single compound (vitamin B) that play important roles in cell metabolism.
+The group comprises of vitamin B1, B2, B3, B5, B6, B7, B9, and B12 (Around 20 other compounds were once thought to be B vitamins but are no longer classified as such).
+"""
 
-1. The code attempts to identify B vitamins by matching specific SMARTS patterns for each known B vitamin subclass (B1, B2, B3, B5, B6, B7, B9, and B12). This approach is good for identifying the "classic" B vitamin molecules but may miss some variants or derivatives.
+from rdkit import Chem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
-2. The additional checks based on molecular weight and number of rings seem reasonable, but the cutoffs might be too strict. Some B vitamin derivatives or complexes could have higher molecular weights or more rings.
+def is_B_vitamin(smiles: str) -> tuple[bool, str]:
+    """
+    Determines if a molecule is a B vitamin based on its SMILES string.
 
-3. The outcomes show that the code failed to identify several B vitamin molecules, including some well-known ones like folates, cobalamins, and pyridoxal derivatives.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-To improve the program, I would suggest the following:
+    Returns:
+        bool: True if molecule is a B vitamin, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-1. Expand the SMARTS patterns to include more variants and derivatives of each B vitamin subclass. This could involve searching the literature or databases for common structural motifs and incorporating them into the patterns.
+    # Thiamine (B1)
+    thiamine_patterns = ['*c1c([nH+]cs1)*', '*c1c([nH+]ccn1)*']
+    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in thiamine_patterns):
+        return True, "Thiamine (B1) substructure found"
 
-2. Relax the molecular weight and ring count cutoffs, or remove them entirely if they are causing too many false negatives.
+    # Riboflavin (B2)
+    riboflavin_pattern = '*c1nc2c(=O)[nH]c(=O)[nH]c2c(*)cc1*'
+    if mol.HasSubstructMatch(Chem.MolFromSmarts(riboflavin_pattern)):
+        return True, "Riboflavin (B2) substructure found"
 
-3. Consider adding additional checks or rules based on other molecular properties or substructures that are characteristic of B vitamins. For example, checking for specific functional groups, atom environments, or connectivity patterns.
+    # Niacin (B3)
+    niacin_patterns = ['*c1ccncc1*', '*c1ccn(O)cc1*']
+    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in niacin_patterns):
+        return True, "Niacin (B3) substructure found"
 
-4. If there are still some false negatives that cannot be addressed by the above steps, consider using a machine learning approach trained on a larger dataset of B vitamin structures.
+    # Pantothenic acid (B5)
+    pantothenic_pattern = '*CC(C)(CO)C(O)C(=O)NCCC(=O)O*'
+    if mol.HasSubstructMatch(Chem.MolFromSmarts(pantothenic_pattern)):
+        return True, "Pantothenic acid (B5) substructure found"
 
-5. Review the false negatives and false positives carefully. If the benchmark dataset has systematic errors or inconsistencies with the accepted definition of B vitamins, it might be reasonable to override the benchmark in those cases and provide a clear explanation for doing so.
+    # Pyridoxine (B6)
+    pyridoxine_patterns = ['*c1c(CO)ncc(CO)c1O*', '*c1c(CO)ncc(COP(O)(O)=O)c1O*']
+    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in pyridoxine_patterns):
+        return True, "Pyridoxine (B6) substructure found"
 
-It's important to note that classifying chemical entities can be challenging, and there may not be a perfect solution that captures all edge cases. The goal should be to develop a robust and interpretable approach that aligns with the chemical knowledge and intuition about the class of interest.
+    # Biotin (B7)
+    biotin_pattern = '*C12CSC(CCCCC(O)=O)C1NC(=O)N2*'
+    if mol.HasSubstructMatch(Chem.MolFromSmarts(biotin_pattern)):
+        return True, "Biotin (B7) substructure found"
+
+    # Folate (B9)
+    folate_patterns = ['*c1cnc2nc(N)[nH]c(=O)c12*', '*c1cnc2nc(N)[nH]c(N)c12*']
+    if any(mol.HasSubstructMatch(Chem.MolFromSmarts(p)) for p in folate_patterns):
+        return True, "Folate (B9) substructure found"
+
+    # Cobalamin (B12)
+    cobalamin_pattern = '*[Co-3]1234*'
+    if mol.HasSubstructMatch(Chem.MolFromSmarts(cobalamin_pattern)):
+        return True, "Cobalamin (B12) substructure found"
+
+    # Additional checks
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+
+    if mol_wt < 100 or n_rings < 2:
+        return False, "Molecular weight or ring count too low for B vitamin"
+
+    return False, "No B vitamin substructures found"
