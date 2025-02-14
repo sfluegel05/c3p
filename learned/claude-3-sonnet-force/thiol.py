@@ -6,13 +6,12 @@ Classifies: CHEBI:34831 thiol
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdchem
+from rdkit.Chem import AllChem
 
 def is_thiol(smiles: str) -> tuple[bool, str]:
     """
     Determines if a molecule is a thiol based on its SMILES string.
-    A thiol is an organosulfur compound in which a thiol group (-SH) is attached to a carbon atom
-    of any aliphatic or aromatic moiety.
+    A thiol is an organosulfur compound with a thiol group (-SH) attached to a carbon atom.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,7 +20,7 @@ def is_thiol(smiles: str) -> tuple[bool, str]:
         bool: True if the molecule is a thiol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -31,32 +30,19 @@ def is_thiol(smiles: str) -> tuple[bool, str]:
     thiol_pattern = Chem.MolFromSmarts("[SH]")
     thiol_matches = mol.GetSubstructMatches(thiol_pattern)
 
-    # Check if there is at least one thiol group
-    if len(thiol_matches) == 0:
-        return False, "No thiol group (-SH) found"
+    # Look for carbon-sulfur bond pattern
+    c_s_pattern = Chem.MolFromSmarts("[C][S]")
+    c_s_matches = mol.GetSubstructMatches(c_s_pattern)
 
-    def traverse_ring_or_chain(atom, visited):
-        """
-        Recursive function to traverse a ring or aliphatic chain starting from a given atom.
-        Returns True if the traversal encounters a non-carbon atom or reaches a termination condition.
-        """
-        if atom.GetAtomicNum() != 6:  # Not a carbon atom
-            return True
+    # A thiol must have at least one thiol group and one carbon-sulfur bond
+    if len(thiol_matches) == 0 or len(c_s_matches) == 0:
+        return False, "No thiol group or carbon-sulfur bond found"
 
-        visited.add(atom.GetIdx())
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() not in visited:
-                if traverse_ring_or_chain(neighbor, visited):
-                    return True
-
-        return False
-
+    # Check if the thiol group is attached to a carbon atom
     for thiol_idx in thiol_matches:
         thiol_atom = mol.GetAtomWithIdx(thiol_idx)
-        for neighbor_atom in thiol_atom.GetNeighbors():
-            if neighbor_atom.GetAtomicNum() == 6:  # Carbon
-                visited = set()
-                if traverse_ring_or_chain(neighbor_atom, visited):
-                    return True, "Contains a thiol group (-SH) attached to a carbon atom of an aliphatic or aromatic moiety"
+        for neighbor in thiol_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6:  # Carbon
+                return True, "Contains a thiol group (-SH) attached to a carbon atom"
 
-    return False, "Thiol group not attached to a carbon atom of an aliphatic or aromatic moiety"
+    return False, "Thiol group not attached to a carbon atom"
