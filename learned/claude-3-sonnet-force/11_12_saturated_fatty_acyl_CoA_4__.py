@@ -1,22 +1,86 @@
 """
 Classifies: CHEBI:84948 11,12-saturated fatty acyl-CoA(4-)
 """
-The previous program seems to work very well, as indicated by the perfect precision, recall, and F1 score of 1.0. However, the outcomes show that there are several true negative examples that were incorrectly classified as false negatives. Let's analyze these cases:
+"""
+Classifies: CHEBI:84947 11,12-saturated fatty acyl-CoA(4-)
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. `3-oxodocosanoyl-CoA(4-)`: This molecule does not have an 11-12 saturated bond in the fatty acyl chain because the chain length is only 22 carbons. Therefore, it should be classified as a true negative, and the program correctly identified it as not belonging to the class.
+def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
+    """
+    Determines if a molecule is an 11,12-saturated fatty acyl-CoA(4-) based on its SMILES string.
+    An 11,12-saturated fatty acyl-CoA(4-) is a fatty acyl-CoA(4-) in which the 11-12 bond of the fatty acyl group is saturated.
 
-2. `(13Z)-3-oxodocosenoyl-CoA(4-)`: Similar to the previous case, this molecule has a chain length of 22 carbons and does not have an 11-12 saturated bond. It should be a true negative, and the program correctly classified it as such.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. `(13Z,16Z,19Z)-3-oxodocosatrienoyl-CoA(4-)`: Again, a chain length of 22 carbons, so it should be a true negative, and the program correctly classified it.
+    Returns:
+        bool: True if molecule is an 11,12-saturated fatty acyl-CoA(4-), False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for CoA head group
+    coa_pattern = Chem.MolFromSmarts("C(C)(COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)([O-])[O-])n1cnc2c(N)ncnc12)C(=O)NCCC(=O)NCCS")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "Missing CoA head group"
+    
+    # Look for fatty acyl chain (at least 12 carbons)
+    fatty_acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])CC[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])[CX4,CX3]([H])([H])")
+    fatty_acyl_matches = mol.GetSubstructMatches(fatty_acyl_pattern)
+    if not fatty_acyl_matches:
+        return False, "Missing fatty acyl chain (at least 12 carbons)"
+    
+    # Check for 11-12 saturated bond
+    for match in fatty_acyl_matches:
+        chain = mol.GetAtomWithIdx(match[0]).GetNeighbors()
+        for i in range(10, len(chain)):
+            atom1 = chain[i]
+            atom2 = chain[i+1]
+            bond = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
+            if bond.GetBondType() == Chem.BondType.SINGLE and i == 10:
+                return True, "Contains an 11-12 saturated bond in the fatty acyl chain"
+    
+    return False, "No 11-12 saturated bond found in the fatty acyl chain"
 
-4. `(3R,13Z,16Z,19Z,22Z)-3-hydroxyoctacosatetraenoyl-CoA(4-)`: This molecule has a chain length of 28 carbons, but the 11-12 bond is unsaturated (part of a conjugated system). Therefore, it should be a true negative, and the program correctly classified it as such.
-
-5. `(R)-3-hydroxylauroyl-CoA(4-)`: This molecule has a chain length of only 12 carbons, so it does not have an 11-12 bond. It should be a true negative, and the program correctly classified it.
-
-6. `phytanoyl-CoA(4-)`: This is a branched-chain fatty acyl-CoA, and it does not have an 11-12 bond in the chain. It should be a true negative, and the program correctly classified it.
-
-7. `2-hydroxyhexacosanoyl-CoA(4-)`: This molecule has a chain length of 26 carbons, but the hydroxyl group is attached to the 2nd carbon, not the 3rd. Therefore, it does not have an 11-12 saturated bond in the fatty acyl chain. It should be a true negative, and the program correctly classified it.
-
-The remaining examples follow a similar pattern: they either do not have a long enough chain to have an 11-12 bond or have an unsaturated bond at that position. In all these cases, the program correctly classified them as true negatives.
-
-Based on this analysis, it appears that the program is working correctly, and the benchmark data may have some systematic mistakes in labeling these examples as false negatives. Unless there is a compelling reason to believe that the program is incorrect, it is reasonable to ignore these outliers and trust the program's classifications, given its perfect performance on the remaining examples.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:84947',
+        'name': '11,12-saturated fatty acyl-CoA(4-)',
+        'definition': 'Any fatty acyl-CoA(4-) in which the 11-12 bond of the fatty acyl group is saturated. This is needed for a reaction together with CHEBI:84947.',
+        'parents': ['CHEBI:35616', 'CHEBI:35618']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 1,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 54,
+    'num_false_positives': 0,
+    'num_true_negatives': 182434,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 1.0,
+    'recall': 1.0,
+    'f1': 1.0,
+    'accuracy': 1.0
+}
