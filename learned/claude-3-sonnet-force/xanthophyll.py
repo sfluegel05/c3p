@@ -8,7 +8,6 @@ A subclass of carotenoids consisting of the oxygenated carotenes.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_xanthophyll(smiles: str):
     """
@@ -38,16 +37,5 @@ def is_xanthophyll(smiles: str):
     carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
     if not carbon_chain_matches:
         return False, "No conjugated carbon chain found, not a carotenoid"
-    
-    # Check for long carbon chain (>= 10 carbons)
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 10:
-        return False, "Carbon chain too short, not a carotenoid"
-    
-    # Check for cyclic structures at the ends
-    cyclic_ends_pattern = Chem.MolFromSmarts("[C@]1([CH2])[CH2][CH2][CH2][CH2]1")
-    cyclic_ends_matches = mol.GetSubstructMatches(cyclic_ends_pattern)
-    if len(cyclic_ends_matches) < 2:
-        return False, "Missing cyclic structures at the ends, not a typical carotenoid"
     
     return True, "Contains oxygenated conjugated carbon chain, characteristic of xanthophylls"
