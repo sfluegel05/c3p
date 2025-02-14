@@ -21,32 +21,36 @@ def is_monoradylglycerol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Define glycerol backbone patterns allowing attachment to any of the three carbons
+    glycerol_pattern1 = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4][OX2]")
+    glycerol_pattern2 = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4]([OX2H1])[CH2X4]([OX2H1])")
+    glycerol_pattern3 = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2])[CH2X4]([OX2H1])")
 
-    # Look for glycerol backbone pattern (C-C-C with two OH groups)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4]")
-    if glycerol_pattern is None:
+    if glycerol_pattern1 is None or glycerol_pattern2 is None or glycerol_pattern3 is None:
       return False, "Invalid glycerol SMARTS pattern"
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    if not glycerol_matches:
+    
+    glycerol_matches1 = mol.GetSubstructMatches(glycerol_pattern1)
+    glycerol_matches2 = mol.GetSubstructMatches(glycerol_pattern2)
+    glycerol_matches3 = mol.GetSubstructMatches(glycerol_pattern3)
+    
+    if not glycerol_matches1 and not glycerol_matches2 and not glycerol_matches3:
         return False, "No glycerol backbone found"
 
     # Define attachment patterns
-    ester_pattern = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4][OX2][CX3](=[OX1])~[!#1]")
-    ether_pattern = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4][OX2][CX4]~[!#1]")
-    alkyl_pattern = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4][CX4]~[!#1]")
-    vinyl_ether_pattern = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4][OX2][CX3]=[CX3]~[!#1]")
+    attachment_pattern1 = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2H1])[CH2X4][OX2][CX3,CX4]~[!#1]")
+    attachment_pattern2 = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4]([OX2H1])[CH2X4]([OX2H1])[CX3,CX4]~[!#1]")
+    attachment_pattern3 = Chem.MolFromSmarts("[CH2X4]([OX2H1])[CHX4]([OX2])[CH2X4]([OX2H1])[CX3,CX4]~[!#1]")
 
-
-    if ester_pattern is None or ether_pattern is None or alkyl_pattern is None or vinyl_ether_pattern is None:
+    if attachment_pattern1 is None or attachment_pattern2 is None or attachment_pattern3 is None:
          return False, "Invalid attachment SMARTS pattern"
     
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    alkyl_matches = mol.GetSubstructMatches(alkyl_pattern)
-    vinyl_ether_matches = mol.GetSubstructMatches(vinyl_ether_pattern)
-
-    total_matches = len(ester_matches) + len(ether_matches) + len(alkyl_matches) + len(vinyl_ether_matches)
-
+    attachment_matches1 = mol.GetSubstructMatches(attachment_pattern1)
+    attachment_matches2 = mol.GetSubstructMatches(attachment_pattern2)
+    attachment_matches3 = mol.GetSubstructMatches(attachment_pattern3)
+    
+    total_matches = len(attachment_matches1) + len(attachment_matches2) + len(attachment_matches3)
+    
     if total_matches != 1:
         return False, f"Found {total_matches} attachment points, require exactly 1"
 
