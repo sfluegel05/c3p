@@ -10,8 +10,7 @@ from rdkit import Chem
 def is_organoiodine_compound(smiles: str):
     """
     Determines if a molecule is an organoiodine compound based on its SMILES string.
-    An organoiodine compound contains at least one carbon-iodine (C-I) bond where iodine
-    is directly bonded to carbon and not bonded to any heteroatoms other than carbon or hydrogen.
+    An organoiodine compound contains at least one carbon-iodine (C-I) bond where the carbon is part of an organic framework.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,29 +19,32 @@ def is_organoiodine_compound(smiles: str):
         bool: True if molecule is an organoiodine compound, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for carbon directly bonded to iodine
-    ci_pattern = Chem.MolFromSmarts("[#6]-[#53]")
-    matches = mol.GetSubstructMatches(ci_pattern)
+    # Exclude molecules with less than 3 carbon atoms to avoid small molecules like iodoform
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if num_carbons < 3:
+        return False, f"Only {num_carbons} carbon atom(s); insufficient for organoiodine compound"
 
-    # Iterate over all matches of the pattern
-    for match in matches:
-        c_idx, i_idx = match
-        iodine_atom = mol.GetAtomWithIdx(i_idx)
-        carbon_atom = mol.GetAtomWithIdx(c_idx)
-
-        # Check if iodine is only bonded to carbon and hydrogen
-        iodine_neighbors = [nbr.GetAtomicNum() for nbr in iodine_atom.GetNeighbors()]
-        # Remove duplicates and exclude the carbon it is bonded to
-        iodine_neighbors = [num for num in iodine_neighbors if num != 6]
-
-        # If iodine is only bonded to carbon and hydrogen (atomic number 1)
-        if all(num in [1] for num in iodine_neighbors):
-            return True, "Contains carbon-iodine bond with iodine in standard oxidation state (-1)"
-
-    return False, "No suitable carbon-iodine bonds found"
+    # Find all carbon-iodine bonds where carbon is connected to at least one other carbon
+    is_organoiodine = False
+    for bond in mol.GetBonds():
+        atom1 = bond.GetBeginAtom()
+        atom2 = bond.GetEndAtom()
+        # Check for C-I bond
+        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 53) or \
+           (atom1.GetAtomicNum() == 53 and atom2.GetAtomicNum() == 6):
+            carbon_atom = atom1 if atom1.GetAtomicNum() == 6 else atom2
+            # Check if carbon is connected to at least one other carbon (excluding the iodine)
+            neighbor_carbons = [nbr for nbr in carbon_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != atom2.GetIdx()]
+            if neighbor_carbons:
+                is_organoiodine = True
+                break  # Found a valid C-I bond
+    if is_organoiodine:
+        return True, "Contains C-I bond with carbon in organic framework"
+    else:
+        return False, "No suitable carbon-iodine bonds found"
