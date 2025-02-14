@@ -2,20 +2,16 @@
 Classifies: CHEBI:76579 triradylglycerol
 """
 """
-Classifies: CHEBI:36373 triradylglycerol
+Classifies: CHEBI:35741 triradylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
-from rdkit.ML.Descriptors import MoleculeDescriptors
-import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from rdkit.Chem import rdMolDescriptors, AllChem
 
 def is_triradylglycerol(smiles: str):
     """
     Determines if a molecule is a triradylglycerol based on its SMILES string.
-    A triradylglycerol has one of three possible substituent groups - 
-    acyl, alkyl, or alk-1-enyl - at each of the three positions (sn-1, sn-2, sn-3) 
-    on the glycerol backbone.
+    A triradylglycerol is a glycerol compound having one of three possible substituent groups
+    (acyl, alkyl, or alk-1-enyl) at each of the three possible positions sn-1, sn-2, or sn-3.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,31 +26,45 @@ def is_triradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone
+    # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for three substituents
-    oxy_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8]
-    if len(oxy_atoms) != 6:
-        return False, "Must have exactly 6 oxygen atoms (3 ester groups)"
+    # Look for 3 ester groups (-O-C(=O)-), alkyl chains (-C-), or alkenyl chains (-C=C-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    alkyl_pattern = Chem.MolFromSmarts("[CX4]~[CX4]")
+    alkenyl_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
+    
+    substituents = []
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() == "O":
+            env = Chem.FindAtomEnvironmentOfRadiusN(mol, 3, atom.GetIdx())
+            if env.HasSubstructMatch(ester_pattern):
+                substituents.append("acyl")
+            elif env.HasSubstructMatch(alkyl_pattern):
+                substituents.append("alkyl")
+            elif env.HasSubstructMatch(alkenyl_pattern):
+                substituents.append("alk-1-enyl")
 
-    # Extract fingerprints
-    fingerprint = MoleculeDescriptors.GetHashedAtomPairFingerprintAsBitVect(mol, nBits=2048)
-    fingerprint = np.array(fingerprint)
+    if len(substituents) != 3:
+        return False, f"Found {len(substituents)} substituents, need exactly 3"
+    
+    # Check for valid substituent combinations
+    valid_combos = [
+        ["acyl", "acyl", "acyl"],
+        ["acyl", "acyl", "alkyl"],
+        ["acyl", "acyl", "alk-1-enyl"],
+        ["acyl", "alkyl", "alkyl"],
+        ["acyl", "alkyl", "alk-1-enyl"],
+        ["acyl", "alk-1-enyl", "alk-1-enyl"],
+        ["alkyl", "alkyl", "alkyl"],
+        ["alkyl", "alkyl", "alk-1-enyl"],
+        ["alkyl", "alk-1-enyl", "alk-1-enyl"],
+        ["alk-1-enyl", "alk-1-enyl", "alk-1-enyl"]
+    ]
+    
+    if sorted(substituents) not in valid_combos:
+        return False, f"Invalid substituent combination: {', '.join(substituents)}"
 
-    # Use pre-trained random forest model
-    model = RandomForestClassifier()
-    model.fit(X_train, y_train)  # Assuming X_train and y_train are provided
-    prediction = model.predict([fingerprint])
-
-    if prediction[0]:
-        return True, "Molecule matches the structural patterns of a triradylglycerol"
-    else:
-        return False, "Molecule does not match the structural patterns of a triradylglycerol"
-
-# Example usage: (Assuming X_train and y_train are available)
-smiles = "O(C(=O)CCCCCCCCCCCCCCCCCCCCC)[C@@H](COC(=O)CCCCCCCCCCCCC(C)C)COC(=O)CCCCCCC"
-result, reason = is_triradylglycerol(smiles)
-print(result, reason)
+    return True, "Contains glycerol backbone with 3 substituents: acyl, alkyl, or alk-1-enyl"
