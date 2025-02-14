@@ -27,41 +27,52 @@ def is_bile_acid_conjugate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for bile acid core
-    # Steroid nucleus: four fused rings (three 6-membered rings and one 5-membered ring)
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCC4)C")
+    # Define a general pattern for the steroid nucleus (four fused rings)
+    steroid_pattern = Chem.MolFromSmarts("""
+    [#6]1[#6][#6][#6]2[#6]([#6]1)[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6][#6]4
+    """)
     
-    # Hydroxyl groups at positions typical for bile acids
-    hydroxyl_pattern = Chem.MolFromSmarts("[C;R][C;R](O)[C;R]")
+    # Define a pattern for the bile acid side chain ending with carboxylic acid at C24
+    side_chain_pattern = Chem.MolFromSmarts("""
+    [#6]-[#6]-[#6]-[#6]-C(=O)[O;H,–]
+    """)
     
-    # Check for steroid nucleus
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid nucleus found"
+    # Combine steroid nucleus and side chain to define bile acid core
+    bile_acid_pattern = Chem.MolFromSmarts("""
+    [$([#6]1[#6][#6][#6]2[#6]([#6]1)[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6][#6]4),R]
+    -[*]-[*]-[*]-C(=O)[O;H,–]
+    """)
+    
+    # Check for bile acid core
+    if not mol.HasSubstructMatch(bile_acid_pattern):
+        return False, "No bile acid core found"
 
-    # Check for bile acid hydroxylation pattern (optional, can be more specific)
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Insufficient hydroxyl groups for bile acid"
-
-    # Define SMARTS patterns for conjugated groups
+    # Define SMARTS patterns for conjugated groups attached via amide or ester linkage
     conjugates = {
-        "glycine": Chem.MolFromSmarts("NCC(O)=O"),
-        "taurine": Chem.MolFromSmarts("NCCS(=O)(=O)O"),
-        "amino_acid": Chem.MolFromSmarts("N[C@@H](C)C(=O)O"),  # Simplified amino acid pattern
-        "sulfate": Chem.MolFromSmarts("OS(=O)(=O)[O-]"),
-        "glucuronic_acid": Chem.MolFromSmarts("OC[C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O"),
-        "glucose": Chem.MolFromSmarts("OC[C@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O"),
-        "coenzyme_A": Chem.MolFromSmarts("NC(=O)CCNC(=O)CC(=O)NCCS"), # Simplified CoA pattern
+        "glycine": Chem.MolFromSmarts("C(=O)NCC(=O)[O;H]"),
+        "taurine": Chem.MolFromSmarts("C(=O)NCCS(=O)(=O)[O;H]"),
+        "amino_acid": Chem.MolFromSmarts("C(=O)N[C@@H]([#6])[#6]C(=O)[O;H]"),  # General amino acid
+        "sulfate": Chem.MolFromSmarts("OS(=O)(=O)[O;H]"),
+        "glucuronic_acid": Chem.MolFromSmarts("""
+        [#6]-1(-[#8]-[#6]-[#8]C(=O)[O;H])[#6]([#8])-[#6]([#8])-[#6]([#8])-[#6]-1
+        """),
+        "glucose": Chem.MolFromSmarts("""
+        [#6]-1(-[#8]-[#6])[#6]([#8])-[#6]([#8])-[#6]([#8])-[#6]-1
+        """),
+        "coenzyme_A": Chem.MolFromSmarts("NC(=O)CCNC(=O)CC(=O)NCCS"),
     }
     
     # Check for conjugation with any of the specified groups
     conjugated = False
+    conjugate_name = ""
     for name, pattern in conjugates.items():
-        if mol.HasSubstructMatch(pattern):
+        # Attachment via an amide or ester bond to the bile acid carboxyl group
+        linker_pattern = Chem.MolFromSmarts(f"C(=O)[O,N]*{pattern}")
+        if mol.HasSubstructMatch(linker_pattern):
             conjugated = True
             conjugate_name = name
             break
-    
+
     if not conjugated:
         return False, "No conjugated hydrophilic group found"
 
