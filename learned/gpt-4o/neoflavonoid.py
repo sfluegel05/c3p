@@ -12,25 +12,22 @@ def is_neoflavonoid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a neoflavonoid, False otherwise
+        bool: True if molecule is a neoflavonoid, False otherwise
         str: Reason for classification
     """
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # 1-benzopyran core pattern (basic chromene structure), flexible substitution allowed
-    benzopyran_pattern = Chem.MolFromSmarts('c1ccc2c(c1)occ2')  # Core without specificity on the substitution
+    
+    # A 1-benzopyran core: Benzene (c1ccccc1) fused to Pyran (O2c3c(C=CC=C3)CC(=C/1)\C2=O) with open valency at 4
+    benzopyran_pattern = Chem.MolFromSmarts('O1C=CC=CC1C2=CC=CC=C2')
     if not mol.HasSubstructMatch(benzopyran_pattern):
         return False, "1-benzopyran core not found"
-
-    # Locate the benzopyran core if found, then check for aryl at position 4
-    # Use a defined substructure to ensure position matching
-    # 4-position in benzopyran is typically part of the C-ring in flavonoids
-    # e.g., Aryl directly connected to chromene/coumarin system
-    aryl_position_pattern = Chem.MolFromSmarts('c1ccc(-c2ccc3c(c2)occ3)o1')  # Ensure direct connection for aryl
-    if not mol.HasSubstructMatch(aryl_position_pattern):
-        return False, "Aryl group not found at position 4 of benzopyran"
-
+    
+    # Check for aryl group attached at position 4 of the benzopyran core
+    aryl_at_pos4_pattern = Chem.MolFromSmarts('O1C=CC=CC1-c2cccc3')
+    if not mol.HasSubstructMatch(aryl_at_pos4_pattern):
+        return False, "Aryl group not found at position 4"
+    
     return True, "Contains a 1-benzopyran core with an aryl group at position 4"
