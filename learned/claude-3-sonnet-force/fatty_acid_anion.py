@@ -32,18 +32,14 @@ def is_fatty_acid_anion(smiles: str):
         return False, "No carboxylate group found"
     
     # Look for long carbon chain
-    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "No long carbon chain found"
     
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Chain too short to be a fatty acid"
-    
-    # Check for other functional groups
-    for pattern in ["[OX2]~[CX3](=[OX1])", "[NX3]", "[#6]=[#6]", "[#6]#[#7]", "[#6]=[#8]", "[#6]=[#16]", "[#6]#[#6]"]:
+    # Check for common functional groups that would disqualify it as a fatty acid anion
+    disqualifying_patterns = ["[NX3]", "[#6]#[#7]", "[#6]=[#16]", "[#6]#[#6]"]
+    for pattern in disqualifying_patterns:
         if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            return False, f"Found additional functional group: {pattern}"
+            return False, f"Found disqualifying functional group: {pattern}"
     
     return True, "Contains a carboxylate group and a long carbon chain"
