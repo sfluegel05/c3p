@@ -23,8 +23,12 @@ def is_2_5_diketopiperazines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for a 2,5-diketopiperazine core. Explicitly specifies a 6 membered ring.
-    diketopiperazine_pattern = Chem.MolFromSmarts("[N1]C(=O)[C][N2]C(=O)[C]12")
+    # Define the SMARTS pattern for a 2,5-diketopiperazine core. This pattern is more flexible and
+    # allows for substitutions on the ring. The key feature is the presence of a six-membered ring with
+    # two amide bonds.
+    diketopiperazine_pattern = Chem.MolFromSmarts("[NX1]1[CX3]=[OX1][CX4][NX1][CX3]=[OX1][CX4]1")
+    if diketopiperazine_pattern is None:
+      return False, "Invalid SMARTS pattern"
     
     # Check if the molecule matches the 2,5-diketopiperazine pattern
     if mol.HasSubstructMatch(diketopiperazine_pattern):
