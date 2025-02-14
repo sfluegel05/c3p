@@ -26,37 +26,99 @@ def is_diterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 25:
-        return False, f"Carbon count ({c_count}) not in typical range for diterpenoids (15-25 carbons)"
-    
-    # Attempt to identify isoprene units
-    isoprene_pattern = Chem.MolFromSmarts("C=C(C)C")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) < 2:
-        return False, f"Found {len(isoprene_matches)} isoprene units, less than expected for diterpenoids"
+    # Calculate molecular formula
+    formula = rdMolDescriptors.CalcMolFormula(mol)
+    # Extract counts of C, H, O, and other elements
+    from collections import Counter
+    import re
 
-    # Check for terpenoid-like methyl branching
-    methyl_branch_pattern = Chem.MolFromSmarts("C(C)(C)C")
-    methyl_branch_matches = mol.GetSubstructMatches(methyl_branch_pattern)
-    if len(methyl_branch_matches) == 0:
-        return False, "No methyl branching found typical of terpenoids"
+    # Use regular expressions to extract element counts from the formula
+    elements = re.findall('([A-Z][a-z]*)(\d*)', formula)
+    element_counts = Counter()
+    for elem, count in elements:
+        count = int(count) if count else 1
+        element_counts[elem] += count
 
-    # Consider rings (many diterpenoids are cyclic)
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings == 0:
-        return False, "No rings found; diterpenoids often contain ring structures"
+    c_count = element_counts.get('C', 0)
+    h_count = element_counts.get('H', 0)
+    o_count = element_counts.get('O', 0)
+    n_count = element_counts.get('N', 0)
+    s_count = element_counts.get('S', 0)
+    other_elements = set(element_counts.keys()) - {'C', 'H', 'O', 'N', 'S'}
 
-    # Check for oxygen-containing functional groups (common in diterpenoids)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count == 0:
-        return False, "No oxygen atoms found; diterpenoids are often oxidized"
+    # Diterpenoids generally have carbon counts around 20 (from four isoprene units)
+    if c_count < 16 or c_count > 24:
+        return False, f"Carbon count ({c_count}) not typical for diterpenoids (16-24 carbons)"
 
-    # Molecular weight check
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 500:
-        return False, f"Molecular weight ({mol_wt:.2f}) not in typical range for diterpenoids (250-500 Da)"
+    # Calculate Double Bond Equivalents (DBE)
+    dbe = (2 * c_count + 2 + n_count - h_count - halogen_count(mol)) / 2
+    if dbe < 4:
+        return False, f"DBE ({dbe}) too low for diterpenoids"
 
-    return True, "Molecule has features consistent with diterpenoids (carbon count, isoprene units, methyl branching, rings, oxygen atoms)"
+    # Check for presence of other elements
+    if other_elements:
+        return False, f"Contains elements not typical in diterpenoids: {', '.join(other_elements)}"
+
+    # Check for terpenoid skeletal patterns (acyclic and cyclic diterpenes)
+    # Common cyclic diterpene skeletons can be matched using SMARTS patterns
+    # Here, we consider several core skeletons of diterpenes
+
+    # List of common diterpene skeleton SMARTS patterns
+    diterpene_skeletons = [
+        # Labdane skeleton
+        "[C&H1]1([C&H2])CC[C&H2]2[C&H2]1CC[C&H2]2",
+        # Clerodane skeleton
+        "[C&H1]1([C&H2])CC[C&H2]2[C&H2]1CC[C&H2]2C",
+        # Abietane skeleton
+        "C1=CC[C&H2]2[C&H2]1CCC3C2CCC=C3",
+        # Gibberellane skeleton
+        "[C&H2]1CC[C&H2]2[C&H2]1CC[C&H2]3[C&H2]2CC[C&H2]3",
+        # Kaurane skeleton
+        "[C&H2]1CCC2[C&H2]1CC[C&H2]3[C&H2]2CCC[C&H2]3",
+        # Retinol skeleton (acyclic diterpene)
+        "C=C(C)CCC=C(C)CCC=C(C)CC=C(C)C",
+    ]
+
+    matches_skeleton = False
+    for pattern in diterpene_skeletons:
+        skeleton = Chem.MolFromSmarts(pattern)
+        if mol.HasSubstructMatch(skeleton):
+            matches_skeleton = True
+            break
+
+    if not matches_skeleton:
+        return False, "Does not match common diterpene skeletons"
+
+    # Check for rearranged or modified skeletons by looking for isoprene units
+    # Count the number of C5 units
+    c5_fragments = Chem.MolFromSmarts('[C&R]1~[C&R]~[C&R]~[C&R]~[C&R]1')
+    c5_matches = mol.GetSubstructMatches(c5_fragments)
+    if len(c5_matches) < 2:
+        return False, f"Found {len(c5_matches)} C5 units, less than expected for diterpenoids"
+
+    # Check if molecule is too oxidized or contains atypical functional groups
+    # Diterpenoids may contain hydroxyl, carbonyl, carboxyl groups but rarely nitro groups, sulfates, etc.
+    # List of atypical functional groups
+    atypical_groups = [
+        Chem.MolFromSmarts('[N+](=O)[O-]'),  # Nitro group
+        Chem.MolFromSmarts('S(=O)(=O)[O-]'),  # Sulfate group
+        Chem.MolFromSmarts('P(=O)(O)(O)O'),  # Phosphate group
+    ]
+    for group in atypical_groups:
+        if mol.HasSubstructMatch(group):
+            return False, "Contains atypical functional groups for diterpenoids"
+
+    return True, "Molecule has features consistent with diterpenoids (carbon count, DBE, terpenoid skeleton)"
+
+def halogen_count(mol):
+    """
+    Counts the number of halogen atoms in the molecule.
+
+    Args:
+        mol (rdkit.Chem.Mol): Molecule object
+
+    Returns:
+        int: Number of halogen atoms
+    """
+    halogens = [9, 17, 35, 53, 85]  # Atomic numbers for F, Cl, Br, I, At
+    return sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in halogens)
