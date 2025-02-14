@@ -6,12 +6,13 @@ Classifies: CHEBI:34831 thiol
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_thiol(smiles: str) -> tuple[bool, str]:
     """
     Determines if a molecule is a thiol based on its SMILES string.
-    A thiol is an organosulfur compound with a thiol group (-SH) attached to a carbon atom.
+    A thiol is an organosulfur compound in which a thiol group (-SH) is attached to a carbon atom
+    of any aliphatic or aromatic moiety.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,7 +21,7 @@ def is_thiol(smiles: str) -> tuple[bool, str]:
         bool: True if the molecule is a thiol, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -30,19 +31,22 @@ def is_thiol(smiles: str) -> tuple[bool, str]:
     thiol_pattern = Chem.MolFromSmarts("[SH]")
     thiol_matches = mol.GetSubstructMatches(thiol_pattern)
 
-    # Look for carbon-sulfur bond pattern
-    c_s_pattern = Chem.MolFromSmarts("[C][S]")
-    c_s_matches = mol.GetSubstructMatches(c_s_pattern)
+    # Check if there is at least one thiol group
+    if len(thiol_matches) == 0:
+        return False, "No thiol group (-SH) found"
 
-    # A thiol must have at least one thiol group and one carbon-sulfur bond
-    if len(thiol_matches) == 0 or len(c_s_matches) == 0:
-        return False, "No thiol group or carbon-sulfur bond found"
-
-    # Check if the thiol group is attached to a carbon atom
+    # Check if the thiol group is attached to an aliphatic or aromatic moiety
     for thiol_idx in thiol_matches:
         thiol_atom = mol.GetAtomWithIdx(thiol_idx)
-        for neighbor in thiol_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:  # Carbon
-                return True, "Contains a thiol group (-SH) attached to a carbon atom"
+        for neighbor_atom in thiol_atom.GetNeighbors():
+            if neighbor_atom.GetAtomicNum() == 6:  # Carbon
+                aliphatic_or_aromatic = False
+                for bond in mol.GetBonds():
+                    if bond.GetBeginAtomIdx() == neighbor_atom.GetIdx() or bond.GetEndAtomIdx() == neighbor_atom.GetIdx():
+                        if bond.GetBondType() == Chem.BondType.AROMATIC or bond.GetBondType() == Chem.BondType.SINGLE:
+                            aliphatic_or_aromatic = True
+                            break
+                if aliphatic_or_aromatic:
+                    return True, "Contains a thiol group (-SH) attached to a carbon atom of an aliphatic or aromatic moiety"
 
-    return False, "Thiol group not attached to a carbon atom"
+    return False, "Thiol group not attached to a carbon atom of an aliphatic or aromatic moiety"
