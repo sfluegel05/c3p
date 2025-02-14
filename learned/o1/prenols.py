@@ -25,100 +25,87 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for primary alcohol group (-CH2OH)
-    OH_pattern = Chem.MolFromSmarts('[C;H2][OX2H]')
+    # Check for alcohol group (-OH)
+    OH_pattern = Chem.MolFromSmarts('[OX2H]')
     OH_matches = mol.GetSubstructMatches(OH_pattern)
     if not OH_matches:
-        return False, "No primary alcohol group (-CH2OH) found"
+        return False, "No hydroxyl group (-OH) found"
 
-    # Assume primary alcohol; get carbon attached to OH
-    OH_atom_idx = OH_matches[0][1]
-    OH_atom = mol.GetAtomWithIdx(OH_atom_idx)
-    carbon_atom = mol.GetAtomWithIdx(OH_matches[0][0])
+    # Find all carbon chains starting from an alcohol group
+    for oh_match in OH_matches:
+        oh_atom_idx = oh_match[0]
+        oh_atom = mol.GetAtomWithIdx(oh_atom_idx)
 
-    visited = set()
-    chain_atoms = []
+        # Look for carbon atom attached to the hydroxyl oxygen
+        neighbors = [n for n in oh_atom.GetNeighbors() if n.GetAtomicNum() == 6]
+        if not neighbors:
+            continue  # No carbon attached to hydroxyl group
+        start_atom = neighbors[0]
 
-    # Function to recursively traverse the main chain
-    def traverse_chain(atom, prev_atom_idx, position):
-        visited.add(atom.GetIdx())
-        chain_atoms.append((atom, position))
-        neighbors = [a for a in atom.GetNeighbors() if a.GetIdx() != prev_atom_idx]
+        # Traverse the longest carbon chain starting from the alcohol carbon
+        path = Chem.GetLongestCarbonChain(mol, start_atom.GetIdx())
+        if not path:
+            continue  # Couldn't find a valid carbon chain
 
-        # Exclude hydrogens
-        neighbors = [a for a in neighbors if a.GetAtomicNum() != 1]
+        # Check if the chain length corresponds to one or more isoprene units
+        chain_length = len(path)
+        if chain_length < 5 or chain_length % 5 != 0:
+            continue  # Chain length does not correspond to complete isoprene units
 
-        main_chain_neighbor = None
-        side_chains = []
-        for neighbor in neighbors:
-            if neighbor.GetIdx() in visited:
+        n_units = chain_length // 5  # Number of isoprene units
+
+        # Check for methyl branches at correct positions
+        is_prenol = True
+        for i in range(n_units):
+            unit_start_idx = path[i*5]
+            unit_carbon = mol.GetAtomWithIdx(unit_start_idx)
+
+            # The second carbon in the isoprene unit (position i*5 + 1)
+            methyl_carbon_idx = path[i*5 + 1]
+            methyl_carbon = mol.GetAtomWithIdx(methyl_carbon_idx)
+
+            # Check for methyl branch attached to this carbon
+            methyl_found = False
+            for neighbor in methyl_carbon.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in path:
+                    # Found a carbon branch not in the main chain
+                    if neighbor.GetDegree() == 1:
+                        methyl_found = True
+                        break
+            if not methyl_found:
+                is_prenol = False
+                break  # Missing methyl group at expected position
+
+        if is_prenol:
+            return True, f"Molecule is a prenol with {n_units} isoprene unit(s)"
+
+    return False, "Molecule does not conform to prenol structure"
+
+# Helper function to get the longest carbon chain starting from a given atom
+def GetLongestCarbonChain(mol, start_atom_idx):
+    """
+    Finds the longest carbon chain in the molecule starting from the given atom index.
+
+    Args:
+        mol: RDKit molecule object
+        start_atom_idx: Index of the starting atom
+
+    Returns:
+        list: List of atom indices representing the longest carbon chain
+    """
+    def dfs(atom_idx, visited):
+        visited.add(atom_idx)
+        atom = mol.GetAtomWithIdx(atom_idx)
+        max_path = [atom_idx]
+        for neighbor in atom.GetNeighbors():
+            nbr_idx = neighbor.GetIdx()
+            if nbr_idx in visited:
                 continue
             if neighbor.GetAtomicNum() != 6:
-                return False  # Non-carbon atom in chain
-            if neighbor.GetDegree() == 1:
-                # Methyl group (CH3), acceptable as side chain
-                side_chains.append(neighbor)
-                continue
-            elif main_chain_neighbor is None:
-                main_chain_neighbor = neighbor
-            else:
-                return False  # More than one main chain neighbor, invalid branch
+                continue  # Only consider carbon atoms
+            path = dfs(nbr_idx, visited.copy())
+            if len(path) > len(max_path):
+                max_path = [atom_idx] + path
+        return max_path
 
-        # Check for side chains at correct positions
-        if position % 5 == 2:
-            if len(side_chains) != 1:
-                return False  # Missing methyl group at position 2 of isoprene unit
-        else:
-            if len(side_chains) != 0:
-                return False  # Unexpected branch at this position
-
-        if main_chain_neighbor is None:
-            # End of chain
-            return True
-
-        # Recursively traverse the next atom in the main chain
-        return traverse_chain(main_chain_neighbor, atom.GetIdx(), position + 1)
-
-    # Start traversing from the carbon attached to OH (position 0)
-    is_linear = traverse_chain(carbon_atom, OH_atom_idx, position=0)
-    if not is_linear:
-        return False, "Chain is branched incorrectly or contains non-carbon atoms"
-
-    # Ensure the chain length corresponds to complete isoprene units
-    chain_length = len(chain_atoms)
-    n_units = chain_length // 5
-    if chain_length % 5 != 0 or n_units < 1:
-        return False, f"Chain length ({chain_length}) does not correspond to complete isoprene units"
-
-    # Check double bonds and methyl groups in each isoprene unit
-    for i in range(n_units):
-        unit_atoms = [atom for atom, pos in chain_atoms[i*5:(i+1)*5]]
-
-        # Positions in the isoprene unit
-        pos0 = unit_atoms[0]  # CH2
-        pos1 = unit_atoms[1]  # C with double bond to next
-        pos2 = unit_atoms[2]  # C with methyl branch
-        pos3 = unit_atoms[3]  # C with double bond to next
-        pos4 = unit_atoms[4]  # CH2
-
-        # Check for double bond between pos0 and pos1
-        bond01 = mol.GetBondBetweenAtoms(pos0.GetIdx(), pos1.GetIdx())
-        if bond01.GetBondType() != Chem.rdchem.BondType.SINGLE:
-            return False, f"Expected single bond between positions {i*5} and {i*5 + 1}"
-
-        # Check for double bond between pos1 and pos2
-        bond12 = mol.GetBondBetweenAtoms(pos1.GetIdx(), pos2.GetIdx())
-        if bond12.GetBondType() != Chem.rdchem.BondType.DOUBLE:
-            return False, f"Expected double bond between positions {i*5 + 1} and {i*5 + 2}"
-
-        # Check for single bond between pos2 and pos3
-        bond23 = mol.GetBondBetweenAtoms(pos2.GetIdx(), pos3.GetIdx())
-        if bond23.GetBondType() != Chem.rdchem.BondType.SINGLE:
-            return False, f"Expected single bond between positions {i*5 + 2} and {i*5 + 3}"
-
-        # Check for double bond between pos3 and pos4
-        bond34 = mol.GetBondBetweenAtoms(pos3.GetIdx(), pos4.GetIdx())
-        if bond34.GetBondType() != Chem.rdchem.BondType.DOUBLE:
-            return False, f"Expected double bond between positions {i*5 + 3} and {i*5 + 4}"
-
-    return True, "Molecule is a prenol with linear chain of isoprene units ending with -OH group"
+    return dfs(start_atom_idx, set())
