@@ -39,18 +39,13 @@ def is_alkanesulfonate_oxoanion(smiles: str):
        if neighbor.GetAtomicNum() == 6:
            carbon_found = True
            carbon_atom = neighbor
-           
-           # Check that the directly bound carbon only binds to H and C
-           for carbon_neighbor in carbon_atom.GetNeighbors():
-              if carbon_neighbor.GetAtomicNum() not in [1, 6]:
-                  return False, "Carbon attached to sulfonate has heteroatom neighbors"
-
+           break #exit the loop when a carbon is found
     if not carbon_found:
        return False, "No carbon directly attached to sulfonate sulfur"
-    
+
     #Check for other sulfonate groups directly attached to that carbon
     for neighbor in carbon_atom.GetNeighbors():
       if neighbor.GetAtomicNum() == 16 and neighbor.GetIdx() != sulfur_atom_idx:
           return False, "Carbon attached to sulfonate contains another sulfonate"
 
-    return True, "Molecule contains a single sulfonate group attached to an alkane chain"
+    return True, "Molecule contains a single sulfonate group attached to a carbon chain"
