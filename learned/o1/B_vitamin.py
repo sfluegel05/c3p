@@ -28,74 +28,50 @@ def is_B_vitamin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for each B vitamin
-
-    patterns = [
-        {
-            'name': 'Vitamin B1 (Thiamine)',
-            'pattern': Chem.MolFromSmarts('CC1=C(C)C=CN=C1CCO'),  # Simplified thiazolium structure
-            'description': 'Matches thiazolium ring of thiamine'
-        },
-        {
-            'name': 'Vitamin B2 (Riboflavin)',
-            'pattern': Chem.MolFromSmarts('CNC1=C2C(=O)NC(=O)NC2=NC2=C1C=CC=C2'),  # Isoalloxazine ring
-            'description': 'Matches isoalloxazine ring system of riboflavin'
-        },
-        {
-            'name': 'Vitamin B3 (Niacin)',
-            'pattern': Chem.MolFromSmarts('c1cccnc1C(=O)O'),  # Pyridine ring with carboxylic acid
-            'description': 'Matches nicotinic acid structure of niacin'
-        },
-        {
-            'name': 'Vitamin B5 (Pantothenic acid)',
-            'pattern': Chem.MolFromSmarts('CC(C)(CO)C(=O)NCCC(=O)O'),  # Pantothenic acid structure
-            'description': 'Matches structure of pantothenic acid'
-        },
-        {
-            'name': 'Vitamin B6 (Pyridoxine, Pyridoxal, Pyridoxamine)',
-            'pattern': Chem.MolFromSmarts('c1cc(CO)c(O)nc1C'),  # Pyridine ring with hydroxyl and methyl groups
-            'description': 'Matches pyridine ring with hydroxyl group characteristic of vitamin B6'
-        },
-        {
-            'name': 'Vitamin B7 (Biotin)',
-            'pattern': Chem.MolFromSmarts('O=C1NC(=O)N2[C@@](CS1)([H])CCCCC2'),  # Biotin structure
-            'description': 'Matches fused ring system of biotin'
-        },
-        {
-            'name': 'Vitamin B9 (Folic acid)',
-            'pattern': Chem.MolFromSmarts('Nc1nc2ncc(CNc3ccc(cc3)C(O)=O)nc2c(=O)[nH]1'),  # Pteridine ring with p-aminobenzoic acid
-            'description': 'Matches pteridine ring system of folic acid'
-        },
-        {
-            'name': 'Vitamin B12 (Cobalamin)',
-            'pattern': Chem.MolFromSmarts('[Cobalt]'),  # Cobalt atom in a corrin ring
-            'description': 'Contains cobalt within a corrin ring characteristic of cobalamin'
-        },
+    # List of known B vitamin SMILES and their names
+    b_vitamin_smiles = [
+        # Vitamin B1 (Thiamine)
+        ('CC1=C(C)C=CN=C1CCO', 'Vitamin B1 (Thiamine)'),
+        # Vitamin B2 (Riboflavin)
+        ('CN(C)C1=NC2=C(N1)C(=O)N(C)C3=C2C=C(C=C3)O', 'Vitamin B2 (Riboflavin)'),
+        # Vitamin B3 (Niacin)
+        ('c1ccncc1C(=O)O', 'Vitamin B3 (Niacin - Nicotinic acid)'),
+        ('c1ccncc1C(=O)N', 'Vitamin B3 (Niacin - Nicotinamide)'),
+        # Vitamin B5 (Pantothenic acid)
+        ('CC(C)(CO)C(=O)NCCC(=O)O', 'Vitamin B5 (Pantothenic acid)'),
+        # Vitamin B6 (Pyridoxine, Pyridoxal, Pyridoxamine)
+        ('O=Cc1ncc(CO)c(C)c1O', 'Vitamin B6 (Pyridoxal)'),
+        ('NCc1ncc(CO)c(C)c1O', 'Vitamin B6 (Pyridoxamine)'),
+        ('COc1ncc(CO)c(C)c1O', 'Vitamin B6 (Pyridoxine)'),
+        # Vitamin B7 (Biotin)
+        ('O=C1NC(=O)N2C[C@@H](SC1)[C@]2([H])CCCCCC(=O)O', 'Vitamin B7 (Biotin)'),
+        # Vitamin B9 (Folic acid and derivatives)
+        ('Nc1nc2ncc(CNc3ccc(cc3)C(=O)O)nc2c(=O)[nH]1', 'Vitamin B9 (Folic acid)'),
+        # Vitamin B12 (Cobalamin)
+        # Cobalamin is complex; check for cobalt atom coordinated in a corrin ring
+        # Here we use a simplified pattern for cobalamin
+        ('[Cobalt]', 'Vitamin B12 (Cobalamin)'),
     ]
 
-    # Check for matches against each vitamin pattern
-    for vit in patterns:
-        pattern = vit['pattern']
-        if pattern is None:
-            continue
+    # Convert known B vitamin SMILES to molecules
+    b_vitamin_mols = []
+    for smi, name in b_vitamin_smiles:
+        mol_vit = Chem.MolFromSmiles(smi)
+        if mol_vit:
+            b_vitamin_mols.append((mol_vit, name))
 
-        # For Vitamin B12, check for the corrin ring
-        if vit['name'] == 'Vitamin B12 (Cobalamin)':
+    # Check if input molecule matches any known B vitamin
+    for vit_mol, vit_name in b_vitamin_mols:
+        if vit_name == 'Vitamin B12 (Cobalamin)':
+            # Check for cobalt atom
             contains_cobalt = any(atom.GetAtomicNum() == 27 for atom in mol.GetAtoms())
-            corrin_ring = Chem.MolFromSmarts('C1=CC=CC=C1')  # Placeholder for corrin ring; needs accurate SMARTS
             if contains_cobalt:
-                # Attempt to match corrin ring
-                # Note: Corrin ring is complex; here we check for cobalt coordinated to nitrogen atoms
-                cobalt_coordination = Chem.MolFromSmarts('[Co]~[N]~[C]')
-                if mol.HasSubstructMatch(cobalt_coordination):
-                    return True, vit['description']
-                else:
-                    continue  # Contains cobalt but not as part of cobalamin
+                return True, f"Molecule matches {vit_name} (Contains cobalt atom characteristic of cobalamin)"
             else:
-                continue  # No cobalt, not vitamin B12
+                continue
         else:
-            # For other vitamins, perform substructure matching
-            if mol.HasSubstructMatch(pattern):
-                return True, f"Molecule matches {vit['name']} ({vit['description']})"
+            # Perform substructure matching
+            if mol.HasSubstructMatch(vit_mol):
+                return True, f"Molecule matches {vit_name}"
 
     return False, "Molecule does not match any known B vitamin"
