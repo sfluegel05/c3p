@@ -31,10 +31,17 @@ def is_beta_carbolines(smiles: str):
     if not mol.HasSubstructMatch(pyridoindole_pattern):
         return False, "No pyridoindole core found"
     
-    # Look for beta-carboline skeleton (fused pyridine, indole, and cyclohexene rings)
-    beta_carboline_pattern = Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34")
-    if mol.HasSubstructMatch(beta_carboline_pattern):
-        return True, "Contains beta-carboline skeleton"
+    # Check for additional fused or spiro-fused rings, and potential substitutions
+    ring_patterns = [
+        Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34"),  # Basic beta-carboline skeleton
+        Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34N5CCCC5"),  # With fused piperidine ring
+        Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34N5CC5"),  # With spiro-fused azetidine ring
+        # Add more patterns as needed
+    ]
+    
+    for pattern in ring_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains beta-carboline skeleton"
     
     # Check for hydrogenated derivatives
     hydrogenated_pattern = Chem.MolFromSmarts("[*]1nc2ccccc2c3c1[nH]c4ccccc34")
