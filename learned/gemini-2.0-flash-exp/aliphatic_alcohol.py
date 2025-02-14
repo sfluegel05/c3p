@@ -21,29 +21,16 @@ def is_aliphatic_alcohol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for the presence of at least one alcohol group (-OH) bound to an aliphatic carbon.
-    alcohol_pattern = Chem.MolFromSmarts("[CX4H0-1][OX2H]")
+    alcohol_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
     
     if not mol.HasSubstructMatch(alcohol_pattern):
       return False, "No aliphatic alcohol group found"
 
-    #Verify it is an aliphatic carbon and not some other attachment.
+    #Check the matched carbon atoms to verify they are not aromatic
     for match in mol.GetSubstructMatches(alcohol_pattern):
-      for carbon_idx, oxygen_idx in zip(match[::2], match[1::2]): #The pattern has a form of C,O,C,O
-          o_atom = mol.GetAtomWithIdx(oxygen_idx)
-          c_atom = mol.GetAtomWithIdx(carbon_idx)
-          
-          if c_atom.GetIsAromatic():
-            continue # Skip if its an aromatic carbon.
-          
-          #check for correct connectivity
-          neighbors = o_atom.GetNeighbors()
-          if len(neighbors) != 1:
-            return False, "Oxygen not bound to a single carbon"
-          if neighbors[0].GetIdx() != c_atom.GetIdx(): # should already be true given the SMARTS match, but lets double check
-                return False, "Oxygen not bonded to a single carbon"
-          if c_atom.GetAtomicNum() != 6:
-              return False, "Alcohol not bound to a carbon"
-
-          return True, "Molecule contains at least one alcohol group attached to a non-aromatic carbon."
+        carbon_idx = match[0]
+        c_atom = mol.GetAtomWithIdx(carbon_idx)
+        if not c_atom.GetIsAromatic():
+             return True, "Molecule contains at least one alcohol group attached to a non-aromatic carbon."
     
     return False, "No aliphatic alcohol group found"
