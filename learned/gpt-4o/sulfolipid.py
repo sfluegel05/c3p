@@ -21,14 +21,14 @@ def is_sulfolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for sulfonic acid group (S(=O)(=O)-OH or S=O patterns)
-    sulfonic_acid_pattern = Chem.MolFromSmarts("S(=O)(=O)[O-,OH]")
-    if not mol.HasSubstructMatch(sulfonic_acid_pattern):
-        return False, "No sulfonic acid group found"
-    
-    # Check for carbon-sulfur bond to a long carbon chain or lipid
-    c_s_bond_pattern = Chem.MolFromSmarts("[CX4,SX1]-[SX,OX2](=O)(=O)")
-    if not mol.HasSubstructMatch(c_s_bond_pattern):
-        return False, "No carbon-sulfur bond connecting sulfonic group to a lipid"
+    # Check for sulfonic acid group with connected carbon
+    sulfonic_acid_lipid_pattern = Chem.MolFromSmarts("C-S(=O)(=O)-O")
+    if not mol.HasSubstructMatch(sulfonic_acid_lipid_pattern):
+        return False, "No sulfonic acid group with connected carbon (potential lipid linkage) found"
 
-    return True, "Contains sulfonic acid residue joined by a carbon-sulfur bond to a lipid"
+    # Verify carbon chain indicative of lipid presence
+    carbon_chain_pattern = Chem.MolFromSmarts("C-[CX4,CX3]-[CX4,CX3,CX2,CX1]~[SX]-[OX2](=O)=O")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No appropriate carbon chain connected through C-S bond to a sulfonic group suggesting lipid"
+
+    return True, "Contains a sulfonic acid group connected by a carbon-sulfur bond to a lipid"
