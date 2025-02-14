@@ -20,14 +20,17 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for octanoyl part of ester
-    octanoyl_pattern = Chem.MolFromSmarts("CCCCCCC(=O)O[#6]") #Match oxygen with single bond
-    octanoyl_matches = mol.GetSubstructMatches(octanoyl_pattern)
-    
-    octanoyl_pattern_ion = Chem.MolFromSmarts("CCCCCCC(=O)[O-]")
-    octanoyl_matches_ion = mol.GetSubstructMatches(octanoyl_pattern_ion)
+    # Improved pattern to match octanoyl connected to ester bond
+    # Match CCCCCCCC(=O)O connected to a C
+    octanoyl_ester_pattern = Chem.MolFromSmarts("CCCCCCC(=O)O[#6]")
+    octanoyl_ester_matches = mol.GetSubstructMatches(octanoyl_ester_pattern)
 
-    if len(octanoyl_matches) == 0 and len(octanoyl_matches_ion) == 0:
-         return False, "No octanoyl group found"
+    # Match ionized version CCCCCCCC(=O)[O-] connected to a C
+    octanoyl_ester_pattern_ion = Chem.MolFromSmarts("CCCCCCC(=O)[O-][#6]")
+    octanoyl_ester_matches_ion = mol.GetSubstructMatches(octanoyl_ester_pattern_ion)
+
+
+    if len(octanoyl_ester_matches) == 0 and len(octanoyl_ester_matches_ion) == 0:
+        return False, "No octanoyl ester group found"
 
     return True, "Contains at least one octanoyl group connected to an ester"
