@@ -26,50 +26,29 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information
-    ring_info = mol.GetRingInfo()
-    # Get list of atom indices for each ring
-    rings = ring_info.AtomRings()
+    # Define SMARTS pattern for pyrroline
+    # Non-aromatic five-membered ring with one nitrogen atom and one double bond
+    pyrroline_smarts = '[#7;$([n&H0]),$([n&H1]);R5;$([R]=1)]@[#6;R1]@[#6;R1]=[#6;R1]@[#6;R1]@1'
 
-    # Initialize flag
-    is_pyrroline = False
+    pyrroline_pattern = Chem.MolFromSmarts(pyrroline_smarts)
+    if pyrroline_pattern is None:
+        return False, "Invalid SMARTS pattern"
 
-    # Iterate over each ring
-    for ring in rings:
-        # Check if ring is five-membered
-        if len(ring) != 5:
-            continue
+    # Search for pyrroline substructure
+    if mol.HasSubstructMatch(pyrroline_pattern):
+        return True, "Contains a pyrroline ring"
 
-        # Collect atoms in the ring
-        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+    # Alternatively, check for all possible pyrroline isomers
+    # SMARTS patterns for 2-pyrroline and 3-pyrroline
+    pyrroline_smarts_list = [
+        'C1=CCCN1',  # 2-Pyrroline
+        'C1CC=CN1',  # 3-Pyrroline
+        'C1=CC=CN1', # Not a pyrroline (pyrrole), excluded
+    ]
 
-        # Count the number of nitrogen atoms in the ring
-        num_nitrogens = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
-        if num_nitrogens != 1:
-            continue
+    for smarts in pyrroline_smarts_list:
+        pattern = Chem.MolFromSmarts(smarts)
+        if pattern and mol.HasSubstructMatch(pattern):
+            return True, "Contains a pyrroline ring"
 
-        # Check if ring is aromatic
-        is_aromatic = any(atom.GetIsAromatic() for atom in ring_atoms)
-        if is_aromatic:
-            continue
-
-        # Count the number of double bonds in the ring
-        num_double_bonds = 0
-        for bond in mol.GetBonds():
-            begin_idx = bond.GetBeginAtomIdx()
-            end_idx = bond.GetEndAtomIdx()
-            if begin_idx in ring and end_idx in ring:
-                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    num_double_bonds += 1
-
-        if num_double_bonds != 1:
-            continue
-
-        # If all conditions are met, it's a pyrroline
-        is_pyrroline = True
-        break
-
-    if is_pyrroline:
-        return True, "Contains a non-aromatic five-membered ring with one nitrogen atom and one double bond (pyrroline ring)"
-    else:
-        return False, "Does not contain a pyrroline ring"
+    return False, "Does not contain a pyrroline ring"
