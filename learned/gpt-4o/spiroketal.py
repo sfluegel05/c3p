@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_spiroketal(smiles: str):
     """
     Determines if a molecule is a spiroketal based on its SMILES string.
-    A spiroketal is defined by a ketal carbon that is the only common atom of two rings.
+    A spiroketal is defined by a ketal carbon that is the only common atom of two distinct rings.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,8 +21,8 @@ def is_spiroketal(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a spiroketal: A carbon single-bonded to two oxygens, each part of a distinct ring
-    spiroketal_pattern = Chem.MolFromSmarts("[C](O)(O)@[R1]@[R2]")  # Simplified for demonstration
+    # SMARTS pattern for a spiroketal: A carbon single-bonded to two oxygens each being part of distinct rings
+    spiroketal_pattern = Chem.MolFromSmarts("[C]([O])[O]")  # This needs further refinement
 
     # Check for spiroketal substructure in the molecule
     if not spiroketal_pattern or not mol.HasSubstructMatch(spiroketal_pattern):
@@ -32,8 +32,11 @@ def is_spiroketal(smiles: str):
     matches = mol.GetSubstructMatches(spiroketal_pattern)
     for match in matches:
         ketal_carbon = match[0]
-        rings = [set(ring) for ring in Chem.GetSymmSSSR(mol) if ketal_carbon in ring]
-        if len(set.union(*rings)) != len(rings[0].union(rings[1])) or len(rings) != 2:
-            return False, "No valid spiroketal: ketal carbon shared exactly by two rings"
-    
-    return True, "Contains ketal carbon common to two rings (spiroketal structure)"
+        connected_oxygens = [match[1], match[2]]
+        rings = [set(ring) for ring in Chem.GetSymmSSSR(mol) if any(o in ring for o in connected_oxygens)]
+        if len(rings) != 2 or len(rings[0].intersection(rings[1])) != 1:
+            continue  # This is not a spiroketal
+
+        return True, "Contains ketal carbon common to two distinct rings (spiroketal structure)"
+
+    return False, "No valid spiroketal: ketal carbon is not in two distinct rings"
