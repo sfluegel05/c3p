@@ -28,48 +28,27 @@ def is_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for isoprene unit
-    isoprene_pattern = Chem.MolFromSmarts('C=C(C)C')  # Isoprene unit
+    # Count the number of carbon atoms
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Find the number of isoprene units
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    num_isoprene_units = len(isoprene_matches)
+    # Monoterpenoids are derived from monoterpenes (C10 skeleton), possibly modified
+    if num_carbons < 7 or num_carbons > 10:
+        return False, f"Number of carbon atoms ({num_carbons}) not consistent with monoterpenoids (should be between 7 and 10)"
 
-    if num_isoprene_units < 2:
-        # Monoterpenoids are derived from two isoprene units
-        return False, f"Contains {num_isoprene_units} isoprene units, less than required for monoterpenoid"
+    # Count the number of oxygen atoms
+    num_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
 
-    # Define SMARTS patterns for common monoterpene skeletons
-    monoterpene_patterns = [
-        "C1CCC(C=C1)C(C)C",        # Myrcene-like structures
-        "C1=CC=CC=C1C(C)C",        # Limonene-like structures
-        "C1=C(C)CCCC1C",           # Pinene-like structures
-        "CC(C)C1CCC(C=C1)O",       # Menthol-like structures
-        "CC(=C)C1CCC(C1)O",        # Pulegone-like structures
-    ]
-
-    has_monoterpene_skeleton = False
-    for smarts in monoterpene_patterns:
-        pattern = Chem.MolFromSmarts(smarts)
-        if mol.HasSubstructMatch(pattern):
-            has_monoterpene_skeleton = True
-            break
-
-    if not has_monoterpene_skeleton:
-        return False, "No monoterpene skeleton detected"
+    if num_oxygens == 0:
+        return False, "No oxygen atoms present, unlikely to be a terpenoid"
 
     # Check for terpenoid functional groups
-    # Functional groups that might be present in monoterpenoids
     functional_group_patterns = {
         "alcohol": "[OX2H]",                # Hydroxyl group
         "ketone": "[CX3](=O)[#6]",          # Ketone group
         "aldehyde": "[CX3H1](=O)[#6]",      # Aldehyde group
-        "ether": "[OD2]([#6])[#6]",         # Ether group
-        "carboxylic_acid": "C(=O)[OH]",     # Carboxylic acid group
+        "carboxylic_acid": "C(=O)[OH1]",    # Carboxylic acid group
         "ester": "C(=O)O[#6]",              # Ester group
-        "epoxide": "[C;R][O;R][C;R]",       # Epoxide ring
-        "thiol": "[SX2H]",                  # Thiol group
-        "double_bond": "C=C",               # Double bond
+        "ether": "[OD2]([#6])[#6]",         # Ether group
     }
 
     has_functional_group = False
@@ -80,6 +59,20 @@ def is_monoterpenoid(smiles: str):
             break
 
     if not has_functional_group:
-        return False, "No terpenoid functional groups found"
+        return False, "No terpenoid functional groups detected"
 
-    return True, "Contains monoterpene skeleton and terpenoid functional groups consistent with a monoterpenoid"
+    # Monoterpenoids may be cyclic or acyclic
+    # Record if molecule is cyclic
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+
+    # Check for branching (common in monoterpenoids)
+    num_chiral_centers = len(Chem.FindMolChiralCenters(mol, includeUnassigned=True))
+
+    # Compile reasons for classification
+    reason = f"Contains {num_carbons} carbons, {num_oxygens} oxygens, "
+    reason += f"{'cyclic' if num_rings > 0 else 'acyclic'} structure, "
+    reason += f"{'with' if has_functional_group else 'without'} terpenoid functional groups"
+
+    # If the molecule fits the criteria, classify as monoterpenoid
+    return True, reason
