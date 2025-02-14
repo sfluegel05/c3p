@@ -25,21 +25,23 @@ def is_azole(smiles: str):
 
     # Find 5-membered rings with at least 1 Nitrogen
     # This SMARTS pattern matches any 5-membered ring with at least one N and optionally other heteroatoms (O, S, N)
-    azole_pattern = Chem.MolFromSmarts("[NX2,NX3;R5][CX3,CX2,NX2,OX2,SX2;R5]~[CX3,CX2,NX2,OX2,SX2;R5]~[CX3,CX2,NX2,OX2,SX2;R5]~[CX3,CX2,NX2,OX2,SX2;R5]") # 5-membered ring with at least one N
+    azole_pattern = Chem.MolFromSmarts("[NX2,NX3;R5][*;R5]~[*;R5]~[*;R5]~[*;R5]") # 5-membered ring with at least one N
     
     ring_matches = mol.GetSubstructMatches(azole_pattern)
 
     if not ring_matches:
           return False, "No azole ring found"
-
-    #Check that all atoms in the ring have ring bond count = 2
-    for match in ring_matches:
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetDegree() > 3: # If total degree >3 it is part of fused ring. 2 ring bonds max + 1 substituent is ok
-              return False, "Found fused ring or too many bonds to ring atom"
-            if atom.IsInRing() and atom.GetRingBondCount() != 2: # check for monocyclic ring
-              return False, "ring atom not part of monocyclic ring"
-
     
+    # Check the ring is monocyclic (no fused rings)
+    for match in ring_matches:
+      ring_atoms = [mol.GetAtomWithIdx(i) for i in match]
+      if any(atom.IsInRing() for atom in ring_atoms): # Check if any atom in the ring is part of another ring.
+        ring_systems = set()
+        for atom in ring_atoms:
+           for ring in atom.GetOwningRings():
+             ring_systems.add(tuple(sorted(ring))) # add each owning ring
+        if len(ring_systems) >1 : # if there is more than one ring in the system, it is not monocyclic.
+          return False, "Found fused ring"
+
+
     return True, "Contains a monocyclic 5-membered heterocycle with at least one nitrogen."
