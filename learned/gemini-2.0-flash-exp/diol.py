@@ -2,12 +2,11 @@
 Classifies: CHEBI:23824 diol
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
 
 def is_diol(smiles: str):
     """
     Determines if a molecule is a diol based on its SMILES string.
-    A diol is a molecule with at least two hydroxyl (-OH) groups.
+    A diol is a molecule with exactly two hydroxyl (-OH) groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,20 +21,16 @@ def is_diol(smiles: str):
     if mol is None:
         return None, None
 
-    # Count hydroxyl groups
-    hydroxyl_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8: # Check for oxygen atoms
-           if atom.GetTotalValence() == 2: #must be single bonded 
-            is_hydroxyl = False
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 1 or neighbor.GetAtomicNum() == 6:
-                  is_hydroxyl = True
-                  break
-            if is_hydroxyl:
-                hydroxyl_count += 1
-    
-    if hydroxyl_count >= 2:
-        return True, f"Molecule contains at least two hydroxyl groups. It has {hydroxyl_count}."
+    # Find hydroxyl groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]") # oxygen with 2 bonds and 1 hydrogen
+
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    num_hydroxyls = len(hydroxyl_matches)
+
+    # Check for exactly two hydroxyl groups
+    if num_hydroxyls == 2:
+        return True, "Molecule contains exactly two hydroxyl groups"
+    elif num_hydroxyls < 2:
+        return False, f"Molecule has fewer than two hydroxyl groups, it has {num_hydroxyls}."
     else:
-       return False, f"Molecule has fewer than two hydroxyl groups, it has {hydroxyl_count}."
+        return False, f"Molecule has more than two hydroxyl groups, it has {num_hydroxyls}."
