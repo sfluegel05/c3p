@@ -27,24 +27,9 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get rings and check for aromaticity
-    rings = mol.GetRingInfo().AtomRings()
-    aromatic_rings = [ring for ring in rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
-    if not aromatic_rings:
-        return False, "No aromatic rings found"
-
     # Check for phenol ring
-    phenol_rings = []
-    for ring in aromatic_rings:
-        atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        if (
-            len(ring) == 6
-            and sum(1 for atom in atoms if atom.GetAtomicNum() == 6) >= 5  # Allow for substituents
-            and sum(1 for atom in atoms if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1) == 1  # Allow for other oxygen substituents
-        ):
-            phenol_rings.append(ring)
-
-    if not phenol_rings:
+    phenol_pattern = Chem.MolFromSmarts("c1ccc(O)cc1")
+    if not mol.HasSubstructMatch(phenol_pattern):
         return False, "No phenol ring found"
 
     # Check for single nitro group
@@ -55,8 +40,8 @@ def is_mononitrophenol(smiles: str):
 
     # Check if nitro group is attached to phenol ring
     nitro_atom_idx = nitro_matches[0][0]
-    nitro_ring_idx = mol.GetAtomWithIdx(nitro_atom_idx).GetIsAromatic()
-    if nitro_ring_idx is None or nitro_ring_idx not in [ring[0] for ring in phenol_rings]:
+    phenol_ring_atoms = mol.GetAtomWithIdx(nitro_atom_idx).GetNeighbors()
+    if not any(mol.GetAtomWithIdx(idx).IsInRingSize(6) and mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in [x.GetIdx() for x in phenol_ring_atoms]):
         return False, "Nitro group not attached to phenol ring"
 
     return True, "Contains a phenol ring with a single nitro substituent"
