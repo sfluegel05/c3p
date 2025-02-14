@@ -1,72 +1,28 @@
 """
 Classifies: CHEBI:23763 pyrroline
 """
-"""
-Classifies: CHEBI:22990 pyrroline
-Any organic heteromonocyclic compound with a structure based on a dihydropyrrole.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+The previous program attempted to classify molecules as pyrrolines based on the following criteria:
 
-def is_pyrroline(smiles: str):
-    """
-    Determines if a molecule is a pyrroline based on its SMILES string.
-    A pyrroline is an organic heteromonocyclic compound with a structure based on a dihydropyrrole.
+1. Presence of a single 5-membered ring with 4 carbon atoms and 1 nitrogen atom
+2. Presence of a double bond within the ring
+3. Allowed substituents on the ring atoms (sp3 and sp2 hybridized)
+4. Absence of disallowed functional groups or heteroatoms (oxygen and sulfur)
+5. Handling of tautomeric forms and resonance structures
 
-    Args:
-        smiles (str): SMILES string of the molecule
+However, the program failed to correctly classify some examples, as indicated by the low F1 score. Here are some potential reasons for the failure and suggestions for improvement:
 
-    Returns:
-        bool: True if molecule is a pyrroline, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+1. **Incomplete pattern recognition**: The program only checks for the presence of a single pyrroline ring and does not consider the possibility of multiple rings or fused ring systems. Many examples in the provided list contain additional fused rings or heterocycles, which were not correctly identified as pyrrolines. To address this, the program should incorporate more flexible substructure matching techniques to identify the pyrroline core within larger molecular frameworks.
 
-    # Check for a single ring with 5 atoms, 4 carbon and 1 nitrogen
-    ring_info = mol.GetRingInfo()
-    if not ring_info.AtomRings():
-        return False, "No ring found"
-    rings = ring_info.AtomRings()
-    pyrroline_ring = None
-    for ring in rings:
-        if len(ring) == 5:
-            ring_atoms = [mol.GetAtomWithIdx(idx).GetAtomicNum() for idx in ring]
-            if ring_atoms.count(6) == 4 and ring_atoms.count(7) == 1:
-                pyrroline_ring = ring
-                break
-    if pyrroline_ring is None:
-        return False, "No pyrroline ring found"
+2. **Overly restrictive substituent rules**: The program only allows sp3 and sp2 hybridized substituents on the pyrroline ring. However, some examples in the list contain other types of substituents, such as carbonyl groups or other functional groups directly attached to the ring. The program should be modified to allow a wider range of substituents or handle them as exceptions.
 
-    # Check for double bond in the ring
-    bond_types = [mol.GetBondBetweenAtoms(pyrroline_ring[i], pyrroline_ring[(i+1)%5]).GetBondType() for i in range(5)]
-    if Chem.rdchem.BondType.DOUBLE not in bond_types:
-        return False, "No double bond found in the ring"
+3. **Tautomer handling**: While the program attempts to handle tautomers, it may not be correctly identifying all possible tautomeric forms, leading to false negatives. The tautomer enumeration and handling process could be improved by using more advanced techniques or external libraries specifically designed for tautomer generation.
 
-    # Check for exocyclic substituents
-    allowed_substituents = [Chem.rdchem.HybridizationType.SP3, Chem.rdchem.HybridizationType.SP2]
-    for atom_idx in pyrroline_ring:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() not in pyrroline_ring:
-                if neighbor.GetHybridization() not in allowed_substituents:
-                    return False, "Substituent is not allowed for pyrrolines"
+4. **Resonance structure handling**: The program does not explicitly handle resonance structures, which could lead to false negatives for molecules with resonance-stabilized pyrroline forms. Incorporating resonance structure enumeration and analysis could improve the classification accuracy.
 
-    # Check for disallowed functional groups or heteroatoms
-    disallowed_patterns = [Chem.MolFromSmarts("[O;!R]"), Chem.MolFromSmarts("[S;!R]")]
-    for pattern in disallowed_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return False, "Molecule contains disallowed functional group or heteroatom"
+5. **Disallowed functional group and heteroatom rules**: The program disallows oxygen and sulfur atoms, but some examples in the list contain these atoms in specific contexts (e.g., carbonyl groups, heterocycles). The rules for disallowed functional groups and heteroatoms should be refined to account for these exceptions or handle them separately.
 
-    # Handle tautomeric forms and resonance structures
-    tautomers = Chem.MolFromSmiles(smiles, Chem.SANITIZE_PROPERTIES, True)
-    if tautomers is None:
-        return False, "Invalid SMILES string"
-    for tautomer in tautomers:
-        if is_pyrroline(Chem.MolToSmiles(tautomer))[0]:
-            return True, "Molecule is a valid pyrroline tautomer or resonance structure"
+6. **Structural diversity**: The provided list of examples covers a wide range of structural diversity, including complex fused ring systems, long aliphatic chains, and various functional groups. The program may need to be further refined and tailored to handle this diverse set of structures, potentially by incorporating more sophisticated substructure matching techniques or machine learning-based approaches.
 
-    return True, "Molecule contains a 5-membered ring with 4 carbon and 1 nitrogen atoms, a double bond, and allowed substituents"
+To improve the program, a thorough analysis of the false positives and false negatives is necessary. This analysis can provide insights into the specific cases where the program fails and guide the development of more robust rules or techniques for pyrroline classification.
+
+It's important to note that while the benchmark used may not be perfect, it serves as a valuable guide for identifying potential shortcomings in the program. However, if the classifications made by the program align with a deeper understanding of the chemical class, it is reasonable to discount outliers or inconsistencies in the benchmark, provided that the reasoning is well-justified.
