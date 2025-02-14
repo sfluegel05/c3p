@@ -1,60 +1,28 @@
 """
 Classifies: CHEBI:23899 icosanoid
 """
-"""
-Classifies: CHEBI:35976 icosanoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the outcomes provided, it seems that the current program has some issues in accurately classifying icosanoids. Here are some observations and potential improvements:
 
-def is_icosanoid(smiles: str):
-    """
-    Determines if a molecule is an icosanoid based on its SMILES string.
-    Icosanoids are signaling molecules arising from oxidation of C20 essential fatty acids
-    like arachidonic acid, EPA, and DGLA. They typically contain a cyclopentane/cyclopentene
-    ring, multiple carbon-carbon double bonds, and long carbon chains.
+1. **False Negatives**: Several molecules that are listed as examples of icosanoids are being incorrectly classified as non-icosanoids by the program. This suggests that the current criteria used for classification may be too strict or incomplete.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Cyclopentane/Cyclopentene Ring**: The requirement for a cyclopentane or cyclopentene ring seems to be the reason for some false negatives, such as "19R-Hydroxy-PGE2" and "delta(17)-6-keto Prostaglandin F1alpha". While many icosanoids contain these rings, it might be too restrictive to require them for all icosanoids.
 
-    Returns:
-        bool: True if molecule is an icosanoid, False otherwise
-        str: Reason for classification
-    """
-    try:
-        # Parse SMILES
-        mol = Chem.MolFromSmiles(smiles)
-        if mol is None:
-            return False, "Invalid SMILES string"
+3. **Carbon Count**: The requirement for exactly 20 carbon atoms is also causing some false negatives, like "1-Glyceryl-PGE2" and "PG(PGE2/i-14:0)". Some icosanoids might have slightly fewer or more than 20 carbons due to modifications or substituents.
 
-        # Check for 20 carbon atoms
-        if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6) != 20:
-            return False, "Does not contain 20 carbon atoms"
+4. **Double Bond Count**: The requirement for at least 3 carbon-carbon double bonds might also be too strict, as some icosanoids may have fewer double bonds or different types of unsaturation.
 
-        # Look for cyclopentane/cyclopentene ring
-        ring_pattern = Chem.MolFromSmarts("[CR5]")
-        ring_matches = mol.GetSubstructMatches(ring_pattern)
-        if not ring_matches:
-            return False, "No cyclopentane/cyclopentene ring found"
+5. **Oxygen Atom Count**: The minimum requirement of 3 oxygen atoms may exclude some valid icosanoids with fewer oxygen atoms.
 
-        # Check for multiple carbon-carbon double bonds
-        double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
-        double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-        if len(double_bond_matches) < 3:
-            return False, "Less than 3 carbon-carbon double bonds"
+To improve the program, we could consider the following modifications:
 
-        # Check for long carbon chains
-        chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-        chain_matches = mol.GetSubstructMatches(chain_pattern)
-        if len(chain_matches) < 2:
-            return False, "Missing long carbon chains"
+1. Relax the strict requirements for a cyclopentane/cyclopentene ring, exactly 20 carbon atoms, and a minimum number of double bonds or oxygen atoms. Instead, we could look for the presence of these features without strict counts or requirements.
 
-        # Check for oxygen atoms
-        if sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8) < 3:
-            return False, "Too few oxygen atoms for an icosanoid"
+2. Introduce additional structural patterns or substructures that are commonly found in icosanoids, such as specific functional groups (e.g., carboxylic acids, alcohols, ketones) or carbon chain lengths.
 
-        return True, "Contains cyclopentane/cyclopentene ring, multiple double bonds, long carbon chains, and oxygen atoms"
+3. Consider using machine learning or statistical models trained on a larger dataset of known icosanoids to learn the structural patterns more effectively.
 
-    except Exception as e:
-        return False, f"Error processing molecule: {str(e)}"
+4. If there are specific outliers or exceptions that are consistently misclassified, we could incorporate rules or exceptions to handle them separately.
+
+5. Consult with domain experts or literature to refine the definition and criteria for classifying icosanoids, as there may be nuances or variations not captured by the current program.
+
+Overall, while the current program captures some key features of icosanoids, it may benefit from a more flexible and comprehensive approach to handle the structural diversity within this class of molecules.
