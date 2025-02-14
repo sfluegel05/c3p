@@ -23,8 +23,9 @@ def is_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the CoA substructure (simplified, focusing on the key parts, Adenosine removed to avoid issues)
-    coa_pattern = Chem.MolFromSmarts("CC(C)(COP(=O)([OX1])OP(=O)([OX1])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)([OX1])[OX1])n1cnc2c(N)ncnc12)[C@@H](O)C(=O)NCCC(=O)NCCS")
+    # Define a simplified CoA substructure, focusing on the pantetheine and pyrophosphate core
+    # and simplifying the ribose and adenine portions.
+    coa_pattern = Chem.MolFromSmarts("CC(C)(COP(=O)(O)OP(=O)(O)OCC[C@H]1[C@H](O)[C@@H](OP(=O)(O)O)[C@@H](O)[C@H]1O)C(=O)NCCS")
     
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA substructure not found"
@@ -64,8 +65,6 @@ def is_2_enoyl_CoA(smiles: str):
             break
         if not found_double_bond:
             return False, "Double bond is not directly attached to carbonyl group"
-
-
 
 
     return True, "Molecule contains CoA, a thioester, and a double bond between the 2nd and 3rd carbon atoms of the acyl chain."
