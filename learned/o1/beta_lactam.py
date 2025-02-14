@@ -24,13 +24,29 @@ def is_beta_lactam(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define beta-lactam SMARTS pattern
-    # This pattern matches a 4-membered ring containing an amide bond (N-C=O)
-    beta_lactam_smarts = '[NX3;R][C;R](=O)[C;R][C;R]'
-    beta_lactam_pattern = Chem.MolFromSmarts(beta_lactam_smarts)
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
 
-    # Check for beta-lactam ring
-    if mol.HasSubstructMatch(beta_lactam_pattern):
-        return True, "Molecule contains a beta-lactam ring"
-    else:
-        return False, "No beta-lactam ring found"
+    # Iterate over all rings
+    for ring in atom_rings:
+        # Check for four-membered rings
+        if len(ring) == 4:
+            ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+            # Count nitrogen atoms in the ring
+            n_atoms = [atom for atom in ring_atoms if atom.GetAtomicNum() == 7]
+            # Count carbon atoms in the ring
+            c_atoms = [atom for atom in ring_atoms if atom.GetAtomicNum() == 6]
+            # Check if there is exactly one nitrogen and three carbons
+            if len(n_atoms) == 1 and len(c_atoms) == 3:
+                nitrogen = n_atoms[0]
+                # Look for a carbonyl carbon connected to the nitrogen within the ring
+                for neighbor in nitrogen.GetNeighbors():
+                    if neighbor.GetIdx() in ring and neighbor.GetAtomicNum() == 6:
+                        # Check if this carbon has a double bond to oxygen
+                        for bond in neighbor.GetBonds():
+                            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                                other_atom = bond.GetOtherAtom(neighbor)
+                                if other_atom.GetAtomicNum() == 8:
+                                    return True, "Molecule contains a beta-lactam ring"
+    return False, "No beta-lactam ring found"
