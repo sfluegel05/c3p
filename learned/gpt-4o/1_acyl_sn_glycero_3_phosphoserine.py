@@ -21,19 +21,20 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for a stereochemistry-aware glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("O[C@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)CO")  # Guard the glycerol structure with chiral centers
+    # Look for a glycerol backbone with a defined structure linked by stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("O[C@@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone with correct stereochemistry found"
     
-    # Look for phosphoserine pattern
+    # Check for the presence and correct placement of the phosphoserine group
     phosphoserine_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@H](N)C(=O)O")
     if not mol.HasSubstructMatch(phosphoserine_pattern):
         return False, "No phosphoserine group found"
 
-    # Look for acyl group pattern linked to glycerol
-    acyl_pattern = Chem.MolFromSmarts("C(=O)O[C@H](O)")  # Ensure correct chiral binding to hydroxyl position
-    if not mol.HasSubstructMatch(acyl_pattern):
+    # Look for acyl chain pattern with ester linkage
+    acyl_pattern = Chem.MolFromSmarts("C(=O)OC[C@H](O)")  # Focus on ester linkage, possibly allowing different chain orientations
+    acyl_match = mol.GetSubstructMatch(acyl_pattern)
+    if not acyl_match:
         return False, "No acyl chain linked to the glycerol 1-hydroxy position"
 
     return True, "Contains glycerol backbone with acyl chain and attached phosphoserine group"
