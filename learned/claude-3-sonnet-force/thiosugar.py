@@ -37,10 +37,9 @@ def is_thiosugar(smiles: str):
     if not sulfur_atoms:
         return False, "No sulfur atoms found"
 
-    # Check if sulfur atom is directly bonded to carbohydrate backbone
-    thiosugar_pattern = Chem.MolFromSmarts("[C;X4;R][S;X2]")  # Sulfur atom attached to carbohydrate carbon
-    for sulfur in sulfur_atoms:
-        if mol.HasSubstructMatch(thiosugar_pattern, atomIdxList=[sulfur.GetIdx()]):
-            return True, "Molecule contains a sulfur atom replacing an oxygen or hydroxy group in the carbohydrate backbone"
+    # Check if any oxygen or hydroxy group is replaced by sulfur or -SR
+    thiosugar_pattern = Chem.MolFromSmarts("[SX2;R]")  # Sulfur atom with any substitution
+    if mol.HasSubstructMatch(thiosugar_pattern):
+        return True, "Molecule contains a sulfur atom replacing an oxygen or hydroxy group in the carbohydrate backbone"
 
-    return False, "Sulfur atom(s) not directly attached to the carbohydrate backbone"
+    return False, "Sulfur atom(s) not replacing any oxygen or hydroxy group in the carbohydrate backbone"
