@@ -27,62 +27,74 @@ def is_ether_lipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more specific glycerol backbone pattern with oxygen atoms
+    # Define SMARTS patterns
+    # Glycerol backbone: O-C-C-C-O with hydroxyl groups
     glycerol_pattern = Chem.MolFromSmarts("""
-    [C:1]-[C:2]-[C:3],
-    [C:1][O],
-    [C:2][O],
-    [C:3][O]
+    [O;!R][CH2][CH](O)[CH2][O;!R]
     """)
 
-    # Alternative SMARTS pattern for glycerol backbone with attached oxygens
-    glycerol_pattern = Chem.MolFromSmarts("""
-    [$([C@@H](O)-[CH2]-O),$([C@@H](O)-[CH2]-O)]
+    # Ether linkage: C-O-C where O is connected to glycerol carbon
+    ether_linkage_pattern = Chem.MolFromSmarts("""
+    [C;!R][O;!R][CH2][CH](O)[CH2][O;!R]  # Ether linkage at primary carbon
+    |
+    [O;!R][CH2][CH](O)[CH2][O;!R][C;!R]  # Ether linkage at terminal carbon
+    |
+    [O;!R][CH2][CH](O)[CH2][O;!R]
     """)
 
-    # For this example, we'll use a pattern that matches glycerol backbone with oxygens
-    glycerol_pattern = Chem.MolFromSmarts("[C;H2][C;H][C;H2]")
-
-    matches = mol.GetSubstructMatches(glycerol_pattern)
-    if not matches:
+    # Match glycerol backbone
+    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not glycerol_matches:
         return False, "No glycerol backbone found"
 
-    # For each glycerol backbone found, check for ether linkages
-    for match in matches:
-        c1, c2, c3 = [mol.GetAtomWithIdx(idx) for idx in match]
+    # Initialize flags
+    ether_linkage_found = False
+    ester_linkage_found = False
 
-        # Check for oxygen atoms connected to each carbon
+    # Iterate over glycerol backbones found
+    for match in glycerol_matches:
+        # Get atoms in the glycerol backbone
+        o1_idx, c1_idx, c2_idx, c3_idx, o2_idx = match
+        c1 = mol.GetAtomWithIdx(c1_idx)
+        c2 = mol.GetAtomWithIdx(c2_idx)
+        c3 = mol.GetAtomWithIdx(c3_idx)
+        o1 = mol.GetAtomWithIdx(o1_idx)
+        o2 = mol.GetAtomWithIdx(o2_idx)
+
+        # Check for ether linkages on carbons c1, c2, c3
+        # Function to check for ether linkage on a given carbon
+        def has_ether_linkage(carbon_atom):
+            for nbr in carbon_atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in [o1_idx, o2_idx]:
+                    # Check if oxygen is connected to another carbon (alkyl chain)
+                    for nbr2 in nbr.GetNeighbors():
+                        if nbr2.GetAtomicNum() == 6 and nbr2.GetIdx() != carbon_atom.GetIdx():
+                            # Ensure it's an ether linkage (not ester)
+                            bond = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
+                            if bond.GetBondType() == Chem.BondType.SINGLE:
+                                # Check that nbr2 is part of an alkyl chain
+                                return True
+            return False
+
+        # Check for ester linkage (C=O) on carbons c1, c2, c3
+        def has_ester_linkage(carbon_atom):
+            for nbr in carbon_atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 8:
+                    bond = mol.GetBondBetweenAtoms(carbon_atom.GetIdx(), nbr.GetIdx())
+                    if bond.GetBondType() == Chem.BondType.DOUBLE:
+                        return True
+            return False
+
+        # Check each carbon for ether or ester linkages
         c_atoms = [c1, c2, c3]
-        ether_found = False
-
         for c in c_atoms:
-            # Get all oxygen neighbors
-            oxygen_neighbors = [nbr for nbr in c.GetNeighbors() if nbr.GetAtomicNum() == 8]
+            if has_ether_linkage(c):
+                ether_linkage_found = True
+            if has_ester_linkage(c):
+                ester_linkage_found = True
 
-            for o in oxygen_neighbors:
-                bond = mol.GetBondBetweenAtoms(c.GetIdx(), o.GetIdx())
-                if bond.GetBondType() != Chem.BondType.SINGLE:
-                    continue  # Skip non-single bonds
+    if not ether_linkage_found:
+        return False, "No ether linkage found on glycerol backbone"
 
-                # Check if oxygen is connected to another carbon (not part of glycerol backbone)
-                other_carbons = [nbr for nbr in o.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != c.GetIdx()]
-                for oc in other_carbons:
-                    # Ensure the other carbon is not a carbonyl carbon
-                    is_carbonyl = False
-                    for obond in oc.GetBonds():
-                        if obond.GetBondType() == Chem.BondType.DOUBLE and obond.GetOtherAtom(oc).GetAtomicNum() == 8:
-                            is_carbonyl = True
-                            break
-                    if not is_carbonyl:
-                        # Found an ether linkage
-                        ether_found = True
-                        break
-                if ether_found:
-                    break
-            if ether_found:
-                break
-
-        if ether_found:
-            return True, "Contains glycerol backbone with at least one alkyl chain attached via ether linkage"
-
-    return False, "No ether linkage found on glycerol backbone"
+    # Since it's similar in structure to a glycerolipid, it can have ester linkages too
+    return True, "Contains glycerol backbone with at least one alkyl chain attached via ether linkage"
