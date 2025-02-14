@@ -21,18 +21,21 @@ def is_prenols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Isoprene unit pattern: C=C-C-C or C-C=C-C (simple representations)
-    # These patterns are generalized to reduce failure from structural variations
-    isoprene_pattern1 = Chem.MolFromSmarts("C=C-C-C")
-    isoprene_pattern2 = Chem.MolFromSmarts("C-C=C-C")
+    # An isoprene unit pattern represents the ongoing connectivity in prenol molecules
+    many_isoprene_pattern = Chem.MolFromSmarts("C(C)(C)=C")
     
-    # Detect any isoprene substructure presence
-    if not (mol.HasSubstructMatch(isoprene_pattern1) or mol.HasSubstructMatch(isoprene_pattern2)):
+    if not mol.HasSubstructMatch(many_isoprene_pattern):
         return False, "No isoprene units found"
 
-    # Verify the molecule has a terminal alcohol group
-    alcohol_pattern = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatch(alcohol_pattern):
-        return False, "No alcohol (OH) group found"
+    # Check for terminal alcohol functionalities including OH, phosphates, and others
+    term_alcohol_patterns = [
+        Chem.MolFromSmarts("[OH]"),  # Direct OH group
+        Chem.MolFromSmarts("COP(O)(=O)O"),  # Phosphate ester
+        Chem.MolFromSmarts("C(=O)O"),  # Ester form often seen in derivatized forms
+    ]
+    
+    for pattern in term_alcohol_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains isoprene units with terminal alcohol group"
 
-    return True, "Contains isoprene units with terminal alcohol group"
+    return False, "No suitable terminal alcohol functionality found"
