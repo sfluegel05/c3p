@@ -30,23 +30,19 @@ def is_cyclic_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Check for rings
+    # Identify non-aromatic aliphatic rings
     ring_info = mol.GetRingInfo()
-    if not ring_info.AtomRings():
-        return False, "No rings found in the structure"
+    rings = ring_info.AtomRings()
+    aliphatic_rings = [ring for ring in rings if all(mol.GetAtomWithIdx(idx).GetIsAromatic() == 0 for idx in ring)]
 
-    # Check for long carbon chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Carbon chains too short to be a fatty acid"
+    if not aliphatic_rings:
+        return False, "No non-aromatic aliphatic rings found in the structure"
 
-    # Count carbons and oxygens
+    # Check for carbon chains
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-
-    if c_count < 10:
+    if c_count < 8:
         return False, "Too few carbons for a fatty acid"
-    if o_count < 2:
-        return False, "Too few oxygens for a fatty acid"
 
-    return True, "Contains a carboxylic acid group and at least one ring in the structure"
+    # Additional checks or filters can be added here if needed
+
+    return True, "Contains a carboxylic acid group and at least one non-aromatic aliphatic ring in the structure"
