@@ -1,55 +1,24 @@
 """
 Classifies: CHEBI:47923 tripeptide
 """
-"""
-Classifies: CHEBI:33938 tripeptide
-A tripeptide is any oligopeptide that consists of three amino-acid residues connected by peptide linkages.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+After analyzing the previous code and the outcomes, it appears that the current approach has some limitations in accurately classifying tripeptides. Here are a few potential issues and suggestions for improvement:
 
-def is_tripeptide(smiles: str):
-    """
-    Determines if a molecule is a tripeptide based on its SMILES string.
+1. **Missed Linear Tripeptides**: The code correctly identifies cyclic tripeptides (diketopiperazines) but fails to recognize many linear tripeptides. This could be due to the specific SMARTS pattern used to identify connected amino acid residues. The current pattern `[N&x3]-[C&x3](=O)-[C&x3]` may be too strict and miss some valid tripeptide structures.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Lack of Handling for Modifications and Substituents**: The code does not account for common modifications or substituents present in tripeptides, such as protecting groups, side-chain modifications, or cyclic residues other than diketopiperazines. This could lead to false negatives for tripeptides with such modifications.
 
-    Returns:
-        bool: True if molecule is a tripeptide, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Overly Strict N-terminus and C-terminus Checks**: The current checks for N-terminus and C-terminus patterns may be too strict, leading to false negatives for tripeptides with non-standard terminal groups or modifications.
 
-    # Check for 3 connected amino acid residues (N-C(=O)-C)
-    amino_acid_pattern = Chem.MolFromSmarts("[N&x3]-[C&x3](=O)-[C&x3]")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-    if len(amino_acid_matches) != 3:
-        return False, f"Found {len(amino_acid_matches)} amino acid residues, need exactly 3"
+To improve the classification, we can consider the following modifications:
 
-    # Check for connected amino acid residues
-    connected_residues = []
-    for match in amino_acid_matches:
-        residue = tuple(match)
-        if any(residue[0] in prev_residue and residue[2] in next_residue for prev_residue, next_residue in zip(connected_residues, connected_residues[1:])):
-            connected_residues.append(residue)
-        else:
-            return False, "Amino acid residues not connected by peptide bonds"
+1. **Use a More Flexible SMARTS Pattern**: Instead of the strict `[N&x3]-[C&x3](=O)-[C&x3]` pattern, we could use a more flexible pattern that accounts for potential modifications or substituents on the amino acid residues. One approach could be to use a pattern that captures the peptide bonds (`[N&x3]-[C&x3](=O)`) and then check for the presence of three such patterns in the molecule.
 
-    # Check for N-terminus and C-terminus
-    n_terminus_pattern = Chem.MolFromSmarts("[N&x3]-[C&x3](=O)-")
-    c_terminus_pattern = Chem.MolFromSmarts("-[C&x3](=O)-[O&x1,N&x3]")
-    if not mol.HasSubstructMatch(n_terminus_pattern) or not mol.HasSubstructMatch(c_terminus_pattern):
-        return False, "Missing N-terminus or C-terminus"
+2. **Handle Common Modifications and Substituents**: Incorporate logic to identify and handle common modifications and substituents found in tripeptides, such as protecting groups, side-chain modifications, and cyclic residues other than diketopiperazines.
 
-    # Check for common modifications or substituents
-    cyclic_pattern = Chem.MolFromSmarts("[N&x3]-[C&x3](=O)-[C&x3]-1-[C&x3]-[C&x3]-[C&x3]-1")
-    if mol.HasSubstructMatch(cyclic_pattern):
-        reason = "Contains 3 amino acid residues connected by peptide bonds, with a cyclic residue (diketopiperazine)"
-    else:
-        reason = "Contains 3 amino acid residues connected by peptide bonds"
+3. **Relax N-terminus and C-terminus Checks**: Instead of strict pattern matching, we could check for the presence of specific functional groups (e.g., amine, carboxyl) or specific atom environments to identify the N-terminus and C-terminus more flexibly.
 
-    return True, reason
+4. **Consider Additional Structural Features**: Explore other structural features or properties that could help distinguish tripeptides from other peptides or molecules, such as molecular weight, presence of specific functional groups, or specific atom environments.
+
+5. **Use a Machine Learning Approach**: If the rule-based approach proves too complex or ineffective, consider using a machine learning model trained on a diverse dataset of tripeptides and non-tripeptides to perform the classification task.
+
+It's important to note that while improving the classification accuracy is desirable, it's also crucial to ensure that the program does not become overly complex or prone to false positives. Finding the right balance between sensitivity and specificity may require iterative refinement and validation against a diverse set of examples.
