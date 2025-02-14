@@ -15,25 +15,25 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
         bool: True if the molecule is a pyrimidine deoxyribonucleoside, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for deoxyribose pattern
-    deoxyribose_pattern = Chem.MolFromSmarts("C1([C@@H](CO)O[C@H]1O)")
+    # Simplified deoxyribose sugar pattern
+    # Recognizing a furanose ring (pentose) and typical deoxyribose features
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@@H]1(O)O[C@H](CO)[C@@H](O)[C@@H]1")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "No deoxyribose backbone found"
 
-    # Look for pyrimidine pattern
-    pyrimidine_pattern = Chem.MolFromSmarts("c1cnc[nH]c1=O")
+    # More flexible pyrimidine pattern accepting common variants
+    # Pyrimidine base (uracil-like, thymine-like, cytosine-like)
+    pyrimidine_pattern = Chem.MolFromSmarts("c1c[nH]c(=O)[nH]1 | c1cn[c,n](=[O,N])[nH]c1")
     if not mol.HasSubstructMatch(pyrimidine_pattern):
         return False, "No pyrimidine base found attached to the sugar"
 
-    # Additional check - attachment of base to sugar
-    # This would be a specific connection point pattern, 
-    # but for simplicity, we assume pattern checks should suffice in this example.
+    # Consider additional checks here if required, e.g., verifying a specific connection point
 
     return True, "Contains a deoxyribose backbone with a pyrimidine base"
 
