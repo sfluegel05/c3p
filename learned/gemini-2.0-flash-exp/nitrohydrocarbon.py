@@ -3,6 +3,7 @@ Classifies: CHEBI:51129 nitrohydrocarbon
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import EditableMol
 
 def is_nitrohydrocarbon(smiles: str):
     """
@@ -33,13 +34,16 @@ def is_nitrohydrocarbon(smiles: str):
 
     # 3. Create a copy of the molecule, remove the nitro groups and check that what remains is a hydrocarbon
     mol_copy = Chem.Mol(mol)  # create a copy of the molecule
+    edit_mol = EditableMol(mol_copy) # create an editable molecule
 
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
 
     if not nitro_matches:
          return False, "No nitro group found"
-
+    
     atoms_to_remove_idxs = [] # collect the indices of the atoms to remove, they are shared by the original and the copy
+    bonds_to_remove = []
+    
     for match in nitro_matches:
         # get all the atoms involved in the substructure match
         atoms_to_remove_idx = []
@@ -64,25 +68,32 @@ def is_nitrohydrocarbon(smiles: str):
 
         if carbon_neighbor_count != 1:
              return False, "Nitro group is not bonded to exactly one carbon"
-         
+        
         atoms_to_remove_idxs.extend(atoms_to_remove_idx)
+        
+        # remove bonds inside of the nitro group
+        for bond in mol_copy.GetBonds():
+            if bond.GetBeginAtomIdx() in atoms_to_remove_idx and bond.GetEndAtomIdx() in atoms_to_remove_idx:
+              bonds_to_remove.append(bond.GetIdx())
 
+    bonds_to_remove = sorted(list(set(bonds_to_remove)), reverse=True)
 
-    # remove the nitro groups from the copy
-    
-    bonds_to_remove = []
-    for bond in mol_copy.GetBonds():
-      if bond.GetBeginAtomIdx() in atoms_to_remove_idxs and bond.GetEndAtomIdx() in atoms_to_remove_idxs:
-        bonds_to_remove.append(bond.GetIdx())
-    
-    bonds_to_remove.sort(reverse = True)
+    edit_mol.BeginBatchEdit()
     for bond_idx in bonds_to_remove:
-       mol_copy.RemoveBond(mol_copy.GetBondWithIdx(bond_idx).GetBeginAtomIdx(), mol_copy.GetBondWithIdx(bond_idx).GetEndAtomIdx())
-     
-
-    atoms_to_remove_idxs = sorted(list(set(atoms_to_remove_idxs)), reverse=True) # remove duplicates and sort
+        try:
+            edit_mol.RemoveBond(mol_copy.GetBondWithIdx(bond_idx).GetBeginAtomIdx(), mol_copy.GetBondWithIdx(bond_idx).GetEndAtomIdx())
+        except:
+            return False, "Could not remove bond from molecule copy"
+    
+    atoms_to_remove_idxs = sorted(list(set(atoms_to_remove_idxs)), reverse=True)
     for atom_idx in atoms_to_remove_idxs:
-       mol_copy.RemoveAtom(atom_idx)
+        try:
+             edit_mol.RemoveAtom(atom_idx)
+        except:
+            return False, "Could not remove atom from molecule copy"
+    edit_mol.CommitBatchEdit()
+
+    mol_copy = edit_mol.GetMol()
 
 
     for atom in mol_copy.GetAtoms():
