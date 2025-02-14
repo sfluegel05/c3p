@@ -26,9 +26,7 @@ def is_beta_D_glucoside(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for beta-D-glucoside
-    beta_d_glucoside_smarts = """
-    [C@H]1([O][!#1])[O][C@@H]([C@H]([C@@H]([C@H]1O)O)O)O
-    """
+    beta_d_glucoside_smarts = "[C@H]1([O][#6])[O][C@@H]([C@@H](O)[C@@H](O)[C@H]1O)O"
     beta_d_glucoside_pattern = Chem.MolFromSmarts(beta_d_glucoside_smarts)
     if beta_d_glucoside_pattern is None:
         return False, "Error in SMARTS pattern"
