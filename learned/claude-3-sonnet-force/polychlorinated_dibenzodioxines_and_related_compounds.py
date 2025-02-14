@@ -30,63 +30,63 @@ def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count atoms and check complexity
-    num_atoms = mol.GetNumAtoms()
-    if num_atoms > 50:  # Exclude large complex molecules
-        return False, "Molecule too complex - likely a natural product"
+    # Define core structure patterns with more flexible matching
+    # Allow for substituted carbons in the aromatic rings
+    dibenzodioxin_pattern = Chem.MolFromSmarts('c1c(*)c(*)c2Oc3c(*)c(*)c(*)c(*)c3Oc2c1')  
+    dibenzofuran_pattern = Chem.MolFromSmarts('c1c(*)c(*)c2oc3c(*)c(*)c(*)c(*)c3c2c1')    
+    biphenyl_pattern = Chem.MolFromSmarts('c1c(*)c(*)c(*)c(c1)-c1c(*)c(*)c(*)c(*)c1')     
     
+    # Check if SMARTS patterns were created successfully
+    if None in (dibenzodioxin_pattern, dibenzofuran_pattern, biphenyl_pattern):
+        return False, "Error in SMARTS patterns"
+
     # Count halogens
     num_cl = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[Cl]')))
     num_br = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[Br]')))
     total_halogens = num_cl + num_br
     
-    # Define core structure patterns
-    dibenzodioxin_pattern = Chem.MolFromSmarts('c1ccc2Oc3ccccc3Oc2c1')  # Dibenzodioxin core
-    dibenzofuran_pattern = Chem.MolFromSmarts('c1ccc2oc3ccccc3c2c1')    # Dibenzofuran core
-    biphenyl_pattern = Chem.MolFromSmarts('c1ccccc1-c1ccccc1')          # Biphenyl core
-    
+    if total_halogens == 0:
+        return False, "No halogens present"
+
     # Check for core structures
     is_dibenzodioxin = mol.HasSubstructMatch(dibenzodioxin_pattern)
     is_dibenzofuran = mol.HasSubstructMatch(dibenzofuran_pattern)
     is_biphenyl = mol.HasSubstructMatch(biphenyl_pattern)
     
-    if not (is_dibenzodioxin or is_dibenzofuran or is_biphenyl):
-        return False, "No dibenzodioxin, dibenzofuran, or biphenyl core structure found"
+    # Count rings and check aromaticity
+    ring_info = mol.GetRingInfo()
+    aromatic_rings = sum(1 for ring in ring_info.AtomRings() 
+                        if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring))
+    
+    if aromatic_rings < 2:
+        return False, "Insufficient aromatic rings"
 
-    # Count other substituents
+    # Count other substituents that might indicate natural products
     oh_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OH]')))
     ome_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OMe]')))
     other_subst = oh_count + ome_count
-    
-    # Specific requirements for each core type
+
+    # Natural product check - more permissive to allow some substitution
+    # but still exclude highly functionalized molecules
+    if other_subst > 4 and aromatic_rings > 3:
+        return False, "Too many substituents and rings - likely a complex natural product"
+
+    # Determine core type and check requirements
     if is_dibenzodioxin:
-        if num_cl < 2:
-            return False, "Insufficient chlorination for dibenzodioxin"
-        if other_subst > 2:
-            return False, "Too many non-halogen substituents for PCDDs"
+        if num_cl < 1 and num_br < 1:
+            return False, "Insufficient halogenation for dibenzodioxin"
         core_type = "dibenzodioxin"
-        
     elif is_dibenzofuran:
-        if num_cl < 2:
-            return False, "Insufficient chlorination for dibenzofuran"
-        if other_subst > 2:
-            return False, "Too many non-halogen substituents for PCDFs"
+        if num_cl < 1 and num_br < 1:
+            return False, "Insufficient halogenation for dibenzofuran"
         core_type = "dibenzofuran"
-        
     elif is_biphenyl:
         if total_halogens < 2:
             return False, "Insufficient halogenation for biphenyl"
-        if num_cl + num_br < 2:
-            return False, "Insufficient chlorination/bromination"
-        if other_subst > 1:
-            return False, "Too many non-halogen substituents for PCBs/PBBs"
         core_type = "biphenyl"
-    
-    # Check for natural product-like features
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    if ring_count > 3:  # Core structure should have 2-3 rings only
-        return False, "Too many rings - likely a natural product"
-        
+    else:
+        return False, "No characteristic core structure found"
+
     # Build classification reason
     halogen_desc = []
     if num_cl > 0:
