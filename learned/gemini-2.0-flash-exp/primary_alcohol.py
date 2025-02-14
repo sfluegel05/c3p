@@ -23,34 +23,17 @@ def is_primary_alcohol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Define SMARTS pattern for primary alcohol carbons, matching a -CH2-OH group 
+    # with the carbon being saturated, not bonded to any other non-hydrogen, non-oxygen
+    # atom by a double or triple bond
+    primary_alcohol_pattern = Chem.MolFromSmarts("[CH2;!$(C=[C,N,O,S]);!$(C#[C,N])][OH]")
+
+    # Find matches for the pattern
+    matches = mol.GetSubstructMatches(primary_alcohol_pattern)
     
-    # SMARTS pattern to match any alcohol bond
-    alcohol_pattern = Chem.MolFromSmarts("[CH0-3][OH]")
-    
-    matches = mol.GetSubstructMatches(alcohol_pattern)
-    
+    # Check if any of the patterns are present
     if not matches:
-      return False, "No alcohol group found"
-    
-    for match in matches:
-        carbon_index = match[0]
-        carbon = mol.GetAtomWithIdx(carbon_index)
-        
-        carbon_neighbors = 0
-        
-        for neighbor in carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6:
-                carbon_neighbors += 1
-            
-        hydrogens_count = carbon.GetTotalNumHs()
-        
-        if carbon_neighbors == 1:
-          if hydrogens_count != 2:
-            return False, "Not a primary alcohol: Has one carbon neighbor but not 2 hydrogens"
-        elif carbon_neighbors == 0:
-          if hydrogens_count != 3:
-              return False, "Not a primary alcohol: Has no carbon neighbors but not 3 hydrogens"
-        elif carbon_neighbors > 1:
-          return False, "Not a primary alcohol: Has more than one carbon neighbor"
-        
-    return True, "All alcohol groups are primary"
+        return False, "No primary alcohol group found"
+
+    return True, "Primary alcohol group found"
