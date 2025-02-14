@@ -2,13 +2,11 @@
 Classifies: CHEBI:23824 diol
 """
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_diol(smiles: str):
     """
     Determines if a molecule is a diol based on its SMILES string.
-    A diol contains exactly two hydroxy groups, generally assumed part of its main chain.
-    Complex cases with more hydroxys should have identifiable separate roles for two groups.
+    A diol contains exactly two hydroxy groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,30 +21,17 @@ def is_diol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find hydroxyl groups (-OH)
+    # Find hydroxyl groups (–OH)
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     
-    # Check primarily that there are two significant hydroxy groups as a diol
-    if len(hydroxy_matches) == 2:
-        return True, "Contains exactly two hydroxy groups, qualifying it as a diol"
+    # Check number of hydroxyl groups
+    if len(hydroxy_matches) != 2:
+        return False, f"Found {len(hydroxy_matches)} hydroxy groups, need exactly 2"
     
-    # Complex logic: check if adjacent diol groups or other structural cues
-    elif len(hydroxy_matches) > 2:
-        # Check if any two OH are adjacent or structurally relevant
-        adjacent_oxygens = False
-        # Create bond pattern queries
-        o_bond_query = rdqueries.BondBetweenAtomsQuery()
-        for i, j in hydroxy_matches:
-            # For more than two OH groups, ensure at least two are connected or near-main chain
-            for bond in mol.GetBonds():
-                if (bond.GetBeginAtomIdx() in (i, j) and
-                   bond.GetEndAtomIdx() in (i, j)):
-                    adjacent_oxygens = True
-                    break
-            if adjacent_oxygens:
-                break
-        if adjacent_oxygens:
-            return True, "Contains adjacent two hydroxy groups or structurally significant arrangement"
-    
-    return False, f"Found {len(hydroxy_matches)} hydroxy groups, which is inadequate for typical diol classification"
+    # The molecule has two hydroxy groups, classify as diol
+    return True, "Contains exactly two hydroxy groups"
+
+# Example usage:
+# result, reason = is_diol("OC(CO)CO")  # Should return True, "Contains exactly two hydroxy groups"
+# print(result, reason)
