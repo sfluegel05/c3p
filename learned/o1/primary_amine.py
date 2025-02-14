@@ -10,7 +10,8 @@ from rdkit import Chem
 def is_primary_amine(smiles: str):
     """
     Determines if a molecule is a primary amine based on its SMILES string.
-    A primary amine is a compound where a nitrogen atom is bonded to one hydrocarbyl group and two hydrogens.
+    A primary amine is a compound where a nitrogen atom is bonded to one hydrocarbyl group and two hydrogens,
+    and the nitrogen is not connected to a carbonyl group (excluding amides).
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,33 +27,36 @@ def is_primary_amine(smiles: str):
 
     # Iterate over all nitrogen atoms in the molecule
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Atomic number for nitrogen
+        if atom.GetAtomicNum() == 7:  # Nitrogen
             if atom.GetFormalCharge() != 0:
-                continue  # Skip if nitrogen has a formal charge
-                
-            # Total number of hydrogens (implicit + explicit)
-            total_hydrogens = atom.GetTotalNumHs()
-            
-            # Continue if nitrogen has exactly two hydrogens
-            if total_hydrogens != 2:
-                continue
+                continue  # Skip charged nitrogen atoms
 
-            # Get neighbors of the nitrogen atom
-            neighbors = atom.GetNeighbors()
-            
-            # Initialize counters
-            num_carbon = 0
-            num_heteroatoms = 0
-            
-            for neighbor in neighbors:
-                atomic_num = neighbor.GetAtomicNum()
-                if atomic_num == 6:
-                    num_carbon += 1
-                elif atomic_num != 1:  # Not hydrogen
-                    num_heteroatoms += 1
+            if atom.GetDegree() != 1:
+                continue  # Nitrogen must be connected to exactly one heavy atom
 
-            # Check if nitrogen is bonded to exactly one carbon and no other heteroatoms
-            if num_carbon == 1 and num_heteroatoms == 0:
-                return True, "Primary amine group found"
+            if atom.GetTotalNumHs() != 2:
+                continue  # Nitrogen must have two hydrogens
+
+            # Get neighbor atom (only one heavy atom neighbor)
+            neighbor_atom = atom.GetNeighbors()[0]
+            if neighbor_atom.GetAtomicNum() != 6:
+                continue  # Neighbor is not carbon
+
+            # Check that the neighbor carbon is not a carbonyl carbon (exclude amides)
+            is_amide = False
+            for bond in neighbor_atom.GetBonds():
+                bonded_atom = bond.GetOtherAtom(neighbor_atom)
+                if bonded_atom.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
+                    is_amide = True
+                    break
+            if is_amide:
+                continue  # Exclude amide nitrogen
+
+            # Check that nitrogen is not part of a nitrile group (C#N)
+            if neighbor_atom.GetBondBetweenAtoms(neighbor_atom.GetIdx(), atom.GetIdx()).GetBondType() == Chem.BondType.TRIPLE:
+                continue  # Exclude nitriles
+
+            # If all conditions are met, it's a primary amine
+            return True, "Primary amine group found"
 
     return False, "No primary amine group found"
