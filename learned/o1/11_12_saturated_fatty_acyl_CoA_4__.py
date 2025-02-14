@@ -13,10 +13,10 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     Determines if a molecule is an 11,12-saturated fatty acyl-CoA(4-) based on its SMILES string.
     An 11,12-saturated fatty acyl-CoA(4-) is a fatty acyl-CoA(4-) molecule in which the bond between
     carbons 11 and 12 in the fatty acyl chain is saturated (a single bond).
-
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+        
     Returns:
         bool: True if molecule is an 11,12-saturated fatty acyl-CoA(4-), False otherwise
         str: Reason for classification
@@ -26,8 +26,9 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Use a more general CoA SMARTS pattern (excluding stereochemistry)
-    coa_smarts = 'NC(=O)CCNC(=O)C(O)C(C)(C)CO[P](=O)(O)O[P](=O)(O)OCC1OC(CO[P](=O)(O)O)C(O)C1O'
+    # Begin by checking for the CoA moiety
+    # Use a simplified CoA pattern that captures the core structure
+    coa_smarts = '[#7]-[#6](=O)-[#6]-[#6][#7]-[#6](=O)-[#6](-[#8])(-[#6](-[#6])(-[#6])-[#6][#8][P](=O)([O-])[O][P](=O)([O-])[O]-[#6][#6]-1-[#6][#8][#6]([#8])[#6]-1-[#8][P](=O)([O-])[O-])[#8]'
     coa_mol = Chem.MolFromSmarts(coa_smarts)
     if coa_mol is None:
         return False, "Invalid CoA SMARTS pattern"
@@ -35,12 +36,12 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(coa_mol):
         return False, "Coenzyme A moiety not found"
 
-    # Find the thioester linkage (C(=O)S)
-    thioester_smarts = 'C(=O)S'
+    # Find the thioester linkage (C(=O)SCCN)
+    thioester_smarts = 'C(=O)SCCN'
     thioester_mol = Chem.MolFromSmarts(thioester_smarts)
     thioester_matches = mol.GetSubstructMatches(thioester_mol)
     if not thioester_matches:
-        return False, "Thioester linkage not found"
+        return False, "Thioester linkage to CoA not found"
 
     # Identify the carbonyl carbon in the thioester linkage
     carbonyl_c_idx = thioester_matches[0][0]  # Index of the carbonyl carbon
@@ -51,7 +52,9 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     prev_atom_idx = None
 
     while True:
-        neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom_idx]
+        # Get the carbon neighbors excluding the previous atom and non-carbon atoms
+        neighbors = [nbr for nbr in current_atom.GetNeighbors() 
+                     if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom_idx]
         if not neighbors:
             break
         next_atom = neighbors[0]
@@ -69,6 +72,7 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     bond = mol.GetBondBetweenAtoms(c11_idx, c12_idx)
     if bond is None:
         return False, "No bond between carbons 11 and 12"
+
     bond_type = bond.GetBondType()
     if bond_type == Chem.rdchem.BondType.SINGLE:
         return True, "Bond between carbons 11 and 12 is saturated (single bond)"
