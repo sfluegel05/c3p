@@ -19,30 +19,35 @@ def is_primary_amine(smiles: str):
         bool: True if molecule is a primary amine, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get atoms with atomic number 7 (nitrogen)
+    # Get nitrogen atoms
     n_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
 
     # Check if there is at least one nitrogen atom
     if not n_atoms:
         return False, "No nitrogen atom found"
 
-    # Check if any nitrogen atom has exactly 2 hydrogen atoms attached
+    # Check for primary amine groups
     for n_atom in n_atoms:
-        if sum(1 for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 1) == 2:
+        # Check if nitrogen has exactly one hydrogen and one carbon neighbor
+        h_neighbors = sum(1 for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 1)
+        c_neighbors = sum(1 for neighbor in n_atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
+        if h_neighbors == 1 and c_neighbors == 1:
             # This is a primary amine nitrogen
             break
     else:
+        # No primary amine group found
         return False, "No primary amine group found"
 
-    # Check if there is at least one carbon atom bonded to the nitrogen
-    for n_atom in n_atoms:
-        if any(neighbor.GetAtomicNum() == 6 for neighbor in n_atom.GetNeighbors()):
-            return True, "Contains a primary amine group (-NH2) bonded to a carbon"
+    # Check if the molecule has no secondary or tertiary amines
+    smarts_patterns = ['[NX3H2]', '[NX4H3+]']
+    for pattern in smarts_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, "Contains secondary or tertiary amine groups"
 
-    return False, "No carbon atom bonded to primary amine group"
+    return True, "Contains a primary amine group (-NH2) bonded to a carbon"
