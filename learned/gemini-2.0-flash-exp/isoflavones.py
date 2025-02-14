@@ -20,8 +20,9 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the core isoflavone structure using SMARTS, including 3-aryl group, and only one carbonyl.
-    core_smarts = "c1cc2c(=O)c(-c3ccccc3)oc2cc1"
+    # Define the core isoflavone structure using SMARTS, allowing for substitution
+    # at positions other than those explicitly defined in the pattern
+    core_smarts = "c1cc2c(=O)c(-[cX3]c3)oc2cc1"
     core_pattern = Chem.MolFromSmarts(core_smarts)
     
     if not mol.HasSubstructMatch(core_pattern):
