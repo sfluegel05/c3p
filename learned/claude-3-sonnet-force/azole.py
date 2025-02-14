@@ -8,7 +8,7 @@ Azoles can also contain one or more other non-carbon atoms, such as nitrogen, su
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdchem
+from rdkit.Chem import rdchem, rdMolDescriptors
 
 def is_azole(smiles: str):
     """
@@ -28,12 +28,8 @@ def is_azole(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for a 5-membered ring containing nitrogen
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
-    azole_rings = []
-    for ring in rings:
-        if len(ring) == 5 and any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 7 for idx in ring):
-            azole_rings.append(ring)
+    rings = mol.GetRingInfo().AtomRings()
+    azole_rings = [ring for ring in rings if len(ring) == 5 and any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 7 for idx in ring)]
 
     if not azole_rings:
         return False, "No 5-membered ring containing nitrogen found"
@@ -42,7 +38,7 @@ def is_azole(smiles: str):
     polycyclic_azole_rings = []
     for ring in azole_rings:
         ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        fused_rings = rdchem.GetSSSR(mol, ring_atoms)
+        fused_rings = rdchem.FindFusedRings(mol, ring_atoms)
         if len(fused_rings) > 1:
             polycyclic_azole_rings.append(ring)
 
@@ -65,6 +61,8 @@ def is_azole(smiles: str):
                 continue  # Avoid aromatic stabilized rings
             if sum(atom.GetImplicitValence() for atom in ring_atoms) > 8:
                 continue  # Avoid highly unsaturated or strained rings
+            if rdMolDescriptors.CalcNumAromaticRings(mol) == 1:
+                continue  # Avoid monocyclic aromatic rings (e.g., pyrrole)
             return True, "Molecule contains a monocyclic or polycyclic azole moiety"
 
     return False, "No valid azole moiety found"
