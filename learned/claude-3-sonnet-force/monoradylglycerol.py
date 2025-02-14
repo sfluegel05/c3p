@@ -5,7 +5,6 @@ Classifies: CHEBI:76575 monoradylglycerol
 Classifies: CHEBI:36225 monoradylglycerol
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_monoradylglycerol(smiles: str):
@@ -31,7 +30,7 @@ def is_monoradylglycerol(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Look for ester (-O-C(=O)-), ether (-O-), or alkene (-C=C-) group
+    # Look for a single acyl (-O-C(=O)-), alkyl (-O-), or alk-1-enyl (-C=C-) substituent
     substituent_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])|[OX2][CX4]|[CX3]=[CX3]")
     substituent_matches = mol.GetSubstructMatches(substituent_pattern)
     if len(substituent_matches) != 1:
