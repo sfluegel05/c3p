@@ -29,46 +29,43 @@ def is_thiosugar(smiles: str):
       return False, "No sulfur atoms found"
     
     # Check for a carbohydrate-like core (ring with multiple hydroxyls or oxygens)
-    # A simplified SMARTS pattern to detect a 5 or 6-membered ring with multiple O's or OHs attached to carbons.
-    sugar_ring_pattern = Chem.MolFromSmarts("[C;R5,R6]([OX2H,OX2])[C;R5,R6]([OX2H,OX2])[C;R5,R6]([OX2H,OX2])[C;R5,R6]([OX2H,OX2])([C;R5,R6])([C;R5,R6])")
-    if not mol.HasSubstructMatch(sugar_ring_pattern):
+    # Relaxed SMARTS pattern to detect 5 or 6-membered rings with carbons and oxygens
+    sugar_ring_pattern = Chem.MolFromSmarts("[C,O;R5,R6]1[C,O;R5,R6][C,O;R5,R6][C,O;R5,R6][C,O;R5,R6]1")
+    sugar_rings_matches = mol.GetSubstructMatches(sugar_ring_pattern)
+    if not sugar_rings_matches:
         return False, "No carbohydrate-like ring structure detected"
     
+    # Check for at least 3 oxygen atoms in the ring or attached to it
+    oxygens_in_or_attached_to_ring = 0
+    for ring_match in sugar_rings_matches:
+      for atom_idx in ring_match:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() == 8:
+          oxygens_in_or_attached_to_ring += 1
+        for neighbor in atom.GetNeighbors():
+           if neighbor.GetAtomicNum() == 8:
+               oxygens_in_or_attached_to_ring +=1
     
-    # Check if any sulfur is directly connected to a sugar ring carbon, or as part of -SR where R is another atom/group.
-    sugar_carbon_pattern = Chem.MolFromSmarts("[C;R5,R6]")
-    sugar_carbon_atoms = mol.GetSubstructMatches(sugar_carbon_pattern)
+    if oxygens_in_or_attached_to_ring < 3:
+        return False, "Too few oxygens in or attached to ring"
 
+    # Check if sulfur is connected to a sugar ring, or is part of SR group.
+    sulfur_connected_to_ring = False
     for s_atom in sulfur_atoms:
-      for c_match in sugar_carbon_atoms:
-          for c_atom_idx in c_match:
-              c_atom = mol.GetAtomWithIdx(c_atom_idx)
-              if s_atom.GetIdx() in [neighbor.GetIdx() for neighbor in c_atom.GetNeighbors()]:
-                  return True, "Sulfur directly connected to a sugar ring carbon"
-              for neighbor in s_atom.GetNeighbors():
-                #check for S-R, where R is a carbon or hydrogen
-                if neighbor.GetAtomicNum() == 1 or neighbor.GetAtomicNum() == 6:
-                     return True, "Sulfur connected to sugar ring carbon via a chain"
+        for neighbor in s_atom.GetNeighbors():
+            for ring_match in sugar_rings_matches:
+               if neighbor.GetIdx() in ring_match:
+                   sulfur_connected_to_ring = True
+                   break
+            if sulfur_connected_to_ring:
+              break
+        if sulfur_connected_to_ring:
+            break
+    if not sulfur_connected_to_ring:
+      return False, "Sulfur not directly attached to a sugar ring."
 
-    # Check for thio-glycosidic bond, a C-S-C between sugar rings
-    #First find sugar rings
-    sugar_rings_matches = mol.GetSubstructMatches(sugar_ring_pattern)
-    if len(sugar_rings_matches) > 1:
-        for ring_match_1 in sugar_rings_matches:
-            for ring_match_2 in sugar_rings_matches:
-                if ring_match_1 != ring_match_2:
-                     for s_atom in sulfur_atoms:
-                         neighbor_count = 0
-                         for neighbor in s_atom.GetNeighbors():
-                             for carbon_idx in ring_match_1:
-                                if neighbor.GetIdx() == carbon_idx:
-                                    neighbor_count +=1
-                             for carbon_idx in ring_match_2:
-                                if neighbor.GetIdx() == carbon_idx:
-                                  neighbor_count +=1
-                         if neighbor_count ==2:
-                            return True, "Sulfur forms a thio-glycosidic bond between sugar rings"
+    #Check for multiple sugar rings with sulfur connections
+    if len(sugar_rings_matches) > 1 and sulfur_connected_to_ring:
+         return True, "Multiple carbohydrate rings with sulfur present"
 
-
-    # if all checks failed:
-    return False, "Sulfur not directly attached to sugar, or as part of a glycosidic bond."
+    return True, "Sulfur is attached to a carbohydrate-like ring."
