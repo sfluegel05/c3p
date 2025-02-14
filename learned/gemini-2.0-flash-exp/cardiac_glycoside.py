@@ -24,8 +24,8 @@ def is_cardiac_glycoside(smiles: str):
         return None, None  # Indicate an issue with SMILES parsing
 
     # 1. Check for steroid core
-    #   SMARTS for basic steroid structure. Includes a fused 4-ring system.
-    steroid_pattern = Chem.MolFromSmarts("[C]12[C]3[C]([C]1)[C][C]4[C]([C]2)[C][C]34")
+    #   SMARTS for basic steroid structure. Includes a fused 4-ring system with implicit H.
+    steroid_pattern = Chem.MolFromSmarts("[C]1[C]([C]([C]2)([C]([C]([C]3)([C]1)[C]([C]2)([C]4)[C]([C]3)[C]4)([H]))([H])([H])")
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid core found."
 
@@ -47,7 +47,6 @@ def is_cardiac_glycoside(smiles: str):
             oh_count += 1
     if oh_count < 2:
        return False, "Too few OH groups. Expected at least two."
-
 
     # Additional check on MW, as cardiac glycosides are typically larger.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
