@@ -1,20 +1,63 @@
 """
 Classifies: CHEBI:32955 epoxide
 """
-Based on the outcomes provided, it seems that the current program has some issues with correctly classifying epoxide molecules. Here's an analysis of the potential issues and how the program can be improved:
+"""
+Classifies: CHEBI:33856 epoxide
 
-1. **Missed cases**: The program missed some molecules that contained an epoxide ring, such as 'auroxanthin', 'DON-sulfonate 1', and 'plasmodiophorol B(1-)'. This could be because the SMARTS patterns used for detecting epoxide rings might not be comprehensive enough.
+An epoxide is any cyclic ether in which the oxygen atom forms part of a 3-membered ring.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-   **Potential improvement**: Add more SMARTS patterns to cover different types of epoxide ring representations. For example, the current patterns only consider three-membered rings where the oxygen is connected to two carbon atoms. However, there might be cases where the oxygen is connected to other atoms like sulfur or nitrogen in the ring.
+def is_epoxide(smiles: str):
+    """
+    Determines if a molecule is an epoxide based on its SMILES string.
 
-2. **False positives**: The program incorrectly classified some molecules as epoxides, even though they did not contain an epoxide ring. This issue might be due to the additional checks for false positives being insufficient or too lenient.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   **Potential improvement**: Consider adding more stringent checks to filter out false positives. For example, you could check the connectivity of the atoms in the three-membered rings to ensure that they form a cyclic ether structure. Additionally, you could check for the presence of specific functional groups or substructures that are incompatible with epoxide rings.
+    Returns:
+        bool: True if molecule is an epoxide, False otherwise
+        str: Reason for classification
+    """
+    try:
+        # Parse SMILES
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return False, "Invalid SMILES string"
 
-3. **Handling exceptions**: The program assumes that the provided SMILES string is valid. If an invalid SMILES string is provided, it returns `False` with the reason "Invalid SMILES string". However, in some cases, it might be better to handle this exception more gracefully or provide more detailed information about the error.
+        # Look for epoxide ring patterns
+        epoxide_patterns = [
+            Chem.MolFromSmarts("[O;R]1[CR]2[CR]1[CR]2"),  # Basic epoxide ring
+            Chem.MolFromSmarts("[O;R]1[CR]2[NR]1[CR]2"),  # Epoxide ring with N in the ring
+            Chem.MolFromSmarts("[O;R]1[CR]2[OR]1[CR]2"),  # Epoxide ring with O in the ring
+            Chem.MolFromSmarts("[O;R]1[CR]2[SR]1[CR]2"),  # Epoxide ring with S in the ring
+        ]
 
-   **Potential improvement**: Use try-except blocks to catch exceptions related to invalid SMILES strings or other errors that might occur during the processing. You could then return a more informative error message or handle the exception in a more appropriate way.
+        # Check for epoxide ring matches
+        has_epoxide = any(mol.HasSubstructMatch(pattern) for pattern in epoxide_patterns)
+        if not has_epoxide:
+            return False, "No epoxide ring found"
 
-4. **Confidence in the benchmark**: As mentioned in the prompt, you should use your best judgment and understanding of chemistry to evaluate the classifications made by your program. If you believe that your program is correctly classifying molecules based on the definition of an epoxide, you can choose to ignore some of the outliers or false positives/negatives in the benchmark, but provide a clear explanation for your reasoning.
+        # Additional checks to filter out false positives
+        epoxide_atoms = [atom for atom in mol.GetAtoms() if atom.IsInRingSize(3) and atom.GetAtomicNum() == 8]
+        if not epoxide_atoms:
+            return False, "No epoxide oxygen atom found"
 
-Overall, the current program provides a good starting point for classifying epoxide molecules, but it could benefit from more comprehensive SMARTS patterns, additional checks for false positives, better exception handling, and a deeper understanding of the chemical class being classified.
+        for epoxide_atom in epoxide_atoms:
+            neighbors = [mol.GetAtomWithIdx(n).GetAtomicNum() for n in epoxide_atom.GetNeighbors()]
+            if 6 not in neighbors or len(neighbors) != 2:
+                return False, "Epoxide oxygen not connected to two carbon atoms"
+
+        # Count the number of epoxide rings
+        epoxide_rings = mol.GetRingInfo().AtomRings()
+        epoxide_rings = [ring for ring in epoxide_rings if len(ring) == 3 and mol.GetAtomWithIdx(ring[0]).GetAtomicNum() == 8]
+        n_epoxide_rings = len(epoxide_rings)
+
+        if n_epoxide_rings > 0:
+            return True, f"Contains {n_epoxide_rings} epoxide ring(s)"
+        else:
+            return False, "No valid epoxide ring found"
+
+    except Exception as e:
+        return False, f"Error: {str(e)}"
