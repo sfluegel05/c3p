@@ -8,7 +8,7 @@ def is_organometalloidal_compound(smiles: str):
     """
     Determines if a molecule is an organometalloidal compound based on its SMILES string.
     An organometalloidal compound has bonds between one or more metalloid atoms (B, Si, Ge, As, Sb, Te) 
-    and one or more carbon atoms of an organyl group.
+    and one or more carbon atoms of an organyl group. The metalloid atom must be bound to an organic carbon, that is in turn bonded to other carbon atoms.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -33,10 +33,17 @@ def is_organometalloidal_compound(smiles: str):
             break
     if not has_metalloid:
         return False, "No metalloid atoms found"
-
-    # Check for metalloid-carbon bonds
-    metalloid_carbon_bond_pattern = Chem.MolFromSmarts("[#5,#14,#32,#33,#51,#52]-[#6]")
-    if mol.HasSubstructMatch(metalloid_carbon_bond_pattern):
-        return True, "Contains at least one metalloid-carbon bond"
-    else:
-        return False, "No metalloid-carbon bonds found"
+    
+    # Check for metalloid-carbon bonds where the carbon is also bonded to at least one other carbon atom
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() in metalloid_atoms:
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6:  # Check if neighbor is carbon
+                    carbon_neighbor_count = 0
+                    for carbon_neighbor in neighbor.GetNeighbors():
+                        if carbon_neighbor.GetAtomicNum() == 6:
+                             carbon_neighbor_count += 1
+                    if carbon_neighbor_count > 0: # ensure carbon has at least another carbon neighbor
+                       return True, "Contains at least one metalloid-carbon bond in an organic group"
+    
+    return False, "No metalloid-carbon bond to an organic group found"
