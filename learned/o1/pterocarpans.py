@@ -23,22 +23,17 @@ def is_pterocarpans(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for pterocarpan core
-    # The pattern represents the fused tetracyclic ring system
-    pterocarpan_smarts = """
-    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1
-    -2-[#8]-[#6]3-[#6]-[#6]-[#8]-[#6]-4-[#6]:[#6]:[#6]:[#6]:[#6]:[#6]:4-[#6]-3-2
-    """
+    # Define the pterocarpan core structure as a molecule
+    pterocarpan_core_smiles = 'C1=CC=C2C(=C1)C3C(O2)COC4=C3C=CC=C4'  # SMILES for pterocarpan core
+    pterocarpan_core_mol = Chem.MolFromSmiles(pterocarpan_core_smiles)
+    if pterocarpan_core_mol is None:
+        return False, "Could not define pterocarpan core structure"
 
-    # Remove whitespace and line breaks
-    pterocarpan_smarts = pterocarpan_smarts.replace('\n', '').replace(' ', '')
-    
-    pterocarpan_core = Chem.MolFromSmarts(pterocarpan_smarts)
-    if pterocarpan_core is None:
-        return False, "Could not define pterocarpan core pattern"
+    # Convert core structure to SMARTS pattern
+    pterocarpan_core_smarts = Chem.MolToSmarts(pterocarpan_core_mol)
 
     # Check for substructure match
-    if mol.HasSubstructMatch(pterocarpan_core):
+    if mol.HasSubstructMatch(Chem.MolFromSmarts(pterocarpan_core_smarts)):
         return True, "Molecule contains the pterocarpan core structure"
 
     return False, "Molecule does not contain the pterocarpan core structure"
