@@ -21,9 +21,11 @@ def is_carbamate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the carbamate ester SMARTS pattern
-    carbamate_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[OX2][CX4]")
+    # Corrected carbamate ester SMARTS pattern (O-C(=O)-N)
+    carbamate_smarts = "[OX2H0][CX3](=O)[NX3;!$(N-C=O)]"
 
+    # Create the SMARTS pattern molecule
+    carbamate_pattern = Chem.MolFromSmarts(carbamate_smarts)
     if carbamate_pattern is None:
         return False, "Invalid SMARTS pattern for carbamate ester"
 
