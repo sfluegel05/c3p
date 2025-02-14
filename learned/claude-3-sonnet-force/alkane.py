@@ -5,7 +5,7 @@ Classifies: CHEBI:18310 alkane
 Classifies: CHEBI:24428 alkane
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_alkane(smiles: str):
     """
@@ -39,12 +39,11 @@ def is_alkane(smiles: str):
     if any(ring for ring in mol.GetRingInfo().AtomRings()):
         return False, "Contains cyclic structures"
 
-    # Count carbon and hydrogen atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-
-    # Check if the formula matches CnH2n+2
-    if h_count != (2 * c_count + 2):
-        return False, "Does not match the alkane formula CnH2n+2"
+    # Check for substituents and their connectivity
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            substituents = [neighbor.GetAtomicNum() for neighbor in atom.GetNeighbors()]
+            if 6 in substituents and sum(substituents) != (2 * len(substituents) + 2):
+                return False, "Contains non-alkane substituents"
 
     return True, "Acyclic compound containing only carbon and hydrogen in the correct ratio"
