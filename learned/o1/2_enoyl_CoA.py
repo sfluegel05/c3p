@@ -22,19 +22,28 @@ def is_2_enoyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define CoA molecule from its SMILES
-    smiles_coa = 'CC(C)(COP(=O)(O)OP(=O)(O)OCC1C(C(C(O1)N2C=NC3=C2N=CN=C3N)O)O)OC(=O)CCNC(=O)CCSC'
-    coa_mol = Chem.MolFromSmiles(smiles_coa)
-    if coa_mol is None:
-        return False, "Failed to create CoA molecule"
-
-    # Check for CoA substructure
-    if not mol.HasSubstructMatch(coa_mol):
-        return False, "Coenzyme A (CoA) moiety not found"
-
-    # Define thioester linkage pattern: C(=O)S
-    thioester_smarts = 'C(=O)S'
+    # Define SMARTS patterns for key features
+    # Thioester linkage: C(=O)-S-C
+    thioester_smarts = '[CX3](=O)[SX2][#6]'
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
+
+    # Adenine ring in CoA
+    adenine_smarts = 'n1c([nH])cnc1N'
+    adenine_pattern = Chem.MolFromSmarts(adenine_smarts)
+
+    # Ribose sugar connected to adenine
+    ribose_smarts = 'OC[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O'
+    ribose_pattern = Chem.MolFromSmarts(ribose_smarts)
+
+    # Diphosphate linkage
+    diphosphate_smarts = 'OP(=O)(O)OP(=O)(O)O'
+    diphosphate_pattern = Chem.MolFromSmarts(diphosphate_smarts)
+
+    # Pantetheine moiety (portion of CoA connected to thioester)
+    pantetheine_smarts = '[NX3][CX3](=O)[CX4][CX3](=O)[NX3][CX4][CX4][SX2]'
+    pantetheine_pattern = Chem.MolFromSmarts(pantetheine_smarts)
+
+    # Check for thioester linkage
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Thioester linkage not found"
@@ -44,11 +53,38 @@ def is_2_enoyl_CoA(smiles: str):
     carbonyl_c_idx = thioester_match[0]  # Carbonyl carbon index
     sulfur_idx = thioester_match[2]      # Sulfur atom index
 
-    # Find the acyl chain connected to the carbonyl carbon
-    # Traverse away from the carbonyl carbon, avoiding the sulfur atom
+    # Check for CoA substructures connected to sulfur
+    sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
+    coa_found = False
+
+    # Perform recursive search from sulfur atom to find CoA moiety
+    atoms_to_visit = [sulfur_atom]
+    visited_atoms = set()
+    while atoms_to_visit:
+        current_atom = atoms_to_visit.pop()
+        if current_atom.GetIdx() in visited_atoms:
+            continue
+        visited_atoms.add(current_atom.GetIdx())
+
+        # Check for adenine ring
+        if current_atom.HasSubstructMatch(adenine_pattern):
+            coa_found = True
+            break
+
+        # Add neighbors to visit
+        for neighbor in current_atom.GetNeighbors():
+            atoms_to_visit.append(neighbor)
+
+    if not coa_found:
+        return False, "Coenzyme A (CoA) moiety not found"
+
+    # Identify the acyl chain connected to the carbonyl carbon
+    # We will traverse away from the carbonyl carbon, avoiding the sulfur atom
     acyl_chain = []
     visited = set()
     stack = [carbonyl_c_idx]
+    position_map = {carbonyl_c_idx: 1}  # Map atom idx to position in acyl chain
+
     while stack:
         atom_idx = stack.pop()
         if atom_idx in visited:
@@ -56,39 +92,24 @@ def is_2_enoyl_CoA(smiles: str):
         visited.add(atom_idx)
         atom = mol.GetAtomWithIdx(atom_idx)
         acyl_chain.append(atom_idx)
+        current_position = position_map[atom_idx]
         for neighbor in atom.GetNeighbors():
             nbr_idx = neighbor.GetIdx()
             if nbr_idx == sulfur_idx:
                 continue  # Skip the sulfur atom leading to CoA
-            if nbr_idx not in visited:
-                stack.append(nbr_idx)
+            if nbr_idx in visited:
+                continue
+            # Ensure we are moving along the acyl chain (carbons and hydrogens)
+            nbr_atom = mol.GetAtomWithIdx(nbr_idx)
+            if nbr_atom.GetAtomicNum() in [1]:  # Skip hydrogens
+                continue
+            # Assign position number
+            position_map[nbr_idx] = current_position + 1
+            stack.append(nbr_idx)
 
-    # Remove the carbonyl carbon (position 1)
-    acyl_chain.remove(carbonyl_c_idx)
-
-    # Check that acyl chain has at least 2 carbons
-    if len(acyl_chain) < 2:
+    # Check if acyl chain is long enough
+    if len(acyl_chain) < 3:
         return False, "Acyl chain is too short"
-
-    # Build a map of positions in the acyl chain
-    atom_positions = {carbonyl_c_idx: 1}
-    current_positions = [carbonyl_c_idx]
-    position = 1
-    while current_positions:
-        next_positions = []
-        position += 1
-        for idx in current_positions:
-            atom = mol.GetAtomWithIdx(idx)
-            for neighbor in atom.GetNeighbors():
-                nbr_idx = neighbor.GetIdx()
-                if nbr_idx in atom_positions:
-                    continue
-                if nbr_idx == sulfur_idx:
-                    continue  # Skip sulfur atom
-                if nbr_idx in acyl_chain:
-                    atom_positions[nbr_idx] = position
-                    next_positions.append(nbr_idx)
-        current_positions = next_positions
 
     # Check for double bond between positions 2 and 3
     double_bond_found = False
@@ -97,8 +118,10 @@ def is_2_enoyl_CoA(smiles: str):
         if bond_order == 2.0:
             begin_idx = bond.GetBeginAtomIdx()
             end_idx = bond.GetEndAtomIdx()
-            pos1 = atom_positions.get(begin_idx)
-            pos2 = atom_positions.get(end_idx)
+            pos1 = position_map.get(begin_idx)
+            pos2 = position_map.get(end_idx)
+            if pos1 is None or pos2 is None:
+                continue
             if {pos1, pos2} == {2, 3}:
                 double_bond_found = True
                 break
