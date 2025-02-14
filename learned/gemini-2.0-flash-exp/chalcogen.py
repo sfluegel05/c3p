@@ -28,6 +28,10 @@ def is_chalcogen(smiles: str):
     # Get the atom from the molecule
     atom = mol.GetAtomWithIdx(0)
 
+    # Check the atom has no formal charge
+    if atom.GetFormalCharge() != 0:
+        return False, "Chalcogen must be neutral."
+
     # Get atomic number
     atomic_num = atom.GetAtomicNum()
     isotope = atom.GetIsotope()
