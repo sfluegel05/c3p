@@ -2,6 +2,7 @@
 Classifies: CHEBI:25676 oligopeptide
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_oligopeptide(smiles: str):
     """
@@ -22,60 +23,36 @@ def is_oligopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define peptide bond SMARTS pattern
-    # This pattern specifically matches peptide bonds in the backbone
-    peptide_bond_smarts = '[C:1](=O)[N:2][C:3]'
-    peptide_bond_mol = Chem.MolFromSmarts(peptide_bond_smarts)
-    if peptide_bond_mol is None:
+    # Define peptide bond SMARTS pattern (amide bond between amino acids)
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    if peptide_bond_pattern is None:
         return False, "Invalid SMARTS pattern for peptide bond"
 
-    # Find peptide bonds
-    matches = mol.GetSubstructMatches(peptide_bond_mol)
-    peptide_bond_indices = []
-    for match in matches:
-        c_idx = match[0]
-        n_idx = match[1]
-        bond = mol.GetBondBetweenAtoms(c_idx, n_idx)
-        if bond:
-            peptide_bond_indices.append(bond.GetIdx())
+    # Find peptide bonds (amide bonds)
+    peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
+
+    # Count the number of peptide bonds
+    num_peptide_bonds = len(peptide_bonds)
+
+    # Estimate the number of amino acid residues
+    # For linear peptides, number of residues = number of peptide bonds + 1
+    # For cyclic peptides, this estimation may differ
+    num_amino_acids = num_peptide_bonds + 1 if num_peptide_bonds > 0 else 0
 
     # Check if there are any peptide bonds
-    if not peptide_bond_indices:
+    if num_amino_acids == 0:
         return False, "No peptide bonds found"
 
-    # Fragment the molecule along peptide bonds
-    # This will split the molecule into potential amino acid residues
-    frag_mol = Chem.FragmentOnBonds(mol, peptide_bond_indices, addDummies=False)
+    # Check if the number of residues is within oligopeptide range (2-20)
+    if num_amino_acids < 2:
+        return False, f"Molecule has {num_amino_acids} amino acid residue(s), fewer than required for an oligopeptide"
+    if num_amino_acids > 20:
+        return False, f"Molecule has {num_amino_acids} amino acid residues, more than allowed for an oligopeptide"
 
-    # Obtain the fragments
-    fragments = Chem.GetMolFrags(frag_mol, asMols=True)
-    num_fragments = len(fragments)
+    # Additional check to exclude simple amide-containing molecules
+    # Verify that the molecule has amino acid-like substructures
+    amino_acid_pattern = Chem.MolFromSmarts("N[C@@H](C)C(=O)O")  # Simplified amino acid pattern
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "No amino acid residues detected"
 
-    # Check if the number of fragments (residues) is within oligopeptide range (2-20)
-    if num_fragments < 2:
-        return False, f"Molecule has {num_fragments} amino acid residue(s), fewer than required for an oligopeptide"
-    if num_fragments > 20:
-        return False, f"Molecule has {num_fragments} amino acid residues, more than allowed for an oligopeptide"
-
-    # Define a general amino acid residue pattern
-    # This pattern matches an amino group attached to an alpha carbon, which is attached to a carboxyl group
-    amino_acid_pattern = Chem.MolFromSmarts('[NX3,NX4+][CX4H][CX3](=O)[O-]')
-    if amino_acid_pattern is None:
-        return False, "Invalid SMARTS pattern for amino acid residue"
-
-    # Count fragments that match the amino acid pattern
-    amino_acid_fragments = 0
-    for frag in fragments:
-        if frag.HasSubstructMatch(amino_acid_pattern):
-            amino_acid_fragments += 1
-        else:
-            # Check for modified amino acids or terminal residues
-            terminal_amino_pattern = Chem.MolFromSmarts('[NX3,NX4+][CX4H][CX3](=O)[O,N]')
-            if frag.HasSubstructMatch(terminal_amino_pattern):
-                amino_acid_fragments += 1
-
-    # Validate that most fragments are amino acid residues
-    if amino_acid_fragments < num_fragments:
-        return False, f"Only {amino_acid_fragments} out of {num_fragments} fragments are amino acid residues"
-
-    return True, f"Molecule has {num_fragments} amino acid residues, classified as an oligopeptide"
+    return True, f"Molecule has {num_amino_acids} amino acid residues, classified as an oligopeptide"
