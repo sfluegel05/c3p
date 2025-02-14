@@ -8,7 +8,7 @@ Polyphenols are defined as members of the class of phenols that contain 2 or mor
 each of which is substituted by at least one hydroxy group.
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors, rdchem
 
 def is_polyphenol(smiles: str):
     """
@@ -27,27 +27,26 @@ def is_polyphenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count benzene rings
-    ring_info = mol.GetRingInfo()
-    n_benzene_rings = sum(1 for ring in ring_info.AtomRings() if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring))
-    if n_benzene_rings < 2:
-        return False, "Less than 2 benzene rings"
+    # Identify largest aromatic ring system
+    aromatic_rings = [ring for ring in rdchem.GetSymmSSSR(mol) if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
+    largest_aromatic_ring_system = max(aromatic_rings, key=len, default=[])
 
-    # Check for hydroxy groups on benzene rings
+    # Check if largest aromatic ring system contains at least 2 benzene rings
+    n_benzene_rings = sum(1 for ring in largest_aromatic_ring_system if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring))
+    if n_benzene_rings < 2:
+        return False, "Less than 2 benzene rings in the largest aromatic ring system"
+
+    # Check for hydroxy groups on benzene rings in the largest aromatic ring system
     hydroxy_on_benzene = False
-    for ring in ring_info.AtomRings():
+    for ring in largest_aromatic_ring_system:
         if len(ring) == 6 and all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
             for idx in ring:
                 atom = mol.GetAtomWithIdx(idx)
-                if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1:
+                neighbors = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in atom.GetNeighbors()]
+                if any(neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1 for neighbor in neighbors):
                     hydroxy_on_benzene = True
                     break
     if not hydroxy_on_benzene:
-        return False, "No hydroxy groups on benzene rings"
+        return False, "No hydroxy groups on benzene rings in the largest aromatic ring system"
 
-    # Check for phenolic oxygens
-    n_phenolic_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
-    if n_phenolic_oxygens < 2:
-        return False, "Less than 2 phenolic oxygens"
-
-    return True, "Contains 2 or more benzene rings, each with at least one hydroxy group"
+    return True, "Contains 2 or more benzene rings in the largest aromatic ring system, with at least one hydroxy group substituted"
