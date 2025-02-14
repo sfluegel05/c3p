@@ -32,11 +32,10 @@ def is_methyl_sulfide(smiles: str):
 
     # Check if any sulfur atom has a neighboring methyl group
     for sulfur_idx in sulfur_atoms:
-        sulfur = mol.GetAtomWithIdx(sulfur_idx)
-        neighbors = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in sulfur.GetNeighbors()]
-        for neighbor in neighbors:
+        for neighbor_idx in mol.GetAtomWithIdx(sulfur_idx).GetNeighbors():
+            neighbor = mol.GetAtomWithIdx(neighbor_idx)
             if neighbor.GetSymbol() == 'C' and len(neighbor.GetNeighbors()) == 4:
-                hydrogen_count = sum(1 for neighbor_neighbor in neighbor.GetNeighbors() if neighbor_neighbor.GetSymbol() == 'H')
+                hydrogen_count = sum(1 for neighbor_neighbor_idx in neighbor.GetNeighbors() if mol.GetAtomWithIdx(neighbor_neighbor_idx).GetSymbol() == 'H')
                 if hydrogen_count == 3:
                     return True, "Contains a sulfur atom with a neighboring methyl group"
 
