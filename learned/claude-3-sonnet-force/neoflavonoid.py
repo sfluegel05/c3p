@@ -10,7 +10,7 @@ semi-synthetic and fully synthetic compounds.
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import AllChem, rdMolDescriptors
 
 def is_neoflavonoid(smiles: str):
     """
@@ -38,15 +38,19 @@ def is_neoflavonoid(smiles: str):
     aryl_pattern = Chem.MolFromSmarts("[cX3](-[cX3])-[cX3]")
     aryl_matches = mol.GetSubstructMatches(aryl_pattern)
     if not aryl_matches:
-        return False, "No aryl substituent at position 4"
+        return False, "No aryl substituent found"
 
     # Check if aryl substituent is attached to benzopyran at position 4
     for match in aryl_matches:
         atom_idx = match[0]
         env = Chem.FindAtomEnvironmentOfRadiusN(mol, 4, atom_idx)
         if env.getIsConstrained():
-            # Check if benzopyran core is part of environment
             if benzopyran_pattern.HasSubstructMatch(env.Abbreviation):
+                # Additional checks
+                if rdMolDescriptors.CalcNumRotatableBonds(mol) < 3:
+                    return False, "Too few rotatable bonds for a neoflavonoid"
+                if rdMolDescriptors.CalcExactMolWt(mol) < 200:
+                    return False, "Molecular weight too low for a neoflavonoid"
                 return True, "Molecule has a benzopyran core with an aryl substituent at position 4"
 
     return False, "Aryl substituent not attached to benzopyran at position 4"
