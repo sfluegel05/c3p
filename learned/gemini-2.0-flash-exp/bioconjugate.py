@@ -21,11 +21,11 @@ def is_bioconjugate(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for common biological building blocks
-    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0][CX4][CX3](=[OX1])[OX2;H1,H0]") # Covers both N- and C- termini
-    sugar_pattern = Chem.MolFromSmarts("OC[C,c]1([O,N,S][C,c]([O,N,S])[C,c]([O,N,S])[C,c]([O,N,S])[C,c]1[O,N,S])") # Covers many sugar types
-    nucleotide_base_pattern = Chem.MolFromSmarts("c1[nc][nc][nc]1") # covers purine and pyrimidine bases
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O])([O])[O]") # Covers phosphates
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") # A crude definition, but OK for now
+    amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0][CX4][CX3](=[OX1])[OX2;H1,H0]")  # Covers both N- and C- termini
+    sugar_pattern = Chem.MolFromSmarts("OC[C,c]1([O,N,S][C,c]([O,N,S])[C,c]([O,N,S])[C,c]([O,N,S])[C,c]1[O,N,S])")  # Covers many sugar types
+    nucleotide_base_pattern = Chem.MolFromSmarts("c1[nc][nc][nc]1")  # covers purine and pyrimidine bases
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)([O])([O])[O]")  # Covers phosphates
+    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)(O)C[C,c]([C,c])")
     
     patterns = [amino_acid_pattern, sugar_pattern, nucleotide_base_pattern, phosphate_pattern, fatty_acid_pattern]
 
@@ -40,28 +40,40 @@ def is_bioconjugate(smiles: str):
       return False, "Does not contain at least two different bio-molecule substructures"
 
 
-    # Check for covalent linkages
-    # Find all substructure atom matches for each substructure
-    all_substructure_atoms = []
-    for pattern in matches:
-      match_indices = mol.GetSubstructMatches(pattern)
-      if len(match_indices) > 0: # Only process if a match is found
-          for match in match_indices:
-            all_substructure_atoms.append(set(match))
-    
-    
-    # Check for atom overlap across all substructures
-    # If two substructures share atoms, they are covalently linked
+    # Define SMARTS patterns for common bioconjugate linkages
+    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
+    glycosidic_bond_pattern = Chem.MolFromSmarts("C-O-[C,c]1([O,N,S][C,c]([O,N,S])[C,c]([O,N,S])[C,c]([O,N,S])[C,c]1[O,N,S])")  # C-O-C in a sugar context
+    thioester_bond_pattern = Chem.MolFromSmarts("C(=O)S") # For CoA linkages
+    phosphodiester_bond_pattern = Chem.MolFromSmarts("P(=O)(-O)-O") # For nucleotide linkages
+
+    linkage_patterns = [peptide_bond_pattern, glycosidic_bond_pattern, thioester_bond_pattern, phosphodiester_bond_pattern]
+
+    # Check if any linkage is present and connects different substructure types
     linked = False
-    if len(all_substructure_atoms) > 1:
-        for i in range(len(all_substructure_atoms)):
-            for j in range(i+1, len(all_substructure_atoms)):
-                if len(all_substructure_atoms[i].intersection(all_substructure_atoms[j])) > 0:
-                    linked = True
-                    break
-            if linked:
-                break
     
+    for linkage_pattern in linkage_patterns:
+      linkage_matches = mol.GetSubstructMatches(linkage_pattern)
+      
+      if linkage_matches:
+        for match in linkage_matches:
+            # Get the atoms of the linkage.
+            link_atoms = set(match)
+
+            # Check if linkage connects two different substructures.
+            connected_substructures = 0
+            for pattern in matches:
+                match_indices = mol.GetSubstructMatches(pattern)
+                if match_indices:
+                    for match_idx in match_indices:
+                      substructure_atoms = set(match_idx)
+                      if len(link_atoms.intersection(substructure_atoms)) > 0:
+                        connected_substructures += 1
+            if connected_substructures > 1:
+                linked = True
+                break
+      if linked:
+        break
+
     if not linked:
         return False, "Contains at least two different bio-molecule substructures, but not covalently linked."
 
