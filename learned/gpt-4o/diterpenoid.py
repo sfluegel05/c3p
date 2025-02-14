@@ -7,7 +7,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_diterpenoid(smiles: str):
     """
     Determines if a molecule is a diterpenoid based on its SMILES string.
-    Diterpenoids are characterized by a core derived from 20 carbon atoms of a diterpene, often modified or rearranged.
+    A diterpenoid typically has a core terpenoid structure with 20 carbons,
+    potentially rearranged or functionalized.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,23 +23,25 @@ def is_diterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count number of carbon atoms; allow flexibility due to potential rearrangements
+    # Count number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 30:
-        return False, "Carbon count not within extended diterpenoid range (15-30)"
+    if c_count < 20:
+        return False, "Insufficient carbon atoms for diterpenoid (less than 20)"
 
-    # Retrieve ring information to check for potential diterpenoid structures
+    # Family specific patterns are typically challenging, hence our focus will be on
+    # ring structures and diverse functionalities typical for diterpenoids.
+    # Check for the presence of complex ring structures
     ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized():
-        return False, "No ring data available"
-    ring_sizes = [len(ring) for ring in ring_info.AtomRings() if 5 <= len(ring) <= 8]
-    if len(ring_sizes) < 1:
-        return False, "Lacks typical ring structures of diterpenoids, expected 5-8 members"
+    if not ring_info.IsInitialized() or ring_info.NumRings() == 0:
+        return False, "No ring structures found"
 
-    # Check for presence of relevant functional groups (hydroxyl, carbonyl, ether, epoxide)
-    functional_group_pattern_1 = Chem.MolFromSmarts("[OX2H,C]=[OX1,O]")
-    functional_group_pattern_2 = Chem.MolFromSmarts("[O,N]")
-    if not mol.HasSubstructMatch(functional_group_pattern_1) and not mol.HasSubstructMatch(functional_group_pattern_2):
-        return False, "Missing expected functional groups (e.g., hydroxyl, carbonyl, ether, epoxide)"
+    # Check for specific terpenoid-like ring patterns
+    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
+    if not any(size >= 6 for size in ring_sizes):
+        return False, "Lacks larger ring structures typical of diterpenoids"
 
-    return True, "Exhibits typical characteristics of diterpenoids (ring structure and functional modifications)"
+    # Additional checks can include specific functional groups or structural motifs
+    # Present in known diterpenoids, though complex variations exist.
+
+    # We consider here the generic properties without a highly specific pattern due to diversity
+    return True, "Matches general diterpenoid structure based on ring presence and carbon count"
