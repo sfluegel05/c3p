@@ -28,27 +28,17 @@ def is_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for amino group and carboxyl group on adjacent carbons
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1]")
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX1]")
+    # Define alpha-amino acid pattern
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[N;H2]([C;H2,H1])([C;H2,H1])([C;H2,H1])[C;H1]([N;H2,H1])([C;H1])(=O)[O;H1]")
     
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    # Check if molecule matches the pattern
+    matches = mol.GetSubstructMatches(alpha_amino_acid_pattern)
     
-    for amino_idx in amino_matches:
-        amino_atom = mol.GetAtomWithIdx(amino_idx)
-        amino_neighbors = [n.GetIdx() for n in amino_atom.GetNeighbors()]
-        
-        for carboxyl_idx in carboxyl_matches:
-            carboxyl_atom = mol.GetAtomWithIdx(carboxyl_idx)
-            carboxyl_neighbors = [n.GetIdx() for n in carboxyl_atom.GetNeighbors()]
-            
-            # Check if amino and carboxyl groups are on adjacent carbons
-            common_neighbor = set(amino_neighbors) & set(carboxyl_neighbors)
-            if common_neighbor:
-                alpha_carbon_idx = common_neighbor.pop()
-                alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
-                if alpha_carbon.GetAtomicNum() == 6:  # Carbon
-                    return True, "Contains amino group and carboxyl group on adjacent carbons (alpha-amino acid)"
+    # Check for zwitterionic forms
+    zwitterion_pattern = Chem.MolFromSmarts("[N+;H3]([C;H2,H1])([C;H2,H1])([C;H2,H1])[C;H1]([N+;H2])([C;H1])(=[O-1])")
+    zwitterion_matches = mol.GetSubstructMatches(zwitterion_pattern)
+    
+    if matches or zwitterion_matches:
+        return True, "Contains an alpha-amino acid substructure"
     
     return False, "No alpha-amino acid substructure found"
