@@ -27,16 +27,39 @@ def is_monoterpenoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Count the number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    # Monoterpenoids typically have around 10 carbons, but may have fewer due to modifications
-    if c_count < 7 or c_count > 11:
-        return False, f"Number of carbon atoms ({c_count}) not consistent with a monoterpenoid"
-    
+
+    # Define SMARTS patterns for isoprene unit
+    isoprene_pattern = Chem.MolFromSmarts('C=C(C)C')  # Isoprene unit
+
+    # Find the number of isoprene units
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    num_isoprene_units = len(isoprene_matches)
+
+    if num_isoprene_units < 2:
+        # Monoterpenoids are derived from two isoprene units
+        return False, f"Contains {num_isoprene_units} isoprene units, less than required for monoterpenoid"
+
+    # Define SMARTS patterns for common monoterpene skeletons
+    monoterpene_patterns = [
+        "C1CCC(C=C1)C(C)C",        # Myrcene-like structures
+        "C1=CC=CC=C1C(C)C",        # Limonene-like structures
+        "C1=C(C)CCCC1C",           # Pinene-like structures
+        "CC(C)C1CCC(C=C1)O",       # Menthol-like structures
+        "CC(=C)C1CCC(C1)O",        # Pulegone-like structures
+    ]
+
+    has_monoterpene_skeleton = False
+    for smarts in monoterpene_patterns:
+        pattern = Chem.MolFromSmarts(smarts)
+        if mol.HasSubstructMatch(pattern):
+            has_monoterpene_skeleton = True
+            break
+
+    if not has_monoterpene_skeleton:
+        return False, "No monoterpene skeleton detected"
+
     # Check for terpenoid functional groups
-    # Common functional groups in monoterpenoids include alcohols, ketones, aldehydes, ethers, carboxylic acids
+    # Functional groups that might be present in monoterpenoids
     functional_group_patterns = {
         "alcohol": "[OX2H]",                # Hydroxyl group
         "ketone": "[CX3](=O)[#6]",          # Ketone group
@@ -46,9 +69,9 @@ def is_monoterpenoid(smiles: str):
         "ester": "C(=O)O[#6]",              # Ester group
         "epoxide": "[C;R][O;R][C;R]",       # Epoxide ring
         "thiol": "[SX2H]",                  # Thiol group
+        "double_bond": "C=C",               # Double bond
     }
 
-    # Initialize flag for functional group presence
     has_functional_group = False
     for fg_name, smarts in functional_group_patterns.items():
         pattern = Chem.MolFromSmarts(smarts)
@@ -58,10 +81,5 @@ def is_monoterpenoid(smiles: str):
 
     if not has_functional_group:
         return False, "No terpenoid functional groups found"
-    
-    # Optional: Attempt to detect terpenoid skeleton
-    # Due to the diversity and complexity of monoterpenoid structures,
-    # detecting a common skeleton is challenging
-    # For simplicity, we'll rely on carbon count and functional groups
 
-    return True, f"Contains {c_count} carbons and terpenoid functional groups consistent with a monoterpenoid"
+    return True, "Contains monoterpene skeleton and terpenoid functional groups consistent with a monoterpenoid"
