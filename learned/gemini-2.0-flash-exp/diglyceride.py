@@ -28,35 +28,35 @@ def is_diglyceride(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached via single bonds)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4](-[OX2])-[CHX4](-[OX2])-[CH2X4](-[OX2])")
+    glycerol_pattern = Chem.MolFromSmarts("[CH2][CH][CH2]")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Look for 2 ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    # Look for 2 ester groups (-O-C(=O)-). This one needs to be very specific
+    ester_pattern = Chem.MolFromSmarts("[OX2]-[CX3](=[OX1])")
+    if ester_pattern is None:
+        return None, "Could not create ester smarts pattern"
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 2:
       return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
     # Check for a remaining alcohol or ether on glycerol backbone:
     hydroxyl_or_ether_pattern = Chem.MolFromSmarts("[CH2X4,CHX4](-[OX2]) | [CH2X4,CHX4,CHX3]-[OX2]-[CX4]")
+    if hydroxyl_or_ether_pattern is None:
+        return None, "Could not create alcohol/ether smarts pattern"
     hydroxyl_or_ether_matches = mol.GetSubstructMatches(hydroxyl_or_ether_pattern)
-
-    glycerol_carbons_pattern = Chem.MolFromSmarts("[CH2X4](-[OX2])-[CHX4](-[OX2])-[CH2X4](-[OX2])")
-    glycerol_carbon_matches = mol.GetSubstructMatches(glycerol_carbons_pattern)
-
-    if len(glycerol_carbon_matches) != 1:
-        return False, "Incorrect number of glycerol backbones"
-
     if len(hydroxyl_or_ether_matches) < 1:
         return False, "No remaining hydroxyl or ether on glycerol backbone"
-    
+
     # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3](=[OX1])-[OX2]-[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[OX2]-[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if fatty_acid_pattern is None:
+        return None, "Could not create fatty acid smarts pattern"
+
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
-    
+
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 6:
