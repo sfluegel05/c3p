@@ -26,27 +26,11 @@ def is_long_chain_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (-COOH, -COO-, or ester)
-    acid_pattern = Chem.MolFromSmarts("C(=O)[OX1H0,OX2H1,OX2]") # check for -COOH, -COO-, and esters
-    if not mol.HasSubstructMatch(acid_pattern):
-        return False, "No carboxylic acid group or ester found"
-
-    # Get the carbon of the carboxyl group
-    carboxylic_carbon_matches = mol.GetSubstructMatches(acid_pattern)
-    if not carboxylic_carbon_matches:
-      return False, "No carboxylic acid carbon found"
-    carboxylic_carbon_idx = carboxylic_carbon_matches[0][0] # get the first carbon idx
-    carboxylic_atom = mol.GetAtomWithIdx(carboxylic_carbon_idx)
-
-
-    # Find the alpha carbon (carbon directly attached to the carbonyl carbon)
-    alpha_carbons = []
-    for neighbor in carboxylic_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:
-            alpha_carbons.append(neighbor)
-
-    if not alpha_carbons:
-        return False, "No alpha carbon found"
+    # Check for carboxylic acid group (-COOH)
+    acid_pattern = Chem.MolFromSmarts("C(=O)O[H]")  # Explicitly check for -COOH, avoiding esters and -COO-
+    carboxylic_acid_matches = mol.GetSubstructMatches(acid_pattern)
+    if not carboxylic_acid_matches:
+        return False, "No carboxylic acid group (-COOH) found"
 
 
     def trace_linear_chain(start_carbon, visited=None, chain_count = 0, previous_carbon = None):
@@ -54,29 +38,44 @@ def is_long_chain_fatty_acid(smiles: str):
             visited = set()
         if start_carbon.GetIdx() in visited:
             return chain_count
-        
+
         visited.add(start_carbon.GetIdx())
-        chain_count += 1
+
         next_carbons = []
         for neighbor in start_carbon.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != carboxylic_carbon_idx and (previous_carbon is None or neighbor.GetIdx() != previous_carbon.GetIdx()):
+            if neighbor.GetAtomicNum() == 6 and (previous_carbon is None or neighbor.GetIdx() != previous_carbon.GetIdx()):
                 next_carbons.append(neighbor)
         
-        if len(next_carbons) == 0:
+        if len(next_carbons) == 0: # end of the chain
           return chain_count
-        elif len(next_carbons) > 1 :
-          # Branching, so terminate path
+        elif len(next_carbons) == 1: # continue the chain
+          return trace_linear_chain(next_carbons[0], visited, chain_count + 1, start_carbon)
+        else: # a branch, so return
           return chain_count
-        else:
-          return trace_linear_chain(next_carbons[0], visited, chain_count, start_carbon)
-
 
     max_chain_length = 0
-    for alpha_carbon in alpha_carbons:
-      chain_length = trace_linear_chain(alpha_carbon)
-      max_chain_length = max(chain_length, max_chain_length)
 
-    if max_chain_length < 13 or max_chain_length > 22:
-      return False, f"Chain length is {max_chain_length}, not between 13 and 22 carbons"
+    for match in carboxylic_acid_matches:
+      carboxylic_carbon_idx = match[0]
+      carboxylic_atom = mol.GetAtomWithIdx(carboxylic_carbon_idx)
+
+      # Find the alpha carbon (carbon directly attached to the carbonyl carbon)
+      alpha_carbons = []
+      for neighbor in carboxylic_atom.GetNeighbors():
+          if neighbor.GetAtomicNum() == 6:
+              for neighbor2 in neighbor.GetNeighbors():
+                  if neighbor2.GetAtomicNum() == 8:
+                      if neighbor2.GetIdx() != carboxylic_atom.GetIdx():
+                            alpha_carbons.append(neighbor)
+                            break
+      if not alpha_carbons:
+            continue
+      
+      for alpha_carbon in alpha_carbons:
+        chain_length = trace_linear_chain(alpha_carbon)
+        max_chain_length = max(max_chain_length, chain_length)
     
+    if max_chain_length < 13 or max_chain_length > 22:
+        return False, f"Chain length is {max_chain_length}, not between 13 and 22 carbons"
+
     return True, f"Molecule is a long-chain fatty acid with a chain length of {max_chain_length} carbons."
