@@ -25,31 +25,32 @@ def is_diradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone pattern
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    # Define glycerol backbone atoms explicitly to control the attachment points
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4]([OX2])[CH2X4]([OX2])")
+    glycerol_match = mol.GetSubstructMatch(glycerol_pattern)
+    if not glycerol_match:
         return False, "No glycerol backbone found"
     
-    # Look for ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    glycerol_atoms = glycerol_match
 
-    # Look for ether groups (-O-C-)
-    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    # Find attachments to glycerol carbons via ester, ether or enol ether
+    attachment_points = 0
     
-    # Look for enol ether groups (-O-C=C-)
-    enol_ether_pattern = Chem.MolFromSmarts("[OX2][CX3]=[CX3]")
-    enol_ether_matches = mol.GetSubstructMatches(enol_ether_pattern)
+    # Ester attachment
+    ester_attach_pattern = Chem.MolFromSmarts("[CH2X4;!H0]([OX2])[CHX4;!H0]([OX2])[CH2X4;!H0]([OX2])-[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_attach_pattern)
+    
+    #Ether attachment (alkyl)
+    ether_attach_pattern = Chem.MolFromSmarts("[CH2X4;!H0]([OX2])[CHX4;!H0]([OX2])[CH2X4;!H0]([OX2])-[OX2][CX4]")
+    ether_matches = mol.GetSubstructMatches(ether_attach_pattern)
 
-    total_substituents = len(ester_matches) + len(ether_matches) + len(enol_ether_matches)
+    #Enol ether attachment (alk-1-enyl)
+    enol_ether_attach_pattern = Chem.MolFromSmarts("[CH2X4;!H0]([OX2])[CHX4;!H0]([OX2])[CH2X4;!H0]([OX2])-[OX2][CX3]=[CX3]")
+    enol_ether_matches = mol.GetSubstructMatches(enol_ether_attach_pattern)
 
-    #Check it has exactly two substituents.
-    if total_substituents != 2:
-        return False, f"Found {total_substituents} substituents, need exactly 2"
+    attachment_points = len(ester_matches) + len(ether_matches) + len(enol_ether_matches)
 
-    #Check it is not a triglyceride (3 esters)
-    if len(ester_matches) == 3:
-        return False, "Molecule is a triglyceride, not a diradylglycerol"
-
+    if attachment_points != 2:
+         return False, f"Found {attachment_points} substituents, need exactly 2"
+    
     return True, "Contains glycerol backbone with exactly two substituents (acyl, alkyl or alk-1-enyl) attached"
