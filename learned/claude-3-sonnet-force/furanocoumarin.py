@@ -28,13 +28,23 @@ def is_furanocoumarin(smiles: str) -> tuple[bool, str]:
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for the fused furanocoumarin system
-    furanocoumarin_pattern = Chem.MolFromSmarts("c1cc2c3c(c1)oc1ccccc1c3oc2")
+    # Look for coumarin substructure
+    coumarin_pattern = Chem.MolFromSmarts("c1cc2ccoc2cc1=O")
+    coumarin_matches = mol.GetSubstructMatches(coumarin_pattern)
 
-    if mol.HasSubstructMatch(furanocoumarin_pattern):
-        # Additional checks for furanocoumarin characteristics (optional)
-        # ...
+    # Look for furan substructure
+    furan_pattern = Chem.MolFromSmarts("c1occc1")
+    furan_matches = mol.GetSubstructMatches(furan_pattern)
 
-        return True, "Contains a fused furanocoumarin system"
+    # Check if both coumarin and furan rings are present and fused
+    if coumarin_matches and furan_matches:
+        # Check for atom sharing between coumarin and furan rings
+        atom_idx_set = set()
+        for match in coumarin_matches:
+            atom_idx_set.update(match)
+        for match in furan_matches:
+            shared_atoms = atom_idx_set.intersection(match)
+            if shared_atoms:
+                return True, "Contains a fused coumarin and furan ring system"
 
-    return False, "Does not match the structural characteristics of a furanocoumarin"
+    return False, "Does not contain a fused coumarin and furan ring system"
