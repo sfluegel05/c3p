@@ -29,11 +29,13 @@ def is_2_hydroxy_fatty_acid(smiles: str):
 
     # Look for carboxylic acid group (-C(=O)O)
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
+    if not carboxyl_matches:
         return False, "No carboxylic acid group found"
 
-    # Find the longest carbon chain
-    longest_chain = find_longest_carbon_chain(mol)
+    # Find the longest carbon chain starting from the carboxylic acid carbon
+    start_atom_idx = carboxyl_matches[0][0]
+    longest_chain = find_longest_carbon_chain(mol, start_atom_idx)
     if not longest_chain:
         return False, "No carbon chain found"
 
@@ -67,41 +69,42 @@ def is_2_hydroxy_fatty_acid(smiles: str):
 
     return True, "Contains a carbon chain with a carboxylic acid and a single hydroxy group at C2"
 
-def find_longest_carbon_chain(mol):
+def find_longest_carbon_chain(mol, start_atom_idx):
     """
-    Finds the longest carbon chain in a molecule.
-
-    Args:
-        mol (Chem.Mol): RDKit molecule object
-
-    Returns:
-        list or None: Atom indices of the longest carbon chain, or None if no chain is found
-    """
-    longest_chain = []
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            chain = find_chain(mol, atom.GetIdx())
-            if len(chain) > len(longest_chain):
-                longest_chain = chain
-    return longest_chain
-
-def find_chain(mol, start_atom_idx):
-    """
-    Recursive function to find a carbon chain starting from a given atom index.
+    Finds the longest carbon chain in a molecule starting from a given atom index.
 
     Args:
         mol (Chem.Mol): RDKit molecule object
         start_atom_idx (int): Index of the starting atom
 
     Returns:
-        list: Atom indices of the carbon chain
+        list or None: Atom indices of the longest carbon chain, or None if no chain is found
     """
-    chain = [start_atom_idx]
-    neighbors = mol.GetAtomWithIdx(start_atom_idx).GetNeighbors()
-    for neighbor in neighbors:
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in chain:
-            chain.extend(find_chain(mol, neighbor.GetIdx()))
-    return list(set(chain))
+    visited = set()
+    return list(find_chain(mol, start_atom_idx, visited))
+
+def find_chain(mol, start_atom_idx, visited):
+    """
+    Recursive function to find a carbon chain starting from a given atom index.
+
+    Args:
+        mol (Chem.Mol): RDKit molecule object
+        start_atom_idx (int): Index of the starting atom
+        visited (set): Set of visited atom indices
+
+    Returns:
+        set: Set of atom indices in the carbon chain
+    """
+    chain = set()
+    visited.add(start_atom_idx)
+    start_atom = mol.GetAtomWithIdx(start_atom_idx)
+    if start_atom.GetAtomicNum() == 6:  # Carbon atom
+        chain.add(start_atom_idx)
+        neighbors = start_atom.GetNeighbors()
+        for neighbor in neighbors:
+            if neighbor.GetIdx() not in visited:
+                chain.update(find_chain(mol, neighbor.GetIdx(), visited))
+    return chain
 
 def count_hydroxy_groups(mol, ignore_atom_idx=None):
     """
