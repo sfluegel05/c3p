@@ -30,38 +30,23 @@ def is_polycyclic_arene(smiles: str):
     # Check if there are multiple aromatic rings
     aromatic_count = len(mol.GetSubstructMatches(aromatic_ring_pattern))
     if aromatic_count < 2:
-        return False, "Less than 2 aromatic rings found, not a polycyclic arene"
-
-    # Get ring information from RDKit
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
+         return False, "Less than 2 aromatic rings found, not a polycyclic arene"
     
-    if not atom_rings:
-        return False, "No rings detected"
-
-    # Check for fused rings (at least two shared atoms)
-    fused_rings = False
-    num_rings = len(atom_rings)
-    if num_rings > 1:
-        for i in range(num_rings):
-            for j in range(i + 1, num_rings):
-                ring1 = set(atom_rings[i])
-                ring2 = set(atom_rings[j])
-                if len(ring1.intersection(ring2)) >= 2: # At least two shared atoms
-                   fused_rings = True
-                   break
-            if fused_rings:
-                break
+    #check presence of fused rings
+    fused_ring_pattern = Chem.MolFromSmarts("c12ccccc1cccc2")
+    if not mol.HasSubstructMatch(fused_ring_pattern):
+        return False, "No fused rings detected"
     
-    if not fused_rings:
-       return False, "No fused aromatic rings detected"
+    # Check for non-aromatic atoms other than hydrogens; this part is to eliminate complex molecules with other functional groups.
+    non_aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic() == False and atom.GetAtomicNum() != 1]
+    if len(non_aromatic_atoms) > 0:
+        return False, f"Non-aromatic atoms other than H found {len(non_aromatic_atoms)}"
 
-
-    # Check for non-aromatic atoms (excluding hydrogens)
-    non_aromatic_atoms = [atom for atom in mol.GetAtoms() if not atom.GetIsAromatic() and atom.GetAtomicNum() != 1]
-    
-    if len(non_aromatic_atoms) > mol.GetNumAtoms() * 0.3:
-         return False, f"Too many non-aromatic atoms, {len(non_aromatic_atoms)} found."
+    # Check for single bonds between aromatic rings to exclude cases where they are just joined not fused
+    single_bond_between_aromatic_rings = Chem.MolFromSmarts("[c]~[c]")
+    if len(mol.GetSubstructMatches(single_bond_between_aromatic_rings)) == 0:
+            return False, "Rings are not fused"
+        
 
     # Check that at least 50% of the atoms are aromatic.
     total_atoms = mol.GetNumAtoms()
@@ -72,5 +57,7 @@ def is_polycyclic_arene(smiles: str):
 
     if aromatic_atoms/total_atoms < 0.5:
         return False, "Not enough aromatic atoms"
+
+
 
     return True, "Contains fused aromatic rings, classified as polycyclic arene"
