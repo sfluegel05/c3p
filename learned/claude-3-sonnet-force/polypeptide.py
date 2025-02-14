@@ -6,7 +6,8 @@ Classifies: CHEBI:25004 polypeptide
 A peptide containing ten or more amino acid residues.
 """
 from rdkit import Chem
-from rdkit.Chem import PeptidePredictor
+from rdkit.Chem import Descriptors
+from rdkit.Chem import Fragments
 
 def is_polypeptide(smiles: str):
     """
@@ -25,13 +26,12 @@ def is_polypeptide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for peptide backbone
-    predictor = PeptidePredictor.PeptidePredictor()
-    is_peptide = predictor.isPeptide(mol)
-    if not is_peptide:
+    has_peptide_backbone = any(Fragments.fr_peptide.fp_bit in fp for fp in Fragments.get_fragments(mol))
+    if not has_peptide_backbone:
         return False, "No peptide backbone detected"
 
     # Count amino acid residues
-    num_residues = predictor.getResidueCount(mol)
+    num_residues = Descriptors.NumResidues(mol)
     if num_residues < 10:
         return False, f"Only {num_residues} amino acid residues, need at least 10"
 
