@@ -35,32 +35,59 @@ def is_ether_lipid(smiles: str):
     else:
         return False, "Glycerol substructure not found"
 
-    # Look for at least one ether group connected to a glycerol carbon (C-O-C), the glycerol carbon
-    # must be connected to the ether oxygen
-    ether_pattern = Chem.MolFromSmarts("[CH2X4,CHX4]-O-[CX4]")
+    # Look for at least one ether group connected to a glycerol carbon (C-O-C) or (C=C-O-C), 
+    # the glycerol carbon must be connected to the ether oxygen
+    ether_pattern = Chem.MolFromSmarts("[CH2X4,CHX4;!$(C=O)]-[OX2]-[CX4]") # Changed to prevent ester linkages
+    ether_pattern2 = Chem.MolFromSmarts("[C,c]=[C,c]-[OX2]-[CX4]") #Handles P-lipids
     ether_matches = mol.GetSubstructMatches(ether_pattern)
+    ether_matches2 = mol.GetSubstructMatches(ether_pattern2)
+
 
     has_valid_ether = False
     if ether_matches:
       for match in ether_matches:
+        #check if the oxygen is connected to a glycerol carbon
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetSymbol() == 'O':
+                neighbors = [n.GetIdx() for n in atom.GetNeighbors()]
+                glycerol_neighbors = [n for n in neighbors if n in glycerol_carbons]
+                if glycerol_neighbors:
+                    other_neighbors = [mol.GetAtomWithIdx(x) for x in neighbors if x not in glycerol_neighbors]
+                    if len(other_neighbors) > 0 and other_neighbors[0].GetSymbol() == 'C':
+                       has_valid_ether = True
+                       break
+        if has_valid_ether:
+            break
+    if not has_valid_ether and ether_matches2:
+      for match in ether_matches2:
           #check if the oxygen is connected to a glycerol carbon
           for atom_idx in match:
              atom = mol.GetAtomWithIdx(atom_idx)
              if atom.GetSymbol() == 'O':
                 neighbors = [n.GetIdx() for n in atom.GetNeighbors()]
-                if len(set(neighbors) & set(glycerol_carbons)) > 0:
-                    has_valid_ether = True
-                    break
+                glycerol_neighbors = [n for n in neighbors if n in glycerol_carbons]
+                if glycerol_neighbors:
+                    other_neighbors = [mol.GetAtomWithIdx(x) for x in neighbors if x not in glycerol_neighbors]
+                    if len(other_neighbors) > 0 and other_neighbors[0].GetSymbol() == 'C':
+                       has_valid_ether = True
+                       break
           if has_valid_ether:
-              break
+            break
 
     if not has_valid_ether:
         return False, "No valid ether linkage found on glycerol"
-    
+
     #Check for long carbon chains
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
         return False, f"Missing fatty acid chains"
+
+    # Check molecular weight - lipids typically >300 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for ether lipid"
+
     
     return True, "Contains glycerol backbone with at least one fatty acid chain attached via ether bond"
