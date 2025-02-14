@@ -17,14 +17,14 @@ def is_2_5_diketopiperazines(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string to a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Refined SMARTS pattern to allow substitutions (R groups) and stereochemistry
-    # The pattern focuses on ensuring C(=O)N substructure at appropriate positions within a six-membered ring
-    diketopiperazine_pattern = Chem.MolFromSmarts("C1(=O)N(R)CC(=O)N(R)C1")
+    # SMARTS pattern for 2,5-diketopiperazines: 
+    # An N-C-C-N ring structure with =O at 2nd and 5th position of this 6-membered ring
+    diketopiperazine_pattern = Chem.MolFromSmarts("C1=O-N-C-C-N-C1=O")
     
     if mol.HasSubstructMatch(diketopiperazine_pattern):
         return True, "Contains a piperazine-2,5-dione skeleton"
