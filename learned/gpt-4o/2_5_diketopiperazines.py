@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_2_5_diketopiperazines(smiles: str):
     """
     Determines if a molecule is a 2,5-diketopiperazine based on its SMILES string.
-    A 2,5-diketopiperazine is characterized by a six-membered ring with two nitrogen atoms
-    and ketone groups on the carbons adjacent to these nitrogens.
+    A 2,5-diketopiperazine has a piperazine-2,5-dione skeleton, featuring a six-membered ring
+    with alternating carbon and nitrogen atoms and ketone groups at positions 2 and 5.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,16 +17,13 @@ def is_2_5_diketopiperazines(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string to a molecule object
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS pattern for 2,5-diketopiperazines:
-    # A six-membered ring (with any carbon substitution) containing C(=O)N and NC(=O)
-    # This pattern ensures only the core structure is specified with flexibility in substitutions
-    diketopiperazine_pattern = Chem.MolFromSmarts("N1C(=O)CNC(=O)C1")
-
+    # Define the SMARTS pattern for a 2,5-diketopiperazine
+    diketopiperazine_pattern = Chem.MolFromSmarts("C1(=O)NCC(=O)NC1")
     if mol.HasSubstructMatch(diketopiperazine_pattern):
         return True, "Contains a piperazine-2,5-dione skeleton"
     
