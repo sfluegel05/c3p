@@ -43,7 +43,7 @@ def is_metal_atom(smiles: str):
                     "Cu","Ag","Au","Rg",
                     "Zn","Cd","Hg","Cn",
                     "Al","Ga","In","Tl",
-                    "Ge","Sn","Pb",
+                     "Ge","Sn","Pb",
                     "Sb","Bi",
                     "Po"]:
                 return True, "Single metal atom"
