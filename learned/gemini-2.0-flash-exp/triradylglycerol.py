@@ -28,10 +28,61 @@ def is_triradylglycerol(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # 2. Check for three radyl groups - we combine the SMARTS of possible linkages
-    radyl_pattern = Chem.MolFromSmarts("[OX2]-[CX3,CX4]=[OX1];!@[CH2X4][CHX4][CH2X4], [OX2]-[CX4];!@[CH2X4][CHX4][CH2X4],[OX2]-[CX3]=[CX3];!@[CH2X4][CHX4][CH2X4]")
-    radyl_matches = mol.GetSubstructMatches(radyl_pattern)
+    # 2. Check for three radyl groups - separate checks for acyl, alkyl, and alk-1-enyl
+    acyl_pattern = Chem.MolFromSmarts("[OX2]-[CX3](=[OX1])")
+    alkyl_pattern = Chem.MolFromSmarts("[OX2]-[CX4]")
+    alkenyl_pattern = Chem.MolFromSmarts("[OX2]-[CX3]=[CX3]")
 
+
+    radyl_matches = []
+
+    glycerol_atoms = mol.GetSubstructMatches(glycerol_pattern)[0]
+    
+    for atom in glycerol_atoms:
+        attached_atoms = []
+        
+        glycerol_atom = mol.GetAtomWithIdx(atom)
+        for neighbor in glycerol_atom.GetNeighbors():
+            if neighbor.GetIdx() not in glycerol_atoms:
+                attached_atoms.append(neighbor)
+
+        for attached_atom in attached_atoms:
+            is_radyl = False
+            
+            #check acyl
+            acyl_match = mol.GetSubstructMatches(acyl_pattern)
+            for match in acyl_match:
+                if attached_atom.GetIdx() == match[0]:
+                    is_radyl = True
+                    break
+            if is_radyl:
+               radyl_matches.append(attached_atom.GetIdx())
+               continue
+            
+            #check alkyl
+            alkyl_match = mol.GetSubstructMatches(alkyl_pattern)
+            for match in alkyl_match:
+                if attached_atom.GetIdx() == match[0]:
+                    is_radyl = True
+                    break
+            if is_radyl:
+                radyl_matches.append(attached_atom.GetIdx())
+                continue
+
+            #check alkenyl
+            alkenyl_match = mol.GetSubstructMatches(alkenyl_pattern)
+            for match in alkenyl_match:
+                if attached_atom.GetIdx() == match[0]:
+                    is_radyl = True
+                    break
+            if is_radyl:
+                radyl_matches.append(attached_atom.GetIdx())
+                continue
+                
+            if not is_radyl:
+               return False, "Not all positions have valid radyl groups"
+                
+    
     if len(radyl_matches) != 3:
        return False, f"Found {len(radyl_matches)} radyl groups, need exactly 3"
 
