@@ -8,25 +8,28 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from collections import deque
 
-def find_path_to_cooh(mol, start_atom_idx, cooh_carbon_idx):
-    """Helper function to find shortest path between two atoms"""
+def get_longest_carbon_chain(mol, start_idx):
+    """Find the longest continuous carbon chain from a starting point"""
     visited = set()
-    queue = deque([(start_atom_idx, [start_atom_idx])])
+    longest_path = []
     
-    while queue:
-        current_idx, path = queue.popleft()
-        if current_idx == cooh_carbon_idx:
-            return path
+    def dfs(atom_idx, current_path):
+        nonlocal longest_path
+        visited.add(atom_idx)
+        current_path.append(atom_idx)
+        
+        if len(current_path) > len(longest_path):
+            longest_path = current_path.copy()
             
-        atom = mol.GetAtomWithIdx(current_idx)
+        atom = mol.GetAtomWithIdx(atom_idx)
         for neighbor in atom.GetNeighbors():
-            n_idx = neighbor.GetIdx()
-            if n_idx not in visited:
-                visited.add(n_idx)
-                new_path = list(path)
-                new_path.append(n_idx)
-                queue.append((n_idx, new_path))
-    return None
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                dfs(neighbor.GetIdx(), current_path)
+        current_path.pop()
+        visited.remove(atom_idx)
+    
+    dfs(start_idx, [])
+    return longest_path
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
@@ -44,7 +47,7 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for carboxylic acid groups
+    # Look for carboxylic acid group
     carboxylic_pattern = Chem.MolFromSmarts("[OX2H][CX3](=[OX1])")
     cooh_matches = mol.GetSubstructMatches(carboxylic_pattern)
     
@@ -53,62 +56,61 @@ def is_omega_hydroxy_fatty_acid(smiles: str):
     if len(cooh_matches) > 1:
         return False, "Multiple carboxylic acid groups found"
     
-    # Look for amide bonds (to exclude peptides)
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
-    if mol.HasSubstructMatch(amide_pattern):
-        return False, "Contains amide bonds (peptide-like structure)"
-    
     # Get the carboxylic acid carbon
     cooh_carbon_idx = cooh_matches[0][1]
     
-    # Find hydroxyl groups (excluding the one in COOH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
-    oh_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    # Find terminal hydroxyl groups
+    terminal_oh_pattern = Chem.MolFromSmarts("[CX4][OX2H]")
+    oh_matches = mol.GetSubstructMatches(terminal_oh_pattern)
     
     if not oh_matches:
-        return False, "No suitable hydroxyl groups found"
+        return False, "No hydroxyl groups found"
     
-    # Check carbon chain characteristics
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 3:
-        return False, "Carbon chain too short"
-    
-    # Find the terminal carbon with hydroxyl that's furthest from COOH
-    max_path_length = 0
-    valid_terminal_oh = False
-    
+    # Find valid terminal hydroxyl groups
+    valid_terminal_oh = []
     for match in oh_matches:
-        carbon_idx = match[0]  # Carbon attached to OH
-        atom = mol.GetAtomWithIdx(carbon_idx)
+        carbon_idx = match[0]
+        carbon = mol.GetAtomWithIdx(carbon_idx)
         
-        # Check if this carbon is terminal (only one carbon neighbor)
-        carbon_neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
-        if len(carbon_neighbors) != 1:
-            continue
-            
-        # Find path to COOH
-        path = find_path_to_cooh(mol, carbon_idx, cooh_carbon_idx)
-        if path and len(path) > max_path_length:
-            max_path_length = len(path)
-            valid_terminal_oh = True
+        # Check if carbon is terminal (only one carbon neighbor)
+        carbon_neighbors = [n for n in carbon.GetNeighbors() if n.GetAtomicNum() == 6]
+        if len(carbon_neighbors) == 1:
+            valid_terminal_oh.append(carbon_idx)
     
     if not valid_terminal_oh:
-        return False, "No valid terminal hydroxyl group found"
+        return False, "No terminal hydroxyl groups found"
     
-    # Verify chain characteristics
+    # Check ring characteristics
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 1:  # Allow up to 1 ring (for epoxy groups)
-        return False, "Too many ring structures"
+    ring_atoms = set()
+    for ring in ring_info.AtomRings():
+        ring_atoms.update(ring)
+        if len(ring) > 3:  # Allow only small (epoxy) rings
+            return False, "Contains large ring structure"
     
-    # Count branching points
-    branching_points = 0
+    # Find the longest carbon chain from COOH
+    main_chain = get_longest_carbon_chain(mol, cooh_carbon_idx)
+    if len(main_chain) < 3:
+        return False, "Carbon chain too short"
+    
+    # Check if any terminal OH is at the end of the longest chain
+    valid_omega_oh = False
+    for oh_carbon in valid_terminal_oh:
+        if oh_carbon in main_chain and main_chain.index(oh_carbon) in [0, len(main_chain)-1]:
+            valid_omega_oh = True
+            break
+    
+    if not valid_omega_oh:
+        return False, "No omega hydroxyl group found"
+    
+    # Additional structural checks
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6:
+            # Check for excessive branching
             carbon_neighbors = len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6])
-            if carbon_neighbors > 2:
-                branching_points += 1
+            if carbon_neighbors > 2 and atom.GetIdx() not in ring_atoms:
+                return False, "Structure too branched"
+        elif atom.GetAtomicNum() not in [1, 6, 8]:
+            return False, "Contains elements other than C, H, O"
     
-    if branching_points > 2:  # Allow limited branching
-        return False, "Structure too branched"
-        
-    return True, "Contains terminal (omega) hydroxyl and carboxylic acid in a primarily linear structure"
+    return True, "Contains terminal (omega) hydroxyl and carboxylic acid in a linear structure"
