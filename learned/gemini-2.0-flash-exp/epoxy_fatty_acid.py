@@ -38,6 +38,31 @@ def is_epoxy_fatty_acid(smiles: str):
     if not acid_matches:
         return False, "No carboxylic acid group found"
 
+
+    #Check number of oxygen atoms. Fatty acids usually have very few.
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count > 5:
+        return False, "Too many oxygen atoms for a fatty acid."
+
+
+    #Check number of rings that contain both the epoxide and carboxylic groups
+    for ep_match in epoxide_matches:
+       ep_atoms = [mol.GetAtomWithIdx(i) for i in ep_match]
+       for acid_match in acid_matches:
+        acid_atoms = [mol.GetAtomWithIdx(i) for i in acid_match]
+
+        for ep_atom in ep_atoms:
+            for acid_atom in acid_atoms:
+                if ep_atom.GetSymbol() == "C" and acid_atom.GetSymbol() == "C":
+                    
+                    #if there is a ring including the epoxide carbon and the carboxylic carbon, then its not a fatty acid
+                    ring_info = mol.GetRingInfo()
+                    for ring in ring_info.AtomRings():
+                       if ep_atom.GetIdx() in ring and acid_atom.GetIdx() in ring:
+                            return False, "Epoxide and carboxylic acid are part of a ring"
+
+
+
     # Check if the epoxide and the acid are linked by a carbon chain
     # We look for a chain of at least 4 carbons connected to the epoxide and the acid group
     # Create SMARTS pattern for a chain linking the epoxide to the acid. We start from the carbons of the epoxide
@@ -50,31 +75,63 @@ def is_epoxy_fatty_acid(smiles: str):
                  if ep_atom.GetSymbol() == "C" and acid_atom.GetSymbol() == "C": # both ends must be carbon
                     
                    # Check if there is a path between the epoxide carbon and the acid carbon
-                   path = Chem.GetShortestPath(mol, ep_atom.GetIdx(), acid_atom.GetIdx())
+                   #Now we will check if there is a carbon chain of at least 3 carbons
+                   
+                   #search for a general path between them. We use recursive method.
+                   def find_path_recursive(current_atom, target_atom, visited, path):
+                    
+                        visited.add(current_atom.GetIdx())
+                        path.append(current_atom)
+
+                        if current_atom.GetIdx() == target_atom.GetIdx():
+                             return path
+                        
+                        for neighbor in current_atom.GetNeighbors():
+                            if neighbor.GetIdx() not in visited and neighbor.GetSymbol() == "C":
+                                result = find_path_recursive(neighbor, target_atom, visited.copy(), path.copy())
+                                if result:
+                                    return result
+
+                        return None
+                   
+                   path = find_path_recursive(ep_atom, acid_atom, set(), [])
+
                    if path is None:
                         continue #no path between this epoxide/acid pair, try the next
+
+
+                   if len(path) < 5: # at least a chain of 3 carbons between them. the 2 end atoms are C too
+                        continue
+
+                   all_carbons = True
+                   for atom_in_path in path[1:-1]:
+                       if atom_in_path.GetSymbol() != "C":
+                            all_carbons = False
+                            break
+                   if not all_carbons:
+                        continue
+
                    
-                   #check path length and atom types within the path. Should consist of carbon chains
-                   if len(path) >= 5:  # min chain length 4 carbons.  Also must have an O on one end
-                      all_carbons = True
-                      for atom_idx in path[1:-1]: # do not check starting and final atoms since those are ep/acid
-                            if mol.GetAtomWithIdx(atom_idx).GetSymbol() != "C":
-                                all_carbons = False
-                                break
-                      if all_carbons: # check also if it contains double or triple bonds. If it does, its still a fatty acid
-                           
-                            #check total chain length
-                            n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-                            if n_rotatable < 5: # fatty acids should be at least this long
-                                return False, "Chain too short for a fatty acid"
+                   # Count rotatable bonds to verify long chains, more flexible way of counting carbons
+                   n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+                   if n_rotatable < 6:
+                        return False, "Chain too short for a fatty acid"
 
-                            #Check the number of carbons
-                            c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-                            if c_count < 12: # typical fatty acid
-                                return False, "Too few carbons for a fatty acid"
+                   #Check the number of carbons, must be greater than 12.
+                   c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+                   if c_count < 12:
+                        return False, "Too few carbons for a fatty acid"
+                    
+                   # check the number of double bonds
+                   double_bond_count = 0
+                   for bond in mol.GetBonds():
+                        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                            double_bond_count += 1
+                   if double_bond_count > 6:
+                        return False, "Too many double bonds for a fatty acid"
 
 
-                            return True, "Contains an epoxide ring and a fatty acid chain"
+                   return True, "Contains an epoxide ring and a fatty acid chain"
     
     # if we reach here, it means no path was found
     return False, "No fatty acid chain linking the epoxide and the carboxylic acid group"
