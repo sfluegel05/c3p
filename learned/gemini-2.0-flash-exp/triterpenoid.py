@@ -22,33 +22,26 @@ def is_triterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a minimum number of rings
-    ring_pattern = Chem.MolFromSmarts("[R]1[R][R][R]1") #minimal ring with 4 atoms
-    ring_matches = mol.GetSubstructMatches(ring_pattern)
-    if len(ring_matches) < 4:
-      return False, f"Too few rings, got {len(ring_matches)}, need at least 4."
+    # Check for a minimum number of rings using rdMolDescriptors
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    if num_rings < 4:
+      return False, f"Too few rings, got {num_rings}, need at least 4."
 
     # Check carbon count
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 27 or c_count > 33 :
+    if c_count < 20 or c_count > 35:
        return False, f"Carbon count out of range {c_count}. Triterpenoids must have ~30 C."
         
     # Check oxygen count
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 1 or o_count > 10:
-        return False, f"Oxygen count out of range {o_count}, requires 1 to 10 oxygens."
-
-    # Check methyl groups
-    methyl_pattern = Chem.MolFromSmarts("[CH3]")
-    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
-    if len(methyl_matches) < 4 :
-        return False, f"Too few methyl groups, got {len(methyl_matches)}, needs at least 4."
+    if o_count < 0 or o_count > 15:
+        return False, f"Oxygen count out of range {o_count}, requires between 0 to 15 oxygens."
 
 
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400 or mol_wt > 800:
-        return False, f"Molecular weight out of range {mol_wt}, must be between 400 and 800."
+    if mol_wt < 350 or mol_wt > 1000:
+        return False, f"Molecular weight out of range {mol_wt}, must be between 350 and 1000."
 
 
-    return True, "Meets criteria for a triterpenoid (multiple rings, appropriate C count, O count, methyl count, and molecular weight)"
+    return True, "Meets criteria for a triterpenoid (multiple rings, appropriate C count, O count, and molecular weight)"
