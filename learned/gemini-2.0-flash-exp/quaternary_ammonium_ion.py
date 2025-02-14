@@ -2,11 +2,12 @@
 Classifies: CHEBI:35267 quaternary ammonium ion
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_quaternary_ammonium_ion(smiles: str):
     """
     Determines if a molecule is a quaternary ammonium ion based on its SMILES string.
-    A quaternary ammonium ion is a positively charged nitrogen with four single bonds to non-hydrogen atoms.
+    A quaternary ammonium ion is a positively charged nitrogen with four single bonds to non-hydrogen atoms (usually carbons).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,17 +21,12 @@ def is_quaternary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate through atoms to find nitrogens
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7: # Nitrogen has atomic number 7
-            # Check if positively charged
-            if atom.GetFormalCharge() == 1:
-                #Check number of non-hydrogen neighbors
-                non_h_neighbors = 0
-                for neighbor in atom.GetNeighbors():
-                  if neighbor.GetAtomicNum() != 1:
-                    non_h_neighbors += 1
-                if non_h_neighbors == 4:
-                    return True, "Positively charged nitrogen with four bonds to non-hydrogen atoms found."
-                
-    return False, "No positively charged nitrogen with four bonds to non-hydrogen atoms found."
+    # Define the SMARTS pattern for a quaternary ammonium ion
+    # [N+] is a positively charged nitrogen
+    # [C] means a carbon atom
+    quaternary_ammonium_pattern = Chem.MolFromSmarts("[N+]([C])([C])([C])[C]")
+    
+    if mol.HasSubstructMatch(quaternary_ammonium_pattern):
+         return True, "Quaternary ammonium ion pattern found: Positively charged nitrogen with four single bonds to carbon atoms."
+    
+    return False, "No quaternary ammonium ion pattern found: Positively charged nitrogen with four single bonds to carbon atoms."
