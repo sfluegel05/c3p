@@ -2,8 +2,6 @@
 Classifies: CHEBI:16385 organic sulfide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-
 
 def is_organic_sulfide(smiles: str):
     """
@@ -29,11 +27,11 @@ def is_organic_sulfide(smiles: str):
         return False, "No sulfur atom found"
     
     for sulfur_atom in sulfur_atoms:
-        carbon_neighbors = 0
+        non_hydrogen_neighbors = 0
         for neighbor in sulfur_atom.GetNeighbors():
-          if neighbor.GetSymbol() == 'C':
-            carbon_neighbors += 1
-        if carbon_neighbors >= 2:
-          return True, "Has the structure R-S-R' (R and R' not hydrogen)"
+          if neighbor.GetSymbol() != 'H':
+              non_hydrogen_neighbors += 1
+        if non_hydrogen_neighbors >= 2:
+            return True, "Has the structure R-S-R' (R and R' not hydrogen)"
     
-    return False, "Sulfur is not bonded to at least two carbon atoms."
+    return False, "Sulfur is not bonded to at least two non-hydrogen atoms."
