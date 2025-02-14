@@ -23,11 +23,16 @@ def is_carbapenems(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the core carbapenem structure using SMARTS
-    # Matches the bicyclic core with a 4-membered nitrogen containing ring
-    # attached to a 5 membered ring
-    carbapenem_core_smarts = "[N]12[C@]([H])([C@@H](C1=O)[H])([C@@H]1[C@H]2C=C1)"
-    carbapenem_core_pattern = Chem.MolFromSmarts(carbapenem_core_smarts)
-    if not mol.HasSubstructMatch(carbapenem_core_pattern):
+    # Allow for variation in the N position and ring double bond and sterochemistry
+    carbapenem_core_smarts1 = "[N]1[C@H]2[C@H](C1=O)C[C@@H]2"
+    carbapenem_core_smarts2 = "[C]1[C@H]2[C@H](N1C=O)C[C@@H]2"
+
+
+    carbapenem_core_pattern1 = Chem.MolFromSmarts(carbapenem_core_smarts1)
+    carbapenem_core_pattern2 = Chem.MolFromSmarts(carbapenem_core_smarts2)
+
+
+    if not (mol.HasSubstructMatch(carbapenem_core_pattern1) or mol.HasSubstructMatch(carbapenem_core_pattern2)):
        return False, "Core carbapenem structure not found"
 
     # Check for a carboxylic acid group (C(=O)O), which most carbapenems have
@@ -36,11 +41,6 @@ def is_carbapenems(smiles: str):
 
     if not mol.HasSubstructMatch(acid_group_pattern):
        return False, "No carboxylic acid group present"
-       
-    # Check for the presence of a sulfur substituent at position 3 (general feature)
-    sulfur_smarts = "[S]~[C]"
-    sulfur_pattern = Chem.MolFromSmarts(sulfur_smarts)
-    if not mol.HasSubstructMatch(sulfur_pattern):
-       return False, "No sulfur substituent found at the 3 position, this is unusual for carbapenems"
+
 
     return True, "Contains the core carbapenem structure and an acid group"
