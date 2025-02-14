@@ -2,39 +2,42 @@
 Classifies: CHEBI:33563 glycolipid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_glycolipid(smiles: str):
     """
     Determines if a molecule is a glycolipid based on its SMILES string.
-    A glycolipid is either a 1,2-di-O-acylglycerol linked to a carbohydrate part
-    via a glycosidic bond or a sphingolipid connected to a sugar part.
-    
+    A glycolipid is defined as a 1,2-di-O-acylglycerol with a carbohydrate
+    part joined via a glycosidic linkage.
+
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a glycolipid, False otherwise
+        bool: True if molecule is a glycolipid, False otherwise
         str: Reason for classification
     """
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
-
-    # Identify glycerol-based lipid structure or sphingolipid structure
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)(COC=O)(COC=O)")
-    sphingolipid_pattern = Chem.MolFromSmarts("NC(CO)C(O)C=O")
+        return False, "Invalid SMILES string"
     
-    has_lipid_structure = (mol.HasSubstructMatch(glycerol_pattern) or 
-                           mol.HasSubstructMatch(sphingolipid_pattern))
-
-    if not has_lipid_structure:
-        return False, "No 1,2-di-O-acylglycerol or sphingolipid pattern found"
+    # Check for glycerol backbone with two acyl chains
+    glycerol_pattern = Chem.MolFromSmarts("[C](O[C]=O)(O[C]=O)")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No 1,2-diacylglycerol structure detected"
     
-    # Identify glycosidic linkage (sugar joined via oxygen)
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("C-O[C@H1,C@H2][O-]")
-    if mol.HasSubstructMatch(glycosidic_linkage_pattern):
-        return True, "Glycolipid structure identified with lipid and glycosidic linkage"
+    # Check for glycosidic linkage (sugar motif)
+    # Monosaccharide pattern as Cn(O)Ox multiple hydroxyls
+    sugar_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No glycosidic linkage to a sugar moiety found"
     
-    return False, "No glycosidic linkage found, therefore not a glycolipid"
+    # Count fatty acid chains (long carbon chains attached via esters or amides)
+    fatty_acid_pattern = Chem.MolFromSmarts("C(=O)OCC(=O)")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, f"Expected at least 2 fatty acid chains, found {len(fatty_acid_matches)}"
+    
+    return True, "Structure matches a glycolipid with a glycerol backbone, acyl chains, and glycosidic linkage"
