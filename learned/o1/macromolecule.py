@@ -6,8 +6,6 @@ Classifies: macromolecule
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import BRICS
-from rdkit.Chem import rdFingerprintGenerator
 
 def is_macromolecule(smiles: str):
     """
@@ -23,34 +21,39 @@ def is_macromolecule(smiles: str):
         bool: True if molecule is a macromolecule, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+    try:
+        # Parse SMILES
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return False, "Invalid SMILES string"
 
-    # Calculate molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 1000:
-        return False, f"Molecular weight is {mol_wt:.2f} Da, which is below the macromolecule threshold"
+        # Calculate molecular weight
+        mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+        if mol_wt < 1000:
+            return False, f"Molecular weight is {mol_wt:.2f} Da, which is below typical macromolecule mass"
 
-    # Generate molecular fingerprint
-    fp_generator = rdFingerprintGenerator.GetRDKitFPGenerator(maxPath=5)
-    fp = fp_generator.GetFingerprint(mol)
+        # Define common linkage patterns in macromolecules
+        peptide_bond = Chem.MolFromSmarts("C(=O)N")
+        glycosidic_bond = Chem.MolFromSmarts("[CX4H]O[CX4H]")  # Simplified pattern for sugar linkages
+        ester_bond = Chem.MolFromSmarts("C(=O)O[CX4H]")
+        amide_bond = Chem.MolFromSmarts("C(=O)N[CX4H]")
 
-    # Count subgraph frequencies
-    substructures = {}
-    for atom in mol.GetAtoms():
-        env = Chem.FindAtomEnvironmentOfRadiusN(mol, radius=1, atomIdx=atom.GetIdx())
-        submol = Chem.PathToSubmol(mol, env)
-        smi = Chem.MolToSmiles(submol, canonical=True)
-        if smi:
-            substructures[smi] = substructures.get(smi, 0) + 1
+        bond_patterns = [peptide_bond, glycosidic_bond, ester_bond, amide_bond]
+        pattern_names = ['peptide bonds', 'glycosidic bonds', 'ester bonds', 'amide bonds']
+        repeating_units_detected = []
 
-    # Identify repeating units
-    repeating_units = {smi: count for smi, count in substructures.items() if count > 1}
+        # Check for repeating linkage patterns
+        for pattern, name in zip(bond_patterns, pattern_names):
+            matches = mol.GetSubstructMatches(pattern)
+            if len(matches) > 3:  # Threshold for considering repeating units
+                repeating_units_detected.append(name)
 
-    if not repeating_units:
-        return False, "No repeating units detected in the molecule"
+        if not repeating_units_detected:
+            return False, "No repeating units detected in the molecule"
 
-    # If we reach here, the molecule is large and has repeating units
-    return True, f"Molecule is a macromolecule with molecular weight {mol_wt:.2f} Da and repeating units detected"
+        # If we reach here, the molecule is large and has repeating units
+        reasons = f"Molecule is a macromolecule with molecular weight {mol_wt:.2f} Da and contains repeating units: {', '.join(repeating_units_detected)}"
+        return True, reasons
+
+    except Exception as e:
+        return False, f"An error occurred during processing: {str(e)}"
