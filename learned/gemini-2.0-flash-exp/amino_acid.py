@@ -13,25 +13,32 @@ def is_amino_acid(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-         tuple(bool, str): True if molecule is an amino acid, False otherwise and the reason.
+        tuple(bool, str): True if molecule is an amino acid, False otherwise and the reason.
     """
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # SMARTS for amino group (primary, secondary, tertiary, protonated)
-    # explicitly specify hydrogens for explicit match or include charged N
-    amino_pattern = Chem.MolFromSmarts("[NX3H2,NX3H1,NX3H0+,NX3+,NX2H1,NX2H0]")
-    # SMARTS for carboxylic acid group, excluding those in amides and esters
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX1H0,OX2H1]")
     
+    # Define SMARTS patterns for amino and carboxylic acid groups
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0]") # includes primary, secondary and tertiary amines
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX1H0,OX2H1]") # covers carboxylate and carboxylic acid forms
 
+    # Check for presence of amino group
     if not mol.HasSubstructMatch(amino_pattern):
         return False, "No amino group found"
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxylic acid group found"
     
-    # If we reach this point, it means there is at least one amino and one carboxyl group.
-    return True, "Contains at least one amino and one carboxylic acid group"
+    # Check for presence of carboxylic acid group
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+          return False, "No carboxylic acid group found"
+
+    # Check if it's an alpha amino acid by looking for 1 carbon distance between the carboxyl carbon and the amino nitrogen
+    alpha_amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0][CX4][CX3](=[OX1])[OX2]")
+
+    #if an alpha amino acid is found, then return True and the appropriate reason.
+    if mol.HasSubstructMatch(alpha_amino_acid_pattern):
+        return True, "Contains both amino and carboxylic acid groups with alpha carbon"
+    
+    # if not an alpha amino acid return true because it contains an amino and carboxylic acid
+    return True, "Contains both amino and carboxylic acid groups"
