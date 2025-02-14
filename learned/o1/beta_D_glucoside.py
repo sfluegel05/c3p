@@ -6,6 +6,7 @@ Classifies: beta-D-glucoside
 """
 
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_beta_D_glucoside(smiles: str):
     """
@@ -19,20 +20,21 @@ def is_beta_D_glucoside(smiles: str):
         bool: True if molecule is a beta-D-glucoside, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for beta-D-glucoside
-    beta_d_glucoside_smarts = "[C@H]1([O][#6])[O][C@@H]([C@@H](O)[C@@H](O)[C@H]1O)O"
+    # This pattern represents a glucose ring with beta linkage at C1
+    beta_d_glucoside_smarts = "[C@H]1([O][#6])[O][C@@H]([C@H]([C@H]([C@H]1O)O)O)O"
     beta_d_glucoside_pattern = Chem.MolFromSmarts(beta_d_glucoside_smarts)
     if beta_d_glucoside_pattern is None:
         return False, "Error in SMARTS pattern"
 
-    # Search for matches with chirality considered
-    matches = mol.GetSubstructMatches(beta_d_glucoside_pattern, useChirality=True)
+    # Search for matches
+    matches = mol.GetSubstructMatches(beta_d_glucoside_pattern)
     if matches:
         return True, "Contains beta-D-glucoside unit"
     else:
