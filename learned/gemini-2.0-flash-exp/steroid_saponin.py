@@ -23,34 +23,27 @@ def is_steroid_saponin(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS patterns for steroid core and glycosidic linkages
-    # Steroid core (gonane ring system with common substitutions)
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C]([C]([C]([C]2[C]1([C]([C]([C]3[C]2([C]([C]([C]([C]3)([C]4)[C])([C]5)[C])([C]4)C)C)C)C)C)C")
+    # Simplified steroid core pattern: four fused rings with some variability.
+    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C][C]3[C][C]4[C]([C]1)[C]2[C]34")
+    if steroid_core_pattern is None:
+        return None, "Could not create steroid core pattern" # sanity check
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "No steroid core found."
     
-    # Check for glycosidic linkages: Carbon-O-Sugar
-    glycosidic_linkage_pattern = Chem.MolFromSmarts("[CX4][OX2][C](O)")
+    # Check for glycosidic linkages (ring carbon-O-sugar carbon)
+    glycosidic_linkage_pattern = Chem.MolFromSmarts("[C;R][O][C;R](O)")
+    if glycosidic_linkage_pattern is None:
+         return None, "Could not create glycosidic linkage pattern"  # sanity check
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_linkage_pattern)
     if len(glycosidic_matches) == 0 :
       return False, "No glycosidic linkage found. Thus not a saponin"
     
-    # Check for sugar presence
-    sugar_pattern = Chem.MolFromSmarts("[C][C](O)[C](O)[C](O)[C](O)[C]")
+    # Check for sugar presence (ring containing multiple O)
+    sugar_pattern = Chem.MolFromSmarts("[C]1[C](O)[C](O)[C](O)[C](O)[C]1")
+    if sugar_pattern is None:
+        return None, "Could not create sugar pattern" # sanity check
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     if len(sugar_matches) == 0 :
       return False, "No sugar moiety found. Thus not a saponin"
     
-    # Check molecular weight: steroid saponins are relatively large
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-      return False, "Molecular weight too low to be a steroidal saponin"
-
-    # Check number of carbons and oxygens: steroid saponins are large and have several oxygens.
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 20:
-        return False, "Too few carbons to be steroidal saponin"
-    if o_count < 5:
-        return False, "Too few oxygens to be steroidal saponin"
-
     return True, "Contains steroid core with glycosidic linkages and sugar moieties (i.e. is a steroid saponin)."
