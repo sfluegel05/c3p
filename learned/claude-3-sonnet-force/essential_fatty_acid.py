@@ -35,40 +35,32 @@ def is_essential_fatty_acid(smiles: str):
     
     # Check for carbon chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8 or n_rotatable > 20:
+    if n_rotatable < 5 or n_rotatable > 30:
         return False, "Carbon chain length not in the typical range for essential fatty acids"
     
     # Check for multiple double bonds (polyunsaturated)
     num_double_bonds = sum(1 for b in mol.GetBonds() if b.GetBondType() == Chem.BondType.DOUBLE)
-    if num_double_bonds < 2 or num_double_bonds > 6:
-        return False, "Number of double bonds not in the typical range for essential fatty acids"
+    if num_double_bonds < 2:
+        return False, "Not enough double bonds to be a polyunsaturated fatty acid"
     
-    # Check for all cis double bonds
+    # Check for presence of cis double bonds
     smarts_cis = Chem.MolFromSmarts("/C=C/")
     cis_matches = mol.GetSubstructMatches(smarts_cis)
-    smarts_trans = Chem.MolFromSmarts("/C=C\\")
-    trans_matches = mol.GetSubstructMatches(smarts_trans)
-    if len(cis_matches) + len(trans_matches) != num_double_bonds:
-        return False, "Double bonds are not all in cis configuration"
-    
-    # Check for omega-3 or omega-6 double bond positioning
-    omega_3_pattern = Chem.MolFromSmarts("C\C=C/C\C=C/C\C=C/CCCCC(O)=O")
-    omega_6_pattern = Chem.MolFromSmarts("C\C=C/C\C=C/CCCCCCCC(O)=O")
-    if not mol.HasSubstructMatch(omega_3_pattern) and not mol.HasSubstructMatch(omega_6_pattern):
-        return False, "Double bond positioning not characteristic of omega-3 or omega-6 essential fatty acids"
+    if not cis_matches:
+        return False, "No cis double bonds found"
     
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 16 or c_count > 30:
+    if c_count < 10 or c_count > 40:
         return False, "Number of carbons not in the typical range for essential fatty acids"
     if o_count != 2:
         return False, "Must have exactly 2 oxygens (carboxylic acid)"
     
-    # Check molecular weight - essential fatty acids typically 200-400 Da
+    # Check molecular weight - essential fatty acids typically 150-500 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 400:
+    if mol_wt < 150 or mol_wt > 500:
         return False, "Molecular weight not in the typical range for essential fatty acids"
     
-    return True, "Polyunsaturated fatty acid with multiple cis double bonds, omega-3 or omega-6 positioning, and carboxylic acid group"
+    return True, "Polyunsaturated fatty acid with multiple cis double bonds and a carboxylic acid group"
