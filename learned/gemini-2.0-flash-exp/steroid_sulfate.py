@@ -23,9 +23,8 @@ def is_steroid_sulfate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the steroid core (tetracyclic ring system)
-    # This pattern is generic and may need refinement for unusual steroid structures
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]([C]1[C])([C][C]4[C]([C]2[C])([C][C]3[C]4))")
+    # Define a more general SMARTS pattern for the steroid core (tetracyclic ring system)
+    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]([C]1)([C][C]4[C]([C]2)([C][C]34))")
     if not mol.HasSubstructMatch(steroid_core_pattern):
          return False, "No steroid core found"
     
@@ -34,13 +33,6 @@ def is_steroid_sulfate(smiles: str):
     sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
     if len(sulfate_matches) == 0:
         return False, "No sulfate group found attached to a carbon atom"
-    
-
-    # Check for at least one sulfate group attached to the steroid core.
-    # This pattern is to check that the sulfate group is attached to one of the carbon atoms from the steroid_core_pattern
-    sulfate_carbon_pattern = Chem.MolFromSmarts("([C]1[C][C]2[C]3[C]([C]1[C])([C][C]4[C]([C]2[C])([C][C]3[C]4)))[CX4]-[OX2]-[SX4](=[OX1])(=[OX1])-[OX2]")
-    if not mol.HasSubstructMatch(sulfate_carbon_pattern):
-        return False, "No sulfate group directly attached to steroid core found."
     
     # Check if molecule contains at least 15 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
