@@ -27,37 +27,27 @@ def is_monosaccharide(smiles: str):
     if carbon_count < 3:
         return False, "Less than 3 carbon atoms"
 
-    # Check for aldehyde or ketone group
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[H]")  # C(=O)H
-    ketone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4]") # C(=O)C
+    # Check for at least one carbonyl group
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])")
+    if not mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "No carbonyl group"
     
-    has_carbonyl = mol.HasSubstructMatch(aldehyde_pattern) or mol.HasSubstructMatch(ketone_pattern)
-    if not has_carbonyl:
-        return False, "No aldehyde or ketone group"
+
+    # Check for glycosidic linkages (ether bond between rings)
+    glycosidic_pattern = Chem.MolFromSmarts("[CX4]~[OX2]~[CX4]")
+    glycosidic_matches = mol.GetSubstructMatches(glycosidic_pattern)
+    for match in glycosidic_matches:
+        oxygen_atom = mol.GetAtomWithIdx(match[1])
+        if oxygen_atom.IsInRing():
+            
+            neighbor_carbon_1 = mol.GetAtomWithIdx(match[0])
+            neighbor_carbon_2 = mol.GetAtomWithIdx(match[2])
+            if neighbor_carbon_1.IsInRing() and neighbor_carbon_2.IsInRing() :
+               return False, "Possible glycosidic linkage"
 
     # Count hydroxyl groups
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2][H]")  # -OH
     hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    
-    # Count other oxygens not in a carbonyl or a hydroxyl group
-    other_oxygens = 0
-    for atom in mol.GetAtoms():
-         if atom.GetAtomicNum() == 8:
-              if not atom.HasSubstituent(Chem.AtomFromSmarts("[H]")) and not atom.IsInRing(): # Skip carbonyl oxygen and hydroxyl
-                    other_oxygens +=1
 
-    if other_oxygens > 1 : # Glycosidic bond should not be present
-          return False, "Possible glycosidic linkage"
-    
 
-    # Check for at least 1 OH group for each C atom
-    if hydroxyl_count < carbon_count - 1 :
-        return False, "Not enough hydroxyl groups"
-    
-    # Check for molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 500:
-        return False, "Molecular weight too high for monosaccharide"
-
-    
     return True, "Meets criteria for a monosaccharide"
