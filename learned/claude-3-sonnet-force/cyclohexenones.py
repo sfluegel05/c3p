@@ -2,12 +2,12 @@
 Classifies: CHEBI:48953 cyclohexenones
 """
 """
-Classifies: CHEBI:38021 cyclohexenone
+Classifies: CHEBI:38021 cyclohexenones
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_cyclohexenone(smiles: str) -> tuple[bool, str]:
+def is_cyclohexenones(smiles: str) -> tuple[bool, str]:
     """
     Determines if a molecule is a cyclohexenone based on its SMILES string.
     A cyclohexenone is a six-membered alicyclic ketone with one double bond in the ring.
