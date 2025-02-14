@@ -31,17 +31,16 @@ def is_decanoate_ester(smiles: str):
     if len(decanoate_matches) == 0:
         return False, "No decanoate group found"
 
-    # Look for ester linkage (-C(=O)O-)
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) == 0:
-        return False, "No ester linkage found"
+    # Look for alcohol/phenol group (-O-[!#6])
+    alcohol_pattern = Chem.MolFromSmarts("O[!#6]")
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    if len(alcohol_matches) == 0:
+        return False, "No alcohol or phenol group found"
 
-    # Check if the decanoate group is part of the ester linkage
+    # Check if the decanoate group is connected to an alcohol/phenol group via an ester bond
     for decanoate_idx in decanoate_matches:
-        for ester_idx in ester_matches:
-            if decanoate_idx[1] == ester_idx[0]:
-                # Decanoate group is part of the ester linkage
-                return True, "Contains a decanoate group linked via an ester bond"
+        for alcohol_idx in alcohol_matches:
+            if any(mol.GetBondBetweenAtoms(decanoate_idx[1], alcohol_idx[0]).GetBondType() == Chem.BondType.ESTER):
+                return True, "Contains a decanoate group linked to an alcohol or phenol via an ester bond"
 
-    return False, "Decanoate group not linked via an ester bond"
+    return False, "Decanoate group not linked to an alcohol or phenol via an ester bond"
