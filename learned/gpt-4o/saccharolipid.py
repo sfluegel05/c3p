@@ -21,29 +21,32 @@ def is_saccharolipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more generalized pattern for a carbohydrate moiety: 
-    # Monosaccharides can vary widely, so include multiple recognizable features.
+    # Define patterns for diverse carbohydrate moieties
     carbohydrate_patterns = [
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C(O)C1"),  # Hexopyranose pattern
-        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),      # Pentose pattern
-        Chem.MolFromSmarts("[CX4](O)[CX4](O)[CX4](O)"),# Linear sugar-like structure
-        Chem.MolFromSmarts("OC[C@H](O)[C@H](O)C=O"),   # Open form of glucose
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C(O)C1"),  # Hexopyranose
+        Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1"),      # Pentopyranose
+        Chem.MolFromSmarts("[CX4](O)[CX4](O)[CX4](O)"),# Linear sugar-like
+        Chem.MolFromSmarts("OC[C@H](O)[C@H](O)C=O"),   # Open sugars
     ]
 
-    if not any(mol.HasSubstructMatch(pat) for pat in carbohydrate_patterns):
+    # Check for the presence of carbohydrate moieties
+    has_carbohydrate = any(mol.HasSubstructMatch(pat) for pat in carbohydrate_patterns)
+    if not has_carbohydrate:
         return False, "No recognized carbohydrate moiety pattern found"
 
-    # Define a pattern for a lipid moiety: longer hydrocarbon chain, ester or other typical lipid linkage
+    # Define patterns for lipid moieties
     lipid_patterns = [
-        Chem.MolFromSmarts("C(=O)[O,N][CX4][CX4]"),    # Fatty acid ester or amide
+        Chem.MolFromSmarts("C(=O)[O,N][CX4][CX4]"),    # Fatty acid ester/amide
         Chem.MolFromSmarts("C(=O)[O,N]C[C;R0]{6,}"),   # Long chain ester/amide
         Chem.MolFromSmarts("C(=O)O[C;R0]{5,}"),        # Ester linkage
     ]
 
-    if not any(mol.HasSubstructMatch(pat) for pat in lipid_patterns):
+    # Check for the presence of lipid moieties
+    has_lipid = any(mol.HasSubstructMatch(pat) for pat in lipid_patterns)
+    if not has_lipid:
         return False, "No recognized lipid moiety pattern found"
 
-    # Check for plausible linkages between detected carbohydrate and lipid parts
+    # Verify direct linkage between carbohydrate and lipid moieties
     for carb_pat in carbohydrate_patterns:
         carb_matches = mol.GetSubstructMatches(carb_pat)
         for lipid_pat in lipid_patterns:
@@ -55,4 +58,4 @@ def is_saccharolipid(smiles: str):
 
     return False, "Recognized moieties were not found to be directly linked"
 
-# Note: Due to structural diversity of saccharolipids, further expansion might still be needed for uncommon structures.
+# Note: Classification accuracy might still be improved with more specific patterns for the distinct variants of saccharolipids.
