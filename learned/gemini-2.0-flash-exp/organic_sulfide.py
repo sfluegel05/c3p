@@ -21,17 +21,16 @@ def is_organic_sulfide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of sulfur atom
-    sulfur_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'S']
-    if not sulfur_atoms:
-        return False, "No sulfur atom found"
-    
-    for sulfur_atom in sulfur_atoms:
-        non_hydrogen_neighbors = 0
-        for neighbor in sulfur_atom.GetNeighbors():
-          if neighbor.GetSymbol() != 'H':
-              non_hydrogen_neighbors += 1
-        if non_hydrogen_neighbors >= 2:
-            return True, "Has the structure R-S-R' (R and R' not hydrogen)"
-    
-    return False, "Sulfur is not bonded to at least two non-hydrogen atoms."
+    # Define the SMARTS pattern for an organic sulfide
+    sulfide_pattern = Chem.MolFromSmarts("[#6]~[#16]~[#6]")
+
+    # Check if the molecule matches the pattern
+    if mol.HasSubstructMatch(sulfide_pattern):
+        return True, "Has the structure R-S-R' (R and R' are carbon atoms)"
+    else:
+         # Check for presence of sulfur atom to make reason more precise
+        sulfur_atoms = [atom for atom in mol.GetAtoms() if atom.GetSymbol() == 'S']
+        if not sulfur_atoms:
+            return False, "No sulfur atom found"
+        else:
+            return False, "Sulfur is not bonded to at least two carbon atoms."
