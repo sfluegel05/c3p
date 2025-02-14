@@ -24,8 +24,8 @@ def is_epoxy_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for epoxide pattern ([O;R1]1[C@@;@R1]2[C@@;@R1][C@@;@R1][C@@;@R1][C@@;@R1][C@;@R1]2[C@;@R1]1)
-    epoxide_pattern = Chem.MolFromSmarts("[O;R1]1[C@@;@R1]2[C@@;@R1][C@@;@R1][C@@;@R1][C@@;@R1][C@;@R1]2[C@;@R1]1")
+    # Look for epoxide pattern (O1C2CCCCC2)
+    epoxide_pattern = Chem.MolFromSmarts("O1C2CCCCC2")
     if not mol.HasSubstructMatch(epoxide_pattern):
         return False, "No epoxide ring found"
 
@@ -33,6 +33,11 @@ def is_epoxy_fatty_acid(smiles: str):
     acid_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
+
+    # Look for long carbon chain (at least 8 carbons)
+    carbon_chain_pattern = Chem.MolFromSmarts("[C;H3]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "Carbon chain too short for fatty acid"
 
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -43,4 +48,4 @@ def is_epoxy_fatty_acid(smiles: str):
     if o_count < 2:
         return False, "Too few oxygens for epoxy fatty acid"
 
-    return True, "Contains an epoxide ring and a carboxylic acid group"
+    return True, "Contains an epoxide ring, a carboxylic acid group, and a long carbon chain"
