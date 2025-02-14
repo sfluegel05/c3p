@@ -5,8 +5,6 @@ Classifies: CHEBI:30527 flavin
 Classifies: flavin
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_flavin(smiles: str):
     """
@@ -16,7 +14,7 @@ def is_flavin(smiles: str):
     
     Args:
         smiles (str): SMILES string of the molecule
-    
+        
     Returns:
         bool: True if molecule is a flavin, False otherwise
         str: Reason for classification
@@ -27,9 +25,11 @@ def is_flavin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define the isoalloxazine core without substitutions
-    # This pattern matches the tricyclic ring system of isoalloxazine
-    isoalloxazine_smarts = 'O=C1NC2=NC(=O)N=C2N(C3=CC=CC=C13)'
+    # Define the isoalloxazine core with atom maps for positions 7, 8, and 10
+    isoalloxazine_smarts = """
+    [#6][$([#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1)]
+    -c2ncnc3nc(=O)[nH]c(=O)c23
+    """
     isoalloxazine_core = Chem.MolFromSmarts(isoalloxazine_smarts)
     if isoalloxazine_core is None:
         return None, "Error in defining isoalloxazine core SMARTS pattern"
@@ -39,44 +39,59 @@ def is_flavin(smiles: str):
         return False, "No isoalloxazine core found"
     
     # Get the matching substructure
-    matches = mol.GetSubstructMatches(isoalloxazine_core)
+    matches = mol.GetSubstructMatch(isoalloxazine_core)
     if not matches:
         return False, "No match for the isoalloxazine core"
     
-    # Verify methyl groups at positions 7 and 8
-    # Positions 7 and 8 correspond to the carbons adjacent to the benzene ring
-    methyl_positions_smarts = 'Cc1cc2nc3c(nc(=O)[nH]c3=O)n(c2cc1C)[N]'
-    methyl_pattern = Chem.MolFromSmarts(methyl_positions_smarts)
-    if methyl_pattern is None:
-        return None, "Error in defining methyl positions SMARTS pattern"
+    # Map indices to identify positions
+    match_atom_indices = {atom.GetIdx() for atom in mol.GetSubstructMatch(isoalloxazine_core)}
+    atom_positions = {}
+    for atom in isoalloxazine_core.GetAtoms():
+        atom_map_num = atom.GetAtomMapNum()
+        if atom_map_num:
+            atom_positions[atom_map_num] = matches[atom.GetIdx()]
     
-    if not mol.HasSubstructMatch(methyl_pattern):
+    # Check for methyl groups at positions 7 and 8
+    position7_idx = matches[0]  # Assuming position 7 is the first atom in pattern
+    position8_idx = matches[1]  # Assuming position 8 is the second atom in pattern
+    position7_atom = mol.GetAtomWithIdx(position7_idx)
+    position8_atom = mol.GetAtomWithIdx(position8_idx)
+    
+    # Check if atoms at positions 7 and 8 are carbons
+    if position7_atom.GetAtomicNum() != 6 or position8_atom.GetAtomicNum() != 6:
+        return False, "Positions 7 and 8 are not carbon atoms"
+    
+    # Check for methyl groups at positions 7 and 8
+    methyl7 = False
+    methyl8 = False
+    for neighbor in position7_atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() == 1:
+            methyl7 = True
+            break
+    for neighbor in position8_atom.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() == 1:
+            methyl8 = True
+            break
+    if not (methyl7 and methyl8):
         return False, "Methyl groups at positions 7 and 8 not found"
     
-    # Check for substituent at position 10
-    # Position 10 is the nitrogen atom in the pyrimidine ring
-    # Find the nitrogen atom at position 10
-    nitrogen10_smarts = '[nH]c1ncnc2c1n(C)c(=O)[nH]c2=O'
-    nitrogen10_pattern = Chem.MolFromSmarts(nitrogen10_smarts)
-    if nitrogen10_pattern is None:
-        return None, "Error in defining position 10 nitrogen SMARTS pattern"
-    
-    match = mol.GetSubstructMatch(nitrogen10_pattern)
-    if not match:
+    # Check for substituent at position 10 (nitrogen atom in central ring)
+    position10_atom = None
+    for atom in isoalloxazine_core.GetAtoms():
+        if atom.GetAtomicNum() == 7 and atom.GetDegree() == 3:
+            # Nitrogen with three bonds is likely position 10
+            position10_idx = matches[atom.GetIdx()]
+            position10_atom = mol.GetAtomWithIdx(position10_idx)
+            break
+    if position10_atom is None:
         return False, "Nitrogen at position 10 not found"
     
-    # Get the atom index of nitrogen at position 10
-    nitrogen_idx = match[0]
-    nitrogen_atom = mol.GetAtomWithIdx(nitrogen_idx)
-    
-    # Check if nitrogen has a substituent (connected to an atom outside the core)
-    substituent_found = False
-    for neighbor in nitrogen_atom.GetNeighbors():
-        if neighbor.GetIdx() not in match:
-            substituent_found = True
-            break
-    
-    if not substituent_found:
+    # Check if nitrogen at position 10 has a substituent (excluding ring bonds)
+    substituents = 0
+    for bond in position10_atom.GetBonds():
+        if not bond.IsInRing():
+            substituents += 1
+    if substituents == 0:
         return False, "No substituent found at position 10"
     
     return True, "Contains dimethylisoalloxazine core with substituent at position 10"
@@ -101,7 +116,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
