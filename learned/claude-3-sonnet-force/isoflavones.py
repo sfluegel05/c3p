@@ -1,26 +1,58 @@
 """
 Classifies: CHEBI:38757 isoflavones
 """
-Thank you for the feedback and additional information. Let me analyze the previous program and the outcomes:
+"""
+Classifies: CHEBI:28820 isoflavone
 
-The previous program attempted to classify molecules as isoflavones by checking for the presence of the isoflavone skeleton and considering various substituents. However, it seems that the approach was not comprehensive enough, leading to the failure in the benchmark.
+Any isoflavonoid with a 3-aryl-1-benzopyran-4-one (3-aryl-4H-chromen-4-one) skeleton and its substituted derivatives.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are a few potential issues and improvements:
+def is_isoflavone(smiles: str):
+    """
+    Determines if a molecule is an isoflavone based on its SMILES string.
 
-1. **Incomplete Skeleton Pattern**: The SMARTS pattern `"c1cc(-c2coc3cc(O)ccc3c2=O)ccc1"` used to identify the isoflavone skeleton might be too specific and may not cover all possible variations of the skeleton. A more general pattern that captures the core structure of 3-aryl-1-benzopyran-4-one (3-aryl-4H-chromen-4-one) might be required.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Limited Substituent Handling**: The program only checks for hydroxy and methoxy substituents. However, isoflavones can have a wider range of substituents, such as different alkyl groups, glycosides, sulfates, and more. A more comprehensive approach to handle substituents is needed.
-
-3. **Lack of Structural Constraints**: The program does not enforce structural constraints that are specific to isoflavones, such as the presence of a glycerol backbone or the number of oxygens and carbons. These constraints could help differentiate isoflavones from other chemical classes with similar skeletons.
-
-4. **Potential False Positives**: The program may classify molecules as isoflavones even if they do not strictly meet the definition provided. This could lead to false positives, which may explain the low F1 score.
-
-To improve the program, we can consider the following steps:
-
-1. Refine the SMARTS pattern for the isoflavone skeleton to cover all possible variations.
-2. Implement a more comprehensive approach to handle substituents, either by enumerating common substituents or using SMARTS patterns to identify them.
-3. Include structural constraints specific to isoflavones, such as the number of oxygens, carbons, and the presence of a glycerol backbone (if applicable).
-4. Carefully analyze the definition of isoflavones and ensure that the program accurately captures the requirements.
-5. Test the program thoroughly with a diverse set of positive and negative examples to identify and address potential false positives and false negatives.
-
-By addressing these issues and incorporating the necessary improvements, we can strive to create a more accurate and reliable program for classifying isoflavones.
+    Returns:
+        bool: True if molecule is an isoflavone, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for isoflavone skeleton pattern (3-aryl-1-benzopyran-4-one)
+    isoflavone_pattern = Chem.MolFromSmarts("c1cc(-c2oc3c(c2=O)c(O)cc(O)c3)ccc1")
+    if not mol.HasSubstructMatch(isoflavone_pattern):
+        return False, "No isoflavone skeleton found"
+    
+    # Check substituents
+    allowed_substituents = ['O', 'C', 'OC', 'Br', 'Cl', 'S', 'OS', 'CO', 'COC', 'OCC', 'OCCO', 'COCC', 'OCCOC', 'COCO']
+    substituents = [atom.GetSmarts() for atom in mol.GetAtoms() if atom.GetSymbol() not in ['H', 'C', 'O'] and atom.GetSmarts() not in allowed_substituents]
+    if substituents:
+        return False, f"Found disallowed substituents: {', '.join(substituents)}"
+    
+    # Check molecular weight - isoflavones typically 250-300 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for isoflavones"
+    
+    # Count oxygens, carbons, and heteroatoms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    hetero_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6, 8])
+    
+    if o_count < 3 or o_count > 10:
+        return False, "Oxygen count outside typical range for isoflavones"
+    if c_count < 15 or c_count > 30:
+        return False, "Carbon count outside typical range for isoflavones"
+    if hetero_count > 5:
+        return False, "Too many heteroatoms for isoflavone"
+    
+    return True, "Molecule contains the isoflavone skeleton with allowed substituents"
