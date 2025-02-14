@@ -1,20 +1,49 @@
 """
 Classifies: CHEBI:50699 oligosaccharide
 """
-Based on the error message and the failed test cases, it seems that the issue lies in the SMARTS pattern used to identify glycosidic linkages. The error suggests that the pattern `"[OC1C(O)C(O)C(O[C2C(O)C(O)C(O)C(O)C2])C(O)C1]"` is not matching correctly, possibly due to an issue with the nested ring structure or the specific arrangement of atoms.
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-To improve the program, we can take the following steps:
+def is_oligosaccharide(smiles: str) -> tuple[bool, str]:
+    """
+    Determines if a molecule is an oligosaccharide based on its SMILES string.
+    An oligosaccharide is a compound with monosaccharide units joined by glycosidic linkages.
 
-1. **Analyze the failed test cases**: Examine the SMILES strings of the false negatives and try to identify the common patterns or structures that are not being recognized as glycosidic linkages by the current SMARTS pattern.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Refine the SMARTS pattern**: Based on the analysis of the failed test cases, refine the SMARTS pattern to better capture the various types of glycosidic linkages present in oligosaccharides. This may involve breaking down the pattern into smaller components or using more general atom-type descriptions.
+    Returns:
+        bool: True if molecule is an oligosaccharide, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Consider alternative approaches**: Instead of relying solely on a single SMARTS pattern, consider alternative approaches to identify glycosidic linkages. For example, you could try to identify the acetal oxygen atoms and then check their connectivity to monosaccharide rings.
+    # Check for the presence of multiple monosaccharide rings
+    monosaccharide_rings = [r for r in mol.GetRingInfo().AtomRings() if len(r) in [5, 6]]
+    if len(monosaccharide_rings) < 2:
+        return False, "Fewer than two monosaccharide rings found"
 
-4. **Incorporate additional checks**: In addition to identifying monosaccharide rings and glycosidic linkages, you could incorporate additional checks to improve the accuracy of the classification. For example, you could check the presence of specific functional groups or atoms commonly found in oligosaccharides, or check the overall molecular weight or composition.
+    # Check for acetal oxygen atoms (indicative of glycosidic linkages)
+    acetal_oxygens = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetHybridization() == Chem.HybridizationState.SP3 and atom.GetTotalDegree() == 2]
 
-It's important to note that the SMARTS pattern approach may have inherent limitations, especially when dealing with more complex or diverse oligosaccharide structures. In such cases, it may be necessary to explore more sophisticated machine learning or rule-based approaches for accurate classification.
+    # Check if acetal oxygens connect monosaccharide rings
+    for o in acetal_oxygens:
+        neighbors = [mol.GetAtomWithIdx(n).GetRingInfo().IsAtomInRingOfSize(5) or mol.GetAtomWithIdx(n).GetRingInfo().IsAtomInRingOfSize(6) for n in mol.GetAtomWithIdx(o).GetNeighbors()]
+        if sum(neighbors) >= 2:
+            break
+    else:
+        return False, "No glycosidic linkages found between monosaccharide rings"
 
-Additionally, as mentioned in the prompt, it's essential to use your understanding of chemistry and the meaning of the chemical class to validate the classifications made by the program. If the program's classifications align with your understanding of oligosaccharides, you can choose to trust the program's results over the benchmark, provided you can justify your reasoning.
+    # Check molecular weight and composition
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 300:
+        return False, "Molecular weight too low for oligosaccharide"
 
-By analyzing the failed cases, refining the SMARTS patterns or exploring alternative approaches, and incorporating additional checks, you should be able to improve the accuracy of the `is_oligosaccharide` function.
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if c_count < 10 or o_count < 5:
+        return False, "Insufficient carbon or oxygen atoms for oligosaccharide"
+
+    return True, "Contains multiple monosaccharide rings connected by glycosidic linkages"
