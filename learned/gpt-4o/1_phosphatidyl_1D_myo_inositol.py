@@ -20,26 +20,34 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (False, "Invalid SMILES string")
     
-    # SMARTS pattern for 1D-myo-inositol: a six-membered ring with hydroxyl groups in the correct stereochemistry
-    inositol_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H]([C@H]([C@H]1O)O)O)O)O)O")
+    # SMARTS pattern for 1D-myo-inositol: a six-membered ring with hydroxyl groups in the right stereochemistry
+    # Updated to ensure all hydroxyls are in correct stereochemistry
+    inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)O")
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "1D-myo-inositol pattern not found or incorrect stereochemistry"
+        return (False, "1D-myo-inositol pattern not found or incorrect stereochemistry")
 
-    # SMARTS pattern for the phosphatidyl group: a glycerol backbone with two esterified fatty acids and a phosphate group
-    phosphatidyl_pattern = Chem.MolFromSmarts("O[C@@H](CO[P](=O)(O)OC[C@@H](OC(=O)C)OC(=O)C)C")
+    # SMARTS pattern for a generic phosphatidyl group: focusing on glycerol with two esterified acyl chains and phosphate
+    phosphatidyl_pattern = Chem.MolFromSmarts("OC(=O)[C@H](CO[P](=O)(O)O)OC(=O)C")
     if not mol.HasSubstructMatch(phosphatidyl_pattern):
-        return False, "Phosphatidyl group pattern not detected, or incorrect attachment"
+        return (False, "Phosphatidyl group pattern not detected or incorrect")
 
-    # Additional check to ensure the phosphatidyl group is connected to the correct carbon in inositol
-    matches = mol.GetSubstructMatches(inositol_pattern)
-    phosphatidyl_matches = mol.GetSubstructMatches(phosphatidyl_pattern)
+    # Ensure the phosphatidyl group is bonded to position 1
+    phosphorus_pattern = Chem.MolFromSmarts("P([O-])(=O)O")
+    inositol_match_atoms = mol.GetSubstructMatch(inositol_pattern)
+    phosphorus_match_atoms = mol.GetSubstructMatch(phosphorus_pattern)
+
+    if not inositol_match_atoms or not phosphorus_match_atoms:
+        return (False, "Phosphatidyl or inositol pattern not fully matched in the molecule")
+
+    # Check connectivity
+    inositol_atom_1 = inositol_match_atoms[0]
+    phosphorus_atom = phosphorus_match_atoms[0]
+
+    # Verify the connection via position 1 of the inositol moiety
+    for neighbor in mol.GetAtomWithIdx(inositol_atom_1).GetNeighbors():
+        if neighbor.GetIdx() == phosphorus_atom:
+            return (True, "Valid 1-phosphatidyl-1D-myo-inositol detected")
     
-    for match in matches:
-        for phosphatidyl_match in phosphatidyl_matches:
-            if phosphatidyl_match[0] in match:
-                # Ensure the phosphatidyl group is at position 1 of myo-inositol
-                return True, "Valid 1-phosphatidyl-1D-myo-inositol detected"
-
-    return False, "Phosphatidyl group not attached to position 1 of inositol"
+    return (False, "Phosphatidyl group not attached to position 1 of inositol")
