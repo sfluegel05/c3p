@@ -20,10 +20,9 @@ def is_polychlorobiphenyl(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for biphenyl structure (two connected benzene rings, not in a fused system)
-    # This SMARTS will look for two six-membered aromatic rings connected by a single bond
-    # where the connecting bond is not part of a ring, using !@*@!.
-    biphenyl_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[c]2[c][c][c][c][c]2;!@*@!")
+    # Check for biphenyl structure (two connected benzene rings)
+    # Use a simple SMARTS for two phenyl rings connected by a single bond
+    biphenyl_pattern = Chem.MolFromSmarts("c1ccccc1-c2ccccc2")
     if not mol.HasSubstructMatch(biphenyl_pattern):
         return False, "Not a biphenyl structure"
     
