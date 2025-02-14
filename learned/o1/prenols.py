@@ -27,27 +27,91 @@ def is_prenols(smiles: str):
 
     # Check for alcohol group (-OH)
     OH_pattern = Chem.MolFromSmarts('[OX2H]')
-    if not mol.HasSubstructMatch(OH_pattern):
+    OH_matches = mol.GetSubstructMatches(OH_pattern)
+    if not OH_matches:
         return False, "No alcohol group (-OH) found"
+    
+    # Assume primary alcohol; get carbon attached to OH
+    OH_atom_idx = OH_matches[0][0]
+    OH_atom = mol.GetAtomWithIdx(OH_atom_idx)
+    neighbors = OH_atom.GetNeighbors()
+    if not neighbors:
+        return False, "OH group is not connected to any carbon"
+    # Carbon attached to OH group
+    start_atom = neighbors[0]
+    
+    visited = set()
+    chain_atoms = []
 
-    # Define isoprene unit pattern: CH2-C(Me)=CH-CH2
-    isoprene_pattern = Chem.MolFromSmarts('[CH2]-[C]([CH3])=C-[CH2]')
-    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
-    if len(isoprene_matches) == 0:
-        return False, "No isoprene units found"
+    # Function to recursively traverse the chain
+    def traverse_chain(atom, prev_atom_idx):
+        visited.add(atom.GetIdx())
+        chain_atoms.append(atom)
+        neighbors = [a for a in atom.GetNeighbors() if a.GetIdx() != prev_atom_idx]
+        if len(neighbors) > 1:
+            # Branch detected
+            return False
+        elif len(neighbors) == 0:
+            # End of chain
+            return True
+        else:
+            next_atom = neighbors[0]
+            if next_atom.GetAtomicNum() != 6:
+                # Non-carbon atom in chain
+                return False
+            return traverse_chain(next_atom, atom.GetIdx())
+    
+    # Start traversing from the carbon attached to OH
+    is_linear = traverse_chain(start_atom, OH_atom_idx)
+    if not is_linear:
+        return False, "Chain is branched or contains non-carbon atoms"
+    
+    # Exclude the terminal OH carbon from chain length
+    chain_length = len(chain_atoms)
+    
+    if chain_length < 1:
+        return False, "Chain is too short"
+    
+    # Exclude the OH-attached carbon from the chain for counting isoprene units
+    isoprene_chain = chain_atoms[1:]
+    n_carbons = len(isoprene_chain)
 
-    # Check that isoprene units are connected head-to-tail
-    # Build a graph of isoprene units
-    isoprene_atoms = set()
-    for match in isoprene_matches:
-        isoprene_atoms.update(match)
+    # Number of carbons should be a multiple of 5
+    if n_carbons % 5 != 0:
+        return False, f"Chain length ({n_carbons}) is not a multiple of 5"
 
-    # Get all atoms in the molecule
-    total_atoms = set(range(mol.GetNumAtoms()))
+    n_units = n_carbons // 5
+    # Check each 5-carbon segment for isoprene pattern
+    for i in range(n_units):
+        segment_atoms = isoprene_chain[i*5:(i+1)*5]
+        if len(segment_atoms) != 5:
+            return False, "Incomplete isoprene unit detected"
 
-    # Remove isoprene atoms from total atoms, the remaining should be minimal
-    remaining_atoms = total_atoms - isoprene_atoms
-    if len(remaining_atoms) > 5: # Allowing for OH group and possible variations
-        return False, "Isoprene units are not connected head-to-tail or extra atoms detected"
+        atom1 = segment_atoms[0]
+        atom2 = segment_atoms[1]
+        atom3 = segment_atoms[2]
+        atom4 = segment_atoms[3]
+        atom5 = segment_atoms[4]
 
-    return True, "Contains alcohol group and one or more isoprene units connected head-to-tail"
+        # Check that atom2 has a methyl substituent
+        methyl_found = False
+        for neighbor in atom2.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in [atom1.GetIdx(), atom3.GetIdx()]:
+                # Check if it's a methyl group
+                if len(neighbor.GetNeighbors()) == 1:
+                    methyl_found = True
+                    break
+        if not methyl_found:
+            return False, "Isoprene unit missing methyl group at correct position"
+        
+        # Check for double bonds between atom1-atom2 and/or atom3-atom4
+        bond12 = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
+        bond34 = mol.GetBondBetweenAtoms(atom3.GetIdx(), atom4.GetIdx())
+        if bond12 is None or bond34 is None:
+            return False, "Isoprene unit missing bonds"
+        bond12_order = bond12.GetBondType()
+        bond34_order = bond34.GetBondType()
+        if bond12_order != Chem.rdchem.BondType.DOUBLE and bond34_order != Chem.rdchem.BondType.DOUBLE:
+            return False, "Isoprene unit missing double bonds at correct positions"
+        
+    return True, "Molecule is a prenol with linear chain of isoprene units ending with -OH group"
