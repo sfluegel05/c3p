@@ -25,40 +25,21 @@ def is_fatty_acid_methyl_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the methyl ester group pattern (C(=O)OC)
-    methyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])OC")
+    # Look for the methyl ester group pattern (C(=O)OC) including methyl hydrogens
+    methyl_ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])OC([H])([H])[H]")
     methyl_ester_matches = mol.GetSubstructMatches(methyl_ester_pattern)
     
-    if len(methyl_ester_matches) == 0:
-        return False, "No methyl ester group found"
-    
-    if len(methyl_ester_matches) > 1:
-        return False, "Multiple methyl ester groups found, only 1 is allowed"
-    
-    # Check for the methyl group attached to the oxygen on the ester
-    for match in methyl_ester_matches:
-       ester_o_idx = -1
-       for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetSymbol() == 'O':
-                ester_o_idx = idx
-                break
-       if ester_o_idx != -1:
-        methyl_attached = False
-        for neighbor in mol.GetAtomWithIdx(ester_o_idx).GetNeighbors():
-             if neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() == 3:
-                methyl_attached = True
-                break
-        if not methyl_attached:
-            return False, "Methyl group not found on ester oxygen"
+    if len(methyl_ester_matches) != 1:
+        return False, f"Found {len(methyl_ester_matches)} methyl ester groups, need exactly 1"
 
+    
     # Check for fatty acid chains (long carbon chains attached to carbonyl of ester)
     fatty_acid_chain_found = False
     for match in methyl_ester_matches:
          carbonyl_idx = -1
          for idx in match:
               atom = mol.GetAtomWithIdx(idx)
-              if atom.GetSymbol() == 'C' and atom.GetTotalValence() == 3:
+              if atom.GetSymbol() == 'C' and atom.GetTotalValence() == 3: # looking for carbon that is part of ester carbonyl
                 carbonyl_idx = idx
                 break
          if carbonyl_idx != -1:
@@ -67,8 +48,7 @@ def is_fatty_acid_methyl_ester(smiles: str):
             
             # get all neighbours for carbonyl, not including ester oxygen
             neighbours = [neighbour for neighbour in mol.GetAtomWithIdx(carbonyl_idx).GetNeighbors() if mol.GetAtomWithIdx(neighbour.GetIdx()).GetSymbol() != 'O' ]
-            
-            
+           
             for neighbour in neighbours:
                 submol = Chem.PathToSubmol(mol, [carbonyl_idx, neighbour.GetIdx()])
                 
