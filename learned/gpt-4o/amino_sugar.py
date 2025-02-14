@@ -22,11 +22,10 @@ def is_amino_sugar(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
     
-    # Recognize sugar-like rings more broadly by considering other ring types
+    # Recognize sugar-like rings (adjusted to catch broader structures)
     sugar_patterns = [
-        Chem.MolFromSmarts("C[C@H]1O[C@H](O)[C@@H](CO)[C@@H](N)C1"), # Generic 6-membered sugar ring with amino
-        Chem.MolFromSmarts("C1OC([C@@H](O)C[C@H](N)O1)"), # 6-membered ring with an amine
-        Chem.MolFromSmarts("C1OC(C[NH]C[C@@H](O)[C@@H]1)"), # 5-membered furanose-like with amine
+        Chem.MolFromSmarts("[O;R1]1[C;R1][C;R1][C;R1][C;R1][C;R1][C;R1]1"),  # Generic 6-membered ring
+        Chem.MolFromSmarts("[O;R1]1[C;R1][C;R1][C;R1][C;R1][O;R1]1"),        # 5-membered ring (furanose-like)
     ]
     
     found_sugar = False
@@ -37,10 +36,10 @@ def is_amino_sugar(smiles: str):
     
     if not found_sugar:
         return False, "No typical sugar-like ring structure found"
-    
-    # Confirm presence of amino groups in potential substitution sites for hydroxyls
-    nh_group = Chem.MolFromSmarts("[NH2,NH1,N#N]")
-    if not mol.HasSubstructMatch(nh_group):
+
+    # Detect amino group replacing OH
+    amino_group_pattern = Chem.MolFromSmarts("[NX3H2,NX3H,NX3](C)-[OH]")
+    if not mol.HasSubstructMatch(amino_group_pattern):
         return False, "No amino group replacing a hydroxy group found"
     
     return True, "Contains a sugar-like ring structure with one or more hydroxyl groups replaced by amino groups"
