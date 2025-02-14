@@ -2,12 +2,12 @@
 Classifies: CHEBI:35785 sphingoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_sphingoid(smiles: str):
     """
     Determines if a molecule is a sphingoid based on its SMILES string.
-    A sphingoid is characterized by a long carbon chain, an amino group, and hydroxyl groups.
+    Sphingoids generally have a long carbon chain, an amino group, and hydroxyl groups,
+    as well as potential additional features like double bonds or certain stereochemistry.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,30 +22,30 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Sphingoids typically have a long carbon chain of about 14-20 carbons
-    carbon_chain_pattern = Chem.MolFromSmarts("[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]~[C;H2]")
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
+    # Check for a long aliphatic carbon chain (14-30+ carbons)
+    long_chain_pattern = Chem.MolFromSmarts("[C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")
+    if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "No sufficient long carbon chain recognized"
 
-    # Check for the presence of an amine group at C-2 position
-    amine_pattern = Chem.MolFromSmarts("N")
-    if not mol.HasSubstructMatch(amine_pattern):
-        return False, "No amino group found"
+    # Check for the presence of a 2-amino-1,3-diol configuration
+    sphingoid_core_pattern = Chem.MolFromSmarts("[C@H](O)[C@H](N)CO")
+    if not mol.HasSubstructMatch(sphingoid_core_pattern):
+        return False, "No recognizable sphingoid core substructure"
 
-    # Check for the presence of hydroxyl group(s)
-    hydroxyl_pattern = Chem.MolFromSmarts("O")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
+    # Check for additional hydroxyl group
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 2:
+        return False, "Less than two hydroxyl groups found"
 
-    # Check if the molecule contains at least 14 - 20 carbons
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not (14 <= c_count <= 20):
-        return False, f"Carbon chain length {c_count} is not typical for sphingoids"
+    # Evaluate the total number of carbon atoms
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if total_carbons < 14:
+        return False, f"Carbon chain length {total_carbons} is insufficient for a sphingoid"
 
-    # Verify if specified stereochemistry is present (if mentioned in examples)
-    stereo_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[C@@H]"))
-    if stereo_matches:
-        # Check for specific stereocenters. This can be extended for detailed stereochemistry checks.
-        return True, "Contains stereochemistry matching a sphingoid"
+    # Check for common side features like double bonds or extra hydroxyls
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    if mol.HasSubstructMatch(double_bond_pattern):
+        return True, "Contains additional features like double bonds, consistent with sphingoid derivatives"
 
-    return True, "Contains typical structural features of a sphingoid (long chain, amino, hydroxyl groups)"
+    return True, "Contains typical structure of a sphingoid (long chain, amino, hydroxyl groups)"
