@@ -21,9 +21,9 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone (C-C-C with 2 esters and 1 phosphate)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2][CX3](=[OX1]))[CH2X4][OX2]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    # Check for glycerol backbone with a phosphate group attached via an oxygen
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OX2][CX3](=[OX1]))[CH2X4][OX2][P](=[OX1])([OX2])")
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
          return False, "No glycerol-phosphate backbone found"
 
 
@@ -32,10 +32,15 @@ def is_phosphoinositide(smiles: str):
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No myo-inositol ring found"
 
-    # Check for at least one phosphate group attached to the inositol ring
-    inositol_phosphate_pattern = Chem.MolFromSmarts("[C][O][P](=O)([O])([O])")
+    # Check for a phosphate group on the inositol ring, directly linked via an oxygen
+    inositol_phosphate_pattern = Chem.MolFromSmarts("[C][O][P](=[OX1])([OX2])([OX2])")
     inositol_phosphate_matches = mol.GetSubstructMatches(inositol_phosphate_pattern)
-    if len(inositol_phosphate_matches) < 1:
-        return False, "No phosphate group attached to the inositol ring found"
+    if len(inositol_phosphate_matches) < 2:  # One phosphate from the glycerol and one additional at least.
+        return False, "Less than two phosphate groups found in the phosphoinositide"
+
+    # Check for linkage between glycerol phosphate and inositol phosphate
+    phosphodiester_pattern = Chem.MolFromSmarts("[OX2][P](=[OX1])([OX2])[OX2][C]1[C]([O])[C]([O])[C]([O])[C]([O])[C]([O])1")
+    if not mol.HasSubstructMatch(phosphodiester_pattern):
+        return False, "No phosphodiester bond found connecting glycerol phosphate to inositol"
 
     return True, "Contains glycerol backbone, a phosphate group linked to glycerol, a myo-inositol ring, and at least one phosphate group on the inositol ring"
