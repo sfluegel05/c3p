@@ -23,25 +23,23 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycerol backbone pattern (OH groups on 1, 2, 3 carbons)
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    # Define SMARTS pattern for glycerol backbone with OH at 2,3-positions and 1-ester linkage
+    # Simple ester linkage at position 1
+    glycerol_ester_1_pattern = Chem.MolFromSmarts("OCC(O)COC(=O)C")
+    glycerol_ester_1_pattern_racemic = Chem.MolFromSmarts("OC[C@@H](O)COC(=O)C")
     
-    # Look for ester linkage at the 1-position
-    # -OH replaced with an ester group at the start of the glycerol
-    ester_pattern_1_position = Chem.MolFromSmarts("OC(=O)C(O)C(O)")
-    if not mol.HasSubstructMatch(ester_pattern_1_position):
+    if not mol.HasSubstructMatch(glycerol_ester_1_pattern) and not mol.HasSubstructMatch(glycerol_ester_1_pattern_racemic):
         return False, "No ester linkage found at 1-position of glycerol"
-    
+
     # Ensure only one ester linkage is present
     ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O"))
     if len(ester_matches) != 1:
         return False, f"Expected 1 ester linkage, found {len(ester_matches)}"
     
-    # Check for the presence of fatty acid chains
-    long_chain_pattern = Chem.MolFromSmarts("C(CCCCCCCC)C(=O)O")
+    # Check for the presence of a fatty acid chain (long hydrocarbon chain)
+    # Consider a flexible definition for a long carbon chain
+    long_chain_pattern = Chem.MolFromSmarts("C(=O)O[CX4][CX4][CX4][CX4][CX4]")
     if not mol.HasSubstructMatch(long_chain_pattern):
-        return False, "Missing long-chain characteristic of fatty acid"
-    
+        return False, "No fatty acid chain (long hydrocarbon chain) found"
+
     return True, "Contains glycerol backbone with one fatty acid chain attached via ester bond at position 1"
