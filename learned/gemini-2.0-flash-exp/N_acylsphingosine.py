@@ -22,9 +22,9 @@ def is_N_acylsphingosine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for sphingosine backbone (more generic, ignoring stereochemistry)
-    # [CX4,CX3]-[CX4,CX3](O)-[CX4,CX3](N)-[CX4,CX3](O)-[CX4,CX3]=[CX4,CX3]
-    sphingosine_pattern = Chem.MolFromSmarts("[CX4,CX3][CX4,CX3](O)[CX4,CX3](N)[CX4,CX3](O)[CX4,CX3]=[CX4,CX3]")
+    # Define SMARTS for sphingosine backbone, relaxing the original pattern
+    # Looking for a chain of carbons with a double bond, two hydroxyl groups, a nitrogen attached to one of the carbons and a terminal CH2OH
+    sphingosine_pattern = Chem.MolFromSmarts("[CX4,CX3]-[CX4,CX3](O)-[CX4,CX3](N)-[CX4,CX3](O)-[CX4,CX3]=[CX4,CX3]-[CX4,CX3](O)")
     if not mol.HasSubstructMatch(sphingosine_pattern):
        return False, "No sphingosine backbone found"
 
@@ -35,15 +35,34 @@ def is_N_acylsphingosine(smiles: str):
     if len(amide_matches) !=1:
         return False, f"Found {len(amide_matches)} amide bonds, need exactly 1"
 
-    # Check for long carbon chain by checking the number of carbons
+    # Define a SMARTS for fatty acid (long carbon chain) attached to the amide bond
+    fatty_acyl_pattern = Chem.MolFromSmarts("C[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acyl_matches = mol.GetSubstructMatches(fatty_acyl_pattern)
+
+    #Check that the long chain is attached to the amide group
+    found_acyl_chain=False
+    for match in amide_matches:
+        for fatty_match in fatty_acyl_matches:
+             amide_nitrogen_atom_index = match[1]
+             for atom_index in fatty_match:
+                 if mol.GetAtomWithIdx(atom_index).GetBonds()[0].GetOtherAtomIdx(atom_index) == amide_nitrogen_atom_index:
+                        found_acyl_chain=True
+                        break
+             if found_acyl_chain:
+                  break
+
+    if not found_acyl_chain:
+        return False, "No fatty acyl chain attached to the amide group"
+    
+    #Check that there are at least 16 Carbons
     num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons < 18:
+    if num_carbons < 16:
        return False, "Too few carbons for N-acylsphingosine"
 
     # Check for at least one hydroxyl group
     oh_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and len(atom.GetNeighbors()) == 1)
-    if oh_count < 1:
-        return False, "Must have at least one hydroxyl group"
+    if oh_count < 2:
+        return False, "Must have at least two hydroxyl groups"
     
     # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
