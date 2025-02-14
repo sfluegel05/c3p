@@ -5,7 +5,7 @@ Classifies: CHEBI:39418 straight-chain saturated fatty acid
 Classifies: CHEBI:35838 straight-chain saturated fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors, SanitizeMol
+from rdkit.Chem import rdMolDescriptors
 
 def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
@@ -25,14 +25,6 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Remove explicit hydrogens and parentheses for normalization
-    SanitizeMol(mol, sanitizeOps=Chem.SanitizeFlags.SANITIZE_PROPERTIES |
-                             Chem.SanitizeFlags.SANITIZE_FINDRADICALS |
-                             Chem.SanitizeFlags.SANITIZE_KEKULIZE |
-                             Chem.SanitizeFlags.SANITIZE_SETAROMATICITY)
-    Chem.RemoveHs(mol)
-    Chem.RemoveParentheses(mol)
-    
     # Check for carboxylic acid group (-C(=O)O)
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
@@ -49,14 +41,13 @@ def is_straight_chain_saturated_fatty_acid(smiles: str):
             if bond.GetIsotopeSum() == 0:  # Ignore isotopic labeling
                 return False, "Unsaturated bond found"
     
-    # Check for hydroxy groups (optional, but no other substituents)
-    hydroxy_pattern = Chem.MolFromSmarts("O[H]")
-    other_substituents = []
+    # Check for allowed substituents (hydroxy groups)
+    allowed_substituents = ["O"]
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in (1, 6, 8):  # H, C, O
-            other_substituents.append(atom.GetSymbol())
-    if other_substituents:
-        return False, f"Found other substituents: {', '.join(other_substituents)}"
+        symbol = atom.GetSymbol()
+        if symbol not in ("C", "O", "H"):
+            if symbol not in allowed_substituents:
+                return False, f"Found disallowed substituent: {symbol}"
     
     # Additional check for typical molecular weight or chain length
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
