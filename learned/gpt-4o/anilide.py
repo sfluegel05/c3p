@@ -21,15 +21,15 @@ def is_anilide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Aniline feature: Phenyl group attached to a nitrogen directly forming an amide
-    aniline_pattern = Chem.MolFromSmarts("c1ccc(cc1)NC(=O)")
-    # Allows variation in acyl group by expanding the pattern to include any carbonyl attached to N
-    extended_pattern = Chem.MolFromSmarts("c1ccc(cc1)N=[OD1]")
+    # Anilide feature: Phenyl group directly attached to a nitrogen forming an amide (expanded for substitution on the phenyl)
+    anilide_patterns = [
+        Chem.MolFromSmarts("c1ccccc1NC(=O)"),  # Unsubstituted phenylamide
+        Chem.MolFromSmarts("c1cc(c(cc1)*)NC(=O)")  # Substituted phenyl containing amide
+    ]
+    
+    # Check for any pattern match that will qualify it as an anilide
+    for pattern in anilide_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains an aniline-like aromatic amide structure"
 
-    # Check if the molecule contains an aniline-like substructure
-    if mol.HasSubstructMatch(aniline_pattern):
-        return True, "Contains aniline-like aromatic amide structure"
-    elif mol.HasSubstructMatch(extended_pattern):
-        return True, "Contains extended aniline-like aromatic amide structure"
-    else:
-        return False, "Does not match anilide structural criteria"
+    return False, "Does not match anilide structural criteria"
