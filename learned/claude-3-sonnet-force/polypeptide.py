@@ -6,8 +6,8 @@ Classifies: CHEBI:25004 polypeptide
 A peptide containing ten or more amino acid residues.
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
-from rdkit.Chem import Fragments
+from rdkit.Chem import MolFromSmiles, MolFromSmarts
+from rdkit.Chem.rdchem import Mol
 
 def is_polypeptide(smiles: str):
     """
@@ -21,17 +21,21 @@ def is_polypeptide(smiles: str):
         str: Reason for classification
     """
     # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    mol = MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Define peptide backbone SMARTS pattern
+    peptide_backbone_pattern = MolFromSmarts("[N;X3;H2,H1]-,=&@[C;X3](-,=&@[N;X3;H2,H1])-,=&@[C;X3](=O)-,=&@[N;X3;H1]")
+
     # Check for peptide backbone
-    has_peptide_backbone = any(Fragments.fr_peptide.fp_bit in fp for fp in Fragments.get_fragments(mol))
+    has_peptide_backbone = mol.HasSubstructMatch(peptide_backbone_pattern)
     if not has_peptide_backbone:
         return False, "No peptide backbone detected"
 
     # Count amino acid residues
-    num_residues = Descriptors.NumResidues(mol)
+    amino_acid_pattern = MolFromSmarts("[N;X3;H2]-,=&@[C;X3](-,=&@[N;X3;H1])-,=&@[C;X3](=O)-,=&@[N;X3;H1]")
+    num_residues = len(mol.GetSubstructMatches(amino_acid_pattern))
     if num_residues < 10:
         return False, f"Only {num_residues} amino acid residues, need at least 10"
 
