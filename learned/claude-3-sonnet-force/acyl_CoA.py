@@ -27,21 +27,19 @@ def is_acyl_CoA(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for coenzyme A moiety pattern
-    coa_pattern = Chem.MolFromSmarts("C1(N2C3=C(N=C(N=C3N)N)N=C2)OC(COP(=O)(O)OP(=O)(O)OCC(C(O)C(=O)NCCC(=O)NCCS)O)C(O)C1O")
-    coa_matches = mol.GetSubstructMatches(coa_pattern)
-    if not coa_matches:
-        return False, "No coenzyme A moiety found"
+    coa_pattern = Chem.MolFromSmarts("C1OC(COP(=O)(O)OP(=O)(O)OCC(C(O)C(=O)NCCC(=O)NCCS)O)C(O)C1O")
+    coa_pattern_matches = mol.GetSubstructMatches(coa_pattern)
 
-    # Look for thioester (-C(=O)-S-) group attached to CoA
+    # Look for thioester (-C(=O)-S-) group
     thioester_pattern = Chem.MolFromSmarts("C(=O)S")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
-    if not thioester_matches:
-        return False, "No thioester group found"
 
     # Check if thioester is connected to CoA
-    for match in thioester_matches:
-        thioester_atom = mol.GetAtomWithIdx(match)
-        if thioester_atom.GetNeighbors()[1].IsInRing():
-            return True, "Contains coenzyme A moiety connected to a thioester group"
+    for coa_match in coa_pattern_matches:
+        for thioester_match in thioester_matches:
+            thioester_atom = mol.GetAtomWithIdx(thioester_match)
+            neighbors = [mol.GetAtomWithIdx(n).GetSmarts() for n in thioester_atom.GetNeighbors()]
+            if any(mol.GetAtomWithIdx(coa_match).GetSmarts() in neighbors):
+                return True, "Contains coenzyme A moiety connected to a thioester group"
 
     return False, "Thioester group not connected to coenzyme A moiety"
