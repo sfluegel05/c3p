@@ -23,43 +23,42 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns
-    # Pattern for monocarboxylic acid group (protonated or deprotonated)
-    carboxylic_acid_pattern = Chem.MolFromSmarts('[CX3](=O)[OX1H0-,OX2H1]')
-    # Pattern for carbonyl group attached to carbon (ketone)
-    oxo_group_pattern = Chem.MolFromSmarts('[CX3]=O')
-    
-    # Find all carboxylic acid groups
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(carboxylic_acid_matches) == 0:
-        return False, "No carboxylic acid groups found"
-    elif len(carboxylic_acid_matches) > 1:
-        return False, f"More than one carboxylic acid group found ({len(carboxylic_acid_matches)} groups)"
-    
-    # There is exactly one carboxylic acid group
-    acid_carbon_idx = carboxylic_acid_matches[0][0]
+    # Define SMARTS pattern for monocarboxylic acid group (protonated or deprotonated)
+    carboxylic_acid_pattern = Chem.MolFromSmarts('[$([CX3](=O)[O-]),$([CX3](=O)[OH])]')
+
+    # Find matches for the carboxylic acid group
+    acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
+    if len(acid_matches) != 1:
+        return False, f"Found {len(acid_matches)} carboxylic acid groups, need exactly 1"
+
+    # Get the index of the carboxylic acid carbon atom
+    acid_carbon_idx = acid_matches[0][0]
     acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
-    
-    # Find alpha carbons (carbons adjacent to the carboxylic acid carbon)
-    alpha_carbons = [neighbor for neighbor in acid_carbon.GetNeighbors() if neighbor.GetAtomicNum() == 6]
-    
-    if not alpha_carbons:
-        return False, "No alpha carbon adjacent to carboxylic acid carbon"
-    
-    # Check if any alpha carbon has an oxo substituent
-    found_2_oxo = False
+
+    # Initialize list to store alpha carbons (carbons adjacent to the carboxylic acid group)
+    alpha_carbons = []
+    for neighbor in acid_carbon.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6:  # Carbon atom
+            alpha_carbons.append(neighbor)
+
+    # Check if there is at least one alpha carbon
+    if len(alpha_carbons) == 0:
+        return False, "No alpha carbon found adjacent to carboxylic acid group"
+
+    # Check each alpha carbon for the presence of a ketone (=O) group
+    alpha_oxo_found = False
     for alpha_carbon in alpha_carbons:
-        alpha_carbon_idx = alpha_carbon.GetIdx()
-        # Check for oxo group attached to alpha carbon
-        for neighbor in alpha_carbon.GetNeighbors():
-            bond = mol.GetBondBetweenAtoms(alpha_carbon_idx, neighbor.GetIdx())
-            if neighbor.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                found_2_oxo = True
+        # Iterate over bonds connected to the alpha carbon
+        for bond in alpha_carbon.GetBonds():
+            neighbor = bond.GetOtherAtom(alpha_carbon)
+            # Check for a double bond to an oxygen atom
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and neighbor.GetAtomicNum() == 8:
+                alpha_oxo_found = True
                 break
-        if found_2_oxo:
+        if alpha_oxo_found:
             break
-    
-    if not found_2_oxo:
-        return False, "No 2-oxo substituent found on alpha carbon"
-    
+
+    if not alpha_oxo_found:
+        return False, "Alpha carbon does not have a ketone (=O) group"
+
     return True, "Molecule is a 2-oxo monocarboxylic acid"
