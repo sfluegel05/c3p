@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_catechols(smiles: str):
     """
     Determines if a molecule is a catechol based on its SMILES string.
-    A catechol contains an o-diphenol component (two hydroxyl groups on adjacent carbons).
+    A catechol contains an o-diphenol component (two hydroxyl groups on adjacent carbons on an aromatic ring).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,11 +21,14 @@ def is_catechols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for catechol: A benzene ring with ortho (adjacent) hydroxyl groups
+    # Broader SMARTS patterns for catechol moiety
+    # Detecting o-dihydroxy groups (ortho-diphenol) in potentially various aromatic rings
     catechol_patterns = [
-        Chem.MolFromSmarts("c1c(O)c(O)ccc1"),  # Basic catechol pattern
-        Chem.MolFromSmarts("c1c(O)ccc(O)c1"),  # Larger aromatic system
-        Chem.MolFromSmarts("c1cc(O)c(O)c2ccccc12"),  # Extended to capture more connectivity
+        Chem.MolFromSmarts("c1c(O)c(O)c[c,n]c1"),  # Basic ortho-diphenol pattern, allowing variable connectivity
+        Chem.MolFromSmarts("c1(O)c(O)cc[n,c]c1"),  # Including nitrogen-containing heterocycles
+        Chem.MolFromSmarts("c1(O)c(O)c[c,n]cc1"),  # Extended aromatic rings with ortho-dihydroxy
+        Chem.MolFromSmarts("Oc1ccc(O)c[c,H]c1"),  # Generalized aromatic with ortho hydroxys
+        Chem.MolFromSmarts("Oc1ccc2cc(O)c(O)cc2c1"),  # Biphenyl systems
     ]
 
     # Check each pattern
