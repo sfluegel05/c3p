@@ -6,8 +6,7 @@ Classifies: semisynthetic derivative
 """
 from rdkit import Chem
 from rdkit.Chem import Descriptors
-from rdkit.Chem.Scaffolds import MurckoScaffold
-from rdkit.Chem.rdMolDescriptors import CalcNumAromaticRings
+from rdkit.Chem import rdMolDescriptors
 
 def is_semisynthetic_derivative(smiles: str):
     """
@@ -30,46 +29,47 @@ def is_semisynthetic_derivative(smiles: str):
     if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
         return False, "Molecule is not an organic compound"
 
+    # Compute molecular weight
+    mol_weight = Descriptors.ExactMolWt(mol)
+
+    # Compute number of rings
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+
+    # Compute number of chiral centers
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    num_chiral_centers = len(chiral_centers)
+
+    # Criteria for natural product core
+    if num_rings < 3 or num_chiral_centers < 2 or mol_weight < 500:
+        return False, "Molecule may not contain a complex natural product core"
+
     # Generate Murcko Scaffold (core structure of molecule)
-    scaffold = MurckoScaffold.GetScaffoldForMol(mol)
+    scaffold = Chem.Scaffolds.MurckoScaffold.GetScaffoldForMol(mol)
     scaffold_smiles = Chem.MolToSmiles(scaffold, isomericSmiles=True)
 
-    # Define known natural product scaffolds (simplified for this example)
-    # In practice, this would be a more comprehensive list
-    natural_product_scaffolds = [
-        'C1CCC(CC1)',  # Cyclohexane ring (terpenoids)
-        'C1=CC=CC=C1',  # Benzene ring (common in alkaloids)
-        'C1CC2CC3CC1CC(C2)C3',  # Steroid nucleus
-        'C1CC[C@H]2[C@@H]3CCC(C3)CC[C@]12C',  # Steroid nucleus with stereochemistry
-        'O=C1CC[C@H]2[C@@H]3CC[C@@H](O)[C@H](O)[C@@H](CC3)CC[C@]12C',  # Example triterpene scaffold
-    ]
-    # Check if scaffold matches any known natural product scaffold
-    has_natural_product_core = False
-    for np_smiles in natural_product_scaffolds:
-        np_mol = Chem.MolFromSmiles(np_smiles)
-        if scaffold.HasSubstructMatch(np_mol):
-            has_natural_product_core = True
-            break
-
-    if not has_natural_product_core:
-        return False, "Molecule does not contain a known natural product core"
+    # Check if scaffold is significantly smaller than molecule (indicating modifications)
+    mol_smiles = Chem.MolToSmiles(mol, isomericSmiles=True)
+    if scaffold_smiles == mol_smiles:
+        return False, "Molecule appears to be a natural product without modifications"
 
     # Check for synthetic modifications
     synthetic_modifications = False
 
-    # List of functional groups that might indicate synthetic modification
-    # Focus on modifications uncommon in natural biosynthesis
+    # Expanded list of synthetic functional groups uncommon in natural products
     synthetic_patterns = {
         'Halogenation': '[F,Cl,Br,I]',
+        'Nitro group': '[NX3](=O)=O',
         'Azide': 'N=[N+]=[N-]',
         'Alkyne': 'C#C',
-        'Nitro': '[$([NX3](=O)=O)]',
         'Trifluoromethyl': 'C(F)(F)F',
-        'Methoxy': 'OC',
-        'Ester': 'C(=O)OC',
-        'Amide': 'C(=O)N',  # Amides can be natural, but check for unusual patterns
+        'Sulfonamide': 'S(=O)(=O)N',
+        'Sulfonic acid': 'S(=O)(=O)[O-]',
+        'Protecting group': '[Si]',
+        'Unnatural phosphate': 'P(=O)(O)(O)',
+        'Sulfonate ester': 'S(=O)(=O)O',
         'Propargyl': 'C#CC',
-        'Protecting group': 'C(=O)O[C@H1]',  # Simplified pattern
+        'Aryl ether': 'c-O-c',
     }
 
     for mod_name, smarts in synthetic_patterns.items():
@@ -81,9 +81,4 @@ def is_semisynthetic_derivative(smiles: str):
     if not synthetic_modifications:
         return False, "No synthetic modifications detected"
 
-    # Ensure that the molecule is not a known natural product (i.e., unmodified)
-    # We can compare the scaffold to the entire molecule
-    if scaffold_smiles == Chem.MolToSmiles(mol, isomericSmiles=True):
-        return False, "Molecule appears to be a natural product without modifications"
-
-    return True, "Molecule contains a natural product core with evidence of synthetic modifications"
+    return True, "Molecule contains complex natural product core with evidence of synthetic modifications"
