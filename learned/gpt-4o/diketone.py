@@ -21,26 +21,30 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for a ketone group, considering potential ring structures
+    # SMARTS pattern for a ketone group
     ketone_pattern = Chem.MolFromSmarts("C(=O)C")
 
-    # Find ketone groups in the molecule, making sure realistic C=O occurrences are found
+    # Find ketone groups matches
     ketone_matches = mol.GetSubstructMatches(ketone_pattern)
-    
-    # Filter out duplicates in cyclic ketone environments by checking atom indices
-    unique_ketone_bonds = set((min(m[0], m[1]), max(m[0], m[1])) for m in ketone_matches)
+
+    # Process the matches to count unique ketone groups
+    # creating a set to store bonds represented by sorted tuples
+    unique_ketone_bonds = set()
+    for match in ketone_matches:
+        # Sort the carbon-carbon bonded atom indices to ensure set uniqueness
+        bond = tuple(sorted((match[0], match[2])))  # ketone is C-O, look at the second carbon (match[2])
+        unique_ketone_bonds.add(bond)
 
     # Check if there are exactly two ketone groups
-    if len(unique_ketone_bonds) == 2:
+    num_ketones = len(unique_ketone_bonds)
+    if num_ketones == 2:
         return True, "Contains exactly two ketone groups, hence a diketone."
     else:
-        return False, f"Contains {len(unique_ketone_bonds)} ketone groups, not a diketone."
+        return False, f"Contains {num_ketones} ketone groups, not a diketone."
 
 # Examples
-# Test the function with a diketone example SMILES
-result, reason = is_diketone("CCCCCC(=O)CC(=O)CCCCCC")  # Expected: True, diketone
+result, reason = is_diketone("CCCCCC(=O)CC(=O)CCCCCC")  # SMILES example of a diketone
 print(result, reason)
 
-# Test the function with a non-diketone example SMILES
-result, reason = is_diketone("CCCCCCC=O")  # Expected: False, only one ketone
+result, reason = is_diketone("CCCCCCC=O")  # Non-diketone
 print(result, reason)
