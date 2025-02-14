@@ -11,7 +11,7 @@ def is_diterpenoid(smiles: str):
     """
     Determines if a molecule is a diterpenoid based on its SMILES string.
     A diterpenoid is derived from a diterpene (originally composed of four isoprene units),
-    but may have rearranged or modified skeletons, often missing or adding skeletal atoms.
+    which may have rearranged or modified skeletons, and can have various functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,41 +26,46 @@ def is_diterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Calculate molecular formula
-    formula = rdMolDescriptors.CalcMolFormula(mol)
-    # Extract counts of elements
-    from collections import Counter
-    import re
+    # Check for presence of elements typical in diterpenoids
+    allowed_elements = {6, 1, 7, 8, 15, 16}  # C, H, N, O, P, S
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_elements:
+            return False, f"Contains element {atom.GetSymbol()} not typical in diterpenoids"
 
-    # Use regular expressions to extract element counts from the formula
-    elements = re.findall('([A-Z][a-z]*)(\d*)', formula)
-    element_counts = Counter()
-    for elem, count in elements:
-        count = int(count) if count else 1
-        element_counts[elem] += count
+    # Count carbons
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    c_count = element_counts.get('C', 0)
-    h_count = element_counts.get('H', 0)
-    n_count = element_counts.get('N', 0)
-    o_count = element_counts.get('O', 0)
-    s_count = element_counts.get('S', 0)
-    p_count = element_counts.get('P', 0)
-    other_elements = set(element_counts.keys()) - {'C', 'H', 'O', 'N', 'S', 'P'}
-
-    # Diterpenoids are generally composed of carbon, hydrogen, oxygen, nitrogen, sulfur, phosphorus
-    if other_elements:
-        return False, f"Contains elements not typical in diterpenoids: {', '.join(other_elements)}"
-
-    # Diterpenoids generally have carbon counts around 20 (from four isoprene units)
-    # But due to modifications, the carbon count can vary
-    if c_count < 15 or c_count > 40:
-        return False, f"Carbon count ({c_count}) not typical for diterpenoids (15-40 carbons)"
+    # Diterpenoids generally have around 20 carbons but can vary due to modifications
+    if c_count < 15 or c_count > 45:
+        return False, f"Carbon count ({c_count}) not typical for diterpenoids (15-45 carbons)"
 
     # Calculate Double Bond Equivalents (DBE)
-    dbe = (2 * c_count + 2 + n_count - h_count - halogen_count(mol)) / 2
-    # Diterpenoids are generally polycyclic compounds with several rings
-    if dbe < 4:
-        return False, f"DBE ({dbe}) too low for diterpenoids"
+    dbe = rdMolDescriptors.CalcNumRings(mol) + mol.GetNumBonds() - mol.GetNumAtoms() + 1
+
+    # Diterpenoids often have multiple rings
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    if num_rings < 2:
+        return False, f"Too few rings ({num_rings}) for typical diterpenoids"
+
+    # Check for common diterpenoid skeletons using SMARTS patterns
+    diterpene_scaffolds = [
+        # Abietane skeleton
+        Chem.MolFromSmarts('C1(CC[C@@]2([C@@H]1CC=C2)C)C'),
+        # Labdane skeleton
+        Chem.MolFromSmarts('C1CC2CCC1(C)C(CCC2C)C'),
+        # Clerodane skeleton
+        Chem.MolFromSmarts('C1CC2CCC1(C)C=CC2'),
+        # Additional diterpene skeletons can be added
+    ]
+
+    scaffold_matches = False
+    for scaffold in diterpene_scaffolds:
+        if mol.HasSubstructMatch(scaffold):
+            scaffold_matches = True
+            break
+
+    if not scaffold_matches:
+        return False, "Does not contain common diterpenoid skeletons"
 
     # Check for atypical functional groups
     atypical_groups = [
@@ -76,17 +81,4 @@ def is_diterpenoid(smiles: str):
             return False, "Contains atypical functional groups for diterpenoids"
 
     # If the molecule passes all checks, classify as diterpenoid
-    return True, "Molecule has features consistent with diterpenoids (element composition, carbon count, DBE)"
-
-def halogen_count(mol):
-    """
-    Counts the number of halogen atoms in the molecule.
-
-    Args:
-        mol (rdkit.Chem.Mol): Molecule object
-
-    Returns:
-        int: Number of halogen atoms
-    """
-    halogens = [9, 17, 35, 53, 85]  # Atomic numbers for F, Cl, Br, I, At
-    return sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in halogens)
+    return True, "Molecule has features consistent with diterpenoids (common skeleton, ring count)"
