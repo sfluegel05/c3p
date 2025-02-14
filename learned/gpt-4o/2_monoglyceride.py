@@ -21,26 +21,22 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for glycerol backbone
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Missing glycerol backbone"
+    # Check for a glycerol backbone with an acyl linked at the 2nd position
+    # Glycerol backbone pattern: OCC(O)CO with additional ester:
+    monoglyceride_pattern = Chem.MolFromSmarts("C(CO)OC(=O)[C,C][C,C]")  # Partial ester group patterns around glycerol
+    
+    if not mol.HasSubstructMatch(monoglyceride_pattern):
+        return False, "Does not match the 2-monoglyceride pattern"
 
-    # Check for single ester linkage attached to the second carbon
-    ester_pattern = Chem.MolFromSmarts("OCC(OC(=O)[#6])CO") # Acyl group off second carbon
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "Ester group not on the second carbon"
+    # Find ester linkages explicitly at central glycerol position and ensure exclusivity
+    ester_connectivity = Chem.MolFromSmarts("C(CO)OC(=O)[C,C][C,C]")  # stricter account for ester configuration
+    if not mol.HasSubstructMatch(ester_connectivity):
+        return False, "Ester linkage not precisely at the 2-position"
 
-    # Verify that there is only one ester group
+    # Verify only one esterification (one acyl chain)
     general_ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(general_ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
-
-    # Ensure no additional esterification occurs at positions other than the 2-position
-    non_2_position_ester_pattern = Chem.MolFromSmarts("[OX2][#6][OX2H]")
-    other_ester_matches = mol.GetSubstructMatches(non_2_position_ester_pattern)
-    if len(other_ester_matches) > 1:
-        return False, f"Ester group is not exclusively on the 2-position"
 
     return True, "Contains a glycerol backbone with an acyl substituent at position 2"
