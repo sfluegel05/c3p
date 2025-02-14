@@ -31,18 +31,12 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if len(thioester_matches) != 1:
          return False, f"Found {len(thioester_matches)} thioester groups, need exactly 1"
 
-    # 3. Check for propionyl group and the substituent at position 3, (and the connection to the thioester)
-    #  This pattern matches a carbonyl carbon, with a connection to the sulfur, followed by 2 carbons with a substituent at the 3rd pos
-    propionyl_pattern = Chem.MolFromSmarts("C(=O)C[C]")
+    # 3. Check for the 3-substituted propionyl group attached to the thioester.
+    # The pattern now specifies a carbonyl connected to a CH2 group then to a substituted carbon (CX4) then to a sulfur
+    propionyl_pattern = Chem.MolFromSmarts("[C](=O)[CH2][CX4]S")
     propionyl_matches = mol.GetSubstructMatches(propionyl_pattern)
     if len(propionyl_matches) != 1:
        return False, f"Found {len(propionyl_matches)} propionyl groups, need exactly 1"
-    
-    # Verify substitution on the beta carbon
-    match = propionyl_matches[0]
-    beta_carbon = mol.GetAtomWithIdx(match[2])
-    if beta_carbon.GetDegree() < 3:
-         return False, f"The beta carbon is not substituted"
 
     # 4. Verify the presence of the 4 negative charges, we look for 4 oxygen atoms that are deprotonated
     charged_o = 0
