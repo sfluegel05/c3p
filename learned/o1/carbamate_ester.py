@@ -21,16 +21,15 @@ def is_carbamate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Corrected carbamate ester SMARTS pattern (O-C(=O)-N)
-    carbamate_smarts = "[OX2H0][CX3](=O)[NX3;!$(N-C=O)]"
-
-    # Create the SMARTS pattern molecule
+    # General SMARTS pattern for carbamate ester: O-C(=O)-N
+    carbamate_smarts = "[#8]-[#6](=O)-[#7]"
     carbamate_pattern = Chem.MolFromSmarts(carbamate_smarts)
     if carbamate_pattern is None:
         return False, "Invalid SMARTS pattern for carbamate ester"
 
     # Check if the molecule contains the carbamate ester pattern
-    if mol.HasSubstructMatch(carbamate_pattern):
+    matches = mol.GetSubstructMatches(carbamate_pattern)
+    if matches:
         return True, "Contains carbamate ester functional group"
     else:
         return False, "Does not contain carbamate ester functional group"
