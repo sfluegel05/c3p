@@ -28,29 +28,57 @@ def is_phosphatidylinositol(smiles: str):
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
 
-    # 2. Check for Glycerol Backbone with phosphate and inositol.
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("C(COP(=O)(O)O[C]1([C]([C]([C]([C]([C]1O)O)O)O)O)O)") #glycerol with phosphate and inositol attached
+    # 2. Check for Glycerol Backbone with phosphate group
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("CC(COP(=O)(O)[O])C")
     glycerol_phosphate_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-
     if len(glycerol_phosphate_matches) == 0:
-        glycerol_phosphate_pattern = Chem.MolFromSmarts("C(COP(=O)(O)[O][C]1([C]([C]([C]([C]([C]1O)O)O)O)O)O)") #glycerol with phosphate and inositol attached and an extra O
-        glycerol_phosphate_matches = mol.GetSubstructMatches(glycerol_phosphate_pattern)
-    if len(glycerol_phosphate_matches) == 0:
-        return False, "No glycerol backbone with phosphate and inositol linkage found"
+        return False, "No glycerol backbone with phosphate group found"
 
-    # 3. Check for two fatty acid chains attached via esters.
+    # 3. Verify that inositol is connected to glycerol via the phosphate
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)[O]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+
+    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
+    
+    connected = False
+    for p_match in phosphate_matches:
+        for i_match in inositol_matches:
+            for glycerol_match in glycerol_phosphate_matches:
+                p_atom = mol.GetAtomWithIdx(p_match[0])
+                i_atom = mol.GetAtomWithIdx(i_match[0])
+                gly_atom_list = [mol.GetAtomWithIdx(glycerol_match[0]), mol.GetAtomWithIdx(glycerol_match[1]), mol.GetAtomWithIdx(glycerol_match[2]), mol.GetAtomWithIdx(glycerol_match[3])] #list of atoms in glycerol
+                
+                for gly_atom in gly_atom_list: #check if each atom of glycerol has bond to phosphate
+                  if mol.GetBondBetweenAtoms(p_atom.GetIdx(), gly_atom.GetIdx()):
+                      for nbr in p_atom.GetNeighbors():  #check if phosphate has bond to inositol
+                          if nbr.GetIdx() == i_atom.GetIdx():
+                             connected = True
+                             break
+                  if connected:
+                    break
+                if connected:
+                    break
+            if connected:
+              break
+        if connected:
+            break
+
+    if not connected:
+       return False, "Inositol is not connected to glycerol via phosphate"
+
+    # 4. Check for two fatty acid chains attached via esters.
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-
     if len(ester_matches) < 2:
       return False, f"Found {len(ester_matches)} ester groups, need at least 2"
+
 
     # Check for fatty acid chains (long carbon chains attached to esters)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
 
-    if len(fatty_acid_matches) < 2:
-        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+    if len(fatty_acid_matches) < 2 :
+       return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
 
 
     # Check for number of rotatable bonds to exclude short chains
@@ -58,18 +86,5 @@ def is_phosphatidylinositol(smiles: str):
     if n_rotatable < 8 :
         return False, "Chains too short to be fatty acids"
 
-    # Count carbons and oxygens (approximate check).
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-
-    if c_count < 20:
-        return False, "Too few carbons for phosphatidylinositol"
-
-    if o_count < 10:
-      return False, "Too few oxygens for phosphatidylinositol"
-
-    if p_count != 1:
-        return False, f"Must have exactly 1 phosphorus, got {p_count}"
 
     return True, "Contains inositol, glycerol, phosphate, and two fatty acid chains"
