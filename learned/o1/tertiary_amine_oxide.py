@@ -9,9 +9,8 @@ from rdkit import Chem
 def is_tertiary_amine_oxide(smiles: str):
     """
     Determines if a molecule is a tertiary amine oxide based on its SMILES string.
-    A tertiary amine oxide has a nitrogen atom with a positive charge (+1),
-    bonded to an oxygen atom with a negative charge (-1) and three organic groups
-    (typically carbon atoms).
+    A tertiary amine oxide has a nitrogen atom bonded to an oxygen atom,
+    and the nitrogen is also bonded to three organic groups (typically carbon atoms).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,22 +24,26 @@ def is_tertiary_amine_oxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Iterate over all atoms to find nitrogen atoms with formal charge +1
+    # Iterate over all nitrogen atoms in the molecule
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7 and atom.GetFormalCharge() == +1:
+        if atom.GetAtomicNum() == 7:
+            # Check if nitrogen is connected to exactly 4 atoms
+            if atom.GetDegree() != 4:
+                continue
             neighbors = atom.GetNeighbors()
-            # Check if nitrogen is bonded to exactly four atoms
-            if len(neighbors) != 4:
-                continue
-            # Find oxygen neighbors with formal charge -1
-            oxygen_neighbors = [nbr for nbr in neighbors
-                                if nbr.GetAtomicNum() == 8 and nbr.GetFormalCharge() == -1]
-            # There must be exactly one such oxygen neighbor
-            if len(oxygen_neighbors) != 1:
-                continue
-            # The other three neighbors should be carbon atoms (organic groups)
-            other_neighbors = [nbr for nbr in neighbors if nbr.GetIdx() != oxygen_neighbors[0].GetIdx()]
-            if all(nbr.GetAtomicNum() == 6 for nbr in other_neighbors):
+            num_carbons = 0
+            num_oxygens = 0
+            other_atoms = 0
+            for nbr in neighbors:
+                atomic_num = nbr.GetAtomicNum()
+                if atomic_num == 6:
+                    num_carbons += 1
+                elif atomic_num == 8:
+                    num_oxygens += 1
+                else:
+                    other_atoms +=1
+            # Check if nitrogen is connected to exactly 3 carbons and 1 oxygen
+            if num_carbons == 3 and num_oxygens == 1 and other_atoms == 0:
                 return True, "Contains tertiary amine oxide functional group"
     return False, "Does not contain tertiary amine oxide functional group"
 
