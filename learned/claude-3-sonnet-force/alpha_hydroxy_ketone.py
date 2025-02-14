@@ -6,6 +6,7 @@ Classifies: CHEBI:35708 alpha-hydroxy ketone
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import Descriptors
 
 def is_alpha_hydroxy_ketone(smiles: str):
     """
@@ -25,27 +26,21 @@ def is_alpha_hydroxy_ketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find carbonyl atoms
-    carbonyl_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 0 and atom.IsInRingSize(3)]
+    # Use a SMARTS pattern to match alpha-hydroxy ketones
+    alpha_hydroxy_ketone_pattern = Chem.MolFromSmarts("[CX3](=[OX1])(C)[C@H](O)")
+    matches = mol.GetSubstructMatches(alpha_hydroxy_ketone_pattern)
 
-    for carbonyl_idx in carbonyl_atoms:
-        # Get neighboring atoms of carbonyl
-        neighbors = [atom.GetIdx() for atom in mol.GetAtomWithIdx(carbonyl_idx).GetNeighbors()]
+    if matches:
+        # Check molecular weight as an additional filter
+        mol_wt = Descriptors.MolWt(mol)
+        if mol_wt < 100 or mol_wt > 1000:
+            return False, "Molecular weight outside typical range for alpha-hydroxy ketones"
 
-        # Check if one neighbor is a carbon with hydrogen and the other neighbor is a carbon with oxygen
-        alpha_carbon_idx = None
-        hydroxy_carbon_idx = None
-        for idx in neighbors:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 6 and atom.GetTotalNumHs() == 1:
-                alpha_carbon_idx = idx
-            elif atom.GetAtomicNum() == 6 and atom.GetTotalNumHs() == 0:
-                hydroxy_carbon_idx = idx
+        # Check for presence of additional functional groups
+        # (This is just an example, you may want to modify or remove this check)
+        if mol.HasSubstructMatch(Chem.MolFromSmarts("[NX3]")):
+            return False, "Contains additional nitrogen-containing functional groups"
 
-        # Check if we found both an alpha carbon and a hydroxy carbon
-        if alpha_carbon_idx is not None and hydroxy_carbon_idx is not None:
-            hydroxy_atom_idx = [neighbor.GetIdx() for neighbor in mol.GetAtomWithIdx(hydroxy_carbon_idx).GetNeighbors() if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1]
-            if hydroxy_atom_idx:
-                return True, "Contains a hydroxy group on the alpha-carbon relative to the C=O group"
+        return True, "Contains a hydroxy group on the alpha-carbon relative to the C=O group"
 
     return False, "Does not contain an alpha-hydroxy ketone substructure"
