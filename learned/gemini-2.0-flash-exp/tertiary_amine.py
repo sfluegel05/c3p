@@ -31,13 +31,23 @@ def is_tertiary_amine(smiles: str):
       return False, "No nitrogen atoms found"
     
     # check if each N is bonded to exactly three C's
+    found_tertiary_amine = False
     for atom in nitrogen_atoms:
         carbon_neighbors = 0
         for neighbor in atom.GetNeighbors():
             if neighbor.GetAtomicNum() == 6:
                 carbon_neighbors += 1
+            elif neighbor.GetAtomicNum() == 7 or neighbor.GetAtomicNum() == 8 or neighbor.GetAtomicNum() == 16 or neighbor.GetAtomicNum() == 1: # N,O,S or H
+                pass
+            else:
+                 return False, "Nitrogen atom is not only attached to carbon." # Added check for other heteroatoms/H
         
         if carbon_neighbors == 3:
-          return True, "Tertiary amine"
-    
-    return False, "Not a tertiary amine"
+            found_tertiary_amine = True
+        elif carbon_neighbors < 3 or carbon_neighbors > 3:
+            return False, "Nitrogen atom is not a tertiary amine"
+
+    if found_tertiary_amine:
+       return True, "Tertiary amine"
+    else:
+        return False, "No tertiary amine found"
