@@ -21,20 +21,31 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the beta-D-glucuronic acid substructure with explicit stereochemistry
-    # and glycosidic bond at C1. Also handle the case where the sugar is terminal,
-    # i.e., when there is a hydrogen attached to the glycosidic oxygen.
-    glucuronic_acid_smarts = "[C@H]1([C@@H]([C@H]([C@@H]([C@@H](O1)O([C,S,P,H]))O)O)C(=O)O)"
+    # Define the beta-D-glucuronic acid substructure with specific stereochemistry
+    # using SMARTS. We are checking the correct orientation of the hydroxyl groups
+    # and the carboxyl group, and the ring oxygen
+    glucuronic_acid_smarts = "[C@H]1([O])[C@@H]([O])[C@@H]([O])[C@H]([C@@H]1O)C(=O)O"
     glucuronic_acid_pattern = Chem.MolFromSmarts(glucuronic_acid_smarts)
 
     if not mol.HasSubstructMatch(glucuronic_acid_pattern):
-        return False, "No beta-D-glucuronic acid substructure with glycosidic bond found"
+        return False, "No beta-D-glucuronic acid substructure found"
 
-    # Additional check to ensure the presence of the carboxyl group and stereochemistry
-    carboxyl_group_smarts = "C(=O)O"
-    carboxyl_group_pattern = Chem.MolFromSmarts(carboxyl_group_smarts)
+    # Get the matches for the substructure
+    matches = mol.GetSubstructMatches(glucuronic_acid_pattern)
 
-    if not mol.HasSubstructMatch(carboxyl_group_pattern):
-        return False, "No carboxyl group found in the expected position"
+    #Check that one of the C1 is attached to an oxygen
+    glycosidic_bond_found = False
+    for match in matches:
+       c1_index = match[0] # the index of C1 in the molecule
+       c1_atom = mol.GetAtomWithIdx(c1_index)
+       for neighbor in c1_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8: # check for the glycosidic bond with Oxygen
+                glycosidic_bond_found = True
+                break
+       if glycosidic_bond_found:
+            break
+    if not glycosidic_bond_found:
+       return False, "No glycosidic bond at C1 of glucuronic acid."
+
 
     return True, "Contains beta-D-glucuronic acid with a glycosidic bond at the C1 position."
