@@ -2,6 +2,7 @@
 Classifies: CHEBI:76578 diradylglycerol
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_diradylglycerol(smiles: str):
     """
@@ -22,61 +23,75 @@ def is_diradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Glycerol backbone with optional substitution at any position
-    glycerol_pattern = Chem.MolFromSmarts("C([O])(C([O])C([O]))")
+    # Add hydrogens to correctly identify explicit hydrogens
+    mol = Chem.AddHs(mol)
+
+    # Define SMARTS patterns for glycerol backbone
+    # Glycerol backbone with three carbons and three hydroxyl groups
+    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)")
     matches = mol.GetSubstructMatches(glycerol_pattern)
+
     if not matches:
         return False, "No glycerol backbone found"
 
     # For each glycerol backbone found
     for match in matches:
-        # Indices of carbons and oxygens in the glycerol backbone
-        c1_idx, o1_idx, c2_idx, o2_idx, c3_idx, o3_idx = match
+        c_atoms = [mol.GetAtomWithIdx(idx) for idx in match if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
+        o_atoms = [mol.GetAtomWithIdx(idx) for idx in match if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8]
 
-        # Keep track of the number of substituted positions
+        # Map each hydroxyl oxygen to its carbon
+        hydroxyls = []
+        for o_atom in o_atoms:
+            for neighbor in o_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 6 and neighbor in c_atoms:
+                    hydroxyls.append((neighbor, o_atom))
+                    break
+
+        # Keep track of substituents
         substituted_positions = 0
-
-        # List to store types of substituents
         substituent_types = []
 
-        # Function to check for substituents on each hydroxyl group
-        def check_substitution(carbon_idx, oxygen_idx):
-            carbon = mol.GetAtomWithIdx(carbon_idx)
-            oxygen = mol.GetAtomWithIdx(oxygen_idx)
+        for c_atom, o_atom in hydroxyls:
+            # Check if oxygen is bonded to any atom other than the carbon and hydrogen
+            substituent_found = False
+            for bond in o_atom.GetBonds():
+                neighbor = bond.GetOtherAtom(o_atom)
+                if neighbor.GetIdx() != c_atom.GetIdx():
+                    if neighbor.GetAtomicNum() != 1:
+                        substituent_found = True
 
-            # Bonds from oxygen
-            for bond in oxygen.GetBonds():
-                neighbor = bond.GetOtherAtom(oxygen)
-                if neighbor.GetIdx() != carbon_idx:
-                    if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                        # Check for ether linkage (alkyl or alk-1-enyl)
-                        substituent = neighbor.GetIdx()
-                        substituent_atom = mol.GetAtomWithIdx(substituent)
-                        if substituent_atom.GetAtomicNum() == 6:
-                            # Check for vinyl ether (alk-1-enyl)
-                            if substituent_atom.GetDegree() > 1:
-                                for nb in substituent_atom.GetNeighbors():
-                                    if nb.GetAtomicNum() == 6 and mol.GetBondBetweenAtoms(substituent_atom.GetIdx(), nb.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                                        substituent_types.append('alk-1-enyl')
-                                        return 1
-                            substituent_types.append('alkyl')
-                            return 1
-                    elif bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        # Check for ester linkage (acyl)
-                        substituent_types.append('acyl')
-                        return 1
-            return 0
+                        # Determine substituent type
+                        if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                            # Ether linkage
+                            if neighbor.GetAtomicNum() == 6:
+                                # Check for vinyl ether (alk-1-enyl)
+                                is_vinyl = False
+                                for next_bond in neighbor.GetBonds():
+                                    nbr = next_bond.GetOtherAtom(neighbor)
+                                    if nbr.GetIdx() != o_atom.GetIdx() and next_bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                        is_vinyl = True
+                                        break
+                                if is_vinyl:
+                                    substituent_types.append('alk-1-enyl')
+                                else:
+                                    substituent_types.append('alkyl')
+                            else:
+                                substituent_types.append('other')
+                        elif bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                            # Ester linkage (acyl)
+                            substituent_types.append('acyl')
+                        else:
+                            substituent_types.append('other')
+                    else:
+                        # Oxygen bonded to hydrogen (hydroxyl group)
+                        continue
 
-        # Check substitutions at each position
-        substituted_positions += check_substitution(c1_idx, o1_idx)
-        substituted_positions += check_substitution(c2_idx, o2_idx)
-        substituted_positions += check_substitution(c3_idx, o3_idx)
+            if substituent_found:
+                substituted_positions += 1
 
-        if substituted_positions >= 2:
-            # Verify that substituents are acyl, alkyl, or alk-1-enyl
-            if all(sub_type in ['acyl', 'alkyl', 'alk-1-enyl'] for sub_type in substituent_types):
-                return True, f"Molecule is a diradylglycerol with {substituted_positions} substituted positions"
-            else:
-                return False, "Substituents are not acyl, alkyl, or alk-1-enyl groups"
+        if substituted_positions == 2 and all(sub_type in ['acyl', 'alkyl', 'alk-1-enyl'] for sub_type in substituent_types):
+            return True, f"Molecule is a diradylglycerol with {substituted_positions} substituted positions"
+        else:
+            continue  # Check next match if available
 
     return False, "Does not meet criteria for diradylglycerol"
