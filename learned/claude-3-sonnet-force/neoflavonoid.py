@@ -1,56 +1,26 @@
 """
 Classifies: CHEBI:71971 neoflavonoid
 """
-"""
-Classifies: CHEBI:35706 neoflavonoid
+The previous program attempted to classify neoflavonoids based on the presence of a benzopyran core and an aryl substituent at position 4. However, the outcomes indicate that the program missed several true positives, suggesting that the implemented criteria were too strict or had some shortcomings.
 
-A neoflavonoid is defined as any 1-benzopyran with an aryl substituent at position 4. 
-The term was originally restricted to natural products, but is now also used to describe 
-semi-synthetic and fully synthetic compounds.
-"""
+Here's my analysis and suggestions for improvement:
 
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+1. **Missed true positives**: The program missed many known neoflavonoid structures, such as Mammea A/AA, Mammea A/BA, Mesuol, and others. This suggests that the implemented criteria were too restrictive or did not account for all possible neoflavonoid structural variations.
 
-def is_neoflavonoid(smiles: str):
-    """
-    Determines if a molecule is a neoflavonoid based on its SMILES string.
+2. **Benzopyran core detection**: The SMARTS pattern used to detect the benzopyran core ([c&r4]1[c&r3][c&r4][c&r3][c&r4][c&r3]2[O&r3][C&r4][c&r3][c&r4][c&r3]12) may be too specific and could miss some valid benzopyran structures. It might be better to use a more flexible pattern or combine multiple patterns to cover a broader range of benzopyran variations.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+3. **Aryl substituent detection**: The program only checks for a single aryl substituent at position 4 of the benzopyran core. However, some neoflavonoids may have additional substituents or variations in the aryl group. It might be necessary to consider these variations or use a more flexible pattern to detect the aryl group.
 
-    Returns:
-        bool: True if molecule is a neoflavonoid, False otherwise
-        str: Reason for classification
-    """
+4. **Additional checks**: The program includes additional checks for the number of rotatable bonds and molecular weight. While these checks can help exclude some non-neoflavonoid structures, they may also inadvertently exclude valid neoflavonoids. It might be better to rely more on the structural patterns and less on these additional checks, unless they are essential for distinguishing neoflavonoids from other classes.
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+To improve the program, here's what you could try:
 
-    # Check for benzopyran core
-    benzopyran_pattern = Chem.MolFromSmarts("[c&r4]1[c&r3][c&r4][c&r3][c&r4][c&r3]2[O&r3][C&r4][c&r3][c&r4][c&r3]12")
-    if not mol.HasSubstructMatch(benzopyran_pattern):
-        return False, "No benzopyran core found"
+1. **Review and expand the structural patterns**: Analyze the missed true positive examples and identify common structural features or patterns that were not covered by the current implementation. Expand the SMARTS patterns or use multiple patterns to cover a broader range of valid neoflavonoid structures.
 
-    # Check for aryl substituent at position 4
-    aryl_pattern = Chem.MolFromSmarts("[cX3](-[cX3])-[cX3]")
-    aryl_matches = mol.GetSubstructMatches(aryl_pattern)
-    if not aryl_matches:
-        return False, "No aryl substituent found"
+2. **Consider alternative approaches**: Instead of relying solely on SMARTS patterns, you could explore other approaches, such as using RDKit's built-in functionality for substructure matching or implementing a more sophisticated algorithm that considers various structural features and their combinations.
 
-    # Check if aryl substituent is attached to benzopyran at position 4
-    for match in aryl_matches:
-        atom_idx = match[0]
-        env = Chem.FindAtomEnvironmentOfRadiusN(mol, 4, atom_idx)
-        if env.getIsConstrained():
-            if benzopyran_pattern.HasSubstructMatch(env.Abbreviation):
-                # Additional checks
-                if rdMolDescriptors.CalcNumRotatableBonds(mol) < 3:
-                    return False, "Too few rotatable bonds for a neoflavonoid"
-                if rdMolDescriptors.CalcExactMolWt(mol) < 200:
-                    return False, "Molecular weight too low for a neoflavonoid"
-                return True, "Molecule has a benzopyran core with an aryl substituent at position 4"
+3. **Incorporate domain knowledge**: Consult the literature or consult with experts in the field to better understand the structural variations and boundaries of the neoflavonoid class. This knowledge can help refine the criteria and improve the accuracy of the classification.
 
-    return False, "Aryl substituent not attached to benzopyran at position 4"
+4. **Iterative refinement**: Implement the suggested improvements, evaluate the results on a larger and more diverse dataset, and iteratively refine the criteria based on the outcomes and analysis of any remaining misclassifications.
+
+It's important to note that the benchmark data may not be perfect, and there could be systematic mistakes or ambiguities in the classification of some structures. In such cases, it's reasonable to rely on your domain knowledge and expertise to make informed decisions about which structures should be classified as neoflavonoids, while providing a clear rationale for any deviations from the benchmark.
