@@ -25,10 +25,12 @@ def is_organohalogen_compound(smiles: str):
 
     # Create SMARTS pattern for a carbon-halogen bond.
     # This pattern looks for a halogen connected to a carbon atom by any bond,
-    carbon_halogen_pattern = Chem.MolFromSmarts("[CX4,CX3]~[F,Cl,Br,I]")
-
+    carbon_halogen_pattern = Chem.MolFromSmarts("[C]~[F,Cl,Br,I]")
+    iodyl_pattern = Chem.MolFromSmarts("[C]~[I](=[O])=[O]")
+    iodine_pattern = Chem.MolFromSmarts("[C]~[I]")
+    
     # Check if the molecule contains the pattern
-    if mol.HasSubstructMatch(carbon_halogen_pattern):
+    if mol.HasSubstructMatch(carbon_halogen_pattern) or mol.HasSubstructMatch(iodyl_pattern) or mol.HasSubstructMatch(iodine_pattern):
         return True, "Contains at least one carbon-halogen bond"
 
     return False, "No carbon-halogen bond found"
