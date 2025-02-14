@@ -27,74 +27,118 @@ def is_ceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for amide bond (C(=O)-N)
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if not amide_matches:
-        return False, "No amide bond found"
+    try:
+        # Define SMARTS patterns
+        amide_smarts = '[CX3](=O)[NX3][C]'  # Amide bond
+        sphingoid_smarts = '[NX3][C@@H](CO)[C@H](O)CCCCCCCCCCCCCCC'  # Sphingoid base core
+        fatty_acid_smarts = '[C](-[C]){12,24}-C(=O)N'  # Fatty acid chain with 14-26 carbons
 
-    # Assume first amide bond is the linkage
-    amide_match = amide_matches[0]
-    carbonyl_c_idx = amide_match[0]
-    nitrogen_idx = amide_match[2]
+        # Convert SMARTS to molecules
+        amide_pattern = Chem.MolFromSmarts(amide_smarts)
+        sphingoid_pattern = Chem.MolFromSmarts(sphingoid_smarts)
+        fatty_acid_pattern = Chem.MolFromSmarts(fatty_acid_smarts)
 
-    # Retrieve atoms
-    carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
-    nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
+        # Check for amide bond
+        if not mol.HasSubstructMatch(amide_pattern):
+            return False, "No amide bond found"
 
-    # Get fatty acid chain starting from carbonyl carbon
-    fatty_acid_atoms = set()
-    atoms_to_visit = [carbonyl_c]
-    while atoms_to_visit:
-        atom = atoms_to_visit.pop()
-        if atom.GetAtomicNum() == 6:  # Carbon
-            fatty_acid_atoms.add(atom.GetIdx())
+        # Find amide matches
+        amide_matches = mol.GetSubstructMatches(amide_pattern)
+
+        # Loop through all amide matches to find valid ceramide structure
+        for amide_match in amide_matches:
+            carbonyl_c_idx = amide_match[0]
+            nitrogen_idx = amide_match[2]
+
+            carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
+            nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
+
+            # Check for sphingoid base attached to nitrogen
+            sphingoid_match = mol.HasSubstructMatch(sphingoid_pattern, useChirality=True)
+            if not sphingoid_match:
+                continue  # Try next amide bond
+
+            # Get fatty acid chain length starting from carbonyl carbon
+            fatty_acid_length = get_chain_length(mol, carbonyl_c_idx, exclude_idx=nitrogen_idx)
+            if not 14 <= fatty_acid_length <= 26:
+                continue  # Try next amide bond
+
+            # Get sphingoid base chain length starting from nitrogen
+            sphingoid_length = get_chain_length(mol, nitrogen_idx, exclude_idx=carbonyl_c_idx)
+            if sphingoid_length < 12:
+                continue  # Try next amide bond
+
+            # Check for hydroxyl groups on sphingoid base
+            sphingoid_oxygen_count = count_heteroatoms(mol, nitrogen_idx, atomic_num=8, exclude_idx=carbonyl_c_idx)
+            if sphingoid_oxygen_count < 1:
+                continue  # Try next amide bond
+
+            # All checks passed
+            return True, "Molecule is a ceramide with appropriate chain lengths and functional groups"
+
+        # If no valid ceramide structure found
+        return False, "No valid ceramide structure found in molecule"
+
+    except Exception as e:
+        return False, f"Error during processing: {e}"
+
+def get_chain_length(mol, start_idx, exclude_idx=None):
+    """
+    Calculates the length of a carbon chain starting from a given atom index.
+
+    Args:
+        mol (Chem.Mol): Molecule object
+        start_idx (int): Starting atom index
+        exclude_idx (int): Atom index to exclude from traversal
+
+    Returns:
+        int: Number of carbon atoms in the chain
+    """
+    visited = set()
+    queue = [start_idx]
+    carbon_count = 0
+
+    while queue:
+        idx = queue.pop()
+        if idx in visited or idx == exclude_idx:
+            continue
+        visited.add(idx)
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() == 6:
+            carbon_count += 1
             for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() not in fatty_acid_atoms and neighbor.GetAtomicNum() in [6,1]:
-                    atoms_to_visit.append(neighbor)
+                n_idx = neighbor.GetIdx()
+                if n_idx not in visited:
+                    queue.append(n_idx)
+    return carbon_count
 
-    fatty_acid = Chem.PathToSubmol(mol, list(fatty_acid_atoms))
+def count_heteroatoms(mol, start_idx, atomic_num, exclude_idx=None):
+    """
+    Counts the number of heteroatoms (e.g., oxygen) connected to the chain starting from a given atom index.
 
-    # Get sphingoid base starting from nitrogen
-    sphingoid_atoms = set()
-    atoms_to_visit = [nitrogen]
-    while atoms_to_visit:
-        atom = atoms_to_visit.pop()
-        sphingoid_atoms.add(atom.GetIdx())
+    Args:
+        mol (Chem.Mol): Molecule object
+        start_idx (int): Starting atom index
+        atomic_num (int): Atomic number of the heteroatom to count
+        exclude_idx (int): Atom index to exclude from traversal
+
+    Returns:
+        int: Number of heteroatoms found
+    """
+    visited = set()
+    queue = [start_idx]
+    heteroatom_count = 0
+
+    while queue:
+        idx = queue.pop()
+        if idx in visited or idx == exclude_idx:
+            continue
+        visited.add(idx)
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() == atomic_num:
+            heteroatom_count += 1
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() not in sphingoid_atoms and neighbor.GetAtomicNum() != 1:
-                atoms_to_visit.append(neighbor)
-
-    sphingoid_base = Chem.PathToSubmol(mol, list(sphingoid_atoms))
-
-    # Analyze fatty acid fragment
-    fatty_acid_carbons = sum(1 for atom in fatty_acid.GetAtoms() if atom.GetAtomicNum() == 6)
-    if fatty_acid_carbons < 14 or fatty_acid_carbons > 26:
-        return False, f"Fatty acid chain length is {fatty_acid_carbons}, which is outside 14-26 carbons"
-
-    # Count double bonds in fatty acid
-    fatty_acid_unsaturations = sum(1 for bond in fatty_acid.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE)
-    if fatty_acid_unsaturations > 1:
-        return False, f"Fatty acid has {fatty_acid_unsaturations} double bonds, should be saturated or monounsaturated"
-
-    # Analyze sphingoid base fragment
-    sphingoid_base_carbons = sum(1 for atom in sphingoid_base.GetAtoms() if atom.GetAtomicNum() == 6)
-    sphingoid_base_nitrogens = sum(1 for atom in sphingoid_base.GetAtoms() if atom.GetAtomicNum() == 7)
-    sphingoid_base_oxygens = sum(1 for atom in sphingoid_base.GetAtoms() if atom.GetAtomicNum() == 8)
-
-    if sphingoid_base_carbons < 12:
-        return False, f"Sphingoid base chain length is {sphingoid_base_carbons}, which is too short"
-
-    if sphingoid_base_nitrogens < 1:
-        return False, "No nitrogen atom found in sphingoid base"
-
-    if sphingoid_base_oxygens < 1:
-        return False, "No hydroxyl groups found on sphingoid base"
-
-    # Check for hydroxyl groups on sphingoid base carbons
-    hydroxyl_smarts = Chem.MolFromSmarts("[CX4][$([OX2H])]")
-    hydroxyls = sphingoid_base.GetSubstructMatches(hydroxyl_smarts)
-    if not hydroxyls:
-        return False, "Hydroxyl groups not attached to carbon in sphingoid base"
-
-    return True, "Molecule is a ceramide with appropriate chain lengths and functional groups"
+            n_idx = neighbor.GetIdx()
+            if n_idx not in visited:
+                queue.append(n_idx)
+    return heteroatom_count
