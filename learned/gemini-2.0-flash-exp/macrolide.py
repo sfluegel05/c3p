@@ -2,7 +2,7 @@
 Classifies: CHEBI:25106 macrolide
 """
 from rdkit import Chem
-from collections import deque
+from rdkit.Chem import rdMolDescriptors
 
 def is_macrolide(smiles: str):
     """
@@ -28,33 +28,14 @@ def is_macrolide(smiles: str):
     if not lactone_matches:
           return False, "No lactone group found"
     
-    for match in lactone_matches: # check all lactone groups until we find a macrolide
-
+    for match in lactone_matches:
         lactone_carbon_index = match[0]
+        
+        # Find rings containing the lactone carbon
+        rings = mol.GetAtomWithIdx(lactone_carbon_index).GetOwningRings()
 
-        # Breadth-first search to find the ring
-        queue = deque([(lactone_carbon_index, [lactone_carbon_index])])  # (atom_index, path)
-        visited_atoms = set() #to track the ring size
-
-        while queue:
-            current_atom_index, path = queue.popleft()
+        for ring in rings:
+            if len(ring) >= 12:
+                return True, f"Macrocyclic lactone ring (size: {len(ring)}) found."
             
-            if current_atom_index in visited_atoms:
-                continue
-            visited_atoms.add(current_atom_index)
-            
-            if len(visited_atoms) > 1:
-                if current_atom_index == lactone_carbon_index:
-                    if len(visited_atoms) >= 12:
-                         return True, f"Macrocyclic lactone ring (size: {len(visited_atoms)}) found."
-                    else:
-                       break # continue the loop, to check the other lactone
-            
-            
-            atom = mol.GetAtomWithIdx(current_atom_index)
-            for neighbor in atom.GetNeighbors():
-                 neighbor_index = neighbor.GetIdx()
-                 if neighbor_index not in path:
-                     queue.append((neighbor_index, path+[neighbor_index]))
-                    
     return False, "No macrocyclic lactone ring (12+ atoms) found."
