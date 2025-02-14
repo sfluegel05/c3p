@@ -1,54 +1,30 @@
 """
 Classifies: CHEBI:65323 monoterpenoid indole alkaloid
 """
-"""
-Classifies: CHEBI:25680 monoterpenoid indole alkaloid
-A terpenoid indole alkaloid which is biosynthesised from L-tryptophan and diisoprenoid 
-(usually secolaganin) building blocks.
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+Based on the outcomes provided, it seems that the previous program has some flaws in correctly identifying monoterpenoid indole alkaloids. Here are my observations and suggestions for improvement:
 
-def is_monoterpenoid_indole_alkaloid(smiles: str):
-    """
-    Determines if a molecule is a monoterpenoid indole alkaloid based on its SMILES string.
+1. **Indole Substructure Detection**: The program correctly identifies molecules without an indole substructure (e.g., Corynantheol, Vincamajine, Strychnohexamine, etc.) as false negatives. However, it also misses some molecules that do contain an indole substructure (e.g., Cabucine, Mitragynine, yohimbic acid, etc.). This could be because the SMARTS pattern used to detect the indole substructure is too specific and fails to match some variations of the indole ring system.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+   **Suggestion**: Use a more general SMARTS pattern to detect the indole substructure, such as `"c1ccc2[nH]ccc2c1"` or `"c1ccc2c(c1)nc3ccccc23"`.
 
-    Returns:
-        bool: True if molecule is a monoterpenoid indole alkaloid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for indole substructure
-    indole_pattern = Chem.MolFromSmarts("c1ccc2c(c1)nc3ccccc23")
-    if not mol.HasSubstructMatch(indole_pattern):
-        return False, "No indole substructure found"
-    
-    # Look for terpenoid substructure
-    terpenoid_pattern = Chem.MolFromSmarts("C=CC(C)CC")
-    if not mol.HasSubstructMatch(terpenoid_pattern):
-        return False, "No terpenoid substructure found"
-    
-    # Check for connectivity between indole and terpenoid
-    connected = any(atom.GetAtomicNum() == 7 and atom.GetDegree() > 3 for atom in mol.GetAtoms())
-    if not connected:
-        return False, "Indole and terpenoid not connected"
-    
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 600:
-        return False, "Molecular weight outside expected range (200-600 Da)"
-    
-    # Count nitrogen atoms (should have 2-3)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count < 2 or n_count > 3:
-        return False, f"Unexpected number of nitrogen atoms ({n_count})"
-    
-    return True, "Contains indole and terpenoid substructures connected"
+2. **Terpenoid Substructure Detection**: The program correctly identifies some molecules without a terpenoid substructure (e.g., yohimbic acid) as false negatives. However, it also misses many molecules that likely contain a terpenoid substructure (e.g., Cabucine, Mitragynine, etc.). This could be because the SMARTS pattern used to detect the terpenoid substructure is too specific and only matches a particular type of terpenoid substructure.
+
+   **Suggestion**: Use a more general SMARTS pattern to detect terpenoid substructures, such as `"C=CC(C)C"` or `"C=CC(C)CC"`. Additionally, consider using multiple SMARTS patterns to match different types of terpenoid substructures.
+
+3. **Connectivity Check**: The program's connectivity check seems reasonable, but it might be too strict in some cases. Some monoterpenoid indole alkaloids might have the indole and terpenoid substructures connected through a longer chain or more complex linker.
+
+   **Suggestion**: Consider relaxing the connectivity check or using a more flexible approach, such as checking for a maximum topological distance between the indole and terpenoid substructures.
+
+4. **Molecular Weight Check**: The molecular weight range of 200-600 Da seems reasonable for monoterpenoid indole alkaloids. However, there might be exceptions to this range, especially for larger or more complex molecules.
+
+   **Suggestion**: Consider using a broader molecular weight range or adjusting the range based on the specific examples provided.
+
+5. **Nitrogen Count Check**: The nitrogen count check seems reasonable, but it might be too strict in some cases. Some monoterpenoid indole alkaloids might have additional nitrogen atoms due to functional groups or substituents.
+
+   **Suggestion**: Consider relaxing the nitrogen count check or removing it altogether, as it may not be a critical feature for identifying this class of compounds.
+
+6. **Additional Checks**: Depending on the specific examples provided, additional checks or filters might be necessary to correctly identify monoterpenoid indole alkaloids. For example, checking for the presence of specific functional groups, ring systems, or molecular frameworks.
+
+   **Suggestion**: Analyze the false negatives and positives carefully to identify additional patterns or features that could be used to improve the classification.
+
+Overall, the previous program has a good foundation, but it might be too strict or specific in its criteria. By relaxing some of the checks and using more general SMARTS patterns, the program's performance could potentially improve. Additionally, incorporating more examples and analyzing the false negatives and positives can help refine the classification approach.
