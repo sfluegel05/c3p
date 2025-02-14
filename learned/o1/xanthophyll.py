@@ -6,12 +6,12 @@ Classifies: xanthophyll
 """
 
 from rdkit import Chem
-from rdkit.Chem import Descriptors
 
 def is_xanthophyll(smiles: str):
     """
     Determines if a molecule is a xanthophyll based on its SMILES string.
-    A xanthophyll is an oxygen-containing carotenoid; that is, a carotene (C40 polyene hydrocarbon) with oxygen-containing functional groups such as hydroxyls, ketones, epoxides, etc.
+    A xanthophyll is an oxygen-containing carotenoid; that is, a carotene (C40 polyene hydrocarbon) 
+    with oxygen-containing functional groups such as hydroxyls, ketones, epoxides, etc.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,65 +25,72 @@ def is_xanthophyll(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Exclude molecules with unusual elements (only consider C, H, O)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in (1, 6, 8):
+            return False, f"Contains unusual element: {atom.GetSymbol()}"
+
     # Count number of carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 35:
+    if c_count < 20:
         return False, f"Too few carbons ({c_count}) to be a carotenoid"
-
-    # Check for extensive conjugation (long polyene chain)
-    # Estimate the number of conjugated double bonds
-    double_bond_count = 0
-    conjugated_double_bond_count = 0
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            double_bond_count += 1
-            # Check if connected to another double bond (conjugation)
-            begin_atom = bond.GetBeginAtom()
-            end_atom = bond.GetEndAtom()
-            for nbr in begin_atom.GetNeighbors():
-                if nbr.GetIdx() != end_atom.GetIdx():
-                    nbr_bond = mol.GetBondBetweenAtoms(begin_atom.GetIdx(), nbr.GetIdx())
-                    if nbr_bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        conjugated_double_bond_count += 1
-            for nbr in end_atom.GetNeighbors():
-                if nbr.GetIdx() != begin_atom.GetIdx():
-                    nbr_bond = mol.GetBondBetweenAtoms(end_atom.GetIdx(), nbr.GetIdx())
-                    if nbr_bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        conjugated_double_bond_count += 1
-
-    if conjugated_double_bond_count < 7:
-        return False, f"Too few conjugated double bonds ({conjugated_double_bond_count}) for a carotenoid"
 
     # Check for presence of oxygen atoms
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count == 0:
         return False, "No oxygen atoms found, not a xanthophyll"
 
+    # Find the longest chain of conjugated non-aromatic double bonds
+    def get_longest_conjugated_chain(mol):
+        longest_length = 0
+        visited_bonds = set()
+
+        for bond in mol.GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and not bond.IsAromatic():
+                length = dfs_conjugated_chain(bond, visited_bonds)
+                if length > longest_length:
+                    longest_length = length
+        return longest_length
+
+    def dfs_conjugated_chain(bond, visited):
+        if bond in visited or bond.IsAromatic() or bond.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+            return 0
+        visited.add(bond)
+        length = 1
+        for nbr in [bond.GetBeginAtom(), bond.GetEndAtom()]:
+            for nbr_bond in nbr.GetBonds():
+                if nbr_bond != bond and not nbr_bond.IsAromatic():
+                    if nbr_bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                        length = max(length, 1 + dfs_conjugated_chain(nbr_bond, visited))
+        return length
+
+    longest_conj_chain = get_longest_conjugated_chain(mol)
+    if longest_conj_chain < 7:
+        return False, f"Longest conjugated chain is too short ({longest_conj_chain}) for a carotenoid"
+
     # Check for typical oxygen-containing functional groups
-    # Hydroxyl groups (-OH)
     has_hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts('[OX2H]'))
-    # Ketone groups (>C=O)
-    has_ketone = mol.HasSubstructMatch(Chem.MolFromSmarts('C(=O)[#6]'))
-    # Epoxide groups (C1OC1)
+    has_ketone = mol.HasSubstructMatch(Chem.MolFromSmarts('[CX3]=[OX1]'))
     has_epoxide = mol.HasSubstructMatch(Chem.MolFromSmarts('C1OC1'))
 
     if not (has_hydroxyl or has_ketone or has_epoxide):
         return False, "No typical oxygen-containing functional groups found in xanthophyll"
 
-    # If all checks passed, classify as xanthophyll
+    # Check for carotenoid-like structure: long linear or semi-linear molecule
+    mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, f"Molecular weight too low ({mol_wt} Da) for a typical xanthophyll"
+
+    # All checks passed
     return True, "Molecule is likely a xanthophyll (oxygenated carotenoid)"
 
-# Example usage
-# result, reason = is_xanthophyll("CC(\C=C\C=C(C)\C=C\C1=C(C)C[C@@H](O)CC1(C)C)=C/C=C/C=C(C)/C=C/C=C(C)/C=C/C1=C(C)C[C@@H](O)CC1(C)C")
-# print(result, reason)
-
-# Note: Uncomment the example usage and replace the SMILES string with desired input to test the function.
-
-# The function checks for the following:
+# Note: The function checks for the following:
 # - Valid SMILES string
-# - Sufficient number of carbons (typical carotenoids have around 40 carbons)
-# - Presence of extensive conjugation (approximate estimation of conjugated double bonds)
+# - Does not contain unusual elements (only C, H, O)
+# - Sufficient number of carbons (minimum 20)
 # - Presence of oxygen atoms
+# - Longest chain of conjugated non-aromatic double bonds (minimum length 7)
 # - Presence of typical functional groups in xanthophylls (hydroxyls, ketones, epoxides)
+# - Molecular weight consistent with xanthophylls
 
 # If all criteria are met, the molecule is classified as a xanthophyll.
