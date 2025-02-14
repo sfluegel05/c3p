@@ -20,22 +20,17 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS for steroid core, 3-oxo group, and delta(4) double bond
-    # The core is a fused ring system and the numbered carbons correspond to a steroid numbering scheme:
-    #      1   2   3   4
-    #    /---\---/-\---/
-    #   10    9   8   5
-    #   \---\---/-\---/
-    #      6   7
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C][C]2[C]1[C]([C])([C])[C]3[C]2[C][C][C]4[C]3([C])[C][C][C]4")
-    steroid_core_pattern2 = Chem.MolFromSmarts("[CR1]1[CR1][CR1][CR1]2[CR1]1[CR1]([CR1])([CR1])[CR1]3[CR1]2[CR1][CR1][CR1]4[CR1]3([CR1])[CR1][CR1][CR1]4")
-    
+    # Define SMARTS for steroid core
+    # This pattern matches a basic 4-ring system with R-groups at each position
+    # Three 6-membered rings and one 5-membered ring
+    steroid_core_pattern = Chem.MolFromSmarts("[CR1]1[CR1][CR1][CR1]2[CR1]1[CR1]([CR1])([CR1])[CR1]3[CR1]2[CR1][CR1][CR1]4[CR1]3[CR1][CR1]4")
+
     # Define SMARTS for the 3-oxo group with delta-4 double bond
     oxo_group_pattern = Chem.MolFromSmarts("[C]1-[C](=[O])-[C]=[C]-[C]1")
 
     # Check for substructure matches
-    if not mol.HasSubstructMatch(steroid_core_pattern2) and not mol.HasSubstructMatch(steroid_core_pattern):
-         return False, "No steroid core found"
+    if not mol.HasSubstructMatch(steroid_core_pattern):
+        return False, "No steroid core found"
 
     if not mol.HasSubstructMatch(oxo_group_pattern):
         return False, "No 3-oxo-Delta(4) group found"
