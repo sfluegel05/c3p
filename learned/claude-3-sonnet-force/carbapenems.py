@@ -10,8 +10,9 @@ from rdkit.Chem import AllChem
 def is_carbapenems(smiles: str):
     """
     Determines if a molecule is a carbapenem based on its SMILES string.
-    Carbapenems are a class of beta-lactam antibiotics with a carbapenem skeleton
-    that is variously substituted and typically contains sulfur, amine, and/or hydroxyl groups.
+    Carbapenems are a class of beta-lactam antibiotics that have a carbapenem skeleton,
+    which consists of a four-membered beta-lactam ring fused to a five-membered ring
+    with a sulfur atom and a carboxylate group attached.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,23 +28,18 @@ def is_carbapenems(smiles: str):
         return False, "Invalid SMILES string"
     
     # Look for carbapenem backbone pattern
-    backbone_pattern = Chem.MolFromSmarts("[C@@H]1[C@H]2C(=O)N1C2")
+    backbone_pattern = Chem.MolFromSmarts("[C@@H]1[C@H]2C(=O)N1C2SC3=C(N4C(=O)[C@@]3([C@H]([C@@H]4C)O)C)C(O)=O")
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No carbapenem backbone found"
     
-    # Check for common functional groups
-    sulfur_pattern = Chem.MolFromSmarts("S")
-    amine_pattern = Chem.MolFromSmarts("N")
+    # Check for common functional groups and substituents
     hydroxy_pattern = Chem.MolFromSmarts("O[H]")
+    amine_pattern = Chem.MolFromSmarts("N")
     
-    has_sulfur = mol.HasSubstructMatch(sulfur_pattern)
-    has_amine = mol.HasSubstructMatch(amine_pattern)
     has_hydroxy = mol.HasSubstructMatch(hydroxy_pattern)
+    has_amine = mol.HasSubstructMatch(amine_pattern)
     
-    if not (has_sulfur or has_amine or has_hydroxy):
-        return False, "Missing common functional groups (sulfur, amine, or hydroxyl)"
-    
-    # Additional checks for specific substituents or patterns
-    # ...
+    if not (has_hydroxy or has_amine):
+        return False, "Missing common functional groups (hydroxyl or amine)"
     
     return True, "Contains carbapenem skeleton with common functional groups and substituents"
