@@ -5,6 +5,7 @@ Classifies: CHEBI:24026 fatty alcohol
 Classifies: fatty alcohol
 """
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_fatty_alcohol(smiles: str):
     """
@@ -19,70 +20,65 @@ def is_fatty_alcohol(smiles: str):
         bool: True if molecule is a fatty alcohol, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Remove hydrogens for efficiency
-    mol = Chem.RemoveHs(mol)
-    
-    # Identify all carbon atoms
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    # Identify hydroxyl groups attached to sp3 carbons (exclude phenols)
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4;!$(C[O,N,S,P]=O)]-[OX2H]")
+    matches = mol.GetSubstructMatches(hydroxyl_pattern)
 
-    if not carbon_atoms:
-        return False, "No carbon atoms found"
+    if not matches:
+        return False, "No suitable hydroxyl groups attached to sp3 carbons"
 
-    # Find all chains starting from carbon atoms
-    from collections import deque
+    # Iterate over each hydroxyl group
+    for match in matches:
+        carbon_idx = match[0]
+        oxygen_idx = match[1]
 
-    longest_chain_length = 0
-    longest_chain = []
+        # Check if the carbon is in a ring
+        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+        if carbon_atom.IsInRing():
+            continue  # Skip if carbon is part of a ring
 
-    for atom in carbon_atoms:
+        # Perform BFS to find all connected carbons (excluding rings)
         visited = set()
-        queue = deque()
-        queue.append([atom.GetIdx()])
-        
+        queue = [carbon_idx]
+        carbon_count = 0
+
         while queue:
-            path = queue.popleft()
-            current_atom_idx = path[-1]
-            current_atom = mol.GetAtomWithIdx(current_atom_idx)
-            visited.add(current_atom_idx)
-            
-            # Extend path
-            neighbors = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited]
-            for nbr in neighbors:
-                new_path = path + [nbr.GetIdx()]
-                queue.append(new_path)
-                if len(new_path) > longest_chain_length:
-                    longest_chain_length = len(new_path)
-                    longest_chain = new_path
+            current_idx = queue.pop(0)
+            if current_idx in visited:
+                continue
+            visited.add(current_idx)
+            atom = mol.GetAtomWithIdx(current_idx)
 
-    if longest_chain_length < 3:
-        return False, f"Longest carbon chain has {longest_chain_length} carbons, less than 3"
+            # Count only carbon atoms
+            if atom.GetAtomicNum() == 6:
+                carbon_count += 1
+            else:
+                continue  # Skip non-carbon atoms
 
-    # Check for hydroxyl group attached to any carbon in the longest chain
-    found = False
-    for idx in longest_chain:
-        atom = mol.GetAtomWithIdx(idx)
-        if atom.GetAtomicNum() == 6 and not atom.IsInRing():
-            for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() == 1:
-                    # Check that oxygen is hydroxyl group (OH)
-                    if nbr.GetDegree() == 1 and not nbr.IsInRing():
-                        found = True
-                        break
-            if found:
-                break
+            # Add neighboring carbons that are not in rings
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited and not neighbor.IsInRing():
+                    if neighbor.GetAtomicNum() == 6:
+                        queue.append(neighbor_idx)
 
-    if not found:
-        return False, "No hydroxyl group attached to carbon in the longest chain"
+        if carbon_count >= 3:
+            return True, f"Contains aliphatic alcohol with a chain of {carbon_count} carbons"
 
-    return True, f"Contains aliphatic alcohol with a chain of {longest_chain_length} carbons"
+    return False, "No aliphatic chain with sufficient length connected to hydroxyl group"
 
 # Example usage:
-# smiles = "CCCCCCCCCCCCCC(O)CCC"  # tetradecan-5-ol
-# result, reason = is_fatty_alcohol(smiles)
-# print(result, reason)
+# smiles_list = [
+#     "CCCCCCCCCCCCCC(O)CCC",  # tetradecan-5-ol
+#     "CCCCCCCCCCCCCO",        # dodecan-1-ol
+#     "CC(C)(O)C(=O)Cc1cnc2ccccc12",  # Should be False
+# ]
+# for smiles in smiles_list:
+#     result, reason = is_fatty_alcohol(smiles)
+#     print(f"SMILES: {smiles}\nResult: {result}, Reason: {reason}\n")
