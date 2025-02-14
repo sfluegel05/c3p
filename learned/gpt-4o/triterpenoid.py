@@ -2,14 +2,13 @@
 Classifies: CHEBI:36615 triterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_triterpenoid(smiles: str):
     """
     Determines if a molecule is a triterpenoid based on its SMILES string.
     Triterpenoids are terpenoids derived from a triterpene with a varied 
     C30 carbon skeleton that might be rearranged or modified.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
 
@@ -28,30 +27,29 @@ def is_triterpenoid(smiles: str):
     if c_count < 30:
         return False, f"Contains only {c_count} carbon atoms, requires at least 30 for triterpenoid"
     
-    # Check for triterpenoid-like patterns using SMARTS
-    # Lupane, oleanane, and other base structures
+    # Define skeletal structures typical of triterpenoids
     triterpenoid_patterns = [
-        Chem.MolFromSmarts("C1CCCC2(C1)C3CCCCC3CC2"), # Generic pattern example
-        # Placeholders for specific triterpenoid skeletons can be inserted here
-        # These are not accurate representations but illustrative of concept
+        Chem.MolFromSmarts("C1CCC2CC[C@H]3[C@]4(C)CC[C@@H]5C4CC[C@@H]3[C@@H]2C1"),
+        Chem.MolFromSmarts("C1CC2(CC[C@@H]3CC4(C)CCC5C4CCC3C2CCC1C5)C"),
+        Chem.MolFromSmarts("C1=CC2=C3C=CC4=C2C1C5=C3C(C=C6[C@H](C5)CC(=CC6)C)C4"),
     ]
     
-    # Check for each pattern
+    # Check if matches any typical triterpenoid patterns
     for pattern in triterpenoid_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Matches triterpenoid-like pattern"
+            return True, "Matches typical triterpenoid skeletal pattern"
     
-    # Check for common functional groups (alcohols, ketones, carboxylic acids)
-    alcohol_pattern = Chem.MolFromSmarts("[CX4][OH1]")
-    if mol.HasSubstructMatch(alcohol_pattern):
-        return True, "Contains alcohol functional group"
-    
-    ketone_pattern = Chem.MolFromSmarts("C(=O)[C,C]")
-    if mol.HasSubstructMatch(ketone_pattern):
-        return True, "Contains ketone functional group"
-    
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OH1]")
-    if mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return True, "Contains carboxylic acid functional group"
-    
+    # Check for common triterpenoid functional group patterns within specific contexts
+    specific_alcohol_pattern = Chem.MolFromSmarts("[C&!R][C@H](O)C")
+    if mol.HasSubstructMatch(specific_alcohol_pattern):
+        return True, "Contains alcohol functional group in sterane ring"
+
+    specific_ketone_pattern = Chem.MolFromSmarts("[C&R2](=O)[C&R2]")
+    if mol.HasSubstructMatch(specific_ketone_pattern):
+        return True, "Contains ketone functional group in sterane ring"
+
+    specific_carboxylic_acid_pattern = Chem.MolFromSmarts("[C&R2](=O)[OH]")
+    if mol.HasSubstructMatch(specific_carboxylic_acid_pattern):
+        return True, "Contains carboxylic acid functional group in sterane ring"
+
     return False, "Does not match typical triterpenoid structure"
