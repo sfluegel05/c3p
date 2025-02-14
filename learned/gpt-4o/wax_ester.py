@@ -2,16 +2,17 @@
 Classifies: CHEBI:10036 wax ester
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.rdMolDescriptors import CalcNumAliphaticCarbocycles
 
 def is_wax_ester(smiles: str):
     """
     Determines if a molecule is a wax ester based on its SMILES string.
-    A wax ester consists of an ester linkage formed between a fatty acid and a fatty alcohol.
-    
+    A wax ester is a fatty acid ester resulting from the condensation of a carboxy group of
+    a fatty acid with the alcoholic hydroxy group of a fatty alcohol.
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a wax ester, False otherwise
         str: Reason for classification
@@ -22,25 +23,29 @@ def is_wax_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Check for ester group (-C(=O)O-)
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+    # Check for ester linkage (-C(=O)O-)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     if not mol.HasSubstructMatch(ester_pattern):
         return False, "No ester linkage found"
-    
-    # Find ester linkage(s)
+
+    # Get the atom indices of all ester linkages found
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    # Verify carbon chain lengths (fatty acid/alcohol characteristics)
-    # Specific length requirements are not well-defined universally, but they are typically long for wax esters
+
+    # Verify that each ester group connects two sufficiently long carbon chains
     for match in ester_matches:
-        # Check carbon chain before and after the ester group
-        atom_idx_o = match[2]  # Index of the oxygen atom involved in the ester
-        atom_idx_c = match[0]  # Index of the carbon atom double-bonded to oxygen
-        chain_before = Chem.GetShortestPath(mol, atom_idx_c, 0)  # Assumes chain starts from this carbon
-        chain_after = Chem.GetShortestPath(mol, atom_idx_o, mol.GetNumAtoms() - 1)  # Assumes chain ends at the last atom
+        atom_idx_c1 = match[0]  # Carbon of the carbonyl group
+        atom_idx_o = match[2]   # Oxygen in -C(=O)O-
+        
+        # Check chain connected to atom_idx_c1
+        atom_neighbors = [neigh.GetIdx() for neigh in mol.GetAtomWithIdx(atom_idx_c1).GetNeighbors() if neigh.GetIdx() != match[1]]
+        c1_chain_length = sum(1 for _ in Chem.rdmolops.bfsTraverse(mol, startAtomIdx=atom_neighbors[0]) if mol.GetAtomWithIdx(_).GetAtomicNum() == 6)
+        
+        # Check chain connected to atom_idx_o
+        atom_neighbors = [neigh.GetIdx() for neigh in mol.GetAtomWithIdx(atom_idx_o).GetNeighbors()]
+        o_chain_length = sum(1 for _ in Chem.rdmolops.bfsTraverse(mol, startAtomIdx=atom_neighbors[0]) if mol.GetAtomWithIdx(_).GetAtomicNum() == 6)
 
-        # Estimate the length, ensuring more than a minimal length typical for fatty acids/alcohols
-        if len(chain_before) < 8 or len(chain_after) < 8:
-            return False, f"Chains are too short to be characteristic of a wax ester (chains found: {len(chain_before)} and {len(chain_after)})"
+        # Ensure both chains are sufficiently long (e.g., >=8 carbons)
+        if c1_chain_length < 8 or o_chain_length < 8:
+            return False, f"Chains attached to ester group are too short (lengths found: {c1_chain_length} and {o_chain_length})"
 
-    return True, "Contains ester linkage with suitable long chains typical for wax esters"
+    return True, "Contains an ester linkage with sufficiently long carbon chains typical of wax esters"
