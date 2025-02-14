@@ -12,7 +12,8 @@ def is_polyamine(smiles: str):
     Determines if a molecule is a polyamine based on its SMILES string.
     A polyamine is defined as any organic amino compound that contains two or more amino groups.
     Amino groups include primary, secondary, and tertiary amines (both aliphatic and aromatic),
-    excluding nitrogen atoms in amides, nitro groups, nitriles, azo compounds, and other non-amino functional groups.
+    including their protonated forms, but excluding nitrogen atoms in amides, nitro groups,
+    nitriles, azo compounds, and other non-amino functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,80 +28,98 @@ def is_polyamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for amino groups
-    # Primary amine: Nitrogen with two hydrogens and single bonds
-    primary_amine = Chem.MolFromSmarts("[NX3;H2][#6]")
-    # Secondary amine: Nitrogen with one hydrogen and single bonds
-    secondary_amine = Chem.MolFromSmarts("[NX3;H1]([#6])[#6]")
-    # Tertiary amine: Nitrogen with no hydrogens and single bonds
-    tertiary_amine = Chem.MolFromSmarts("[NX3;H0]([#6])[#6]")
-    # Aromatic amine (aniline type): Nitrogen attached to aromatic ring
-    aromatic_amine = Chem.MolFromSmarts("[NX3;H1,H0][a]")
-
-    # Combine all amine patterns
-    amine_patterns = [primary_amine, secondary_amine, tertiary_amine, aromatic_amine]
-
-    # Initialize set to keep track of unique amino nitrogen atoms
     amino_nitrogens = set()
 
-    # Search for amino groups
-    for pattern in amine_patterns:
-        matches = mol.GetSubstructMatches(pattern)
-        for match in matches:
-            n_idx = match[0]
-            atom = mol.GetAtomWithIdx(n_idx)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 7:  # Not a nitrogen atom
+            continue
 
-            # Exclude nitrogens in amides (N-C=O)
-            is_amide = False
-            for bond in atom.GetBonds():
-                nbr = bond.GetOtherAtom(atom)
-                if nbr.GetAtomicNum() == 6:  # Carbon
-                    # Check if carbon is double bonded to oxygen
-                    for nbr_bond in nbr.GetBonds():
-                        nbr_atom = nbr_bond.GetOtherAtom(nbr)
-                        if (nbr_bond.GetBondType() == rdchem.BondType.DOUBLE and
-                            nbr_atom.GetAtomicNum() == 8):  # Oxygen
-                            is_amide = True
-                            break
-                    if is_amide:
+        # Initialize exclusion flags
+        is_amide = False
+        is_nitro = False
+        is_nitrile = False
+        is_azo = False
+        is_quaternary = False
+        is_in_ring = atom.IsInRing()
+        is_aniline = False
+
+        # Exclude quaternary ammonium (N+ with 4 bonds)
+        if atom.GetFormalCharge() > 0 and atom.GetTotalDegree() >= 4:
+            is_quaternary = True
+
+        if is_quaternary:
+            continue
+
+        # Check if nitrogen is in amide (N-C(=O))
+        for bond in atom.GetBonds():
+            nbr = bond.GetOtherAtom(atom)
+            if nbr.GetAtomicNum() == 6 and bond.GetBondType() == rdchem.BondType.SINGLE:
+                # Check if carbon has a double bond to oxygen
+                for nbr_bond in nbr.GetBonds():
+                    nbr_atom = nbr_bond.GetOtherAtom(nbr)
+                    if (nbr_atom.GetAtomicNum() == 8 and
+                        nbr_bond.GetBondType() == rdchem.BondType.DOUBLE):
+                        is_amide = True
                         break
-            if is_amide:
-                continue
+                if is_amide:
+                    break
 
-            # Exclude nitro groups (N(=O)-O)
-            is_nitro = False
-            oxy_count = 0
-            for bond in atom.GetBonds():
+        if is_amide:
+            continue
+
+        # Check if nitrogen is in nitro group (N(=O)-O)
+        oxy_double = False
+        oxy_single = False
+        for bond in atom.GetBonds():
+            nbr = bond.GetOtherAtom(atom)
+            if nbr.GetAtomicNum() == 8:
+                if bond.GetBondType() == rdchem.BondType.DOUBLE:
+                    oxy_double = True
+                elif bond.GetBondType() == rdchem.BondType.SINGLE:
+                    oxy_single = True
+        if oxy_double and oxy_single:
+            is_nitro = True
+
+        if is_nitro:
+            continue
+
+        # Check if nitrogen is in nitrile (N#C)
+        for bond in atom.GetBonds():
+            if bond.GetBondType() == rdchem.BondType.TRIPLE:
                 nbr = bond.GetOtherAtom(atom)
-                if nbr.GetAtomicNum() == 8:  # Oxygen
-                    oxy_count += 1
-            if oxy_count >= 2:
-                is_nitro = True
-            if is_nitro:
-                continue
-
-            # Exclude nitriles (N#C)
-            is_nitrile = False
-            for bond in atom.GetBonds():
-                if bond.GetBondType() == rdchem.BondType.TRIPLE:
+                if nbr.GetAtomicNum() == 6:
                     is_nitrile = True
                     break
-            if is_nitrile:
-                continue
 
-            # Exclude azo compounds (N=N)
-            is_azo = False
-            for bond in atom.GetBonds():
+        if is_nitrile:
+            continue
+
+        # Check if nitrogen is in azo group (N=N)
+        for bond in atom.GetBonds():
+            if bond.GetBondType() == rdchem.BondType.DOUBLE:
                 nbr = bond.GetOtherAtom(atom)
-                if (nbr.GetAtomicNum() == 7 and
-                    bond.GetBondType() == rdchem.BondType.DOUBLE):
+                if nbr.GetAtomicNum() == 7:
                     is_azo = True
                     break
-            if is_azo:
-                continue
 
-            # Passed all checks, add to amino nitrogens set
-            amino_nitrogens.add(n_idx)
+        if is_azo:
+            continue
+
+        # Exclude nitrogen atoms in rings unless they are aniline-type amines
+        if is_in_ring:
+            # Check if nitrogen is attached to an aromatic carbon outside the ring (aniline)
+            for bond in atom.GetBonds():
+                nbr = bond.GetOtherAtom(atom)
+                if nbr.GetAtomicNum() == 6:
+                    if nbr.GetIsAromatic() and not nbr.IsInRing():
+                        is_aniline = True
+                        break
+            if not is_aniline:
+                continue  # Exclude nitrogen atoms in rings not aniline-type
+
+        # Include protonated amines (e.g., [NH3+])
+        if (atom.GetHybridization() == rdchem.HybridizationType.SP3 or atom.GetIsAromatic()) and not is_quaternary:
+            amino_nitrogens.add(atom.GetIdx())
 
     amino_count = len(amino_nitrogens)
 
