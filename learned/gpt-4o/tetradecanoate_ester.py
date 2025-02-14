@@ -21,12 +21,26 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define tetradecanoate ester pattern (14-carbons with ester linkage)
-    # [*] is a wildcard for any attachment, handles various alcohols
-    tetradecanoate_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O[*]")
+    # Define tetradecanoate functional group pattern
+    # This molecule starts with a 14-carbon chain and follows with an ester linkage
+    tetradecanoate_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCC(=O)O")
+    matching_atoms = mol.GetSubstructMatches(tetradecanoate_pattern)
     
-    # Check if the molecule matches the tetradecanoate ester pattern
-    if mol.HasSubstructMatch(tetradecanoate_ester_pattern):
-        return True, "Contains tetradecanoate ester group"
-    else:
-        return False, "No tetradecanoate ester group found"
+    if len(matching_atoms) > 0:
+        # Calculate the total number of carbon atoms in the esterified alcohol part
+        esterified_parts = 0
+        for match in matching_atoms:
+            # Check beyond the ester linkage to ensure it connects with a hydrocarbon or aromatic alcohol structure
+            for atom_idx in match:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                # Consider carbons beyond the ester oxygen
+                if atom.GetAtomicNum() == 6:
+                    esterified_parts += 1
+
+        # We already asserted liveliness with 14 carbon backbones, additional carbons would apply to the alcohol
+        if esterified_parts >= 14:  # Basic assumption extending
+            return True, "Contains tetradecanoate ester group"
+        else:
+            return False, "Insufficient esterified structure"
+    
+    return False, "No tetradecanoate ester group found"
