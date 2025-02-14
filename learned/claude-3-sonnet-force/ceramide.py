@@ -1,26 +1,71 @@
 """
 Classifies: CHEBI:17761 ceramide
 """
-Based on the outcomes and the code, it seems that the program is too strict in its criteria for identifying ceramides. While it correctly identifies non-ceramides, it fails to identify many true ceramides. Here's an analysis of the issues and potential improvements:
+"""
+Classifies: CHEBI:17855 ceramide
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Sphingoid base pattern**: The SMARTS pattern used to identify the sphingoid base backbone is too specific. It requires a double bond and a specific arrangement of carbon and nitrogen atoms. Many ceramides have variations in their sphingoid base structure, such as different degrees of unsaturation or substitutions. To address this, we can use a more general pattern or a series of patterns to cover different sphingoid base structures.
+def is_ceramide(smiles: str):
+    """
+    Determines if a molecule is a ceramide based on its SMILES string.
+    Ceramides are N-acyl-sphingoid bases with an amide-linked fatty acid.
 
-2. **Amide group pattern**: The SMARTS pattern used to identify the amide group is correct, but the program assumes that there should be only one amide group. Some ceramides, such as glycosphingolipids, can have additional amide groups (e.g., in the sugar moieties). We can remove the condition that checks for a single amide group or modify it to allow for multiple amide groups.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Hydrocarbon chain pattern**: The SMARTS pattern used to identify long hydrocarbon chains is too specific and may miss some ceramides with branched or substituted fatty acid chains. We can use a more general pattern or a combination of patterns to cover different types of fatty acid chains.
+    Returns:
+        bool: True if molecule is a ceramide, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Rotatable bond count**: The rotatable bond count is a good indicator of long chains, but the threshold of 8 may be too high for some ceramides. We can either lower the threshold or use it as a supplementary check rather than a strict requirement.
+    # Look for sphingoid base backbone patterns
+    sphingoid_patterns = [
+        Chem.MolFromSmarts("[N;X3][C;X4][C;X4][C;X4][C;X4][C;X4]"),  # Linear
+        Chem.MolFromSmarts("[N;X3][C;X4][C;X4][C;X4][C;X4]=[C;X3]"),  # With double bond
+        Chem.MolFromSmarts("[N;X3][C;X4][C;X4][C;X4][C;X4][C;X4][C;X4]")  # Longer chain
+    ]
+    if not any(mol.HasSubstructMatch(pat) for pat in sphingoid_patterns):
+        return False, "No sphingoid base backbone found"
 
-5. **Molecular weight**: The molecular weight check is reasonable, but the threshold of 400 Da may be too high for some smaller ceramides. We can either lower the threshold or remove this check altogether, as it may not be a reliable indicator for all ceramides.
+    # Look for amide group
+    amide_pattern = Chem.MolFromSmarts("[N;X3][C;X3](=[O;X1])")
+    if not mol.HasSubstructMatch(amide_pattern):
+        return False, "No amide group found"
 
-6. **Atom count checks**: The checks for the minimum number of carbon and nitrogen atoms are reasonable, but they may need to be adjusted or removed depending on the changes made to the other patterns and checks.
+    # Look for fatty acid chains
+    fatty_acid_patterns = [
+        Chem.MolFromSmarts("[C;X4][C;X4][C;X4][C;X4]"),  # Minimum length
+        Chem.MolFromSmarts("[C;X4][C;X4][C;X4][C;X4][C;X4]"),  # Longer chain
+        Chem.MolFromSmarts("[C;X4][C;X4][C;X4][C;X4][C;X4][C;X4]"),  # Even longer chain
+        Chem.MolFromSmarts("[C;X4][C;X4][C;X4][C;X4][C;X4][C;X4][C;X4]")  # Longest chain
+    ]
+    fatty_acid_matches = sum(mol.GetSubstructMatches(pat) for pat in fatty_acid_patterns)
+    if fatty_acid_matches < 1:
+        return False, "Missing fatty acid chain"
 
-To improve the program, we can consider the following steps:
+    # Count rotatable bonds as a supplementary check
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 6:
+        return False, "Chains too short to be fatty acids"
 
-1. Analyze a larger set of known ceramide structures to identify common structural patterns and variations.
-2. Develop more general SMARTS patterns or a combination of patterns to cover the diverse structures of sphingoid bases and fatty acid chains.
-3. Remove or adjust the strict requirements for a single amide group, rotatable bond count, and molecular weight, as these may not be reliable indicators for all ceramides.
-4. Fine-tune the atom count checks based on the updated patterns and structural analysis.
-5. Incorporate additional checks or heuristics, if necessary, to improve the classification accuracy.
+    # Count carbons, nitrogens, and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 16:
+        return False, "Too few carbons for ceramide"
+    if n_count != 2:
+        return False, "Must have exactly 2 nitrogens (1 amide, 1 sphingoid base)"
+    if o_count < 3:
+        return False, "Too few oxygens for ceramide"
 
-It's important to note that while the program's performance can be improved, there may still be edge cases or ambiguous structures that cannot be classified with certainty based solely on the SMILES string. In such cases, it may be necessary to incorporate additional information or expert knowledge to make an accurate classification.
+    return True, "Contains sphingoid base with fatty acid chain attached via amide bond"
