@@ -1,90 +1,26 @@
 """
 Classifies: CHEBI:1722 3beta-hydroxy-Delta(5)-steroid
 """
-"""
-Classifies: CHEBI:37991 3beta-hydroxy-Delta(5)-steroid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+The previous program seems to be on the right track, but there are a few potential issues that could be causing the poor performance:
 
-def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
-    """
-    Determines if a molecule is a 3beta-hydroxy-Delta(5)-steroid based on its SMILES string.
-    A 3beta-hydroxy-Delta(5)-steroid is a steroid that has a hydroxyl group at the 3 position,
-    and a double bond between carbons 5 and 6.
+1. **Steroid backbone pattern**: The steroid backbone pattern used in the code ([C@@]12[C@H]([C@@]([C@H](C1)C)([C@@]2([H])[H])[H])[H]) may not be capturing all possible steroid backbones. Some steroid structures, particularly those with additional rings or substituents, may not match this specific pattern. We might need to consider a more flexible pattern or multiple patterns to cover a wider range of steroid backbones.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Hydroxyl group position**: The code checks for the presence of a hydroxyl group, but it does not explicitly check if the hydroxyl group is in the beta configuration at position 3. The current implementation assumes that if a hydroxyl group is present and has an isotope label of 3, it is at the 3-beta position. However, this assumption may not always hold true, as the isotope label could be used for other purposes or incorrectly assigned.
 
-    Returns:
-        bool: True if molecule is a 3beta-hydroxy-Delta(5)-steroid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for steroid backbone pattern
-    steroid_pattern = Chem.MolFromSmarts("[C@@]12[C@H]([C@@]([C@H](C1)C)([C@@]2([H])[H])[H])[H]")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
-    
-    # Look for 3-hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX1H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    has_3_hydroxyl = any(mol.GetAtomWithIdx(idx).GetIsotope() == 3 for match in hydroxyl_matches for idx in match)
-    if not has_3_hydroxyl:
-        return False, "No hydroxyl group at position 3"
-    
-    # Look for double bond between C5 and C6
-    c5_c6_double_bond_pattern = Chem.MolFromSmarts("[C@H]=[C@@H]")
-    c5_c6_double_bond_matches = mol.GetSubstructMatches(c5_c6_double_bond_pattern)
-    has_c5_c6_double_bond = any(
-        mol.GetAtomWithIdx(idx1).GetIsotope() == 5 and mol.GetAtomWithIdx(idx2).GetIsotope() == 6
-        for match in c5_c6_double_bond_matches
-        for idx1, idx2 in [(match[0], match[1]), (match[1], match[0])]
-    )
-    if not has_c5_c6_double_bond:
-        return False, "No double bond between C5 and C6"
-    
-    return True, "Molecule contains a steroid backbone with a 3-hydroxyl group and a double bond between C5 and C6"
+3. **Double bond position and stereochemistry**: The code checks for the presence of a double bond between carbons 5 and 6, but it does not consider the stereochemistry of the double bond. The class definition specifies that the double bond should be in the Delta(5) configuration, which means it should have a specific stereochemistry. The current implementation does not account for this.
 
+4. **False positives and false negatives**: Based on the provided outcomes, there seem to be a few false positives and false negatives, which could be due to the issues mentioned above or other factors not accounted for in the current implementation.
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:37991',
-        'name': '3beta-hydroxy-Delta(5)-steroid',
-        'definition': 'Any 3beta-hydroxy-steroid that contains a double bond between positions 5 and 6.',
-        'parents': ['CHEBI:51411', 'CHEBI:35694']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 100,
-    'num_false_positives': 3,
-    'num_true_negatives': 182291,
-    'num_false_negatives': 15,
-    'num_negatives': None,
-    'precision': 0.9709302325581395,
-    'recall': 0.8695652173913043,
-    'f1': 0.9166666666666666,
-    'accuracy': 0.9998992490118577
-}
+To improve the program, we could consider the following steps:
+
+1. **Refine the steroid backbone pattern**: Analyze the false negatives and investigate if the steroid backbone pattern needs to be expanded or modified to capture a wider range of structures. We could also consider using multiple patterns or a more flexible approach, such as checking for specific ring systems and connectivity.
+
+2. **Explicitly check for 3-beta hydroxyl group configuration**: Instead of relying solely on the isotope label, we could use additional checks to ensure that the hydroxyl group is in the beta configuration at position 3. This could involve analyzing the connectivity and stereochemistry of the atoms around the hydroxyl group.
+
+3. **Incorporate double bond stereochemistry**: In addition to checking for the presence of a double bond between carbons 5 and 6, we should also verify that the double bond has the correct stereochemistry (Delta(5) configuration). This could involve analyzing the stereochemistry of the atoms around the double bond.
+
+4. **Analyze false positives and false negatives**: Carefully examine the false positives and false negatives to identify any patterns or outliers. If there are consistent errors or exceptions, we might need to incorporate additional checks or rules to handle those cases.
+
+5. **Consider alternative approaches**: If the current approach based on SMARTS patterns and substructure matching proves too limiting or error-prone, we could explore alternative approaches, such as using more advanced cheminformatics tools or machine learning techniques for molecular classification.
+
+It's also important to note that the benchmark you're using may not be 100% accurate, and there could be occasional or systematic mistakes. If the classifications made by your program are consistent with your understanding of the chemical class definition, you can consider ignoring outliers, but it's essential to explain your reasoning for doing so.
