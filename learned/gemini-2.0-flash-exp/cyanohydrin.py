@@ -22,12 +22,12 @@ def is_cyanohydrin(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for a cyanohydrin core structure: C connected to -OH and -C#N
-    cyanohydrin_core = Chem.MolFromSmarts("[CX4]([OH1])[C#N]")
+    cyanohydrin_core = Chem.MolFromSmarts("[C]([OH1])[C#N]")
     
-    if mol.HasSubstructMatch(cyanohydrin_core):
-      matches = mol.GetSubstructMatches(cyanohydrin_core)
+    if cyanohydrin_core is None:
+      return False, "Invalid SMARTS pattern for cyanohydrin core"
       
-      if len(matches) > 0 :
-        return True, "Contains the core cyanohydrin substructure (carbon with OH and CN)"
+    if mol.HasSubstructMatch(cyanohydrin_core):
+      return True, "Contains the core cyanohydrin substructure (carbon with OH and CN)"
 
     return False, "Does not contain the core cyanohydrin substructure"
