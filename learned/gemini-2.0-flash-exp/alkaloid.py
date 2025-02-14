@@ -29,23 +29,20 @@ def is_alkaloid(smiles: str):
     ring_pattern = Chem.MolFromSmarts("[R]")
     has_ring = mol.HasSubstructMatch(ring_pattern)
 
-    # Check if there is at least one nitrogen in a ring - this is not a strict condition
-    heterocyclic_nitrogen_pattern = Chem.MolFromSmarts("[#7;R]")
-    has_ring_nitrogen = mol.HasSubstructMatch(heterocyclic_nitrogen_pattern)
+    #Check for a minimum number of heavy atoms (C, N, O, S, P etc)
+    heavy_atom_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() != 1)
+    if heavy_atom_count < 8:
+       return False, "Too small, likely not alkaloid"
+
+    # Check if there is at least one *heterocyclic* nitrogen - nitrogen that is part of the ring system
+    heterocyclic_nitrogen_pattern = Chem.MolFromSmarts("[#7;R1;!H0]") # Must be part of a ring, and not attached to H
+    has_heterocyclic_nitrogen = mol.HasSubstructMatch(heterocyclic_nitrogen_pattern)
     
-    #Check for a minimum number of C and heteroatoms (N, O, S)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    hetero_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [7, 8, 16])
-
-    if c_count < 10 or hetero_count < 2:
-        return False, "Too small, likely not alkaloid"
-
-
     # Check for exocyclic nitrogen, excluding amides
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 7 and not atom.IsInRing():
             
-            is_amide_or_similar = False
+            is_amide_or_similar = False # Check for amides
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetAtomicNum() == 6:
                     for neighbor2 in neighbor.GetNeighbors():
@@ -55,25 +52,22 @@ def is_alkaloid(smiles: str):
                     if is_amide_or_similar:
                         break # Move to next N
             if not is_amide_or_similar:
-                #Check if nitrogen is only attached to C atoms. If yes, it is considered an exocyclic amine
-                neighbor_carbon_count = 0
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6:
-                        neighbor_carbon_count +=1
+                #Check if nitrogen is only attached to C atoms and no other non H
                 all_c_neighbors = True
+                carbon_count = 0
                 for neighbor in atom.GetNeighbors():
-                      if neighbor.GetAtomicNum() !=6:
+                      if neighbor.GetAtomicNum() !=6 and neighbor.GetAtomicNum() != 1:
                          all_c_neighbors = False
+                      if neighbor.GetAtomicNum() == 6:
+                        carbon_count+=1
 
-                if all_c_neighbors and neighbor_carbon_count < 3: # simple amines should not have 3 C neighbors
+                if all_c_neighbors and carbon_count < 3:
                    return False, "Contains simple exocyclic amine"
-
-
 
     reason = "Contains at least one nitrogen atom, "
     if has_ring:
         reason += "has at least one ring, "
-    if has_ring_nitrogen:
+    if has_heterocyclic_nitrogen:
       reason += "and at least one N in a ring, "
 
     reason += "and is large enough, excluding simple exocyclic amine"
