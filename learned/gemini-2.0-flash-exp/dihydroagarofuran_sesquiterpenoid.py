@@ -24,37 +24,46 @@ def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
 
     # 2. Core Skeleton Matching using SMARTS
     # This SMARTS matches the dihydroagarofuran core, with * as variable carbon positions.
-    # The stereochemistry is somewhat included, but not fully. Note that the 
-    # methyls are not defined here, they are added later.
-    core_pattern = Chem.MolFromSmarts('[C@]([H])1([C@]([H])2[C@]([H])([C]([H])([H])[O]1)[C]([H])([H])[C]([H])([H])[C]([H])([C]2([H])[H])[H])')
-    if not mol.HasSubstructMatch(core_pattern):
-         return False, "No dihydroagarofuran core skeleton found."
-
-    # 3. Check for at least 1 methyl group on the core
-    methyl_pattern = Chem.MolFromSmarts('[C]([H])([H])([H])')
-    core_match = mol.GetSubstructMatch(core_pattern)
-    if core_match:
-        methyl_count = 0
-        for atom_idx in core_match:
-          atom = mol.GetAtomWithIdx(atom_idx)
-          for neighbor in atom.GetNeighbors():
-            if mol.HasSubstructMatch(methyl_pattern, neighbor.GetIdx()):
-                 methyl_count+=1
-        if methyl_count <1 :
-            return False, "No methyl group directly bonded to core carbon"
-    else:
-        return False, "No core pattern found, should not reach here"
+    # Includes the methyl group on the core, and focuses on the ring connectivity. Ignores stereochemistry for now.
+    core_pattern = Chem.MolFromSmarts('[C]12[C]([C][O]1)[C][C][C]([C])([C]2[C])')
+    match = mol.GetSubstructMatch(core_pattern)
+    if not match:
+        return False, "No dihydroagarofuran core skeleton found."
     
-    # 4. Additional checks: At least 2 ester groups and 4 oxygens
+    # 3. Stereochemistry check for core atoms.
+    # Get the indices for the core atoms
+    c1, c2, c3, c4, c5, c6, c7, c8  = match
+    core_atoms = [c1,c2,c3,c4,c5,c6,c7,c8]
+
+    #Check stereochemistry at C1 and C6 (bridgehead carbons) and C2
+    c1_atom = mol.GetAtomWithIdx(c1)
+    c6_atom = mol.GetAtomWithIdx(c6)
+    c2_atom = mol.GetAtomWithIdx(c2)
+
+    if not (c1_atom.HasProp('_CIPCode') and c6_atom.HasProp('_CIPCode') and c2_atom.HasProp('_CIPCode')):
+        AllChem.AssignStereochemistry(mol, cleanIt=True, force=True)
+
+    if c1_atom.HasProp('_CIPCode') and c6_atom.HasProp('_CIPCode') and c2_atom.HasProp('_CIPCode') :
+        if (c1_atom.GetProp('_CIPCode') != 'R' ) or (c6_atom.GetProp('_CIPCode') != 'R') or (c2_atom.GetProp('_CIPCode') != 'S'):
+            return False, "Incorrect stereochemistry at core atoms."
+    else:
+        return False, "Could not determine stereochemistry of the core"
+
+
+    # 4. At least 2 ester groups
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
          return False, f"Less than 2 ester groups. Found {len(ester_matches)}"
     
+    # 5. Additional checks: At least 4 oxygens, at least 15 carbons
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+
     if oxygen_count < 4:
         return False, f"Too few oxygens. Found {oxygen_count}"
-    
-    
-    # 5. If all checks pass, it's classified as a dihydroagarofuran sesquiterpenoid.
-    return True, "Contains a dihydroagarofuran core and at least one methyl group on the core, at least two ester groups and four oxygens"
+    if carbon_count < 15 :
+        return False, f"Too few carbons. Found {carbon_count}"
+
+    # 6. If all checks pass, it's classified as a dihydroagarofuran sesquiterpenoid.
+    return True, "Contains a dihydroagarofuran core with correct stereochemistry, at least two ester groups, four oxygens and 15 carbons"
