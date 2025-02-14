@@ -23,32 +23,36 @@ def is_bile_acid(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Check for the steroid core (tetracyclic ring system) with 5beta configuration.
-    # This SMARTS pattern captures the basic tetracyclic ring structure
-    # [C]1[C]2[C]3[C]4[C]([C]1)([C]2)([C]3)([C]4), and we add the 5beta configuration to the carbon between rings A and B using [C@]([H]).
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C@]2([C]3[C]4[C]([C@]([H])1)([C]2)([C]3)([C]4))")
+    # Flexible SMARTS to capture the steroid core with 5beta configuration
+    # and allow for substitutions or unsaturations.
+    steroid_core_pattern = Chem.MolFromSmarts("[C;R]1~[C;R@]2~[C;R]~[C;R]~[C;R]2~[C;R]~[C;R]1")
     if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "Steroid core with 5beta configuration not found"
-
+         return False, "Steroid core not found or incorrect configuration"
+    
+    # Check for methyl groups at C10 and C13. These are always present in bile acids.
+    methyl_c10_c13_pattern = Chem.MolFromSmarts("[C;R]1~[C;R@]2([C;R]~[C;R]~[C;R]2~[C;R](C)~[C;R]1C)")
+    if not mol.HasSubstructMatch(methyl_c10_c13_pattern):
+        return False, "Methyl groups missing at positions 10 and 13."
+    
     # 2. Check for carboxylic acid group (-COOH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H]")
     if not mol.HasSubstructMatch(carboxylic_acid_pattern):
         return False, "Carboxylic acid group not found"
 
     # 3. Check for at least one hydroxyl group (-OH) on the steroid core.
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    hydroxyl_pattern = Chem.MolFromSmarts("[CX4]-[OX2]") #Matches C-O
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     if not hydroxyl_matches:
         return False, "No hydroxyl group (-OH) found."
-
-     # 4. Check for Sidechain at C17
-    # Look for pattern for a chain of Carbons attached to the C17 position that ends in a carboxylic group.
+    
+    # 4. Check for Sidechain at C17
     #The C17 position is the last carbon of the tetracyclic system attached to 3 or 2 other carbons.
-    # Use a generic SMARTS to find the sidechain attached to any carbon
-    # The specific C17 match was too rigid, so removing that condition
-    sidechain_pattern = Chem.MolFromSmarts("[C]~[C](=O)O")
-    sidechain_matches = mol.GetSubstructMatches(sidechain_pattern)
-    if not sidechain_matches:
-        return False, "Carboxylic acid chain at C17 not found"
+    #Use a SMARTS that looks for this, and then a chain that ends in carboxylic acid (or carboxylate)
+    # The C17 carbon is a quaternary or tertiary carbon [CX4;CX3]
+    c17_sidechain_pattern = Chem.MolFromSmarts("[CX4;CX3](~[C;R])(~[C;R])~[C]~[C](=O)[O;H]")
+
+    if not mol.HasSubstructMatch(c17_sidechain_pattern):
+        return False, "Carboxylic acid sidechain not found at C17"
 
 
     # 5. Check for Amide linkage (optional). If there is an amide it is also a bile acid.
