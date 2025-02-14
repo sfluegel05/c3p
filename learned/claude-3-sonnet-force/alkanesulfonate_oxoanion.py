@@ -34,8 +34,8 @@ def is_alkanesulfonate_oxoanion(smiles: str):
         return False, "No sulfonate group found"
     
     # Look for carbon chain attached to the sulfonate group
-    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3][CX4,CX3]~[S+3(=O)(-[O-])(-[O-])]")
-    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern)
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3][CX4,CX3]*[S+3(=O)(-[O-])(-[O-])]")
+    carbon_chain_matches = mol.GetSubstructMatches(carbon_chain_pattern, sulfonate_matches)
     
     if len(carbon_chain_matches) > 0:
         return True, "Molecule contains an alkanesulfonate oxoanion group"
