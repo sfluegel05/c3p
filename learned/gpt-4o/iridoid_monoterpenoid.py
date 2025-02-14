@@ -22,22 +22,23 @@ def is_iridoid_monoterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Recognize major motif: cyclopentane ring fused with oxygen heterocycle
-    cyclopentane_oxygen_pattern = Chem.MolFromSmarts("[C]1[C][C][C][O]1")
-    if mol.HasSubstructMatch(cyclopentane_oxygen_pattern):
-        # Check for variant patterns indicating iridoid structures
-        cyclopentane_fused_pattern = Chem.MolFromSmarts("[C]1[C][C][O][C]2[C][C]1O2")
-        if mol.HasSubstructMatch(cyclopentane_fused_pattern):
-            return True, "Found cyclopentane fused with six-membered oxygen-containing heterocycle"
+    # Recognize major motif: cyclopentane ring
+    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")  # Basic cyclopentane
+    if mol.HasSubstructMatch(cyclopentane_pattern):
+        # Check for fusion with overlapping oxygen heterocycle
+        oxygen_fusion_pattern = Chem.MolFromSmarts("[C;R]1[C;R][C;R][C;R]O1")
+        if mol.HasSubstructMatch(oxygen_fusion_pattern):
+            return True, "Found cyclopentane fused with oxygen-containing heterocycle"
 
-    # Recognize open lactone structures indicative of secoiridoids
-    secoiridoid_pattern = Chem.MolFromSmarts("[C]1(=O)[O][C][C]=C[C][O1]")
-    if mol.HasSubstructMatch(secoiridoid_pattern):
-        return True, "Open lactone structure typical of secoiridoids detected"
+    # Recognize if the structure is a possible secoiridoid (open form)
+    results = mol.GetSubstructMatches(Chem.MolFromSmarts("O1CC=C[C;R][C;R][C;R]1"))
+    if results:
+        return True, "Found open lactone structure typical of secoiridoids"
 
-    # Check for additional patterns of iridoid variations (e.g., complex lactones)
-    iridoid_complex_lactone_pattern = Chem.MolFromSmarts("[C]1[C]([C][C])C[C]OC1")
-    if mol.HasSubstructMatch(iridoid_complex_lactone_pattern):
-        return True, "Complex iridoid structural motif with lactone content recognized"
+    # Capture alternate overlapped rings scenarios (common in more complex iridoids)
+    # e.g., 'dicyclohexyl' or 'methenyl-spiro' modifications, typical of secoiridoid variations
+    alt_struct = Chem.MolFromSmarts("[C;R]1[C;R](O)[C;R][C;R](=O)[C;R]1")
+    if mol.HasSubstructMatch(alt_struct):
+        return True, "Typical iridoid structural motif (including secoiridoid content) recognized"
 
     return False, "Iridoid monoterpenoid characteristic structure not detected"
