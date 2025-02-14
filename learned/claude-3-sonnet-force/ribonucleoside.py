@@ -39,7 +39,10 @@ def is_ribonucleoside(smiles: str):
     
     # Check for N-glycosidic bond between base and ribose
     atom_idx_pairs = mol.GetSubstructMatches(Chem.MolFromSmarts("[C@H]1[C@@H](CO)O[C@H](O)[C@@H]1O.n"))
-    for ribose_idx, base_idx in atom_idx_pairs:
+    for pair in atom_idx_pairs:
+        if len(pair) != 2:
+            continue  # Skip pairs with incorrect length
+        ribose_idx, base_idx = pair
         ribose_atom = mol.GetAtomWithIdx(ribose_idx)
         base_atom = mol.GetAtomWithIdx(base_idx)
         if mol.GetBondBetweenAtoms(ribose_idx, base_idx):
