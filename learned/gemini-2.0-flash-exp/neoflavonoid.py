@@ -19,60 +19,22 @@ def is_neoflavonoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define a general benzopyran core pattern
-    # This pattern checks for a fused 6-membered aromatic ring (c1ccccc1) and a 6-membered ring containing an oxygen. 
-    # X is used to denote any atom for now, C is aromatic carbon and the second bond of the oxygen atom should also
-    # be to an aromatic carbon. Also, consider cases where there is no carbonyl.
-    core_pattern1 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(-[*])-C=C2') # For 1-benzopyran
-    core_pattern2 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(=O)-C-C=C2') # For 1-benzopyran-2-one (coumarin) 
-    core_pattern3 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(-[*])-CC2') # For dihydro-1-benzopyran
-    
-    has_core = mol.HasSubstructMatch(core_pattern1) or mol.HasSubstructMatch(core_pattern2) or mol.HasSubstructMatch(core_pattern3)
-    if not has_core:
-        return False, "Does not contain a 1-benzopyran core."
 
+    # Define the neoflavonoid core pattern with aryl at position 4.
+    # This pattern uses a more specific SMARTS to capture the 1-benzopyran core.
+    # The core is composed of fused benzene and a 6 membered ring with oxygen and double bonds.
+    # [c] denotes aromatic carbon, [C] denotes a carbon with 4 explicit bonds.
+    # The pattern considers 1-benzopyran-2-one (coumarin) as well.
+    # [c]1[c](-[CH]=[CH]-O-[CH](-[c]2[c][c][c][c][c]2)-[CH]=[CH]1) also considers the case where we do not have a carbonyl
+    # Variations for a dihydro system are also considered.
 
-    # Now, check for an aryl group directly connected to the 4 position of the benzopyran.
-    # The * matches any atom which is attached to the carbon of the core.
-    aryl_substituent_pattern1 = Chem.MolFromSmarts('c1ccccc1-[*]') # A simple phenyl
-    aryl_substituent_pattern2 = Chem.MolFromSmarts('c1ccccc1c1-[*]') # Biphenyl
-    
-    
-    
-    # Find the carbon at position 4 in the core.
-    matches = []
-    if mol.HasSubstructMatch(core_pattern1):
-       matches = mol.GetSubstructMatches(core_pattern1)
-       match_pattern = core_pattern1
-    elif mol.HasSubstructMatch(core_pattern2):
-       matches = mol.GetSubstructMatches(core_pattern2)
-       match_pattern = core_pattern2
-    elif mol.HasSubstructMatch(core_pattern3):
-        matches = mol.GetSubstructMatches(core_pattern3)
-        match_pattern = core_pattern3
-    
-    if not matches:
-        return False, "Could not find core match"
-   
-    found_aryl_at_pos4 = False
-    for match in matches:
-        # the position of the carbon attached to the core is always at position 4
-        # get the atom that corresponds to the [*] in the SMARTS. This will be the 
-        # atom attached to C at position 4 of the benzopyran core.
-        pos4_atom_idx = match_pattern.GetSubstructMatch(Chem.MolFromSmarts('*'))[0] #Atom index of substituent at pos4
-        pos4_atom = mol.GetAtomWithIdx(match[pos4_atom_idx])
-        
-        # Now check neighbors and if any of them are attached to an aromatic ring
-        for neighbor in pos4_atom.GetNeighbors():
-           sub_mol = Chem.MolFromSmiles(Chem.MolFragmentToSmiles(mol, atomBonds = list(mol.GetBonds()), rootedAtAtom = neighbor.GetIdx(), singleBondsOnly = True))
-           if sub_mol.HasSubstructMatch(aryl_substituent_pattern1) or sub_mol.HasSubstructMatch(aryl_substituent_pattern2):
-                found_aryl_at_pos4 = True
-                break
-        if found_aryl_at_pos4:
-            break #found the aryl group at position 4
+    core_pattern1 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(-c3ccccc3)=C-C=C2') # 1-benzopyran with phenyl at pos 4
+    core_pattern2 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(=O)-C(-c3ccccc3)=C-C2') # 1-benzopyran-2-one (coumarin) with phenyl at pos 4
+    core_pattern3 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(-c3ccccc3)-C-C2') # dihydro-1-benzopyran with phenyl at pos 4
+    core_pattern4 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(-c3ccccc3)=C-C-C2') # Partially saturated 1-benzopyran
+    core_pattern5 = Chem.MolFromSmarts('c1ccccc1-c2-O-C(=O)-C(-c3ccccc3)-C-C2') # Partially saturated coumarin
 
-    if not found_aryl_at_pos4:
-         return False, "Does not have an aryl substituent at position 4 of the 1-benzopyran core."
-        
+    if not (mol.HasSubstructMatch(core_pattern1) or mol.HasSubstructMatch(core_pattern2) or mol.HasSubstructMatch(core_pattern3) or mol.HasSubstructMatch(core_pattern4) or mol.HasSubstructMatch(core_pattern5)):
+        return False, "Does not contain a 1-benzopyran core with an aryl substituent at position 4."
+
     return True, "Contains a 1-benzopyran core with an aryl substituent at position 4."
