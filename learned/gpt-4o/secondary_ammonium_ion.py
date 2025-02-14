@@ -22,15 +22,12 @@ def is_secondary_ammonium_ion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for secondary ammonium ion
-    # The nitrogen must have a +1 charge and be connected to exactly two carbon atoms, non-aromatic
-    secondary_ammonium_pattern = Chem.MolFromSmarts("[NH2+;R0]([C;!R])[C;!R]")
+    # Define an improved SMARTS pattern for secondary ammonium ion
+    # The nitrogen must have a +1 charge and be connected to two carbon atoms
+    # Allow both aromatic and non-aromatic systems, check nitrogen's non-zero formal charge
+    secondary_ammonium_pattern = Chem.MolFromSmarts("[N;+1]([C])[C]")  # Nitrogen with +1 charge, bonded to two carbons
 
     if mol.HasSubstructMatch(secondary_ammonium_pattern):
-        # Check each match for additional verification
-        for match in mol.GetSubstructMatches(secondary_ammonium_pattern):
-            nitrogen_atom = mol.GetAtomWithIdx(match[0])
-            if nitrogen_atom.GetFormalCharge() == 1 and nitrogen_atom.GetDegree() == 3:
-                return True, "Contains protonated secondary ammonium ion pattern"
+        return True, "Contains protonated secondary ammonium ion pattern"
 
     return False, "Does not contain a secondary ammonium ion pattern"
