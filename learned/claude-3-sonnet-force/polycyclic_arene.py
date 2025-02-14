@@ -6,7 +6,7 @@ Classifies: CHEBI:33587 polycyclic arene
 A polycyclic aromatic hydrocarbon.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polycyclic_arene(smiles: str):
     """
@@ -27,23 +27,24 @@ def is_polycyclic_arene(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for aromaticity
-    if not mol.GetAromaticForm().IsPossibleAromaticMol():
-        return False, "Molecule is not aromatic"
+    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    num_aromatic_heterocycles = rdMolDescriptors.CalcNumAromaticHeterocycles(mol)
+    if num_aromatic_rings == 0 and num_aromatic_heterocycles == 0:
+        return False, "Molecule does not contain any aromatic rings"
 
     # Check for polycyclic structure
-    ring_info = mol.GetRingInfo()
-    num_rings = ring_info.NumRings()
-    if num_rings < 3:
-        return False, "Molecule is not polycyclic (fewer than 3 rings)"
-
-    # Check for fused rings
-    fused_rings = AllChem.GetSSSR(mol)
+    fused_rings = mol.GetRingInfo().BondRings()
     if len(fused_rings) < 2:
         return False, "Molecule does not have fused rings"
 
-    # Check for only carbon and hydrogen atoms
+    # Check for characteristic ring sizes and fused ring systems
+    ring_sizes = [len(ring) for ring in fused_rings]
+    if not any(size in [5, 6, 7] for size in ring_sizes):
+        return False, "Molecule does not contain characteristic ring sizes for polycyclic arenes"
+
+    # Check for only carbon and hydrogen atoms (optional)
     atoms = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
     if any(atom_num not in [1, 6] for atom_num in atoms):
-        return False, "Molecule contains atoms other than carbon and hydrogen"
+        return True, "Polycyclic aromatic hydrocarbon containing heteroatoms"
 
     return True, "Polycyclic aromatic hydrocarbon"
