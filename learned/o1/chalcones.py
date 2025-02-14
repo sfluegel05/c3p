@@ -6,7 +6,6 @@ Classifies: CHEBI:35671 chalcones
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_chalcones(smiles: str):
     """
@@ -27,10 +26,10 @@ def is_chalcones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the chalcone core SMARTS pattern with acyclic constraint
+    # Define the chalcone core SMARTS pattern
     # Pattern represents:
-    # Aromatic ring connected to acyclic C=C-C=O connected to aromatic ring
-    chalcone_pattern = Chem.MolFromSmarts("[a][C;R0]=[C;R0]-C(=O;R0)[C;R0][a]")
+    # Aromatic ring connected to C=C-C=O connected to aromatic ring
+    chalcone_pattern = Chem.MolFromSmarts("[a][C]=[C]-C(=O)[a]")
     if chalcone_pattern is None:
         return False, "Invalid SMARTS pattern"
 
