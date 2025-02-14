@@ -2,6 +2,7 @@
 Classifies: CHEBI:26255 prenylquinone
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_prenylquinone(smiles: str):
@@ -21,17 +22,22 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a quinone core (a conjugated ring system with two carbonyls in a 1,4 position)
-    quinone_pattern = Chem.MolFromSmarts("[C;$(C=O)]1[C,c](=[C,c][C,c](=[C,c]1)[C;$(C=O)])")
-    if not mol.HasSubstructMatch(quinone_pattern):
+    # Check for benzoquinone core (1,4 or 1,2)
+    benzoquinone_14_pattern = Chem.MolFromSmarts("C1(=O)C=CC(=O)C=C1")
+    benzoquinone_12_pattern = Chem.MolFromSmarts("C1(=O)C(=O)C=CC=C1")
+    #Check for naphthoquinone core (1,4 or 1,2)
+    naphthoquinone_14_pattern = Chem.MolFromSmarts("C1(=O)C=CC2=CC=CC=C2C1=O")
+    naphthoquinone_12_pattern = Chem.MolFromSmarts("C1(=O)C2=CC=CC=C2C(=O)C=C1")
+    
+    if not (mol.HasSubstructMatch(benzoquinone_14_pattern) or mol.HasSubstructMatch(benzoquinone_12_pattern) or
+            mol.HasSubstructMatch(naphthoquinone_14_pattern) or mol.HasSubstructMatch(naphthoquinone_12_pattern)):
         return False, "No quinone core found"
-
-    # Check for at least two isoprenoid units (C-C=C-C) attached to a carbon
-    #Prenyl group is defined as a carbon chain containing a double bond (C=C)
-    prenyl_pattern = Chem.MolFromSmarts("[CX4]!@[CH2]C=C[CX4]")
-    prenyl_matches = mol.GetSubstructMatches(prenyl_pattern)
-    if len(prenyl_matches) < 2:
-        return False, "Less than two polyprenyl side chains found"
+        
+    # Check for isoprenyl chain (at least two isoprene units)
+    isoprenyl_pattern = Chem.MolFromSmarts("CC=CC")  # Basic isoprene unit
+    isoprenyl_matches = mol.GetSubstructMatches(isoprenyl_pattern)
+    if len(isoprenyl_matches) < 2:
+        return False, "Less than two isoprenyl units found"
 
 
     return True, "Contains a quinone core and a polyprenyl side chain"
