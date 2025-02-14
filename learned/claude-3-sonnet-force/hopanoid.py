@@ -1,20 +1,69 @@
 """
 Classifies: CHEBI:51963 hopanoid
 """
-The previous code has a high accuracy (0.9998) and a reasonable F1 score (0.9773), suggesting that it is performing well in classifying hopanoids. However, let's analyze the false negatives and false positives to see if we can improve the program further.
+"""
+Classifies: CHEBI:38159 hopanoid
 
-False Negatives:
-1. (32R,33R,34R)-bacteriohopanetetrol: This molecule should have been classified as a hopanoid as it contains the hopane skeleton and meets the other criteria. The issue seems to be that the SMARTS pattern used to detect the hopane skeleton is too specific and is missing this valid structure.
+A hopanoid is a triterpenoid based on a hopane skeleton.
+The hopane skeleton consists of a pentacyclic ring system
+with 5 rings arranged in a particular way.
+"""
 
-2. 3-Epimoretenol: This molecule also contains the hopane skeleton but was missed by the pattern.
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-3. 22-hydroxy-7-hopanone, Bacteriohop-6-enetetrol carbapseudopentose ether, 11-cyclohexyl-N-((2S,3S,4R,5S,6R)-2-((2S,3S,4R,5R,6R,7S)-7-((3S,3aS,5aR,5bR,7aS,11aS,11bR,13aR,13bS)-5a,5b,8,8,11a,13b-hexamethylicosahydro-1H-cyclopenta[a]chrysen-3-yl)-2,3,4,5,6-pentahydroxyoctyloxy)-4,5-dihydroxy-6-(hydroxymethyl)tetrahydro-2H-pyran-3-yl)undecanamide: These molecules were missed due to the SMARTS pattern being too specific.
+def is_hopanoid(smiles: str):
+    """
+    Determines if a molecule is a hopanoid based on its SMILES string.
 
-The false negatives suggest that the SMARTS pattern used to detect the hopane skeleton is too narrow and needs to be more general to capture all valid hopanoid structures.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-False Positives:
-There were no false positives, which is a good sign that the program is not over-classifying non-hopanoids as hopanoids.
+    Returns:
+        bool: True if molecule is a hopanoid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for hopane skeleton pattern
+    hopane_pattern = Chem.MolFromSmarts("[C@@]12[C@]([C@@]3([C@]([C@@]4([C@]([C@@]5([C@H](C(CCC5)(C)C)CC4)C)CC3)C)(C)CC2)(C)CC1")
+    if not mol.HasSubstructMatch(hopane_pattern):
+        return False, "No hopane skeleton found"
+    
+    # Check number of rings and carbon skeleton
+    ring_info = mol.GetRingInfo()
+    if ring_info.NumRings() < 5:
+        return False, "Too few rings for hopanoid"
+    
+    # Check molecular formula - hopanoids typically C30-C35
+    mol_formula = rdMolDescriptors.CalcMolFormula(mol)
+    c_count = mol_formula.count("C")
+    if c_count < 30 or c_count > 35:
+        return False, f"Carbon count {c_count} outside typical range for hopanoids"
+    
+    # Additional checks based on chemical knowledge
+    # ...
+    
+    return True, "Contains hopane skeleton and meets other criteria for hopanoids"
 
-To improve the program, we can try to generalize the SMARTS pattern for the hopane skeleton. Additionally, we can consider adding other checks or patterns to ensure that we capture all valid hopanoid structures without compromising specificity.
-
-Overall, the program is performing reasonably well, but there is room for improvement, especially in reducing the false negatives by improving the detection of the hopane skeleton.
+__metadata__ = {"chemical_class": {"id":"CHEBI:38159", "name":"hopanoid", "definition":"A triterpenoid based on a  hopane skeleton.","parents":["CHEBI:35708"]},
+"config":{"llm_model_name":"lbl/claude-sonnet","f1_threshold":0.8,"max_attempts":5,"max_positive_instances":None,"max_positive_to_test":None,"max_negative_to_test":None,"max_positive_in_prompt":50,"max_negative_in_prompt":20,"max_instances_in_prompt":100,"test_proportion":0.1},
+"message":"",
+"attempt":0,
+"success":True,
+"best":True,
+"error":"",
+"stdout":None,
+"num_true_positives":207,
+"num_false_positives":0,
+"num_true_negatives":182397,
+"num_false_negatives":1,
+"num_negatives":None,
+"precision":1.0,
+"recall":0.9951928963919886,
+"f1":0.9975865747642091,
+"accuracy":0.9999994560358548}
