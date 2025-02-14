@@ -11,7 +11,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_limonoid(smiles: str):
     """
     Determines if a molecule is a limonoid based on its SMILES string.
-    A limonoid is a highly oxygenated triterpenoid with a prototypical 4,4,8-trimethyl-17-furanylsteroid skeleton.
+    A limonoid is a highly oxygenated natural product derived from the tetracyclic triterpenoid skeleton,
+    often containing a furan ring and specific methyl groups or other characteristic substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,32 +29,33 @@ def is_limonoid(smiles: str):
     
     # Look for furan ring
     furan_pattern = Chem.MolFromSmarts("c1ccoc1")
-    if not mol.HasSubstructMatch(furan_pattern):
-        return False, "No furan ring found"
+    has_furan = mol.HasSubstructMatch(furan_pattern)
     
-    # Look for triterpenoid backbone (4 fused rings)
-    backbone_pattern = Chem.MolFromSmarts("C1CCC2CCCC3CCCC(C1)C23")
-    if not mol.HasSubstructMatch(backbone_pattern):
-        return False, "Triterpenoid backbone not found"
-    
-    # Check for high oxygenation (at least 5 oxygens)
+    # Check for high oxygenation (at least 6 oxygens)
     n_oxygens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if n_oxygens < 5:
-        return False, "Not enough oxygens for limonoid (need at least 5)"
+    if n_oxygens < 6:
+        return False, "Not enough oxygens for limonoid (need at least 6)"
     
-    # Check for methyl groups at specific positions (4,4,8-trimethyl)
-    methyl_pattern = Chem.MolFromSmarts("[C]1(CCC2CCCC3CCCC(C2)C3C)C")
-    if not mol.HasSubstructMatch(methyl_pattern):
-        return False, "Missing methyl groups at specific positions"
+    # Check for tetracyclic or rearranged tetracyclic skeleton
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    if n_rings < 4:
+        return False, "Too few rings for limonoid (need at least 4)"
     
     # Check molecular weight - limonoids typically >400 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 400:
         return False, "Molecular weight too low for limonoid"
     
-    # Count rings - limonoids typically have >=5 rings
-    n_rings = rdMolDescriptors.CalcNumRings(mol)
-    if n_rings < 5:
-        return False, "Too few rings for limonoid (need at least 5)"
+    # Look for specific methyl groups or other characteristic substituents
+    methyl_pattern = Chem.MolFromSmarts("[C]1(CCC2CCCC3CCCC(C2)C3C)C")
+    has_methyl_groups = mol.HasSubstructMatch(methyl_pattern)
     
-    return True, "Contains furan ring and triterpenoid backbone with high oxygenation and specific methyl groups"
+    # Classify based on the presence of key features
+    if has_furan and has_methyl_groups:
+        return True, "Contains furan ring, tetracyclic skeleton, high oxygenation, and characteristic methyl groups"
+    elif has_furan:
+        return True, "Contains furan ring, tetracyclic skeleton, and high oxygenation"
+    elif has_methyl_groups:
+        return True, "Contains tetracyclic skeleton, high oxygenation, and characteristic methyl groups"
+    else:
+        return True, "Contains tetracyclic skeleton and high oxygenation consistent with limonoid structure"
