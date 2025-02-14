@@ -5,7 +5,6 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
-
 def is_peptide_antibiotic(smiles: str):
     """
     Determines if a molecule is a peptide antibiotic based on its SMILES string.
@@ -24,25 +23,25 @@ def is_peptide_antibiotic(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for multiple amide bonds
-    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])N")
+    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX2,NX1,NX3]")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     if len(amide_matches) < 2:  # Require at least 2 amide bonds
          return False, f"Found {len(amide_matches)} amide bonds, need at least 2"
     
-    # Check for alpha carbon
-    alpha_carbon_pattern = Chem.MolFromSmarts("[NX2][CX4](C(=O)[OX1])[#6]") # Carbon with N and C=O and another carbon
+    # Check for alpha carbon, relaxed definition
+    alpha_carbon_pattern = Chem.MolFromSmarts("[NX3,NX2,NX1][CX4,CX3](C(=O)[OX1])[#6]")
     alpha_carbon_matches = mol.GetSubstructMatches(alpha_carbon_pattern)
     if len(alpha_carbon_matches) < 2: # Must have at least 2 aminoacids
         return False, f"Found {len(alpha_carbon_matches)} alpha carbon patterns, need at least 2"
     
     # Check for a reasonable number of rotatable bonds to see if it can be a peptide
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5 :
+    if n_rotatable < 3 :
          return False, "Too few rotatable bonds for peptide antibiotic"
     
     # Check for molecular weight (peptide antibiotics are usually > 500)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
+    if mol_wt < 200:
         return False, "Molecular weight too low for peptide antibiotic"
     
     return True, "Contains multiple amide bonds and amino acid structure with a relatively high number of rotatable bonds"
