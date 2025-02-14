@@ -30,25 +30,20 @@ def is_N_acetyl_amino_acid(smiles: str):
     if not mol.HasSubstructMatch(acetyl_pattern):
         return False, "No acetyl group attached to nitrogen"
     
-    # Look for amino acid backbone (C-N-C-C=O)
-    amino_acid_pattern = Chem.MolFromSmarts("[C;X4][N;X3][C;X4][C;X3](=[O;X1])[O;X2]")
-    if not mol.HasSubstructMatch(amino_acid_pattern):
-        return False, "No amino acid backbone found"
+    # Look for amino group (attached to the nitrogen with the acetyl group)
+    amino_pattern = Chem.MolFromSmarts("[N;X3][C;X4]")
+    if not mol.HasSubstructMatch(amino_pattern):
+        return False, "No amino group found"
     
-    # Check if the nitrogen attached to the acetyl group is also part of the amino acid backbone
-    acetyl_N = mol.GetSubstructMatches(acetyl_pattern)[0][1]
-    amino_acid_N = mol.GetSubstructMatches(amino_acid_pattern)[0][1]
-    if acetyl_N != amino_acid_N:
-        return False, "Acetyl group not attached to amino acid nitrogen"
-    
-    # Count number of nitrogens - should be 1 for N-acetyl-amino acids
-    n_nitrogens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_nitrogens != 1:
-        return False, "More than one nitrogen atom present"
-    
-    # Check for carboxylic acid group
+    # Look for carboxylic acid group
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
     
-    return True, "Contains acetyl group attached to nitrogen of an amino acid backbone"
+    # Check if the nitrogen attached to the acetyl group is also part of the amino group
+    acetyl_N = mol.GetSubstructMatches(acetyl_pattern)[0][1]
+    amino_N = mol.GetSubstructMatches(amino_pattern)[0][1]
+    if acetyl_N != amino_N:
+        return False, "Acetyl group not attached to amino nitrogen"
+    
+    return True, "Contains acetyl group attached to nitrogen of an amino acid"
