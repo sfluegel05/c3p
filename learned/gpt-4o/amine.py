@@ -16,22 +16,25 @@ def is_amine(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string
+    # Parse Mol from SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for primary, secondary, and tertiary amines
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][CX4]")
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1][CX4][CX4]")
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4][CX4]")
+    # Common patterns to detect amines
+    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][!C=O]")  # A non-carbonyl nitrogen
+    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1][!C=O,#1][!C=O,#1]")  # Non-carbonyl, bound to two non-hydrogens
+    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3][!C=O,#1][!C=O,#1][!C=O,#1]")  # Non-carbonyl, bound to three non-hydrogens
+    cyclic_amine_pattern = Chem.MolFromSmarts("[NX3]@[#6]")  # Nitrogen within a ring bonded to carbon
 
-    # Check for primary, secondary, or tertiary amine patterns
+    # Check the molecule for primary, secondary, tertiary, or cyclic amine patterns
     if mol.HasSubstructMatch(primary_amine_pattern):
         return True, "Molecule contains a primary amine group"
     elif mol.HasSubstructMatch(secondary_amine_pattern):
         return True, "Molecule contains a secondary amine group"
     elif mol.HasSubstructMatch(tertiary_amine_pattern):
         return True, "Molecule contains a tertiary amine group"
+    elif mol.HasSubstructMatch(cyclic_amine_pattern):
+        return True, "Molecule contains a cyclic amine group"
 
     return False, "No amine group detected"
