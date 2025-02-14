@@ -5,17 +5,16 @@ from rdkit import Chem
 
 def is_metal_atom(smiles: str):
     """
-    Determines if a molecule is a metal atom based on its SMILES string.
-    Considers charges and isotopes as part of metal atoms.
-
+    Determines if a molecule is a standalone metal atom based on its SMILES string.
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+        
     Returns:
-        bool: True if the molecule is a metal atom, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a standalone metal atom, False otherwise.
+        str: Reason for classification.
     """
-    # List of metal elements by symbol
+    # Verified list of known metal symbols
     metal_symbols = [
         "Li", "Be", "Na", "Mg", "Al", "K", "Ca", "Sc", "Ti",
         "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Rb",
@@ -34,12 +33,17 @@ def is_metal_atom(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Extract the element symbol (strip isotopic number and charge info)
-    atom = mol.GetAtomWithIdx(0)
-    element_symbol = atom.GetSymbol()
+    # Check that there's only a single atom in the molecule
+    if mol.GetNumAtoms() != 1:
+        return False, "Not a standalone atom"
 
-    # Check if the element is in the list of metal symbols
-    if element_symbol in metal_symbols:
-        return True, f"{element_symbol} is a metal atom including isotopic or charged forms"
-  
-    return False, f"{element_symbol} is not a metal atom"
+    # Get the atomic number (to consider isotopes)
+    atom = mol.GetAtomWithIdx(0)
+    symbol = atom.GetSymbol()
+    atomic_num = atom.GetAtomicNum()
+
+    # Ensure the standalone atom is a metal
+    if symbol in metal_symbols and atomic_num > 0:
+        return True, f"{symbol} is a standalone metal atom including isotopic forms"
+    
+    return False, f"{symbol} is not a standalone metal atom"
