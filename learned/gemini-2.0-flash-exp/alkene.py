@@ -44,6 +44,15 @@ def is_alkene(smiles: str):
         else:
             return False, "Molecule contains atoms other than C and H"
 
+    # Add explicit hydrogens to molecule
+    mol = Chem.AddHs(mol)
+
+    # Count hydrogens again, now with explicit hydrogens
+    h_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 1:
+            h_count += 1
+
     # Verify formula CnH2n
     if h_count != 2 * c_count:
        return False, f"Formula does not match CnH2n, got C{c_count}H{h_count}"
