@@ -6,6 +6,8 @@ Classifies: CHEBI:82198 wax
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdchem
 
 def is_wax(smiles: str):
     """
@@ -22,55 +24,86 @@ def is_wax(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    # Attempt to parse SMILES with error handling
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+    except Chem.rdchem.KekulizeException as e:
+        return False, f"SMILES parsing error: {str(e)}"
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Identify ester bonds: bond between carbonyl carbon and ester oxygen
-    ester_bond_indices = []
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 8) or (atom1.GetAtomicNum() == 8 and atom2.GetAtomicNum() == 6):
-            # Check if carbon is carbonyl carbon (has double bond to oxygen)
-            if atom1.GetAtomicNum() == 6:
-                carbon = atom1
-                oxygen = atom2
-            else:
-                carbon = atom2
-                oxygen = atom1
-            is_carbonyl = False
-            for nbr in carbon.GetNeighbors():
-                if nbr.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(carbon.GetIdx(), nbr.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    is_carbonyl = True
-                    break
-            # Check if oxygen is connected to another carbon
-            if is_carbonyl:
-                for nbr in oxygen.GetNeighbors():
-                    if nbr.GetIdx() != carbon.GetIdx() and nbr.GetAtomicNum() == 6:
-                        ester_bond_indices.append(bond.GetIdx())
-                        break
-
-    if not ester_bond_indices:
+    # Identify ester groups using SMARTS pattern
+    ester_smarts = '[CX3](=O)[OX2H0][#6]'
+    ester_pattern = Chem.MolFromSmarts(ester_smarts)
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if not ester_matches:
         return False, "No ester groups found"
 
     # Define threshold for long-chain (number of carbons)
     chain_length_threshold = 12
 
-    # Break the molecule at ester bonds and analyze fragments
-    frags = Chem.FragmentOnBonds(mol, ester_bond_indices, addDummies=False)
-    frag_mols = Chem.GetMolFrags(frags, asMols=True, sanitizeFrags=True)
+    # For each ester group, split the molecule and analyze fragments
+    for match in ester_matches:
+        carbonyl_c_idx = match[0]
+        ester_o_idx = match[2]
 
-    # Count carbons in each fragment
-    long_chain_fragments = []
-    for frag in frag_mols:
-        c_count = sum(1 for atom in frag.GetAtoms() if atom.GetAtomicNum() == 6)
-        if c_count >= chain_length_threshold:
-            long_chain_fragments.append(frag)
+        # Break the ester bond (between carbonyl carbon and oxygen)
+        rw_mol = Chem.RWMol(mol)
+        rw_mol.BeginBatchEdit()
+        rw_mol.RemoveBond(carbonyl_c_idx, ester_o_idx)
+        rw_mol.CommitBatchEdit()
 
-    # Check if there are at least two long-chain fragments (from ester bond)
-    if len(long_chain_fragments) >= 2:
-        return True, f"Ester with long chains found (number of long chains: {len(long_chain_fragments)})"
+        # Get the fragments resulting from bond breakage
+        frags = Chem.GetMolFrags(rw_mol, asMols=True, sanitizeFrags=True)
+
+        # Initialize counts for long chains
+        long_chain_count = 0
+
+        # Analyze each fragment
+        for frag in frags:
+            # Calculate the longest aliphatic carbon chain
+            longest_chain = get_longest_aliphatic_chain(frag)
+            
+            if longest_chain >= chain_length_threshold:
+                long_chain_count += 1
+
+        # If both fragments have long aliphatic chains, it's a wax
+        if long_chain_count >= 2:
+            return True, f"Ester with two long aliphatic chains found (long chains: {long_chain_count})"
+
+    return False, "No ester with two long aliphatic chains found"
+
+def get_longest_aliphatic_chain(mol):
+    """
+    Calculates the length of the longest continuous aliphatic carbon chain in a molecule.
+
+    Args:
+        mol (rdkit.Chem.Mol): Molecule to analyze
+
+    Returns:
+        int: Length of the longest aliphatic carbon chain
+    """
+    # Find all carbon atoms
+    carbon_idxs = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+
+    # Build a graph of carbon-carbon connections
+    paths = []
+    for carbon_idx in carbon_idxs:
+        for other_carbon_idx in carbon_idxs:
+            if carbon_idx < other_carbon_idx:
+                # Find all paths between two carbon atoms
+                all_paths = Chem.rdmolops.GetAllPaths(mol, carbon_idx, other_carbon_idx)
+                for path in all_paths:
+                    # Check if all atoms in path are carbons
+                    if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in path):
+                        # Check if bonds are single or double (allow for unsaturation)
+                        if all(mol.GetBondBetweenAtoms(path[i], path[i+1]).GetBondType() in [Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE] for i in range(len(path)-1)):
+                            paths.append(path)
+
+    # Find the longest path
+    if paths:
+        longest_path_length = max(len(path) for path in paths)
     else:
-        return False, "No ester with long chains found"
+        longest_path_length = 0
+
+    return longest_path_length
