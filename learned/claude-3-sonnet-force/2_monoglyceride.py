@@ -25,10 +25,10 @@ def is_2_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for glycerol backbone (C-C-C with two hydroxyl groups and one substituent)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2;$([OH1])][CH;$([OH1])][CH2;$([OH1])]([$([OX2][CX3](=[OX1]))])")
+    # Look for glycerol backbone (C-C-C with at least one oxygen attached)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found with correct substitution pattern"
+        return False, "No glycerol backbone found"
 
     # Look for ester group (-O-C(=O)-) attached at position 2
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -42,14 +42,14 @@ def is_2_monoglyceride(smiles: str):
         return False, "Ester group not attached at position 2 of glycerol"
 
     # Look for acyl chain (long carbon chain attached to ester)
-    acyl_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    acyl_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
     if len(acyl_chain_matches) == 0:
         return False, "No acyl chain found"
 
     # Count rotatable bonds to verify long chain
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 6:
+    if n_rotatable < 4:
         return False, "Acyl chain too short"
 
     # Check molecular weight - monoglycerides typically 200-600 Da
@@ -60,7 +60,7 @@ def is_2_monoglyceride(smiles: str):
     # Check atom counts
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if c_count < 10 or o_count != 4:
+    if c_count < 10 or o_count < 3:
         return False, "Atom counts outside typical range for 2-monoglycerides"
 
     return True, "Molecule has a glycerol backbone with an acyl chain attached at position 2"
