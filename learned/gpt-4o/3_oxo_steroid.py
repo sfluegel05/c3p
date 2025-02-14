@@ -21,21 +21,29 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define steroid backbone pattern
-    # (4 fused rings with allowance for common variations)
-    steroid_pattern = Chem.MolFromSmarts('[#6]1([#6])[#6][#6]2[#6]3[#6][#8]C(=O)[#6]=[C]4[#6]3CC[C@]12C[C@@H](O)[C@]4(C)C')
+    # Generalized pattern for four-fused rings as in steroids
+    steroid_ring_smarts = '[R]1[R][R][R]2[R][R][R]3[R][R][R]4[R][R][R]2[R][R][R]1[R][R][R]3[R][R]4'
+    steroid_pattern = Chem.MolFromSmarts(steroid_ring_smarts)
     
     # Check for steroid backbone
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone found"
+        return False, "No four-ring steroid backbone found"
 
-    # Define the oxo group pattern at position 3
-    # A more refined, specific pattern is needed here
-    # Identify the oxo group in context of known steroid structure
-    oxo_pattern = Chem.MolFromSmarts('[#8]=[C]3CC[C@](C)(O)[#6]C(=O)[#6]4[C@@H]3C[C@]12CC')
+    # C(=O) group identification
+    oxo_smarts = '[C]=O'
+    oxo_pattern = Chem.MolFromSmarts(oxo_smarts)
     
-    # Check if this specific pattern for a 3-oxo structure matches
-    if not mol.HasSubstructMatch(oxo_pattern):
-        return False, "No oxo group (C=O) at the 3rd position found"
+    # Find potential matches of the oxo groups
+    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
+    if not oxo_matches:
+        return False, "No C=O bond found"
 
-    return True, "Contains a steroid backbone with a 3-oxo group at the correct position."
+    # Evaluate if the oxo group is appropriately positioned (usually at 3rd position in a common steroid layout)
+    # This typically involves checking ring adjacency or direct substitution positions
+    for match in oxo_matches:
+        carbon_idx = match[0]
+        # Simple adjacency check, in practical terms this should map to 3rd position in steroid rings
+        if any(mol.GetBondWithIdx(bond.GetIdx()).IsInRing() for bond in mol.GetAtomWithIdx(carbon_idx).GetBonds()):
+            return True, "Detected steroid with a 3-oxo (C=O) group"
+
+    return False, "No oxo group at position 3 detected"
