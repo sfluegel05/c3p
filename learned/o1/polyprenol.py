@@ -6,6 +6,7 @@ Classifies: polyprenol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polyprenol(smiles: str):
     """
@@ -27,13 +28,12 @@ def is_polyprenol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for terminal primary alcohol group (O-H connected to a primary carbon)
-    alcohol_pattern = Chem.MolFromSmarts('[CX4H2][OX2H]')
+    alcohol_pattern = Chem.MolFromSmarts('[C;H2][O;H1]')  # Primary alcohol
     if not mol.HasSubstructMatch(alcohol_pattern):
         return False, "No terminal primary alcohol group found"
 
-    # Define isoprene unit pattern (simplified pattern)
-    # Pattern represents: C=C-C-C (with a methyl group attached to the middle carbon)
-    isoprene_pattern = Chem.MolFromSmarts('C(=C)C(C)C')
+    # Define isoprene unit pattern (captures the repeating isoprene unit in polyprenols)
+    isoprene_pattern = Chem.MolFromSmarts('[CH2]-[C](=C([CH3]))-[CH2]')  # Isoprene unit
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     num_isoprene_units = len(isoprene_matches)
 
