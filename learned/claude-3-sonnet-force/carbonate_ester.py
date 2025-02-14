@@ -28,22 +28,24 @@ def is_carbonate_ester(smiles: str):
     
     # Look for carbonate ester functional group (-O-C(=O)-O-)
     carbonate_ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[OX2]")
-    if not mol.HasSubstructMatch(carbonate_ester_pattern):
+    carbonate_ester_matches = mol.GetSubstructMatches(carbonate_ester_pattern)
+    if not carbonate_ester_matches:
         return False, "No carbonate ester functional group found"
     
-    # Check for at least one carbon-carbon bond
-    if not any(bond.GetBondType() == Chem.BondType.SINGLE and
-               bond.GetBeginAtom().GetAtomicNum() == 6 and
-               bond.GetEndAtom().GetAtomicNum() == 6 for bond in mol.GetBonds()):
-        return False, "No carbon-carbon bonds found"
-    
     # Check for organyl groups (alkyl/aryl groups) attached to carbonate ester
-    organyl_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]")
-    organyl_matches = mol.GetSubstructMatches(organyl_pattern)
-    if len(organyl_matches) < 2:
-        return False, "No organyl groups attached to carbonate ester"
+    for match in carbonate_ester_matches:
+        carbonate_ester_atoms = [mol.GetAtomWithIdx(idx) for idx in match]
+        organyl_attached = False
+        for atom in carbonate_ester_atoms:
+            if atom.GetAtomicNum() == 8:  # Oxygen atom
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetHybridization() in (Chem.HybridizationType.SP3, Chem.HybridizationType.SP2):
+                        organyl_attached = True
+                        break
+        if organyl_attached:
+            return True, "Contains carbonate ester functional group with organyl groups attached"
     
-    return True, "Contains carbonate ester functional group with organyl groups attached"
+    return False, "No organyl groups attached to carbonate ester"
 
 __metadata__ = {
     'chemical_class': {
@@ -70,13 +72,13 @@ __metadata__ = {
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 676,
-    'num_false_positives': 120,
-    'num_true_negatives': 185785,
-    'num_false_negatives': 3,
+    'num_true_positives': 673,
+    'num_false_positives': 3,
+    'num_true_negatives': 185902,
+    'num_false_negatives': 6,
     'num_negatives': None,
-    'precision': 0.849187935034802,
-    'recall': 0.9956481481481481,
-    'f1': 0.9157786283505168,
-    'accuracy': 0.9992595389744407
+    'precision': 0.9957098957098957,
+    'recall': 0.9912528480704371,
+    'f1': 0.9934783367951536,
+    'accuracy': 0.9999267758896635
 }
