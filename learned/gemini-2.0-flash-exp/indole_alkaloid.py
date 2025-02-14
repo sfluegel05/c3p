@@ -2,6 +2,7 @@
 Classifies: CHEBI:38958 indole alkaloid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_indole_alkaloid(smiles: str):
     """
@@ -20,16 +21,24 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More specific SMARTS pattern for indole:
-    #  - c1: Aromatic carbon
-    #  - c2: Aromatic carbon
-    #  - [nH+] or [nH]: Nitrogen (protonated or not)
-    #  - c3-c6: Remaining aromatic carbons
-    #  - The ~ represents an aromatic bond and is more explicit than specifying double and single bonds
-    indole_pattern = Chem.MolFromSmarts("c1~c~[nH+]~c2~c~c~c~c1~2") # Added protonated N
-    indole_pattern2 = Chem.MolFromSmarts("c1~c~[nH]~c2~c~c~c~c1~2") # added neutral N
+    # More robust SMARTS pattern for indole - simplified to a 5-membered ring with N connected to an aromatic 6-membered ring.
+    indole_pattern = Chem.MolFromSmarts("c1cc2[nH]c(c1)cc2") # simplified smarts, aromatic C connected to aromatic N
 
-    if mol.HasSubstructMatch(indole_pattern) or mol.HasSubstructMatch(indole_pattern2):
-        return True, "Contains an indole substructure"
-    else:
-        return False, "Does not contain an indole substructure"
+    if mol.HasSubstructMatch(indole_pattern):
+        
+        #Verify the substructure has at least 9 ring atoms and 1 Nitrogen.
+        match = mol.GetSubstructMatch(indole_pattern)
+        ring_atoms = [mol.GetAtomWithIdx(i) for i in match]
+        
+        n_count = 0
+        aromatic_count = 0
+        for atom in ring_atoms:
+            if atom.GetAtomicNum() == 7: #nitrogen
+                n_count+=1
+            if atom.GetIsAromatic():
+              aromatic_count +=1
+        
+        if n_count >0 and aromatic_count>=9:
+            return True, "Contains an indole substructure"
+
+    return False, "Does not contain an indole substructure"
