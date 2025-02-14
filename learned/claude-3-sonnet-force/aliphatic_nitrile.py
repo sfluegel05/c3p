@@ -33,14 +33,15 @@ def is_aliphatic_nitrile(smiles: str):
     if not nitrile_matches:
         return False, "No nitrile group found"
 
-    # Check if the carbon attached to the nitrile is aliphatic
+    # Check if at least one nitrile group is attached to an aliphatic carbon
+    has_aliphatic_nitrile = False
     for match in nitrile_matches:
         c_idx = match[0]  # Index of the carbon atom attached to the nitrile
-        if mol.GetAtomWithIdx(c_idx).GetIsAromatic():
-            return False, "Nitrile group is attached to an aromatic carbon"
+        if not mol.GetAtomWithIdx(c_idx).GetIsAromatic():
+            has_aliphatic_nitrile = True
+            break
 
-    # Check if the molecule has any aromatic rings
-    if mol.GetAromaticRings():
-        return False, "Molecule contains aromatic rings"
+    if not has_aliphatic_nitrile:
+        return False, "All nitrile groups are attached to aromatic carbons"
 
-    return True, "Molecule contains a nitrile group attached to an aliphatic carbon chain"
+    return True, "Molecule contains at least one nitrile group attached to an aliphatic carbon chain"
