@@ -1,26 +1,54 @@
 """
 Classifies: CHEBI:26208 polyunsaturated fatty acid
 """
-After analyzing the previous program and the outcomes provided, I can make the following observations:
+"""
+Classifies: CHEBI:36344 polyunsaturated fatty acid
+Any fatty acid containing more than one double bond. Acids in this group are reported to have cardioprotective effects; and levels are lowered in chronic fatigue syndrome.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. The program correctly identifies most of the polyunsaturated fatty acids, as evident from the true positives.
+def is_polyunsaturated_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is a polyunsaturated fatty acid based on its SMILES string.
 
-2. The main issue lies in the false positives, where the program incorrectly classifies molecules as polyunsaturated fatty acids when they are not. This could be due to the following reasons:
-   - The program only checks for the presence of a carboxylic acid group and multiple double bonds, but it does not consider other structural features that are characteristic of fatty acids, such as a long aliphatic chain and the position of the double bonds.
-   - Some false positives contain multiple double bonds and a carboxylic acid group, but they may belong to different chemical classes, such as macrolides, terpenoids, or other natural products.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. The false negatives are relatively few, and most of them seem to be due to the program's strict requirement that the double bonds should be separated by at least one methylene group. This may not always be the case for some polyunsaturated fatty acids, where the double bonds can be adjacent or separated by other functional groups.
-
-To improve the program, we can consider the following steps:
-
-1. Implement additional checks to ensure that the molecule has a long aliphatic chain, which is a characteristic feature of fatty acids. This could involve checking the number of carbon atoms in the longest aliphatic chain or using a more specific SMARTS pattern to match the aliphatic chain.
-
-2. Add constraints on the position of the double bonds relative to the carboxylic acid group. Typically, the double bonds in polyunsaturated fatty acids are located in the middle of the aliphatic chain, away from the carboxylic acid group.
-
-3. Consider relaxing the constraint that double bonds must be separated by methylene groups. While this is generally true, there may be exceptions where the double bonds are adjacent or separated by other functional groups.
-
-4. Implement a more sophisticated filtering mechanism to exclude molecules that belong to other chemical classes, such as macrolides, terpenoids, or natural products, even if they contain multiple double bonds and a carboxylic acid group.
-
-5. If there are consistent outliers or mistakes in the benchmark data, you can choose to ignore them, but provide a clear explanation for your reasoning. However, this should be done with caution and only after careful consideration.
-
-By incorporating these improvements, the program should be able to more accurately classify polyunsaturated fatty acids while minimizing false positives and false negatives.
+    Returns:
+        bool: True if molecule is a polyunsaturated fatty acid, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxylic acid group found"
+    
+    # Check for long aliphatic chain
+    aliphatic_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCC")
+    if not mol.HasSubstructMatch(aliphatic_chain_pattern):
+        return False, "Aliphatic chain too short"
+    
+    # Check for multiple double bonds
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) < 2:
+        return False, "Less than two double bonds found"
+    
+    # Check position of double bonds relative to carboxylic acid group
+    aliphatic_chain_length = rdMolDescriptors.CalcMolWt(mol) // 14  # approximate chain length
+    double_bond_positions = [atom_idx for match in double_bond_matches for atom_idx in match]
+    distance_from_acid = min(mol.GetAtomWithIdx(idx).GetShortestPathDistanceToSubmits()[0] for idx in double_bond_positions)
+    if distance_from_acid < 3 or distance_from_acid > aliphatic_chain_length - 3:
+        return False, "Double bonds too close to carboxylic acid group"
+    
+    # Additional checks or constraints can be added here, if needed
+    
+    return True, "Contains multiple double bonds in a long aliphatic chain with a carboxylic acid group"
