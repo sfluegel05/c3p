@@ -6,7 +6,6 @@ Classifies: CHEBI:18133 hexose
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_hexose(smiles: str):
     """
@@ -29,64 +28,57 @@ def is_hexose(smiles: str):
     # Remove hydrogens for accurate atom counting
     mol = Chem.RemoveHs(mol)
 
+    # Check for invalid atoms (exclude metals and halogens)
+    allowed_atomic_nums = {1, 6, 7, 8}  # Allow C, H, N, O
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_atomic_nums:
+            return False, f"Molecule contains invalid atom type {atom.GetSymbol()}"
+
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if c_count != 6:
         return False, f"Molecule has {c_count} carbon atoms, expected 6"
 
-    # Count oxygen atoms
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Exclude molecules with carboxylic acid groups
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
+    if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "Molecule contains carboxylic acid group, not a hexose"
 
-    # Hexoses typically have 6 carbons and 6 oxygens (C6H12O6)
-    if o_count < 5 or o_count > 8:
-        return False, f"Molecule has {o_count} oxygen atoms, expected between 5 and 8"
+    # Exclude molecules with ester groups (including lactones)
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
+    if mol.HasSubstructMatch(ester_pattern):
+        return False, "Molecule contains ester group (possible lactone), not a hexose"
 
-    # Check for glycosidic bonds (exclude molecules with glycosidic bonds)
-    # Glycosidic bond pattern: anomeric carbon (connected to two oxygens) linked to another saccharide unit
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[C@H]1(O)[O][C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
-    if mol.HasSubstructMatch(glycosidic_bond_pattern):
-        return False, "Molecule appears to have glycosidic bonds, may not be a monosaccharide"
+    # Exclude molecules with phosphate or sulfate groups
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    sulfate_pattern = Chem.MolFromSmarts("S(=O)(=O)O")
+    if mol.HasSubstructMatch(phosphate_pattern) or mol.HasSubstructMatch(sulfate_pattern):
+        return False, "Molecule contains phosphate or sulfate group, not a hexose"
 
-    # Check for aldehyde group (aldohexose)
-    # Aldehyde pattern: [CHO]
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
+    # Exclude molecules with large substituents (e.g., aromatic rings)
+    aromatic_atoms = [atom for atom in mol.GetAtoms() if atom.GetIsAromatic()]
+    if aromatic_atoms:
+        return False, "Molecule contains aromatic rings, not characteristic of hexoses"
+
+    # Check for aldehyde group at position 1 (aldohexose)
+    aldehyde_pattern = Chem.MolFromSmarts("[#6H1](=O)[#6]")
     has_aldehyde = mol.HasSubstructMatch(aldehyde_pattern)
 
-    # Check for ketone group (ketohexose)
-    # Ketone pattern: [#6][CX3](=O)[#6]
-    ketone_pattern = Chem.MolFromSmarts("[#6][CX3](=O)[#6]")
+    # Check for ketone group at position 2 (ketohexose)
+    ketone_pattern = Chem.MolFromSmarts("[#6][C](=O)[#6]")
     has_ketone = mol.HasSubstructMatch(ketone_pattern)
 
-    # Check for cyclic hemiacetal (pyranose form)
-    pyranose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C(O)C1O")
-    has_pyranose = mol.HasSubstructMatch(pyranose_pattern)
+    # Check for cyclic hemiacetal (pyranose form) or hemiketal (furanose form)
+    hemiacetal_pattern = Chem.MolFromSmarts("[C;R][O;R][C;R]")
+    has_hemiacetal = mol.HasSubstructMatch(hemiacetal_pattern)
 
-    # Check for cyclic hemiketal (furanose form)
-    furanose_pattern = Chem.MolFromSmarts("C1OC(O)C(O)C1O")
-    has_furanose = mol.HasSubstructMatch(furanose_pattern)
+    # Ensure molecule is a monosaccharide (no glycosidic bonds)
+    glycosidic_bond_pattern = Chem.MolFromSmarts("[C;R1]-[O]-[C;!R]")
+    if mol.HasSubstructMatch(glycosidic_bond_pattern):
+        return False, "Molecule appears to have a glycosidic bond, may not be a monosaccharide"
 
-    # Check for ring sizes (5 or 6-membered rings with oxygen)
-    ring_info = mol.GetRingInfo()
-    has_valid_ring = False
-    for ring in ring_info.AtomRings():
-        if len(ring) == 5 or len(ring) == 6:
-            # Check if ring contains exactly one oxygen atom
-            o_in_ring = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
-            if o_in_ring == 1:
-                has_valid_ring = True
-                break
-
-    # Check for monosaccharide (no glycosidic bonds)
-    # We can check that all oxygens are attached to carbons and not forming O-glycosidic linkages
-    # Also, the molecule should not have phosphates or other non-standard substituents
-
-    # Exclude molecules with phosphates, sulfates, or other large substituents
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in [1, 6, 8]:  # Allow only C, H, O
-            return False, f"Molecule contains atom type {atom.GetSymbol()}, which is not typical in a hexose"
-
-    # Evaluate if molecule has aldehyde, ketone, pyranose, or furanose form
-    if has_aldehyde or has_ketone or has_pyranose or has_furanose or has_valid_ring:
-        return True, "Molecule is a hexose: 6 carbons, appropriate oxygen content, and contains aldehyde/ketone or cyclic hemiacetal/hemiketal"
+    # Evaluate if molecule has aldehyde, ketone, or cyclic form
+    if has_aldehyde or has_ketone or has_hemiacetal:
+        return True, "Molecule is a hexose: 6 carbons and contains aldehyde/ketone or cyclic hemiacetal/hemiketal"
     else:
         return False, "Molecule does not contain aldehyde, ketone, or cyclic hemiacetal/hemiketal in expected positions"
