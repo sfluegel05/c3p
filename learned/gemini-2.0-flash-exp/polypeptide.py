@@ -22,9 +22,9 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern to find a peptide bond. 
-    # This pattern will also match some cyclic peptide bonds, which is correct.
-    peptide_bond_pattern = Chem.MolFromSmarts("[N]-C(=O)-[C]")
+    # SMARTS pattern to find a peptide bond
+    #  N-C(=O)-C where N has at least one H, to avoid other amides. 
+    peptide_bond_pattern = Chem.MolFromSmarts("[N;!H0]-C(=O)-[#6]")
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
 
     num_peptide_bonds = len(peptide_bonds)
