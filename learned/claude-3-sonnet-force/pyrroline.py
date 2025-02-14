@@ -2,17 +2,16 @@
 Classifies: CHEBI:23763 pyrroline
 """
 """
-Classifies: CHEBI:35447 pyrroline
+Classifies: CHEBI:22990 pyrroline
 Any organic heteromonocyclic compound with a structure based on a dihydropyrrole.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_pyrroline(smiles: str):
     """
     Determines if a molecule is a pyrroline based on its SMILES string.
-    A pyrroline is an organic heteromonocyclic compound with a dihydropyrrole structure.
+    A pyrroline is an organic heteromonocyclic compound with a structure based on a dihydropyrrole.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,41 +25,29 @@ def is_pyrroline(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for pyrroline ring
-    pyrroline_ring = Chem.MolFromSmarts("C1=NCCC1")
-    pyrroline_matches = mol.GetSubstructMatches(pyrroline_ring)
-    if not pyrroline_matches:
-        return False, "No pyrroline ring found"
-    
-    # Enumerate tautomers and check for pyrroline structures
-    tautomers = AllChem.EnumerateTautomers(mol)
-    for tautomer in tautomers:
-        tautomer_matches = tautomer.GetSubstructMatches(pyrroline_ring)
-        if tautomer_matches:
-            break
-    else:
-        return False, "No pyrroline tautomer found"
-    
-    # Check for disallowed heteroatoms and functional groups
-    disallowed_smarts = ["[!#6&#7]", "*=O", "*=S", "*#*", "O=C=O"]
-    disallowed_patterns = [Chem.MolFromSmarts(s) for s in disallowed_smarts]
-    for pattern in disallowed_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return False, "Contains disallowed heteroatoms or functional groups"
-    
-    # Check for allowed substituents (alkyl, alkenyl, aryl, halogen, amine, ether)
-    allowed_smarts = ["C", "c", "X", "N", "O"]
-    allowed_patterns = [Chem.MolFromSmarts("[" + s + "]") for s in allowed_smarts]
-    pyrroline_atoms = [atom.GetIdx() for match in tautomer_matches for atom in mol.GetAtomWithIdx(match)]
-    for atom in mol.GetAtoms():
-        if atom.GetIdx() not in pyrroline_atoms:
-            allowed = False
-            for pattern in allowed_patterns:
-                if atom.IsInRingSize(5) and mol.HasSubstructMatch(pattern, atom.GetIdx()):
-                    allowed = True
-                    break
-            if not allowed:
-                return False, "Contains disallowed substituents"
-    
-    return True, "Molecule contains a pyrroline ring system"
+
+    # Check for a single ring with 5 atoms, 4 carbon and 1 nitrogen
+    ring_info = mol.GetRingInfo()
+    if not ring_info.AtomRings():
+        return False, "No ring found"
+    if len(ring_info.AtomRings()[0]) != 5:
+        return False, "Ring size is not 5"
+    ring_atoms = [mol.GetAtomWithIdx(idx).GetAtomicNum() for idx in ring_info.AtomRings()[0]]
+    if ring_atoms.count(6) != 4 or ring_atoms.count(7) != 1:
+        return False, "Ring does not contain 4 carbon and 1 nitrogen atoms"
+
+    # Check for double bond in the ring
+    bond_types = [mol.GetBondBetweenAtoms(ring_info.AtomRings()[0][i], ring_info.AtomRings()[0][(i+1)%5]).GetBondType() for i in range(5)]
+    if Chem.rdchem.BondType.DOUBLE not in bond_types:
+        return False, "No double bond found in the ring"
+
+    # Check for exocyclic substituents
+    allowed_substituents = [Chem.rdchem.HybridizationType.SP3, Chem.rdchem.HybridizationType.SP2]
+    for atom_idx in ring_info.AtomRings()[0]:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in ring_info.AtomRings()[0]:
+                if neighbor.GetHybridization() not in allowed_substituents:
+                    return False, "Substituent is not allowed for pyrrolines"
+
+    return True, "Molecule contains a 5-membered ring with 4 carbon and 1 nitrogen atoms, a double bond, and allowed substituents"
