@@ -6,6 +6,7 @@ Classifies: CHEBI:33716 dihydroflavonol
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_dihydroflavonols(smiles: str):
     """
@@ -25,29 +26,25 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for the flavanone scaffold
-    flavanone_pattern = Chem.MolFromSmarts("[O;R]1C(=O)C2=C(C=CC=C2)C2=C1C=CC(O)=C2")
+    # Look for the flavanone scaffold with a hydroxy group at position 3
+    flavanone_pattern = Chem.MolFromSmarts("[O;R]1[C@@H]([C@H](C(=O)C2=C1C=CC=C2)O)[c;R]3ccc(O)cc3")
     if not mol.HasSubstructMatch(flavanone_pattern):
-        return False, "Molecule does not contain the flavanone scaffold"
+        return False, "Molecule does not contain the dihydroflavonol scaffold"
     
-    # Check for hydroxy group at position 3 of the heterocyclic ring
-    dihydroflavonol_pattern = Chem.MolFromSmarts("[O;R]1C(=O)C2=C(C=CC=C2)C2=C1C(O)=CC=C2")
-    if not mol.HasSubstructMatch(dihydroflavonol_pattern):
-        return False, "No hydroxy group at position 3 of the heterocyclic ring"
+    # Count the number of hydroxy groups
+    hydroxyl_groups = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetHybridization() == Chem.rdchem.HybridizationType.SP3)
+    if hydroxyl_groups < 3:
+        return False, "Molecule does not have enough hydroxy groups"
     
-    # Allow for additional substituents or structural variations
-    additional_pattern = Chem.MolFromSmarts("[*]")
-    if mol.HasSubstructMatch(additional_pattern):
-        return True, "Molecule contains the flavanone scaffold with a hydroxy group at position 3 of the heterocyclic ring, and additional substituents or structural variations"
+    # Check for additional double bonds or rings (to exclude flavones and flavonols)
+    num_double_bonds = mol.GetNumBonds(Chem.BondType.DOUBLE)
+    num_rings = mol.GetRingInfo().NumRings()
+    if num_double_bonds > 3 or num_rings > 3:
+        return False, "Molecule has too many double bonds or rings"
     
-    return True, "Molecule contains the flavanone scaffold with a hydroxy group at position 3 of the heterocyclic ring"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:33716',
-        'name': 'dihydroflavonol',
-        'definition': 'Any hydroxyflavanone in which a hydroxy group is present at position 3 of the heterocyclic ring.',
-        'parents': ['CHEBI:28519', 'CHEBI:35402']
-    },
-    # Additional metadata can be added here
-}
+    # Check molecular weight - dihydroflavonols typically 200-500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for dihydroflavonols"
+    
+    return True, "Molecule meets the criteria for a dihydroflavonol"
