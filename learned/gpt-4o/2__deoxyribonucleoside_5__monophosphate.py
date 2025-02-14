@@ -21,21 +21,26 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for 2'-deoxyribose sugar with hydroxyl at 3' position, no hydroxyl at 2'
-    deoxyribose_pattern = Chem.MolFromSmarts("[C@@H]1([C@@H](O)[C@H]([C]([O-])O)O[C@@H]1CO)")
+    # Pattern for 2'-deoxyribose sugar: A 5-membered ring with 3' hydroxyl, no 2' hydroxyl
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@@H]([C@H](O)C1)CO")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
-        return False, "No 2'-deoxyribose sugar backbone found"
+        return False, "No 2'-deoxyribose sugar backbone found (missing 5-membered ring with proper configuration)"
     
-    # Nucleobase patterns for adenine, guanine (purines) and thymine, cytosine, uracil (pyrimidines)
-    purine_pattern = Chem.MolFromSmarts("n1cnc2c1ncnc2")
-    pyrimidine_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c(=O)c1")
+    # Nucleobase patterns for adenine, guanine, thymine, cytosine, uracil (varied configurations)
+    nucleobase_patterns = [
+        Chem.MolFromSmarts("n1cnc2[nH]cnc2c1"),  # adenine-like
+        Chem.MolFromSmarts("c1nc2[nH]c[nH]c2[nH]1"),  # guanine-like
+        Chem.MolFromSmarts("c1c[nH]c(=O)nc1=O"),  # uracil-like
+        Chem.MolFromSmarts("c1cc(=O)[nH]c[nH]1"),  # cytosine-like
+        Chem.MolFromSmarts("c1c[nH]c(=O)nc1C")  # thymine-like adjustments
+    ]
     
-    if not (mol.HasSubstructMatch(purine_pattern) or mol.HasSubstructMatch(pyrimidine_pattern)):
-        return False, "No common nucleobase found (purine or pyrimidine)"
-    
-    # Check for a phosphate group at 5'-location
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)([O-])O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No 5'-phosphate group found"
+    if not any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns):
+        return False, "No recognized nucleobase found (purine or pyrimidine derivatives)"
 
-    return True, "Contains 2'-deoxyribose with 5'-phosphate and nucleobase"
+    # Check for a flexible 5'-phosphate group allowing different attachment types
+    phosphate_pattern = Chem.MolFromSmarts("O[P](=O)(O)[O-]")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No flexible 5'-phosphate group match"
+
+    return True, "Contains 2'-deoxyribose with 5'-phosphate and recognized nucleobase"
