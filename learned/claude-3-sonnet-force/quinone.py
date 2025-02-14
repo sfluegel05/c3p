@@ -6,7 +6,6 @@ Classifies: CHEBI:38170 quinone
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_quinone(smiles: str):
     """
@@ -30,43 +29,39 @@ def is_quinone(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define quinone pattern
-    quinone_pattern = Chem.MolFromSmarts("[#6]1([#6]=[#6])([#8])=[#6][#6]=[#6][#6]1=[#8]")
+    quinone_pattern = Chem.MolFromSmarts("[#6,#7,#8,#16]1([#6]=[#6])([#8])=[#6][#6]=[#6][#6]1=[#8]")
     
     # Check for quinone pattern
-    if not mol.HasSubstructMatch(quinone_pattern):
+    matches = mol.GetSubstructMatches(quinone_pattern)
+    if not matches:
         return False, "No quinone substructure found"
     
-    # Check for conjugated cyclic dione
-    diones = [m for m in mol.GetSubstructMatches(quinone_pattern)]
-    is_conjugated = all(check_conjugation(mol, dione) for dione in diones)
+    # Check for conjugation and ring membership
+    for match in matches:
+        is_conjugated = check_conjugation(mol, match)
+        is_cyclic = all(mol.GetAtomWithIdx(idx).IsInRing() for idx in match)
+        
+        if is_conjugated and is_cyclic:
+            return True, "Molecule contains a fully conjugated cyclic dione structure (quinone)"
     
-    if not is_conjugated:
-        return False, "Quinone substructure is not fully conjugated"
-    
-    # Check for ring membership
-    ring_info = mol.GetRingInfo()
-    is_cyclic = all(ring_info.IsAtomInRingOfSize(atom_idx, 6) for atom_idx in diones[0])
-    
-    if not is_cyclic:
-        return False, "Quinone substructure is not cyclic"
-    
-    return True, "Molecule contains a fully conjugated cyclic dione structure (quinone)"
+    return False, "Quinone substructure is not fully conjugated or not cyclic"
 
-def check_conjugation(mol, dione):
+def check_conjugation(mol, atom_indices):
     """
-    Checks if a given dione substructure is fully conjugated in a molecule.
+    Checks if a given substructure is fully conjugated in a molecule.
     
     Args:
         mol (rdkit.Chem.rdchem.Mol): RDKit molecule object
-        dione (list): List of atom indices representing the dione substructure
+        atom_indices (list): List of atom indices representing the substructure
         
     Returns:
-        bool: True if the dione substructure is fully conjugated, False otherwise
+        bool: True if the substructure is fully conjugated, False otherwise
     """
-    for i in range(len(dione)):
-        atom1 = mol.GetAtomWithIdx(dione[i])
-        atom2 = mol.GetAtomWithIdx(dione[(i+1) % len(dione)])
-        bond = mol.GetBondBetweenAtoms(atom1.GetIdx(), atom2.GetIdx())
-        if bond is None or bond.GetBondType() != Chem.BondType.DOUBLE:
-            return False
-    return True
+    conjugated_atoms = set(atom_indices)
+    for idx in atom_indices:
+        atom = mol.GetAtomWithIdx(idx)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in conjugated_atoms and mol.GetBondBetweenAtoms(idx, neighbor.GetIdx()).GetIsConjugated():
+                conjugated_atoms.add(neighbor.GetIdx())
+    
+    return len(conjugated_atoms) == len(atom_indices)
