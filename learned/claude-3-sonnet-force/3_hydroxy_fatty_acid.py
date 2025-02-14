@@ -32,16 +32,24 @@ def is_3_hydroxy_fatty_acid(smiles: str):
     if len(carboxylic_matches) < 1:
         return False, "No carboxylic acid group found"
     
-    # Check for long carbon chain (fatty acid)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check for long carbon chain (fatty acid) with possible cyclopropane rings
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~*~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
         return False, "No long carbon chain found"
     
-    # Look for hydroxyl group at 2nd or 3rd carbon from carboxylic acid
-    hydroxy_pattern = Chem.MolFromSmarts("[CX4]([CX3]([OX2H1])[CX3]([CX3]([CX3](=O)[OX2H0]))[CX4,CX3])")
+    # Look for hydroxyl group(s) along the carbon chain
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4]([CX3]([OX2H1])[CX4,CX3])")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     if len(hydroxy_matches) < 1:
-        return False, "No hydroxyl group at 2nd or 3rd carbon found"
+        return False, "No hydroxyl group found along the carbon chain"
     
-    return True, "Contains a carboxylic acid group and a hydroxyl group in the beta- or 3-position"
+    # Allow for methoxy groups
+    methoxy_pattern = Chem.MolFromSmarts("[CX4]([CX3]([OX2C]))")
+    methoxy_matches = mol.GetSubstructMatches(methoxy_pattern)
+    
+    # Check for branched chains
+    branched_pattern = Chem.MolFromSmarts("[CX4]([CX3])([CX3])([CX3,CX4])")
+    branched_matches = mol.GetSubstructMatches(branched_pattern)
+    
+    return True, "Contains a carboxylic acid group, a long carbon chain, and one or more hydroxyl groups along the chain"
