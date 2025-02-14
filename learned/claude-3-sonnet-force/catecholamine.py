@@ -6,7 +6,6 @@ Classifies: CHEBI:18148 catecholamine
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_catecholamine(smiles: str):
     """
@@ -27,43 +26,32 @@ def is_catecholamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for pyrocatechol (benzene-1,2-diol) core
-    pyrocatechol_pattern = Chem.MolFromSmarts("c1c(O)cc(O)cc1")
-    pyrocatechol_matches = mol.GetSubstructMatches(pyrocatechol_pattern)
-    if not pyrocatechol_matches:
-        return False, "No pyrocatechol core found"
-
-    # Look for 2-aminoethyl side chain
-    ethylamine_pattern = Chem.MolFromSmarts("CCN")
-    ethylamine_matches = mol.GetSubstructMatches(ethylamine_pattern)
-    if not ethylamine_matches:
-        return False, "No 2-aminoethyl side chain found"
-
-    # Check connectivity between pyrocatechol and ethylamine
-    connected = any(AllChem.GetShortestPath(mol, pyrocatechol_match[0], ethylamine_match[0])
-                    for pyrocatechol_match in pyrocatechol_matches
-                    for ethylamine_match in ethylamine_matches)
-    if not connected:
-        return False, "Pyrocatechol and ethylamine not connected"
+    # Look for pyrocatechol core with 2-aminoethyl side chain
+    catecholamine_pattern = Chem.MolFromSmarts("c1c(O)cc(O)c(c1)CCNC")
+    catecholamine_matches = mol.GetSubstructMatches(catecholamine_pattern)
+    if not catecholamine_matches:
+        return False, "No catecholamine core found"
 
     # Check for substitutions on the pyrocatechol core
-    pyrocatechol_core_atom = mol.GetAtomWithIdx(pyrocatechol_matches[0][0])
-    if pyrocatechol_core_atom.GetDegree() > 3:
-        substituted = True
-    else:
-        substituted = False
+    substituted = False
+    for match in catecholamine_matches:
+        core_atom = mol.GetAtomWithIdx(match[0])
+        if core_atom.GetDegree() > 3:
+            substituted = True
+            break
 
     # Check for additional hydroxyl groups
     num_hydroxyl_groups = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1)
     if num_hydroxyl_groups > 2:
         substituted = True
 
-    # Check molecular weight - catecholamines typically <300 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 300:
-        return False, "Molecular weight too high for catecholamine"
+    # Check for other substitutions on the catecholamine core
+    catecholamine_core = Chem.MolFromSmarts("c1c(O)cc(O)c(CCNC)c1")
+    other_substitutions = mol.HasSubstructMatch(catecholamine_core, useChirality=True)
+    if other_substitutions:
+        substituted = True
 
     if substituted:
         return True, "Substituted catecholamine derivative"
     else:
-        return True, "Contains pyrocatechol core with 2-aminoethyl side chain"
+        return True, "Contains unsubstituted catecholamine core"
