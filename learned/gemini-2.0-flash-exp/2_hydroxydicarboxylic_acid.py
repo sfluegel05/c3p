@@ -8,7 +8,7 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-hydroxydicarboxylic acid based on its SMILES string.
     A 2-hydroxydicarboxylic acid is a dicarboxylic acid with a hydroxyl group on the alpha carbon
-    relative to *each* carboxy group.
+    relative to a carboxylic acid.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,37 +27,43 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if len(carboxyl_matches) != 2:
        return False, f"Molecule does not have 2 carboxyl groups. Found {len(carboxyl_matches)}"
 
+    # 2. Check for a hydroxyl group
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) == 0:
+        return False, "Molecule does not contain any hydroxyl group."
 
-    # 2. Check for at least one hydroxyl on an alpha carbon relative to *each* carboxyl
-    alpha_hydroxyl_count = 0
+    # 3. Check for at least one hydroxyl on an alpha carbon relative to *any* carboxyl
+    alpha_hydroxyl_found = False
     for carboxyl_match in carboxyl_matches:
-        carboxyl_carbon_idx = carboxyl_match[0] # Get index of the carboxyl carbon
-        carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
+      carboxyl_carbon_idx = carboxyl_match[0] # Get index of the carboxyl carbon
 
-        alpha_carbon_idx = -1
-        for neighbor in carboxyl_carbon.GetNeighbors():
-              #Find the alpha carbon, which should be a carbon and not the oxygen of the carboxyl
-              if neighbor.GetAtomicNum() == 6:
-                 alpha_carbon_idx = neighbor.GetIdx()
-                 break
-        if alpha_carbon_idx == -1:
-           return False, "Carboxyl group does not have an alpha carbon"
+      carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_carbon_idx)
 
-        # Check if this specific alpha carbon has a hydroxyl group
-        alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
+      for neighbor in carboxyl_carbon.GetNeighbors():
+            neighbor_idx = neighbor.GetIdx()
 
-        # Using a smarter SMARTS that checks for alcohol carbons -[C](-O)-
-        alcohol_pattern = Chem.MolFromSmarts("[CX4]-[OX2H1]") #  Explicitly look for C-O-H 
-        
-        for hydroxyl_match in mol.GetSubstructMatches(alcohol_pattern):
-              hydroxyl_carbon_idx = mol.GetAtomWithIdx(hydroxyl_match[0]).GetIdx() # index of the alcohol carbon
+            # Check if neighbor is a carbon
+            if neighbor.GetAtomicNum() != 6:
+                continue
 
-              if hydroxyl_carbon_idx == alpha_carbon_idx: # if the carbon attached to the alcohol IS the alpha carbon of the carboxyl
-                alpha_hydroxyl_count+=1
-                break
-            
-    if alpha_hydroxyl_count != 2:
-      return False, f"Not all alpha carbons have a hydroxyl. Found {alpha_hydroxyl_count}"
+            # Check if any of the hydroxyl groups are attached to the neighbor carbon
+            for hydroxyl_match in hydroxyl_matches:
+                  hydroxyl_oxygen_idx = hydroxyl_match[0]
+                  hydroxyl_oxygen = mol.GetAtomWithIdx(hydroxyl_oxygen_idx)
+
+                  hydroxyl_carbon_neighbors = [atom.GetIdx() for atom in hydroxyl_oxygen.GetNeighbors()]
+                  if neighbor_idx in hydroxyl_carbon_neighbors:
+                        alpha_hydroxyl_found = True
+                        break
+            if alpha_hydroxyl_found:
+                  break
+
+      if alpha_hydroxyl_found:
+          break
+    
+    if not alpha_hydroxyl_found:
+      return False, "Hydroxyl group is not on the alpha carbon relative to any carboxylic group."
 
 
     #4 Success
