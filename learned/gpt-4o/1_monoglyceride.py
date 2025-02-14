@@ -2,7 +2,7 @@
 Classifies: CHEBI:35759 1-monoglyceride
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_1_monoglyceride(smiles: str):
     """
@@ -23,32 +23,24 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Glycerol backbone with ester linkage at 1-position
+    # Pattern for glycerol backbone: OH groups at 1, 2, 3 positions
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
-    ester_pattern = Chem.MolFromSmarts("O(C=O)")
-    
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    # Pattern for 1-position ester linkage: ester linkage with carbon chain
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC(CO)CO")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester linkage found at expected position"
+    
+    # Check for only one ester linkage
+    ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O"))
     if len(ester_matches) != 1:
         return False, f"Expected 1 ester linkage, found {len(ester_matches)}"
     
-    # Check position of ester linkage
-    ester_sites = [bond.GetBeginAtom().GetIdx() for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.ESTER]
-    if not ester_sites or ester_sites[0] != 0:
-        return False, "Ester linkage not at 1-position"
-
-    # Verify the presence of a single acyl chain attached at the ester group
-    acyl_chain_pattern = Chem.MolFromSmarts("C(=O)C")
-    acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
-    if len(acyl_chain_matches) != 1:
-        return False, "Expected 1 acyl chain, found {}".format(len(acyl_chain_matches))
+    # Consideration of chirality, technically 1-monoglycerides can be racemic
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    if len(chiral_centers) < 1:
+        return False, f"Expected at least one chiral center, found {len(chiral_centers)}"
     
-    # Consideration of chiral center
-    n_chiral_centers = len(Chem.FindMolChiralCenters(mol, includeUnassigned=False))
-    if n_chiral_centers != 1:
-        has_chiral = "chiral" if n_chiral_centers >= 1 else "achiral"
-        return False, f"Molecule should ideally have 1 chiral center, found {n_chiral_centers} ({has_chiral})"
-    
-    return True, "Valid structure for a 1-monoglyceride"
+    return True, "Contains glycerol backbone with one fatty acid chain attached via ester bond at position 1"
