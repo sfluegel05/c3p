@@ -20,8 +20,8 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS pattern for carboxylic acid (including deprotonated form)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])([OX2H0,OX1-])")
+    # More specific SMARTS pattern for carboxylic acid groups
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,-1]")
     if carboxylic_acid_pattern is None:
         return False, "Invalid SMARTS pattern"
 
