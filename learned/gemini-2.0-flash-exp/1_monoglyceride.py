@@ -2,13 +2,12 @@
 Classifies: CHEBI:35759 1-monoglyceride
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_1_monoglyceride(smiles: str):
     """
     Determines if a molecule is a 1-monoglyceride based on its SMILES string.
-    A 1-monoglyceride is a glycerol backbone with a fatty acid chain attached at the 1-position via an ester bond,
+    A 1-monoglyceride has a glycerol backbone with a fatty acid chain at position 1 via an ester bond,
     and free hydroxyl groups at positions 2 and 3.
 
     Args:
@@ -35,14 +34,26 @@ def is_1_monoglyceride(smiles: str):
     # Get the glycerol carbon atoms from the match, convert them to a list of integers
     glycerol_carbon_atoms = [int(atom) for atom in glycerol_match]
     
-    #Check connectivity. The 2nd carbon of the glycerol is the one that has 2 oxygens bonded to it.
+    #Check connectivity. The 2nd carbon of the glycerol has 1 OH bonded to it. The others have one.
     glycerol_carbon_2_index = glycerol_carbon_atoms[1]
     glycerol_carbon_2 = mol.GetAtomWithIdx(glycerol_carbon_2_index)
-    #Check that this carbon has 2 oxygen neighbours (hydroxy groups)
-    oxygen_neighbors = [neighbor for neighbor in glycerol_carbon_2.GetNeighbors() if neighbor.GetAtomicNum() == 8]
-    if len(oxygen_neighbors) != 2:
-      return False, "Glycerol position 2 does not have two hydroxyl groups"
-
+    #Check that this carbon has 1 oxygen neighbor (hydroxy group)
+    oxygen_neighbors_c2 = [neighbor for neighbor in glycerol_carbon_2.GetNeighbors() if neighbor.GetAtomicNum() == 8]
+    if len(oxygen_neighbors_c2) != 1:
+      return False, "Glycerol position 2 does not have one hydroxyl group"
+    
+    # Check that the first and third glycerol carbons have a hydroxyl group
+    glycerol_carbon_1_index = glycerol_carbon_atoms[0]
+    glycerol_carbon_1 = mol.GetAtomWithIdx(glycerol_carbon_1_index)
+    oxygen_neighbors_c1 = [neighbor for neighbor in glycerol_carbon_1.GetNeighbors() if neighbor.GetAtomicNum() == 8]
+    if len(oxygen_neighbors_c1) != 1:
+      return False, "Glycerol position 1 does not have a hydroxyl group"
+    
+    glycerol_carbon_3_index = glycerol_carbon_atoms[2]
+    glycerol_carbon_3 = mol.GetAtomWithIdx(glycerol_carbon_3_index)
+    oxygen_neighbors_c3 = [neighbor for neighbor in glycerol_carbon_3.GetNeighbors() if neighbor.GetAtomicNum() == 8]
+    if len(oxygen_neighbors_c3) != 1:
+        return False, "Glycerol position 3 does not have a hydroxyl group"
 
     #2. Check for one ester group (-O-C(=O)-)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -56,15 +67,9 @@ def is_1_monoglyceride(smiles: str):
     ester_oxygen_index = ester_match[0]
     ester_carbon_index = ester_match[1]
     ester_oxygen_atom = mol.GetAtomWithIdx(ester_oxygen_index)
-
+    ester_carbon_atom = mol.GetAtomWithIdx(ester_carbon_index)
+    
     # 4. Check if the ester is attached to the correct carbon of glycerol backbone (1-position)
-    #Check that this carbon (glycerol_carbon_1) is adjacent to 2 oxygenated carbons
-    glycerol_carbon_1_index = glycerol_carbon_atoms[0]
-    glycerol_carbon_1 = mol.GetAtomWithIdx(glycerol_carbon_1_index)
-
-    glycerol_carbon_3_index = glycerol_carbon_atoms[2]
-    glycerol_carbon_3 = mol.GetAtomWithIdx(glycerol_carbon_3_index)
-        
     #Find if the ester oxygen is connected to the carbon at position 1 of the glycerol
     is_connected_to_glycerol_1 = False
     for neighbor in ester_oxygen_atom.GetNeighbors():
@@ -80,6 +85,16 @@ def is_1_monoglyceride(smiles: str):
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if not fatty_acid_matches:
         return False, "Missing fatty acid chain"
+    
+    # Ensure the fatty acid is connected to the carbonyl carbon of the ester
+    is_connected_to_fatty_acid = False
+    for neighbor in ester_carbon_atom.GetNeighbors():
+      if neighbor.GetIdx() != ester_oxygen_index and neighbor.GetAtomicNum() == 6:
+        is_connected_to_fatty_acid = True
+        break
+
+    if not is_connected_to_fatty_acid:
+        return False, "Fatty acid chain not connected to the ester"
 
     # Count rotatable bonds to verify long chains
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
@@ -90,8 +105,5 @@ def is_1_monoglyceride(smiles: str):
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 200:
       return False, "Molecular weight too low for monoglyceride"
-
-    # 6. Check that the glycerol positions 2 and 3 have OH groups
-    # This was checked earlier
 
     return True, "Contains a glycerol backbone with one fatty acid chain attached at the 1-position via an ester bond, and free hydroxyls at positions 2 and 3"
