@@ -19,7 +19,7 @@ def is_organobromine_compound(smiles: str):
     # Parse SMILES into RDKit Mol object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return False, "Invalid SMILES string or cannot be parsed"
 
     # Iterate over all bonds in the molecule
     for bond in mol.GetBonds():
@@ -27,7 +27,7 @@ def is_organobromine_compound(smiles: str):
         atom1 = bond.GetBeginAtom()
         atom2 = bond.GetEndAtom()
         
-        # Check if a C-Br bond is present
+        # Check if a C-Br bond is present by checking atomic numbers
         if ((atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 35) or 
             (atom1.GetAtomicNum() == 35 and atom2.GetAtomicNum() == 6)):
             return True, "Contains at least one carbon-bromine (C–Br) bond"
