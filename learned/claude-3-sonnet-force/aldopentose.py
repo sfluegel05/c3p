@@ -1,87 +1,28 @@
 """
 Classifies: CHEBI:33916 aldopentose
 """
-"""
-Classifies: CHEBI:18277 aldopentose
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
+The previous program attempted to classify aldopentose molecules based on the following criteria:
 
-def is_aldopentose(smiles: str):
-    """
-    Determines if a molecule is an aldopentose based on its SMILES string.
-    An aldopentose is a pentose with a (potential) aldehyde group at one end.
+1. Exactly 5 carbon atoms
+2. Presence of an aldehyde group
+3. Presence of 4 hydroxyl groups
+4. Presence of a ring structure (furanose or pyranose form)
 
-    Args:
-        smiles (str): SMILES string of the molecule
+While these criteria are generally correct for identifying aldopentoses, the program missed some key points, leading to the false negatives observed in the outcomes.
 
-    Returns:
-        bool: True if molecule is an aldopentose, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for exactly 5 carbon atoms
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if num_carbons != 5:
-        return False, f"Found {num_carbons} carbon atoms, aldopentoses must have 5"
-    
-    # Check for aldehyde group
-    aldehyde_pattern = Chem.MolFromSmarts("[CH]=O")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
-        return False, "No aldehyde group found"
-    
-    # Check for 4 hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) != 4:
-        return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, aldopentoses must have 4"
-    
-    # Check for ring structures (furanose or pyranose forms)
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() == 0:
-        return False, "No ring found, aldopentoses typically have furanose or pyranose forms"
-    
-    return True, "Contains 5 carbon atoms, 4 hydroxyl groups, an aldehyde group, and a ring structure"
+1. **No aldehyde group found**: The program correctly identified the aldehyde group using the `[CH]=O` SMARTS pattern. However, some aldopentoses can have an open-chain form without a cyclic structure, where the aldehyde group is represented as `C=O` instead of `[CH]=O`. This explains why molecules like "aldehydo-L-xylose" and "aldehydo-D-arabinose" were missed.
 
+2. **No ring found, aldopentoses typically have furanose or pyranose forms**: While aldopentoses commonly exist in cyclic furanose or pyranose forms, they can also have open-chain structures. The program should not strictly require a ring structure to classify a molecule as an aldopentose.
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:18277',
-        'name': 'aldopentose',
-        'definition': 'A pentose with a (potential) aldehyde group at one end.',
-        'parents': ['CHEBI:18021', 'CHEBI:16646']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 352,
-    'num_false_positives': 4,
-    'num_true_negatives': 182411,
-    'num_false_negatives': 15,
-    'num_negatives': None,
-    'precision': 0.9888888888888889,
-    'recall': 0.9592233009708737,
-    'f1': 0.9737533699847448,
-    'accuracy': 0.9998932789627203
-}
+3. **Found 6 carbon atoms, aldopentoses must have 5**: The program correctly checks for 5 carbon atoms. However, some aldopentoses like "beta-D-hamamelose" can have additional functional groups or substituents that increase the total number of carbon atoms. The program should be more flexible in this regard.
+
+4. **No aldehyde group found**: Some molecules classified as false negatives, such as "beta-L-lyxofuranose" and "alpha-D-lyxopyranose," do not contain an aldehyde group. These are not aldopentoses and should be correctly classified as negatives.
+
+To improve the program, we can make the following modifications:
+
+1. Expand the aldehyde group pattern to include both `[CH]=O` and `C=O` forms.
+2. Remove the strict requirement for a ring structure.
+3. Allow for some flexibility in the number of carbon atoms, as long as there is a pentose backbone.
+4. Refine the criteria for identifying true aldopentoses by checking for the presence of both an aldehyde group and a pentose backbone.
+
+By incorporating these changes, the program should be able to more accurately classify aldopentose molecules while minimizing false negatives and false positives.
