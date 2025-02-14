@@ -22,12 +22,12 @@ def is_aromatic_primary_alcohol(smiles: str):
         return False, "Invalid SMILES string"
 
     # SMARTS pattern for an aromatic primary alcohol (aromatic-C-CH2-OH)
-    aromatic_alcohol_pattern = Chem.MolFromSmarts("[c]-[CH2]-[OH]")
+    aromatic_primary_alcohol_pattern = Chem.MolFromSmarts("c[CH2][OH]")
 
     # Find matches
-    matches = mol.GetSubstructMatches(aromatic_alcohol_pattern)
-    
+    matches = mol.GetSubstructMatches(aromatic_primary_alcohol_pattern)
+
     if matches:
         return True, "Aromatic primary alcohol found."
     else:
-      return False, "No aromatic primary alcohol found."
+       return False, "No aromatic primary alcohol found."
