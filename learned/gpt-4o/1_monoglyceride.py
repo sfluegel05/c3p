@@ -18,29 +18,30 @@ def is_1_monoglyceride(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Pattern for glycerol backbone: OH groups at 1, 2, 3 positions
+    # Look for glycerol backbone pattern (OH groups on 1, 2, 3 carbons)
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
     
-    # Pattern for 1-position ester linkage: ester linkage with carbon chain
-    ester_pattern = Chem.MolFromSmarts("C(=O)OC(CO)CO")
-    if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage found at expected position"
+    # Look for ester linkage at the 1-position
+    # -OH replaced with an ester group at the start of the glycerol
+    ester_pattern_1_position = Chem.MolFromSmarts("OC(=O)C(O)C(O)")
+    if not mol.HasSubstructMatch(ester_pattern_1_position):
+        return False, "No ester linkage found at 1-position of glycerol"
     
-    # Check for only one ester linkage
+    # Ensure only one ester linkage is present
     ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O"))
     if len(ester_matches) != 1:
         return False, f"Expected 1 ester linkage, found {len(ester_matches)}"
     
-    # Consideration of chirality, technically 1-monoglycerides can be racemic
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-    if len(chiral_centers) < 1:
-        return False, f"Expected at least one chiral center, found {len(chiral_centers)}"
+    # Check for the presence of fatty acid chains
+    long_chain_pattern = Chem.MolFromSmarts("C(CCCCCCCC)C(=O)O")
+    if not mol.HasSubstructMatch(long_chain_pattern):
+        return False, "Missing long-chain characteristic of fatty acid"
     
     return True, "Contains glycerol backbone with one fatty acid chain attached via ester bond at position 1"
