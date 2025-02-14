@@ -23,14 +23,14 @@ def is_CDP_diacylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CDP core
-    # Nucleoside with ribose and 2 phosphate
-    cdp_core_pattern = Chem.MolFromSmarts('O[C@H]1[C@@H]([C@@H](O[C@H]1[n]2[c]([n][cH][c]([n]2)[N])=O)O)COP(=O)([O])OP(=O)([O])O')
+    # Check for CDP core.
+    # Pattern is Cytosine-Ribose-Diphosphate
+    cdp_core_pattern = Chem.MolFromSmarts('[#6]1-[#8]-[#6](-[#6](-[#8]-1)[#7]2-[#6]=[#7]-[#6](-[#7])=[#6]-[#7]2)COP(=O)(O)OP(=O)(O)O')
     if not mol.HasSubstructMatch(cdp_core_pattern):
        return False, "CDP core not found"
 
-    # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    # Look for glycerol backbone pattern (C-C-C with 2 oxygens attached to each C)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4]([OX2])[CHX4]([OX2])[CH2X4]([OX2])")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
@@ -52,30 +52,14 @@ def is_CDP_diacylglycerol(smiles: str):
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 2:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
-
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8:
-        return False, "Chains too short to be fatty acids"
-
-    # Check molecular weight - CDP-diacylglycerols typically >700 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 700:
-        return False, "Molecular weight too low for CDP-diacylglycerol"
     
-    # Count carbons, oxygens, phosphorus and nitrogen
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Count phosphorus and nitrogen
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-
-    if c_count < 20:
-        return False, "Too few carbons for CDP-diacylglycerol"
-    if o_count < 14:
-        return False, "Too few oxygens for CDP-diacylglycerol"
+    
     if p_count != 2:
         return False, "Must have exactly 2 phosphorus atoms (diphosphate group)"
     if n_count != 3:
-        return False, "Must have 3 nitrogen atoms in CDP base"
-    
+         return False, "Must have 3 nitrogen atoms in CDP base"
+
     return True, "Contains CDP core with diacylglycerol attached"
