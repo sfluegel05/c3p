@@ -24,7 +24,8 @@ def is_flavones(smiles: str):
 
     # Define the SMARTS pattern for the flavone core
     # Flavone core: chromone (1-benzopyran-4-one) with an aryl group at position 2
-    flavone_smarts = 'O=C1C=CC(=C1C2=CC=CC=C2)'
+    # Using aromatic atoms (lowercase 'c') and allowing for substitutions
+    flavone_smarts = 'c1cc2c(c1)oc(=O)c(c2)-c3cccc[cH]3'
 
     flavone_pattern = Chem.MolFromSmarts(flavone_smarts)
     if flavone_pattern is None:
