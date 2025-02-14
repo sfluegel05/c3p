@@ -20,21 +20,22 @@ def is_acetate_ester(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
 
-    # SMARTS pattern for the acetate ester group
-    # Acetate group: [C](=O)O[C], where the second [C] is a methyl group
-    acetate_pattern = Chem.MolFromSmarts("C(=O)OC")
+    # SMARTS pattern to find the acetate group
+    # Acetate group (CH3COO-): carbonyl C(=O) bonded to O and methyl group [CH3]
+    # This pattern assumes [-C(=O)OCH3] where the methyl is directly attached to the ester oxygen
+    acetate_pattern = Chem.MolFromSmarts("[C](=O)O[C]") 
 
     # Look for acetate group
-    if mol.HasSubstructMatch(acetate_pattern):
-        matches = mol.GetSubstructMatches(acetate_pattern)
-        for match in matches:
-            # Verify that the ester oxygen is connected to a methyl group
-            ester_oxygen = match[2]  # This is the oxygen in C(=O)O[C]
-            methyl_carbon = match[3] # This should be part of CH3
+    if not mol.HasSubstructMatch(acetate_pattern):
+        return (False, "No acetate ester group found")
+    
+    # Check each match to ensure the pattern fully represents an acetate ester part of acetic acid
+    matches = mol.GetSubstructMatches(acetate_pattern)
+    for match in matches:
+        # Verify the carbon bonded to the ester oxygen is part of a methyl group
+        ester_oxygen_idx = match[2]
+        connected_atoms = [neighb for neighb in mol.GetAtomWithIdx(ester_oxygen_idx).GetNeighbors()]
+        if any((atom.GetAtomicNum() == 6 and atom.GetTotalDegree() == 3) for atom in connected_atoms):
+            return (True, "Contains acetate ester group as part of acetic acid")
 
-            # Confirm that the carbon (methyl_carbon) has 3 hydrogens bonded to it, making it CH3
-            carbon = mol.GetAtomWithIdx(methyl_carbon)
-            if carbon.GetSymbol() == 'C' and sum(1 for nbr in carbon.GetNeighbors() if nbr.GetSymbol() == 'H') == 3:
-                return (True, "Contains acetate ester group as part of acetic acid")
-
-    return (False, "No acetate ester group found")
+    return (False, "Acetate ester group not part of acetic acid component")
