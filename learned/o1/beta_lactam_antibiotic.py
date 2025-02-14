@@ -5,7 +5,7 @@ Classifies: CHEBI:27933 beta-lactam antibiotic
 Classifies: CHEBI:35627 beta-lactam antibiotic
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdchem
 
 def is_beta_lactam_antibiotic(smiles: str):
     """
@@ -25,56 +25,53 @@ def is_beta_lactam_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for beta-lactam ring (4-membered cyclic amide)
-    beta_lactam_smarts = '[NX3;H1;R1][C;R1](=O)[C;R1][C;R1]'  # Specific to beta-lactam ring
-    beta_lactam_pattern = Chem.MolFromSmarts(beta_lactam_smarts)
-    if not mol.HasSubstructMatch(beta_lactam_pattern):
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+
+    beta_lactam_found = False
+
+    # Loop over atom rings to find beta-lactam ring
+    for ring in atom_rings:
+        if len(ring) == 4:
+            atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
+            num_nitrogen = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 7)
+            num_carbonyl = 0
+            # Check for carbonyl group (C=O) in ring
+            for idx in ring:
+                atom = mol.GetAtomWithIdx(idx)
+                if atom.GetAtomicNum() == 6:  # Carbon atom
+                    for bond in atom.GetBonds():
+                        if bond.GetBondType() == rdchem.BondType.DOUBLE:
+                            neighbor = bond.GetOtherAtom(atom)
+                            if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() in ring:
+                                num_carbonyl += 1
+            if num_nitrogen == 1 and num_carbonyl == 1:
+                beta_lactam_found = True
+                break
+
+    if not beta_lactam_found:
         return False, "No beta-lactam ring found"
 
-    # Define SMARTS patterns for specific beta-lactam antibiotic cores
-    penam_smarts = '[NX3;H1;R1][C;R1](=O)[C;R1]1[C;R1][C;R1][S;R1]1'  # Penam core
-    cephem_smarts = '[NX3;H1;R1][C;R1](=O)[C;R1]1=[C;R1][C;R1][S;R1]1'  # Cephem core
-    carbapenem_smarts = '[NX3;H1;R1][C;R1](=O)[C;R1]1=[C;R1][C;R1][C;R1]1'  # Carbapenem core
-    oxapenam_smarts = '[NX3;H1;R1][C;R1](=O)[C;R1]1[C;R1][O;R1][C;R1]1'  # Clavams and oxapenams
-    monobactam_smarts = '[NX3;H1;R1][C;R1](=O)[C;R1][C;R1]'  # Monobactams
-
-    # Compile patterns
-    penam_pattern = Chem.MolFromSmarts(penam_smarts)
-    cephem_pattern = Chem.MolFromSmarts(cephem_smarts)
-    carbapenem_pattern = Chem.MolFromSmarts(carbapenem_smarts)
-    oxapenam_pattern = Chem.MolFromSmarts(oxapenam_smarts)
-    monobactam_pattern = Chem.MolFromSmarts(monobactam_smarts)
-
-    # Check for specific beta-lactam antibiotic cores
-    is_penam = mol.HasSubstructMatch(penam_pattern)
-    is_cephem = mol.HasSubstructMatch(cephem_pattern)
-    is_carbapenem = mol.HasSubstructMatch(carbapenem_pattern)
-    is_oxapenam = mol.HasSubstructMatch(oxapenam_pattern)
-    is_monobactam = mol.HasSubstructMatch(monobactam_pattern)
-
-    if not any([is_penam, is_cephem, is_carbapenem, is_oxapenam, is_monobactam]):
-        return False, "Beta-lactam ring not part of known antibiotic cores"
-
-    # Verify that the molecule is an organonitrogen heterocycle
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
+    # Check if molecule is an organonitrogen heterocycle (contains nitrogen in a ring)
     organonitrogen_heterocycle = False
-
-    for ring in rings:
+    for ring in atom_rings:
         atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
-        # Check if ring contains nitrogen and is all non-metal elements
         if any(atom.GetAtomicNum() == 7 for atom in atoms_in_ring):
-            if all(atom.GetAtomicNum() > 0 and atom.GetAtomicNum() <= 16 for atom in atoms_in_ring):
-                organonitrogen_heterocycle = True
-                break
+            organonitrogen_heterocycle = True
+            break
 
     if not organonitrogen_heterocycle:
         return False, "Molecule is not an organonitrogen heterocycle"
 
-    # Check for carboxylic acid group or its esters (common in beta-lactam antibiotics)
-    carboxylic_acid_smarts = '[CX3](=O)[OX1H0-,OX2H1,OX2H0][#0,#6]'
+    # Optional: Check for antibiotic-like properties (presence of carboxylic acid or ester group)
+    antibiotic_features = False
+    carboxylic_acid_smarts = '[CX3](=O)[OX1H0-,OX2H1]'
     carboxylic_acid_pattern = Chem.MolFromSmarts(carboxylic_acid_smarts)
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group or ester found"
+    if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        antibiotic_features = True
 
-    return True, "Contains beta-lactam antibiotic core and is an organonitrogen heterocycle"
+    if not antibiotic_features:
+        return False, "No carboxylic acid or ester group found"
+
+    return True, "Contains beta-lactam ring and is an organonitrogen heterocycle"
