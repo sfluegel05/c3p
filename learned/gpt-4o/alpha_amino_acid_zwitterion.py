@@ -21,13 +21,25 @@ def is_alpha_amino_acid_zwitterion(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns for zwitterionic alpha-amino acids
-    # Look for protonated amine on alpha carbon and a deprotonated carboxylate
-    alpha_amino_acid_pattern = Chem.MolFromSmarts('[$([NH3+]),$([NH2+]),$([NH+]=*)]CC(=O)[O-]')
+    # Look for alpha-amino group and deprotonated carboxylate as core structure
+    core_zwitterion_pattern = Chem.MolFromSmarts('[C@@H]([NH3+])C(=O)[O-]')
+    
+    # Complex side chain matching with flexibility for backbone
+    full_zwitterion_patterns = [
+        Chem.MolFromSmarts('[$([NH3+]),$([NH2+]),$([NH+]=*)][C@H](C[*])C(=O)[O-]'),
+        Chem.MolFromSmarts('[C@@H]([NH3+])(C[*])C(=O)[O-]'),
+    ]
 
-    if not mol.HasSubstructMatch(alpha_amino_acid_pattern):
-        return False, "No matching alpha-amino acid zwitterion pattern found"
+    # Check for presence of zwitterionic core
+    if not mol.HasSubstructMatch(core_zwitterion_pattern):
+        return False, "No matching alpha-amino acid zwitterion core structure found"
+    
+    # Check each potential pattern to ensure there's commonly encountered complexity
+    for pattern in full_zwitterion_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Contains alpha-amino acid structure with zwitterionic charges"
 
-    return True, "Contains alpha-amino acid structure with zwitterionic charges"
+    return False, "Missing patterns indicating complex zwitterionic alpha-amino acid configuration"
 
 # Example usage:
 # smiles = "CC(=O)CC([NH3+])C([O-])=O"  # Example SMILES from the list
