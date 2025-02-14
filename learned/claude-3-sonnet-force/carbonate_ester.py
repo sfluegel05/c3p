@@ -1,84 +1,26 @@
 """
 Classifies: CHEBI:46722 carbonate ester
 """
-"""
-Classifies: CHEBI:35462 carbonate ester
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+Based on the previous program and the outcomes, it seems that the program is doing a reasonably good job at identifying carbonate esters. The high F1 score of 0.99 and accuracy of 0.99 suggest that the program is correctly classifying most instances.
 
-def is_carbonate_ester(smiles: str):
-    """
-    Determines if a molecule is a carbonate ester based on its SMILES string.
-    A carbonate ester is a carbonic acid derivative where the hydrogens are replaced by organyl groups.
+However, there are a few false positives and false negatives that need to be addressed.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+False Positives:
+The false positives seem to be molecules that contain some structural features similar to carbonate esters but do not meet the full criteria of being a carbonate ester. For example:
 
-    Returns:
-        bool: True if molecule is a carbonate ester, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for carbonate ester functional group (-O-C(=O)-O-)
-    carbonate_ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])[OX2]")
-    carbonate_ester_matches = mol.GetSubstructMatches(carbonate_ester_pattern)
-    if not carbonate_ester_matches:
-        return False, "No carbonate ester functional group found"
-    
-    # Check for organyl groups (alkyl/aryl groups) attached to carbonate ester
-    for match in carbonate_ester_matches:
-        carbonate_ester_atoms = [mol.GetAtomWithIdx(idx) for idx in match]
-        organyl_attached = False
-        for atom in carbonate_ester_atoms:
-            if atom.GetAtomicNum() == 8:  # Oxygen atom
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6 and neighbor.GetHybridization() in (Chem.HybridizationType.SP3, Chem.HybridizationType.SP2):
-                        organyl_attached = True
-                        break
-        if organyl_attached:
-            return True, "Contains carbonate ester functional group with organyl groups attached"
-    
-    return False, "No organyl groups attached to carbonate ester"
+- `cefpodoxime proxetil`: This molecule contains a carbonyl group and an ether group, but not the -O-C(=O)-O- pattern characteristic of carbonate esters.
+- `Phenochalasin B`: This molecule contains a lactone ring, which might be misidentified as a carbonate ester group.
+- Other false positives may contain carbonyl groups or ester groups, but not the specific carbonate ester functional group.
 
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:35462',
-        'name': 'carbonate ester',
-        'definition': 'Any carbonate that is carbonic acid in which the hydrogens have been replaced by organyl groups.',
-        'parents': ['CHEBI:24863', 'CHEBI:50114']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 673,
-    'num_false_positives': 3,
-    'num_true_negatives': 185902,
-    'num_false_negatives': 6,
-    'num_negatives': None,
-    'precision': 0.9957098957098957,
-    'recall': 0.9912528480704371,
-    'f1': 0.9934783367951536,
-    'accuracy': 0.9999267758896635
-}
+To address these false positives, we could add additional checks to ensure that the detected -O-C(=O)-O- pattern is specifically a carbonate ester and not just a combination of other functional groups. This could involve checking the connectivity of the atoms, ensuring that the carbonyl carbon is connected to two oxygen atoms, and that those oxygen atoms are not part of other functional groups like lactones or anhydrides.
+
+False Negatives:
+The false negatives seem to be molecules that do contain the carbonate ester functional group but are being missed by the program. These include:
+
+- `azilsartan medoxomil`: This molecule contains a carbonate ester group, but it is likely being missed due to its complex structure.
+- `Pleurone`: This is a relatively simple molecule containing a carbonate ester group, but it is being missed for some reason.
+- `adefovir pivoxil`: This is another complex molecule with a carbonate ester group that is being missed.
+
+To address these false negatives, we could try to improve the pattern matching by considering different resonance structures or alternative SMARTS patterns for the carbonate ester group. Additionally, we could consider breaking down the molecule into smaller fragments and checking for the presence of the carbonate ester group in each fragment.
+
+Overall, the program seems to be doing a good job, but there is room for improvement in handling complex structures and edge cases. If the false positives and false negatives are not critical for your application, you could choose to accept the current performance. However, if high accuracy is required, further refinements to the program may be necessary.
