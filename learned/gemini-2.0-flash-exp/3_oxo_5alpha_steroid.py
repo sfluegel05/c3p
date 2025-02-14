@@ -23,10 +23,9 @@ def is_3_oxo_5alpha_steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # 1. Define steroid core SMARTS pattern.
-    # The numbers in the comments indicate the atom index based on the SMARTS matching
-    # The order of the atoms is crucial for getting the right indices
-    steroid_core_smarts = "[C]1[C]([H])([H])[C]([H])([H])[C]2([H])[C]([H])([H])[C]3([H])[C]([H])([H])[C]4([H])[C]([H])([H])[C]([H])([H])[C]([H])([H])[C]3([H])[C]5([H])[C]([H])([H])[C]([H])([H])[C]6([H])[C]([H])([H])[C]([H])([H])[C]([H])([H])[C]5([H])[C]1([H])([H])[C]([H])([H])[C]2([H])([H])[C]4([H])([H])6"
-    
+    # This SMARTS pattern defines the steroid skeleton
+    steroid_core_smarts = "[C]1[C][C]2[C][C]3[C][C]4[C]([C]3[C]5[C]([C]6[C]([C]4[C]21)CC[C]6)CC5)CC4"
+
     steroid_core = Chem.MolFromSmarts(steroid_core_smarts)
     if steroid_core is None:
        return False, "Invalid core pattern"
@@ -41,17 +40,17 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     atom_index_3 = core_matches[6] # index of carbon 3
     atom_index_5 = core_matches[13] # index of carbon 5
 
-
     # 2. Check for carbonyl at position 3
     atom3 = mol.GetAtomWithIdx(atom_index_3)
+    
     if atom3.GetDegree() != 3:
         return False, "Carbon at position 3 not part of carbonyl"
-    
+
     is_carbonyl_carbon_3 = False
     for neighbor in atom3.GetNeighbors():
-      if neighbor.GetSymbol() == 'O' and mol.GetBondBetweenAtoms(atom3.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
-          is_carbonyl_carbon_3 = True
-          break
+        if neighbor.GetSymbol() == 'O' and mol.GetBondBetweenAtoms(atom3.GetIdx(), neighbor.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            is_carbonyl_carbon_3 = True
+            break
 
     if not is_carbonyl_carbon_3:
         return False, "No carbonyl group at position 3 found."
@@ -59,27 +58,29 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     # 3. Check for alpha configuration at position 5
     atom5 = mol.GetAtomWithIdx(atom_index_5)
 
-    chiral_tag = atom5.GetChiralTag()
+    # Check for the alpha configuration based on the surrounding atoms.
+    # In steroids, the alpha configuration at C5 has the C6 atom "below" the plane.
+    # The alpha bond to the C6 at position 5 should be CW
+    
+    # Get C4 and C6 atoms
+    atom_index_4 = core_matches[12] #index of carbon 4
+    atom_index_6 = core_matches[14] #index of carbon 6
+    atom4 = mol.GetAtomWithIdx(atom_index_4)
+    atom6 = mol.GetAtomWithIdx(atom_index_6)
+    
+    #Get the bonds
+    bond_c5_c4 = mol.GetBondBetweenAtoms(atom5.GetIdx(), atom4.GetIdx())
+    bond_c5_c6 = mol.GetBondBetweenAtoms(atom5.GetIdx(), atom6.GetIdx())
 
-    if chiral_tag != Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CW and chiral_tag != Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW:
-         return False, "No 5 alpha configuration found. Not a chiral carbon."
+    # Check that the C5 atom has the correct chirality for an alpha configuration.
+    # Specifically C5 bonded to C4 and C6 should have a clockwise configuration
+    if not (atom5.GetChiralTag() == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CW or atom5.GetChiralTag() == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW) :
+        return False, "No 5 alpha configuration found. C5 is not a chiral center"
+        
+    #If we made it to here, then it is chiral, and the bonds to c4 and c6 should be oriented in a CW direction.
+    # The default direction in RDKit for alpha is CW
 
-    # alpha configuration corresponds to CW or CCW, depending on the other bonds but using the RDKit standard
-    # we can assume CW corresponds to alpha
-
-    #  We need to check if the 5 atom has an explicit hydrogen and if it has chiral tag of CHI_TETRAHEDRAL_CW
-    #  or not an explicit hydrogen and has chiral tag CHI_TETRAHEDRAL_CCW
-    #  If these conditions are met we consider the 5 position to have the alpha configuration.
-    has_explicit_hydrogen = False
-    for neighbor in atom5.GetNeighbors():
-        if neighbor.GetAtomicNum() == 1:
-            has_explicit_hydrogen = True
-
-    if has_explicit_hydrogen and chiral_tag == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CW :
-        pass
-    elif not has_explicit_hydrogen and chiral_tag == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW:
-        pass
-    else:
-       return False, "No 5 alpha configuration found. Wrong chirality or missing Hydrogen"
-
+    if atom5.GetChiralTag() == Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW:
+        return False, "No 5 alpha configuration found. Wrong chirality at C5"
+   
     return True, "Molecule is a 3-oxo-5alpha-steroid"
