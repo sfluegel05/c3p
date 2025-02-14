@@ -9,8 +9,7 @@ from rdkit import Chem
 def is_nitrile(smiles: str):
     """
     Determines if a molecule is a nitrile based on its SMILES string.
-    A nitrile contains a carbon atom triple-bonded to a nitrogen atom (C#N),
-    which is not part of a more complex group like amides, cyanates, or isocyanates.
+    A nitrile contains a carbon atom triple-bonded to a nitrogen atom (C#N).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,24 +23,12 @@ def is_nitrile(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define basic nitrile pattern: carbon triple-bonded to nitrogen
+
+    # Define nitrile pattern: carbon triple bonded to nitrogen
     nitrile_pattern = Chem.MolFromSmarts("[C]#[N]")
     
-    # Check for known exclusion patterns: amide, cyanate, isocyanate, etc.
-    exclusion_patterns = [
-        Chem.MolFromSmarts("[$([NX3]=[CX3]-[CX2]#[N])]-[OX2]"),  # Carbamates and imides
-        Chem.MolFromSmarts("[CX3]=[NX2]=[CX2]#[N]"),              # Cyanates
-        Chem.MolFromSmarts("[NX3]=[CX2]#[N]"),                   # General exclusion for isocyanates
-    ]
-    
-    # Find nitrile substructures
-    matches = mol.GetSubstructMatches(nitrile_pattern)
-    if not matches:
+    # Check for the nitrile pattern in the molecule
+    if not mol.HasSubstructMatch(nitrile_pattern):
         return False, "No nitrile (C#N) group found"
     
-    for excl_pattern in exclusion_patterns:
-        if mol.HasSubstructMatch(excl_pattern):
-            return False, "Nitrile (C#N) exists but as part of an excluded group (amide, cyanate, etc.)"
-
-    return True, "Contains a nitrile (C#N) group not part of an excluded functional group"
+    return True, "Contains a nitrile (C#N) group"
