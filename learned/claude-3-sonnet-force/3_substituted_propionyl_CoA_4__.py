@@ -31,19 +31,15 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if not mol.HasSubstructMatch(coa_backbone_pattern):
         return False, "Missing CoA backbone"
     
-    # Look for acyl group attached to sulfur
-    acyl_pattern = Chem.MolFromSmarts("S(=O)(=O)CC")
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if not acyl_matches:
-        return False, "Missing acyl group attached to sulfur"
+    # Look for 3-substituted propionyl group attached to sulfur
+    propionyl_pattern = Chem.MolFromSmarts("S(=O)(=O)CC(C)C")
+    propionyl_matches = mol.GetSubstructMatches(propionyl_pattern)
+    if not propionyl_matches:
+        return False, "Missing 3-substituted propionyl group attached to sulfur"
     
-    # Check for substitution at position 3 of acyl group
-    for match in acyl_matches:
-        acyl_atom = mol.GetAtomWithIdx(match[1])
-        if acyl_atom.GetTotalNumHs() < 2:  # Substituted at position 3
-            break
-    else:
-        return False, "No substitution at position 3 of acyl group"
+    # Check for double bonds in the acyl chain
+    acyl_chain_pattern = Chem.MolFromSmarts("S(=O)(=O)CCC=C")
+    acyl_chain_matches = mol.GetSubstructMatches(acyl_chain_pattern)
     
     # Look for deprotonated phosphate and diphosphate groups
     phosphate_pattern = Chem.MolFromSmarts("[O-,P]")
@@ -51,4 +47,7 @@ def is_3_substituted_propionyl_CoA_4__(smiles: str):
     if len(phosphate_matches) < 3:
         return False, "Missing deprotonated phosphate and diphosphate groups"
     
-    return True, "Contains CoA backbone with 3-substituted acyl group and deprotonated phosphate/diphosphate groups"
+    if acyl_chain_matches:
+        return True, "Contains CoA backbone with 3-substituted propionyl group, double bonds in acyl chain, and deprotonated phosphate/diphosphate groups"
+    else:
+        return True, "Contains CoA backbone with 3-substituted propionyl group and deprotonated phosphate/diphosphate groups"
