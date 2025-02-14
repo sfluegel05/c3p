@@ -40,13 +40,18 @@ def is_enone(smiles: str):
         c1, c2, c3, r = [mol.GetAtomWithIdx(idx) for idx in match]
         
         # Check if the double bond and ketone are in the same pi system
-        if not mol.GetAromaticForm().IsBondInRingOfSize(c1.GetBonds()[0], 6):
-            continue  # Not conjugated
-        
-        # Check if R is not hydrogen
-        if r.GetAtomicNum() == 1:
-            continue  # R is hydrogen
-        
-        return True, "Contains alpha,beta-unsaturated ketone with conjugated C=C and C=O groups"
+        if mol.GetAromaticForm().IsBondInRingOfSize(c1.GetBonds()[0], 6):
+            # Aromatic enone
+            if r.GetAtomicNum() != 1:
+                return True, "Contains aromatic alpha,beta-unsaturated ketone with conjugated C=C and C=O groups"
+        else:
+            # Check for linear or non-aromatic ring conjugation
+            conjugated = False
+            for bond in c1.GetBonds():
+                if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetOtherAtom(c1).GetAtomicNum() != 1:
+                    conjugated = True
+                    break
+            if conjugated and r.GetAtomicNum() != 1:
+                return True, "Contains non-aromatic alpha,beta-unsaturated ketone with conjugated C=C and C=O groups"
 
     return False, "No valid enone substructure found"
