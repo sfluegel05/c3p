@@ -28,26 +28,30 @@ def is_nucleotide(smiles: str):
     if not mol.HasSubstructMatch(phosphate_pattern):
         return False, "No phosphate group found"
 
-    # Check for a pentose sugar
-    # More flexible pattern: 5 member ring with one O and 4 C
-    pentose_pattern = Chem.MolFromSmarts("[C;X4]1[O;X2][C;X4][C;X4][C;X4]1")
-    if not mol.HasSubstructMatch(pentose_pattern):
+    # Check for a pentose sugar - flexible pattern 5 C or 4C and one O
+    pentose_pattern1 = Chem.MolFromSmarts("[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]") # 5 C
+    pentose_pattern2 = Chem.MolFromSmarts("[C;X4]~[C;X4]~[C;X4]~[O;X2]~[C;X4]") # 4 C and one O
+    if not (mol.HasSubstructMatch(pentose_pattern1) or mol.HasSubstructMatch(pentose_pattern2)):
        return False, "No pentose sugar ring found"
 
-
-    # Check for a nucleobase - simplified as N atom connected to a ring system
-    nucleobase_pattern = Chem.MolFromSmarts("[N;!H0]~[#6]") # N not connected to H, connected to carbon
+    # Check for a nucleobase - an N atom in an aromatic cycle
+    nucleobase_pattern = Chem.MolFromSmarts("[n;r]")
     if not mol.HasSubstructMatch(nucleobase_pattern):
-        return False, "No nucleobase found (simplified)"
+        return False, "No nucleobase found"
     
-    # Check if a phosphate is connected to a pentose carbon and another oxygen (sugar)
-    phosphate_connection_pattern = Chem.MolFromSmarts("[P](=[OX1])([OX2])([OX2])~[#6][OX2]")
+    # Check if a phosphate is connected to an oxygen.
+    phosphate_connection_pattern = Chem.MolFromSmarts("[P](=[OX1])([OX2])([OX2])~[OX2]")
     if not mol.HasSubstructMatch(phosphate_connection_pattern):
-       return False, "Phosphate not connected to sugar"
+        return False, "Phosphate not connected to an oxygen"
+    
+    # Check that pentose sugar is connected to an oxygen
+    pentose_sugar_connection_pattern = Chem.MolFromSmarts("[#6]~[OX2]")
+    if not mol.HasSubstructMatch(pentose_sugar_connection_pattern):
+        return False, "No hydroxyl group found"
 
-    # check for N-glycosidic bond to the pentose
-    N_glycosidic_pattern = Chem.MolFromSmarts("[N;!H0]~[#6]1[O;X2][#6;X4][#6;X4][#6;X4]1") # base N attached to pentose
+    # Check for N-glycosidic bond
+    N_glycosidic_pattern = Chem.MolFromSmarts("[N;!H0]~[#6]~[O;X2]")
     if not mol.HasSubstructMatch(N_glycosidic_pattern):
-        return False, "No N-glycosidic linkage"
+       return False, "No N-glycosidic linkage"
     
     return True, "Contains a nucleobase, a pentose sugar and a phosphate group connected correctly."
