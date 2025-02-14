@@ -2,7 +2,6 @@
 Classifies: CHEBI:72600 spiroketal
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
 
 def is_spiroketal(smiles: str):
     """
@@ -22,8 +21,19 @@ def is_spiroketal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find spiro atoms
-    spiro_atoms = Chem.FindSpiroAtoms(mol)
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
+
+    # Build a dictionary to count the number of rings each atom is in
+    atom_ring_count = {}
+    for ring in atom_rings:
+        for atom_idx in ring:
+            atom_ring_count[atom_idx] = atom_ring_count.get(atom_idx, 0) + 1
+
+    # Identify potential spiro centers (atoms in exactly two rings)
+    spiro_atoms = [atom_idx for atom_idx, count in atom_ring_count.items() if count == 2]
+
     if not spiro_atoms:
         return False, "No spiro centers found"
 
@@ -31,22 +41,28 @@ def is_spiroketal(smiles: str):
     for atom_idx in spiro_atoms:
         atom = mol.GetAtomWithIdx(atom_idx)
 
+        # Check if the two rings share only this atom
+        rings_with_atom = [ring for ring in atom_rings if atom_idx in ring]
+        if len(rings_with_atom) != 2:
+            continue
+
+        shared_atoms = set(rings_with_atom[0]) & set(rings_with_atom[1])
+        if len(shared_atoms) != 1:
+            continue  # The rings share more than one atom
+
         # Check if the atom is carbon
         if atom.GetAtomicNum() != 6:
             continue  # Not a carbon atom
 
-        # Get neighbors of the atom
+        # Check if the atom is connected to exactly two oxygens
         neighbors = atom.GetNeighbors()
-
-        # Count oxygen atoms connected to this atom
         oxygens = [nbr for nbr in neighbors if nbr.GetAtomicNum() == 8]
         if len(oxygens) != 2:
             continue  # Not connected to exactly two oxygens
 
-        # Check that the oxygens are connected to carbons (ether linkages)
+        # Check that each oxygen is connected to the spiro carbon and another carbon (ether linkage)
         is_ketal = True
         for oxygen in oxygens:
-            # Oxygen should be connected to two atoms: the spiro carbon and another carbon
             if oxygen.GetDegree() != 2:
                 is_ketal = False
                 break
@@ -60,10 +76,6 @@ def is_spiroketal(smiles: str):
                 break
         if not is_ketal:
             continue  # Does not fulfill ketal criteria
-
-        # Check that spiro carbon has four single bonds and no hydrogens
-        if atom.GetTotalDegree() != 4 or atom.GetTotalNumHs() != 0:
-            continue  # Not a tetrahedral carbon without hydrogens
 
         # If all checks passed, this is a spiroketal
         return True, f"Molecule is a spiroketal with spiro ketal center at atom index {atom_idx}"
