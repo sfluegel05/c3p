@@ -7,7 +7,7 @@ Classifies: CHEBI:32221 trichlorobenzene
 Any member of the class of chlorobenzenes carrying three chloro substituents at unspecified positions.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdchem
 
 def is_trichlorobenzene(smiles: str):
     """
@@ -32,7 +32,7 @@ def is_trichlorobenzene(smiles: str):
         return False, f"Molecule contains {chlorine_count} chlorine atoms, should be 3"
     
     # Find aromatic rings
-    aromatic_rings = Chem.GetAromaticRings(mol)
+    aromatic_rings = mol.GetRingInfo().AtomRings()
     
     # Check if there is an aromatic benzene ring with 3 chlorine substituents
     benzene_rings_with_3_chlorines = []
@@ -40,7 +40,14 @@ def is_trichlorobenzene(smiles: str):
         ring_atoms = set(ring)
         ring_chlorines = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 17 and atom.GetIdx() in ring_atoms]
         if len(ring_atoms) == 6 and len(ring_chlorines) == 3:
-            benzene_rings_with_3_chlorines.append(ring_atoms)
+            benzene_ring = True
+            for atom_idx in ring_atoms:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetHybridization() != rdchem.HybridizationType.SP2:
+                    benzene_ring = False
+                    break
+            if benzene_ring:
+                benzene_rings_with_3_chlorines.append(ring_atoms)
     
     if not benzene_rings_with_3_chlorines:
         return False, "No benzene ring with 3 chlorine substituents found"
