@@ -5,16 +5,15 @@ Classifies: CHEBI:71543 rotenoid
 Classifies: rotenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_rotenoid(smiles: str):
     """
     Determines if a molecule is a rotenoid based on its SMILES string.
     A rotenoid contains a cis-fused tetrahydrochromeno[3,4-b]chromene skeleton.
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if molecule is a rotenoid, False otherwise
         str: Reason for classification
@@ -26,15 +25,14 @@ def is_rotenoid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS pattern for the rotenoid core structure
-    # The pattern represents the cis-fused tetrahydrochromeno[3,4-b]chromene skeleton
+    # This pattern represents the cis-fused tetrahydrochromeno[3,4-b]chromene skeleton
     rotenoid_smarts = """
-    [#6]-1=[#6]-[#6]=[#6]-[#6]=[#6]-1
-    -[#6]-2-[#6]-3-[#8]-[#6]-[#6]-[#6]-3-[#6]-2
-    -[#6]-[#6]-[#8]-[#6]-1-[#6]=[#6]-[#6]=[#6]-[#6]=[#6]-1
+    [#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1
+    -[#8]-[#6]2-[#6]-3-[#6]-[#6]-[#6]-[#6]-3-[#6]-2-[#8]-[#6]4:[#6]:[#6]:[#6]:[#6]:[#6]:4
     """
 
     # Remove line breaks and extra whitespace from SMARTS pattern
-    rotenoid_smarts = "".join(rotenoid_smarts.strip().split())
+    rotenoid_smarts = ''.join(rotenoid_smarts.strip().split())
 
     # Create a molecule from the SMARTS pattern
     rotenoid_pattern = Chem.MolFromSmarts(rotenoid_smarts)
