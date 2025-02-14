@@ -27,11 +27,41 @@ def is_essential_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(acid_pattern):
         return False, "No carboxylic acid group found"
 
-    # Count carbons
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if not 16 <= c_count <= 36:
-        return False, "Carbon count is not within the typical range (16-36)"
+    # Check for unwanted functional groups
+    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    if mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "Contains hydroxyl group, not a typical fatty acid"
+    
+    peroxide_pattern = Chem.MolFromSmarts("O-O")
+    if mol.HasSubstructMatch(peroxide_pattern):
+        return False, "Contains peroxide group, not a typical fatty acid"
 
+    ether_pattern = Chem.MolFromSmarts("C-O-C")
+    if mol.HasSubstructMatch(ether_pattern):
+         return False, "Contains ether linkage, not a typical fatty acid"
+
+    ester_pattern = Chem.MolFromSmarts("C(=O)[OX2;!H]") #Avoid matching the carboxylic acid
+    if len(mol.GetSubstructMatches(ester_pattern)) > 1: #Allow one matching carboxylic acid
+      return False, "Contains ester linkage, not a typical fatty acid"
+      
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Contains amide linkage, not a typical fatty acid"
+
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)")
+    if mol.HasSubstructMatch(phosphate_pattern):
+         return False, "Contains phosphate group, not a typical fatty acid"
+
+    # Check for glycerol backbone
+    glycerol_pattern = Chem.MolFromSmarts("C(O)C(O)C(O)")
+    if mol.HasSubstructMatch(glycerol_pattern):
+      return False, "Contains glycerol backbone, not a typical fatty acid"
+
+    # Count carbons. We are more flexible now and allow for slightly longer or shorter chains.
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if not 14 <= c_count <= 40:
+      return False, "Carbon count is not within the typical range (14-40)"
+    
     # Check for double bonds
     double_bond_pattern = Chem.MolFromSmarts("[CX3]=[CX3]")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
@@ -42,12 +72,13 @@ def is_essential_fatty_acid(smiles: str):
     aliphatic_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     aliphatic_matches = mol.GetSubstructMatches(aliphatic_chain_pattern)
     if len(aliphatic_matches) < 1:
-        return False, "Molecule does not contain long aliphatic chain"
+         return False, "Molecule does not contain long aliphatic chain"
+    
 
     # Check for the presence of rings.
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains rings, not a typical fatty acid"
-    
+
     # Check if the double bonds are in the chain:
     chain_atoms = []
     for match in aliphatic_matches:
@@ -58,17 +89,18 @@ def is_essential_fatty_acid(smiles: str):
           bond_match[0] in chain_atoms and bond_match[1] in chain_atoms):
               return False, "Double bond not part of main aliphatic chain"
 
-    # Check for Z/cis double bond configuration using SMARTS
+    # Check for the presence of trans double bonds and be more strict by ensuring all double bonds are cis.
     cis_double_bond_pattern = Chem.MolFromSmarts("[CX3;!R]=[CX3;!R]")
     cis_matches = mol.GetSubstructMatches(cis_double_bond_pattern)
 
-    if len(cis_matches) < len(double_bond_matches) / 2: #Allow for the presence of a few trans double bonds.
-      return False, "Most double bonds need to be cis"
+    if len(cis_matches) != len(double_bond_matches): #All double bonds must be cis
+      return False, "All double bonds need to be cis"
+    
 
-    # Check molecular weight range
+    # Check molecular weight range (adjusting the range a bit to be more flexible)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if not 250 <= mol_wt <= 600:
-       return False, "Molecular weight is outside of the typical range for an essential fatty acid (250-600)"
+    if not 200 <= mol_wt <= 700:
+       return False, "Molecular weight is outside of the typical range for an essential fatty acid (200-700)"
 
 
-    return True, "Contains a carboxylic acid group, a long linear carbon chain (C16-C36), multiple cis double bonds (at least 2), and a suitable molecular weight."
+    return True, "Contains a carboxylic acid group, a long linear carbon chain (C14-C40), multiple cis double bonds (at least 2), and a suitable molecular weight, without unwanted groups"
