@@ -27,29 +27,27 @@ def is_triterpenoid(smiles: str):
     if c_count < 30:
         return False, f"Contains only {c_count} carbon atoms, requires at least 30 for triterpenoid"
     
-    # Define skeletal structures typical of triterpenoids
+    # Define skeletal structures typical of triterpenoids, focusing on sterane-like structures
     triterpenoid_patterns = [
-        Chem.MolFromSmarts("C1CCC2CC[C@H]3[C@]4(C)CC[C@@H]5C4CC[C@@H]3[C@@H]2C1"),
-        Chem.MolFromSmarts("C1CC2(CC[C@@H]3CC4(C)CCC5C4CCC3C2CCC1C5)C"),
-        Chem.MolFromSmarts("C1=CC2=C3C=CC4=C2C1C5=C3C(C=C6[C@H](C5)CC(=CC6)C)C4"),
+        Chem.MolFromSmarts("[C@@]1(C[C@@H]2CC[C@]3(C)[C@]4(CC[C@@H](O)[C@]5(C)C)C=C[C@@H]3[C@H]4CC[C@@]25C)C"),
+        Chem.MolFromSmarts("C1CCC2(C(C)CCC3[C@H]4CC[C@@H]5[C@@](C4CCC3)[C@H](O)[C@]5(C)CO)C2C1"), 
+        # Additionally decorated ring structures
     ]
     
-    # Check if matches any typical triterpenoid patterns
+    # Check against complex triterpenoid skeletal patterns
     for pattern in triterpenoid_patterns:
         if mol.HasSubstructMatch(pattern):
-            return True, "Matches typical triterpenoid skeletal pattern"
+            return True, "Matches triterpenoid skeletal pattern"
     
     # Check for common triterpenoid functional group patterns within specific contexts
-    specific_alcohol_pattern = Chem.MolFromSmarts("[C&!R][C@H](O)C")
-    if mol.HasSubstructMatch(specific_alcohol_pattern):
-        return True, "Contains alcohol functional group in sterane ring"
-
-    specific_ketone_pattern = Chem.MolFromSmarts("[C&R2](=O)[C&R2]")
-    if mol.HasSubstructMatch(specific_ketone_pattern):
-        return True, "Contains ketone functional group in sterane ring"
-
-    specific_carboxylic_acid_pattern = Chem.MolFromSmarts("[C&R2](=O)[OH]")
-    if mol.HasSubstructMatch(specific_carboxylic_acid_pattern):
-        return True, "Contains carboxylic acid functional group in sterane ring"
-
+    common_functional_groups = [
+        Chem.MolFromSmarts("[CX3](=O)[OX2H1]"), # Carboxylic acid
+        Chem.MolFromSmarts("[CX3](=O)[C]"),    # Ketone
+        Chem.MolFromSmarts("[CX4][OX2H]")      # Alcohol
+    ]
+    
+    matches = sum(mol.HasSubstructMatch(fg) for fg in common_functional_groups)
+    if matches > 0:
+        return True, f"Contains {matches} triterpenoid-like functional groups"
+    
     return False, "Does not match typical triterpenoid structure"
