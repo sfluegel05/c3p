@@ -6,13 +6,13 @@ Classifies: 1-acyl-sn-glycero-3-phosphoethanolamine
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     """
     Determines if a molecule is a 1-acyl-sn-glycero-3-phosphoethanolamine based on its SMILES string.
-    This class has a glycerol backbone with an acyl group esterified at the sn-1 position,
-    a hydroxyl group at the sn-2 position, and a phosphoethanolamine group at the sn-3 position,
-    with (R)-configuration at the sn-2 carbon if stereochemistry is specified.
+    A 1-acyl-sn-glycero-3-phosphoethanolamine is a glycerophosphoethanolamine with an acyl group 
+    at the sn-1 position and (R)-configuration at the chiral center.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -29,60 +29,75 @@ def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
 
     # Add hydrogens to correctly perceive chiral centers
     mol = Chem.AddHs(mol)
+    
+    # Find chiral centers
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
+    if not chiral_centers:
+        return False, "No chiral centers found"
 
-    # Assign stereochemistry
-    Chem.AssignAtomChiralTagsFromStructure(mol)
+    # Identify sn-2 carbon (should be a carbon attached to two oxygens and one carbon)
+    sn2_atom_idx = None
+    for idx, config in chiral_centers:
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() != 6:
+            continue  # Not a carbon
+        neighbors = atom.GetNeighbors()
+        o_count = sum(1 for neighbor in neighbors if neighbor.GetAtomicNum() == 8)
+        c_count = sum(1 for neighbor in neighbors if neighbor.GetAtomicNum() == 6)
+        if o_count == 2 and c_count == 1:
+            sn2_atom_idx = idx
+            sn2_config = config
+            break
+    if sn2_atom_idx is None:
+        return False, "No appropriate chiral center found for sn-2 position"
 
-    # Define SMARTS patterns
-    # Ester linkage at sn-1 position
-    ester_sn1_pattern = Chem.MolFromSmarts("[$([O][C](=O)[C])]")
+    # Check sn-2 configuration
+    if sn2_config != 'R':
+        return False, f"Chiral center at sn-2 position is not (R)-configuration (found {sn2_config})"
 
-    # Hydroxyl group at sn-2 position
-    hydroxyl_sn2_pattern = Chem.MolFromSmarts("[C@H](O)")
-
-    # Phosphoethanolamine group at sn-3 position
-    phospho_ethanolamine_pattern = Chem.MolFromSmarts("[O][P](=O)([O])[O][C][C][N]")
-
-    # Validate patterns
-    if None in (ester_sn1_pattern, hydroxyl_sn2_pattern, phospho_ethanolamine_pattern):
-        return False, "Error in SMARTS pattern definitions"
-
-    # Search for ester linkage at sn-1 position
-    ester_matches = mol.GetSubstructMatches(ester_sn1_pattern)
+    # Check for ester linkage at sn-1 position
+    # sn-1 position is primary alcohol connected to acyl group via ester linkage
+    ester_pattern = Chem.MolFromSmarts("OC(=O)C")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
         return False, "No ester linkage found at sn-1 position"
 
-    # Search for hydroxyl group at sn-2 position
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_sn2_pattern)
-    if not hydroxyl_matches:
-        return False, "No hydroxyl group found at sn-2 position"
+    # Verify that the O in ester linkage is connected to sn-1 carbon (neighbor of sn-2 carbon)
+    sn1_found = False
+    for match in ester_matches:
+        ester_o_idx = match[0]  # Index of oxygen in ester linkage
+        ester_o = mol.GetAtomWithIdx(ester_o_idx)
+        for neighbor in ester_o.GetNeighbors():
+            if neighbor.GetIdx() == sn2_atom_idx:
+                sn1_found = True
+                break
+        if sn1_found:
+            break
+    if not sn1_found:
+        return False, "Ester linkage at sn-1 position not connected properly"
 
-    # Search for phosphoethanolamine group at sn-3 position
-    phospho_matches = mol.GetSubstructMatches(phospho_ethanolamine_pattern)
+    # Check for phosphoethanolamine group at sn-3 position
+    # sn-3 position is primary alcohol connected to phosphoethanolamine group
+    phospho_pattern = Chem.MolFromSmarts("O[P](=O)(OCCN)O")
+    phospho_matches = mol.GetSubstructMatches(phospho_pattern)
     if not phospho_matches:
         return False, "No phosphoethanolamine group found at sn-3 position"
 
-    # Identify sn-2 chiral carbon
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=False)
-    sn2_chiral = None
-    for idx, config in chiral_centers:
-        atom = mol.GetAtomWithIdx(idx)
-        if atom.GetSymbol() == 'C' and config == 'R':
-            # Check if this carbon matches the hydroxyl pattern
-            if mol.HasSubstructMatch(Chem.MolFromSmarts("[C@H](O)")):
-                sn2_chiral = idx
+    # Verify that the O in phosphoester linkage is connected to sn-3 carbon (neighbor of sn-2 carbon)
+    sn3_found = False
+    for match in phospho_matches:
+        phospho_o_idx = match[3]  # Index of oxygen connecting phospho group to glycerol backbone
+        phospho_o = mol.GetAtomWithIdx(phospho_o_idx)
+        for neighbor in phospho_o.GetNeighbors():
+            if neighbor.GetIdx() == sn2_atom_idx:
+                sn3_found = True
                 break
+        if sn3_found:
+            break
+    if not sn3_found:
+        return False, "Phosphoethanolamine group at sn-3 position not connected properly"
 
-    if sn2_chiral is None:
-        return False, "No chiral center with (R)-configuration at sn-2 position"
-
-    # Verify connectivity of sn-2 carbon
-    sn2_atom = mol.GetAtomWithIdx(sn2_chiral)
-    neighbor_elements = [nbr.GetSymbol() for nbr in sn2_atom.GetNeighbors()]
-    if neighbor_elements.count('O') < 1 or neighbor_elements.count('C') < 3:
-        return False, "sn-2 carbon does not have the correct connectivity"
-
-    return True, "Molecule is a 1-acyl-sn-glycero-3-phosphoethanolamine"
+    return True, "Molecule is a 1-acyl-sn-glycero-3-phosphoethanolamine with (R)-configuration"
 
 __metadata__ = {
     'chemical_class': {
@@ -104,7 +119,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 3,
+    'attempt': 0,
     'success': True,
     'best': True,
     'error': '',
