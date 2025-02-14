@@ -6,7 +6,6 @@ Classifies: furanocoumarin
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdqueries
 
 def is_furanocoumarin(smiles: str):
     """
@@ -28,11 +27,11 @@ def is_furanocoumarin(smiles: str):
 
     # Define SMARTS patterns for linear and angular furanocoumarins
     # Linear furanocoumarin (psoralen-type) core SMARTS
-    linear_smarts = 'c1cc2oc3ccoc3cc2c1'  # Matches psoralen core
+    linear_smarts = '[O]=C1C=CC2=C1Oc1ccoc1C=C2'  # Matches psoralen core
     linear_pattern = Chem.MolFromSmarts(linear_smarts)
 
     # Angular furanocoumarin (angelicin-type) core SMARTS
-    angular_smarts = 'c1ccc2oc3ccocc3c2c1'  # Matches angelicin core
+    angular_smarts = 'O=C1C=CC2=C1C=CC3=COC=CC3=C2'  # Matches angelicin core
     angular_pattern = Chem.MolFromSmarts(angular_smarts)
 
     if linear_pattern is None or angular_pattern is None:
