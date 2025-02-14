@@ -24,45 +24,60 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for naphthoquinone cores (1,4- and 1,2-naphthoquinone)
-    naphthoquinone_smarts_list = [
-        'C12=C(C=CC=C1)C(=O)C=CC2=O',   # 1,4-naphthoquinone core
-        'C1=CC=C2C(=O)C=CC(=O)C2=C1'    # 1,2-naphthoquinone core
-    ]
-    naphthoquinone_mols = [Chem.MolFromSmarts(smarts) for smarts in naphthoquinone_smarts_list]
+    # Get ring information
+    ri = mol.GetRingInfo()
+    atom_rings = ri.AtomRings()
 
-    # Check for presence of naphthoquinone moiety
-    has_naphthoquinone = False
-    for naphthoquinone in naphthoquinone_mols:
-        if mol.HasSubstructMatch(naphthoquinone):
-            has_naphthoquinone = True
-            naphthoquinone_matches = mol.GetSubstructMatches(naphthoquinone)
-            break
-
-    if not has_naphthoquinone:
-        return False, "No naphthoquinone moiety found"
-
-    # Check for hydroxy substitution on the naphthoquinone ring
-    for match in naphthoquinone_matches:
-        naphthoquinone_atoms = set(match)
-        has_hydroxy = False
-
-        for idx in naphthoquinone_atoms:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 6 and atom.IsInRing():
-                for neighbor in atom.GetNeighbors():
-                    # Look for hydroxy group attached to ring carbon
-                    if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
-                        has_hydroxy = True
-                        break
-                if has_hydroxy:
+    # Merge rings into fused ring systems
+    fused_ring_systems = []
+    visited_atoms = set()
+    for ring in atom_rings:
+        ring_set = set(ring)
+        if not visited_atoms.intersection(ring_set):
+            # Start a new fused ring system
+            fused_ring_systems.append(ring_set)
+            visited_atoms.update(ring_set)
+        else:
+            # Add to existing fused ring system
+            for frs in fused_ring_systems:
+                if frs.intersection(ring_set):
+                    frs.update(ring_set)
+                    visited_atoms.update(ring_set)
                     break
 
-        if has_hydroxy:
-            return True, "Contains naphthoquinone moiety substituted with at least one hydroxy group"
+    # Check each fused ring system for naphthoquinone characteristics
+    for ring_system in fused_ring_systems:
+        # Check if ring system is aromatic and has at least 8 atoms (allowing for substitutions)
+        if len(ring_system) >= 8:
+            is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring_system)
+            if not is_aromatic:
+                continue
 
-    return False, "No hydroxy substitution on naphthoquinone moiety found"
-           
+            # Count ketone groups (C=O) attached to ring carbons
+            ketone_count = 0
+            hydroxy_count = 0
+
+            for idx in ring_system:
+                atom = mol.GetAtomWithIdx(idx)
+                if atom.GetAtomicNum() == 6:  # Carbon atom
+                    # Check for ketone group (C=O)
+                    for bond in atom.GetBonds():
+                        nbr = bond.GetOtherAtom(atom)
+                        if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                            ketone_count += 1
+                            break
+                    # Check for hydroxy group (C-OH)
+                    for nbr in atom.GetNeighbors():
+                        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                        if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.SINGLE and nbr.GetDegree() == 1:
+                            hydroxy_count += 1
+                            break
+
+            if ketone_count >= 2 and hydroxy_count >= 1:
+                return True, "Contains naphthoquinone moiety substituted with at least one hydroxy group"
+
+    return False, "No hydroxylated naphthoquinone moiety found"
+
 __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:51793',
@@ -83,7 +98,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 1,
+    'attempt': 2,
     'success': True,
     'best': True,
     'error': '',
