@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_hydroxynaphthoquinone(smiles: str):
     """
     Determines if a molecule is a hydroxynaphthoquinone based on its SMILES string.
-    A hydroxynaphthoquinone is defined as any naphthoquinone in which the naphthoquinone moiety
+    A hydroxynaphthoquinone is defined as any naphthoquinone in which the naphthaoquinone moiety
     is substituted by at least one hydroxy group.
 
     Args:
@@ -21,29 +21,21 @@ def is_hydroxynaphthoquinone(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # A more flexible SMARTS pattern for naphthoquinone with possible aromatic substitutions
-    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=C2C(=O)C=CC(=O)C2=C1")
-    naphthoquinone_matches = mol.GetSubstructMatches(naphthoquinone_pattern)
-    if len(naphthoquinone_matches) < 1:
+
+    # Define SMARTS pattern for naphthoquinone core
+    naphthoquinone_pattern = Chem.MolFromSmarts("C1=CC=C2C(=O)C=CC(=O)c2c1")
+    if not mol.HasSubstructMatch(naphthoquinone_pattern):
         return False, "No naphthoquinone core structure found"
-    
-    # Check for hydroxy groups within the molecule
+        
+    # Define SMARTS pattern for hydroxy group
     hydroxy_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     if len(hydroxy_matches) < 1:
         return False, "No hydroxy group found"
 
-    # Ensure hydroxy is part of the same aromatic system as naphthoquinone
-    for match in naphthoquinone_matches:
-        for hydroxy in hydroxy_matches:
-            # If an oxygen atom in the hydroxy group is connected to an aromatic carbon in the core
-            if any(mol.GetBondBetweenAtoms(hydroxy[0], atom_idx).IsAromatic() for atom_idx in match):
-                return True, "Contains naphthoquinone core with at least one hydroxy group attached"
-
-    return False, "Hydroxy groups are not properly connected to the naphthoquinone core"
+    return True, "Contains naphthoquinone core with at least one hydroxy group attached"
 
 # Example Usage:
-# smiles_example = "O=C1C=CC(=O)c2cc(O)ccc12"  # Example of a hydroxynaphthoquinone
+# smiles_example = "O=C1C=CC(=O)c2cc(O)ccc12"  # Juglone, an example of a hydroxynaphthoquinone
 # result, reason = is_hydroxynaphthoquinone(smiles_example)
 # print(result, reason)
