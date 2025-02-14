@@ -1,34 +1,75 @@
 """
 Classifies: CHEBI:17517 phosphatidylglycerol
 """
-The previous program attempted to classify molecules as phosphatidylglycerols based on the presence of a glycerol-phosphate moiety, two ester groups, and two long fatty acid chains. It also checked for appropriate molecular weight, atomic composition, and ruled out phosphatidylcholines and phosphatidylethanolamines. However, there are some issues that may have led to the low F1 score:
+"""
+Classifies: CHEBI:18115 phosphatidylglycerol
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Defining the class**: The definition of phosphatidylglycerol used in the program ("A glycerophosphoglycerol that is glycerol in which the hydrogen of one of the primary hydroxy groups has been replaced by a phosphatidyl group.") may not be entirely accurate or complete. The key structural feature seems to be the presence of a glycerol-phosphate moiety with two fatty acid chains attached via ester bonds, rather than the specific substitution of a hydroxy group.
+def is_phosphatidylglycerol(smiles: str):
+    """
+    Determines if a molecule is a phosphatidylglycerol based on its SMILES string.
+    A phosphatidylglycerol is a glycerophosphoglycerol, where glycerol has one of its primary
+    hydroxy groups replaced by a phosphatidyl group.
 
-2. **Fatty acid chain length**: The program checks for the presence of at least two fatty acid chains of length 4 or more. However, it may be more appropriate to check for longer chains (e.g., 8 or more) to better represent typical fatty acid lengths in phosphatidylglycerols.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Molecular weight cutoff**: The molecular weight cutoff of 500 Da may be too low, as some phosphatidylglycerols can have higher molecular weights, particularly those with longer or unsaturated fatty acid chains.
-
-4. **Atomic composition checks**: The checks for minimum numbers of carbon and oxygen atoms may be too strict or not specific enough for this class of molecules.
-
-5. **False positives**: The program may be incorrectly classifying some non-phosphatidylglycerol molecules as positive due to the presence of the required substructures (e.g., glycerol-phosphate and fatty acid chains) in other types of molecules.
-
-6. **False negatives**: The program may be missing some valid phosphatidylglycerol structures, perhaps due to unusual or atypical fatty acid chain lengths or compositions.
-
-To improve the program, the following modifications could be considered:
-
-1. Refine the definition and structural requirements for phosphatidylglycerols based on a more thorough analysis of representative examples and counterexamples.
-
-2. Adjust the fatty acid chain length requirement to better represent typical phosphatidylglycerol structures.
-
-3. Increase or remove the molecular weight cutoff, as it may be too restrictive.
-
-4. Reevaluate the atomic composition checks and potentially replace them with more specific structural patterns or substructure searches.
-
-5. Analyze the false positives and false negatives to identify additional patterns or rules that can be incorporated into the program to improve classification accuracy.
-
-6. Consider incorporating additional checks or rules to handle atypical or edge cases, such as unusual fatty acid chain lengths or compositions.
-
-7. If the benchmark dataset itself has errors or inconsistencies, it may be necessary to adjust the program based on your expert understanding of the chemical class, rather than strictly following the benchmark classifications.
-
-Overall, the program's approach of using substructure searches and structural patterns is reasonable, but further refinement and tuning based on a deeper analysis of the chemical class and the specific examples may be necessary to improve the classification performance.
+    Returns:
+        bool: True if molecule is a phosphatidylglycerol, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Look for glycerol-phosphate moiety ([CH2X4][CHX4][CH2X4]OP(=O)(O)O)
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]OP(=O)(O)O")
+    if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
+        return False, "No glycerol-phosphate moiety found"
+    
+    # Look for ester groups (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 2:
+        return False, f"Found fewer than 2 ester groups"
+    
+    # Check for fatty acid chains (long carbon chains attached to esters)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+    
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 8:
+        return False, "Chains too short to be fatty acids"
+    
+    # Check molecular weight - phosphatidylglycerols typically >500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return None, "Molecular weight may be too low for phosphatidylglycerol"
+    
+    # Count carbons, oxygens, and phosphorus
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    
+    if c_count < 20:
+        return False, "Too few carbons for phosphatidylglycerol"
+    if o_count < 8:
+        return False, "Too few oxygens for phosphatidylglycerol"
+    if p_count < 1:
+        return False, "No phosphorus atom found"
+    
+    # Rule out phosphatidylcholines (PCs) and phosphatidylethanolamines (PEs)
+    pc_pattern = Chem.MolFromSmarts("[N+](C)(C)(C)")
+    pe_pattern = Chem.MolFromSmarts("OCCN")
+    if mol.HasSubstructMatch(pc_pattern) or mol.HasSubstructMatch(pe_pattern):
+        return False, "Molecule appears to be a phosphatidylcholine or phosphatidylethanolamine"
+    
+    return True, "Contains glycerol-phosphate moiety with 2 fatty acid chains"
