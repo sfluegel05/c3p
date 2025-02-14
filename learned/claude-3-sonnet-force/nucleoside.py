@@ -27,27 +27,26 @@ def is_nucleoside(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for ribose or deoxyribose sugar
-    sugar_pattern = Chem.MolFromSmarts("[OX2]C[CX4]([OX2])[CX4]([CX4]([OX2])[CX4][OX2])[CH2][OX2]")
-    if not mol.HasSubstructMatch(sugar_pattern):
+    sugar_patterns = [
+        Chem.MolFromSmarts("[OX2]C[CX4]([OX2])[CX4]([CX4]([OX2])[CX4][OX2])[CH2][OX2]"),
+        Chem.MolFromSmarts("[OX2]C[CX4]([OX2])[CX4]([CX4]([OX2])[CX4][OX2])[CH2][OX2H]")
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in sugar_patterns):
         return False, "No ribose or deoxyribose sugar found"
 
-    # Look for common nucleobases
-    nucleobase_patterns = [
-        Chem.MolFromSmarts("[$(nc1ncnc1N)]"),  # Adenine
-        Chem.MolFromSmarts("[$(nc1nc(=O)nc(N)n1)]"),  # Guanine
-        Chem.MolFromSmarts("[$(nc1nc(=O)c2ncn(n2)c1=O)]"),  # Xanthine
-        Chem.MolFromSmarts("[$(Cc1c(N)nc(=O)[nH]c1=O)]"),  # Thymine
-        Chem.MolFromSmarts("[$(NC(=O)nc1nc(N)ccn1)]"),  # Cytosine
-        Chem.MolFromSmarts("[$(Oc1ccnc(=O)[nH]1)]")  # Uracil
-    ]
-
-    nucleobase_match = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
-    if not nucleobase_match:
-        return False, "No common nucleobase found"
+    # Look for nucleobase
+    nucleobase_pattern = Chem.MolFromSmarts("[*r3,r4,r5,r6]~[*r3,r4,r5,r6]~[*r3,r4,r5,r6]~[*r3,r4,r5,r6]~[NX3]")
+    if not mol.HasSubstructMatch(nucleobase_pattern):
+        return False, "No nucleobase found"
 
     # Check for N-glycosidic bond between sugar and nucleobase
     glycosidic_bond_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][CX4][CX4][NX3]")
     if not AllChem.FindMolChiralCenters(mol, glycosidic_bond_pattern):
         return False, "No N-glycosidic bond found between sugar and nucleobase"
 
-    return True, "Contains a nucleobase (adenine, guanine, xanthine, thymine, cytosine or uracil) N-glycosidically linked to a ribose or deoxyribose sugar"
+    # Additional checks
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count < 3:
+        return False, "Too few nitrogen atoms for a nucleoside"
+
+    return True, "Contains a nucleobase N-glycosidically linked to a ribose or deoxyribose sugar"
