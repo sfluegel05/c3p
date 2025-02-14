@@ -2,7 +2,6 @@
 Classifies: CHEBI:38958 indole alkaloid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_indole_alkaloid(smiles: str):
     """
@@ -21,10 +20,9 @@ def is_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # More robust SMARTS pattern for indole - simplified to a 5-membered ring with N connected to an aromatic 6-membered ring.
-    indole_pattern = Chem.MolFromSmarts("c1cc2[nH]c3ccccc3c21") # simplified smarts, aromatic C connected to aromatic N
-
+    # Look for indole substructure
+    indole_pattern = Chem.MolFromSmarts("c1c[nH]c2ccccc12")
     if mol.HasSubstructMatch(indole_pattern):
         return True, "Contains an indole substructure"
-
-    return False, "Does not contain an indole substructure"
+    else:
+        return False, "Does not contain an indole substructure"
