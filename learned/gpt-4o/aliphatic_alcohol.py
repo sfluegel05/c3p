@@ -6,27 +6,27 @@ from rdkit import Chem
 def is_aliphatic_alcohol(smiles: str):
     """
     Determines if a molecule is an aliphatic alcohol based on its SMILES string.
-    An aliphatic alcohol has a hydroxyl group (-OH) attached to a non-aromatic carbon,
-    ideally in an open chain or a simple cycle, not involved in complex structures.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is classified as an aliphatic alcohol, False otherwise
+        bool: True if molecule is an aliphatic alcohol, False otherwise
         str: Reason for classification
     """
-
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for aliphatic alcohol
-    # [C;R0] means non-aromatic, outside aromatic or complex ring systems
-    aliphatic_oh_pattern = Chem.MolFromSmarts("[C&H2&H1][OX2H]")
+    # Check for presence of hydroxyl group attachment (C-OH)
+    oh_pattern = Chem.MolFromSmarts("[CX4H2,CX4H,CX4]-[OH]")  # Saturated carbon with hydroxyl
+    if not mol.HasSubstructMatch(oh_pattern):
+        return False, "No aliphatic hydroxyl group found"
 
-    if mol.HasSubstructMatch(aliphatic_oh_pattern):
-        return True, "Contains aliphatic hydroxyl group(s) fitting criteria for aliphatic alcohols"
+    # Verify the absence of aromaticity
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("a")):
+        return False, "Contains aromatic rings; not purely aliphatic"
 
-    return False, "No fitting aliphatic hydroxyl group found for an aliphatic alcohol context"
+    return True, "Contains aliphatic hydroxyl group(s) on a non-aromatic carbon chain"
