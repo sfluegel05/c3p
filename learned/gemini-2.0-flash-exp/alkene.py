@@ -26,12 +26,6 @@ def is_alkene(smiles: str):
     if rdMolDescriptors.CalcNumRings(mol) != 0:
          return False, "Molecule is not acyclic"
     
-    # Count double bonds
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    if len(double_bond_matches) != 1:
-        return False, f"Molecule has {len(double_bond_matches)} double bond(s). An alkene must have exactly 1."
-    
     # Check for only carbon and hydrogen
     c_count = 0
     for atom in mol.GetAtoms():
@@ -40,7 +34,7 @@ def is_alkene(smiles: str):
             c_count += 1
         elif atomic_num != 1:
             return False, "Molecule contains atoms other than C and H"
-
+    
     # Add explicit hydrogens to molecule
     mol = Chem.AddHs(mol)
 
@@ -53,5 +47,12 @@ def is_alkene(smiles: str):
     # Verify formula CnH2n
     if h_count != 2 * c_count:
        return False, f"Formula does not match CnH2n, got C{c_count}H{h_count}"
+
+    # Count double bonds
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
+    if len(double_bond_matches) != 1:
+        return False, f"Molecule has {len(double_bond_matches)} double bond(s). An alkene must have exactly 1."
+    
     
     return True, "Molecule is an acyclic hydrocarbon with one C=C double bond and formula CnH2n"
