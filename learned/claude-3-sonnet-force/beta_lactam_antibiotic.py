@@ -6,7 +6,6 @@ Classifies: CHEBI:38199 beta-lactam antibiotic
 An organonitrogen heterocyclic antibiotic that contains a beta-lactam ring.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_beta_lactam_antibiotic(smiles: str):
     """
@@ -26,29 +25,18 @@ def is_beta_lactam_antibiotic(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for beta-lactam ring
-    beta_lactam_pattern = Chem.MolFromSmarts("[C&R]1(N[C&R]([C&R]1=[O])=[O])")
+    beta_lactam_pattern = Chem.MolFromSmarts("[C&R]2(=[O])[NR1][C&R]([C&R]2=[O])=[O]")
     if not mol.HasSubstructMatch(beta_lactam_pattern):
         return False, "No beta-lactam ring found"
 
-    # Check for nitrogen-containing heterocycle
-    heterocycle_pattern = Chem.MolFromSmarts("*1~*~*~*~*~*1")
-    heterocycle_pattern = AllChem.AddAtomProp(heterocycle_pattern, "N")
-    heterocycle_matches = mol.GetSubstructMatches(heterocycle_pattern)
-    if not heterocycle_matches:
-        return False, "No nitrogen-containing heterocycle found"
+    # Additional checks for common features in beta-lactam antibiotics
+    thiazolidine_pattern = Chem.MolFromSmarts("C1NCCCS1")
+    dihydrothiazine_pattern = Chem.MolFromSmarts("C1NCCCS1=O")
+    if mol.HasSubstructMatch(thiazolidine_pattern) or mol.HasSubstructMatch(dihydrothiazine_pattern):
+        return True, "Contains beta-lactam ring and thiazolidine/dihydrothiazine rings (common in beta-lactam antibiotics)"
 
-    # Check for amide or amine groups (for antibiotic activity)
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    amine_pattern = Chem.MolFromSmarts("N")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    amine_matches = mol.GetSubstructMatches(amine_pattern)
-    if not amide_matches and not amine_matches:
-        return False, "No amide or amine groups found (required for antibiotic activity)"
-
-    # Check for carboxylic acid group (common in beta-lactam antibiotics)
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if not carboxyl_matches:
-        return True, "Contains beta-lactam ring, nitrogen-containing heterocycle, and amide/amine groups"
-    else:
-        return True, "Contains beta-lactam ring, nitrogen-containing heterocycle, amide/amine groups, and carboxylic acid group"
+    if mol.HasSubstructMatch(carboxyl_pattern):
+        return True, "Contains beta-lactam ring and carboxylic acid group (common in beta-lactam antibiotics)"
+
+    return True, "Contains beta-lactam ring"
