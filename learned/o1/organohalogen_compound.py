@@ -24,21 +24,12 @@ def is_organohalogen_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define atomic numbers for carbon and halogens
-    carbon_atomic_num = 6
-    halogen_atomic_nums = [9, 17, 35, 53]  # F, Cl, Br, I
+    # Define SMARTS pattern for carbon-halogen bond
+    carbon_halogen_smarts = "[#6]-[F,Cl,Br,I]"
+    pattern = Chem.MolFromSmarts(carbon_halogen_smarts)
+    matches = mol.GetSubstructMatches(pattern)
 
-    # Check for carbon-halogen bonds
-    has_carbon_halogen_bond = False
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        atomic_nums = (atom1.GetAtomicNum(), atom2.GetAtomicNum())
-        if (carbon_atomic_num in atomic_nums) and (any(h in atomic_nums for h in halogen_atomic_nums)):
-            has_carbon_halogen_bond = True
-            break  # No need to check further
-
-    if has_carbon_halogen_bond:
+    if matches:
         return True, "Contains at least one carbon-halogen bond"
     else:
         return False, "No carbon-halogen bonds found"
