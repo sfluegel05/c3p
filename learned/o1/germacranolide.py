@@ -21,21 +21,32 @@ def is_germacranolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for 15 carbons (sesquiterpene)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 15:
-        return False, f"Number of carbons is {c_count}, not 15 (not a sesquiterpene)"
+    # Define SMARTS pattern for germacrane skeleton (10-membered ring with specific connectivity)
+    germacrane_smarts = "[C;R]1[C;R][C;R][C;R][C;R][C;R][C;R][C;R][C;R][C;R]1"  # 10-membered ring
+    germacrane_mol = Chem.MolFromSmarts(germacrane_smarts)
+    if not mol.HasSubstructMatch(germacrane_mol):
+        return False, "No germacrane skeleton (10-membered ring) found"
 
-    # Check for 10-membered ring (germacrane skeleton)
-    ring_info = mol.GetRingInfo()
-    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
-    if 10 not in ring_sizes:
-        return False, "No 10-membered ring found (germacrane skeleton missing)"
-
-    # Check for lactone group (cyclic ester within a ring)
-    lactone_smarts = "[C;R](=O)[O;R][C;R]"  # Ester group where atoms are in a ring
+    # Define SMARTS pattern for lactone ring attached to germacrane skeleton
+    lactone_smarts = "[C;R](=O)[O;R][C;R]"  # Lactone group within a ring
     lactone_mol = Chem.MolFromSmarts(lactone_smarts)
     if not mol.HasSubstructMatch(lactone_mol):
-        return False, "No lactone ring (cyclic ester) found"
+        return False, "No lactone group (cyclic ester) found within the ring"
 
-    return True, "Molecule is a germacranolide (15 carbons, 10-membered ring, and lactone group)"
+    # Ensure lactone is part of the 10-membered ring
+    germacrane_matches = mol.GetSubstructMatch(germacrane_mol)
+    lactone_matches = mol.GetSubstructMatches(lactone_mol)
+    lactone_in_ring = False
+    for lactone_match in lactone_matches:
+        if set(lactone_match).issubset(germacrane_matches):
+            lactone_in_ring = True
+            break
+    if not lactone_in_ring:
+        return False, "Lactone group is not part of the germacrane ring"
+
+    # Optionally, check for sesquiterpene backbone (15 carbons) but allow for substitutions
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 15:
+        return False, f"Too few carbons ({c_count}) for a germacranolide (sesquiterpene)"
+
+    return True, "Molecule is a germacranolide (germacrane skeleton with lactone ring)"
