@@ -21,10 +21,10 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for beta-D-galactopyranoside
-    # The pattern specifies the beta-anomeric configuration of D-galactose
-    beta_d_galactopyranoside_smarts = "[C@@H]1(O[C@H]([C@@H]([C@@H]([C@H](O1)O)O)CO)[C@H]2[*:1])[C@H]([C@@H]([C@@H]([C@H]2O)O)O)CO"
-
+    # Improved SMARTS pattern for beta-D-galactopyranoside
+    # The pattern now explicitly specifies the beta-anomeric configuration of D-galactose
+    beta_d_galactopyranoside_smarts = "[C@@H]1([O][C@H]([C@@H]([C@@H]([C@H](O1)O)O)CO)[*])"
+    
     # Create a molecule from the SMARTS pattern
     galactopyranoside_pattern = Chem.MolFromSmarts(beta_d_galactopyranoside_smarts)
     
