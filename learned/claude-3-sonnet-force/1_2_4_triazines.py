@@ -31,6 +31,12 @@ def is_1_2_4_triazine(smiles: str):
     if not mol.HasSubstructMatch(triazine_pattern):
         return False, "No 1,2,4-triazine core found"
 
+    # Canonicalize the molecule
+    mol = Chem.RemoveHs(mol)
+    mol = AllChem.EmbedMolecule(mol)
+    AllChem.MMFFOptimizeMolecule(mol)
+    mol = Chem.RemoveAllHs(mol)
+
     # Check the positions of nitrogen atoms
     atoms = mol.GetAtoms()
     n_positions = []
