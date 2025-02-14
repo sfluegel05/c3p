@@ -8,7 +8,6 @@ A compound having bonds between one or more metalloid atoms and one or more carb
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 # List of metalloid atomic numbers
 METALLOID_ATOMIC_NUMBERS = [5, 14, 32, 33, 51, 52, 83, 84]  # B, Si, Ge, As, Sb, Te, Bi, Po
@@ -41,17 +40,6 @@ def is_organometalloidal_compound(smiles: str):
         atom2 = bond.GetEndAtom()
         if (atom1.GetAtomicNum() in METALLOID_ATOMIC_NUMBERS and atom2.GetAtomicNum() == 6) or \
            (atom2.GetAtomicNum() in METALLOID_ATOMIC_NUMBERS and atom1.GetAtomicNum() == 6):
-            # Check for multiple bonds
-            if bond.GetBondType() != Chem.BondType.SINGLE:
-                return True, "Contains bond(s) between metalloid and carbon atoms, including multiple bonds"
-            else:
-                return True, "Contains bond(s) between metalloid and carbon atoms"
-
-    # Check for organometallic compounds (exclude from organometalloidal)
-    metal_pattern = Chem.MolFromSmarts("[!#6;!#5;!#14;!#32;!#33;!#51;!#52;!#83;!#84]")
-    if mol.HasSubstructMatch(metal_pattern):
-        for atom in mol.GetSubstructMatches(metal_pattern):
-            if any(mol.GetBondBetweenAtoms(atom, neighbor).GetBondType() != Chem.BondType.SINGLE for neighbor in atom.GetNeighbors()):
-                return False, "Organometallic compound detected (contains bonds between metal and carbon atoms)"
+            return True, "Contains bond(s) between metalloid and carbon atoms"
 
     return False, "No bond found between metalloid and carbon atoms"
