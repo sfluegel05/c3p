@@ -48,14 +48,9 @@ def is_ultra_long_chain_fatty_acid(smiles: str):
     # Count unsaturated carbons
     adjacency_matrix = rdmolops.GetAdjacencyMatrix(mol)
     unsaturated_carbons = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
-            neighbors = [mol.GetAtomWithIdx(idx) for idx in adjacency_matrix[atom.GetIdx()].GetNonzeroIndices()]
-            for neighbor in neighbors:
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
-                if bond.GetBondType() in (Chem.BondType.DOUBLE, Chem.BondType.TRIPLE):
-                    unsaturated_carbons += 1
-                    break
+    for bond_idx, bond_order in adjacency_matrix.GetNonzeroElements().items():
+        if bond_order > 1:
+            unsaturated_carbons += 1
     
     if unsaturated_carbons > 0:
         return True, f"Ultra-long-chain fatty acid with {c_count} carbons and {unsaturated_carbons} unsaturations"
