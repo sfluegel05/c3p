@@ -19,57 +19,50 @@ def is_glycosaminoglycan(smiles: str):
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return None, "Invalid SMILES string"
+        return False, "Invalid SMILES string"
 
-    # 1. Check for the presence of multiple 5- or 6-membered rings with oxygen (potential monosaccharide units)
-    ring_pattern_5 = Chem.MolFromSmarts("C1OCC[C,O]1") # 5-membered ring
-    ring_pattern_6 = Chem.MolFromSmarts("C1COCCC[C,O]1") # 6-membered ring
-    ring_matches_5 = mol.GetSubstructMatches(ring_pattern_5)
-    ring_matches_6 = mol.GetSubstructMatches(ring_pattern_6)
-    total_rings = len(ring_matches_5) + len(ring_matches_6)
-    if total_rings < 3:
-       return False, f"Too few monosaccharide rings: {total_rings}"
+    # 1. Define a pattern for a monosaccharide ring (5 or 6 membered) with a hemiacetal/ketal.
+    monosaccharide_pattern = Chem.MolFromSmarts("[C1][O][C]([C])([C])[C][C]1") # 5 or 6 membered ring.  This pattern captures the hemiacetal carbon and its neighbours (simplification)
+    monosaccharide_matches = mol.GetSubstructMatches(monosaccharide_pattern)
+    
+    #If no monosaccharide pattern is detected, it cannot be a GAG
+    if len(monosaccharide_matches) == 0:
+        return False, "No monosaccharide ring detected"
 
-    # 2. Check for glycosidic linkages (C-O-C) connecting rings (at least 2)
+    # 2. Check for amino groups (NH2, NHR, or N-acetylated) *on or adjacent to* the monosaccharide rings
+    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(N-[CX4]=O)]") #NH2 or NHR, excluding amide nitrogens
+    n_acetyl_pattern = Chem.MolFromSmarts("[NX3;!H0]-[CX3](=[OX1])-[CX4]")# N-acetyl group
+
+    amino_matches = []
+    for match in monosaccharide_matches:
+       for atom_index in match: # check atoms in each monosaccharide
+            monosaccharide_atom = mol.GetAtomWithIdx(atom_index)
+            for neighbor in monosaccharide_atom.GetNeighbors():
+                if neighbor.Match(amino_pattern) or neighbor.Match(n_acetyl_pattern):
+                    amino_matches.append(neighbor.GetIdx())
+
+    if len(amino_matches) == 0:
+        return False, f"No amino groups or N-acetylated amino groups detected on or adjacent to monosaccharide ring(s)."
+
+    # 3. Check for at least one glycosidic linkage (C-O-C) connected to at least one of the monosaccharide units.
     glycosidic_link_pattern = Chem.MolFromSmarts("[CX4]-[OX2]-[CX4]")
     glycosidic_matches = mol.GetSubstructMatches(glycosidic_link_pattern)
-    if len(glycosidic_matches) < 2:
-        return False, f"Too few glycosidic linkages: {len(glycosidic_matches)}"
+    
+    has_glycosidic = False
+    for match in glycosidic_matches:
+        for atom_index in match:
+          glycosidic_atom = mol.GetAtomWithIdx(atom_index)
+          for monosaccharide_match in monosaccharide_matches:
+              for mono_atom_index in monosaccharide_match:
+                  mono_atom = mol.GetAtomWithIdx(mono_atom_index)
+                  if glycosidic_atom.IsInRing() and (glycosidic_atom.GetIdx() in [x.GetIdx() for x in mono_atom.GetNeighbors()]):
+                    has_glycosidic = True
+                    break
+              if has_glycosidic:
+                  break
+        if has_glycosidic:
+            break;
+    if not has_glycosidic:
+       return False, "No glycosidic linkage detected, connected to a monosaccharide unit"
 
-    # 3. Check for presence of amino groups (-NH2) or substituted amino groups (-NHR).
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(N-[CX4]=O)]") # NH2 or NHR, excluding amide nitrogens
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    if len(amino_matches) < 1:
-      #Check for N-acetylated amino groups (common modification)
-      n_acetyl_pattern = Chem.MolFromSmarts("[NX3;!H0]-[CX3](=[OX1])-[CX4]")
-      n_acetyl_matches = mol.GetSubstructMatches(n_acetyl_pattern)
-      if len(n_acetyl_matches) < 1:
-        return False, f"No amino groups or N-acetylated amino groups detected."
-      else:
-         amino_count = len(n_acetyl_matches)
-    else:
-      amino_count = len(amino_matches)
-
-    #4.  Check for enough carbons.  GAG's are large molecules with many carbon atoms.
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 12:
-      return False, "Too few carbons for a glycosaminoglycan"
-
-
-    # 5. Check for a minimum number of oxygen atoms
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 5:
-        return False, "Too few oxygens for glycosaminoglycan"
-
-
-    # 6. Check for minimum number of hydroxyl groups
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 3:
-        return False, "Too few hydroxyl groups for a glycosaminoglycan"
-
-
-    if total_rings >= 3 and len(glycosidic_matches) >= 2 and amino_count >= 1:
-       return True, "Contains multiple monosaccharide units, glycosidic bonds, and amino groups."
-    else:
-       return None, None
+    return True, "Contains monosaccharide units, glycosidic bonds, and amino groups on or adjacent to monosaccharides."
