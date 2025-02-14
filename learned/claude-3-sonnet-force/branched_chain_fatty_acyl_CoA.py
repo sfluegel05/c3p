@@ -39,12 +39,26 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     # Check for ester linkage between CoA and fatty acid
     ester_pattern = Chem.MolFromSmarts("CCC(=O)OC")
     if not mol.HasSubstructMatch(ester_pattern):
-        return False, "No ester linkage found"
+        # Try a more relaxed ester pattern
+        ester_pattern = Chem.MolFromSmarts("C(=O)OC")
+        if not mol.HasSubstructMatch(ester_pattern):
+            return False, "No ester linkage found"
     
-    # Count rotatable bonds to verify long chain
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 10:
-        return False, "Chain too short to be a fatty acid"
+    # Check for specific branched fatty acid groups
+    branched_groups = ["CC(C)", "CC(C)C", "CCC(C)", "CCCC(C)", "CCCCC(C)", "CCCCCC(C)"]
+    branched_group_found = False
+    for group in branched_groups:
+        group_pattern = Chem.MolFromSmarts(group)
+        if mol.HasSubstructMatch(group_pattern):
+            branched_group_found = True
+            break
+    if not branched_group_found:
+        return False, "No specific branched fatty acid group found"
+    
+    # Exclude molecules with hydroxyl groups on the fatty acid chain
+    hydroxyl_pattern = Chem.MolFromSmarts("CC(O)")
+    if mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "Hydroxyl group present on the fatty acid chain"
     
     # Check molecular weight - typically >800 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -52,39 +66,3 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
         return False, "Molecular weight too low for branched-chain fatty acyl-CoA"
     
     return True, "Contains coenzyme A backbone with a branched-chain fatty acid attached via an ester bond"
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:60444',
-        'name': 'branched-chain fatty acyl-CoA',
-        'definition': 'A fatty acyl-CoA that results from the formal condensation of the thiol group of coenzyme A with the carboxy group of any branched-chain fatty acid.',
-        'parents': ['CHEBI:57363', 'CHEBI:57787']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 28,
-    'num_false_positives': 1,
-    'num_true_negatives': 182408,
-    'num_false_negatives': 0,
-    'num_negatives': None,
-    'precision': 0.9655172413793104,
-    'recall': 1.0,
-    'f1': 0.9825174825174826,
-    'accuracy': 0.9999954584201931
-}
