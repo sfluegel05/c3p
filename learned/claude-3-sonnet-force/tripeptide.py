@@ -1,26 +1,55 @@
 """
 Classifies: CHEBI:47923 tripeptide
 """
-Based on the outcomes provided, it seems that the previous program is missing some key aspects to correctly classify tripeptides. Here are my observations and suggestions for improvement:
+"""
+Classifies: CHEBI:33938 tripeptide
+A tripeptide is any oligopeptide that consists of three amino-acid residues connected by peptide linkages.
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-1. The program correctly identifies molecules with 3 peptide bonds (-C(=O)-N-), which is a necessary condition for tripeptides. However, it does not check if these peptide bonds are connecting amino acid residues specifically.
+def is_tripeptide(smiles: str):
+    """
+    Determines if a molecule is a tripeptide based on its SMILES string.
 
-2. The program checks for the presence of 3 amino acid residues using the SMARTS pattern "[N&x3]-[C&x3](=O)-[C&x3](=[O&x1])-[C&x3]". This pattern is too specific and will miss many valid amino acid residues, such as those with side chains or cyclic residues like proline.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. The program checks for the presence of N-terminus and C-terminus, which is a good approach. However, the conditions used to identify these terminal groups are too strict and may miss some valid cases.
+    Returns:
+        bool: True if molecule is a tripeptide, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. The program checks for common protecting groups, which is a nice addition, but not strictly necessary for the classification of tripeptides.
+    # Check for 3 connected amino acid residues (N-C(=O)-C)
+    amino_acid_pattern = Chem.MolFromSmarts("[N&x3]-[C&x3](=O)-[C&x3]")
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
+    if len(amino_acid_matches) != 3:
+        return False, f"Found {len(amino_acid_matches)} amino acid residues, need exactly 3"
 
-To improve the program, I would suggest the following changes:
+    # Check for connected amino acid residues
+    connected_residues = []
+    for match in amino_acid_matches:
+        residue = tuple(match)
+        if any(residue[0] in prev_residue and residue[2] in next_residue for prev_residue, next_residue in zip(connected_residues, connected_residues[1:])):
+            connected_residues.append(residue)
+        else:
+            return False, "Amino acid residues not connected by peptide bonds"
 
-1. Instead of checking for specific amino acid residue patterns, check for the presence of 3 connected substructures that match the general amino acid pattern: "N-C(=O)-C".
+    # Check for N-terminus and C-terminus
+    n_terminus_pattern = Chem.MolFromSmarts("[N&x3]-[C&x3](=O)-")
+    c_terminus_pattern = Chem.MolFromSmarts("-[C&x3](=O)-[O&x1,N&x3]")
+    if not mol.HasSubstructMatch(n_terminus_pattern) or not mol.HasSubstructMatch(c_terminus_pattern):
+        return False, "Missing N-terminus or C-terminus"
 
-2. Relax the conditions for identifying the N-terminus and C-terminus. Instead of checking for specific hydrogen counts and formal charges, look for more general patterns like "N-C(=O)-" for the N-terminus and "-C(=O)-O" or "-C(=O)-N" for the C-terminus.
+    # Check for common modifications or substituents
+    cyclic_pattern = Chem.MolFromSmarts("[N&x3]-[C&x3](=O)-[C&x3]-1-[C&x3]-[C&x3]-[C&x3]-1")
+    if mol.HasSubstructMatch(cyclic_pattern):
+        reason = "Contains 3 amino acid residues connected by peptide bonds, with a cyclic residue (diketopiperazine)"
+    else:
+        reason = "Contains 3 amino acid residues connected by peptide bonds"
 
-3. Remove the check for protecting groups, as it is not strictly necessary for the classification of tripeptides.
-
-4. Add additional checks for common modifications or substituents found in peptides, such as cyclization (as in diketopiperazines), disulfide bridges, or other post-translational modifications.
-
-5. Consider using machine learning techniques or more sophisticated rule-based approaches to improve the accuracy and robustness of the classification.
-
-It's worth noting that some of the false negatives in the provided outcomes may be due to limitations or errors in the benchmark itself. If you are confident that your program is correctly classifying tripeptides based on your understanding of the chemical class, you can choose to ignore these outliers and provide a justification for doing so.
+    return True, reason
