@@ -1,28 +1,95 @@
 """
 Classifies: CHEBI:16219 cucurbitacin
 """
-The previous program attempted to identify cucurbitacins based on the presence of a cucurbitane core, oxygenated substituents, molecular weight range, tetracyclic scaffold, and reasonable carbon and oxygen counts. However, the outcomes suggest that this approach is not effective in correctly classifying cucurbitacins.
+"""
+Classifies: CHEBI:49044 cucurbitacin
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Here are some potential issues and improvements:
+def is_cucurbitacin(smiles: str):
+    """
+    Determines if a molecule is a cucurbitacin based on its SMILES string.
+    Cucurbitacins are tetracyclic triterpenoids derived from the triterpene hydrocarbon cucurbitane.
 
-1. **Cucurbitane core pattern**: The SMARTS pattern used to match the cucurbitane core may be too specific or restrictive. Cucurbitacins can have varying degrees of unsaturation and substitution patterns within the core structure. A more generalized pattern or a set of alternative patterns may be needed to capture the structural diversity of the cucurbitane core.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Oxygenated substituents**: While the program checks for the presence of oxygenated substituents, it does not consider their position or arrangement on the scaffold. Cucurbitacins may have specific patterns or requirements for the placement of these substituents, which are not accounted for in the current approach.
+    Returns:
+        bool: True if molecule is a cucurbitacin, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for tetracyclic scaffold
+    tetracyclic_pattern = Chem.MolFromSmarts("[C&R1]1[C&R1]2[C&R1]3[C&R1]4[C&R1][C&R1][C&R1][C&R1]2[C&R1][C&R1][C&R1]4[C&R1][C&R1]3[C&R1]1")
+    if not mol.HasSubstructMatch(tetracyclic_pattern):
+        return False, "Not a tetracyclic scaffold"
+    
+    # Check for cucurbitane core
+    cucurbitane_pattern = Chem.MolFromSmarts("[C&R1]1[C&R1]2[C&R1]3[C&R1]4[C&R1][C&R1][C&R1][C&R1]2[C&R1][C&R1][C&R1]4[C&R1][C&R1]3[C&R1]1")
+    if not mol.HasSubstructMatch(cucurbitane_pattern):
+        return False, "Does not contain a cucurbitane core"
+    
+    # Check for oxygenated substituents (hydroxy, carbonyl, ester, etc.)
+    oxygenated_pattern = Chem.MolFromSmarts("[O;X2,X3]")
+    oxygenated_matches = mol.GetSubstructMatches(oxygenated_pattern)
+    if not oxygenated_matches:
+        return False, "No oxygenated substituents found"
+    
+    # Check molecular weight - cucurbitacins typically >500 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 500:
+        return False, "Molecular weight too low for cucurbitacin"
+    
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 20:
+        return False, "Too few carbons for cucurbitacin"
+    if o_count < 3:
+        return False, "Too few oxygens for cucurbitacin"
+    
+    return True, "Contains a tetracyclic cucurbitane core with oxygenated substituents"
 
-3. **Molecular weight range**: The molecular weight range used (500-1000 Da) may be too narrow or inaccurate. It would be helpful to analyze the distribution of molecular weights for known cucurbitacins and adjust the range accordingly.
-
-4. **Tetracyclic scaffold**: The program checks for the presence of at least four rings, but it does not verify the specific arrangement or connectivity of these rings, which is crucial for the cucurbitacin scaffold.
-
-5. **Carbon and oxygen counts**: The ranges used for carbon and oxygen counts may need to be adjusted based on a more comprehensive analysis of known cucurbitacins.
-
-To improve the program, a more detailed analysis of the structural features and patterns specific to cucurbitacins is necessary. This could involve:
-
-a. Studying the core scaffold and its variations in more detail, and developing SMARTS patterns or substructure searches to capture these variations.
-b. Analyzing the positioning and patterns of oxygenated substituents in known cucurbitacins, and incorporating rules or constraints to check for these patterns.
-c. Investigating the molecular weight distribution of cucurbitacins and adjusting the range accordingly.
-d. Developing a more specific set of criteria or patterns to identify the tetracyclic scaffold characteristic of cucurbitacins.
-e. Refining the carbon and oxygen count ranges based on a larger dataset of known cucurbitacins.
-
-Additionally, it may be helpful to incorporate machine learning techniques or use pre-trained models specifically designed for classifying cucurbitacins, as their structural complexity may make it challenging to develop a rule-based approach that covers all cases.
-
-If the provided benchmark dataset is considered reliable, it would be advisable to trust its classifications and refine the program accordingly, even if some cases seem counterintuitive based on the current understanding of cucurbitacin structures.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:49044',
+        'name': 'cucurbitacin',
+        'definition': 'Any one of a class of tetracyclic triterpenoids, formally derived from the triterpene hydrocarbon cucurbitane, developed by some plants (especially those of the family Cucurbitaceaeas) as a defence mechanism against herbivores.',
+        'parents': ['CHEBI:60027', 'CHEBI:63637']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 56,
+    'num_false_positives': 1,
+    'num_true_negatives': 182414,
+    'num_false_negatives': 13,
+    'num_negatives': None,
+    'precision': 0.9827586206896552,
+    'recall': 0.8116883116883117,
+    'f1': 0.8910891089108911,
+    'accuracy': 0.9997794258063422
+}
