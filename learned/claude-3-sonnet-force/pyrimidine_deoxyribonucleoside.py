@@ -25,23 +25,43 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for pyrimidine ring substructure
-    pyrimidine_pattern = Chem.MolFromSmarts("n1cccnc1")
-    if not mol.HasSubstructMatch(pyrimidine_pattern):
+    # Look for pyrimidine rings
+    pyrimidine_rings = [ring for ring in AllChem.GetSymmSSSR(mol) if sum(1 for atom in ring if atom.GetAtomicNum() in [7, 6]) == 5]
+    if not pyrimidine_rings:
         return False, "No pyrimidine ring found"
     
-    # Look for deoxyribose substructure
-    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]([C@H]([C@@H]1[C@H](CO)O[C@@H]1O)O)O")
-    if not mol.HasSubstructMatch(deoxyribose_pattern):
+    # Check for deoxyribose sugar
+    def is_deoxyribose(ring):
+        if not ring.GetNumAtoms() == 5:
+            return False
+        
+        # Check for oxygen and carbon atoms
+        oxygen_count = sum(1 for atom in ring if atom.GetAtomicNum() == 8)
+        carbon_count = sum(1 for atom in ring if atom.GetAtomicNum() == 6)
+        if oxygen_count != 1 or carbon_count != 4:
+            return False
+        
+        # Check for attached hydroxyl groups and CH2OH group
+        hydroxyl_count = sum(1 for atom in ring if atom.GetTotalNumHs() == 1 and atom.GetAtomicNum() == 8)
+        ch2oh_count = sum(1 for atom in ring if atom.GetDegree() == 3 and atom.GetAtomicNum() == 6 and sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1) == 1)
+        if not (hydroxyl_count == 2 and ch2oh_count == 1):
+            return False
+        
+        return True
+    
+    deoxyribose_rings = [ring for ring in AllChem.GetSymmSSSR(mol) if is_deoxyribose(ring)]
+    if not deoxyribose_rings:
         return False, "No deoxyribose sugar found"
     
     # Check if pyrimidine and deoxyribose are connected
-    atom_sets = [set(mol.GetAtomWithIdx(match_idx).GetNeighbors()) for match_idx in mol.GetSubstructMatches(pyrimidine_pattern)[0]]
-    deoxyribose_atoms = set(mol.GetSubstructMatch(deoxyribose_pattern))
-    if not any(atom_set & deoxyribose_atoms for atom_set in atom_sets):
-        return False, "Pyrimidine and deoxyribose not connected"
+    for pyrimidine_ring in pyrimidine_rings:
+        for deoxyribose_ring in deoxyribose_rings:
+            pyrimidine_atoms = set(pyrimidine_ring)
+            deoxyribose_atoms = set(deoxyribose_ring)
+            if any(atom_set & deoxyribose_atoms for atom_set in [set(atom.GetNeighbors()) for atom in pyrimidine_atoms]):
+                return True, "Contains a pyrimidine base connected to a deoxyribose sugar"
     
-    return True, "Contains a pyrimidine base connected to a deoxyribose sugar"
+    return False, "Pyrimidine and deoxyribose not connected"
 
 
 __metadata__ = {
@@ -50,31 +70,5 @@ __metadata__ = {
         'name': 'pyrimidine deoxyribonucleoside',
         'definition': 'A deoxyribonucleoside containing a pyrimidine base.'
     },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 43,
-    'num_false_positives': 0,
-    'num_true_negatives': 182443,
-    'num_false_negatives': 0,
-    'num_negatives': None,
-    'precision': 1.0,
-    'recall': 1.0,
-    'f1': 1.0,
-    'accuracy': 0.9997639944286905
+    # ... (rest of the metadata)
 }
