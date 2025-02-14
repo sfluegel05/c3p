@@ -21,19 +21,20 @@ def is_11beta_hydroxy_steroid(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the 11-beta hydroxyl group SMARTS pattern, using the specific stereo bond.
-    # This pattern focuses on the carbon at the 11-position and its neighbours,
-    # and not the whole steroid ring system, which is often hard to generalize.
     # Note that [C@H] indicates beta (up) config
     hydroxy_11beta_pattern = Chem.MolFromSmarts("[C]([C])[C@H](O)[C]")
     
     if not mol.HasSubstructMatch(hydroxy_11beta_pattern):
         return False, "No 11-beta-hydroxy group found"
-
-    # Define a relaxed steroid core with just 4 fused rings with specific number of C atoms in each
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C]2[C]3[C]4[C]1[C]5[C]2[C]([C]3)[C]45")
-
-    if not mol.HasSubstructMatch(steroid_core_pattern):
-        return False, "No steroid core structure detected"
-
+    
+    # Count the number of carbon atoms
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 17:
+         return False, f"Too few carbons, expected 17 in core, got {carbon_count}"
+    
+    # Check for four fused rings
+    four_ring_pattern = Chem.MolFromSmarts("[C]1~[C]~[C]~[C]~1~[C]~[C]~[C]~[C]~[C]~[C]~[C]~[C]")
+    if not mol.HasSubstructMatch(four_ring_pattern):
+        return False, "No steroid core structure detected (no 4 fused rings)"
 
     return True, "Molecule has a steroid core with an 11-beta-hydroxyl group"
