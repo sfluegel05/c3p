@@ -22,42 +22,56 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for a flavone or isoflavone-like core
-    # Define core substructures
-    # Benzene and pyrone
-    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
-    pyrone_pattern = Chem.MolFromSmarts("c1cc(=O)oc1") #or "c1cc(=O)cc1"
-    if not (mol.HasSubstructMatch(benzene_pattern) and mol.HasSubstructMatch(pyrone_pattern)):
-          return False, "No flavone/isoflavone-like core found (no benzene-pyrone combination)"
+    # 1. Check for isoflavone or flavone core
+    isoflavone_pattern = Chem.MolFromSmarts("c1cc(cc(c1)C2=CC(=O)c3ccccc3O2)O") # basic isoflavone or flavone core
+    if not mol.HasSubstructMatch(isoflavone_pattern):
+       isoflavone_pattern = Chem.MolFromSmarts("c1cc(cc(c1)C2=CC(=O)c3ccc(O)cc3O2)O") # basic isoflavone or flavone core with two O
+       if not mol.HasSubstructMatch(isoflavone_pattern):
+         return False, "No isoflavone/flavone core found"
 
-    # Check if the benzene is connected directly to the pyrone, A and B ring structure
-    a_ring_pattern = Chem.MolFromSmarts("c1cc(cc(c1)O)C(=O)c2ccccc2")  # A ring with OH group.
-    b_ring_pattern = Chem.MolFromSmarts("c1ccccc1O") #B-ring with OH group, this is very simple for now.
-    if not (mol.HasSubstructMatch(a_ring_pattern)): #require at least an A ring, and one OH on this ring.
-         return False, "A ring is missing"
-
-    # 2. Check for glycosylation (optional)
-    # Look for glycosidic bonds, C-O-C between a sugar and a core carbon
-    glycosidic_bond_pattern = Chem.MolFromSmarts("[C;R]-O-[C;R][OX2]")
-    sugar_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    is_glycosylated = len(sugar_matches) > 0
-
-    # 3. Check for multiple hydroxyl groups on rings
-    # count hydroxyls on ring
-    hydroxyl_pattern = Chem.MolFromSmarts("c1ccccc1O")
-    ring_hydroxyls = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    # 2. Check for multiple hydroxyl groups (at least 2, often more)
+    hydroxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OH]")))
+    if hydroxyl_count < 2:
+        return False, f"Too few hydroxyl groups: {hydroxyl_count}"
     
-    if ring_hydroxyls < 1: # At least one hydroxyl is required on a ring
-        return False, "Must have at least 1 hydroxyl on ring."
-
-    # 4. Molecular Weight check, acrovestones tend to be heavier
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-        return False, "Molecular weight too low for acrovestone"
-
-    #Final check
-    if ring_hydroxyls > 0 or is_glycosylated:
-         return True, "Matches acrovestone structural features"
+    # 3. Check for glycosylation (at least 1 sugar moiety)
+    sugar_pattern = Chem.MolFromSmarts("[C](-[O])-[C](-[O])-[C](-[O])-[C](-[O])-[C](-[O])-[C](-[O])") # check for 6-member sugar
+    
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    
+    
+    sugar_pattern_pentose = Chem.MolFromSmarts("[C](-[O])-[C](-[O])-[C](-[O])-[C](-[O])-[C](-[O])") #check for 5-member sugar
+    pentose_matches = mol.GetSubstructMatches(sugar_pattern_pentose)
 
 
-    return False, "Does not match acrovestone characteristics"
+    if len(sugar_matches) == 0 and len(pentose_matches) == 0:
+      
+      is_glycoside = False
+    else:
+      is_glycoside = True
+
+    if not is_glycoside and hydroxyl_count<3 : #some acrovestones are not glycosides but tend to have more OHs
+          return False, "No glycosylation detected, must have 3 or more hydroxyl groups"
+
+
+    # Check for methoxy groups
+    methoxy_pattern = Chem.MolFromSmarts("[OCH3]")
+    methoxy_count = len(mol.GetSubstructMatches(methoxy_pattern))
+
+    #4 check for prenyl pattern
+
+    prenyl_pattern = Chem.MolFromSmarts("CC(C)(O)CCC")
+    prenyl_matches = mol.GetSubstructMatches(prenyl_pattern)
+
+    # # 5. Verify substitution at expected positions (7, 4', 5 or 6) - This is difficult to do in a generalized way, not checking for now
+
+    #additional checks
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 15:
+        return False, "Too few carbons for acrovestone"
+
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count < 4:
+         return False, "Too few oxygens for acrovestone"
+    
+    return True, "Matches acrovestone structural features"
