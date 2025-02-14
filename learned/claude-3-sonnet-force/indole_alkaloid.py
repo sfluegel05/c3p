@@ -19,20 +19,20 @@ def is_indole_alkaloid(smiles: str):
         bool: True if molecule is an indole alkaloid, False otherwise
         str: Reason for classification
     """
-    
+
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for indole substructure that is part of a larger ring system
-    indole_alkaloid_pattern = Chem.MolFromSmarts("[r8;a]1nc2ccccc2[nH]1")
+
+    # Look for indole substructure that may be part of a larger ring system
+    indole_alkaloid_pattern = Chem.MolFromSmarts("c1ccc2c(c1)cnc2")
     has_indole_alkaloid = mol.HasSubstructMatch(indole_alkaloid_pattern)
-    
+
     # Look for basic nitrogen
     basic_nitrogen_pattern = Chem.MolFromSmarts("[N;H0;+]")
     has_basic_nitrogen = mol.HasSubstructMatch(basic_nitrogen_pattern)
-    
+
     # Classify as indole alkaloid if both conditions are met
     if has_indole_alkaloid and has_basic_nitrogen:
         return True, "Contains an indole skeleton fused to a larger ring system and a basic nitrogen atom"
