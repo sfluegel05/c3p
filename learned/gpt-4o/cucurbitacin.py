@@ -3,11 +3,11 @@ Classifies: CHEBI:16219 cucurbitacin
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+import re
 
 def is_cucurbitacin(smiles: str):
     """
     Determines if a molecule is a cucurbitacin based on its SMILES string.
-    Cucurbitacins are tetracyclic triterpenoids with specific functional groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,25 +21,23 @@ def is_cucurbitacin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Simplified pattern focusing on a tetracyclic triterpenoid core
-    tetracyclic_pattern = Chem.MolFromSmarts("C1CCC2C3C(CCC4C3CCC2C1)C4")
+    # Looking for cucurbitane backbone structure
+    tetracyclic_pattern = Chem.MolFromSmarts('C1CCC2C(C1)CCC3C2CCC4C3CCCC4')
     if not mol.HasSubstructMatch(tetracyclic_pattern):
-        return False, "No tetracyclic triterpenoid backbone found"
+        return False, "No tetracyclic cucurbitane backbone structure found"
 
-    # Check for at least two keto groups (C=O)
-    keto_pattern = Chem.MolFromSmarts("[CX3]=O")
+    # Checking for characteristic functional groups, e.g., hydroxyl (OH) and keto groups (C=O)
+    hydroxyl_count = len(re.findall(r'\[OH\]', smiles))
+    keto_pattern = Chem.MolFromSmarts('[CX3](=O)')
     keto_matches = mol.GetSubstructMatches(keto_pattern)
-    if len(keto_matches) < 2:
-        return False, f"Insufficient keto groups, found {len(keto_matches)}"
 
-    # Check for multiple hydroxyl groups (-OH)
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and any(neighbor.GetSymbol() == 'H' for neighbor in atom.GetNeighbors()))
-    if hydroxyl_count < 2:
-        return False, f"Insufficient hydroxyl groups, found {hydroxyl_count}"
+    # Cucurbitacins often possess multiple hydroxyl groups and keto moieties (at least 2 keto groups)
+    if hydroxyl_count < 2 or len(keto_matches) < 2:
+        return False, f"Insufficient characteristic functional groups: hydroxyls {hydroxyl_count}, ketones {len(keto_matches)}"
 
-    # Cucurbitacins are typically larger molecules; use descriptive, not strict mass range
+    # Check the molecular weight - cucurbitacins typically have higher molecular weights
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 400:
         return False, "Molecular weight too low for a typical cucurbitacin"
 
-    return True, "Contains tetracyclic backbone with characteristic functional groups"
+    return True, "Contains cucurbitane-like tetracyclic pattern with characteristic functional groups"
