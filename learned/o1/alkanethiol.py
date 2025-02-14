@@ -20,30 +20,14 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add explicit hydrogens to accurately count hydrogen atoms
-    mol = Chem.AddHs(mol)
-
-    # Initialize flag
-    is_alkanethiol = False
-
-    # Iterate over atoms to find sulfur atoms
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 16:  # Sulfur atom
-            # Count hydrogens attached to sulfur
-            num_hydrogens = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 1)
-            # Check if sulfur has exactly one hydrogen attached
-            if num_hydrogens == 1:
-                # Check for carbon neighbors
-                has_carbon_neighbor = any(neighbor.GetAtomicNum() == 6 for neighbor in atom.GetNeighbors())
-                # Check for other heteroatoms connected to sulfur
-                has_other_heteroatoms = any(
-                    neighbor.GetAtomicNum() not in [1, 6, 16] for neighbor in atom.GetNeighbors()
-                )
-                if has_carbon_neighbor and not has_other_heteroatoms:
-                    is_alkanethiol = True
-                    break  # Found the required group
-
-    if is_alkanethiol:
-        return True, "Contains a sulfanyl group (-SH) attached to an alkyl group"
-    else:
+    # Define thiol pattern: sulfur (S) with one hydrogen (H) attached and connected to carbon (C)
+    thiol_pattern = Chem.MolFromSmarts("[#16H1]-[#6]")
+    if not mol.HasSubstructMatch(thiol_pattern):
         return False, "Does not contain an -SH group attached to an alkyl group"
+
+    # Define amide bond pattern: carbonyl group attached to nitrogen (peptide bond)
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Contains amide bonds (peptide), not an alkanethiol"
+
+    return True, "Contains a sulfanyl group (-SH) attached to an alkyl group"
