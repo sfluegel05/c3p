@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_organic_sulfide(smiles: str):
     """
     Determines if a molecule is an organic sulfide based on its SMILES string.
-    An organic sulfide has a sulfur atom bonded to two carbon atoms, represented as C-S-C.
+    An organic sulfide has a sulfur atom bonded to two carbon atoms, represented as R-S-R.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,27 +16,28 @@ def is_organic_sulfide(smiles: str):
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse SMILES string to RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for an organic sulfide (C-S-C)
-    sulfide_pattern = Chem.MolFromSmarts("[C;!H0]S[C;!H0]")  # Carbon attached directly to sulfur, not hydrogen
+    # Define SMARTS pattern: Match sulfur with two alkyl/aromatic groups
+    sulfide_pattern = Chem.MolFromSmarts("[C;!H0][S][C;!H0]")  # Avoid chemo-specific [SH] types
 
-    # Check if the molecule matches the sulfide pattern
+    # Check molecule for organic sulfide structure
     if mol.HasSubstructMatch(sulfide_pattern):
-        return True, "Contains organic sulfide group (C-S-C)"
+        return True, "Contains organic sulfide group (R-S-R where R is not H)"
     else:
         return False, "No organic sulfide group found"
 
-# Test examples
+# Test with various SMILES examples
 test_smiles = [
     "CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@H](O[C@H]3O[C@H](CO)[C@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@@H](CO)O[C@H]1OCCSCCC(N)=O",
     "C\\C=C\\S\\C=C\\C",
     "CSC1=N[C@](C)(C(=O)N1Nc1ccccc1)c1ccccc1",
     "S(C(C)C)C(C)C",
     "CC1=C(C=C(C=C1)SC2=C(C=CC=N2)C(=O)O)C",
+    "CCOP(=S)(OCC)SCSc1ccc(Cl)cc1",
 ]
 
 for smiles in test_smiles:
