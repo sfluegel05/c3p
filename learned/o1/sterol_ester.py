@@ -5,8 +5,6 @@ Classifies: CHEBI:35915 sterol ester
 Classifies: CHEBI:35366 sterol ester
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdChemReactions
 
 def is_sterol_ester(smiles: str):
     """
@@ -26,14 +24,12 @@ def is_sterol_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the steroid nucleus with IUPAC numbering
-    steroid_nucleus_smarts = """
-    [#6;R1]1-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-1
-    -[#6;R1]2-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-2
-    -[#6;R1]3-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-3
-    -[#6;R1]4-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-4
-    """
+    # Define the steroid nucleus SMARTS pattern (corrected formatting)
+    steroid_nucleus_smarts = '[#6;R1]1-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-1-[#6;R1]2-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-2-[#6;R1]3-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-3-[#6;R1]4-[#6;R1]-[#6;R1]-[#6;R1]-[#6;R1]-4'
     steroid_pattern = Chem.MolFromSmarts(steroid_nucleus_smarts)
+    if steroid_pattern is None:
+        return False, "Invalid steroid SMARTS pattern"
+
     if not mol.HasSubstructMatch(steroid_pattern):
         return False, "No steroid nucleus found"
 
@@ -132,13 +128,17 @@ M  END
 
     # Check if the atom at position 3 is connected via an ester linkage
     # Ester pattern: [CX3](=O)[OX2H0][#6]
-    ester_pattern = Chem.MolFromSmarts('[CX3](=O)[O][#6]')
+    ester_pattern = Chem.MolFromSmarts('[CX3](=O)[OX2][#6]')
+    if ester_pattern is None:
+        return False, "Invalid ester SMARTS pattern"
+
     esters = mol.GetSubstructMatches(ester_pattern)
 
     # Check if any ester oxygen is connected to position 3
     is_esterified = False
     for ester in esters:
         ester_oxygen = ester[1]
+        ester_carbonyl = ester[0]
         if ester_oxygen in [nbr.GetIdx() for nbr in mol.GetAtomWithIdx(position_3).GetNeighbors()]:
             is_esterified = True
             break
