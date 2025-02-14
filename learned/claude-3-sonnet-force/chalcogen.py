@@ -5,7 +5,6 @@ Classifies: CHEBI:33303 chalcogen
 Classifies: CHEBI:33373 chalcogen
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_chalcogen(smiles: str):
     """
@@ -25,39 +24,18 @@ def is_chalcogen(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Exclude known non-chalcogen species
-    if smiles in ["[H]OO[H]", "[O-][O+]=O"]:
-        return False, "The molecule is a known non-chalcogen species"
+    # Check if there is only one atom in the molecule
+    if mol.GetNumAtoms() != 1:
+        return False, "Chalcogen must be a single atom"
     
-    # Check for chalcogen elements
-    chalcogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() in [8, 16, 34, 52, 84, 118]]
-    if not chalcogen_atoms:
-        return False, "The molecule does not contain any chalcogen elements"
+    # Get the atomic number of the single atom
+    atom = mol.GetAtoms()[0]
+    atomic_number = atom.GetAtomicNum()
     
-    # Check for common chalcogen functional groups
-    chalcogen_patterns = ['[OX2H]',  # Alcohols and phenols
-                          '[OX2H0]',  # Ethers
-                          '[SX2H]',  # Thiols
-                          '[SX2H0]',  # Thioethers
-                          '[SeX2H]',  # Selenols
-                          '[SeX2H0]', # Selenoethers
-                          '[OX1H0]',  # Oxides
-                          '[SX1H0]',  # Sulfides
-                          '[SeX1H0]', # Selenides
-                          '[OX1H1]',  # Hydroxy groups
-                          '[SX1H1]',  # Mercaptans
-                          '[SeX1H1]', # Selenols
-                          '[OX1H2]',  # Water
-                          '[OX1H0-]', # Oxoanions
-                          '[SX1H0-]', # Sulfanions
-                          '[SeX1H0-]' # Selenanions
-                         ]
-    
-    chalcogen_groups = []
-    for pattern in chalcogen_patterns:
-        chalcogen_groups.extend(mol.GetSubstructMatches(Chem.MolFromSmarts(pattern)))
-    
-    if chalcogen_groups:
-        return True, "The molecule contains chalcogen functional groups"
+    # Check if the atomic number corresponds to a chalcogen element
+    chalcogens = [8, 16, 34, 52, 84, 118]  # Atomic numbers of chalcogen elements
+    if atomic_number in chalcogens:
+        element_symbol = atom.GetSymbol()
+        return True, f"The single atom with symbol '{element_symbol}' is a chalcogen element"
     else:
-        return False, "The molecule does not contain any recognized chalcogen functional groups"
+        return False, "The single atom is not a chalcogen element"
