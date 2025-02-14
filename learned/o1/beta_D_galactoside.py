@@ -26,17 +26,8 @@ def is_beta_D_galactoside(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for beta-D-galactoside with correct stereochemistry
-    # The pattern represents beta-D-galactopyranose linked via an O-glycosidic bond at the anomeric carbon (C1)
-    beta_D_galactoside_smarts = """
-    [C@H]1([O][#6])                 # Anomeric carbon C1 with beta-configuration connected via O to any carbon
-    [C@@H](O)                       # C2 with OH group
-    [C@@H](O)                       # C3 with OH group
-    [C@@H](O)                       # C4 with OH group
-    [C@H](O)[C@H]1O                 # C5 and closure of the ring with ring oxygen
-    """
-
-    # Remove whitespace and newlines from SMARTS
-    beta_D_galactoside_smarts = ''.join(beta_D_galactoside_smarts.strip().split())
+    # The pattern represents beta-D-galactose with a glycosidic linkage at the anomeric carbon (C1)
+    beta_D_galactoside_smarts = "[C@H]1(O[C;!H0])[C@@H](O)[C@@H](O)[C@@H](O)[C@H](O)[C@H]1O"
 
     beta_D_galactoside_mol = Chem.MolFromSmarts(beta_D_galactoside_smarts)
     if beta_D_galactoside_mol is None:
