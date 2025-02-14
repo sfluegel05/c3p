@@ -23,8 +23,14 @@ def is_carbamate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for carbamate ester group (more specific)
-    carbamate_pattern = Chem.MolFromSmarts("[N;!H0]-[C](=[O])-[O;!H0]")
+    # SMARTS pattern for carbamate ester group
+    carbamate_pattern = Chem.MolFromSmarts("[N]-C(=O)-[O]")
+    # SMARTS pattern for amides
+    amide_pattern = Chem.MolFromSmarts("[N]-C(=O)-[C]")
+
+    # Check for amides
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Contains an amide, not a carbamate"
     
     #Check for the carbamate pattern
     if mol.HasSubstructMatch(carbamate_pattern):
