@@ -23,13 +23,13 @@ def is_glucosylceramide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for beta-D-glucose
-    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@@H](O)[C@H](O)[C@H](CO)O)O[C@H]1")
+    glucose_pattern = Chem.MolFromSmarts("[OX2][C@H]1[C@@H]([C@@H](O)[C@H](O)[C@H](CO)O)O[C@H]1")
     if not mol.HasSubstructMatch(glucose_pattern):
          return False, "No beta-D-glucose head group found"
 
     # Check for sphingosine/sphinganine backbone.
-    # Look for a chain of at least 12 carbons with one alcohol and one amide.
-    sphingosine_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CHX4]([OX2])[CHX4]([NX3])")
+    # Look for a chain of at least 10 carbons with one alcohol and one amide.
+    sphingosine_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4,CX3]([OX2])[CHX4]([NX3])")
     if not mol.HasSubstructMatch(sphingosine_pattern):
          return False, "No sphingosine or sphinganine backbone found"
          
@@ -43,13 +43,5 @@ def is_glucosylceramide(smiles: str):
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 1:
          return False, "No fatty acid chain found"
-        
-    # Check rotatable bonds and carbon count
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_rotatable < 10:
-        return False, "Fatty acid chain too short"
-    if c_count < 20:
-        return False, "Too few carbons for glucosylceramide"
     
     return True, "Contains a beta-D-glucose head group, sphingosine/sphinganine backbone and a fatty acid via an amide bond"
