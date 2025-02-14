@@ -20,11 +20,9 @@ def is_7_hydroxyisoflavones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define SMARTS for the 7-hydroxyisoflavone core structure
-    # Using 'a' as generic atom to allow substitutions, 'O' is the key for the 7-OH
-    core_pattern = Chem.MolFromSmarts('a1cc(O)cc2c(a1)c(=O)oc2')
+    # 'X4' is to specify that the hydroxyl group is attached to a carbon with 4 bonds
+    core_pattern = Chem.MolFromSmarts('c1cc(O)cc2c1c(=O)oc2')
     if not mol.HasSubstructMatch(core_pattern):
-         core_pattern = Chem.MolFromSmarts('a1cc(O)cc2c(a1)oc(=O)c2')
-         if not mol.HasSubstructMatch(core_pattern):
-            return False, "Molecule does not have the 7-hydroxyisoflavone core structure"
+         return False, "Molecule does not have the 7-hydroxyisoflavone core structure"
 
     return True, "Molecule has the 7-hydroxyisoflavone core with a hydroxyl group at the 7-position"
