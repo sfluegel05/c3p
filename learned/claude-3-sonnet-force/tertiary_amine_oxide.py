@@ -1,28 +1,88 @@
 """
 Classifies: CHEBI:134363 tertiary amine oxide
 """
-Previous Attempt Analysis:
+"""
+Classifies: CHEBI:50786 tertiary amine oxide
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-The previous program did not work effectively for classifying tertiary amine oxides. There are a few potential reasons for this:
+def is_tertiary_amine_oxide(smiles: str):
+    """
+    Determines if a molecule is a tertiary amine oxide based on its SMILES string.
+    A tertiary amine oxide is an N-oxide where there are three organic groups bonded to the nitrogen atom.
 
-1. **Identifying the N-oxide group**: The program correctly looks for the presence of a single N-oxide group (N=O) in the molecule. However, it does not distinguish between N-oxides of tertiary amines and other types of N-oxides (e.g., on pyridines, imines, etc.).
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Checking organic groups on N-oxide**: The program checks if the nitrogen atom attached to the N-oxide has exactly three neighbors that are not oxygen atoms. While this is a necessary condition for tertiary amine oxides, it is not sufficient. The program does not explicitly check if these "organic groups" are indeed alkyl/aryl groups or other types of substituents.
+    Returns:
+        bool: True if molecule is a tertiary amine oxide, False otherwise
+        str: Reason for classification
+    """
 
-3. **Checking for tertiary amine structure**: The program attempts to check if the organic groups are not just hydrogen atoms by checking if their degree is greater than 1. However, this is a flawed approach as it does not account for cases where the organic group is a small alkyl/aryl group (e.g., methyl, phenyl) which would still have a degree of 1.
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-4. **Lack of additional checks**: The program does not perform any additional checks to validate the structure as a tertiary amine oxide, such as checking the overall connectivity, ring systems, or other structural features.
+    # Look for N-oxide pattern ([N+](=O)[!O;!H])
+    n_oxide_pattern = Chem.MolFromSmarts("[N+](=O)[!O;!H]")
+    n_oxide_matches = mol.GetSubstructMatches(n_oxide_pattern)
+    if len(n_oxide_matches) != 1:
+        return False, f"Found {len(n_oxide_matches)} N-oxide groups, need exactly one"
 
-Improvement Strategies:
+    # Check if N-oxide is tertiary (3 organic groups attached)
+    n_oxide_idx = n_oxide_matches[0][0]
+    n_oxide_atom = mol.GetAtomWithIdx(n_oxide_idx)
+    organic_neighbors = [nbr for nbr in n_oxide_atom.GetNeighbors() if nbr.GetAtomicNum() != 8 and nbr.GetAtomicNum() != 1]
+    if len(organic_neighbors) != 3:
+        return False, f"N-oxide has {len(organic_neighbors)} organic neighbors, need exactly 3"
 
-To improve the classification of tertiary amine oxides, we can consider the following strategies:
+    # Check if organic groups are alkyl/aryl
+    alkyl_aryl_pattern = Chem.MolFromSmarts("[C;A]")
+    for nbr in organic_neighbors:
+        if not mol.GetAtomWithIdx(nbr.GetIdx()).HasSubstructMatch(alkyl_aryl_pattern):
+            return False, "One of the organic groups is not alkyl or aryl"
 
-1. **Use SMARTS patterns**: SMARTS patterns can be used to explicitly match the tertiary amine oxide substructure, including the N-oxide group and the three organic substituents on the nitrogen atom.
+    # Additional checks (e.g., connectivity, rings, etc.)
+    # ...
 
-2. **Check for alkyl/aryl groups**: Instead of just counting the number of non-oxygen neighbors, we can use SMARTS patterns or other methods to explicitly check if the three substituents on the nitrogen atom are indeed alkyl or aryl groups.
+    return True, "Molecule is a tertiary amine oxide"
 
-3. **Perform additional structural checks**: We can implement additional checks to validate the overall structure, such as checking for the presence of rings, ensuring the organic groups are connected to the N-oxide in the expected way, and checking for other structural features consistent with tertiary amine oxides.
 
-4. **Use machine learning models**: If the above rule-based approaches are not sufficient, we could consider training machine learning models on a dataset of tertiary amine oxides and non-tertiary amine oxides to learn the relevant structural features.
-
-Considering the benchmark data and the provided examples, it appears that the classification of tertiary amine oxides may require more complex structural analysis than what the previous program attempted. A combination of SMARTS patterns, connectivity checks, and additional structural validation may be necessary to achieve a high level of accuracy.
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:50786',
+        'name': 'tertiary amine oxide',
+        'definition': 'An N-oxide where there are three organic groups bonded to the nitrogen atom.',
+        'parents': ['CHEBI:35428', 'CHEBI:50781']
+    },
+    'config': {
+        'llm_model_name': 'lbl/claude-sonnet',
+        'f1_threshold': 0.8,
+        'max_attempts': 5,
+        'max_positive_instances': None,
+        'max_positive_to_test': None,
+        'max_negative_to_test': None,
+        'max_positive_in_prompt': 50,
+        'max_negative_in_prompt': 20,
+        'max_instances_in_prompt': 100,
+        'test_proportion': 0.1
+    },
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 442,
+    'num_false_positives': 10,
+    'num_true_negatives': 182458,
+    'num_false_negatives': 3,
+    'num_negatives': None,
+    'precision': 0.9782608695652174,
+    'recall': 0.9932038834951456,
+    'f1': 0.9856380457521599,
+    'accuracy': 0.9998479811417816
+}
