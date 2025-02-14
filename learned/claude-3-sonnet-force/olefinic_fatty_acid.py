@@ -6,7 +6,6 @@ Classifies: CHEBI:37722 olefinic fatty acid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_olefinic_fatty_acid(smiles: str):
     """
@@ -36,18 +35,23 @@ def is_olefinic_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(olefin_pattern):
         return False, "No C=C double bonds found"
     
-    # Check for long carbon chains (fatty acids are typically > 8 carbons)
-    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCCC")
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "Carbon chain too short for a fatty acid"
-    
     # Count carbons and oxygens
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    if c_count < 12:
+    if c_count < 10:
         return False, "Too few carbons for a fatty acid"
-    if o_count != 2:
-        return False, "Must have exactly 2 oxygens (carboxylic acid group)"
+    if o_count < 2:
+        return False, "Must have at least 2 oxygens (carboxylic acid group)"
     
-    return True, "Contains a carboxylic acid group and at least one C=C double bond"
+    # Additional checks to distinguish olefinic fatty acids
+    aliphatic_chain_pattern = Chem.MolFromSmarts("CCCCCCCCC")
+    if not mol.HasSubstructMatch(aliphatic_chain_pattern):
+        return False, "No aliphatic chain found"
+    
+    methyl_pattern = Chem.MolFromSmarts("C")
+    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
+    if len(methyl_matches) > 1:
+        return False, "More than one methyl group found"
+    
+    return True, "Contains a carboxylic acid group, at least one C=C double bond, and meets additional criteria for olefinic fatty acids"
