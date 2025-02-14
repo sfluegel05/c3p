@@ -22,42 +22,39 @@ def is_corrinoid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # remove metals and charges so that the substructure matching works
+    mol_no_metals = Chem.Mol(mol)
+    for atom in mol_no_metals.GetAtoms():
+        if atom.GetAtomicNum() > 20:
+            mol_no_metals.RemoveAtom(atom.GetIdx())
+    for atom in mol_no_metals.GetAtoms():
+        atom.SetFormalCharge(0)
 
-    # Define a combined SMARTS pattern that captures the corrin core connectivity
-    corrin_pattern = Chem.MolFromSmarts(
-        "[NX3;!$(N-)]1-[CX3H]~[CX3H]~[NX3;!$(N-)]2-[CX3H]~[CX3H]~[NX3;!$(N-)]3-[CX3H]~[CX3H]~[NX3;!$(N-)]4-[CX3H]~[CX3H]1"
-    ) # ring closure explicitly included
 
-    #Match the pattern for the corrin core
-    if not mol.HasSubstructMatch(corrin_pattern):
+    # Define a simplified SMARTS pattern for the corrin core, focusing on connectivity of the four nitrogen atoms.
+    # The pattern matches the four nitrogens connected through four 5-membered rings.
+    corrin_pattern = Chem.MolFromSmarts("[NX3;!$(N-)]1~[C]~[C]~[N;!$(N-)]~[C]~[C]~[N;!$(N-)]~[C]~[C]~[N;!$(N-)]~[C]~[C]1")
+    
+    if not mol_no_metals.HasSubstructMatch(corrin_pattern):
         return False, "Corrin core pattern not found."
 
-    # Check that the corrin core is part of a larger ring system
-    corrin_core_matches = mol.GetSubstructMatches(corrin_pattern)
-    if len(corrin_core_matches) == 0:
-        return False, "Could not match corrin core"
 
-    # Check for C=C or C-C bonds in the pyrrole rings
-    pyrrole_pattern_1 = Chem.MolFromSmarts("[NX3;!$(N-)]1[CX3H]=[CX3H][CX3H][CX3H]1")
-    pyrrole_pattern_2 = Chem.MolFromSmarts("[NX3;!$(N-)]1[CX3H][CX3H]=[CX3H][CX3H]1")
-    pyrrole_pattern_3 = Chem.MolFromSmarts("[NX3;!$(N-)]1[CX3H][CX3H][CX3H][CX3H]1") # fully reduced
+    # Check for the presence of at least four pyrrole rings by checking for 5-membered rings containing nitrogen
+    # A more relaxed pattern captures all pyrroles regardless of saturation
+    pyrrole_pattern = Chem.MolFromSmarts("[NX3;!$(N-)]1[C][C][C][C]1") #5-membered ring containing N
+    pyrrole_matches = mol_no_metals.GetSubstructMatches(pyrrole_pattern)
+    if len(pyrrole_matches) < 4 :
+         return False, f"Found only {len(pyrrole_matches)} pyrrole rings. Need at least 4."
 
-    matches_pyrrole_1 = mol.GetSubstructMatches(pyrrole_pattern_1)
-    matches_pyrrole_2 = mol.GetSubstructMatches(pyrrole_pattern_2)
-    matches_pyrrole_3 = mol.GetSubstructMatches(pyrrole_pattern_3)
+    # Check for the methine bridges connecting the pyrroles
+    # Using a relaxed pattern that accounts for single or double bonds on either side.
+    methine_pattern = Chem.MolFromSmarts("[NX3;!$(N-)]-[CX3H]=[CX3H]-[C]-[NX3;!$(N-)]") #single bond version
+    methine_matches = mol_no_metals.GetSubstructMatches(methine_pattern)
+    methine_pattern2 = Chem.MolFromSmarts("[NX3;!$(N-)]-[CX3H]=[CX3H]=[CX3H]-[NX3;!$(N-)]") #double bond version
+    methine_matches2 = mol_no_metals.GetSubstructMatches(methine_pattern2)
+    total_methine_matches = len(methine_matches) + len(methine_matches2)
+    if total_methine_matches < 3:
+        return False, f"Found only {total_methine_matches} methine bridges. Need at least 3."
 
-    total_pyrroles = len(matches_pyrrole_1) + len(matches_pyrrole_2) + len(matches_pyrrole_3)
-
-    if total_pyrroles < 4:
-        return False, f"Found only {total_pyrroles} pyrrole rings."
-
-    # Check for the methine bridges and ensure they are connecting the pyrrole rings
-    methine_pattern = Chem.MolFromSmarts("[NX3;!$(N-)]-[CX3H]=[CX3H]-[CX3H]=[CX3H]-[NX3;!$(N-)]")
-    methine_matches = mol.GetSubstructMatches(methine_pattern)
-    if len(methine_matches) < 3:
-        return False, f"Found {len(methine_matches)} methine bridges. Need at least 3."
-
-    # check for a direct C-C bond linking alpha positions of the pyrroles using the corrin_pattern
-    # this is captured in corrin_pattern already
-        
     return True, "Contains a corrin nucleus with four pyrroles, 3 methine bridges and a direct C-C bond."
