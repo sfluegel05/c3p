@@ -35,19 +35,23 @@ def is_triterpenoid(smiles: str):
     # Look for common triterpenoid skeletons (e.g., lanostane, cycloartane, friedelane, etc.)
     skeletons = ['[C@H]1[C@@]2([C@@H](C[C@@]3([C@]1(C)CCC3(C)C)C)CCC2)C', # lanostane
                  '[C@@]12[C@@H](C[C@@H](C1)C)CCC3=[C]2CCC4[C@]3(CCC(=C4)C)C', # cycloartane
-                 '[C@@]12[C@@H](C[C@H](C1)C)CCC3=[C]2[C@H](CC4[C@@]3(CCC(=C4)C)C)C', # friedelane
-                 # Add more skeletons as needed
-                 ]
+                 '[C@@]12[C@@H](C[C@H](C1)C)CCC3=[C]2[C@H](CC4[C@@]3(CCC(=C4)C)C)C'] # friedelane
+    
     for skeleton in skeletons:
-        skeleton_mol = Chem.MolFromSmarts(skeleton)
-        if mol.HasSubstructMatch(skeleton_mol):
-            return True, f"Contains {skeleton_mol.GetProp('_Name')} skeleton, a common triterpenoid scaffold"
+        try:
+            skeleton_mol = Chem.MolFromSmarts(skeleton)
+            if skeleton_mol is not None:
+                if mol.HasSubstructMatch(skeleton_mol):
+                    return True, f"Contains {skeleton_mol.GetProp('_Name')} skeleton, a common triterpenoid scaffold"
+        except Exception as e:
+            print(f"Error processing SMARTS pattern '{skeleton}': {e}")
     
     # Check for rearranged/modified C30 skeleton
     rearranged_pattern = Chem.MolFromSmarts('[C@H]1[C@]2([C@H](C[C@@]3([C@]1(C)CCC3(C)C)C)CCC2)C' # lanostane with modified/removed methyl groups
                                              '|[C@@]12[C@@H](C[C@@H](C1)C)CCC3=[C]2CCC4[C@]3(CCC(=C4)C)C' # cycloartane with modified/removed methyl groups
                                              '|[C@@]12[C@@H](C[C@H](C1)C)CCC3=[C]2[C@H](CC4[C@@]3(CCC(=C4)C)C)C') # friedelane with modified/removed methyl groups
-    if mol.HasSubstructMatch(rearranged_pattern):
-        return True, "Contains a rearranged/modified C30 skeleton derived from a common triterpenoid scaffold"
+    if rearranged_pattern is not None:
+        if mol.HasSubstructMatch(rearranged_pattern):
+            return True, "Contains a rearranged/modified C30 skeleton derived from a common triterpenoid scaffold"
     
     return False, "No evidence of a triterpenoid scaffold"
