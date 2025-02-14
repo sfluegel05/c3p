@@ -1,49 +1,20 @@
 """
 Classifies: CHEBI:16158 steroid sulfate
 """
-"""
-Classifies: CHEBI:27913 steroid sulfate
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+After analyzing the previous program and the given outcomes, it appears that the failure to classify any molecules as steroid sulfates is likely due to the overly strict definition of the steroid backbone pattern used in the code.
 
-def is_steroid_sulfate(smiles: str):
-    """
-    Determines if a molecule is a steroid sulfate based on its SMILES string.
-    A steroid sulfate is a sulfuric ester obtained by the formal condensation
-    of a hydroxy group of any steroid with sulfuric acid.
+The SMARTS pattern used for the steroid backbone is highly specific and only matches a particular subset of steroid structures. However, steroid sulfates can have various structural modifications and variations in the steroid core, making it challenging to capture all possible structures with a single rigid pattern.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+To improve the program and increase its ability to correctly identify steroid sulfates, the following modifications can be made:
 
-    Returns:
-        bool: True if molecule is a steroid sulfate, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Check for steroid backbone pattern
-    steroid_backbone_pattern = Chem.MolFromSmarts("[C@]1(CC[C@@]2([H])[C@]3([H])C[C@H]([C@H]4[C@@]5([C@H]([C@@H]([C@@H]5CC=C6C[C@@H]4C=C7[C@@H]6C[C@@H]7[H])O)[H])C)=C3CCC2=O)C[C@@H]1[H]"
-    if not mol.HasSubstructMatch(steroid_backbone_pattern):
-        return False, "No steroid backbone found"
-    
-    # Look for sulfate group pattern (-OS(=O)(=O)O)
-    sulfate_pattern = Chem.MolFromSmarts("[OX2][SX4](=[OX1])(=[OX1])[OX2]")
-    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
-    if not sulfate_matches:
-        return False, "No sulfate group found"
-    
-    # Check if sulfate group is attached to an oxygen of a hydroxy group
-    for match in sulfate_matches:
-        sulfate_atom = mol.GetAtomWithIdx(match[0])
-        sulfate_neighbors = [mol.GetAtomWithIdx(neighbor_idx) for neighbor_idx in sulfate_atom.GetNeighbors()]
-        if any(neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1 for neighbor in sulfate_neighbors):
-            # Sulfate group is attached to a hydroxy group
-            return True, "Contains a steroid backbone with a sulfate group attached to a hydroxy group"
-    
-    return False, "Sulfate group is not attached to a hydroxy group"
+1. **Relax the steroid backbone pattern**: Instead of using a highly specific SMARTS pattern, a more general pattern that captures the essential features of steroid structures, such as the tetracyclic ring system and the presence of specific ring junctions, can be used. This will allow the program to recognize a broader range of steroid sulfate structures.
+
+2. **Consider additional structural features**: In addition to the steroid backbone and the sulfate group, other structural features can be taken into account to enhance the classification accuracy. For example, checking for the presence of specific functional groups or substituents commonly found in steroid sulfates can help differentiate them from other steroid derivatives.
+
+3. **Use machine learning techniques**: If the rule-based approach proves too limiting, machine learning techniques like supervised learning or deep learning can be explored. These techniques can learn the patterns and features of steroid sulfates from a labeled dataset, potentially leading to better classification performance.
+
+4. **Utilize external databases and resources**: Consulting external databases or resources that provide information on known steroid sulfate structures can aid in refining the classification rules or generating a dataset for machine learning approaches.
+
+It's important to note that the classification of chemical structures is a complex task, and there may be edge cases or ambiguities that require careful consideration. Additionally, the benchmark dataset itself may contain errors or inconsistencies, which could lead to unexpected outcomes.
+
+In such cases, it is advisable to rely on your understanding of chemistry and the definition of the chemical class, and document any assumptions or deviations from the benchmark data. The ultimate goal should be to create a program that accurately reflects the scientific understanding of steroid sulfates while maintaining flexibility to accommodate structural variations.
