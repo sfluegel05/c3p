@@ -6,6 +6,7 @@ Classifies: CHEBI:18115 2'-deoxyribonucleoside 5'-monophosphate
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     """
@@ -23,26 +24,38 @@ def is_2__deoxyribonucleoside_5__monophosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for 2'-deoxyribo sugar pattern
-    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]([C@H]([C@@H]([C@H](CO)O)O)O)[C@@H]1C(=O)N")
+    # Check for deoxyribose sugar
+    deoxyribose_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@H]([C@H](CO)O)O)O)[C@@H]1[CH]O1")
     if not mol.HasSubstructMatch(deoxyribose_pattern):
         return False, "No 2'-deoxyribose sugar found"
 
-    # Look for phosphate group at 5' position
-    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O[C@@H]1[C@H]([C@@H]([C@H](O1)O)O)N")
+    # Check for phosphate group
+    phosphate_pattern = Chem.MolFromSmarts("OP(O)(=O)O")
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No 5'-phosphate group found"
+        return False, "No phosphate group found"
 
     # Check for nucleobase
-    nucleobase_patterns = [
-        Chem.MolFromSmarts("n1cnc2c1ncnc2"),  # Adenine
-        Chem.MolFromSmarts("Nc1ccnc2ncnc12"),  # Guanine
-        Chem.MolFromSmarts("Nc1ccnc(=O)n1"),  # Cytosine
-        Chem.MolFromSmarts("Oc1ccnc(=O)n1"),  # Uracil
-        Chem.MolFromSmarts("Cc1c[nH]c(=O)[nH]c1=O"),  # Thymine
-    ]
-    has_nucleobase = any(mol.HasSubstructMatch(pattern) for pattern in nucleobase_patterns)
-    if not has_nucleobase:
-        return False, "No valid nucleobase found"
+    nucleobase_pattern = Chem.MolFromSmarts("a1a2a3a4a5a6")  # Any aromatic ring system
+    if not mol.HasSubstructMatch(nucleobase_pattern):
+        return False, "No nucleobase found"
+
+    # Check for connection between deoxyribose and phosphate
+    deoxyribose_phosphate_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@H]([C@H](CO)O)O)O)[C@@H]1[CH]O1OP(O)(=O)O")
+    if not mol.HasSubstructMatch(deoxyribose_phosphate_pattern):
+        return False, "Deoxyribose and phosphate not connected"
+
+    # Check for connection between deoxyribose and nucleobase
+    deoxyribose_nucleobase_pattern = Chem.MolFromSmarts("[C@H]([C@@H]([C@H]([C@H](CO)O)O)O)[C@@H]1[CH]O1a1a2a3a4a5a6")
+    if not mol.HasSubstructMatch(deoxyribose_nucleobase_pattern):
+        return False, "Deoxyribose and nucleobase not connected"
+
+    # Additional checks
+    num_atoms = mol.GetNumAtoms()
+    if num_atoms < 15 or num_atoms > 50:
+        return False, "Molecule size outside expected range"
+
+    num_rings = rdMolDescriptors.CalcNumRings(mol)
+    if num_rings < 1 or num_rings > 3:
+        return False, "Number of rings outside expected range"
 
     return True, "Contains 2'-deoxyribose sugar with 5'-phosphate group and a nucleobase"
