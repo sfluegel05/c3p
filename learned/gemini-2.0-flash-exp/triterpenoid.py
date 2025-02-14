@@ -42,16 +42,12 @@ def is_triterpenoid(smiles: str):
     if mol_wt < 300 or mol_wt > 1500:
         return False, f"Molecular weight out of range {mol_wt}, must be between 300 and 1500."
 
+    # General polycyclic pattern
+    polycyclic_smarts = "[C;R]1[C;R][C;R]2[C;R][C;R]3[C;R]([C;R]1)[C;R]([C;R]2)[C;R]3"
+    polycyclic_pattern = Chem.MolFromSmarts(polycyclic_smarts)
+    if polycyclic_pattern is None:
+        return False, "Invalid SMARTS pattern"
+    if not mol.HasSubstructMatch(polycyclic_pattern):
+        return False, "Does not have a polycyclic core structure"
 
-    # Define a SMARTS pattern for the core triterpenoid structure (multiple fused rings with 4 or 5 member rings)
-    # This is a very generic pattern and may be too broad, but it's a starting point, and can be made more precise later if needed.
-    # I am specifically looking for a 5-membered carbon ring fused to at least two other carbon rings.
-    triterpenoid_core_smarts = "[C;R5]1([C;R])([C;R])[C;R]2([C;R])([C;R])[C;R]3([C;R])([C;R])123"
-    core_pattern = Chem.MolFromSmarts(triterpenoid_core_smarts)
-    if core_pattern is None:
-         return False, "Invalid SMARTS pattern."
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Does not match the triterpenoid core structure"
-
-
-    return True, "Meets criteria for a triterpenoid (multiple rings, appropriate C count, O count, molecular weight, and core structure)."
+    return True, "Meets criteria for a triterpenoid (multiple rings, appropriate C count, O count, molecular weight, and polycyclic core structure)."
