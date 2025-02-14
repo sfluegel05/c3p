@@ -28,27 +28,41 @@ def is_fatty_aldehyde(smiles: str):
     
     # Look for aldehyde functional group (-CHO) at the end of a carbon chain
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)[#6]")
-    if not mol.HasSubstructMatch(aldehyde_pattern):
+    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
+    
+    if not aldehyde_matches:
         return False, "No aldehyde group found"
     
-    aldehyde_atom = mol.GetSubstructMatch(aldehyde_pattern)[0]
-    aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_atom)
+    # Check if the aldehyde group is at the end of a linear carbon chain
+    for aldehyde_atom in aldehyde_matches:
+        aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_atom)
+        
+        # Check if aldehyde is at the end of the chain
+        if aldehyde_carbon.GetDegree() > 2:
+            continue
+        
+        # Check for linear carbon chain
+        carbon_chain = []
+        visited = set()
+        curr_atom = aldehyde_carbon
+        max_chain_length = 30  # Maximum allowed length of the carbon chain
+        
+        while curr_atom.GetAtomicNum() == 6:
+            if curr_atom.GetIdx() in visited:
+                break  # Cycle detected, skip this chain
+            visited.add(curr_atom.GetIdx())
+            carbon_chain.append(curr_atom.GetIdx())
+            
+            neighbors = [nb for nb in curr_atom.GetNeighbors() if nb.GetAtomicNum() == 6]
+            if len(neighbors) != 2:
+                break  # Not a linear chain
+            
+            curr_atom = neighbors[0] if neighbors[0].GetIdx() not in visited else neighbors[1]
+            
+            if len(carbon_chain) > max_chain_length:
+                break  # Chain too long, skip this chain
+        
+        if len(carbon_chain) >= 2:
+            return True, "Aldehyde group at the end of a linear carbon chain"
     
-    # Check if aldehyde is at the end of the chain
-    if aldehyde_carbon.GetDegree() > 2:
-        return False, "Aldehyde group not at the end of the chain"
-    
-    # Check for carbon chain
-    carbon_chain = []
-    curr_atom = aldehyde_carbon
-    while curr_atom.GetAtomicNum() == 6:
-        carbon_chain.append(curr_atom.GetIdx())
-        neighbors = [nb for nb in curr_atom.GetNeighbors() if nb.GetAtomicNum() == 6]
-        if len(neighbors) == 0:
-            break
-        curr_atom = neighbors[0]
-    
-    if len(carbon_chain) < 2:
-        return False, "No carbon chain found"
-    
-    return True, "Aldehyde group at the end of a carbon chain"
+    return False, "No aldehyde group found at the end of a linear carbon chain"
