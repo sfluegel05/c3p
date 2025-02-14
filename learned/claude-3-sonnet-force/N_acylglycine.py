@@ -25,24 +25,25 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for glycine moiety ([NH]-[CH2]-[COOH])
-    glycine_pattern = Chem.MolFromSmarts("[NH][CH2]C(=O)[O,N]")
+    # Look for glycine-like moieties ([NX3]-[CH2]-[C(=O)]-[X])
+    glycine_pattern = Chem.MolFromSmarts("[NX3][CH2]C(=O)[X]")
     glycine_matches = mol.GetSubstructMatches(glycine_pattern)
-    if not glycine_matches:
-        return False, "Glycine moiety not found"
     
-    # Look for acyl group ([R]-[C(=O)]-[N])
+    # Exclude molecules with more than one glycine-like moiety
+    if len(glycine_matches) != 1:
+        return False, "Incorrect number of glycine-like moieties"
+    
+    # Look for acyl group ([CX3](=O)[NX3])
     acyl_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if not acyl_matches:
-        return False, "Acyl group not found"
     
-    # Check if the acyl group is connected to the glycine moiety
+    # Check if the acyl group is connected to the glycine-like moiety
     for acyl_match in acyl_matches:
         acyl_carbon = acyl_match[0]
-        for glycine_match in glycine_matches:
-            glycine_nitrogen = glycine_match[0]
-            if mol.GetBondBetweenAtoms(acyl_carbon, glycine_nitrogen):
-                return True, "Contains an N-acylglycine moiety"
+        glycine_nitrogen = glycine_matches[0][0]
+        if mol.GetBondBetweenAtoms(acyl_carbon, glycine_nitrogen):
+            # Additional checks for charged groups, unusual bonding, etc.
+            # ...
+            return True, "Contains an N-acylglycine moiety"
     
-    return False, "Acyl group and glycine moiety not connected"
+    return False, "Acyl group and glycine-like moiety not connected"
