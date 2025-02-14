@@ -22,17 +22,26 @@ def is_pyrroline(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for a 5-membered ring with one nitrogen and 1 double bond (anywhere in the ring)
-    #This pattern will only match a 5 membered ring with a single N and a double bond.
-    pyrroline_pattern = Chem.MolFromSmarts("[N]1[C]=[C]-[C]-[C]1")
+    # Generalized pattern for a 5-membered ring with one N and one double bond
+    # The nitrogen atom should be sp3 hybridized, hence the [NX3] pattern
+    pyrroline_pattern = Chem.MolFromSmarts("[NX3]1~[#6]~[#6]~[#6]~[#6]1")
     
-    #Check for presence of the pattern
     if not mol.HasSubstructMatch(pyrroline_pattern):
-      return False, "No pyrroline core structure found"
+        return False, "No pyrroline core structure found"
     
-    #Ensure that it's not a pyrrole
-    pyrrole_pattern = Chem.MolFromSmarts("[nX1][cX3]=[cX2][cX2]=[cX2]")
+    #Ensure there is only one double bond within the ring
+    double_bond_pattern = Chem.MolFromSmarts("[#6]=[#6]")
+    matches = mol.GetSubstructMatches(double_bond_pattern)
+    ring_matches = 0
+    for match in matches:
+      if mol.GetAtomWithIdx(match[0]).IsInRing() and mol.GetAtomWithIdx(match[1]).IsInRing():
+        ring_matches += 1
+    if ring_matches != 1:
+      return False, "The pyrroline ring must have exactly 1 double bond."
+
+    # Check that this is not a pyrrole, since a pyrrole contains 2 double bonds within the ring.
+    pyrrole_pattern = Chem.MolFromSmarts("[nX2]1[cX3]=[cX2][cX2]=[cX2]1")
     if mol.HasSubstructMatch(pyrrole_pattern):
         return False, "It's a pyrrole not a pyrroline"
-    
+
     return True, "Pyrroline structure detected"
