@@ -1,73 +1,30 @@
 """
 Classifies: CHEBI:16337 phosphatidic acid
 """
-"""
-Classifies: CHEBI:26179 phosphatidic acid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+Based on the previous code and the outcomes provided, it seems that the program has a few issues and can be improved further. Here's my analysis and proposed improvements:
 
-def is_phosphatidic_acid(smiles: str):
-    """
-    Determines if a molecule is a phosphatidic acid based on its SMILES string.
-    A phosphatidic acid is a derivative of glycerol where one hydroxyl group is esterified with phosphoric acid
-    and the other two are esterified with fatty acids.
+1. **Molecular Weight Range**: The molecular weight range used in the previous code (600-900 Da) might be too restrictive. Some of the false negatives, such as PA(12:0/16:1(9Z)) and PA(14:0/12:0), were incorrectly classified due to their molecular weights falling outside this range. The molecular weight of phosphatidic acids can vary depending on the lengths of the fatty acid chains, and a wider range might be more appropriate.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Oxygen Count**: The requirement of exactly 8 oxygen atoms is too strict. Some of the false negatives, like OKOHA-PA, OON-PA, OHODA-PA, OOB-PA, and PKDdiA-PA, were missed because they had a different number of oxygen atoms. These molecules might have additional functional groups or modifications that alter the oxygen count while still being a phosphatidic acid.
 
-    Returns:
-        bool: True if molecule is a phosphatidic acid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-    
-    # Look for phosphate group (-O-P(=O)(O)O-)
-    phosphate_pattern = Chem.MolFromSmarts("O=[PX4](O)(O)O")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
-    
-    # Look for 2 ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
-    
-    # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
-    
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8:
-        return False, "Chains too short to be fatty acids"
-    
-    # Count carbons, oxygens, and phosphorus
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    
-    if c_count < 20:
-        return False, "Too few carbons for phosphatidic acid"
-    if o_count != 8:
-        return False, "Must have exactly 8 oxygen atoms"
-    if p_count != 1:
-        return False, "Must have exactly 1 phosphorus atom"
-    
-    # Check molecular weight range
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600 or mol_wt > 900:
-        return False, "Molecular weight outside typical range for phosphatidic acid"
-    
-    return True, "Contains glycerol backbone with one hydroxyl group esterified with phosphoric acid and the other two esterified with fatty acids"
+3. **Ester Group Count**: The requirement of exactly 2 ester groups is also too strict. PKDdiA-PA was incorrectly classified as a false negative because it has 3 ester groups. It's possible for a phosphatidic acid to have additional ester groups due to modifications or functional groups.
+
+4. **Glycerol Backbone Pattern**: The current glycerol backbone pattern ([CH2X4][CHX4][CH2X4]) might be too specific. Some phosphatidic acids might have different substitution patterns or conform to alternative representations.
+
+5. **False Positives**: The program incorrectly classified several phospholipids, such as phosphatidylcholines (PC) and phosphatidylethanolamines (PE), as phosphatidic acids. These molecules have a similar structure but differ in the head group attached to the phosphate. Additional checks or patterns might be needed to distinguish phosphatidic acids from other phospholipids.
+
+To improve the program, you could consider the following modifications:
+
+1. Adjust the molecular weight range to a wider interval, such as 500-1000 Da or based on further analysis of the provided examples.
+
+2. Remove the strict requirement for exactly 8 oxygen atoms or consider allowing a range of oxygen counts.
+
+3. Remove the strict requirement for exactly 2 ester groups or consider allowing a range of ester group counts.
+
+4. Modify or generalize the glycerol backbone pattern to accommodate more structural variations.
+
+5. Introduce additional checks or patterns to distinguish phosphatidic acids from other phospholipids, such as looking for specific head groups or structural differences.
+
+Additionally, you might want to consider using machine learning techniques or more advanced substructure matching algorithms to improve the classification accuracy, especially if the structural variations become too complex to handle with predefined patterns.
+
+It's important to note that while the benchmark provided might have some systematic mistakes, your understanding of chemistry and ability to translate it into code should be the primary guide. If you believe that your program's classifications are consistent with your understanding of the chemical class, you can ignore outliers and provide a reasoned explanation.
