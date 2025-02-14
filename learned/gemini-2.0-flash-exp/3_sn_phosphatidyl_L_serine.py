@@ -28,12 +28,13 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
 
     # Check for the glycerol backbone with phosphate at position 3 and correct stereochemistry
     # The pattern C[C@H](COP(...)) is crucial to determine the sn-3 configuration.
-    glycerol_pattern = Chem.MolFromSmarts("C[C@H](COP(=O)([OX1])[OX2])")
+    glycerol_pattern = Chem.MolFromSmarts("C[C@H](COP)")
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No 3-sn-glycerol-phosphate backbone found"
 
-    # Check for the phosphoserine headgroup
-    phosphoserine_pattern = Chem.MolFromSmarts("COP(=O)([OX1])OC[C@H]([NX3])C(=O)[OX2]")
+    # Check for the phosphoserine headgroup. The phosphate is directly connected to an oxygen.
+    # This pattern covers multiple forms of the phosphoserine moiety and does not make bond assumptions
+    phosphoserine_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@H](N)C(=O)O")
     if not mol.HasSubstructMatch(phosphoserine_pattern):
         return False, "No phosphoserine headgroup found"
     
