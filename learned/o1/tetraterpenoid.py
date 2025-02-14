@@ -5,7 +5,6 @@ Classifies: CHEBI:26935 tetraterpenoid
 Classifies: CHEBI:26976 tetraterpenoid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import Descriptors
 
 def is_tetraterpenoid(smiles: str):
@@ -26,37 +25,54 @@ def is_tetraterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Exclude molecules containing heteroatoms not typical for tetraterpenoids (e.g., nitrogen, sulfur, halogens)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in [1, 6, 8]:  # Allow only carbon, hydrogen, oxygen
+            return False, f"Contains heteroatom ({atom.GetSymbol()}) not typical for tetraterpenoids"
+
     # Count number of carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 35:
-        return False, f"Too few carbons ({c_count}) for a tetraterpenoid"
+    if c_count < 20 or c_count > 45:
+        return False, f"Carbon count ({c_count}) not within typical range for tetraterpenoids"
 
-    # Count number of conjugated double bonds
-    # We will approximate conjugation by counting alternating single and double bonds in a chain
-    # This is a simplification and may not capture all cases
-    double_bond_count = 0
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.DOUBLE:
-            double_bond_count += 1
+    # Check for the presence of isoprene units
+    # General isoprene unit pattern allowing for modifications
+    isoprene_patterns = [
+        Chem.MolFromSmarts("C(=C)C"),           # Isoprene unit
+        Chem.MolFromSmarts("C(=C)CC"),          # Isoprene with rearrangement
+        Chem.MolFromSmarts("C=C(C)C"),          # Isoprene alternative
+        Chem.MolFromSmarts("C=C(C)CC"),         # Extended isoprene
+        Chem.MolFromSmarts("C(=C)C(C)C"),       # Isoprene variant
+    ]
 
-    if double_bond_count < 10:
-        return False, f"Too few double bonds ({double_bond_count}) for a tetraterpenoid"
+    isoprene_match_count = 0
+    for pattern in isoprene_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        isoprene_match_count += len(matches)
 
-    # Estimate presence of extended conjugation by calculating the fraction of double bonds
-    total_bonds = mol.GetNumBonds()
-    if double_bond_count / total_bonds < 0.2:
-        return False, "Insufficient fraction of double bonds for extended conjugation"
+    if isoprene_match_count < 6:
+        return False, f"Insufficient isoprene-like units found ({isoprene_match_count})"
+
+    # Check for extended conjugation
+    # Calculate the fraction of sp2 carbons
+    sp2_carbons = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetHybridization() == Chem.HybridizationType.SP2:
+            sp2_carbons += 1
+
+    if sp2_carbons / c_count < 0.3:
+        return False, "Insufficient sp2 hybridized carbons for extended conjugation"
+
+    # Exclude molecules with unusual functional groups
+    # Count number of oxygen atoms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Allow some oxygen (e.g., hydroxyls, carbonyls), but limit excessive functionalization
+    if o_count > 10:
+        return False, f"Too many oxygen atoms ({o_count}) for a typical tetraterpenoid"
 
     # Calculate molecular weight
     mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 500:
-        return False, "Molecular weight too low for a tetraterpenoid"
+    if mol_wt < 300 or mol_wt > 1000:
+        return False, f"Molecular weight ({mol_wt:.2f}) not typical for a tetraterpenoid"
 
-    # Check for the presence of isoprene units (C5H8)
-    # This is challenging due to possible rearrangements, so we will attempt to find repeating units
-    isoprene_smarts = Chem.MolFromSmarts("C(C)=C-C=C")
-    isoprene_matches = mol.GetSubstructMatches(isoprene_smarts)
-    if len(isoprene_matches) < 4:
-        return False, "Insufficient isoprene-like units found"
-
-    return True, "Molecule matches criteria for a tetraterpenoid (high carbon count, extended conjugation, isoprenoid pattern)"
+    return True, "Molecule matches criteria for a tetraterpenoid (isoprenoid units, conjugation, typical functional groups)"
