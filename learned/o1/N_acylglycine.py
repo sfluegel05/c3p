@@ -22,21 +22,31 @@ def is_N_acylglycine(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define N-acylglycine pattern
-    # The pattern represents R-C(=O)-N(H)-CH2-COOH
-    n_acylglycine_pattern = Chem.MolFromSmarts('[CX3](=O)[NX3H][CH2][CX3](=O)[OX1H]')
+    # The pattern represents R-C(=O)-N-CH2-C(=O)-O
+    n_acylglycine_pattern = Chem.MolFromSmarts('O=CNCC(=O)O')
     if not mol.HasSubstructMatch(n_acylglycine_pattern):
         return False, "No N-acylglycine substructure found"
+
+    # Ensure that the nitrogen is part of an amide linkage (acylated)
+    amide_pattern = Chem.MolFromSmarts('C(=O)NCC(=O)O')
+    if not mol.HasSubstructMatch(amide_pattern):
+        return False, "Nitrogen is not acylated"
     
-    # Confirm that the backbone is glycine (no side chains on alpha carbon)
-    alpha_carbon = Chem.MolFromSmarts('[NX3][CH2][CX3](=O)[OX1H]')
-    matches = mol.GetSubstructMatches(alpha_carbon)
-    if not matches:
+    # Check that there are no substituents on the CH2 group (glycine backbone)
+    glycine_pattern = Chem.MolFromSmarts('NCC(=O)O')
+    glycine_matches = mol.GetSubstructMatches(glycine_pattern)
+    if not glycine_matches:
         return False, "No glycine backbone found"
-    for match in matches:
-        alpha_c_idx = match[1]
-        alpha_c_atom = mol.GetAtomWithIdx(alpha_c_idx)
-        # Check if alpha carbon (CH2 group) is bonded to more than two hydrogens (shouldn't be)
-        if len([nbr for nbr in alpha_c_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]) > 2:
+    for match in glycine_matches:
+        # Index of the CH2 carbon
+        ch2_idx = match[1]
+        ch2_atom = mol.GetAtomWithIdx(ch2_idx)
+        # Check that the CH2 carbon is only bonded to nitrogen and carbonyl carbon
+        neighbors = ch2_atom.GetNeighbors()
+        if len(neighbors) != 2:
             return False, "Alpha carbon has substituents, not glycine"
+        for nbr in neighbors:
+            if nbr.GetAtomicNum() != 7 and nbr.GetAtomicNum() != 6:
+                return False, "Alpha carbon bonded to atoms other than N and C"
     
     return True, "Molecule is an N-acylglycine"
