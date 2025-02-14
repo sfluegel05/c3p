@@ -31,17 +31,27 @@ def is_nucleobase_analogue(smiles: str):
     amino_pattern = Chem.MolFromSmarts("[NH2,NH]")
     oxo_pattern = Chem.MolFromSmarts("C=O")
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
+    alkyl_pattern = Chem.MolFromSmarts("[CX4H3]")
+    halogen_pattern = Chem.MolFromSmarts("[F,Cl,Br,I]")
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    ester_pattern = Chem.MolFromSmarts("C(=O)OC")
     
     # Check for purine or pyrimidine ring
     if not mol.HasSubstructMatch(purine_pattern) and not mol.HasSubstructMatch(pyrimidine_pattern):
         return False, "No purine or pyrimidine ring found"
     
-    # Check for amino, oxo, and hydroxyl functional groups
+    # Check for amino, oxo, hydroxyl, alkyl, and halogen functional groups
     has_amino = mol.HasSubstructMatch(amino_pattern)
     has_oxo = mol.HasSubstructMatch(oxo_pattern)
     has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
-    if not (has_amino or has_oxo or has_hydroxyl):
-        return False, "Missing amino, oxo, or hydroxyl functional groups"
+    has_alkyl = mol.HasSubstructMatch(alkyl_pattern)
+    has_halogen = mol.HasSubstructMatch(halogen_pattern)
+    if not (has_amino or has_oxo or has_hydroxyl or has_alkyl or has_halogen):
+        return False, "Missing typical functional groups found in nucleobase analogues"
+    
+    # Check for absence of carboxylic acids and esters
+    if mol.HasSubstructMatch(carboxyl_pattern) or mol.HasSubstructMatch(ester_pattern):
+        return False, "Molecule contains carboxylic acid or ester groups, which are uncommon in nucleobase analogues"
     
     # Check for typical size range of nucleobase analogues
     n_heavy_atoms = mol.GetNumHeavyAtoms()
@@ -49,8 +59,14 @@ def is_nucleobase_analogue(smiles: str):
         return False, "Size deviates too much from typical nucleobases"
     
     # Check for aromaticity and planarity
-    if not mol.GetNumBEdges() or not AllChem.PlanarityAtomsSelfIter(mol):
+    aromatic_rings = Chem.GetAromaticRings(mol)
+    if not aromatic_rings or not AllChem.PlanarityAtomsSelfIter(mol):
         return False, "Molecule is not sufficiently aromatic or planar"
+    
+    # Check molecular weight
+    mol_wt = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 50 or mol_wt > 300:
+        return False, "Molecular weight deviates too much from typical nucleobase analogues"
     
     # If all conditions are met, classify as nucleobase analogue
     return True, "Contains purine or pyrimidine ring and typical functional groups of nucleobase analogues"
