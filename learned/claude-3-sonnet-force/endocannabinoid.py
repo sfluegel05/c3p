@@ -6,7 +6,6 @@ Classifies: CHEBI:37441 endocannabinoid
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_endocannabinoid(smiles: str):
     """
@@ -29,18 +28,18 @@ def is_endocannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Look for ethanolamine or glycerol head group
+    ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
+    glycerol_pattern = Chem.MolFromSmarts("[OX2][CX4]([CHX4])[OX2][CHX4][OX2]")
+    head_group_matches = mol.GetSubstructMatches(ethanolamine_pattern) + mol.GetSubstructMatches(glycerol_pattern)
+    if not head_group_matches:
+        return False, "No ethanolamine or glycerol head group found"
+
     # Look for fatty acid chain (long carbon chain with carboxyl group)
     fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) != 1:
         return False, "No fatty acid chain found"
-
-    # Look for ethanolamine or glycerol head group
-    ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
-    glycerol_pattern = Chem.MolFromSmarts("[OX2][CX4]([CHX4])[OX2][CHX4][OX2]")
-    head_group_matches = mol.GetSubstructMatches(ethanolamine_pattern) + mol.GetSubstructMatches(glycerol_pattern)
-    if len(head_group_matches) != 1:
-        return False, "No ethanolamine or glycerol head group found"
 
     # Look for epoxide ring
     epoxide_pattern = Chem.MolFromSmarts("C1OC1")
@@ -50,9 +49,9 @@ def is_endocannabinoid(smiles: str):
     aromatic_pattern = Chem.MolFromSmarts("a")
     aromatic_matches = mol.GetSubstructMatches(aromatic_pattern)
 
-    # Check for long carbon chain (at least 16 carbons)
+    # Check for long carbon chain (at least 12 carbons)
     n_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_carbons < 16:
+    if n_carbons < 12:
         return False, "Carbon chain too short for endocannabinoid"
 
     # Classify based on structural features
