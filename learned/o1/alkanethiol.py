@@ -20,14 +20,31 @@ def is_alkanethiol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define thiol pattern: sulfur (S) with one hydrogen (H) attached and connected to carbon (C)
-    thiol_pattern = Chem.MolFromSmarts("[#16H1]-[#6]")
-    if not mol.HasSubstructMatch(thiol_pattern):
-        return False, "Does not contain an -SH group attached to an alkyl group"
+    # Define thiol pattern: sulfur with one hydrogen attached to an sp3 carbon (alkyl carbon)
+    thiol_pattern = Chem.MolFromSmarts("[#16H1][CX4;!$(C=*);!$(C~[#7,#8,#15,#16,#17,#35,#53])]")
+    thiol_matches = mol.GetSubstructMatches(thiol_pattern)
 
-    # Define amide bond pattern: carbonyl group attached to nitrogen (peptide bond)
-    amide_pattern = Chem.MolFromSmarts("C(=O)N")
-    if mol.HasSubstructMatch(amide_pattern):
-        return False, "Contains amide bonds (peptide), not an alkanethiol"
+    if not thiol_matches:
+        return False, "Does not contain an -SH group attached to an alkyl carbon"
 
-    return True, "Contains a sulfanyl group (-SH) attached to an alkyl group"
+    # Check each match to ensure the carbon is part of an alkyl group
+    for match in thiol_matches:
+        sulfur_idx, carbon_idx = match
+
+        # Get the carbon atom attached to sulfur
+        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+
+        # Check that carbon is only connected to carbons or hydrogens
+        is_alkyl = True
+        for neighbor in carbon_atom.GetNeighbors():
+            atomic_num = neighbor.GetAtomicNum()
+            if atomic_num not in [1, 6]:  # Hydrogen or Carbon
+                is_alkyl = False
+                break
+
+        if not is_alkyl:
+            continue  # Check next match
+        else:
+            return True, "Contains a sulfanyl group (-SH) attached to an alkyl group"
+
+    return False, "Thiol group is not attached to an alkyl carbon"
