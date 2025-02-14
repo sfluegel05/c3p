@@ -31,24 +31,24 @@ def is_polyunsaturated_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
     
-    # Check for long aliphatic chain
-    aliphatic_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCC")
-    if not mol.HasSubstructMatch(aliphatic_chain_pattern):
-        return False, "Aliphatic chain too short"
+    # Check for long aliphatic chain with multiple double bonds
+    pufa_pattern = Chem.MolFromSmarts("C(=O)OCCCC(/C=C/C)C(/C=C/C)C")
+    if not mol.HasSubstructMatch(pufa_pattern):
+        return False, "Does not match the pattern of a polyunsaturated fatty acid"
     
-    # Check for multiple double bonds
+    # Count number of double bonds
     double_bond_pattern = Chem.MolFromSmarts("C=C")
     double_bond_matches = mol.GetSubstructMatches(double_bond_pattern)
-    if len(double_bond_matches) < 2:
+    num_double_bonds = len(double_bond_matches)
+    if num_double_bonds < 2:
         return False, "Less than two double bonds found"
     
-    # Check position of double bonds relative to carboxylic acid group
-    aliphatic_chain_length = rdMolDescriptors.CalcMolWt(mol) // 14  # approximate chain length
-    double_bond_positions = [atom_idx for match in double_bond_matches for atom_idx in match]
-    distance_from_acid = min(mol.GetAtomWithIdx(idx).GetShortestPathDistanceToSubmits()[0] for idx in double_bond_positions)
-    if distance_from_acid < 3 or distance_from_acid > aliphatic_chain_length - 3:
-        return False, "Double bonds too close to carboxylic acid group"
+    # Check for cis/trans configuration of double bonds
+    cis_trans_pattern = Chem.MolFromSmarts("/C=C/C")
+    cis_trans_matches = mol.GetSubstructMatches(cis_trans_pattern)
+    if len(cis_trans_matches) == 0:
+        return False, "No cis or trans double bonds found"
     
     # Additional checks or constraints can be added here, if needed
     
-    return True, "Contains multiple double bonds in a long aliphatic chain with a carboxylic acid group"
+    return True, f"Contains {num_double_bonds} double bonds in a long aliphatic chain with a carboxylic acid group"
