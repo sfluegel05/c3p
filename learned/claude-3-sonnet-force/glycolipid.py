@@ -2,7 +2,7 @@
 Classifies: CHEBI:33563 glycolipid
 """
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
+from rdkit.Chem import rdFMCS, MolFromSmiles
 
 def is_glycolipid(smiles: str):
     """
@@ -20,14 +20,13 @@ def is_glycolipid(smiles: str):
         bool: True if molecule is a glycolipid, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    try:
+        mol = MolFromSmiles(smiles)
+    except ValueError:
         return False, "Invalid SMILES string"
     
     # Look for saccharide pattern
-    saccharide_pattern = Chem.MolFromSmarts("[OX2][C;!$(C=O)][OX2]")
+    saccharide_pattern = Chem.MolFromSmarts("[OX2][C;!$(C=O)][OX2][C;!$(C=O)][OX2]")
     if not mol.HasSubstructMatch(saccharide_pattern):
         return False, "No saccharide pattern found"
     
@@ -36,17 +35,11 @@ def is_glycolipid(smiles: str):
     if not mol.HasSubstructMatch(glycosidic_linkage_pattern):
         return False, "No glycosidic linkage found"
     
-    # Look for fatty acid chains or acylated saccharides
+    # Check for acyl groups or glycerol backbone (optional)
     acyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
-    acyl_matches = mol.GetSubstructMatches(acyl_pattern)
-    if not acyl_matches:
-        return False, "No fatty acid chains or acylated saccharides found"
-    
-    # Check for glycerol backbone (optional for bacterial glycolipids)
     glycerol_pattern = Chem.MolFromSmarts("[OX2][C;!$(C=O)][C;!$(C=O)][OX2]")
-    if mol.HasSubstructMatch(glycerol_pattern):
-        return True, "Contains glycerol backbone with glycosidic linkage and acyl groups"
+    
+    if mol.HasSubstructMatch(acyl_pattern) or mol.HasSubstructMatch(glycerol_pattern):
+        return True, "Contains glycosidic linkage and acyl groups or glycerol backbone"
     else:
         return True, "Bacterial glycolipid with acylated saccharide"
-    
-    # Additional checks/filters can be added here if needed
