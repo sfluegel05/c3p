@@ -21,9 +21,12 @@ def is_organochlorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for C-Cl bond using SMARTS pattern
-    pattern = Chem.MolFromSmarts("[CX4]-Cl")
-    if mol.HasSubstructMatch(pattern):
+    # Check for C-Cl bond
+    for bond in mol.GetBonds():
+      atom1 = bond.GetBeginAtom()
+      atom2 = bond.GetEndAtom()
+      if (atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 17) or \
+         (atom1.GetAtomicNum() == 17 and atom2.GetAtomicNum() == 6):
         return True, "Contains at least one carbon-chlorine bond"
-    else:
-        return False, "Does not contain any carbon-chlorine bond"
+    
+    return False, "Does not contain any carbon-chlorine bond"
