@@ -2,7 +2,7 @@
 Classifies: CHEBI:24654 hydroxy fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_hydroxy_fatty_acid(smiles: str):
     """
@@ -33,9 +33,16 @@ def is_hydroxy_fatty_acid(smiles: str):
     if len(hydroxy_matches) < 1:
         return False, "No hydroxy (OH) group found"
     
-    # Check for a long carbon chain
-    carbon_chain_pattern = Chem.MolFromSmarts("CCCCCCCCCC") # Simplified pattern for a long chain
-    if not mol.HasSubstructMatch(carbon_chain_pattern):
-        return False, "No long carbon chain detected"
-    
-    return True, "Contains a carboxylic acid group and one or more hydroxy groups on a long carbon chain"
+    # Check for sufficiently long carbon chains (aliphatic)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 10:  # Assuming a simple minimum chain length (can be adjusted)
+        return False, "Too few carbon atoms for a fatty acid"
+
+    # Check if chain is mostly linear (e.g., limited branching/cycles significant in fatty acids)
+    # Fatty acids are primarily linear; however, they can have some branches or minor rings
+    if not mol.GetRingInfo().IsAtomInRingOfSize(6): 
+        return True, "Contains a carboxylic acid group and one or more hydroxy groups; valid fatty acid configuration"
+    else:
+        return False, "Presence of cyclic structures inconsistent with a typical fatty acid"
+
+    return True, "Contains a carboxylic acid group and one or more hydroxy groups on a sufficiently long carbon chain"
