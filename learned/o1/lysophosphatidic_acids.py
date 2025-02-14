@@ -2,7 +2,6 @@
 Classifies: CHEBI:32957 lysophosphatidic acids
 """
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_lysophosphatidic_acids(smiles: str):
     """
@@ -17,77 +16,76 @@ def is_lysophosphatidic_acids(smiles: str):
         bool: True if molecule is a lysophosphatidic acid, False otherwise
         str: Reason for classification
     """
+    from rdkit.Chem import AllChem
 
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns
-    # Glycerol backbone: Three connected carbons each with an attached oxygen (could be O or OH)
-    glycerol_pattern = Chem.MolFromSmarts('OCC(O)CO')
+    # Find glycerol backbone (three connected carbons)
+    # Define SMARTS pattern for glycerol backbone carbons
+    glycerol_pattern = Chem.MolFromSmarts('C-C-C')
+    matches = mol.GetSubstructMatches(glycerol_pattern)
 
-    # Ester linkage (fatty acyl chain attached via ester bond): C(=O)OC
-    ester_pattern = Chem.MolFromSmarts('C(=O)O[C;!$(C(=O))]')
-
-    # Phosphate group attached to glycerol: [O;H][C][O][P](=O)(O)O
-    phosphate_pattern = Chem.MolFromSmarts('COP(=O)(O)O')
-
-    # Check for glycerol backbone
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    if not matches:
         return False, "No glycerol backbone found"
 
-    # Check for exactly one ester group
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, expected exactly 1"
+    found_lysophosphatidic_acid = False
+    for match in matches:
+        c1_idx, c2_idx, c3_idx = match
 
-    # Check for phosphate group
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
+        # Now, check the substituents of each carbon
+        c1 = mol.GetAtomWithIdx(c1_idx)
+        c2 = mol.GetAtomWithIdx(c2_idx)
+        c3 = mol.GetAtomWithIdx(c3_idx)
 
-    # Get the atom indices of glycerol backbone carbons
-    glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    glycerol_atoms = glycerol_matches[0]
-    glycerol_carbons = [atom_idx for atom_idx in glycerol_atoms if mol.GetAtomWithIdx(atom_idx).GetSymbol() == 'C']
+        # Initialize substituent flags
+        has_phosphate = False
+        has_ester = False
+        has_hydroxyl = False
 
-    # Check that the ester is attached to one of the glycerol carbons
-    ester_match = ester_matches[0]
-    ester_oxygen_idx = ester_match[2]  # Index of the oxygen atom connected to glycerol
-    ester_oxygen_atom = mol.GetAtomWithIdx(ester_oxygen_idx)
+        # Check substituents of c1 for phosphate group
+        for bond in c1.GetBonds():
+            nbr = bond.GetOtherAtom(c1)
+            if nbr.GetAtomicNum() == 8:  # Oxygen atom
+                # Check if this oxygen is connected to a phosphate group
+                oxygen = nbr
+                for obond in oxygen.GetBonds():
+                    phosphorus = obond.GetOtherAtom(oxygen)
+                    if phosphorus.GetAtomicNum() == 15:  # Phosphorus atom
+                        has_phosphate = True
 
-    ester_connected_to_glycerol = False
-    for neighbor in ester_oxygen_atom.GetNeighbors():
-        if neighbor.GetIdx() in glycerol_carbons:
-            ester_connected_to_glycerol = True
+        # Check substituents of c2 for hydroxyl group
+        for bond in c2.GetBonds():
+            nbr = bond.GetOtherAtom(c2)
+            if nbr.GetAtomicNum() == 8:  # Oxygen atom
+                if nbr.GetDegree() == 1:
+                    has_hydroxyl = True
+
+        # Check substituents of c3 for ester group
+        for bond in c3.GetBonds():
+            nbr = bond.GetOtherAtom(c3)
+            if nbr.GetAtomicNum() == 8:  # Oxygen atom
+                oxygen = nbr
+                for obond in oxygen.GetBonds():
+                    carbonyl = obond.GetOtherAtom(oxygen)
+                    if carbonyl.GetAtomicNum() == 6 and carbonyl.GetIdx() != c3_idx:
+                        # Check if carbon is a carbonyl carbon (C=O)
+                        is_carbonyl = False
+                        for cbond in carbonyl.GetBonds():
+                            o_nbr = cbond.GetOtherAtom(carbonyl)
+                            if o_nbr.GetAtomicNum() == 8 and o_nbr.GetIdx() != oxygen.GetIdx():
+                                is_carbonyl = True
+                        if is_carbonyl:
+                            has_ester = True
+
+        # Check if we have all required substituents
+        if has_phosphate and has_hydroxyl and has_ester:
+            found_lysophosphatidic_acid = True
             break
-    if not ester_connected_to_glycerol:
-        return False, "Ester group not attached to glycerol backbone"
 
-    # Check that the phosphate group is attached to the glycerol backbone
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    phosphate_match = phosphate_matches[0]
-    phosphate_oxygen_idx = phosphate_match[0]  # Oxygen atom connected to glycerol
-    phosphate_oxygen_atom = mol.GetAtomWithIdx(phosphate_oxygen_idx)
-
-    phosphate_connected_to_glycerol = False
-    for neighbor in phosphate_oxygen_atom.GetNeighbors():
-        if neighbor.GetIdx() in glycerol_carbons:
-            phosphate_connected_to_glycerol = True
-            break
-    if not phosphate_connected_to_glycerol:
-        return False, "Phosphate group not attached to glycerol backbone"
-
-    # Check that the remaining hydroxyl group is free
-    hydroxyl_groups = 0
-    for carbon_idx in glycerol_carbons:
-        carbon = mol.GetAtomWithIdx(carbon_idx)
-        attached_oxygens = [nbr for nbr in carbon.GetNeighbors() if nbr.GetSymbol() == 'O']
-        for oxygen in attached_oxygens:
-            if oxygen.GetDegree() == 1 and oxygen.GetImplicitValence() == 1:  # Free hydroxyl
-                hydroxyl_groups += 1
-
-    if hydroxyl_groups != 1:
-        return False, f"Expected one free hydroxyl group on glycerol backbone, found {hydroxyl_groups}"
-
-    return True, "Molecule is a lysophosphatidic acid"
+    if found_lysophosphatidic_acid:
+        return True, "Molecule is a lysophosphatidic acid"
+    else:
+        return False, "Does not match lysophosphatidic acid structure"
