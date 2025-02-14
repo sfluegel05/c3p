@@ -25,10 +25,18 @@ def is_isoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Kekulize the molecule to handle aromaticity properly
+    try:
+        Chem.Kekulize(mol, clearAromaticFlags=True)
+    except Chem.KekulizeException:
+        return False, "Kekulization failed"
+
     # Define SMARTS pattern for the isoflavone core
-    # Chromen-4-one core: c1cc2ccccc2oc1=O
-    # Aryl group at position 3
-    isoflavone_pattern = Chem.MolFromSmarts('O=C1Oc2ccccc2cc1-c1ccccc1')
+    # Isoflavone core: 3-phenylchromen-4-one
+    isoflavone_pattern = Chem.MolFromSmarts("""
+    [$([#6]-1=[$([#6](-[#6])=[#6]-[#6]=[#6]-[#8]-1-[#6]=O)])]-c1ccccc1
+    """)
+
     if isoflavone_pattern is None:
         return False, "Error in SMARTS pattern"
 
@@ -36,28 +44,6 @@ def is_isoflavones(smiles: str):
     if not mol.HasSubstructMatch(isoflavone_pattern):
         return False, "Does not contain the 3-aryl-1-benzopyran-4-one skeleton"
 
-    # Verify the presence of the chromen-4-one core
-    chromen4one_pattern = Chem.MolFromSmarts('O=C1Oc2ccccc2cc1')
-    if not mol.HasSubstructMatch(chromen4one_pattern):
-        return False, "Does not contain the chromen-4-one core"
-
-    # Verify the aryl group attached at position 3
-    aryl_group_pattern = Chem.MolFromSmarts('c1ccccc1')
-    matches = mol.GetSubstructMatches(chromen4one_pattern)
-    if matches:
-        for match in matches:
-            atom_indices = set(match)
-            # Check for aryl substituent at position 3 of the chromen-4-one core
-            position_3_atom = mol.GetAtomWithIdx(match[5])  # Atom at position 3
-            neighbors = position_3_atom.GetNeighbors()
-            for neighbor in neighbors:
-                if neighbor.GetIdx() not in atom_indices:
-                    # Check if the substituent is an aryl group
-                    neighbor_submol = Chem.PathToSubmol(mol, [position_3_atom.GetIdx(), neighbor.GetIdx()])
-                    if neighbor_submol.HasSubstructMatch(aryl_group_pattern):
-                        return True, "Contains the 3-aryl-1-benzopyran-4-one skeleton with an aryl group at position 3"
-        return False, "No aryl group attached at position 3 of the chromen-4-one core"
-    else:
-        return False, "Chromen-4-one core not found"
-
-    return False, "Molecule does not match isoflavone criteria"
+    # Check for substitutions on the core (which are allowed)
+    # So we can accept the match as isoflavone
+    return True, "Contains the 3-aryl-1-benzopyran-4-one skeleton characteristic of isoflavones"
