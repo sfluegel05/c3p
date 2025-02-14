@@ -22,34 +22,29 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Core cyclopentane ring with at least one double bond
-    core_pattern = Chem.MolFromSmarts("C1[C]([C])[C]([C])C[C]1=[C]")
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Prostaglandin core ring not found"
+    # 1. Check for cyclopentane ring with attached chains
+    cyclopentane_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1")  #Basic 5 member ring
+    if not mol.HasSubstructMatch(cyclopentane_pattern):
+        return False, "No cyclopentane ring found"
 
-    # 2. At least one hydroxyl group
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
+    #2. Check for a carboxyl acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxyl group found"
 
-
-    # 3. Check for two carbon chains attached to cyclopentane ring
-    # simplified chain pattern checking for at least one chain of length 5+ carbons, including a carboxylic acid
-    chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]")
-    chain_matches = mol.GetSubstructMatches(chain_pattern)
-    
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if len(chain_matches) < 2 or len(carboxylic_acid_matches) < 1:
-       return False, "Not enough carbon chains or carboxylic acid group"
-
-    # 4. Check for a minimum number of carbons
+    #3. Check for 20 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18:
-        return False, "Too few carbons for a prostaglandin"
+    if c_count != 20:
+        return False, f"Not 20 carbons, found {c_count}"
+    
+    #4. Check for at least one double bond
+    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
+    if not mol.HasSubstructMatch(double_bond_pattern):
+        return False, "No double bond found"
 
-    # 5. Check for molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-        return False, "Molecular weight too low for prostaglandin"
-    return True, "Meets prostaglandin criteria"
+    # 5. Check for 4-6 oxygens
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 4 or o_count > 6:
+        return False, f"Oxygen count is not between 4 and 6, found {o_count}"
+
+    return True, "Meets basic prostaglandin criteria"
