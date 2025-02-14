@@ -28,6 +28,7 @@ def is_short_chain_fatty_acid(smiles: str):
         atomic_num = atom.GetAtomicNum()
         if atomic_num != 1 and atomic_num != 6 and atomic_num != 8:
             return False, "Non-hydrocarbon substituent found"
+            
 
     # Check for carboxylic acid group with attached alpha carbon
     carboxylic_acid_pattern = Chem.MolFromSmarts("[C]-[C](=O)O")
@@ -39,33 +40,31 @@ def is_short_chain_fatty_acid(smiles: str):
     # Get the carbon index connected to the carbonyl
     carbonyl_carbon_idx = matches[0][1] # index of the carbon in C(=O)O
     alpha_carbon_idx = matches[0][0] #index of carbon connected to the carbonyl
-
     
-    # Check the carbon chain length
-    chain_length = 0
-    current_atom_idx = alpha_carbon_idx
     
-    visited_atoms = set()
-    
-    while chain_length <= 5:
-       
-      visited_atoms.add(current_atom_idx)
-      
-      neighbors = []
-      for neighbor in mol.GetAtomWithIdx(current_atom_idx).GetNeighbors():
+    def get_chain_length(mol, current_atom_idx, visited_atoms, chain_length):
+        
+        visited_atoms.add(current_atom_idx)
+        max_len = chain_length
+        
+        neighbors = []
+        for neighbor in mol.GetAtomWithIdx(current_atom_idx).GetNeighbors():
           neighbor_idx = neighbor.GetIdx()
-          if neighbor.GetAtomicNum() == 6 and neighbor_idx not in visited_atoms:
-             neighbors.append(neighbor_idx)
-      
-      if len(neighbors) == 0:
-          break
-      elif len(neighbors) == 1:
-           current_atom_idx = neighbors[0]
-           chain_length += 1
-      elif len(neighbors) > 1: # branch
-           chain_length = 6 #stop the counting
-           break; #this is not a simple alkyl chain.
+          bond = mol.GetBondBetweenAtoms(current_atom_idx, neighbor_idx)
+          if neighbor.GetAtomicNum() == 6 and neighbor_idx not in visited_atoms and (bond.GetBondType() == Chem.rdchem.BondType.SINGLE or bond.GetBondType() == Chem.rdchem.BondType.DOUBLE) :
+              neighbors.append(neighbor_idx)
+
+        if len(neighbors) == 0:
+          return chain_length
+        
+        for neighbor_idx in neighbors:
+            max_len = max(max_len, get_chain_length(mol,neighbor_idx, set(visited_atoms), chain_length+1))
+
+        return max_len
+            
     
+    chain_length = get_chain_length(mol,alpha_carbon_idx, set(), 1)
+      
     if chain_length > 5:
          return False, "More than 5 carbons in the alkyl chain"
    
