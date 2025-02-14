@@ -25,14 +25,18 @@ def is_vitamin_D(smiles: str):
         return False, "Invalid SMILES string"
     
     # 1. Check for broken B-ring - Look for a 6-membered ring with a double bond connected to a single bond, and a specific connection to the other rings.
-    # The key is the presence of a C=C single bond within a 6 member ring connected to two other carbons that will continue the steroidal framework
-    # We use a complex SMARTS pattern to enforce this connectivity, while being as general as possible.
-    broken_b_ring_pattern = Chem.MolFromSmarts("[C;R6]1([C;R](=[C;R])[C;R])~[C;R]~[C;R]~[C;R]~[C;R]1")
-    if not mol.HasSubstructMatch(broken_b_ring_pattern):
-        return False, "Not a seco-steroid structure (missing broken B ring)"
+    # The key is the presence of a C=C single bond that breaks the ring.
+    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
+    if not mol.HasSubstructMatch(double_bond_pattern):
+        return False, "Not a seco-steroid structure (missing broken B ring: double bond)"
+    
+    # Check the presence of a 6 membered ring
+    six_member_ring = Chem.MolFromSmarts("[C;R6]1~[C;R]~[C;R]~[C;R]~[C;R]~[C;R]1")
+    if not mol.HasSubstructMatch(six_member_ring):
+        return False, "Not a seco-steroid structure (missing broken B ring: six membered ring)"
 
     # 2. Check for triene system in the conjugated system
-    triene_pattern = Chem.MolFromSmarts("C=C-C=C-C") # this is still /C=C/C=C/C
+    triene_pattern = Chem.MolFromSmarts("C=C~C=C~C") # this allows for both cis and trans configurations
     if not mol.HasSubstructMatch(triene_pattern):
         return False, "No triene system found"
     
