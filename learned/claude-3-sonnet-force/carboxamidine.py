@@ -2,14 +2,16 @@
 Classifies: CHEBI:35359 carboxamidine
 """
 """
-Classifies: CHEBI:35244 carboxamidine
+Classifies: CHEBI:36562 carboxamidine
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_carboxamidine(smiles: str):
     """
     Determines if a molecule is a carboxamidine based on its SMILES string.
-    Carboxamidines have the structure RC(=NR)NR2 and contain the -C(=NH)-NH2 group.
+    A carboxamidine is a compound having the structure RC(=NR)NR2, containing
+    the -C(=NH)NH2 group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,21 +26,19 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Carboxamidine SMARTS pattern
-    carboxamidine_pattern = Chem.MolFromSmarts("C(=[N&D2])[N&H2,H1]")
+    # Find all amidine groups (-C(=N)-N) in the molecule
+    amidine_pattern = Chem.MolFromSmarts("C(=N-N)")
+    amidine_matches = mol.GetSubstructMatches(amidine_pattern)
     
-    # Check if the molecule contains the carboxamidine group
-    matches = mol.GetSubstructMatches(carboxamidine_pattern)
+    # If no amidine groups found, it's not a carboxamidine
+    if not amidine_matches:
+        return False, "No carboxamidine (-C(=N)-N) group found"
     
-    if matches:
-        for match in matches:
-            # Check if the matched atoms are not part of a ring
-            if not any(mol.GetAtomWithIdx(idx).IsInRing() for idx in match):
-                # Check if the nitrogen atoms are not further substituted
-                n1_idx, n2_idx = match[1], match[2]
-                n1_atom = mol.GetAtomWithIdx(n1_idx)
-                n2_atom = mol.GetAtomWithIdx(n2_idx)
-                if n1_atom.GetTotalDegree() == 1 and n2_atom.GetTotalDegree() == 2:
-                    return True, "Molecule contains the carboxamidine group RC(=NR)NR2"
+    # Check if any of the amidine groups match the full carboxamidine pattern
+    carboxamidine_pattern = Chem.MolFromSmarts("C(=N-N)N")
+    carboxamidine_matches = mol.GetSubstructMatches(carboxamidine_pattern)
     
-    return False, "No carboxamidine group found"
+    if carboxamidine_matches:
+        return True, "Contains the carboxamidine (-C(=N)-N) group"
+    else:
+        return False, "Amidine group found but not a full carboxamidine structure"
