@@ -26,62 +26,65 @@ def is_sphingoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for key features
+    # Find primary amine nitrogen atoms (degree 1 nitrogen with no charge)
+    amine_atoms = [atom for atom in mol.GetAtoms()
+                   if atom.GetAtomicNum() == 7 and atom.GetDegree() == 1 and atom.GetFormalCharge() == 0]
+    if not amine_atoms:
+        return False, "No primary amino group found"
 
-    # Long aliphatic chain (at least 8 contiguous carbons)
-    chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No long aliphatic chain found (minimum 8 carbons)"
+    for amine_atom in amine_atoms:
+        n_idx = amine_atom.GetIdx()
 
-    # Amino alcohol backbone
-    # Nitrogen atom connected to a carbon with at least one hydroxyl group
-    amino_alcohol_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(N[C,S]=O)]-[CX4]-[OX2H]")
-    if not mol.HasSubstructMatch(amino_alcohol_pattern):
-        return False, "No amino alcohol backbone found"
+        # Get the carbon atom attached to the amine nitrogen (C2)
+        c2_atoms = [nbr for nbr in amine_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        if not c2_atoms:
+            continue  # No carbon attached to nitrogen
+        c2_atom = c2_atoms[0]
+        c2_idx = c2_atom.GetIdx()
 
-    # Additional hydroxyl group (may be at C3 position)
-    # Oxygen atom connected to a carbon adjacent to the amino group
-    hydroxy_pattern = Chem.MolFromSmarts("[OX2H]-[CX4]-[CX4]-[NX3;H2,H1;!$(N[C,S]=O)]")
-    if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No additional hydroxyl group found"
+        # Check for hydroxyl groups on carbons adjacent to C2 (C1 and C3)
+        has_adjacent_hydroxyl = False
+        
+        # Get neighbors of C2 atom
+        c2_neighbors = c2_atom.GetNeighbors()
+        for atom in c2_neighbors:
+            if atom.GetAtomicNum() == 6 and atom.GetIdx() != n_idx:  # Exclude nitrogen
+                # Check if this carbon has a hydroxyl group
+                for nbr in atom.GetNeighbors():
+                    if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:
+                        has_adjacent_hydroxyl = True
+                        break
+            if has_adjacent_hydroxyl:
+                break
 
-    # Check for possible unsaturation (double bonds) or hydroxyl derivatives
-    # This is allowed, so we don't need to explicitly check for them
+        if not has_adjacent_hydroxyl:
+            continue  # No hydroxyl group adjacent to amino group
 
-    # Count total number of carbons (should be at least 12)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 12:
-        return False, f"Too few carbons ({c_count} found, minimum 12 required)"
+        # Now, check the aliphatic chain length starting from C2
+        visited = set()
+        chain_atoms = []
 
-    # Ensure the molecule is a long-chain amino diol
-    # Find the path from amino group to terminal hydroxyl group
-    # This ensures the backbone is continuous
+        def traverse_chain(atom):
+            if atom.GetIdx() in visited:
+                return
+            visited.add(atom.GetIdx())
+            if atom.GetAtomicNum() != 6:
+                return
+            chain_atoms.append(atom)
+            for nbr in atom.GetNeighbors():
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                if bond.IsInRing():
+                    continue  # Skip ring structures
+                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != amine_atom.GetIdx():
+                    traverse_chain(nbr)
 
-    # Identify amino group nitrogen
-    amino_n = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7 and atom.GetTotalDegree() == 3]
-    if not amino_n:
-        return False, "No appropriate amino group found"
-    amino_n = amino_n[0]
+        traverse_chain(c2_atom)
+        chain_length = len(chain_atoms)
 
-    # Identify primary alcohol oxygens
-    primary_oxygens = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1 and atom.GetTotalNumHs() == 1]
-    if len(primary_oxygens) < 1:
-        return False, "No primary hydroxyl group found"
+        if chain_length < 12:
+            continue  # Chain too short to be sphingoid
 
-    # Check connectivity between amino group and hydroxyl groups
-    # Use a BFS to find paths
-    found_backbone = False
-    for oxygen in primary_oxygens:
-        # Get the carbon attached to the hydroxyl group
-        oxy_carbon = oxygen.GetNeighbors()[0]
-        # Find path to amino nitrogen
-        path = Chem.rdmolops.GetShortestPath(mol, amino_n.GetIdx(), oxy_carbon.GetIdx())
-        # Backbone should be at least 2 atoms (C-N)
-        if len(path) >= 2:
-            found_backbone = True
-            break
+        # If all checks passed
+        return True, "Molecule matches sphingoid structural features"
 
-    if not found_backbone:
-        return False, "No proper amino alcohol backbone found"
-
-    return True, "Molecule matches sphingoid structural features"
+    return False, "Molecule does not match sphingoid structural features"
