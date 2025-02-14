@@ -31,14 +31,14 @@ def is_cardiolipin(smiles: str):
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "No glycerol backbone found"
 
-    # Check for 2 phosphate groups
-    phosphate_pattern = Chem.MolFromSmarts("[P]([O])([O])([O])([O])")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) != 2:
-        return False, f"Found {len(phosphate_matches)} phosphate groups, need exactly 2"
+    # Check for 2 phosphatidic acid moieties
+    phosphatidic_acid_pattern = Chem.MolFromSmarts("OP(OCC(OCC=O)OCCCO)OCC(OCC=O)OCC")
+    phosphatidic_acid_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
+    if len(phosphatidic_acid_matches) != 2:
+        return False, f"Found {len(phosphatidic_acid_matches)} phosphatidic acid moieties, need exactly 2"
 
-    # Check for 4 fatty acid chains of appropriate length
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # Check for fatty acid chain lengths and double bonds
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 4:
         return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
@@ -48,10 +48,9 @@ def is_cardiolipin(smiles: str):
     if n_rotatable < 10:
         return False, "Chains too short to be fatty acids"
 
-    # Additional check for phosphatidic acid moieties
-    phosphatidic_acid_pattern = Chem.MolFromSmarts("[P]([O])([O])([O])[C]([O])[C]")
-    phosphatidic_acid_matches = mol.GetSubstructMatches(phosphatidic_acid_pattern)
-    if len(phosphatidic_acid_matches) != 2:
-        return False, "Missing or incorrect phosphatidic acid moieties"
+    # Check for double bonds in fatty acid chains
+    has_double_bonds = any(bond.GetIsAromatic() and bond.GetBondType() == Chem.BondType.DOUBLE for bond in mol.GetBonds())
+    if not has_double_bonds:
+        return False, "No double bonds found in fatty acid chains"
 
     return True, "Contains glycerol backbone with 2 phosphatidic acid moieties attached"
