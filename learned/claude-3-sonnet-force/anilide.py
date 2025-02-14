@@ -27,35 +27,29 @@ def is_anilide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for aniline substructure (aromatic ring with NH2 group)
-    aniline_pattern = Chem.MolFromSmarts("c1ccc(cc1)N")
-    aniline_matches = mol.GetSubstructMatches(aniline_pattern)
+    # Look for the anilide core structure
+    anilide_pattern = Chem.MolFromSmarts("c1ccc(cc1)NC(=O)")
+    anilide_matches = mol.GetSubstructMatches(anilide_pattern)
 
-    # Look for aromatic amide group (-C(=O)N-)
-    amide_pattern = Chem.MolFromSmarts("C(=O)Nc")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if not anilide_matches:
+        return False, "Does not contain the anilide core structure"
 
-    # Check if aniline and amide groups are connected
-    connected = False
-    for aniline_match in aniline_matches:
-        aniline_atom = aniline_match[-1]  # Last atom in the aniline match
-        for amide_match in amide_matches:
-            amide_atom = amide_match[2]  # Nitrogen atom in the amide match
-            if mol.GetBondBetweenAtoms(aniline_atom, amide_atom) is not None:
-                connected = True
-                break
+    # Ensure the entire aromatic system is aromatic
+    aromatic_atoms = [mol.GetAtomWithIdx(idx).GetIsAromatic() for match in anilide_matches for idx in match]
+    if not all(aromatic_atoms):
+        return False, "The aromatic system is not fully aromatic"
 
-    # Check if the aniline ring is aromatic
-    aniline_ring = any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in aniline_match)
+    # Check for common substituents on the aromatic ring(s)
+    allowed_substituents = "[Cl,Br,I,F,#17,#35,#53,#16,#7,#6]"  # Halogens, -NH2, -NO2, -OH, alkyls, aryls
+    substituent_pattern = Chem.MolFromSmarts(f"c1ccc(cc1)NC(=O)[{allowed_substituents}]")
+    substituent_matches = mol.GetSubstructMatches(substituent_pattern)
 
-    # Check if the amide group is part of an aromatic system
-    amide_ring = any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in amide_match)
+    if not substituent_matches:
+        return False, "The substituents on the aromatic ring(s) are not allowed"
 
-    # Check for acylation pattern (C(=O)N-Ar)
-    acylation_pattern = Chem.MolFromSmarts("C(=O)Nc")
-    acylation_matches = mol.GetSubstructMatches(acylation_pattern)
+    # Check molecular weight
+    mol_weight = Chem.rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_weight < 150 or mol_weight > 500:
+        return False, "Molecular weight outside the typical range for anilides"
 
-    if connected and aniline_ring and amide_ring and acylation_matches:
-        return True, "Contains an aromatic aniline group connected to an aromatic amide group via acylation"
-    else:
-        return False, "Does not match the structural requirements for an anilide"
+    return True, "Contains an aromatic amide group connected to an aromatic ring, characteristic of anilides"
