@@ -7,9 +7,10 @@ Classifies: CHEBI:38181 catechol
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-def is_catechol(smiles: str):
+def is_catechols(smiles: str):
     """
-    Determines if a molecule contains an o-diphenol (catechol) component based on its SMILES string.
+    Determines if a molecule contains a catechol component based on its SMILES string.
+    A catechol component is defined as an o-diphenol group, potentially with additional substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,11 +25,14 @@ def is_catechol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define catechol pattern
-    catechol_pattern = Chem.MolFromSmarts("c1c(O)c(O)cc1")
+    # Define a broader catechol pattern
+    catechol_pattern = Chem.MolFromSmarts("[c;r5]1:c(:c(:c(:c(:c:1)-[OH]):c-[OH])-*)-*")
     
     # Check if the molecule contains the catechol pattern
-    if mol.HasSubstructMatch(catechol_pattern):
-        return True, "Contains an o-diphenol (catechol) component"
+    catechol_matches = mol.GetSubstructMatches(catechol_pattern)
+    if catechol_matches:
+        # Additional checks or heuristics can be added here
+        # to ensure the identified substructure is a valid catechol component
+        return True, "Contains a catechol component"
     else:
-        return False, "Does not contain an o-diphenol (catechol) component"
+        return False, "Does not contain a catechol component"
