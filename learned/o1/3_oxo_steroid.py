@@ -6,6 +6,7 @@ Classifies: 3-oxo steroid
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdqueries
 
 def is_3_oxo_steroid(smiles: str):
     """
@@ -25,8 +26,10 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for steroid nucleus (cyclopentanoperhydrophenanthrene)
-    steroid_nucleus_smarts = '[#6]12[#6][#6][#6]3([#6]1[#6][#6][#6]([#6]2)[#6]4[#6][#6][#6][#6][#6]34)'
+    # Define a general SMARTS pattern for the steroid nucleus (cyclopentanoperhydrophenanthrene)
+    steroid_nucleus_smarts = """
+    [#6]1[#6][#6][#6]2[#6]([#6]1)[#6][#6][#6]3[#6]2[#6][#6][#6]4[#6]3[#6][#6][#6][#6]4
+    """
     steroid_nucleus = Chem.MolFromSmarts(steroid_nucleus_smarts)
     if steroid_nucleus is None:
         return False, "Error in steroid nucleus SMARTS pattern"
@@ -35,17 +38,31 @@ def is_3_oxo_steroid(smiles: str):
     if not mol.HasSubstructMatch(steroid_nucleus):
         return False, "Molecule does not contain steroid nucleus"
 
-    # Define SMARTS pattern for ketone at position 3 of steroid nucleus
-    # This pattern looks for a ketone (=O) attached to the third carbon in the A ring
-    three_oxo_steroid_smarts = '''
-    [#6]12[#6](=O)[#6][#6]3([#6]1[#6][#6][#6]([#6]2)[#6]4[#6][#6][#6][#6][#6]34)
-    '''
-    three_oxo_steroid_pattern = Chem.MolFromSmarts(three_oxo_steroid_smarts)
-    if three_oxo_steroid_pattern is None:
-        return False, "Error in 3-oxo steroid SMARTS pattern"
+    # Find the match of the steroid nucleus to map atom indices
+    matches = mol.GetSubstructMatches(steroid_nucleus)
+    if not matches:
+        return False, "Steroid nucleus not properly matched"
 
-    # Check if molecule matches the 3-oxo steroid pattern
-    if mol.HasSubstructMatch(three_oxo_steroid_pattern):
-        return True, "Molecule is a 3-oxo steroid"
-    else:
-        return False, "Molecule does not have ketone at position 3 of steroid nucleus"
+    # Assuming the first match is representative
+    match = matches[0]
+
+    # Map the atoms in the steroid nucleus to their positions
+    steroid_atoms = { "C1": match[0], "C2": match[1], "C3": match[2], "C4": match[3],
+                      "C5": match[4], "C6": match[5], "C7": match[6], "C8": match[7],
+                      "C9": match[8], "C10": match[9], "C11": match[10], "C12": match[11],
+                      "C13": match[12], "C14": match[13], "C15": match[14], "C16": match[15],
+                      "C17": match[16] }
+
+    # Check for a ketone (=O) at position 3
+    position_3 = steroid_atoms["C3"]
+    atom_3 = mol.GetAtomWithIdx(position_3)
+    ketone_found = False
+    for neighbor in atom_3.GetNeighbors():
+        if neighbor.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(position_3, neighbor.GetIdx()).GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            ketone_found = True
+            break
+
+    if not ketone_found:
+        return False, "No ketone (=O) group at position 3 of steroid nucleus"
+
+    return True, "Molecule is a 3-oxo steroid"
