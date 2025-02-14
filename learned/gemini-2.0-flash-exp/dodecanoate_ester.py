@@ -22,8 +22,8 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for the dodecanoyl group with an ester bond
-    # Matches: CH3-[CH2]10-C(=O)-O-[not H]
+    # SMARTS pattern for the dodecanoyl group with an ester bond.
+    # Matches: CH3-[CH2]10-C(=O)-O-[not H] where not H means any atom other than Hydrogen.
     dodecanoyl_ester_pattern = Chem.MolFromSmarts("CCCCCCCCCCCC(=O)O[#6]")
     
     # Check if the pattern is present
