@@ -1,36 +1,31 @@
 """
 Classifies: CHEBI:50477 butyrate ester
 """
-"""
-Classifies: CHEBI:34835 butyrate ester
-Definition: Any carboxylic ester where the carboxylic acid component is butyric acid.
-"""
+The previous program has a simple approach to classify butyrate esters: it checks for the presence of a butanoate group (CCCC(=O)) attached to an oxygen atom using the SMARTS pattern "CCCC(=O)O*".
 
-from rdkit import Chem
-from rdkit.Chem import AllChem
+After analyzing the outcomes, it appears that this approach is too simplistic and leads to several false positives and false negatives.
 
-def is_butyrate_ester(smiles: str):
-    """
-    Determines if a molecule is a butyrate ester based on its SMILES string.
+False Positives:
+The program incorrectly classifies many molecules as butyrate esters because they contain a butanoate group attached to an oxygen atom, even though the oxygen atom is not part of an ester functional group. Examples include fatty acids, glycerolipids, and other molecules where the butanoate group is attached to a hydroxyl group.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+False Negatives:
+The program misses some butyrate esters, such as butyryl-L-carnitine-d3, because the SMARTS pattern does not account for isotopic labeling or other modifications to the butanoate group.
 
-    Returns:
-        bool: True if molecule is a butyrate ester, False otherwise
-        str: Reason for classification
-    """
+Improvements:
+To improve the classification accuracy, the program should incorporate additional checks and chemical knowledge beyond just the presence of a butanoate group attached to an oxygen atom. Here are some potential improvements:
 
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+1. Check for the presence of an ester functional group (-C(=O)O-) within the molecule, rather than just looking for a butanoate group attached to an oxygen atom.
 
-    # Look for butyrate ester substructure (butanoate group attached to oxygen)
-    butanoate_pattern = Chem.MolFromSmarts("CCCC(=O)O*")
-    is_butyrate_ester = mol.HasSubstructMatch(butanoate_pattern)
+2. Ensure that the butanoate group is part of the ester functional group by checking the neighboring atoms and bond types.
 
-    if is_butyrate_ester:
-        return True, "Contains a butanoate group attached to an oxygen atom"
-    else:
-        return False, "Does not contain a butanoate group attached to an oxygen atom"
+3. Account for isotopic labeling, stereochemistry, and other modifications to the butanoate group by using more flexible SMARTS patterns or substructure matching approaches.
+
+4. Consider additional structural features or molecular properties that are characteristic of butyrate esters, such as molecular weight range, number of specific functional groups, or other substructures.
+
+5. Implement a more sophisticated machine learning or rule-based approach that can learn from a larger dataset of butyrate esters and non-butyrate esters.
+
+6. Handle edge cases and exceptions more gracefully, such as molecules with ambiguous or incorrect SMILES strings.
+
+Additionally, it's important to note that there may be some inherent ambiguity or inconsistencies in the benchmark data itself, as you mentioned having limited confidence in it. In such cases, it's reasonable to prioritize chemical knowledge and intuition over strictly adhering to the benchmark if there are clear discrepancies.
+
+By incorporating these improvements, the program can become more robust and accurate in classifying butyrate esters based on their SMILES strings.
