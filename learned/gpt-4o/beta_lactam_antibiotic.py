@@ -6,9 +6,7 @@ from rdkit import Chem
 def is_beta_lactam_antibiotic(smiles: str):
     """
     Determines if a molecule is a beta-lactam antibiotic based on its SMILES string.
-    A beta-lactam antibiotic contains a beta-lactam ring (four-membered cyclic amide), 
-    which is a key feature of antibiotics such as penicillins, cephalosporins, 
-    monobactams, and carbapenems.
+    A beta-lactam antibiotic contains a beta-lactam ring (a four-membered cyclic amide).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,21 +21,13 @@ def is_beta_lactam_antibiotic(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for detecting the beta-lactam ring
-    beta_lactam_ring_pattern = Chem.MolFromSmarts("C1C(=O)N(C)C1")
-    
-    if mol.HasSubstructMatch(beta_lactam_ring_pattern):
-        # Check for additional structural features typical of beta-lactam antibiotics
-        # such as specific side chains or functional groups
-        penicillin_pattern = Chem.MolFromSmarts("C1C(=O)N2C(C)C2SC1")
-        cephalosporin_pattern = Chem.MolFromSmarts("C1C2=C(C)SC(N2C(N1)=O)C(=O)")
-        carbapenem_pattern = Chem.MolFromSmarts("C1C2=C(O)C(=O)N(C2C1)C=O")
-        
-        if (mol.HasSubstructMatch(penicillin_pattern) or
-            mol.HasSubstructMatch(cephalosporin_pattern) or
-            mol.HasSubstructMatch(carbapenem_pattern)):
-            return True, "Contains beta-lactam ring with known antibiotic structure features"
-
+    # Look for beta-lactam ring pattern (four-membered ring with a C=O and a nitrogen)
+    beta_lactam_pattern = Chem.MolFromSmarts("C1C(=O)NC1")
+    if mol.HasSubstructMatch(beta_lactam_pattern):
         return True, "Contains a beta-lactam ring"
-    
-    return False, "No beta-lactam ring found"
+    else:
+        return False, "No beta-lactam ring found"
+
+# Example usage:
+# result, reason = is_beta_lactam_antibiotic('CC1=C(C(=NN1CC(=O)NC2C3N(C2=O)C(=C(CS3)CSC4=NN=C(S4)C)C(=O)O)C)Cl')
+# print(result, reason)
