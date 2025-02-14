@@ -27,7 +27,8 @@ def is_myo_inositol_phosphate(smiles: str):
 
     # Look for inositol backbone pattern
     inositol_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)O")
-    if not mol.HasSubstructMatch(inositol_pattern):
+    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
+    if not inositol_matches:
         return False, "No myo-inositol backbone found"
 
     # Exclude glycerophospholipids and glycosphingolipids
@@ -44,6 +45,11 @@ def is_myo_inositol_phosphate(smiles: str):
 
     # Count number of phosphate groups
     n_phosphates = len(phosphate_matches)
+
+    # Check for at least one phosphate group attached to the inositol ring
+    inositol_phosphate_pattern = Chem.MolFromSmarts("[C@@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)OP(=O)([OX1,OX2])[OX1,OX2]")
+    if not mol.HasSubstructMatch(inositol_phosphate_pattern):
+        return False, "No phosphate group attached to the inositol ring"
 
     # Optionally, you can add additional checks for chemical properties or molecular weight
 
