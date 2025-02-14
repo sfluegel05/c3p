@@ -2,7 +2,6 @@
 Classifies: CHEBI:87657 octanoate ester
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_octanoate_ester(smiles: str):
     """
@@ -20,17 +19,16 @@ def is_octanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved pattern to match octanoyl connected to ester bond
-    # Match CCCCCCCC(=O)O connected to a C
-    octanoyl_ester_pattern = Chem.MolFromSmarts("CCCCCCC(=O)O[#6]")
+    # SMARTS pattern to match octanoyl connected to an ester bond (C(=O)O)
+    # Pattern matches a chain of 7 carbons followed by a carbonyl carbon connected to an oxygen via a single bond and that oxygen connected to any other atom.
+    octanoyl_ester_pattern = Chem.MolFromSmarts("CCCCCCC[CX3](=O)[OX2][#6]")
     octanoyl_ester_matches = mol.GetSubstructMatches(octanoyl_ester_pattern)
 
-    # Match ionized version CCCCCCCC(=O)[O-] connected to a C
-    octanoyl_ester_pattern_ion = Chem.MolFromSmarts("CCCCCCC(=O)[O-][#6]")
+     # SMARTS pattern to match ionized octanoyl connected to an ester bond
+    octanoyl_ester_pattern_ion = Chem.MolFromSmarts("CCCCCCC[CX3](=O)[O-][#6]")
     octanoyl_ester_matches_ion = mol.GetSubstructMatches(octanoyl_ester_pattern_ion)
 
-
-    if len(octanoyl_ester_matches) == 0 and len(octanoyl_ester_matches_ion) == 0:
-        return False, "No octanoyl ester group found"
-
-    return True, "Contains at least one octanoyl group connected to an ester"
+    if len(octanoyl_ester_matches) > 0 or len(octanoyl_ester_matches_ion) > 0 :
+          return True, "Contains at least one octanoyl group connected to an ester"
+    
+    return False, "No octanoyl ester group found"
