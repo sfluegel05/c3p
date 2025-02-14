@@ -22,29 +22,38 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Check for cyclopentane ring with attached chains
-    cyclopentane_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1")  #Basic 5 member ring
+    # 1. Check for a substituted cyclopentane or related ring
+    # Allow for 5-membered rings with C and/or O, double bonds, and substitutions
+    cyclopentane_pattern = Chem.MolFromSmarts("[C,O]1([C,O])([C,O])([C,O])([C,O])1")
     if not mol.HasSubstructMatch(cyclopentane_pattern):
-        return False, "No cyclopentane ring found"
+       return False, "No cyclopentane or related ring found"
 
-    #2. Check for a carboxyl acid group
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group found"
+    # 2. Check for a carboxyl acid, ester, or amide group
+    acid_ester_amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])O") # -C(=O)O, or -C(=O)OR
+    amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])N")
+    if not (mol.HasSubstructMatch(acid_ester_amide_pattern) or mol.HasSubstructMatch(amide_pattern)):
+        return False, "No carboxyl, ester, or amide group found"
+        
+    #3. Check for presence of carbon chain
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No carbon chain found"
 
-    #3. Check for 20 carbons
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count != 20:
-        return False, f"Not 20 carbons, found {c_count}"
-    
-    #4. Check for at least one double bond
-    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "No double bond found"
+    #4. Check for at least 2 alcohol groups
+    alcohol_pattern = Chem.MolFromSmarts("[OX2H]") # -OH
+    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
+    if len(alcohol_matches) < 2:
+        return False, f"Must have at least 2 alcohol groups"
 
-    # 5. Check for 4-6 oxygens
+    #5. Check for at least 3 oxygens
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 4 or o_count > 6:
-        return False, f"Oxygen count is not between 4 and 6, found {o_count}"
+    if o_count < 3:
+        return False, f"Must have at least 3 oxygens, found {o_count}"
+
+    # 6. Check for a carbon chain connected to the cyclopentane ring and a carbonyl group
+    # This should help prevent false positives. This check is similar to the core pattern check from before
+    core_pattern = Chem.MolFromSmarts("[C,O]1([C,O])([C,O])([C,O])([C,O])1~[C]~[CX3]=[OX1]")
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "Core prostaglandin pattern not found"
 
     return True, "Meets basic prostaglandin criteria"
