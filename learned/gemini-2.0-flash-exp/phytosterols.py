@@ -25,25 +25,27 @@ def is_phytosterols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # More flexible steroid core pattern, allows for double bonds, and chirality
-    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C]([C])([C])[C]2[C]3[C]([C]4[C]([C]12)CC[C]34)[C]")
+
+    # Define a more flexible steroid core pattern
+    steroid_core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]([C]4[C]([C]12)CC[C]34)[C]")
     if not mol.HasSubstructMatch(steroid_core_pattern):
             return False, "Does not have the core steroid structure"
-
-    # Check for a side chain at the end of the core -  a C attached to a C in the core
-    sidechain_pattern = Chem.MolFromSmarts("[C]1[C]([C])([C])[C]2[C]3[C]([C]4[C]([C]12)CC[C]34)[C]-[C]")
-    if not mol.HasSubstructMatch(sidechain_pattern):
-        return False, "Does not have the side chain at the end of the core"
-
-    # Check for a hydroxyl group attached to a ring carbon
-    hydroxyl_pattern = Chem.MolFromSmarts("[C]1[C]([C])([C])[C]2[C]3[C]([C]4[C]([C]12)CC[C]34)[C][OH]")
+            
+    # Check for hydroxyl group at position 3 (we need to be precise here)
+    hydroxyl_pattern = Chem.MolFromSmarts("[C]1[C]([OH])[C]2[C]3[C]([C]4[C]([C]12)CC[C]34)[C]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Does not have hydroxyl on a ring"
+        return False, "Does not have hydroxyl group at position 3"
+    
+    # Check for a side chain at position 17
+    sidechain_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C]([C]4[C]([C]12)CC[C]34)[C]-[C]")
+    if not mol.HasSubstructMatch(sidechain_pattern):
+            return False, "Does not have a side chain at position 17"
 
-    # Optional check for double bonds
+
+    # Check for double bonds (optional)
     double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
     if mol.HasSubstructMatch(double_bond_pattern):
-         return True, "Has core steroid structure with side chain, hydroxyl group and at least one double bond"
+        return True, "Has core steroid structure with side chain, hydroxyl group at 3 position and at least one double bond"
     
-    return True, "Has core steroid structure with side chain and hydroxyl group"
+
+    return True, "Has core steroid structure with side chain and hydroxyl group at 3 position"
