@@ -7,6 +7,7 @@ A 3-oxo steroid conjugated to a C=C double bond at the alpha,beta position.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_3_oxo_Delta_4_steroid(smiles: str):
     """
@@ -37,22 +38,24 @@ def is_3_oxo_Delta_4_steroid(smiles: str):
     if not delta4_match:
         return False, "No Delta(4) alkene found"
     
-    # Check if the Delta(4) alkene and 3-oxo group are part of a fused ring system
+    # Check if the Delta(4) alkene and 3-oxo group are part of the same fused ring system
     ring_info = mol.GetRingInfo()
-    is_fused = False
     for ring in ring_info.AtomRings():
         if len(ring) >= 6:
             ring_atoms = set(ring)
             if oxo_match[0][0] in ring_atoms and any(delta4_match[0][i] in ring_atoms for i in range(2)):
-                is_fused = True
-                break
+                # Check for cyclopentanoperhydrophenanthrene ring system
+                if len(ring) == 17:
+                    break
+    else:
+        return False, "Delta(4) alkene and 3-oxo group not part of a cyclopentanoperhydrophenanthrene ring system"
     
-    if not is_fused:
-        return False, "Delta(4) alkene and 3-oxo group not part of a fused ring system"
+    # Check for correct stereochemistry
+    # ... (implement stereochemistry checks)
     
-    # Check for steroid skeleton
-    steroid_pattern = Chem.MolFromSmarts("[CR4]1[CR3]@[CR3]@[CR3]@[CR3]@[CR3]@[CR3]@1")
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid skeleton found"
+    # Check molecular weight (optional)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200 or mol_wt > 500:
+        return False, "Molecular weight outside typical range for steroids"
     
-    return True, "Contains a 3-oxo group and a Delta(4) alkene in a fused ring system, steroid skeleton present"
+    return True, "Contains a 3-oxo group and a Delta(4) alkene in a cyclopentanoperhydrophenanthrene ring system"
