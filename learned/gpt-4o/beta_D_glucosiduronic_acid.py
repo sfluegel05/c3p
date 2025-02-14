@@ -2,7 +2,7 @@
 Classifies: CHEBI:15341 beta-D-glucosiduronic acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdqueries
 
 def is_beta_D_glucosiduronic_acid(smiles: str):
     """
@@ -20,21 +20,22 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return (None, "Invalid SMILES string")
 
     # Define SMARTS patterns
     # Pattern for glucuronic acid with appropriate beta linkage
-    glucuronic_acid_pattern = Chem.MolFromSmarts("OC1[C@@H](O)[C@H](O)[C@H](O)[C@@H](O1)C(=O)O")
+    glucuronic_acid_smarts = "[C@H]1(O)[C@@H](O)[C@H](O)[C@H](O1)C(=O)O"  # Stereochemistry judged for beta-D
+    glucuronic_acid_pattern = Chem.MolFromSmarts(glucuronic_acid_smarts)
     if not mol.HasSubstructMatch(glucuronic_acid_pattern):
         return False, "No beta-D-glucuronic acid substructure found"
-    
-    # Pattern for glycosidic bond
-    glycosidic_bond_pattern = Chem.MolFromSmarts("O-C")
-    glycosidic_bond_matches = mol.GetSubstructMatches(glycosidic_bond_pattern)
-    if not glycosidic_bond_matches:
-        return False, "No glycosidic bond found"
 
+    # Check for glycosidic linkage specifically in the beta position
+    # We need to ensure it's a bond involving the non-reducing end of glucuronic acid
+    beta_linkage_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O1)")
+    if not mol.HasSubstructMatch(beta_linkage_pattern):
+        return False, "No beta glycosidic linkage found"
+    
     return True, "Contains beta-D-glucuronic acid with glycosidic linkage"
 
-# Examples
-# SMILES examples provided in the task description can be classified using the above function
+# Example usage:
+# is_beta_D_glucosiduronic_acid("...")
