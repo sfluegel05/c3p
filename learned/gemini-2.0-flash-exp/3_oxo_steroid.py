@@ -19,19 +19,40 @@ def is_3_oxo_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS for steroid core (simplified, focuses on ring connectivity).
-    # The key here is to identify a pattern that contains 3 fused six membered rings and one five membered ring
-    # and at least one carbon with at least 2 neighbors
-    steroid_core_pattern = Chem.MolFromSmarts("[CH2X4,CHX3,CHX2]1[CH2X4,CHX3,CHX2]2[CH2X4,CHX3,CHX2]3[CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2]4[CH2X4,CHX3,CHX2]1[CH2X4,CHX3,CHX2]5[CH2X4,CHX3,CHX2]6[CH2X4,CHX3,CHX2]2[CH2X4,CHX3,CHX2]7[CH2X4,CHX3,CHX2]3[CH2X4,CHX3,CHX2]4[CH2X4,CHX3,CHX2]756")
+    # SMARTS for steroid core (more general, focuses on fused rings, including at least 2 six-membered)
+    # This pattern identifies fused rings. The [R] means any ring atom, and we want at least one of them to have
+    # a 6 membered ring at the start and end, and the intermediate rings can be any size.
+    # The pattern must contain at least 3 rings.
+    steroid_core_pattern = Chem.MolFromSmarts("[R6]1[R][R]2[R][R]3[R][R]1[R][R]4[R]2[R][R]3[R6]4")
     if not mol.HasSubstructMatch(steroid_core_pattern):
         return False, "Molecule does not have a steroid core"
 
-    # SMARTS for carbonyl at position 3. It will be attached to a carbon of the 6 membered ring
-    # connected to the fused ring.
-    # This focuses on a carbon being part of a 6 membered ring and having a double bonded oxygen.
-    oxo_at_3_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4]([CH2X4,CHX3,CHX2])[CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2][CH2X4,CHX3,CHX2]")
-
+    # SMARTS for carbonyl at position 3. It will be attached to a carbon of a 6 membered ring
+    # in the steroid core.
+    oxo_at_3_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[R6]")
     if not mol.HasSubstructMatch(oxo_at_3_pattern):
-         return False, "Molecule does not have a carbonyl at position 3"
+        return False, "Molecule does not have a carbonyl at position 3"
+
+    # Verify that the carbonyl is part of the steroid core:
+    # Find match of core, then carbonyl, check that the carbon of the carbonyl is in the core
+    core_matches = mol.GetSubstructMatches(steroid_core_pattern)
+    carbonyl_matches = mol.GetSubstructMatches(oxo_at_3_pattern)
+    if not core_matches or not carbonyl_matches:
+        return False, "Molecule does not have both a steroid core and a carbonyl"
     
+    carbonyl_carbon_in_core = False
+
+    for core_match in core_matches:
+        for carbonyl_match in carbonyl_matches:
+            carbonyl_carbon_idx = carbonyl_match[0] # the carbon is always the first match
+            if carbonyl_carbon_idx in core_match:
+                carbonyl_carbon_in_core = True
+                break
+        if carbonyl_carbon_in_core:
+            break
+    
+    if not carbonyl_carbon_in_core:
+        return False, "Carbonyl at 3 not part of the steroid core"
+    
+
     return True, "Molecule is a 3-oxo steroid"
