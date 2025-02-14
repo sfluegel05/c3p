@@ -5,7 +5,6 @@ Classifies: CHEBI:24026 fatty alcohol
 Classifies: fatty alcohol
 """
 from rdkit import Chem
-from rdkit.Chem import rdmolops
 
 def is_fatty_alcohol(smiles: str):
     """
@@ -20,6 +19,7 @@ def is_fatty_alcohol(smiles: str):
         bool: True if molecule is a fatty alcohol, False otherwise
         str: Reason for classification
     """
+    from rdkit.Chem import rdmolops
 
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
@@ -27,58 +27,60 @@ def is_fatty_alcohol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Identify hydroxyl groups attached to sp3 carbons (exclude phenols)
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4;!$(C[O,N,S,P]=O)]-[OX2H]")
-    matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    hydroxyl_pattern = Chem.MolFromSmarts("[C;H1,H2,H3;!$(C=[!#6])]-[OH]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
 
-    if not matches:
+    if not hydroxyl_matches:
         return False, "No suitable hydroxyl groups attached to sp3 carbons"
 
-    # Iterate over each hydroxyl group
-    for match in matches:
+    for match in hydroxyl_matches:
         carbon_idx = match[0]
-        oxygen_idx = match[1]
 
         # Check if the carbon is in a ring
         carbon_atom = mol.GetAtomWithIdx(carbon_idx)
-        if carbon_atom.IsInRing():
-            continue  # Skip if carbon is part of a ring
+        # We now include ring carbons if they are part of an aliphatic chain
 
-        # Perform BFS to find all connected carbons (excluding rings)
+        # Use DFS to find the longest carbon chain starting from carbon_idx
         visited = set()
-        queue = [carbon_idx]
-        carbon_count = 0
+        max_chain_length = 0
 
-        while queue:
-            current_idx = queue.pop(0)
-            if current_idx in visited:
-                continue
-            visited.add(current_idx)
-            atom = mol.GetAtomWithIdx(current_idx)
-
-            # Count only carbon atoms
-            if atom.GetAtomicNum() == 6:
-                carbon_count += 1
-            else:
-                continue  # Skip non-carbon atoms
-
-            # Add neighboring carbons that are not in rings
+        def dfs(atom_idx, length):
+            nonlocal max_chain_length
+            visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            max_chain_length = max(max_chain_length, length)
             for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx not in visited and not neighbor.IsInRing():
-                    if neighbor.GetAtomicNum() == 6:
-                        queue.append(neighbor_idx)
+                nbr_idx = neighbor.GetIdx()
+                nbr_atom = mol.GetAtomWithIdx(nbr_idx)
+                if nbr_idx not in visited and nbr_atom.GetAtomicNum() == 6:
+                    dfs(nbr_idx, length + 1)
 
-        if carbon_count >= 3:
-            return True, f"Contains aliphatic alcohol with a chain of {carbon_count} carbons"
+        dfs(carbon_idx, 1)  # Start from length 1 (carbon attached to OH)
+
+        if max_chain_length >= 3:
+            # Additional check: Ensure the main chain is aliphatic (exclude aromatics)
+            # Get the path of the longest chain
+            path = []
+
+            def dfs_path(atom_idx, current_path):
+                current_path.append(atom_idx)
+                atom = mol.GetAtomWithIdx(atom_idx)
+                for neighbor in atom.GetNeighbors():
+                    nbr_idx = neighbor.GetIdx()
+                    nbr_atom = mol.GetAtomWithIdx(nbr_idx)
+                    if nbr_atom.GetAtomicNum() == 6 and nbr_idx not in current_path:
+                        dfs_path(nbr_idx, current_path.copy())
+
+            dfs_path(carbon_idx, [])
+            # Check if any atom in the path is aromatic
+            aromatic = False
+            for idx in path:
+                if mol.GetAtomWithIdx(idx).GetIsAromatic():
+                    aromatic = True
+                    break
+            if aromatic:
+                continue  # Skip if any atom in the main chain is aromatic
+
+            return True, f"Contains aliphatic alcohol with a chain of {max_chain_length} carbons"
 
     return False, "No aliphatic chain with sufficient length connected to hydroxyl group"
-
-# Example usage:
-# smiles_list = [
-#     "CCCCCCCCCCCCCC(O)CCC",  # tetradecan-5-ol
-#     "CCCCCCCCCCCCCO",        # dodecan-1-ol
-#     "CC(C)(O)C(=O)Cc1cnc2ccccc12",  # Should be False
-# ]
-# for smiles in smiles_list:
-#     result, reason = is_fatty_alcohol(smiles)
-#     print(f"SMILES: {smiles}\nResult: {result}, Reason: {reason}\n")
