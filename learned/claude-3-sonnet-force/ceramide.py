@@ -27,15 +27,15 @@ def is_ceramide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for sphingoid base backbone pattern
-    sphingoid_pattern = Chem.MolFromSmarts("[NH2][CX4;H2]([CX4])[CX4]([CX3])[CX3]=[CX3]")
+    sphingoid_pattern = Chem.MolFromSmarts("[NX3][CX4]([CX4])[CX4]([CX3,CX4])[CX3]=[CX3]")
     if not mol.HasSubstructMatch(sphingoid_pattern):
         return False, "No sphingoid base backbone found"
 
     # Look for amide group (-C(=O)N-) linking fatty acid
     amide_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3]")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) != 1:
-        return False, f"Found {len(amide_matches)} amide groups, need exactly 1"
+    if len(amide_matches) == 0:
+        return False, "No amide group found"
 
     # Check for long hydrocarbon chains (fatty acid and sphingoid base)
     hydrocarbon_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
@@ -59,7 +59,7 @@ def is_ceramide(smiles: str):
     
     if c_count < 20:
         return False, "Too few carbons for ceramide"
-    if n_count != 1:
-        return False, "Must have exactly 1 nitrogen (sphingoid base)"
+    if n_count == 0:
+        return False, "Must have at least 1 nitrogen (sphingoid base)"
 
     return True, "Contains fatty acid amide-linked to a sphingoid base"
