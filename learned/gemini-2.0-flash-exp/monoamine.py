@@ -44,7 +44,7 @@ def is_monoamine(smiles: str):
 
     # Check for the 2-carbon chain linking amino group to *a* benzene ring.
     # The chain is explicitly required to be two single-bonded saturated carbons with the aromatic ring and the N on each end
-    two_carbon_chain_pattern = Chem.MolFromSmarts("[NX3,NX4][CH2][CH2]c1ccccc1")
+    two_carbon_chain_pattern = Chem.MolFromSmarts("[NX3,NX4][CH2][CH2]~c1ccccc1")
     if not mol.HasSubstructMatch(two_carbon_chain_pattern):
        return False, "Amino group must be connected to a benzene ring by a two-carbon chain."
 
