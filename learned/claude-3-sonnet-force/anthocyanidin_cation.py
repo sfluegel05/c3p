@@ -11,7 +11,8 @@ from rdkit.Chem import rdMolDescriptors
 def is_anthocyanidin_cation(smiles: str):
     """
     Determines if a molecule is an anthocyanidin cation based on its SMILES string.
-    An anthocyanidin cation is an oxygenated derivative of flavylium (2-phenylchromenylium) with a positive charge.
+    An anthocyanidin cation is an oxygenated derivative of flavylium (2-phenylchromenylium) with a positive charge,
+    and is an aglycon (non-sugar part) of an anthocyanin cation.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -36,28 +37,20 @@ def is_anthocyanidin_cation(smiles: str):
     if not mol.HasSubstructMatch(phenyl_pattern):
         return False, "No phenyl ring found"
     
-    # Look for oxygens outside the flavylium core
-    oxygen_pattern = Chem.MolFromSmarts("O")
-    oxygen_matches = mol.GetSubstructMatches(oxygen_pattern)
-    oxygen_counts = [0] * mol.GetNumAtoms()
-    for match in oxygen_matches:
-        oxygen_counts[match] += 1
-    n_oxygens_outside = sum(1 for count in oxygen_counts if count > 0 and not mol.GetAtomWithIdx(i).IsInRingSize(6))
-    if n_oxygens_outside < 1:
-        return False, "No oxygens outside flavylium core"
-    
     # Check for positive charge
     formal_charge = rdMolDescriptors.CalcFormalCharge(mol)
     if formal_charge != 1:
         return False, "Incorrect formal charge (expected +1)"
     
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    # Check for absence of sugar moieties
+    sugar_pattern = Chem.MolFromSmarts("OC")
+    if mol.HasSubstructMatch(sugar_pattern):
+        return False, "Contains sugar moieties (not an aglycon)"
     
-    if c_count < 15 or c_count > 25:
-        return False, "Carbon count outside typical range (15-25)"
-    if o_count < 4 or o_count > 10:
-        return False, "Oxygen count outside typical range (4-10)"
+    # Look for oxygens attached to the flavylium core
+    flavylium_atoms = mol.GetSubstructMatches(flavylium_pattern)[0]
+    oxygens_on_core = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and any(bond.GetBeginAtomIdx() in flavylium_atoms or bond.GetEndAtomIdx() in flavylium_atoms for bond in atom.GetBonds())]
+    if not oxygens_on_core:
+        return False, "No oxygens attached to flavylium core"
     
-    return True, "Contains flavylium core with phenyl ring and oxygens outside the core, with +1 charge"
+    return True, "Contains oxygenated flavylium core with phenyl ring and positive charge, without sugar moieties"
