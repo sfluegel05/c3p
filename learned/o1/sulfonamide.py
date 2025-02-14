@@ -5,7 +5,6 @@ Classifies: CHEBI:35358 sulfonamide
 Classifies: CHEBI:35358 sulfonamide
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_sulfonamide(smiles: str):
     """
@@ -16,7 +15,7 @@ def is_sulfonamide(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a sulfonamide, False otherwise
+        bool: True if the molecule is a sulfonamide, False otherwise
         str: Reason for classification
     """
     
@@ -25,11 +24,11 @@ def is_sulfonamide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define sulfonamide SMARTS pattern: sulfur atom double-bonded to two oxygens and single-bonded to nitrogen
-    sulfonamide_pattern = Chem.MolFromSmarts("S(=O)(=O)N")
+    # Define sulfonamide SMARTS pattern: sulfur atom double-bonded to two oxygens and single-bonded to nitrogen (with total valence of 3)
+    sulfonamide_pattern = Chem.MolFromSmarts("[SX4](=O)(=O)[NX3]")
     if sulfonamide_pattern is None:
         return False, "Invalid SMARTS pattern for sulfonamide"
-
+    
     # Check if the molecule contains the sulfonamide functional group
     if mol.HasSubstructMatch(sulfonamide_pattern):
         return True, "Contains sulfonamide functional group"
