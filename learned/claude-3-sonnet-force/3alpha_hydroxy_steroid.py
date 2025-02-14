@@ -27,8 +27,14 @@ def is_3alpha_hydroxy_steroid(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for steroid backbone
-    steroid_pattern = Chem.MolFromSmarts("[C@]1(CCC[C@@H]2[C@@]3([H])CCC[C@]3([H])C[C@@H]2[C@@]1([H])C)")
-    if not mol.HasSubstructMatch(steroid_pattern):
+    steroid_patterns = [
+        Chem.MolFromSmarts("[C@]1(CCC[C@@H]2[C@@]3([H])CCC[C@]3([H])C[C@@H]2[C@@]1([H])C)"),  # Cyclopentanoperhydrophenanthrene
+        Chem.MolFromSmarts("[C@]1(CCC[C@H]2[C@@]3([H])CCC[C@]3([H])C[C@@H]2[C@@]1([H])C)"),  # Cyclopentanoperhydrophenanthrene (alternative)
+        Chem.MolFromSmarts("[C@]1(CCC[C@@H]2[C@@]3([H])CC[C@]4([H])C[C@@H](C)[C@@]4(C)[C@@]3([H])C[C@@H]2[C@@]1([H])C)"),  # Androstane
+        Chem.MolFromSmarts("[C@]1(CCC[C@@H]2[C@@]3([H])CC[C@]4([H])C[C@@H](C)[C@@]4(C)[C@@]3([H])C[C@@H]2[C@@]1([H])C)"),  # Androstane (alternative)
+        Chem.MolFromSmarts("[C@]1(CCC[C@@H]2[C@@]3([H])CC[C@]4([H])C[C@@H](C)[C@@]4(C)[C@@]3([H])C[C@@H]2[C@@]1([H])C)")  # Cholestane
+    ]
+    if not any(mol.HasSubstructMatch(pattern) for pattern in steroid_patterns):
         return False, "No steroid backbone found"
     
     # Check for 3alpha-hydroxy group
