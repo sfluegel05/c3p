@@ -1,58 +1,35 @@
 """
 Classifies: CHEBI:72544 flavonoids
 """
-"""
-Classifies: CHEBI:27558 flavonoid
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+It seems the previous program had a few issues, which led to poor performance in classifying flavonoids correctly. Here's my analysis and suggestions for improvement:
 
-def is_flavonoid(smiles: str):
-    """
-    Determines if a molecule is a flavonoid based on its SMILES string.
-    A flavonoid is a phenyl-substituted 1-phenylpropane derivative with a C15 or C16 skeleton,
-    or a condensed structure with a C6-C3 lignan precursor. It may include flavonoids, isoflavonoids,
-    neoflavonoids, chalcones, dihydrochalcones, aurones, pterocarpans, coumestarins, rotenoids,
-    flavonolignans, homoflavonoids, and flavonoid oligomers.
+1. **Error: `name 'is_flavonoids' is not defined`**
+   - The function was named `is_flavonoid` (singular) in the code, but the expected function name was `is_flavonoids` (plural) according to the instructions.
+   - Solution: Rename the function to `is_flavonoids`.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+2. **Structural patterns used for identification**
+   - The SMARTS patterns used to identify flavonoid skeletons (C6-C3-C6, C6-C3-C3, and C6-C3-C6-C3) are too specific and may miss many valid flavonoid structures.
+   - The definition mentions that flavonoids include various subclasses like chalcones, dihydrochalcones, aurones, pterocarpans, etc., which may not match the patterns used.
+   - Solution: Use a more general pattern or a combination of patterns to cover a wider range of flavonoid structures.
 
-    Returns:
-        bool: True if molecule is a flavonoid, False otherwise
-        str: Reason for classification
-    """
-    
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+3. **Aromatic ring count**
+   - The program checks for condensed systems based on the number of aromatic rings, but this may not be a reliable criterion for identifying flavonoids.
+   - Many flavonoids may have fewer than 3 aromatic rings, and some non-flavonoids may have 3 or more aromatic rings.
+   - Solution: Remove or modify this check, as it may not be a reliable indicator of flavonoid structures.
 
-    # Look for flavonoid skeleton patterns (C6-C3-C6, C6-C3-C3, or C6-C3-C6-C3)
-    flavonoid_pattern = Chem.MolFromSmarts("c1ccc(cc1)cccc2ccc(cc2)Oc3ccccc3")  # C6-C3-C6
-    isoflavonoid_pattern = Chem.MolFromSmarts("c1ccc(cc1)C=2C(=O)Oc3ccccc3C2=O")  # C6-C3-C3
-    neoflavonoid_pattern = Chem.MolFromSmarts("c1ccc(cc1)cccc2cccc3ccccc32")  # C6-C3-C6-C3
-    if not (mol.HasSubstructMatch(flavonoid_pattern) or
-            mol.HasSubstructMatch(isoflavonoid_pattern) or
-            mol.HasSubstructMatch(neoflavonoid_pattern)):
-        return False, "No flavonoid skeleton found"
+4. **Molecular weight check**
+   - The molecular weight range of 200-800 Da may be too narrow for flavonoids, especially for oligomers or derivatives with large substituents.
+   - Solution: Expand the molecular weight range or remove this check if it is not a reliable indicator.
 
-    # Count aromatic rings and check for condensed systems
-    ring_info = mol.GetRingInfo()
-    aromatic_rings = [r for r in ring_info.AtomRings() if ring_info.IsCycleAromaticHs(r)]
-    n_aromatic_rings = len(aromatic_rings)
-    if n_aromatic_rings > 3:
-        return True, "Contains condensed flavonoid skeleton with more than 3 aromatic rings"
+5. **Oxygen atom count**
+   - The check for a minimum of 3 oxygen atoms may be too restrictive, as some flavonoids may have fewer oxygen atoms or none at all.
+   - Solution: Remove or modify this check, as it may not be a reliable indicator of flavonoid structures.
 
-    # Check molecular weight - flavonoids typically 200-800 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200 or mol_wt > 800:
-        return False, "Molecular weight outside typical range for flavonoids"
+6. **Additional checks**
+   - The program could benefit from additional checks or features to better identify flavonoid structures, such as:
+     - Checking for specific substructures or functional groups common in flavonoids (e.g., phenolic groups, carbonyl groups, etc.).
+     - Considering the presence of substituents like hydroxyl, methoxy, prenyl, or sugar moieties, which are common in flavonoids.
+     - Checking for specific molecular scaffolds or skeletons characteristic of different flavonoid subclasses.
+     - Using machine learning models trained on flavonoid structures to improve classification accuracy.
 
-    # Count oxygen atoms (common in flavonoids)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 3:
-        return False, "Too few oxygen atoms for flavonoid"
-
-    return True, "Contains flavonoid skeleton with phenyl-substituted 1-phenylpropane derivative"
+By addressing these issues and incorporating additional checks or features, the program's performance in classifying flavonoids could potentially improve significantly.
