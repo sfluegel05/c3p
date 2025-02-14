@@ -1,7 +1,11 @@
 """
 Classifies: CHEBI:25106 macrolide
 """
+"""
+Classifies: macrolide
+"""
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_macrolide(smiles: str):
     """
@@ -21,34 +25,32 @@ def is_macrolide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Ensure ring information is computed
-    mol.UpdatePropertyCache(strict=False)
-
     # Get ring information
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
     if not atom_rings:
-        return False, "No rings found in molecule"
+        return False, "No ring structures found in molecule"
 
-    # Define lactone pattern where both carbonyl carbon and ester oxygen are in a ring
-    lactone_smarts = '[C;R](=O)[O;R]'
-    lactone_pattern = Chem.MolFromSmarts(lactone_smarts)
+    # Define SMARTS pattern for lactone group (cyclic ester)
+    lactone_pattern = Chem.MolFromSmarts("C(=O)O[C;R]")
     if lactone_pattern is None:
-        return False, "Invalid lactone SMARTS pattern"
+        return None, "Error in defining lactone SMARTS pattern"
 
-    # Find all matches of the lactone pattern
-    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
-    if not lactone_matches:
-        return False, "No lactone functional groups found"
+    # Initialize flag for macrolide detection
+    is_macrolide_flag = False
 
-    # Iterate over rings of size >=12
+    # Iterate over each ring to check for macrocyclic lactone
     for ring_atoms in atom_rings:
         ring_size = len(ring_atoms)
         if ring_size >= 12:
-            ring_atom_set = set(ring_atoms)
-            # Check if any lactone match is fully within the ring
-            for match in lactone_matches:
-                if set(match).issubset(ring_atom_set):
-                    return True, f"Contains macrocyclic lactone ring of size {ring_size} with lactone functionality"
+            # Create a substructure of the ring
+            ring_mol = Chem.PathToSubmol(mol, ring_atoms)
+            # Check if the ring contains a lactone group
+            if ring_mol.HasSubstructMatch(lactone_pattern):
+                is_macrolide_flag = True
+                break  # Found a macrocyclic lactone ring
 
-    return False, "No macrocyclic lactone ring of size 12 or more with lactone functionality found"
+    if is_macrolide_flag:
+        return True, "Contains macrocyclic lactone ring of 12 or more members"
+    else:
+        return False, "No macrocyclic lactone rings of required size found"
