@@ -20,51 +20,57 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
         str: Reason for classification
     """
 
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find alpha-amino acid backbone: N-C-C(=O)-O
-    amino_acid_pattern = Chem.MolFromSmarts("N-C-C(=O)[O;H1]")
+    # Pattern for alpha-amino acid backbone: nitrogen attached to alpha carbon, which is attached to carboxyl group
+    amino_acid_pattern = Chem.MolFromSmarts("[N;$([NX3,H2,H1,H0])]C[C](=O)[O]")
+
     aa_matches = mol.GetSubstructMatches(amino_acid_pattern)
     if not aa_matches:
         return False, "No alpha-amino acid backbone found"
 
-    # For each match, check if nitrogen has at least one oxygen substituent
     for match in aa_matches:
         nitrogen_idx = match[0]
         nitrogen_atom = mol.GetAtomWithIdx(nitrogen_idx)
 
-        # Get neighbors of nitrogen
-        n_neighbors = nitrogen_atom.GetNeighbors()
+        has_n_hydroxy = False
 
-        # Check for oxygen substituents on nitrogen
-        has_n_oxygen = False
-        for neighbor in n_neighbors:
-            if neighbor.GetAtomicNum() == 8:
-                has_n_oxygen = True
-                break
-            elif neighbor.GetAtomicNum() == 7:
-                # Check for imino or oxime group (N=NOH)
-                n2_neighbors = neighbor.GetNeighbors()
-                for n2_neighbor in n2_neighbors:
-                    if n2_neighbor.GetIdx() != nitrogen_idx and n2_neighbor.GetAtomicNum() == 8:
-                        has_n_oxygen = True
+        # Check for N-OH single bond (direct N-hydroxy substitution)
+        for neighbor in nitrogen_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen
+                bond = mol.GetBondBetweenAtoms(nitrogen_idx, neighbor.GetIdx())
+                if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                    # Check if oxygen is hydroxyl (OH)
+                    if neighbor.GetTotalDegree() == 1 and neighbor.GetImplicitValence() == 1:
+                        has_n_hydroxy = True
                         break
 
-        if has_n_oxygen:
-            return True, "Contains N-hydroxy-alpha-amino-acid structure"
+        # Check for N-hydroxyimino group (N=NOH) attached to amino nitrogen
+        if not has_n_hydroxy:
+            for neighbor in nitrogen_atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 7:  # Neighbor nitrogen
+                    bond = mol.GetBondBetweenAtoms(nitrogen_idx, neighbor.GetIdx())
+                    if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                        # Check if neighbor nitrogen has double bond to oxygen (N=O) and single bond to hydroxyl (OH)
+                        o_double_bond = False
+                        oh_single_bond = False
+                        for n2_neighbor in neighbor.GetNeighbors():
+                            if n2_neighbor.GetIdx() == nitrogen_idx:
+                                continue
+                            if n2_neighbor.GetAtomicNum() == 8:  # Oxygen
+                                bond_type = mol.GetBondBetweenAtoms(neighbor.GetIdx(), n2_neighbor.GetIdx()).GetBondType()
+                                if bond_type == Chem.rdchem.BondType.DOUBLE:
+                                    o_double_bond = True
+                                elif bond_type == Chem.rdchem.BondType.SINGLE:
+                                    if n2_neighbor.GetTotalDegree() == 1 and n2_neighbor.GetImplicitValence() == 1:
+                                        oh_single_bond = True
+                        if o_double_bond and oh_single_bond:
+                            has_n_hydroxy = True
+                            break
 
-        # Check for double-bonded oxygen (N=O)
-        for bond in nitrogen_atom.GetBonds():
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                other_atom = bond.GetOtherAtom(nitrogen_atom)
-                if other_atom.GetAtomicNum() == 8:
-                    has_n_oxygen = True
-                    break
-
-        if has_n_oxygen:
+        if has_n_hydroxy:
             return True, "Contains N-hydroxy-alpha-amino-acid structure"
 
     return False, "Does not contain N-hydroxy-alpha-amino-acid structure"
