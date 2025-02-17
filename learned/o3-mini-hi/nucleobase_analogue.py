@@ -4,18 +4,19 @@ Classifies: CHEBI:67142 nucleobase analogue
 """
 Classifies: Nucleobase analogue
 A nucleobase analogue is defined as a molecule that can substitute for a normal nucleobase in nucleic acids.
-This program uses several heuristics:
-  1. The molecule must be a valid RDKit molecule.
-  2. Its molecular weight should be between 80 and 350 Da.
-  3. It must contain at least 2 nitrogen atoms.
-  4. It must be small (≤35 heavy atoms).
-  5. It must be nearly rigid (≤3 rotatable bonds) so that only molecules with limited conformational flexibility pass.
-  6. It should have 1 or 2 rings (nucleobases are typically mono- or bicyclic).
-  7. It must contain at least one appropriate aromatic heterocyclic ring. In our case we scan for an aromatic ring of size 5 or 6 that has at least 2 nitrogen atoms.
-  8. The ratio of carbon atoms to nitrogen atoms must be ≤4.0.
-  9. Finally, since natural nucleobases consist almost entirely of an aromatic ring, we require that the largest qualifying aromatic ring represents at least 75% of the total heavy atoms.
-  
-These filters are intended to eliminate false positives (molecules that just “look like” nucleobase analogues due to a small aromatic bit) and false negatives (molecules with too many flexible substituents).
+This version uses improved heuristics:
+  1. The molecule must be a valid RDKit molecule, with molecular weight 80–350 Da.
+  2. The molecule must contain at least 8 heavy atoms and ≤35 heavy atoms.
+  3. It must have at least 2 nitrogen atoms.
+  4. It must be mostly rigid (≤3 rotatable bonds).
+  5. The molecule must possess an aromatic heterocyclic core.
+     We compute the “aromatic core” as the largest connected set of atoms that are both aromatic and part of a ring.
+  6. The aromatic core must be appreciable – it must account for at least 40% of the molecule’s heavy atoms.
+  7. We add an extra filter on the aromatic core: its carbon-to-nitrogen ratio should be at least 1.0,
+     as typical nucleobases feature a balanced (or carbon‐rich) ring (this helps avoid nitrogen–rich false positives).
+     
+These rules try to capture both the nearly exclusively aromatic ring system of natural nucleobases and
+the presence of substituents seen in nucleobase analogues.
 """
 
 from rdkit import Chem
@@ -24,17 +25,16 @@ from rdkit.Chem import rdMolDescriptors
 def is_nucleobase_analogue(smiles: str):
     """
     Determines if a molecule is a nucleobase analogue based on its SMILES string.
-    
+
     Heuristics used:
-      1. Valid molecule that RDKit can handle.
+      1. Valid RDKit molecule and proper sanitization.
       2. Molecular weight between 80 and 350 Da.
-      3. Contains ≥2 nitrogen atoms.
-      4. Contains ≤35 heavy atoms.
-      5. Contains ≤3 rotatable bonds (i.e. is rigid).
-      6. Contains 1 or 2 rings (typical for nucleobases).
-      7. Contains at least one aromatic heterocyclic ring (of size 5 or 6) that has at least 2 nitrogen atoms.
-      8. The ratio of carbon atoms to nitrogen atoms is ≤4.0.
-      9. The largest aromatic nucleobase ring must account for at least 75% of the molecule’s heavy atoms.
+      3. Contains at least 8 and not more than 35 heavy atoms.
+      4. Contains at least 2 nitrogen atoms.
+      5. Is nearly rigid (≤3 rotatable bonds).
+      6. Has an aromatic heterocyclic core: we compute the largest connected set of atoms that are aromatic and in a ring.
+      7. The aromatic core must be at least 40% of the heavy atoms.
+      8. The aromatic core’s carbon-to-nitrogen ratio must be at least 1.0.
       
     Args:
         smiles (str): SMILES string of the molecule.
@@ -43,7 +43,7 @@ def is_nucleobase_analogue(smiles: str):
         bool: True if the molecule qualifies as a nucleobase analogue, False otherwise.
         str: A reason explaining the classification decision.
     """
-    # Parse the SMILES string into an RDKit molecule.
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
@@ -51,85 +51,115 @@ def is_nucleobase_analogue(smiles: str):
         Chem.SanitizeMol(mol)
     except Exception as e:
         return False, f"Sanitization failed: {str(e)}"
-        
+
     # Check molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 80 or mol_wt > 350:
         return False, f"Molecular weight {mol_wt:.1f} Da is outside expected range (80–350 Da)"
-    
+
+    # Count heavy atoms.
+    heavy_atom_count = mol.GetNumHeavyAtoms()
+    if heavy_atom_count < 8:
+        return False, f"Too few heavy atoms ({heavy_atom_count}); nucleobase analogues are typically larger (≥8 heavy atoms)"
+    if heavy_atom_count > 35:
+        return False, f"Too many heavy atoms ({heavy_atom_count}); nucleobase analogues are typically small (≤35 heavy atoms)"
+
     # Count nitrogen atoms (require at least 2).
     n_nitrogen = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_nitrogen < 2:
         return False, "Too few nitrogen atoms; a nucleobase analogue should contain at least 2 nitrogen atoms"
-    
-    # Count heavy atoms (should be ≤35).
-    heavy_atom_count = mol.GetNumHeavyAtoms()
-    if heavy_atom_count > 35:
-        return False, f"Too many heavy atoms ({heavy_atom_count}); nucleobase analogues are typically small (≤35 heavy atoms)"
-    
-    # Count rotatable bonds (should be ≤3 for rigidity).
+
+    # Count rotatable bonds (molecules should be nearly rigid).
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable > 3:
         return False, f"Too many rotatable bonds ({n_rotatable}); nucleobase analogues are expected to be rigid (≤3 rotatable bonds)"
     
-    # Retrieve ring information.
+    # ----- Aromatic core extraction -----
+    # We want to find all atoms that are both aromatic and belong to at least one ring.
     ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    n_rings = len(atom_rings)
-    if n_rings < 1:
-        return False, "No ring structures detected; nucleobase analogues are heterocyclic"
-    if n_rings > 2:
-        return False, f"Too many rings ({n_rings}); natural nucleobases are usually mono- or bicyclic"
+    aromatic_ring_atoms = set()
+    for ring in ring_info.AtomRings():
+        # Only consider rings where all atoms are aromatic.
+        if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+            aromatic_ring_atoms.update(ring)
+    if not aromatic_ring_atoms:
+        return False, "No aromatic ring atoms detected; nucleobase analogues must be heterocyclic and aromatic"
     
-    # Look for at least one appropriate aromatic heterocyclic ring.
-    # We require the ring to be of size 5 or 6 (typical for pyrimidine or the 6-membered part of purines)
-    # and it must contain at least 2 nitrogen atoms.
-    candidate_ring_sizes = []
-    for ring in atom_rings:
-        ring_size = len(ring)
-        if ring_size not in (5, 6):
-            continue
-        # Check that every atom in the ring is aromatic.
-        if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-            continue
-        # Count the number of nitrogen atoms in the ring.
-        ring_nitrogens = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
-        if ring_nitrogens >= 2:
-            candidate_ring_sizes.append(ring_size)
+    # Now, among these aromatic ring atoms, we want to group connected atoms into components.
+    # We build a graph between aromatic atoms based on bonds between them.
+    aromatic_atoms = list(aromatic_ring_atoms)
+    # Create a mapping for connectivity:
+    neighbors = {idx: set() for idx in aromatic_atoms}
+    for idx in aromatic_atoms:
+        atom = mol.GetAtomWithIdx(idx)
+        for nbr in atom.GetNeighbors():
+            nbr_idx = nbr.GetIdx()
+            if nbr_idx in aromatic_ring_atoms:
+                neighbors[idx].add(nbr_idx)
     
-    if not candidate_ring_sizes:
-        return False, "No appropriate aromatic heterocyclic ring (size 5 or 6 with at least 2 nitrogen atoms) found"
+    # Perform DFS to get connected components.
+    def dfs(start, seen):
+        stack = [start]
+        comp = set()
+        while stack:
+            node = stack.pop()
+            if node in comp:
+                continue
+            comp.add(node)
+            for nbr in neighbors[node]:
+                if nbr not in comp:
+                    stack.append(nbr)
+        return comp
+
+    components = []
+    visited = set()
+    for idx in aromatic_atoms:
+        if idx not in visited:
+            comp = dfs(idx, visited)
+            visited.update(comp)
+            components.append(comp)
     
-    # For the purpose of the next check, consider the largest candidate ring.
-    largest_ring_size = max(candidate_ring_sizes)
+    # Identify the largest aromatic component.
+    largest_core = max(components, key=len)
+    core_size = len(largest_core)
+    aromatic_core_fraction = core_size / heavy_atom_count
+    if aromatic_core_fraction < 0.4:
+        return False, ("The largest aromatic core contains only {} out of {} heavy atoms (fraction {:.2f}); "
+                       "nucleobase analogues are expected to be predominantly aromatic".format(core_size, heavy_atom_count, aromatic_core_fraction))
     
-    # Determine what fraction of the molecule is made up of the aromatic core.
-    aromatic_core_fraction = largest_ring_size / heavy_atom_count
-    if aromatic_core_fraction < 0.75:
-        return False, ("The molecule has too many non‐aromatic substituents (largest aromatic ring contains "
-                       f"{largest_ring_size} of {heavy_atom_count} heavy atoms, fraction {aromatic_core_fraction:.2f}); "
-                       "nucleobase analogues are expected to be predominantly an aromatic core.")
-    
-    # Check the ratio of carbon to nitrogen atoms.
-    n_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if n_nitrogen > 0 and (n_carbon / n_nitrogen) > 4.0:
-        return False, (f"High carbon-to-nitrogen ratio ({n_carbon}/{n_nitrogen} = {n_carbon/n_nitrogen:.2f}); "
-                       "nucleobase analogues are generally nitrogen rich")
+    # Evaluate the carbon-to-nitrogen ratio in the aromatic core.
+    core_n_C = 0
+    core_n_N = 0
+    for idx in largest_core:
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() == 6:
+            core_n_C += 1
+        elif atom.GetAtomicNum() == 7:
+            core_n_N += 1
+    # To avoid division by zero, if there are no nitrogens in the core, fail.
+    if core_n_N == 0:
+        return False, "Aromatic core contains no nitrogen atoms; nucleobase analogues must be heterocyclic"
+    core_c_to_n = core_n_C / core_n_N
+    if core_c_to_n < 1.0:
+        return False, (f"Aromatic core C/N ratio of {core_c_to_n:.2f} is too low; nucleobase analogues typically are not excessively nitrogen‐rich")
     
     return True, ("Molecule exhibits features of a nucleobase analogue: appropriate molecular weight, nitrogen content, "
-                  "small size, rigidity, limited ring system with an aromatic heterocyclic core (5–6 membered ring with ≥2 nitrogens) "
-                  "that comprises most of the structure, and a balanced C/N ratio.")
+                  "small size, rigidity, and a predominantly aromatic heterocyclic core with balanced C/N ratio.")
 
-# Example testing section (uncomment below to test several cases)
+# Example testing section (uncomment to test several cases)
 # if __name__ == "__main__":
-#     test_smiles = [
-#         "C=12C(=NC=NC1NCC(=O)N)NC=N2",      # N(6)-carbamoylmethyladenine (True)
-#         "Nc1nc(=O)[nH]cc1CO",                # 5-(hydroxymethyl)cytosine (True)
-#         "Nc1ncc2nc[nH]c2n1",                # 2-aminopurine (True)
-#         "CCC[NH2+][C@H]1CCc2[nH+]c(N)sc2C1",  # pramipexole(2+) (False)
-#         "[C@H](CNC1=C(C(NC(N1)=O)=O)/N=C/C(=O)C)([C@@H](CCO)O)O",  # 6-[(1,4-dideoxy-D-ribityl)amino]-... (False)
-#         "[H]C(=O)Nc1cncnc1"                 # 5-formamidopyrimidine (False)
+#     test_cases = [
+#         # Expected True examples (nucleobase analogues)
+#         ("C=12C(=NC=NC1NCC(=O)N)NC=N2", "N(6)-carbamoylmethyladenine"),
+#         ("Nc1nc(=O)[nH]cc1CO", "5-(hydroxymethyl)cytosine"),
+#         ("Nc1ncc2nc[nH]c2n1", "2-aminopurine"),
+#         ("O=c1[nH]cnc2nc[nH]c12", "hypoxanthine"),
+#         ("C=12C(=NC=NC1N)NC(N2)=O", "8-oxoadenine"),
+#         # Expected False examples (non-nucleobase analogues)
+#         ("c1ncnnn1", "1,2,3,5-tetrazine"),
+#         ("C1=CN=C(C=N1)Cl", "2-chloropyrazine"),
+#         ("O(C1=NC=CN=C1)C", "Methoxypyrazine"),
 #     ]
-#     for sm in test_smiles:
-#         res, reason = is_nucleobase_analogue(sm)
-#         print(f"SMILES: {sm}\nResult: {res}\nReason: {reason}\n")
+#     for smi, name in test_cases:
+#         res, reason = is_nucleobase_analogue(smi)
+#         print(f"SMILES: {smi}\nName: {name}\nResult: {res}\nReason: {reason}\n")
