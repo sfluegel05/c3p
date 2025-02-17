@@ -4,14 +4,13 @@ Classifies: CHEBI:32876 tertiary amine
 """
 Classifies: Tertiary amine
 
-A tertiary amine is defined as a compound formally derived from ammonia by replacing
-all three hydrogen atoms by hydrocarbyl groups. This implementation improves over a previous
-attempt by (1) rejecting candidate nitrogen atoms that appear to be part of amide bonds
-(i.e. when the nitrogen is directly attached to a carbon that is double-bonded to oxygen)
-and (2) verifying that each substituent attached to the candidate displays predominantly
-hydrocarbyl character (roughly, at least 50% of its heavy atoms should be carbon).
-For non‐ring candidates we additionally require that removal of the candidate disconnects 
-the substituents into three distinct fragments.
+A tertiary amine is defined as a compound formally derived from ammonia by replacing three hydrogen atoms by hydrocarbyl groups.
+This implementation first locates neutral, non‐aromatic nitrogen atoms that have exactly three non‐hydrogen neighbors.
+For candidates not in a ring we then remove the candidate nitrogen and require that the three heavy substituents fall into
+three distinct fragments. For each substituent (either the full fragment in acyclic cases or the immediate neighbor environment
+in ring cases) we compute a “carbon fraction” (the ratio of carbon atoms to heavy atoms). In the case that the substituent is attached
+through a carbonyl‐type atom (a C with at least one double bond to oxygen), we discount that atom. If all three substituents have a
+carbon fraction above a threshold (here 0.4) then the tertiary amine candidate is accepted.
 """
 
 from rdkit import Chem
@@ -19,169 +18,195 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_tertiary_amine(smiles: str):
     """
-    Determines whether the input molecule (given as a SMILES string) qualifies as having
-    at least one tertiary amine group (a neutral nitrogen with three heavy substituents that are
-    largely hydrocarbyl in composition). 
+    Determines if the input molecule (given as a SMILES string) contains at least one tertiary amine group.
+
+    A candidate tertiary amine is a neutral, non‐aromatic nitrogen that is connected to exactly three heavy atoms (i.e. non‐hydrogen).
+    For non‐ring nitrogen candidates we remove the candidate and check that its three heavy neighbors fall into separate fragments.
+    Then each substituent is examined to see if it displays “predominantly hydrocarbyl” character.
+    (If the substituent is attached via a carbonyl carbon, that atom is discounted from the calculation.)
     
+    Args:
+         smiles (str): SMILES string for the molecule.
+         
     Returns:
-        (bool, str): A tuple containing True (with an explanation) if a tertiary amine is found,
-                     and False with a reason otherwise.
+         (bool, str): A tuple where the boolean is True if a tertiary amine group is found, along with explanatory text;
+                      otherwise, False and a reason why.
     """
-    # Parse the molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Add explicit hydrogens so that bond counts are accurate; necessary for later checks.
-    mol_with_H = Chem.AddHs(mol)
-
-    # To track original atom indices reliably after modifications, store each atom's original index.
-    for atom in mol_with_H.GetAtoms():
-        atom.SetProp("orig_idx", str(atom.GetIdx()))
     
+    # Add explicit hydrogens for correct neighbor counts.
+    molH = Chem.AddHs(mol)
+    # Store original atom indices in a property so we can track them after modification.
+    for atom in molH.GetAtoms():
+        atom.SetProp("orig_idx", str(atom.GetIdx()))
+        
+    # Find candidate nitrogen atoms:
     candidates = []
-    # Look for candidate nitrogen atoms.
-    for atom in mol_with_H.GetAtoms():
-        if atom.GetAtomicNum() != 7:  # not nitrogen
+    for atom in molH.GetAtoms():
+        if atom.GetAtomicNum() != 7:
             continue
         if atom.GetFormalCharge() != 0:
             continue
-        # Exclude aromatic nitrogen atoms (their lone pairs are delocalized)
         if atom.GetIsAromatic():
             continue
-        # Must have no hydrogen atoms explicitly attached.
+        # We require that no explicit hydrogen is attached.
         if any(neigh.GetAtomicNum() == 1 for neigh in atom.GetNeighbors()):
             continue
         # Must have exactly three heavy (non-hydrogen) neighbors.
-        heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
-        if len(heavy_neighbors) != 3:
+        heavy_nbrs = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
+        if len(heavy_nbrs) != 3:
             continue
         candidates.append(atom)
-
+    
     if not candidates:
         return False, "No candidate tertiary amine group found in the molecule."
-
-    # helper: check if candidate nitrogen is adjacent to a carbonyl (C=O) group.
-    def is_adjacent_to_carbonyl(nitrogen):
-        for nbr in nitrogen.GetNeighbors():
-            # Check only heavy neighbor atoms (and mostly carbons are expected)
-            if nbr.GetAtomicNum() == 6:  # carbon
-                for bond in nbr.GetBonds():
-                    # If this carbon atom is double-bonded to an oxygen (C=O)
-                    other = bond.GetOtherAtom(nbr)
-                    if other.GetAtomicNum() == 8 and bond.GetBondTypeAsDouble() == 1:
-                        return True
+        
+    # helper: determine if an atom (assumed to be carbon) is a carbonyl carbon
+    def is_carbonyl(atom):
+        if atom.GetAtomicNum() != 6:
+            return False
+        for bond in atom.GetBonds():
+            # Look for double-bonded oxygen (the bond type for a true double bond should equal 2)
+            if bond.GetBondTypeAsDouble() == 2:
+                other = bond.GetOtherAtom(atom)
+                if other.GetAtomicNum() == 8:
+                    return True
         return False
-
-    # helper: given a collection of atoms, return the ratio of carbon atoms among heavy atoms
+    
+    # helper: compute carbon fraction given a set of atoms (only heavy atoms counted).
     def carbon_fraction(atom_list):
-        heavy = [a for a in atom_list if a.GetAtomicNum() != 1]
-        if not heavy:
+        heavy_atoms = [a for a in atom_list if a.GetAtomicNum() != 1]
+        if not heavy_atoms:
             return 1.0
-        nC = sum(1 for a in heavy if a.GetAtomicNum() == 6)
-        return nC / len(heavy)
-
-    # For non-ring candidates, we will remove the candidate nitrogen then see if each heavy neighbor
-    # is separated into a distinct fragment. Also we use the resulting fragment as a measure of the substituent's makeup.
+        nC = sum(1 for a in heavy_atoms if a.GetAtomicNum() == 6)
+        return nC / len(heavy_atoms)
+    
+    # For non‐ring candidates we remove the candidate N and check connectivity.
     for candidate in candidates:
         cand_idx = candidate.GetIdx()
-
-        # Reject candidate if it appears to be part of an amide (attached to a carbonyl carbon)
-        if is_adjacent_to_carbonyl(candidate):
-            # Note: many amide nitrogens are not derived directly from NH3.
-            continue
-
-        heavy_neighbors = [nbr for nbr in candidate.GetNeighbors() if nbr.GetAtomicNum() != 1]
-        # Retrieve original indices for the heavy neighbors.
-        neighbor_orig_idxs = [nbr.GetProp("orig_idx") for nbr in heavy_neighbors]
-
-        connectivity_ok = True  # for acyclic candidate we require distinct fragments
-
-        # For non-ring candidate, do connectivity test
+        heavy_nbrs = [nbr for nbr in candidate.GetNeighbors() if nbr.GetAtomicNum() != 1]
+        # We also record each neighbor’s original index.
+        nbr_orig_idxs = [nbr.GetProp("orig_idx") for nbr in heavy_nbrs]
+        
+        connectivity_ok = True
+        frag_mapping = {}   # maps fragment id to set of original indices
         if not candidate.IsInRing():
-            # Make an editable copy and remove the candidate nitrogen.
-            rwmol = Chem.RWMol(mol_with_H)
+            # Create an editable copy.
+            rwmol = Chem.RWMol(molH)
             try:
                 rwmol.RemoveAtom(cand_idx)
             except Exception as e:
-                return False, f"Error during atom removal: {e}"
-            new_mol = rwmol.GetMol()
-            # Get fragments – each fragment is a tuple of atom indices (in the new_mol)
-            frags = Chem.GetMolFrags(new_mol, asMols=False)
-            # Build mapping: for each fragment, record the set of original indices (stored in "orig_idx")
-            frag_mapping = {}
-            for frag_id, frag in enumerate(frags):
-                frag_mapping[frag_id] = set()
+                return False, f"Error during candidate removal: {e}"
+            newmol = rwmol.GetMol()
+            # Get fragments.
+            frags = Chem.GetMolFrags(newmol, asMols=False)
+            # Build mapping from each fragment (list of new indices) to the set of original indices.
+            for frag in frags:
+                orig_ids = set()
                 for idx in frag:
-                    atom_new = new_mol.GetAtomWithIdx(idx)
+                    atom_new = newmol.GetAtomWithIdx(idx)
                     if atom_new.HasProp("orig_idx"):
-                        frag_mapping[frag_id].add(atom_new.GetProp("orig_idx"))
-            # Determine which fragment each heavy neighbor went to.
-            neighbor_frag_ids = []
-            for orig in neighbor_orig_idxs:
-                found = False
-                for frag_id, orig_set in frag_mapping.items():
+                        orig_ids.add(atom_new.GetProp("orig_idx"))
+                # Save one fragment mapping (we simply record the set).
+                frag_mapping[frozenset(frag)] = orig_ids
+            # Now, for each heavy neighbor, determine which fragment (if any) contains it.
+            nbr_frag_ids = []
+            for orig in nbr_orig_idxs:
+                found_frag = None
+                for frag_set, orig_set in frag_mapping.items():
                     if orig in orig_set:
-                        neighbor_frag_ids.append(frag_id)
-                        found = True
+                        found_frag = frag_set
                         break
-                if not found:
-                    neighbor_frag_ids.append(-1)
-            if len(set(neighbor_frag_ids)) != 3:
-                connectivity_ok = False  # some substituents remain merged
-        # For candidates in rings, we skip the connectivity test.
+                if found_frag is None:
+                    nbr_frag_ids.append(None)
+                else:
+                    nbr_frag_ids.append(found_frag)
+            # Must have three distinct fragments.
+            if None in nbr_frag_ids or len(set(nbr_frag_ids)) != 3:
+                connectivity_ok = False
         
-        if not connectivity_ok and not candidate.IsInRing():
-            continue  # try next candidate
-
-        # Now check the "hydrocarbyl" character of each substituent.
-        # For non-ring candidates, we look into the entire fragment obtained after removal.
-        # For ring candidates, we look only at the immediate neighbor environment.
+        # For substituent evaluation we will now determine an approximate carbon fraction for each group.
         substituent_ok = True
-        if not candidate.IsInRing():
-            # Use the fragments from the connectivity test.
-            for orig in neighbor_orig_idxs:
-                frag_found = None
-                for frag_id, orig_set in frag_mapping.items():
+        # We relax connectivity check for ring candidates.
+        # For non‐ring candidates, use the fragment obtained after removal.
+        # For ring candidates, simply define the substituent to be the heavy neighbor and its immediate heavy neighbors (except candidate).
+        THRESHOLD = 0.4  # minimal acceptable carbon fraction
+        if not candidate.IsInRing() and connectivity_ok:
+            # For each heavy neighbor of candidate, locate its fragment.
+            # Build a lookup: map each neighbor (by original index) to the list of atoms in its fragment.
+            for nbr, orig in zip(heavy_nbrs, nbr_orig_idxs):
+                frag_atoms = None
+                for frag_set, orig_set in frag_mapping.items():
                     if orig in orig_set:
-                        frag_found = frag_id
+                        # Collect atoms from newmol corresponding to indices in frag_set.
+                        frag_atoms = [newmol.GetAtomWithIdx(i) for i in frag_set]
                         break
-                if frag_found is None:
+                if frag_atoms is None:
                     substituent_ok = False
                     break
-                # Get fragment atoms from new_mol using the indices in that fragment.
-                frag_atoms = [new_mol.GetAtomWithIdx(idx) for idx in frags[frag_found]]
-                frac = carbon_fraction(frag_atoms)
-                if frac < 0.5:
+                # Now, check if the atom attached to candidate (i.e. nbr) is a carbonyl. To do that we map original index.
+                att_atom = nbr
+                discount = False
+                if att_atom.GetAtomicNum() == 6 and is_carbonyl(att_atom):
+                    discount = True
+                # If discount, remove the attachment atom from the calculation.
+                if discount and len(frag_atoms) > 1:
+                    # Exclude one atom (the attachment) from both numerator and denominator.
+                    heavy_atoms = [a for a in frag_atoms if a.GetAtomicNum() != 1 and a.GetIdx() != att_atom.GetIdx()]
+                    if heavy_atoms:
+                        nC = sum(1 for a in heavy_atoms if a.GetAtomicNum() == 6)
+                        frac = nC / len(heavy_atoms)
+                    else:
+                        frac = 1.0
+                else:
+                    frac = carbon_fraction(frag_atoms)
+                if frac < THRESHOLD:
                     substituent_ok = False
                     break
         else:
-            # For candidates in a ring, examine each direct neighbor plus its immediate heavy neighbors (excluding the candidate).
-            for nbr in heavy_neighbors:
-                neighbor_group = [nbr]
+            # For ring candidates or those failing connectivity, use a simplified evaluation:
+            for nbr in heavy_nbrs:
+                subgroup = [nbr]
                 for n2 in nbr.GetNeighbors():
                     if n2.GetIdx() == candidate.GetIdx() or n2.GetAtomicNum() == 1:
                         continue
-                    neighbor_group.append(n2)
-                frac = carbon_fraction(neighbor_group)
-                if frac < 0.5:
+                    subgroup.append(n2)
+                discount = False
+                if nbr.GetAtomicNum() == 6 and is_carbonyl(nbr):
+                    discount = True
+                if discount and len(subgroup) > 1:
+                    heavy_atoms = [a for a in subgroup if a.GetAtomicNum() != 1 and a.GetIdx() != nbr.GetIdx()]
+                    if heavy_atoms:
+                        nC = sum(1 for a in heavy_atoms if a.GetAtomicNum() == 6)
+                        frac = nC / len(heavy_atoms)
+                    else:
+                        frac = 1.0
+                else:
+                    frac = carbon_fraction(subgroup)
+                if frac < THRESHOLD:
                     substituent_ok = False
                     break
-
+                    
+        if not connectivity_ok and not candidate.IsInRing():
+            # candidate fails connectivity test (substituents not distinct)
+            continue
         if not substituent_ok:
             continue
-
-        # If we reach here, candidate passed all tests.
+            
+        # If we reach here, candidate passes all tests.
         if candidate.IsInRing():
-            return True, ("Found tertiary amine (in a ring) at atom index {} with 3 substituents that "
-                          "show predominantly hydrocarbyl character."
+            return True, ("Found tertiary amine (in a ring) at atom index {} with 3 substituents that show "
+                          "predominantly hydrocarbyl character."
                           .format(cand_idx))
         else:
-            return True, ("Found tertiary amine at atom index {} with three substituents that become disconnected upon removal "
-                          "and display predominantly hydrocarbyl character."
+            return True, ("Found tertiary amine at atom index {} with three substituents that, upon candidate removal, "
+                          "are in distinct fragments and display predominantly hydrocarbyl character."
                           .format(cand_idx))
-        
-    return False, "Tertiary amine group found, but none passed all connectivity and substituent composition tests."
+    
+    return False, ("Tertiary amine group found, but none passed all connectivity and substituent composition tests.")
+
 
 # Example usage (for testing):
 if __name__ == "__main__":
