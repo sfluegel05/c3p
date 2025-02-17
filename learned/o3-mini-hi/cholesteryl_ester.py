@@ -6,9 +6,9 @@ Classifies: Cholesteryl esters
 
 Definition: A sterol ester obtained by formal condensation of the carboxy group of any carboxylic acid 
 with the 3-hydroxy group of cholesterol. In cholesteryl esters the free 3-hydroxy in cholesterol is 
-esterified. Our approach is to first search for an ester linkage (an O–C(=O) bond) and then examine 
-the oxygen (which came originally from cholesterol) to see if it is attached to a fused cyclic system 
-that is of a size typical for the cholesterol nucleus (roughly 15–20 carbon atoms in the fused rings).
+esterified. This improved approach is to first search for an ester-like bond (an O–C(=O) bond) and then, 
+for the alcohol-side oxygen, require that it is attached to an aliphatic carbon that is part of a set of 
+fused rings whose sizes match the known steroid nucleus (three six-membered rings and one five-membered ring).
 """
 
 from rdkit import Chem
@@ -16,57 +16,58 @@ from rdkit import Chem
 def is_cholesteryl_ester(smiles: str):
     """
     Determines if a molecule is a cholesteryl ester based on its SMILES string.
-    
+
     The method is:
-      1. Parse the SMILES to get an RDKit molecule.
-      2. Iterate over all bonds; if a bond is a single bond between an oxygen and a carbon,
-         check that the carbon (other than the oxygen) is double‐bonded to another oxygen (i.e. part
-         of a carbonyl group).
-      3. For that ester bond, examine the oxygen (the “alcohol oxygen”) – it should have 
-         one more neighbor. If that neighbor is part of a ring, collect all rings containing that atom, 
-         and cluster them using a simple criterion: rings that share at least 2 atoms.
-      4. If a fused ring cluster is found, count the number of carbon atoms in the union; if this number 
-         is in the range 15 to 20 (typical for the cholesterol nucleus) we decide that the compound is a 
-         cholesteryl ester.
+      1. Parse the SMILES string using RDKit.
+      2. Iterate over all bonds and select those that are a single bond between an oxygen and a carbon.
+      3. Verify that the carbon partner is part of a carbonyl group (i.e. double‐bonded to another oxygen).
+      4. For the oxygen (that came from the original 3-hydroxy), check its other neighbor (if any).
+         That neighbor should be in a ring. We then collect all rings that contain that neighbor.
+      5. We “cluster” rings that share at least two atoms. In cholesterol, the fused steroid nucleus 
+         comprises exactly four rings (three of size 6 and one of size 5).
+      6. If we find a cluster of exactly four rings whose individual ring sizes (when sorted) equal [5,6,6,6],
+         we decide the molecule is a cholesteryl ester.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        (bool, str): Tuple where True indicates a cholesteryl ester with a reason; False otherwise.
+        (bool, str): True if the structure is a cholesteryl ester, along with a reason; 
+                     False and a reason otherwise.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get ring information as sets of atom indices.
+    # Retrieve ring information: list each ring as a set of atom indices.
     ring_info = mol.GetRingInfo()
     all_rings = [set(ring) for ring in ring_info.AtomRings()]
     
-    # Helper function: cluster rings that share at least two atoms.
+    # Helper function: given a list of rings (sets of atom indices),
+    # cluster rings that are fused (share at least 2 atoms)
     def cluster_rings(rings):
         clusters = []
         for ring in rings:
-            found_cluster = None
+            added = False
             for cluster in clusters:
                 if any(len(ring & other) >= 2 for other in cluster):
                     cluster.add(frozenset(ring))
-                    found_cluster = cluster
+                    added = True
                     break
-            if not found_cluster:
+            if not added:
                 clusters.append({frozenset(ring)})
         return clusters
-
-    # Iterate over bonds looking for an ester-like linkage.
+    
+    # For every bond, search for ester-like O–C(=O) bonds.
     for bond in mol.GetBonds():
-        # Require a single bond (the ester O-C bond).
+        # Require a single bond.
         if bond.GetBondType() != Chem.BondType.SINGLE:
             continue
 
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
         
-        # Identify a pair in which one atom is oxygen and the other is carbon.
+        # Identify the pair in which one atom is oxygen and the other is carbon.
         if a1.GetAtomicNum() == 8 and a2.GetAtomicNum() == 6:
             o_atom = a1
             c_atom = a2
@@ -76,11 +77,11 @@ def is_cholesteryl_ester(smiles: str):
         else:
             continue
         
-        # Check that the carbon (c_atom) is carbonyl: it must be double-bonded to an oxygen
+        # Check that the carbon (c_atom) is part of a carbonyl group.
         has_carbonyl = False
         for nbr in c_atom.GetNeighbors():
             if nbr.GetIdx() == o_atom.GetIdx():
-                continue  # skip the bond just under consideration
+                continue  # skip the bond under investigation
             bond_to_nbr = mol.GetBondBetweenAtoms(c_atom.GetIdx(), nbr.GetIdx())
             if nbr.GetAtomicNum() == 8 and bond_to_nbr.GetBondType() == Chem.BondType.DOUBLE:
                 has_carbonyl = True
@@ -88,8 +89,7 @@ def is_cholesteryl_ester(smiles: str):
         if not has_carbonyl:
             continue  # not an ester bond
         
-        # Now check the oxygen (o_atom) for its second attachment.
-        # It should be attached (beside c_atom) to an atom in a ring.
+        # For the alcohol oxygen, check its other neighbor (besides c_atom).
         attached_ring_atom = None
         for nbr in o_atom.GetNeighbors():
             if nbr.GetIdx() == c_atom.GetIdx():
@@ -98,29 +98,27 @@ def is_cholesteryl_ester(smiles: str):
                 attached_ring_atom = nbr
                 break
         if attached_ring_atom is None:
-            continue  # The ester oxygen is not attached to any cyclic system.
+            continue  # no neighbor in a ring; cannot be a cholesterol derivative.
         
-        # Collect all rings that include the attached_ring_atom.
+        # Get all rings that include the attached_ring_atom.
         rings_with_atom = [ring for ring in all_rings if attached_ring_atom.GetIdx() in ring]
         if not rings_with_atom:
             continue
-        
+
+        # Cluster these rings according to shared atoms (≥ 2 atoms)    
         clusters = cluster_rings(rings_with_atom)
-        # In the fused steroid nucleus we expect a cluster of 4 (or so) rings.
-        # But we further check that the total number of carbon atoms in the unified set of atoms 
-        # in one of those clusters falls into a typical range (15 to 20) for the cholesteryl nucleus.
+        # For each fused ring cluster, check if it has the steroid nucleus pattern:
+        # exactly 4 rings, with ring sizes 5,6,6,6 (order insensitive)
         for cluster in clusters:
-            # Merge all atom indices in the cluster.
-            cluster_atoms = set()
-            for ring in cluster:
-                cluster_atoms |= set(ring)
-            # Count carbon atoms in that cluster.
-            carbon_count = sum(1 for idx in cluster_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-            if 15 <= carbon_count <= 20:
-                return True, ("Contains an ester linkage (O–C(=O)) where the oxygen is attached to a fused cyclic system "
-                              f"with {carbon_count} carbons, consistent with a cholesteryl ester")
-    return False, ("No appropriate ester bond attached to a fused polycyclic nucleus (with 15–20 carbons) found; "
-                   "not a cholesteryl ester")
+            if len(cluster) != 4:
+                continue
+            ring_sizes = sorted([len(ring) for ring in cluster])
+            if ring_sizes == [5, 6, 6, 6]:
+                # Passed the aromaticity and ring-size test typical for cholesterol nucleus.
+                return True, ("Contains an ester linkage (O–C(=O)) where the alcohol oxygen is attached to a fused "
+                              "steroid nucleus (rings of sizes 5,6,6,6), consistent with a cholesteryl ester")
+    return False, ("No ester bond found whose alcohol oxygen is attached to a fused steroid nucleus (four rings with sizes "
+                   "5,6,6,6); not a cholesteryl ester")
 
 
 # Example usage (for testing):
