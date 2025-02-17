@@ -2,17 +2,19 @@
 Classifies: CHEBI:47916 flavonoid
 """
 """
-Classifies: Flavonoid 
-Definition: Any member of the 'superclass' flavonoids whose skeleton is based on 
-1-benzopyran with an aryl substituent at position 2.
-
-This implementation does not simply search for a 2-phenylbenzopyran SMARTS. Instead, 
-it uses RDKit’s ring information to first require that the molecule contains at least 
-three rings, then identifies (a) aromatic rings (candidate flavonoid ring “A” and “B”) 
-and (b) candidate heterocyclic rings (flavonoid “C” containing an oxygen). Next it requires 
-that one heterocycle is fused (sharing at least two atoms) with an aromatic ring and that 
-it bears an exocyclic aromatic substituent. This exocyclic substituent is taken 
-as consistent with the aryl group at position 2.
+Classifies: Flavonoid
+Definition: A flavonoid is defined as any compound whose skeleton is based on 
+a 1-benzopyran core (i.e. a fused aromatic+heterocyclic ring system where the 
+heterocycle contains at least one oxygen) with an aryl substituent (an exocyclic 
+aromatic ring) at position 2.
+    
+This implementation uses RDKit’s ring information. It first checks that the 
+molecule has at least three rings. Then it collects (a) aromatic rings (candidate “ring B” 
+for the aryl substituent) and (b) oxygen-containing rings (candidate “ring C”). 
+For each oxygen-containing ring that is fused (shares at least two atoms) with an aromatic ring 
+(thereby forming a potential benzopyran core), the code then checks if any atom on the core 
+has an exocyclic aromatic neighbor. The exocyclic aromatic neighbor is defined as belonging to 
+an aromatic ring that shares exactly one atom with the fused core.
 """
 
 from rdkit import Chem
@@ -20,73 +22,78 @@ from rdkit import Chem
 def is_flavonoid(smiles: str):
     """
     Determines if a molecule is a (putative) flavonoid based on its SMILES string.
-    The heuristic first checks that the molecule has at least three rings.
-    Then it identifies a candidate heterocyclic ring (ring C) that:
-       - contains an oxygen and is not fully aromatic,
-       - is fused (shares 2 or more atoms) with an aromatic ring (ring A) 
-         (thus forming the classical benzopyran core),
-       - and that has at least one exocyclic aromatic neighbor (ring B) attached
-         (consistent with an aryl substituent at position 2).
+    
+    Heuristic:
+      - The molecule must have at least three rings.
+      - One ring (the candidate heterocycle) must contain at least one oxygen.
+      - That oxygen ring must be fused (share at least two atoms) with an aromatic ring 
+        (thus forming the benzopyran core).
+      - The fused core must have at least one exocyclic aromatic substituent 
+        (an aromatic ring attached through a single atom with that aromatic ring otherwise 
+         disjoint from the core).
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if the molecule appears to have a flavonoid skeleton; False otherwise.
+        bool: True if the molecule appears to contain a flavonoid skeleton; False otherwise.
         str: Explanation for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get ring information from the molecule.
+    # Get ring information from the molecule
     ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()  # tuple of tuples (each tuple is a ring atom indices)
-    
-    # Flavonoids normally have three rings.
+    rings = ring_info.AtomRings()  # each ring is a tuple of atom indices
+
     if len(rings) < 3:
         return False, f"Only {len(rings)} ring(s) found – expecting at least 3 for a flavonoid skeleton."
     
-    # Collect aromatic rings (which are fully aromatic)
+    # Identify all fully aromatic rings (candidate for the exocyclic aryl substituents)
     aromatic_rings = []
     for ring in rings:
         if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
             aromatic_rings.append(set(ring))
     
-    # Collect candidate heterocyclic rings: not fully aromatic but containing at least one oxygen.
-    candidate_heterocycles = []
+    # Identify rings that contain at least one oxygen atom (candidate for the heterocycle part of the benzopyran)
+    oxygen_rings = []
     for ring in rings:
         ring_set = set(ring)
-        has_oxygen = any(mol.GetAtomWithIdx(idx).GetSymbol() == 'O' for idx in ring)
-        is_fully_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
-        if has_oxygen and (not is_fully_aromatic):
-            candidate_heterocycles.append(ring_set)
+        if any(mol.GetAtomWithIdx(idx).GetSymbol() == 'O' for idx in ring):
+            oxygen_rings.append(ring_set)
     
-    if not candidate_heterocycles:
-        return False, "No candidate heterocycle (containing oxygen and not fully aromatic) found."
+    if not oxygen_rings:
+        return False, "No ring containing oxygen found; cannot form a benzopyran core."
     
-    # Now try to find a candidate heterocycle that is fused to an aromatic ring.
-    # Fused means sharing at least two atoms.
-    for hetero_ring in candidate_heterocycles:
+    # Now look for a candidate oxygen ring (ring C) that is fused with an aromatic ring.
+    for ox_ring in oxygen_rings:
         for aro_ring in aromatic_rings:
-            if len(hetero_ring.intersection(aro_ring)) >= 2:
-                # Now, from any atom in the candidate heterocycle, see if we have an exocyclic aromatic substituent.
-                # Exocyclic means a neighbor that is not part of the heterocycle.
-                for atom_idx in hetero_ring:
+            # Fused means sharing at least 2 atoms.
+            if len(ox_ring.intersection(aro_ring)) >= 2:
+                # Define the candidate benzopyran core as the union of the oxygen ring and the fused aromatic ring.
+                candidate_core = ox_ring.union(aro_ring)
+                # Look for an exocyclic aromatic substituent attached to the candidate core.
+                # Exocyclic: a neighbor of a core atom that is part of an aromatic ring that 
+                # does not merge with the core (its intersection with the core is a single atom).
+                for atom_idx in candidate_core:
                     atom = mol.GetAtomWithIdx(atom_idx)
                     for nbr in atom.GetNeighbors():
                         nbr_idx = nbr.GetIdx()
-                        if nbr_idx not in hetero_ring:
-                            # Check that this neighbor is part of some aromatic ring (i.e. a candidate for ring B).
-                            # We require the neighbor itself to be aromatic.
-                            if nbr.GetIsAromatic():
-                                return True, "Molecule contains a flavonoid skeleton with a fused benzopyran core and an aryl substituent at position 2."
-    
+                        if nbr_idx not in candidate_core:
+                            # Check if this neighbor is in an aromatic ring that is connected via only one atom.
+                            for ext_ring in aromatic_rings:
+                                if nbr_idx in ext_ring:
+                                    # If the ring is attached to the core by exactly one shared atom,
+                                    # we treat it as the aryl substituent.
+                                    if len(ext_ring.intersection(candidate_core)) == 1:
+                                        return True, ("Molecule contains a flavonoid skeleton with a fused benzopyran core "
+                                                      "and an aryl substituent at position 2.")
     return False, "Molecule does not appear to contain a flavonoid skeleton as defined."
 
 # Example usage (for testing)
 if __name__ == "__main__":
-    # Test with (R)-naringenin: a widely known flavonoid.
+    # Example test SMILES for (R)-naringenin, a well-known flavonoid.
     test_smiles = "Oc1ccc(cc1)[C@H]1CC(=O)c2c(O)cc(O)cc2O1"
     result, reason = is_flavonoid(test_smiles)
     print(result, ":", reason)
