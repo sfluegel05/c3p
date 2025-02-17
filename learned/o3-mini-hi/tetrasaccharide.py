@@ -7,119 +7,126 @@ Definition:
   A tetrasaccharide is an oligosaccharide comprising four monosaccharide units.
   In this approach we assume that each monosaccharide unit appears as a cyclic structure 
   (typically a furanose or pyranose) having 5 or 6 atoms with exactly one ring oxygen 
-  (atomic number 8) and the remaining atoms being carbon (atomic number 6). In addition, 
-  the four candidate rings must be connected by glycosidic (bridging) bonds. Here we define
-  a glycosidic linkage as a connection where an atom from one sugar (typically the anomeric 
-  carbon) bonds to an exocyclic oxygen (not part of its ring) which in turn bonds to a carbon 
-  of a second sugar.
+  and that it is connected to at least one other unit by a glycosidic linkage.
+  
+  A glycosidic linkage is defined here as a bond in which an atom of one candidate ring 
+  (usually a carbon) is connected to an exocyclic oxygen (not in that ring) and that oxygen 
+  in turn is bonded to an atom that belongs to a different candidate ring.
 """
 from rdkit import Chem
-import numpy as np
 
 def is_tetrasaccharide(smiles: str):
     """
-    Determines if a molecule is a tetrasaccharide based on its SMILES string.
-    It first finds candidate monosaccharide rings (5- or 6-membered rings with exactly one oxygen)
-    and then checks if exactly four are found. It also verifies that the candidate rings are connected
-    via glycosidic bonds (defined here as a linkage where an atom from one ring bonds to an exocyclic 
-    oxygen that in turn bonds to an atom in a different ring).
+    Determines if a molecule qualifies as a tetrasaccharide.
+    It identifies candidate monosaccharide rings (5- or 6-membered rings with exactly one ring oxygen)
+    and then filters them further to include only rings that show at least one exocyclic oxygen that could
+    participate in a glycosidic bond. It then builds a connectivity graph among those rings using the rule 
+    that a candidate glycosidic linkage is present when an atom from ring A is bonded to an oxygen (not part of A)
+    that in turn is bonded to an atom in ring B.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is classified as a tetrasaccharide, False otherwise.
+        bool: True if the molecule is classified as a tetrasaccharide, else False.
         str: Explanation of the classification decision.
     """
-    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get ring information.
+    # Get ring information from molecule.
     ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()  # tuple of tuples of atom indices
-
-    # Helper function: check if a ring is a candidate monosaccharide ring.
-    def is_monosaccharide_ring(atom_indices):
-        # Only consider 5-membered (furanose) or 6-membered (pyranose) rings.
+    atom_rings = ring_info.AtomRings()
+    
+    # Helper function: checks if a ring (given by atom indices) is a candidate monosaccharide ring.
+    # Criteria: ring size = 5 (furanose) or 6 (pyranose), exactly one oxygen in ring,
+    # and at least one exocyclic oxygen neighbor attaches to a ring atom.
+    def is_candidate_ring(atom_indices):
         ring_size = len(atom_indices)
-        if ring_size not in [5, 6]:
+        if ring_size not in (5, 6):
             return False
         atoms = [mol.GetAtomWithIdx(idx) for idx in atom_indices]
-        # Count atomic numbers: oxygen==8 and carbon==6.
         o_count = sum(1 for atom in atoms if atom.GetAtomicNum() == 8)
         c_count = sum(1 for atom in atoms if atom.GetAtomicNum() == 6)
-        if ring_size == 5:
-            return (o_count == 1 and c_count == 4)
-        if ring_size == 6:
-            return (o_count == 1 and c_count == 5)
+        # For furanoses: 1 O and 4 C; for pyranoses: 1 O and 5 C.
+        if ring_size == 5 and not (o_count == 1 and c_count == 4):
+            return False
+        if ring_size == 6 and not (o_count == 1 and c_count == 5):
+            return False
+        
+        # Check for at least one exocyclic oxygen attached to any ring atom.
+        # This oxygen should not belong to the ring.
+        for idx in atom_indices:
+            atom = mol.GetAtomWithIdx(idx)
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() in atom_indices:
+                    continue
+                if nbr.GetAtomicNum() == 8:  # exocyclic oxygen candidate
+                    # Optionally, check that the oxygen has at least one neighbor in a ring (will do that later).
+                    return True
         return False
 
-    # Collect candidate rings.
+    # Collect candidate rings (store as sets of indices)
     candidate_rings = []
     for ring in atom_rings:
-        if is_monosaccharide_ring(ring):
-            candidate_rings.append(set(ring))  # store as set for quick membership checks
+        if is_candidate_ring(ring):
+            candidate_rings.append(set(ring))
     
     if len(candidate_rings) != 4:
         return False, f"Found {len(candidate_rings)} monosaccharide-like rings; expected 4 for a tetrasaccharide."
 
     # Build connectivity graph among candidate rings.
-    # For each pair of rings we look for a glycosidic linkage defined as: an atom (a) in ring i 
-    # is connected to an exocyclic oxygen (X) (i.e. not in ring i) and that oxygen is bonded to an atom (b)
-    # that is in ring j.
+    # For each pair of candidate rings, scan atoms in ring_i.
+    # For an atom in ring_i, if there is a neighbor that is oxygen (and not in ring_i),
+    # and if that oxygen is also bonded to any atom that belongs to ring_j, define a glycosidic linkage.
     n = len(candidate_rings)
     graph = {i: [] for i in range(n)}
-    
     for i in range(n):
         for j in range(i+1, n):
-            connected = False
-            # Iterate over atoms in ring i.
+            found_link = False
             for a_idx in candidate_rings[i]:
                 a_atom = mol.GetAtomWithIdx(a_idx)
-                # Look at neighbors of candidate atom a.
-                for neigh in a_atom.GetNeighbors():
-                    neigh_idx = neigh.GetIdx()
-                    # Skip if neighbor is also in ring i (we want an exocyclic attachment)
-                    if neigh_idx in candidate_rings[i]:
+                # Look at neighbors outside the ring.
+                for nbr in a_atom.GetNeighbors():
+                    nbr_idx = nbr.GetIdx()
+                    if nbr_idx in candidate_rings[i]:
                         continue
-                    # Require the linking atom to be oxygen (glycosidic linker is O typically)
-                    if neigh.GetAtomicNum() != 8:
+                    if nbr.GetAtomicNum() != 8:  # only consider oxygen as linker
                         continue
-                    # Now check if this oxygen links to an atom in ring j.
-                    for nb in neigh.GetNeighbors():
-                        # Do not consider the bond going back to a_atom.
-                        if nb.GetIdx() == a_idx:
+                    # For this exocyclic oxygen, check if it links to ring j.
+                    for o_nbr in nbr.GetNeighbors():
+                        # Avoid going back to a_atom.
+                        if o_nbr.GetIdx() == a_idx:
                             continue
-                        if nb.GetIdx() in candidate_rings[j]:
-                            connected = True
+                        if o_nbr.GetIdx() in candidate_rings[j]:
+                            found_link = True
                             break
-                    if connected:
+                    if found_link:
                         break
-                if connected:
+                if found_link:
                     break
-            if connected:
+            if found_link:
                 graph[i].append(j)
                 graph[j].append(i)
     
-    # Use depth-first search to see if these four rings form a single connected cluster.
+    # To be a true tetrasaccharide, all 4 candidate rings must be connected via at least one glycosidic bond.
+    # Use DFS on the graph.
     visited = set()
     def dfs(node):
         visited.add(node)
-        for neigh in graph[node]:
-            if neigh not in visited:
-                dfs(neigh)
-    
+        for neighbor in graph[node]:
+            if neighbor not in visited:
+                dfs(neighbor)
     dfs(0)
     if len(visited) != n:
         return False, "Monosaccharide-like rings are not connected via glycosidic bonds; linkages are missing or not contiguous."
     
     return True, "Contains exactly four connected monosaccharide rings with glycosidic linkages typical for tetrasaccharides."
 
-# Example usage (for testing):
+# For testing purposes:
 if __name__ == '__main__':
-    # A true positive example from the provided list.
+    # Use one of the true positive SMILES from the provided list.
     sample_smiles = "C[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@@H](O)[C@@H](CO)O[C@H]2O[C@@H]2[C@@H](CO)OC(O)[C@H](O)[C@H]2O[C@@H]2O[C@@H](C)[C@@H](O)[C@@H](O)[C@@H]2O)[C@@H](O)[C@H](O)[C@@H]1O"
     result, reason = is_tetrasaccharide(sample_smiles)
     print(result, reason)
