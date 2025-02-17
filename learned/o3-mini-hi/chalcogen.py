@@ -3,43 +3,53 @@ Classifies: CHEBI:33303 chalcogen
 """
 """
 Classifies: CHALCOGEN - Any p-block element belonging to the group 16 family of the periodic table.
-Valid chalcogens: Oxygen (O), Sulfur (S), Selenium (Se), Tellurium (Te), Polonium (Po)
-A valid chalcogen entry should be a single atom as represented by its SMILES string.
+Valid chalcogens for this classification: Oxygen (O), Sulfur (S), Selenium (Se), Tellurium (Te), and Polonium (Po).
+A valid entry must be a neutral, single-atom species.
 """
 
 from rdkit import Chem
 
 def is_chalcogen(smiles: str):
     """
-    Determines if a molecule is a chalcogen element based on its SMILES string.
-    A chalcogen is defined as any p-block element belonging to the group 16 family of the periodic table,
-    i.e., oxygen, sulfur, selenium, tellurium, and polonium.
-    Additionally, to be classified as a pure chalcogen, the SMILES should represent a single isolated atom.
+    Determines if a molecule is a neutral, single-atom chalcogen based on its SMILES string.
+    
+    A chalcogen is defined as any p-block element in group 16:
+      - Oxygen (atomic number 8)
+      - Sulfur (atomic number 16)
+      - Selenium (atomic number 34)
+      - Tellurium (atomic number 52)
+      - Polonium (atomic number 84)
+    
+    The molecule must be exactly one atom and must have a formal charge of 0.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is a single-atom chalcogen, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a neutral, single-atom chalcogen, False otherwise.
+        str: A reason for the classification.
     """
-    # Try to parse the SMILES string
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check that the molecule consists of exactly one atom.
-    # Note: Explicit hydrogens are included in GetNumAtoms(), so we also ensure there are no extra atoms.
+    # Ensure that no bonds are present (i.e., the molecule is a single isolated atom).
+    # Note: Sometimes hydrogens are implicit; we rely on the fact that explicit atoms (even hydrogens)
+    # would increase the atom count.
     if mol.GetNumAtoms() != 1:
         return False, "Molecule does not represent a single isolated atom"
     
-    # Get the one atom in the molecule.
+    # Get the only atom in the molecule.
     atom = mol.GetAtomWithIdx(0)
-    atomic_num = atom.GetAtomicNum()
     
-    # Define allowed atomic numbers for group 16 chalcogens:
-    # Oxygen (8), Sulfur (16), Selenium (34), Tellurium (52), Polonium (84)
+    # Check formal charge; we require a neutral (zero charge) atom.
+    if atom.GetFormalCharge() != 0:
+        return False, f"Atom has a formal charge of {atom.GetFormalCharge()}, not neutral"
+    
+    # Define allowed atomic numbers for group 16 chalcogens.
     allowed_atomic_nums = {8, 16, 34, 52, 84}
+    atomic_num = atom.GetAtomicNum()
     if atomic_num in allowed_atomic_nums:
         return True, f"Element with atomic number {atomic_num} is a chalcogen"
     else:
@@ -61,6 +71,7 @@ def is_chalcogen(smiles: str):
 #     "[H][Te+]([H])[H]", "[O-][H]", "[Te--]", "[S+2]", "[H][Po][H]",
 #     "[H][S+]([H])[H]", "[S+][H]", "[Se][H]", "[H][S-]([H])[H]", "[O-]"
 # ]
+#
 # for ts in test_smiles:
 #     status, reason = is_chalcogen(ts)
 #     print(f"{ts}: {status} | {reason}")
