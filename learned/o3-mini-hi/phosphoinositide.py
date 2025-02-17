@@ -1,13 +1,11 @@
 """
 Classifies: CHEBI:18179 phosphoinositide
 """
-#!/usr/bin/env python
 """
 Classifies: Phosphoinositide
 Definition: Any phosphatidylinositol that is phosphorylated at one or more of the hydroxy groups of inositol.
-A phosphoinositide must contain a glycerophosphatidylinositol “core” with at least two acyl chains (detected via ester groups)
-and a phosphate bridging the glycerol backbone to an inositol headgroup – a cyclohexane (six-membered carbon ring) decorated 
-with oxygen substituents (–OH or –O–P(=O)(O) groups, where the phosphate is neutral).
+That is, the molecule must contain a glycerophosphatidylinositol “core” (with two acyl chains attached via ester bonds
+and a phosphate linking to an inositol ring) where at least one hydroxyl on the inositol has been phosphorylated.
 """
 
 from rdkit import Chem
@@ -15,106 +13,92 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_phosphoinositide(smiles: str):
     """
-    Determines if a molecule is a phosphoinositide based on its SMILES string, using heuristic criteria.
-    
+    Determines if a molecule is a phosphoinositide based on its SMILES string.
+
     Heuristic criteria:
-      1. The SMILES must be valid.
-      2. The molecule must contain at least two phosphorus atoms.
-      3. The molecule must contain at least two acyl ester groups (the C(=O)O motif) to indicate two acyl chains.
-      4. The molecule must possess an inositol headgroup that is phosphorylated—that is,
-         it contains a six-membered ring of carbons (typical of inositols) that is decorated
-         with oxygen substituents. For our purposes the ring must have at least three such substituents,
-         and at least one of them should be a phosphate substituent (i.e. an oxygen attached to a neutral P).
-    
+    1. The molecule must be a valid structure.
+    2. It must contain at least two phosphorus atoms (one in the glycerol linkage and at least one extra on inositol).
+    3. It must have at least two acyl ester groups (i.e. -C(=O)O- fragments) representing acyl chains.
+    4. It must contain an inositol ring. Here we search for a six-membered ring of carbons where each ring atom 
+       has at least one substituent oxygen (as would occur for hydroxyl/phosphate substituents) and where at least one of 
+       these oxygens is phosphorylated (i.e. connected to a phosphorus).
+       
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+        smiles (str): SMILES string of the molecule
+
     Returns:
-        bool: True if the molecule meets our criteria for a phosphoinositide, False otherwise.
-        str: Explanation of the classification decision.
+        bool: True if molecule is a phosphoinositide, False otherwise.
+        str: Explanation for the classification.
     """
-    # Parse the SMILES string.
+    # 1. Parse the molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string."
+        return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens for better detection of -OH groups.
-    mol = Chem.AddHs(mol)
-    
-    # Criterion 1: Check for at least two phosphorus atoms (atomic number 15).
+    # 2. Check the total number of phosphorus atoms – need at least 2.
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     if p_count < 2:
-        return False, f"Only {p_count} phosphorus atom(s) found; need at least 2 for a phosphoinositide."
+        return False, f"Only {p_count} phosphorus atom(s) found; phosphoinositides need at least 2."
     
-    # Criterion 2: Look for at least two acyl ester groups.
+    # 3. Check for the presence of at least two acyl ester groups (i.e. a -C(=O)O- fragment).
     ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
-        return False, f"Found only {len(ester_matches)} acyl ester group(s); need at least 2 acyl chains."
+        return False, f"Only {len(ester_matches)} acyl ester group(s) found; need at least two as acyl chains."
     
-    # Criterion 3: Identify a phosphorylated inositol head group.
-    # We search for a six-membered ring whose atoms are all carbons (i.e. a cyclohexane),
-    # and then check the ring atoms’ external substituents.
-    # We count an external substituent if it is an oxygen that is either part of an -OH
-    # (i.e. attached to at least one hydrogen) or it is attached to a neutral phosphorus atom.
-    found_inositol = False
-    ring_info = mol.GetRingInfo()
-    for ring in ring_info.AtomRings():
-        # Look only at 6-membered rings.
+    # 4. Look for an inositol ring:
+    # Here we loop over all rings of size 6. For each such ring composed solely of carbons,
+    # we check that every ring carbon has at least one substituent oxygen (not in the ring).
+    # Furthermore, at least one substituent oxygen must be bound to a phosphorus.
+    ring_info = mol.GetRingInfo().AtomRings()
+    inositol_found = False
+    for ring in ring_info:
         if len(ring) != 6:
             continue
-        # Check that every atom in the ring is carbon.
+        # Verify that all atoms in the ring are carbons.
         if not all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
             continue
-        
-        # Now, for each ring atom, look at substituents that are not members of the ring.
-        total_substituents = 0
-        phosphate_substituents = 0
+
+        all_have_oxygen_substituent = True
+        phosphorylated_substituent = False
+        # For each atom in the ring, check that it has at least one neighbor (not in the ring) that is oxygen.
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            for nbr in atom.GetNeighbors():
-                # Skip neighbor if it is in the ring.
-                if nbr.GetIdx() in ring:
+            has_oxy = False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() in ring:
                     continue
-                # We are interested in oxygen substituents.
-                if nbr.GetAtomicNum() == 8:
-                    # Check if this oxygen is part of a hydroxyl group (i.e., has at least one H neighbor).
-                    has_h = any(n.GetAtomicNum() == 1 for n in nbr.GetNeighbors())
-                    # Alternatively, check if the oxygen is attached to a neutral phosphorus.
-                    is_phosphate = False
-                    for second_nbr in nbr.GetNeighbors():
-                        if second_nbr.GetAtomicNum() == 15 and second_nbr.GetFormalCharge() == 0:
-                            is_phosphate = True
+                if neighbor.GetAtomicNum() == 8:  # oxygen
+                    has_oxy = True
+                    # Check if this oxygen is phosphorylated (i.e. connected to phosphorus)
+                    for subneighbor in neighbor.GetNeighbors():
+                        if subneighbor.GetAtomicNum() == 15:
+                            phosphorylated_substituent = True
                             break
-                    if has_h or is_phosphate:
-                        total_substituents += 1
-                        if is_phosphate:
-                            phosphate_substituents += 1
-        # To count as an inositol head, require at least three such substituents,
-        # with at least one being a phosphate substituent.
-        if total_substituents >= 3 and phosphate_substituents >= 1:
-            found_inositol = True
+                    # No need to check further neighbors for this atom if one oxygen is found.
+                    break
+            if not has_oxy:
+                all_have_oxygen_substituent = False
+                break
+        if all_have_oxygen_substituent and phosphorylated_substituent:
+            inositol_found = True
             break
-    
-    if not found_inositol:
-        return False, ("No phosphorylated inositol head detected: "
-                       "a six-membered carbon ring with at least three oxygen substituents (including at least one phosphate) was not found.")
-    
-    return True, ("Molecule contains at least two phosphorus atoms, at least two acyl ester groups, and a phosphorylated inositol head "
-                  "as indicated by detection of a cyclohexane ring decorated with -OH and -O-P(=O)(O) substituents.")
 
+    if not inositol_found:
+        return False, "No inositol ring detected that meets the substitution criteria (six-membered carbon ring with oxygen substituents and at least one phosphorylated substituent)."
+    
+    # If all three tests pass, we classify the molecule as a phosphoinositide.
+    return True, "Molecule contains at least two phosphorus atoms, at least two acyl chains, and an inositol ring with phosphorylation."
 
-# Debug/test code (executes only when run as a script)
+# Debug/test code (if the module is run as a standalone program)
 if __name__ == "__main__":
     test_smiles = [
+        # Example: 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4-bisphosphate)
+        "CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCC",
         # Example: PIP(18:0/16:0)
-        "[C@@H]1(C(C(C([C@H](C1O)OP(=O)(O)O)O)O)O)OP(OC[C@](COC(CCCCCCCCCCCCCCCCC)=O)([H])OC(CCCCCCCCCCCCCCC)=O)(O)=O",
-        # Example: 1-stearoyl-2-oleoyl-sn-glycero-3-phospho-1D-myo-inositol 4-phosphate
-        "CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@H]1O)OC(=O)CCCCCCC\\C=C/CCCCCCCC"
+        "[C@@H]1(C(C(C([C@H](C1O)OP(=O)(O)O)O)O)O)OP(OC[C@](COC(CCCCCCCCCCCCCCCCC)=O)([H])OC(CCCCCCCCCCCCCCC)=O)(O)=O"
     ]
+    
     for smi in test_smiles:
         result, reason = is_phosphoinositide(smi)
-        print("SMILES:", smi)
-        print("Result:", result)
-        print("Reason:", reason)
-        print("----------")
+        print(f"SMILES: {smi}\nResult: {result}\nReason: {reason}\n")
