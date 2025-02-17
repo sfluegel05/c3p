@@ -3,61 +3,60 @@ Classifies: CHEBI:30527 flavin
 """
 """
 Classifies: A derivative of the dimethylisoalloxazine 
-(7,8-dimethylbenzo[g]pteridine-2,4(3H,10H)-dione) skeleton with a substituent on the 10 position (i.e. flavin).
+(7,8-dimethylbenzo[g]pteridine-2,4(3H,10H)-dione) skeleton with a substituent at the 10 position (i.e. flavin).
 
-This version uses an updated SMARTS pattern:
-  "c1c(C)cc2nc3c(nc(=O)[nH]c3=O)n(*)c2c1C"
-
+This version uses an updated SMARTS pattern that maps the bridging N (position 10) and requires it to have a non‐hydrogen substituent.
+The SMARTS pattern used is:
+  "c1c(C)cc2nc3c(nc(=O)[nH]c3=O)[n:1]([!H])c2c1C"
 Breakdown:
-  - "c1c(C)cc2" and "c2c1C" require that the benzene ring contains two methyl groups (at positions analogous to 7 and 8)
-  - "nc3c(nc(=O)[nH]c3=O)" ensures that the fused heterocycle has the two keto groups
-  - "n(*)" means that the bridging nitrogen (N10) carries any substituent (not just hydrogen)
-This pattern is somewhat relaxed compared to the previous version to better capture the variability in valid flavin derivatives.
+  - "c1c(C)cc" and then later "c2c1C" enforce that the benzene ring has two methyl groups (positions 7 and 8).
+  - "nc3c(nc(=O)[nH]c3=O)" captures the fused heterocycle with the two keto functions.
+  - "[n:1]([!H])" explicitly maps the central (N10) nitrogen and requires that it carries at least one substituent that is not hydrogen.
 """
 
 from rdkit import Chem
 
 def is_flavin(smiles: str):
     """
-    Determines if a molecule is a flavin derivative based on its SMILES string.
-    A flavin is defined as a derivative of the dimethylisoalloxazine 
+    Determines if a molecule is classified as a flavin derivative based on its SMILES string.
+    A flavin derivative is defined as a derivative of the dimethylisoalloxazine 
     (7,8-dimethylbenzo[g]pteridine-2,4(3H,10H)-dione) skeleton with a substituent at the 10 position.
     
-    The classification is done in two steps:
-      1. The molecule is parsed from its SMILES.
-      2. An updated SMARTS pattern is used to see if the isoalloxazine core is found:
-          "c1c(C)cc2nc3c(nc(=O)[nH]c3=O)n(*)c2c1C"
-         This pattern requires:
-           • The benzene ring shows two methyl groups.
-           • The fused heterocycle has two keto groups.
-           • The bridging nitrogen (position 10) carries a substituent (indicated by n(*) ).
+    The procedure is:
+      1. Parse the molecule from the SMILES.
+      2. Apply a SMARTS substructure search with an updated pattern designed to capture the isoalloxazine core
+         and specifically require that the bridging nitrogen (N10) carries a substituent (i.e. not just hydrogen).
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if the molecule is classified as a flavin derivative, False otherwise.
-        str: Reason for the classification result.
+        bool: True if the molecule is classified as flavin.
+        str: Explanation for the classification.
     """
-    # Parse the SMILES string
+    
+    # Parse the SMILES string into an RDKit molecule object.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define an updated SMARTS pattern for the flavin isoalloxazine core.
-    # This pattern is designed to be a bit more flexible than the previous attempt.
-    flavin_smarts = "c1c(C)cc2nc3c(nc(=O)[nH]c3=O)n(*)c2c1C"
+    # Define an updated SMARTS pattern for the isoalloxazine core.
+    # Here we force:
+    #  • a benzene ring with two methyl groups (positions analogous to 7 and 8),
+    #  • a fused heterocycle having two keto groups,
+    #  • and the bridging nitrogen (N10) [mapped as [n:1]] which carries a non-hydrogen substituent ([!H]).
+    flavin_smarts = "c1c(C)cc2nc3c(nc(=O)[nH]c3=O)[n:1]([!H])c2c1C"
     core = Chem.MolFromSmarts(flavin_smarts)
     if core is None:
         return False, "Error constructing the flavin SMARTS pattern"
     
-    # Check if the molecule contains the isoalloxazine core with the required features.
+    # Check if the molecule contains the flavin isoalloxazine core with the required N10 substitution.
     if not mol.HasSubstructMatch(core):
         return False, "Does not contain the required dimethylisoalloxazine core with a substituent at N10"
     
-    return True, "Contains isoalloxazine core (7,8-dimethylbenzo[g]pteridine-2,4(3H,10H)-dione) with a substituent at N10, classified as flavin"
+    return True, "Contains isoalloxazine core (7,8-dimethylbenzo[g]pteridine-2,4(3H,10H)-dione) with substituent at N10, classified as flavin"
 
-# Example testing:
+# Example test cases (can be removed or commented out when using this code as a module):
 if __name__ == "__main__":
     test_smiles = [
         "C[C@@H](OP(O)(=O)OC[C@@H](O)[C@@H](O)[C@@H](O)Cn1c2cc(C)c(C)cc2nc2c1nc(=O)[nH]c2=O",   # FMN-L-threonine
