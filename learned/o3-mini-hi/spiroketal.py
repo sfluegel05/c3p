@@ -5,32 +5,31 @@ Classifies: CHEBI:72600 spiroketal
 """
 Classifies: spiroketal
 Definition: A cyclic ketal in which the ketal carbon is the only common atom of two rings.
-A true spiroketal features a sp³ carbon that sits at the junction of two rings and that
-only bridges the two rings. In a cyclic ketal the spiro carbon is tetravalent, with exactly
-two oxygen and two carbon substituents. Furthermore, in a true spiroketal each of the two rings
-(that share only the spiro center) should include exactly one oxygen substituent (from the spiro center).
-The new approach below refines the pairing of oxygen substituents with the individual rings.
+A true spiroketal features a carbon (ideally sp³ but we now relax that requirement)
+that is tetra‐bonded to exactly two oxygen and two carbon heavy atoms. Moreover,
+there must be two rings (of a reasonable minimum size) that each contain the candidate carbon
+and exactly one of its oxygen neighbors so that the rings share only the candidate atom.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_spiroketal(smiles: str):
     """
     Determines if a molecule is a spiroketal based on its SMILES string.
-
-    The algorithm looks for a candidate spiro carbon that:
-      - Is a carbon (atomic number 6) that is sp3 hybridized.
-      - Has exactly 4 neighbors (i.e. is tetravalent) with exactly 2 oxygen and 2 carbon substituents.
-      - Belongs to at least two rings.
-      - For each of its two oxygen neighbors, there is at least one ring (of minimal size, here >=4 atoms)
-        that contains both the candidate and that oxygen.
-      - There exists a pair of such rings (one for each oxygen) whose intersection is only the candidate atom.
-        In other words, the two rings “meet” only at the candidate spiro center (thus forming a spiro junction).
-
+    
+    The algorithm uses the following criteria:
+      1. The candidate spiro center must be a carbon (atomic number 6).
+      2. It must have exactly four heavy-atom neighbors (ignoring implicit hydrogens),
+         exactly two of which are oxygens (atomic number 8) and two carbons.
+      3. The candidate must belong to at least two rings (ignoring rings with less than 4 atoms).
+      4. For each ring that contains the candidate, we count how many of the candidate’s oxygen
+         neighbors are present. For a true spiroketal each of the two rings that come together at
+         the candidate should contain exactly one (and a different) oxygen neighbor.
+      5. Finally, we require that the pair of rings chosen share only the candidate atom.
+    
     Args:
         smiles (str): SMILES string of the molecule.
-
+    
     Returns:
         bool: True if the molecule is classified as a spiroketal, False otherwise.
         str: Explanation for the classification.
@@ -38,29 +37,24 @@ def is_spiroketal(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Retrieve ring information as a list of sets of atom indices.
-    rings = [set(r) for r in mol.GetRingInfo().AtomRings()]
+    
+    # Get ring information as a list of sets of atom indices.
+    rings = [set(r) for r in mol.GetRingInfo().AtomRings() if len(r) >= 4]
     if not rings:
-        return False, "No rings detected in the molecule"
-
-    # Loop over all atoms looking for candidate spiro centers.
+        return False, "No rings detected in the molecule (or no rings of size>=4)"
+    
+    # Loop over atoms searching for candidate spiro centers.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 6:
             continue
-        if atom.GetHybridization() != rdchem.HybridizationType.SP3:
-            continue
-
-        atom_idx = atom.GetIdx()
-        # Candidate must appear in at least 2 rings.
-        candidate_rings = [r for r in rings if atom_idx in r and len(r) >= 4]  # ignore very small rings
-        if len(candidate_rings) < 2:
-            continue
-
-        # Check degree and neighbor element counts.
+        # (Relax hybridization requirement so that stereochemically annotated atoms are not skipped.)
+    
+        # Use the explicit neighbors (heavy atoms only)
         neighbors = atom.GetNeighbors()
         if len(neighbors) != 4:
-            continue  # Must be tetravalent.
+            continue  # Must be tetravalent when considering heavy atoms.
+    
+        # Count oxygen and carbon neighbors.
         oxygen_neighbors = []
         carbon_neighbors = []
         for nbr in neighbors:
@@ -70,32 +64,59 @@ def is_spiroketal(smiles: str):
             elif anum == 6:
                 carbon_neighbors.append(nbr.GetIdx())
         if len(oxygen_neighbors) != 2 or len(carbon_neighbors) != 2:
+            continue  # Wrong substitution pattern.
+    
+        cand_idx = atom.GetIdx()
+        # Gather rings that contain the candidate.
+        candidate_rings = [r for r in rings if cand_idx in r]
+        if len(candidate_rings) < 2:
             continue
-
-        # For each oxygen neighbor, compile the list of rings (from candidate_rings)
-        # that contain both the candidate and that oxygen.
-        ox_rings = {}
-        for ox_idx in oxygen_neighbors:
-            ox_rings[ox_idx] = [r for r in candidate_rings if ox_idx in r]
-            if not ox_rings[ox_idx]:
-                # If an oxygen neighbor is not in any candidate ring, cannot form spiroketal.
+    
+        # For each candidate ring, count how many oxygen neighbors occur in that ring.
+        # We want rings that (a) contain exactly one of the candidate’s oxygen neighbors.
+        ring_to_ox = {}  # Map ring (as frozenset) -> oxygen neighbor index present in that ring.
+        for r in candidate_rings:
+            # Find intersection between the ring and the oxygen neighbor set.
+            ox_in_ring = set(oxygen_neighbors).intersection(r)
+            if len(ox_in_ring) == 1:
+                # Save the ring (using frozenset as key) along with the oxygen index present.
+                ring_to_ox[frozenset(r)] = list(ox_in_ring)[0]
+        
+        # To be a spiroketal we need two distinct rings that have different oxygen neighbors
+        found_pair = None
+        ring_list = list(ring_to_ox.items())
+        for i in range(len(ring_list)):
+            for j in range(i+1, len(ring_list)):
+                ring1, ox1 = ring_list[i]
+                ring2, ox2 = ring_list[j]
+                if ox1 == ox2:
+                    # Both rings have the same oxygen from the candidate, so they do not
+                    # split the two distinct oxygen substituents.
+                    continue
+                # Check that the two rings share only the candidate atom.
+                if ring1.intersection(ring2) == {cand_idx}:
+                    found_pair = (ring1, ring2, ox1, ox2)
+                    break
+            if found_pair:
                 break
-        else:  # Only proceed if both oxygens have a ring.
-            # Now try to pair one ring from the first oxygen with one ring from the second oxygen.
-            for r1 in ox_rings[oxygen_neighbors[0]]:
-                for r2 in ox_rings[oxygen_neighbors[1]]:
-                    # Check that the two rings share only the candidate carbon.
-                    if r1.intersection(r2) == {atom_idx}:
-                        # We have found the correct pairing.
-                        return True, (f"Found spiroketal center at atom index {atom_idx} with two oxygens "
-                                       f"({oxygen_neighbors[0]} and {oxygen_neighbors[1]}) and two carbons "
-                                       f"({carbon_neighbors[0]} and {carbon_neighbors[1]}). "
-                                       f"Ring one (size {len(r1)}) and ring two (size {len(r2)}) share only the candidate atom.")
+        if found_pair:
+            ring1, ring2, ox1, ox2 = found_pair
+            # Identify the carbon neighbors for reporting (order arbitrary)
+            carbons = carbon_neighbors
+            return True, (f"Found spiroketal center at atom index {cand_idx} with oxygen neighbors "
+                          f"{oxygen_neighbors[0]} and {oxygen_neighbors[1]} and carbon neighbors "
+                          f"{carbons[0]} and {carbons[1]}. Ring one (size {len(ring1)}) contains oxygen {ox1}; "
+                          f"ring two (size {len(ring2)}) contains oxygen {ox2}; rings share only candidate atom.")
+    
     return False, "No spiroketal pattern found in the molecule"
 
 # Example usage:
 if __name__ == "__main__":
-    # Try testing with one of the known examples, for instance chrysopine:
-    test_smiles = "NC(=O)CC[C@@H]1NCC2(OC[C@@H](O)[C@@H](O)[C@@H]2O)OC1=O"
-    result, reason = is_spiroketal(test_smiles)
-    print(result, reason)
+    # Test with one known positive (chrysopine) and a known false positive example.
+    test_smiles_pos = "NC(=O)CC[C@@H]1NCC2(OC[C@@H](O)[C@@H](O)[C@@H]2O)OC1=O"
+    result, reason = is_spiroketal(test_smiles_pos)
+    print("Positive test:", result, reason)
+    
+    test_smiles_neg = "O=C1O[C@@]2(OC[C@]3([C@@H]2O)[C@@H]4C(=C)CC[C@H]3C4)C=C1C"  # Example false positive
+    result2, reason2 = is_spiroketal(test_smiles_neg)
+    print("Negative test:", result2, reason2)
