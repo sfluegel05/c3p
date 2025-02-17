@@ -6,11 +6,10 @@ Classifies: beta-D-galactoside
 
 Definition: Any D-galactoside having beta-configuration at its anomeric centre.
 A beta-D-galactoside here is defined as a molecule that contains a complete beta-D-galactopyranoside fragment.
-A complete beta-D-galactopyranoside fragment is defined as a pyranose ring (six‐membered ring with one oxygen
-and five carbons) in which an external substituent (the aglycone) is attached via an oxygen to the anomeric carbon;
-the anomeric carbon is drawn with beta configuration ([C@@H]), and the ring atoms have the expected relative arrangement.
-In beta-D-galactopyranose the exocyclic CH2OH is attached at C5.
-Because many alternative representations exist, this approach is strict and may fail if stereo is not defined.
+This implementation looks for a six-membered ring (pyranose) that has exactly one ring oxygen and five ring carbons.
+Within the ring, we search for a carbon with beta configuration (C@@H) that is bonded to an oxygen substituent 
+(excluding ring connections) and we also require the presence of a characteristic exocyclic –CH2OH group attached 
+to one of the ring carbons (expected for D-sugars).
 """
 
 from rdkit import Chem
@@ -18,80 +17,111 @@ from rdkit import Chem
 def is_beta_D_galactoside(smiles: str):
     """
     Determines if a molecule is a beta-D-galactoside based on its SMILES string.
-    
-    The function first parses the SMILES and assigns stereochemistry. It uses a refined SMARTS pattern
-    that looks for an external substituent attached via an oxygen to an anomeric carbon in beta configuration.
-    The pattern enforces a complete six-membered pyranose ring (with one ring oxygen and five carbons)
-    with the exocyclic CH2OH group bonded at the appropriate ring carbon.
-    
-    The SMARTS pattern we use here is:
-      [*]O[C@@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@H](CO)O1
-    This denotes:
-      [*]O       : any aglycone attached via an oxygen
-      [C@@H]1   : the anomeric carbon in beta configuration (start ring number 1)
-         O      : the ring oxygen
-         [C@H](O): C2 with an OH
-         [C@@H](O): C3 with an OH
-         [C@H](O): C4 with an OH
-         [C@H](CO): C5 with an exocyclic CH2OH (note the CH2OH group, not in the ring)
-      O1         : closes the ring (the ring oxygen already included)
-    
-    In addition to matching the SMARTS, we verify that the atoms in the sugar ring (the atoms with indices
-    corresponding to the anomeric carbon and the next four atoms plus the oxygen closing the ring)
-    actually form a ring of size 6.
+
+    The implemented strategy consists of:
+      1. Parsing the SMILES and ensuring stereochemistry is assigned.
+      2. Enumerating all rings of size 6.
+      3. For each 6-membered ring, ensuring the ring contains exactly one oxygen (a hallmark of a pyranose)
+         and five carbons.
+      4. Searching in that ring for a carbon that is chiral and has a beta configuration 
+         (i.e. its chiral tag equals CHI_TETRAHEDRAL_CCW) and that is bound to an external oxygen (the glycosidic oxygen).
+      5. Verifying that one (typically at the C5-equivalent position) carries a CH2OH group; this is done by requiring
+         that at least one ring carbon (outside the candidate anomeric carbon) has a neighbor that is a –CH2OH fragment.
+         Here we approximate a CH2OH group by checking for a carbon (atomic number 6) attached to at least one oxygen
+         (atomic number 8) and not being part of the ring.
     
     Args:
         smiles (str): SMILES string of the molecule.
-    
+
     Returns:
-        bool: True if the molecule contains a complete beta-D-galactoside fragment, False otherwise.
+        bool: True if the molecule appears to contain a beta-D-galactoside sugar moiety, False otherwise.
         str: Explanation for the classification.
     """
-    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Ensure stereochemistry is computed (this is important for chiral centers in sugars).
+    # Assign stereochemistry so that chiral tags are set.
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
     
-    # Define a refined SMARTS pattern for a beta-D-galactopyranoside.
-    # This pattern requires an external substituent (any atom, [*]) attached via an oxygen
-    # to a beta-configured anomeric carbon which is part of a six-membered ring with exactly one oxygen.
-    smarts_beta_gal = "[*]O[C@@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@H](CO)O1"
-    patt = Chem.MolFromSmarts(smarts_beta_gal)
-    if patt is None:
-        return None, "Error creating SMARTS pattern"
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
     
-    matches = mol.GetSubstructMatches(patt)
-    if not matches:
-        return False, "Beta-D-galactoside moiety not found (no SMARTS match)"
+    # Loop over all rings looking for a candidate pyranose ring.
+    for ring in rings:
+        if len(ring) != 6:
+            continue  # Only interested in 6-membered rings
+        
+        # Count the number of oxygen atoms in the ring.
+        oxy_in_ring = [idx for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8]
+        if len(oxy_in_ring) != 1:
+            continue  # A pyranose ring should contain exactly one ring oxygen
+        
+        # Count the number of carbon atoms in the ring.
+        carbons_in_ring = [idx for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
+        if len(carbons_in_ring) != 5:
+            continue  # Expect 5 carbons in a pyranose ring
+        
+        # Look for a candidate anomeric carbon in beta configuration.
+        # Candidate anomeric carbons are ring carbons (atomic num 6) that:
+        #   a) are chiral and have configuration beta (RDKit uses CHI_TETRAHEDRAL_CCW for [C@@H]),
+        #   b) are attached to at least one oxygen that is not part of the ring.
+        candidate_anomeric = None
+        for idx in carbons_in_ring:
+            atom = mol.GetAtomWithIdx(idx)
+            if not atom.HasProp('_ChiralityPossible'):
+                # If chirality was never set, skip.
+                continue
+            if atom.GetChiralTag() != Chem.CHI_TETRAHEDRAL_CCW:
+                continue  # We require the beta configuration ([C@@H])
+            # Check neighbors for exocyclic oxygen (not in the ring)
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 8 and (nbr.GetIdx() not in ring):
+                    candidate_anomeric = idx
+                    break
+            if candidate_anomeric is not None:
+                break
+        
+        if candidate_anomeric is None:
+            continue  # No anomeric carbon candidate found in this ring
+        
+        # Now check if one of the other ring carbons carries an exocyclic CH2OH group.
+        # We look for a non-ring carbon neighbor (of a ring carbon) that is a carbon (atomic number 6) and is attached to at least one oxygen.
+        has_CH2OH = False
+        for idx in carbons_in_ring:
+            # We skip the candidate anomeric carbon (which is the glycosidic linkage site)
+            if idx == candidate_anomeric:
+                continue
+            atom = mol.GetAtomWithIdx(idx)
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() in ring:
+                    continue
+                if nbr.GetAtomicNum() == 6:
+                    # Check if this neighbor (potential CH2 group) has an oxygen neighbor
+                    # (this is a loose check for CH2OH)
+                    for subnbr in nbr.GetNeighbors():
+                        if subnbr.GetAtomicNum() == 8:
+                            has_CH2OH = True
+                            break
+                if has_CH2OH:
+                    break
+            if has_CH2OH:
+                break
+        
+        if not has_CH2OH:
+            continue  # The ring does not appear to have the required exocyclic CH2OH group
+        
+        # If we found a ring that fulfills all the requirements, we call the molecule a beta-D-galactoside.
+        return True, "Contains a six-membered pyranose ring with beta-configured anomeric carbon and exocyclic CH2OH group (consistent with a beta-D-galactoside)"
     
-    # Get ring information for further filtering.
-    ring_info = mol.GetRingInfo().AtomRings()
-    
-    # For each match, check that the sugar ring is complete.
-    # In our SMARTS, the ring atoms are in positions 1 through 6 of the match.
-    # (Match tuple: index0 = aglycone O, then index1 = anomeric carbon, index2 = ring oxygen, etc.)
-    for match in matches:
-        # Get the set of atom indices corresponding to the ring in the SMARTS.
-        # The pattern uses ring label "1" starting at the anomeric carbon (match[1]) and closing at match[6].
-        # Thus we consider atoms match[1] ... match[6].
-        if len(match) < 7:
-            continue  # Skip if the match is incomplete.
-        ring_atoms = set(match[1:7])
-        # Now check if these atoms form a ring of size 6.
-        for ring in ring_info:
-            if len(ring) == 6 and ring_atoms.issubset(ring):
-                # We found a complete sugar ring that matches the expected pattern.
-                return True, "Contains beta-D-galactoside moiety based on refined SMARTS matching and ring verification"
-    
-    return False, "No complete beta-D-galactoside sugar ring found despite SMARTS match"
-
+    # If none of the rings qualifies, return a failure.
+    return False, "No complete beta-D-galactoside sugar fragment found"
 
 # Example usage (for testing):
 if __name__ == "__main__":
-    # Test with a confirmed beta-D-galactoside: methyl beta-D-galactoside
+    # One of the provided examples: methyl beta-D-galactoside should return True.
     test_smiles = "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"
     result, reason = is_beta_D_galactoside(test_smiles)
-    print(test_smiles, "->", result, "|", reason)
+    print("SMILES:", test_smiles)
+    print("Result:", result)
+    print("Reason:", reason)
