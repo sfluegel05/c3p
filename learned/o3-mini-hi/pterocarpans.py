@@ -1,20 +1,17 @@
 """
 Classifies: CHEBI:26377 pterocarpans
 """
-#!/usr/bin/env python
 """
-Classifies: Pterocarpans
-Definition: Members of the class of benzofurochromene with a 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton 
-           (i.e. the 3,4-dihydro derivatives of coumestans) and its substituted derivatives.
-Heuristic improvements in this version:
-  1. Extract the Bemis–Murcko scaffold and require that it represents at least 50% of the molecule’s heavy atoms.
-  2. Require that the scaffold has at least 3 rings.
-  3. Require that the scaffold contains at least one oxygen atom.
-  4. Require that at least 2 of the rings in the scaffold are fully aromatic (fused aromatic core).
-  5. Require that at least one ring in the scaffold is “dihydro” (contains at least one carbon that is non‐aromatic) 
-     to capture the reduced (3,4-dihydro) character.
-This heuristic tries to balance capturing the structural essence of pterocarpans while avoiding molecules 
-that merely share one or two substructures.
+Classifies: Pterocarpans – Members of the class of benzofurochromene with a
+6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton (the 3,4-dihydro derivatives of coumestans).
+We now use several heuristics:
+  1. Extract the Bemis–Murcko scaffold.
+  2. Require that the scaffold accounts for a large fraction of the molecule’s heavy atoms.
+  3. Accept scaffolds with a modest number of fused rings (3–5) so that additional fused sub‐rings are allowed.
+  4. Require the scaffold contains at least one oxygen.
+  5. Require a benzofuran substructure (SMARTS: "c1ccc2occc2c1") as pterocarpans belong to the benzofurochromene family.
+  6. Require that at least one ring is “dihydro” (contains a non‐aromatic carbon) to mimic the 3,4-dihydro character.
+This heuristic is not perfect, but we hope it better rejects false positives and identifies known pterocarpans.
 """
 
 from rdkit import Chem
@@ -22,94 +19,95 @@ from rdkit.Chem.Scaffolds import MurckoScaffold
 
 def is_pterocarpans(smiles: str):
     """
-    Determines if a molecule is likely a pterocarpan based on its SMILES string using improved heuristics.
+    Determines if a molecule is likely a pterocarpan based on its SMILES string.
     
-    Heuristics:
-      1. Extract the Bemis–Murcko scaffold and compute the heavy atom ratio (scaffold/molecule) which must be ≥ 0.50.
-      2. The scaffold must have at least 3 rings.
-      3. The scaffold must contain at least one oxygen atom.
-      4. The scaffold must contain at least 2 fully aromatic rings, representing the fused aromatic portion.
-      5. At least one ring in the scaffold must have at least one saturated (non‐aromatic) carbon to reflect its
-         dihydro (reduced) character.
+    Approach:
+      1. Parse the molecule.
+      2. Extract its Bemis–Murcko scaffold.
+      3. Check that the scaffold makes up a large fraction of the molecule.
+      4. Accept only scaffolds with between 3 and 5 rings (to allow extra fused rings from derivatization).
+      5. Verify the scaffold contains at least one oxygen atom.
+      6. Verify the scaffold contains a benzofuran substructure.
+      7. Ensure that at least one ring has one or more saturated (non‐aromatic) carbons to capture the 3,4-dihydro feature.
     
     Args:
         smiles (str): SMILES string of the molecule.
-        
+    
     Returns:
         bool: True if molecule is classified as a pterocarpan, False otherwise.
         str: Reason for the classification decision.
     """
-    # Parse SMILES into a molecule
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Extract Bemis–Murcko scaffold from molecule
+
+    # Extract the Bemis-Murcko scaffold.
     try:
         scaffold = MurckoScaffold.GetScaffoldForMol(mol)
     except Exception as e:
         return False, f"Error extracting scaffold: {e}"
     if scaffold is None:
-        return False, "Could not extract scaffold from molecule"
-    
-    # Criterion 1: Check the heavy atom ratio (scaffold vs full molecule)
+        return False, "Could not extract scaffold"
+
+    # Criterion 1: The scaffold should represent a large fraction of the molecule.
     mol_heavy = mol.GetNumHeavyAtoms()
     scaffold_heavy = scaffold.GetNumHeavyAtoms()
-    if mol_heavy == 0:
-        return False, "Molecule has no heavy atoms"
-    ratio = scaffold_heavy / mol_heavy
-    if ratio < 0.50:
-        return False, f"Scaffold heavy atom ratio too low ({ratio:.2f}); core may not be representative"
-    
-    # Criterion 2: The scaffold must have at least 3 rings.
-    ring_info = scaffold.GetRingInfo()
-    atom_rings = ring_info.AtomRings()  # list of tuples (each ring: indices of atoms)
+    ratio = scaffold_heavy / mol_heavy if mol_heavy > 0 else 0
+    if ratio < 0.6:
+        return False, f"Scaffold heavy atom ratio too low ({ratio:.2f}); likely not a pterocarpan core"
+
+    # Criterion 2: Check that the scaffold has a number of rings consistent with a pterocarpan core.
+    ri = scaffold.GetRingInfo()
+    atom_rings = ri.AtomRings()  # Each ring as a tuple of atom indices.
     n_rings = len(atom_rings)
-    if n_rings < 3:
-        return False, f"Scaffold has {n_rings} ring(s); expected at least 3 fused rings for a pterocarpan core"
-    
-    # Criterion 3: Scaffold must contain at least one oxygen atom.
-    if not any(atom.GetAtomicNum() == 8 for atom in scaffold.GetAtoms()):
+    if n_rings < 3 or n_rings > 5:
+        return False, f"Scaffold has {n_rings} ring(s); expected between 3 and 5 fused rings for a pterocarpan core"
+
+    # Criterion 3: Check that the scaffold contains at least one oxygen atom.
+    oxygens = [atom for atom in scaffold.GetAtoms() if atom.GetAtomicNum() == 8]
+    if not oxygens:
         return False, "Scaffold does not contain any oxygen atoms"
-    
-    # Criterion 4: Require that the scaffold has at least two fully aromatic rings.
-    aromatic_ring_count = 0
-    for ring in atom_rings:
-        # Check if every atom in the ring is aromatic.
-        if all(scaffold.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-            aromatic_ring_count += 1
-    if aromatic_ring_count < 2:
-        return False, f"Scaffold has only {aromatic_ring_count} fully aromatic ring(s); expected at least 2 for the fused aromatic core"
-    
-    # Criterion 5: Check for presence of a "dihydro" (reduced) ring.
-    # That is, at least one ring in the scaffold must contain at least one saturated (non‐aromatic) carbon.
-    has_dihydro = False
+
+    # Criterion 4: Check for a benzofuran substructure.
+    # The SMARTS "c1ccc2occc2c1" represents a benzofuran system.
+    benzofuran_smarts = "c1ccc2occc2c1"
+    benzofuran = Chem.MolFromSmarts(benzofuran_smarts)
+    if not scaffold.HasSubstructMatch(benzofuran):
+        return False, "Scaffold does not contain a benzofuran substructure required for pterocarpans"
+
+    # Criterion 5: Check for a dihydro (reduced) ring: at least one ring should have a non‐aromatic (saturated) carbon.
+    ring_has_saturated = False
     for ring in atom_rings:
         for idx in ring:
             atom = scaffold.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 6 and (not atom.GetIsAromatic()):
-                # This carbon is not part of an aromatic system, indicative of a partially saturated ring.
-                has_dihydro = True
+            # If a carbon atom is not aromatic, mark the ring as reduced.
+            if atom.GetAtomicNum() == 6 and not atom.GetIsAromatic():
+                ring_has_saturated = True
                 break
-        if has_dihydro:
+        if ring_has_saturated:
             break
-    if not has_dihydro:
+    if not ring_has_saturated:
         return False, "No dihydro (reduced) ring found in the scaffold"
-    
-    # All criteria passed—molecule meets our heuristic criteria for pterocarpans.
-    return True, ("Molecule meets heuristic criteria for pterocarpans: scaffold covers a sufficient fraction of the molecule, "
-                  "has at least 3 rings (with at least 2 fully aromatic ones), contains an oxygen, and shows dihydro (reduced) features.")
 
-# Optional testing block
+    # Passed all criteria.
+    return True, ("Molecule meets heuristic criteria for pterocarpans: scaffold covers a high fraction of the molecule, "
+                  "has 3–5 fused rings containing oxygen, shows a benzofuran substructure, and has a dihydro ring.")
+
+    
+# Example usage (for testing):
 if __name__ == "__main__":
     test_examples = [
-        # True positive examples:
-        ("O1C2C(O)(C3=C1C=C(O)C=C3)COC4=C2C=CC(O)=C4O", "3,4,9-Trihydroxypterocarpan"),
+        # True positives (pterocarpans)
+        ("O1C2C(C3=C1C=C(O)C=C3)COC4=C2C=CC(O)=C4O", "3,4,9-Trihydroxypterocarpan"),
         ("O1C2C(C=3C1=C(OC)C(OC)=C(O)C3)COC=4C2=CC(O)=C(OC)C4", "2,8-Dihydroxy-3,9,10-trimethoxypterocarpan"),
         ("COc1c(CC=C(C)C)c(O)cc2OC[C@@H]3[C@@H](Oc4cc(O)ccc34)c12", "edudiol"),
         ("O1C2C(C3=C1C(OC)=C(OC)C=C3)COC4=C2C=CC(OC)=C4O", "Melilotocarpan C"),
-        # False positive example (a molecule that may share parts but is not a pterocarpan):
-        ("O1C2=C3C(=C(C)C=C2C(=C1)CO)CC[C@H]([C@@H]3C)O", "Citreobenzofuran B")
+        # Some additional examples that were problematic:
+        ("[H][C@@]12COc3cc(O)c(CC=C(C)C)cc3[C@]1([H])Oc1c(CC=C(C)C)c(OC)c(O)cc21", "lespeflorin G2"),
+        ("O1C2C(C=3C1=CC(OC)=CC3O)COC4=C2C=CC(O)=C4", "Nissicarpin"),
+        # False positive example (non-pterocarpan)
+        ("COC1=CC=C(C=C1)C(=O)CSC2=NN=C(N2CC=C)C3=CC4=C(O3)C(=CC=C4)OC", "Non-pterocarpan example")
     ]
     
     for smi, name in test_examples:
