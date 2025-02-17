@@ -1,146 +1,118 @@
 """
 Classifies: CHEBI:87657 octanoate ester
 """
-#!/usr/bin/env python
 """
-Classifies: Octanoate Ester
-Definition: Any fatty acid ester in which the carboxylic acid component 
-is octanoic acid (caprylic acid). In other words, every ester group in the 
-molecule must have an acyl chain that is exactly CH3–(CH2)6–C(=O)O.
-This implementation first locates ester groups (using a general SMARTS for C(=O)O)
-and then, for each ester, “walks” from the carbonyl carbon along the acyl chain 
-to check that it is a linear chain with exactly 8 carbons (the carbonyl plus 7 alkyl carbons) 
-with no branching.
+Classifies: Octanoate Ester 
+Definition: Any fatty acid ester in which the carboxylic acid component is octanoic acid (caprylic acid).
+In other words, the ester contains an acyl group that is CH3(CH2)6C(=O)–.
+This program looks for each ester (i.e. –C(=O)O–) in the molecule and checks whether 
+its acyl part is an unbranched chain of 7 carbons (CH2 repeated 6 times and ending in a CH3),
+so that when counting the carbonyl carbon the chain is 8 carbons total.
 """
+
 from rdkit import Chem
 
 def is_octanoate_ester(smiles: str):
     """
-    Determines if every ester group in the molecule is derived from octanoic acid.
+    Determines if a molecule is an octanoate ester based on its SMILES string.
     
-    For each ester group (identified by a C(=O)O pattern), the algorithm finds the
-    acyl chain connected to the carbonyl carbon and traverses it. The ester qualifies as 
-    an octanoate ester if the acyl chain is linear and exactly eight carbons long 
-    (i.e. the carbonyl plus 7 additional carbon atoms, corresponding to CH3–(CH2)6–C(=O)).
+    An octanoate ester is defined as any fatty acid ester in which the acyl part is 
+    CH3(CH2)6C(=O)–. In an ideal octanoate ester the ester bond is formed via a carboxylic
+    acid (octanoic acid) whose acyl chain (excluding the carbonyl) is exactly 7 carbons long:
+    the first 6 should be methylene groups (–CH2–) and the terminal one a methyl group (–CH3).
+    
+    To improve upon the previous strategy we first find all ester groups (using the SMARTS "C(=O)O")
+    and then for each ester we check that:
+      1. The carbonyl carbon (C(=O)) has exactly one carbon neighbor (acyl side) besides the carbonyl oxygen.
+      2. Following that acyl chain gives exactly 7 carbons,
+         with the first 6 carbons being CH2 and the terminal carbon a CH3.
     
     Args:
         smiles (str): SMILES string of the molecule.
-        
+    
     Returns:
-        bool: True if every ester group is derived from octanoic acid, False otherwise.
-        str: Explanation of the classification.
+        bool: True if all ester groups (if any) are derived from octanoic acid, False otherwise.
+        str: A reason for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS to find a general ester group: a carbonyl carbon connected to an oxygen.
-    ester_pattern = Chem.MolFromSmarts("[C:1](=O)[O:2]")
+    # Find all ester groups using a SMARTS pattern.
+    # This pattern matches a carbonyl (C(=O)) directly bonded to an oxygen.
+    ester_pattern = Chem.MolFromSmarts("C(=O)O")
     ester_matches = mol.GetSubstructMatches(ester_pattern, uniquify=True)
+    
+    # If no ester bond is present then by definition the molecule is not an ester.
     if not ester_matches:
         return False, "No ester group found"
     
-    for match in ester_matches:
-        carbonyl_idx, oxy_idx = match
-        # For each ester, check that the acyl chain (from the carbonyl carbon) is exactly octanoate.
-        if not _check_octanoate_chain(mol, carbonyl_idx, oxy_idx):
-            return False, "Found an ester group whose acyl chain is not derived from octanoic acid"
+    # Helper: check if a given carbon atom is CH2 (2 hydrogens) or CH3 (3 hydrogens)
+    def is_ch2(atom):
+        # Only count explicit + implicit hydrogens.
+        return atom.GetAtomicNum() == 6 and atom.GetTotalNumHs() == 2
+
+    def is_ch3(atom):
+        return atom.GetAtomicNum() == 6 and atom.GetTotalNumHs() == 3
     
+    # For each ester group found, we will verify the acyl chain.
+    for match in ester_matches:
+        # match[0] = carbonyl C; match[1] = carbonyl O (double-bonded); match[2] = ester O (single-bonded)
+        carbonyl_atom = mol.GetAtomWithIdx(match[0])
+        ester_oxygen = mol.GetAtomWithIdx(match[2])
+        
+        # Find the acyl side: among neighbors of carbonyl, skip the carbonyl oxygen (match[1]) and also skip the ester oxygen.
+        acyl_neighbors = []
+        for nbr in carbonyl_atom.GetNeighbors():
+            if nbr.GetIdx() not in (match[1], match[2]) and nbr.GetAtomicNum() == 6:
+                acyl_neighbors.append(nbr)
+        if len(acyl_neighbors) != 1:
+            return False, "Ester group found with ambiguous acyl connectivity"
+        acyl_atom = acyl_neighbors[0]
+        
+        # Now traverse the acyl chain from acyl_atom.
+        # For an octanoate chain derived from octanoic acid,
+        # the chain (excluding the carbonyl atom) should have exactly 7 carbons:
+        # positions 1-6: CH2 groups and position7: CH3 (terminal) [all in a linear, unbranched chain]
+        chain_atoms = []
+        current_atom = acyl_atom
+        previous_atom = carbonyl_atom
+        while True:
+            chain_atoms.append(current_atom)
+            # Look for the next carbon atom that is connected linearly (exclude the atom we came from).
+            next_carbons = [nbr for nbr in current_atom.GetNeighbors() 
+                            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != previous_atom.GetIdx()]
+            # For an unbranched chain, expect at most one next carbon.
+            if len(next_carbons) == 0:
+                # End of chain reached.
+                break
+            elif len(next_carbons) > 1:
+                return False, "Branched acyl chain found"
+            else:
+                previous_atom, current_atom = current_atom, next_carbons[0]
+        
+        # We require exactly 7 carbons in the acyl chain.
+        if len(chain_atoms) != 7:
+            return False, f"Ester group acyl chain length is {len(chain_atoms)} (expected 7)"
+        
+        # Check that the first 6 atoms are CH2 and the last is CH3.
+        for i, atom in enumerate(chain_atoms):
+            if i < 6:
+                if not is_ch2(atom):
+                    return False, "Acyl chain does not have six consecutive CH2 groups"
+            else:  # last atom
+                if not is_ch3(atom):
+                    return False, "Acyl chain terminal group is not CH3"
+    
+    # If we got here, every ester group found is an octanoate ester.
     return True, "All ester groups are derived from octanoic acid (octanoate ester)."
 
-
-def _check_octanoate_chain(mol, carbonyl_idx: int, ester_oxy_idx: int) -> bool:
-    """
-    Given an ester group identified by its carbonyl carbon (carbonyl_idx)
-    and the oxygen forming the ester bond (ester_oxy_idx), verify that the acyl chain 
-    attached to the carbonyl (i.e. on the acid side) is exactly octanoate:
-        CH3–CH2–CH2–CH2–CH2–CH2–CH2–C(=O)O
-
-    The algorithm:
-      1. From the carbonyl carbon, get the neighbor that is a carbon
-         (ignoring the ester oxygen).
-      2. "Walk" along the acyl chain while enforcing linearity (no branching).
-      3. Count the total number of carbons in the acyl chain INCLUDING the carbonyl.
-         For octanoate this must equal 8.
-      4. Also ensure that the terminal atom is a CH3 (only one carbon–carbon neighbor).
-
-    Returns:
-        bool: True if the acyl chain is exactly octanoic acid derived; False otherwise.
-    """
-    carbonyl = mol.GetAtomWithIdx(carbonyl_idx)
-    
-    # Identify the acyl neighbor on the acid side.
-    acyl_neighbors = [nbr for nbr in carbonyl.GetNeighbors() 
-                      if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != ester_oxy_idx]
-    # It should have exactly one acyl neighbor.
-    if len(acyl_neighbors) != 1:
-        return False
-    acyl_start = acyl_neighbors[0]
-    
-    # Traverse the acyl chain starting from acyl_start.
-    chain_atoms = _traverse_linear_chain(mol, start_atom=acyl_start, parent=carbonyl)
-    if chain_atoms is None:
-        # Branching detected or other issue.
-        return False
-    # Total number of carbons from the carbonyl plus the chain atoms.
-    total_carbons = 1 + len(chain_atoms)
-    # Octanoate must have exactly 8 carbons.
-    if total_carbons != 8:
-        return False
-    # Check that the terminal atom (last in chain_atoms) is a methyl group: 
-    # it should have only one carbon neighbor.
-    terminal = chain_atoms[-1]
-    carbon_neighbors = [nbr for nbr in terminal.GetNeighbors() if nbr.GetAtomicNum() == 6]
-    if len(carbon_neighbors) != 1:
-        return False
-    return True
-
-
-def _traverse_linear_chain(mol, start_atom, parent):
-    """
-    Traverses a linear carbon chain starting from start_atom.
-    'parent' is the atom from which we came (to avoid backtracking).
-    
-    Returns:
-        list: a list of atoms encountered (in order) along the chain.
-              If branching is detected (more than one carbon neighbor excluding the parent),
-              returns None.
-    """
-    chain = []
-    current = start_atom
-    prev = parent
-    chain.append(current)
-    while True:
-        # Look for carbon neighbors of 'current' excluding the one we came from.
-        nbrs = [nbr for nbr in current.GetNeighbors() 
-                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev.GetIdx()]
-        if len(nbrs) == 0:
-            # Reached terminal carbon.
-            break
-        if len(nbrs) > 1:
-            # Branching detected: not a simple linear chain.
-            return None
-        # Advance along the chain.
-        prev, current = current, nbrs[0]
-        chain.append(current)
-    return chain
-
-
-# The code below is for testing purposes only.
+# Example usage:
 if __name__ == '__main__':
     test_smiles = [
-        # True positives (should return True):
-        "CCCCCCCC(=O)OC[C@H](O)CO",  # 3-octanoyl-sn-glycerol
-        "CCCCCCCC(=O)OC",            # methyl octanoate
-        "CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCC",  # 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4-bisphosphate)
-        "CCCCCCCC(=O)OC[C@H](O)CO",  # 1-octanoyl-sn-glycerol (similar to above)
-        "CCCCCCCC(=O)OCC",           # ethyl octanoate
-        "CCCCCCCC(=O)OCCC",          # propyl octanoate
-        # False positives / negatives (should return False):
-        "O(C(=O)CCCCCCC)C(C)C",      # isopropyl octanoate (WRONGLY CLASSIFIED in previous attempt)
-        "O(CCCCCCCCCCCC)C(=O)CCCCCCC",# dodecyl octanoate (acyl chain too long)
-        "CCCCCCCC(=O)O[C@H](COP(O)(=O)OP(O)(O)=O)OC(=O)CCCCCCCC",  # 1,2-dioctanoyl-sn-glycerol 3-diphosphate is expected True,
-                                                      # but other false negatives should occur if an ester group isn’t pure octanoate.
+        "CCCCCCCC(=O)OC[C@H](O)CO",  # 3-octanoyl-sn-glycerol (true positive)
+        "CCCCCCCC(=O)OC",            # methyl octanoate (true positive)
+        "O(C(=O)CCCCCCC)C(C)C",       # isopropyl octanoate (may be flagged as false because of branching in the alcohol part is allowed, but our check focuses only on the acyl chain)
     ]
     for sm in test_smiles:
         flag, reason = is_octanoate_ester(sm)
