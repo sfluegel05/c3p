@@ -8,17 +8,18 @@ Classifies: Carbonate ester
 Defined as: Any derivative of carbonic acid (O=C(OH)2) in which one or both of the hydroxyl hydrogens 
 have been replaced by organyl (carbon‐containing) groups. This includes both acyclic and cyclic carbonate 
 esters (including monoesters where at least one –OH has been replaced), but not carbonic acid itself.
- 
+
 The strategy implemented here is:
-  1. Loop over all carbon atoms and select those that are sp2 and have exactly three neighbours 
-     (as required by the trigonal planar structure of a carbonate group).
-  2. Among the attached oxygens, require that exactly one is double‐bonded and that oxygen is “simple”
-     (has degree 1) – identifying the carbonyl oxygen.
-  3. For the one or two single‐bonded oxygens, require that at least one has a neighbour (other than the candidate
-     carbon) that is a carbon (atomic number 6). This indicates that an organyl substitution has replaced an –OH.
+  1. Loop over all carbon atoms that are only bonded to oxygen atoms and have exactly 3 such neighbors.
+  2. Among these, require that exactly one bond is a double bond (the carbonyl) with an oxygen 
+     that is “simple” (i.e. it has no extra heavy neighbours).
+  3. For the one or two single‐bonded oxygens, require that at least one is “substituted” – that is, 
+     it is connected to an additional carbon atom which is “organic” (we use a heuristic: the carbon is sp3 
+     or has an explicit hydrogen).
      
-If such a candidate is found the molecule is classified as containing a carbonate ester (or carbonate monoester)
-moiety.
+If a candidate is found the molecule is classified as a carbonate ester (or monoester) moiety.
+Note:
+  This heuristic approach may still miss very “exotic” cases or may flag some borderline cases.
 """
 from rdkit import Chem
 from rdkit.Chem import rdchem
@@ -26,10 +27,10 @@ from rdkit.Chem import rdchem
 def is_carbonate_ester(smiles: str):
     """
     Determines if a molecule contains a carbonate ester (or carbonate monoester) moiety based on its SMILES.
-    The function examines each carbon atom and checks whether it has three oxygen neighbors with
-    the expected bonding pattern (one oxygen double‐bonded having degree 1, and at least one single‐bonded oxygen
-    that is substituted by a carbon rather than being simply –OH).
-    
+    The function examines each carbon atom and checks whether it is connected exclusively to oxygen atoms,
+    has exactly three such neighbors (one double-bond and two single bonds) and that at least one of the 
+    single-bonded oxygen atoms is substituted by an organyl group (i.e. attached to a carbon that is aliphatic).
+
     Args:
         smiles (str): SMILES string of the molecule.
         
@@ -37,71 +38,76 @@ def is_carbonate_ester(smiles: str):
         bool: True if a carbonate ester moiety is found, False otherwise.
         str: Explanation of the outcome.
     """
-    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     
-    # Loop over each atom and look for a candidate carbonate carbon.
+    # Loop over candidate central carbons.
     for atom in mol.GetAtoms():
-        # Candidate central atom must be carbon.
+        # Candidate carbon must be atomic number 6.
         if atom.GetAtomicNum() != 6:
             continue
         
-        # For a carbonate group (derived from carbonic acid) the carbon is sp2 and bonded to exactly three atoms.
-        if atom.GetHybridization() != rdchem.HybridizationType.SP2:
-            continue
-        if atom.GetDegree() != 3:
-            continue
-        
-        # Collect oxygen neighbors and the bonds connecting them.
+        # Collect all neighbors that are oxygen.
         oxygen_neighbors = []
         oxygen_bonds = []
+        valid_candidate = True
         for bond in atom.GetBonds():
             nbr = bond.GetOtherAtom(atom)
             if nbr.GetAtomicNum() == 8:
                 oxygen_neighbors.append(nbr)
                 oxygen_bonds.append(bond)
-        
-        # To be a carbonic acid derivative, the candidate carbon should have exactly 3 oxygen neighbours.
+            else:
+                # If the candidate carbon is attached to a non-oxygen atom,
+                # it is unlikely to be part of an isolated carbonate group.
+                valid_candidate = False
+                break
+        if not valid_candidate:
+            continue
+
+        # For a carbonic acid derivative, expect exactly 3 oxygen neighbours.
         if len(oxygen_neighbors) != 3:
             continue
         
-        # Identify the oxygen that is double-bonded (the carbonyl oxygen) and those with single bonds.
+        # Identify the double-bonded oxygen (the carbonyl) and the single-bonded oxygens.
         dbl_bond_count = 0
-        carbonyl_found = False
+        carbonyl_ok = False
         single_oxygens = []
         for bond in oxygen_bonds:
+            o_atom = bond.GetOtherAtom(atom)
             if bond.GetBondType() == rdchem.BondType.DOUBLE:
                 dbl_bond_count += 1
-                # Check that the double-bonded oxygen is “simple” (typically degree 1)
-                o_atom = bond.GetOtherAtom(atom)
-                # In resonance the degree might be slightly higher, but usually degree 1 is expected.
-                if o_atom.GetDegree() != 1:
-                    carbonyl_found = False
+                # Check that the double-bonded oxygen is simple. In many cases we expect it not to be further bonded.
+                # (Allow a degree of 1 or 2 if the extra connection is to a hydrogen.)
+                if o_atom.GetDegree() > 2:
+                    carbonyl_ok = False
                     break
                 else:
-                    carbonyl_found = True
+                    carbonyl_ok = True
             elif bond.GetBondType() == rdchem.BondType.SINGLE:
-                single_oxygens.append(bond.GetOtherAtom(atom))
+                single_oxygens.append(o_atom)
             else:
-                # Skip if bond type is not single or double.
-                continue
-        # We expect exactly one double bond to oxygen.
-        if dbl_bond_count != 1 or not carbonyl_found:
+                # If bond type is not single/double, skip candidate.
+                carbonyl_ok = False
+                break
+        if dbl_bond_count != 1 or not carbonyl_ok:
             continue
-        
-        # For the carbonate moiety the remaining single-bonded oxygens are either –OH or –OR.
-        # At least one must be substituted (i.e. attached to a carbon) so that we are not simply looking at carbonic acid.
+
+        # For the carbonate moiety, at least one single-bonded oxygen must be substituted by an organyl group.
+        # We define "organyl substitution" here as: the oxygen (other than the one bound to the candidate carbon) 
+        # is attached to at least one carbon that appears to be aliphatic (sp3 or bearing explicit hydrogens).
         substitution_found = False
         for o_atom in single_oxygens:
-            # Get neighbors of oxygen excluding the candidate carbon.
+            # There may be cases where the oxygen is part of a ring; we rely on its explicit bonds.
             for nbr in o_atom.GetNeighbors():
+                # Exclude back-edge to candidate carbon.
                 if nbr.GetIdx() == atom.GetIdx():
                     continue
                 if nbr.GetAtomicNum() == 6:
-                    substitution_found = True
-                    break
+                    # Check if the attached carbon is aliphatic: either SP3 or it carries explicit hydrogens.
+                    if (nbr.GetHybridization() == rdchem.HybridizationType.SP3) or (nbr.GetTotalNumHs() > 0):
+                        substitution_found = True
+                        break
             if substitution_found:
                 break
         
@@ -112,7 +118,7 @@ def is_carbonate_ester(smiles: str):
 
 # Example testing block (can be removed when using as a module)
 if __name__ == "__main__":
-    # A list of (name, SMILES) pairs to illustrate the behavior.
+    # A set of examples that were used in previous testing.
     examples = [
         ("4,5-Dichloro-1,3-dioxolan-2-one", "ClC1OC(OC1Cl)=O"),
         ("(S)-tolpyralate", "C=1C(=C(C(=C(C1)C(=O)C=2C=NN(C2O[C@@H](OC(OC)=O)C)CC)C)OCCOC)S(C)(=O)=O"),
