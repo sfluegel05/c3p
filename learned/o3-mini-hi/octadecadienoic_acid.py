@@ -2,8 +2,8 @@
 Classifies: CHEBI:25627 octadecadienoic acid
 """
 """
-Classifies: octadecadienoic acid – a straight-chain C18 polyunsaturated fatty acid 
-having exactly 2 non-aromatic C=C double bonds and a terminal carboxylic acid group.
+Classifies: octadecadienoic acid – any straight-chain C18 polyunsaturated fatty acid
+with exactly 2 non-aromatic C=C double bonds and a terminal carboxylic acid group.
 """
 
 from rdkit import Chem
@@ -11,129 +11,121 @@ from rdkit import Chem
 def is_octadecadienoic_acid(smiles: str):
     """
     Determines whether a molecule (given by its SMILES string)
-    is an octadecadienoic acid. The definition enforced here is that
-      • the molecule has exactly 18 carbon atoms in total,
-      • the molecule contains a terminal carboxylic acid group (SMARTS: "[CX3](=O)[OX2H1]"),
-      • the carbon atoms (ignoring heteroatoms) form a single connected, linear (unbranched) chain:
-          meaning that in the induced graph on carbons from the molecule,
-          the connected component (which must include the acid carbon) has exactly 18 atoms,
-          with exactly two endpoints (degree 1) and every other carbon has degree 2,
-      • exactly 2 non-aromatic C=C bonds appear along the main carbon chain.
-      
+    is an octadecadienoic acid. The definition enforced here is:
+      • the molecule possesses a carboxylic acid group at one terminus,
+      • the molecule’s longest carbon chain (i.e. the main chain) has 18 carbon atoms,
+      • along that main chain there are exactly 2 non-aromatic C=C double bonds.
+    
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
     
     Returns:
-        (bool, str): Tuple.
-                     True with a positive reason if it is octadecadienoic acid,
-                     otherwise False with reason.
+        (bool, str): Tuple. True with a positive reason if it is an octadecadienoic acid,
+                     otherwise False with an explanatory reason.
     """
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for carboxylic acid functionality using a SMARTS query.
+    # Check for carboxylic acid functionality using SMARTS.
+    # We expect a terminal carboxylic acid: the acid carbon inside "[CX3](=O)[OX2H1]".
     acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     acid_matches = mol.GetSubstructMatches(acid_pattern)
     if not acid_matches:
         return False, "Missing carboxylic acid functionality"
-    
-    # We assume the acid carbon (the one in C(=O)O) is the first atom of the first match.
-    acid_carbon_idx = acid_matches[0][0]
-    
-    # Count all carbon atoms in the molecule.
+
+    # Build an undirected graph on all carbon atoms.
+    # Nodes are atom indices for carbons and edges exist between two carbons that are chemically bonded.
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(carbon_atoms) != 18:
-        return False, f"Expected 18 carbon atoms but found {len(carbon_atoms)}"
-    
-    # Build an undirected graph using only carbon atoms.
-    # The nodes are atom indices for carbons. An edge exists if two carbons are bonded.
+    if not carbon_atoms:
+        return False, "No carbon atoms found"
     carbon_graph = {}
     for atom in carbon_atoms:
         idx = atom.GetIdx()
         # Only add neighbors that are carbons.
-        nbrs = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
-        carbon_graph[idx] = nbrs
+        neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        carbon_graph[idx] = neighbors
 
-    # Get the connected component (set of indices) containing the acid carbon.
-    visited = set()
-    stack = [acid_carbon_idx]
-    while stack:
-        current = stack.pop()
-        if current in visited:
-            continue
-        visited.add(current)
+    # Helper function to find the longest simple path (as a list of carbon indices)
+    # from a given starting node in the carbon graph.
+    def dfs(current, visited):
+        best_path = [current]
         for nbr in carbon_graph.get(current, []):
-            if nbr not in visited:
-                stack.append(nbr)
-    if len(visited) != 18:
-        return False, ("Carbon network is not a single, straight 18-carbon chain. "
-                       f"Found a connected carbon subgraph of size {len(visited)}")
-    
-    # Check for linearity: in a linear chain, exactly two carbons should have degree 1 (endpoints)
-    # and every other carbon must have degree 2.
-    endpoints = [idx for idx, nbrs in carbon_graph.items() if len(nbrs) == 1]
-    if len(endpoints) != 2:
-        return False, ("Carbon chain is branched or cyclic. "
-                       f"Expected 2 terminal carbons (degree=1) but found {len(endpoints)}")
-    for idx, nbrs in carbon_graph.items():
-        if len(nbrs) > 2:
-            return False, f"Carbon atom with index {idx} shows branching (degree >2 in carbon network)"
-    
-    # Now, find the unique simple path between the two endpoints.
-    # We perform a simple DFS search from one endpoint to the other in the induced carbon graph.
-    start, end = endpoints[0], endpoints[1]
-    path = []
-    found = []
-
-    def dfs(current, target, current_path, visited_dfs):
-        if current == target:
-            found.extend(current_path)
-            return True
-        for nbr in carbon_graph[current]:
-            if nbr in visited_dfs:
+            if nbr in visited:
                 continue
-            if dfs(nbr, target, current_path + [nbr], visited_dfs | {nbr}):
-                return True
-        return False
+            candidate = [current] + dfs(nbr, visited | {nbr})
+            if len(candidate) > len(best_path):
+                best_path = candidate
+        return best_path
 
-    if not dfs(start, end, [start], {start}):
-        return False, "Failed to find a linear path in the carbon network"
-    path = found
-    if len(path) != 18:
-        return False, f"Main chain length is {len(path)} instead of 18 carbons"
+    # Find the overall longest carbon chain.
+    longest_chain = []
+    # Try starting a DFS from each carbon atom.
+    for start in carbon_graph.keys():
+        path = dfs(start, {start})
+        if len(path) > len(longest_chain):
+            longest_chain = path
 
-    # Count non-aromatic double bonds along the path.
+    # For a straight-chain C18 fatty acid the main carbon chain must have exactly 18 carbons.
+    if len(longest_chain) != 18:
+        return False, f"Longest carbon chain has {len(longest_chain)} carbons instead of 18"
+
+    # Check that the chain is linear.
+    # In a simple path the connectivity within the chain is linear by construction,
+    # but we also check that the path is not a detour from a branched network.
+    # (We do not reject branches in the overall molecule; only the main chain must be unbranched.)
+    # For each carbon in the longest chain, count how many neighbors are also in the chain.
+    chain_set = set(longest_chain)
+    for i, idx in enumerate(longest_chain):
+        # Count neighbors in the chain
+        in_chain_neighbors = sum(1 for nbr in carbon_graph[idx] if nbr in chain_set)
+        # Endpoints should have exactly one neighbor in the chain,
+        # internal carbons exactly 2.
+        if i == 0 or i == len(longest_chain)-1:
+            if in_chain_neighbors != 1:
+                return False, f"Terminal carbon {idx} in main chain does not have exactly one chain neighbor"
+        else:
+            if in_chain_neighbors != 2:
+                return False, f"Internal carbon {idx} in main chain does not have exactly two chain neighbors"
+    
+    # Check that the terminal carbon at one end is part of the carboxylic acid group.
+    # The carboxyl carbon is the first atom in the SMARTS match.
+    acid_carbons = {match[0] for match in acid_matches}
+    if longest_chain[0] not in acid_carbons and longest_chain[-1] not in acid_carbons:
+        return False, "Neither end of the main chain shows carboxylic acid functionality"
+    
+    # Count the number of non-aromatic double bonds along the main chain.
     double_bond_count = 0
-    for i in range(len(path) - 1):
-        bond = mol.GetBondBetweenAtoms(path[i], path[i+1])
+    for i in range(len(longest_chain) - 1):
+        bond = mol.GetBondBetweenAtoms(longest_chain[i], longest_chain[i+1])
         if bond is None:
-            return False, f"Missing bond between carbons {path[i]} and {path[i+1]}"
-        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and (not bond.GetIsAromatic()):
+            return False, f"Missing bond between carbons {longest_chain[i]} and {longest_chain[i+1]}"
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and not bond.GetIsAromatic():
             double_bond_count += 1
-
+    
     if double_bond_count != 2:
-        return False, (f"Found {double_bond_count} non-aromatic C=C bonds along the main chain; "
-                       "exactly 2 are required")
+        return False, f"Found {double_bond_count} non-aromatic C=C bonds along the main chain; exactly 2 are required"
     
     return True, ("Molecule is a straight-chain C18 fatty acid with exactly 2 non-aromatic C=C bonds "
                   "and a terminal carboxylic acid group")
 
-# For testing (will run when the module is executed directly)
+# For testing (this block will run if the module is executed directly)
 if __name__ == "__main__":
-    # Sample test cases (the list includes examples from successful cases and errors).
-    test_smiles = [
-        # True positives:
-        "CCCCCC\\C=C/C=C/[C@H](O)CCCCCCCC(O)=O",  # 9(R)-HODE
-        "OC(=O)CCCCCCC\\C=C/C=C\\CCCCCC",           # 9Z,11Z-octadecadienoic acid
-        "CC/C=C\\C/C=C\\CC(C(CCCCCCCC(O)=O)O)O",     # 9,10-DiHODE
-        # False positives (should be rejected because of branching/substituents):
-        "C(=C\\C/C=C\\CCCCCO)CCCCCCCC(=O)O",         # 18-hydroxylinoleic acid
-        "OC(=O)CCCCC/C=C/C=C\\CCCCCCCC",             # 7-trans,9-cis-octadecadienoic acid
-        # False negative example: wrong number of carbons
-        "O(C(CCCCCCC(O)=O)/C=C/C(=O)CCCCCCCCC(O)=O",  # (11E)-13-hydroxy-10-oxo-11-octadecenoic acid (extra carbon)
+    # Sample test cases (including some examples from the provided dataset)
+    test_cases = [
+        # Expected true positives:
+        ("CCCCCC\\C=C/C=C/[C@H](O)CCCCCCCC(O)=O", "9(R)-HODE"),
+        ("OC(=O)CCCCCCC\\C=C/C=C\\CCCCCC", "9Z,11Z-octadecadienoic acid"),
+        ("CC/C=C\\C/C=C\\CC(C(CCCCCCCC(O)=O)O)O", "9,10-DiHODE"),
+        # Expected false positives or negatives:
+        ("C(=C\\C/C=C\\CCCCCO)CCCCCCCC(=O)O", "18-hydroxylinoleic acid (should be rejected)"),
+        ("OC(=O)CCCCC/C=C/C=C\\CCCCCCCC", "7-trans,9-cis-octadecadienoic acid (should be rejected)"),
+        # A false negative example (extra carbon in a side chain)
+        ("O(C(CCCCCCC(O)=O)/C=C/C(=O)CCCCCCCCC(O)=O", "(11E)-13-hydroxy-10-oxo-11-octadecenoic acid (should be rejected)"),
     ]
-    for sm in test_smiles:
-        result, reason = is_octadecadienoic_acid(sm)
-        print(f"SMILES: {sm}\nResult: {result}, Reason: {reason}\n")
+    
+    for sm, name in test_cases:
+        res, reason = is_octadecadienoic_acid(sm)
+        status = "CORRECT" if res else "REJECTED"
+        print(f"SMILES: {sm}\nNAME: {name}\nResult: {status}\nReason: {reason}\n")
