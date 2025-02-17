@@ -3,105 +3,99 @@ Classifies: CHEBI:33916 aldopentose
 """
 """
 Classifies: aldopentose, defined as 'A pentose with a (potential) aldehyde group at one end.'
-An aldopentose may appear as an open‐chain sugar – having a terminal aldehyde – 
-or as a cyclic (hemiacetal) sugar in equilibrium with the open‐chain form.
-We no longer simply count all C and O atoms, since cyclic forms like pyranoses 
-may give misleading totals. Instead we extract the sugar “backbone” by finding 
-the longest connected chain of carbon atoms (ignoring extra carbons from substituents).
-For an aldopentose this longest chain should have 5 carbons.
-Furthermore, if an aldehyde functionality (SMARTS "[CX3H1](=O)") is present, we check 
-that it is on a terminal carbon of that backbone.
-If not (but the molecule is cyclic and does not contain a lactone/ester "[CX3](=O)[O]"),
-we classify it as a cyclized aldopentose.
+This function checks that the molecule has exactly 5 carbons and 5 oxygens
+(consistent with an aldopentose formula, C5H10O5) and then determines whether it is in
+the open-chain or cyclized (hemiacetal) form. In the open-chain form, an aldehyde group is
+expected at a terminal carbon; in the cyclic form (without lactone functionality) the molecule
+is assumed to be in equilibrium with the open‐chain form.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_aldopentose(smiles: str):
     """
     Determines if a molecule is an aldopentose based on its SMILES string.
     
-    An aldopentose sugar (open‐chain form C5H10O5) should ultimately have 5 carbons in its sugar 
-    backbone. In the open‐chain form a terminal carbon should bear an aldehyde group.
-    In cyclic (furanose or pyranose) forms, although the total atom counts can be misleading,
-    the longest contiguous chain of carbons (ignoring oxygen in the ring) is still 5.
+    An aldopentose is a 5-carbon sugar (typically C5H10O5) that in its open-chain form displays
+    an aldehyde group at one terminal carbon. In its cyclic (hemiacetal) form the aldehyde may not
+    be explicit, but the molecule still has 5 carbons in its sugar backbone.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is an aldopentose; False otherwise.
+        bool: True if the molecule is classified as an aldopentose; False otherwise.
         str: Explanation for the classification decision.
-    """    
+    """
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return False, "Invalid SMILES string."
     
-    # Build a subgraph containing only carbon atoms.
-    # We create a mapping from carbon atom index to its neighboring carbon indices.
-    carbon_idxs = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if not carbon_idxs:
-        return False, "No carbon atoms found in molecule"
-    carbon_graph = {idx: set() for idx in carbon_idxs}
-    for bond in mol.GetBonds():
-        a1 = bond.GetBeginAtom()
-        a2 = bond.GetEndAtom()
-        if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
-            idx1 = a1.GetIdx()
-            idx2 = a2.GetIdx()
-            if idx1 in carbon_graph and idx2 in carbon_graph:
-                carbon_graph[idx1].add(idx2)
-                carbon_graph[idx2].add(idx1)
+    # Count the number of carbon and oxygen atoms in the molecule.
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     
-    # Use DFS to compute the maximum length of a simple path within the carbon subgraph.
-    # (The length is counted as the number of carbon atoms in that path.)
-    def dfs(current, visited):
-        max_len = 1
-        for neighbor in carbon_graph[current]:
-            if neighbor not in visited:
-                new_len = 1 + dfs(neighbor, visited | {neighbor})
-                if new_len > max_len:
-                    max_len = new_len
-        return max_len
-
-    longest_chain = 0
-    for idx in carbon_idxs:
-        chain_length = dfs(idx, {idx})
-        if chain_length > longest_chain:
-            longest_chain = chain_length
-
-    if longest_chain != 5:
-        return False, f"Longest carbon chain length is {longest_chain}; expected 5 for a pentose sugar backbone"
+    if carbon_count != 5:
+        return False, f"Expected 5 carbon atoms for an aldopentose; found {carbon_count}."
+    if oxygen_count != 5:
+        return False, f"Expected 5 oxygen atoms for an aldopentose; found {oxygen_count}."
     
-    # Look for an aldehyde group.
-    # The SMARTS "[CX3H1](=O)" will match an sp2 carbon attached to one hydrogen and double-bonded to O.
+    # Prepare the aldehyde SMARTS pattern.
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
-    aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
     
-    # For a proper open‐chain aldopentose, the aldehyde should reside at a terminal carbon on the sugar backbone.
-    open_chain_aldehyde = False
-    # We use the carbon_graph built above: a terminal carbon in that subgraph will have degree 1.
-    for match in aldehyde_matches:
-        # match[0] is the carbon atom in the aldehyde group.
-        carbon_idx = match[0]
-        # Check if this carbon is in our carbon backbone graph and if it is terminal.
-        if carbon_idx in carbon_graph and len(carbon_graph[carbon_idx]) == 1:
-            open_chain_aldehyde = True
-            break
-
-    # Also define lactone (ester) pattern so we can exclude lactone sugars.
+    # Check ring information.
+    ring_info = mol.GetRingInfo()
+    num_rings = ring_info.NumRings()
+    
+    # Define lactone (ester) pattern to exclude cyclic lactones.
     lactone_pattern = Chem.MolFromSmarts("[CX3](=O)[O]")
     
-    if open_chain_aldehyde:
-        return True, "Open‐chain aldopentose: terminal aldehyde group detected on the sugar backbone."
-    else:
-        # If no open-chain aldehyde, then for a cyclic sugar we expect a ring (furanose or pyranose)
-        # and no lactone (ester) functionality.
-        if mol.GetRingInfo().NumRings() > 0:
-            if mol.HasSubstructMatch(lactone_pattern):
-                return False, "Cyclic structure contains lactone functionality; not an aldopentose."
-            return True, "Cyclized aldopentose: no free aldehyde but cyclic, in equilibrium with open‐chain form."
-        else:
-            return False, "Molecule is acyclic and lacks a terminal aldehyde group; does not meet aldopentose criteria."
+    # For acyclic (open-chain) structures:
+    if num_rings == 0:
+        # The molecule must have a terminal aldehyde group.
+        if not mol.HasSubstructMatch(aldehyde_pattern):
+            return False, "Acyclic structure missing an aldehyde group."
+        
+        # Build a carbon connectivity graph (only for 5 atoms so it's fast).
+        carbon_idxs = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+        carbon_graph = {idx: set() for idx in carbon_idxs}
+        for bond in mol.GetBonds():
+            a1 = bond.GetBeginAtom()
+            a2 = bond.GetEndAtom()
+            if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
+                idx1 = a1.GetIdx()
+                idx2 = a2.GetIdx()
+                if idx1 in carbon_graph and idx2 in carbon_graph:
+                    carbon_graph[idx1].add(idx2)
+                    carbon_graph[idx2].add(idx1)
+        
+        # A terminal carbon (on the sugar backbone) will have only one connection.
+        terminal_aldehyde_found = False
+        # For each match of the aldehyde group, check if the carbon is terminal.
+        for match in mol.GetSubstructMatches(aldehyde_pattern):
+            # The match returns a tuple with the aldehyde carbon as the first atom.
+            carbon_idx = match[0]
+            if carbon_idx in carbon_graph and len(carbon_graph[carbon_idx]) == 1:
+                terminal_aldehyde_found = True
+                break
+                
+        if not terminal_aldehyde_found:
+            return False, "Acyclic structure: aldehyde group is not located on a terminal carbon of the sugar backbone."
+        
+        return True, "Open-chain aldopentose: 5-carbon backbone with terminal aldehyde group confirmed."
     
-# (Optional: you may include testing calls below this line.)
+    else:
+        # For cyclic forms, even though the explicit aldehyde group might be absent,
+        # the structure is considered an aldopentose if it is cyclic and does not contain lactone functionality.
+        if mol.HasSubstructMatch(lactone_pattern):
+            return False, "Cyclic structure contains lactone (ester) functionality; not classified as an aldopentose."
+        return True, "Cyclized aldopentose: cyclic structure with correct 5-carbon backbone and no disqualifying lactone functionality."
+
+# (Optional testing calls)
+if __name__ == "__main__":
+    # Example aldopentose SMILES (aldehydo-L-xylose)
+    test_smiles = "[H]C(=O)[C@@H](O)[C@H](O)[C@@H](O)CO"
+    result, reason = is_aldopentose(test_smiles)
+    print(f"SMILES: {test_smiles}\nClassification: {result}\nReason: {reason}")
