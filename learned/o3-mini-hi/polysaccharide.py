@@ -5,85 +5,89 @@ Classifies: CHEBI:18154 polysaccharide
 Classifies: Polysaccharide
 Definition: A biomacromolecule consisting of large numbers of monosaccharide residues linked glycosidically.
             For our purposes, we assume a polysaccharide has (roughly) more than 10 sugar rings.
-This version adjusts the previous strict criteria by:
-  • Requiring the overall molecular weight to be at least 500 Da.
-  • Considering only rings of size 5 or 6.
-  • Counting a ring as “sugar–like” if it contains at least one oxygen, if at least half of its atoms are carbons,
-    and if there is at least one –OH substituent (as identified by the SMARTS "[OX2H]") attached from a ring atom.
-  • Using a relaxed threshold for hydroxyl substituents (1 as opposed to 2 on 6‐membered rings).
-  • Classifying the molecule as a polysaccharide if the number of sugar–like rings is at least 11.
+Improvements:
+  • Uses rdMolDescriptors.CalcExactMolWt instead of Descriptors.CalcExactMolWt.
+  • Checks that the overall molecular weight is at least 500 Da.
+  • Reviews each ring (of size 5 or 6) to determine if it is “sugar–like” based on:
+       – The ring contains at least one oxygen.
+       – At least half its atoms are carbons.
+       – At least one substituent attached to a ring atom matches a free hydroxyl group (“[OX2H]”).
+  • Classifies as a polysaccharide if the count of such sugar–like rings is at least 11.
 """
 
 from rdkit import Chem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors
 
 def is_polysaccharide(smiles: str):
     """
     Determines if a molecule is a polysaccharide based on its SMILES string.
     
-    Improvements from the previous version:
-      - Checks that the molecule overall is large (MW >= 500 Da).
-      - For each ring of size 5 or 6 (typical furanose/pyranose systems), the ring is considered sugar-like if:
-           • The ring contains at least 1 oxygen atom.
-           • At least 50% of the atoms in the ring are carbons.
-           • At least one substituent off a ring atom matches the –OH pattern ("[OX2H]").
-      - The molecule is classified as a polysaccharide if the count of such sugar-like rings is at least 11.
-      
+    Criteria:
+      - The overall molecule must have a molecular weight of at least 500 Da.
+      - Only rings of size 5 or 6 are considered (typical furanose or pyranose units).
+      - A ring is "sugar–like" if:
+            • It contains at least one oxygen.
+            • At least half of its atoms are carbons.
+            • At least one external substituent attached (via a single bond) to a ring atom matches the free –OH pattern.
+      - The molecule is classified as a polysaccharide if the number of sugar-like rings is at least 11.
+    
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
-        (bool, str): Tuple of decision and reason.
+        (bool, str): Tuple of decision and explanation.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # First, require that the molecule is large enough to be a polysaccharide.
-    mw = Descriptors.CalcExactMolWt(mol)
+    # Use rdMolDescriptors to calculate the exact molecular weight.
+    mw = rdMolDescriptors.CalcExactMolWt(mol)
     if mw < 500:
         return False, f"Molecular weight too low ({mw:.1f} Da) to be a polysaccharide."
-        
-    # Get ring information
+    
+    # Fetch ring information. If no rings exist, exit.
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
     if not rings:
         return False, "No rings detected in molecule"
     
-    # Pre-compile a SMARTS pattern for a free hydroxyl group
+    # Pre-compile pattern for a free hydroxyl group.
     oh_smarts = Chem.MolFromSmarts("[OX2H]")
-    
     sugar_ring_count = 0
-    # Process each ring
+    
+    # Evaluate each ring.
     for ring in rings:
         ring_size = len(ring)
-        if ring_size not in (5, 6):  # only look at typical sugar rings
+        # Only consider 5-membered and 6-membered rings.
+        if ring_size not in (5, 6):
             continue
-            
+        
         ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        # Count oxygen atoms and carbon atoms in the ring
+        # Count oxygen and carbon atoms in the ring.
         oxygens_in_ring = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 8)
         carbons_in_ring = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 6)
-        # To be sugar-like, require at least one oxygen and at least half of the atoms are carbons.
+        
+        # Require the ring to have at least one oxygen and at least half its atoms are carbon.
         if oxygens_in_ring < 1 or (carbons_in_ring / ring_size) < 0.5:
             continue
         
-        # Count free hydroxyl substituents (i.e. an [OX2H] attached to a ring atom, not part of the ring).
+        # Count free hydroxyl substituents on the ring atoms.
         hydroxyl_count = 0
         for atom in ring_atoms:
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetIdx() not in ring:
-                    # Check if neighbor matches an -OH using the SMARTS pattern.
+                    # Check if the neighbor structure corresponds to a free hydroxyl.
                     if neighbor.HasSubstructMatch(oh_smarts):
-                        # Additionally, check that the bond is single.
                         bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
                         if bond is not None and bond.GetBondTypeAsDouble() == 1.0:
                             hydroxyl_count += 1
-        # For both 5- and 6-membered rings, relax to require at least one free hydroxyl
+        # If at least one free hydroxyl is found, count this ring as sugar-like.
         if hydroxyl_count >= 1:
             sugar_ring_count += 1
 
-    threshold = 11  # More than 10 rings is the definition.
+    # For our purposes, a molecule must have at least 11 sugar-like rings.
+    threshold = 11
     if sugar_ring_count >= threshold:
         return True, f"Contains {sugar_ring_count} sugar-like rings (monosaccharide residues) consistent with a polysaccharide."
     else:
@@ -91,8 +95,8 @@ def is_polysaccharide(smiles: str):
 
 # Example usage:
 if __name__ == "__main__":
-    # Test with a typical glucose ring (a single pyranose unit)
-    test_smiles = "OC1OC(O)C(O)C(O)C1O"  # one pyranose unit
+    # Test with a simple glucose ring (not a polysaccharide).
+    test_smiles = "OC1OC(O)C(O)C(O)C1O"  # A single pyranose unit.
     result, reason = is_polysaccharide(test_smiles)
     print("Is polysaccharide:", result)
     print("Reason:", reason)
