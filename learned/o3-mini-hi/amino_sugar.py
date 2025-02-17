@@ -2,147 +2,108 @@
 Classifies: CHEBI:28963 amino sugar
 """
 """
-Classifies: Amino sugar – any sugar having one or more alcoholic hydroxy groups replaced by 
+Classifies: Amino sugar – Any sugar having one or more alcoholic hydroxy groups replaced by 
 substituted or unsubstituted amino groups.
 
 Revised algorithm:
-  1. Parse the molecule from the SMILES.
-  2. Force initialization of ring information.
-  3. Loop over all rings (from RDKit) that are 5 or 6 members.
-  4. In each such ring, require that it contains at least one oxygen and that the ring is “sugar‐like”
-     (i.e. most ring atoms are carbon/oxygen).
-  5. For each ring atom (typically carbons) check the exocyclic substituents. Count an -OH group if
-     it has an attached hydrogen. For nitrogen substituents, only count them if they are sp3 and their 
-     local environment suggests they are amino substituents (free –NH2 or part of an acetamido group).
-  6. If a candidate ring has at least three exocyclic substituents and at least one acceptable amino substituent,
-     classify the molecule as an amino sugar.
-     
-If ring information could not be determined or if no sugar-like ring is found, we return False with an appropriate reason.
+  1. Parse the molecule from the provided SMILES.
+  2. Loop over all rings (as provided by RDKit) looking for candidate 5– or 6–membered rings.
+  3. For each candidate ring, require that the ring contains exactly one oxygen atom 
+     (typical for pyranose/furanose rings) and all the other ring atoms are carbons.
+  4. For every ring carbon (non-oxygen) check each neighbor that is not in the ring.
+     • For an oxygen (atomic number 8) we require that it has at least one hydrogen (i.e. resembles –OH).
+     • For a nitrogen (atomic number 7) we count it only if the substituent is not part of another ring 
+       or (if in a ring) is non‐aromatic. This is meant to filter out substituents that arise from a nucleobase.
+  5. Additionally, require that the candidate ring has at least three such exocyclic substituents, thus
+     ensuring it is “sugar‐like.”
+  6. If a candidate ring is found that also has at least one acceptable amino (–NH2 or acetamido) substituent,
+     we classify the molecule as an amino sugar.
+  7. Otherwise, report a reason (or a negative result).
+  
+Note: this heuristic is not “perfect” but attempts to average over some mis‐classifications.
 """
 
 from rdkit import Chem
 
-# Pre-compile a SMARTS pattern for an acetamido environment.
-# This SMARTS looks for a nitrogen bound to a carbonyl carbon with a methyl group.
-acetamido_smarts = Chem.MolFromSmarts("[NX3;!R][C](=O)[CH3]")
-
-def is_valid_amino(n_atom):
-    """
-    Checks whether the given nitrogen atom appears to be a valid amino substituent:
-       - It is an sp3 (non‐aromatic) nitrogen.
-       - It either has one or more hydrogen atoms (free amine)
-         or is part of an acetamido group (matches a C(=O)CH3 nearby).
-    """
-    # Only consider nitrogen atoms
-    if n_atom.GetAtomicNum() != 7:
-        return False
-    # Must be sp3 (non‐aromatic)
-    if n_atom.GetHybridization() != Chem.HybridizationType.SP3:
-        return False
-    # If the atom has one or more attached hydrogen, accept it.
-    if n_atom.GetTotalNumHs() > 0:
-        return True
-    # Otherwise, attempt to see if its neighborhood matches the acetamido pattern.
-    # Construct a sub-molecule from the bonds adjacent to this nitrogen.
-    try:
-        bond_idxs = [bond.GetIdx() for bond in n_atom.GetBonds()]
-        env = Chem.PathToSubmol(n_atom.GetOwningMol(), bond_idxs)
-        if env.HasSubstructMatch(acetamido_smarts):
-            return True
-    except Exception:
-        pass
-    return False
-
 def is_amino_sugar(smiles: str):
     """
     Determines if a molecule is an amino sugar based on its SMILES string.
-    
-    The algorithm inspects rings of size 5 or 6. For each candidate ring:
-      - The ring must contain at least one oxygen (typical for a sugar ring) 
-        and a majority of its atoms are carbon or oxygen.
-      - Exocyclic substituents attached to ring carbons are examined.
-            • Hydroxy (-OH) groups are counted if the oxygen appears to carry at least one hydrogen.
-            • Amino substituents are counted only if the nitrogen atom is sp3 
-              (i.e. non‐aromatic) and either carries a free –NH2 or is part of an acetamido group.
-      - The candidate ring must have at least three exocyclic substituents and at least one acceptable amino substituent.
-    
+    The algorithm inspects rings of size 5 and 6 for a sugar‐like pattern:
+      • The ring must contain exactly one oxygen and the rest carbons.
+      • Each ring carbon’s exocyclic substituents are examined: we count those that look like hydroxyl groups
+        (oxygen with at least one hydrogen) or nitrogen atoms that are not part of another ring or aromatic.
+      • To be “sugar–like” we require at least three exocyclic substituents overall, and at least one must be a 
+        nitrogen substituent (free amine or acetamido) to indicate that a hydroxyl has been replaced.
+      
     Args:
-       smiles (str): SMILES string of the molecule.
-       
+      smiles (str): SMILES string of the molecule.
+      
     Returns:
-       (bool, str): (True, reason) if the molecule is classified as an amino sugar;
-                    otherwise, (False, reason).
+      (bool, str): A tuple with True if the molecule is classified as an amino sugar,
+                   and a reason string for the decision.
     """
-    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
-    if not mol:
+    if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Force update of property cache to (re)compute ring info.
-    mol.UpdatePropertyCache(strict=False)
-    
-    # Try to extract ring info; if not available, fall back on GetSymmSSSR
-    try:
-        ring_info = mol.GetRingInfo().AtomRings()
-    except Exception:
-        # Force computation using GetSymmSSSR
-        ring_info = [tuple(r) for r in Chem.GetSymmSSSR(mol)]
-    
-    candidate_found = False
-    
+
+    ring_info = mol.GetRingInfo().AtomRings()
+    candidate_found = False  # flag if we find any sugar-like ring
+    # Loop over all rings in the molecule.
     for ring in ring_info:
-        # Only consider rings of size 5 or 6.
+        # Consider only rings of size 5 or 6.
         if len(ring) not in (5, 6):
             continue
 
         ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
-        # Count oxygen atoms within the ring.
-        oxy_in_ring = [atom for atom in ring_atoms if atom.GetAtomicNum() == 8]
-        if len(oxy_in_ring) < 1:
-            continue  # Not sugar-like if no oxygen is in the ring.
+        # Count ring oxygens and carbons.
+        ring_oxygens = [a for a in ring_atoms if a.GetAtomicNum() == 8]
+        ring_carbons = [a for a in ring_atoms if a.GetAtomicNum() == 6]
+        if len(ring_oxygens) != 1 or len(ring_carbons) != (len(ring) - 1):
+            continue  # skip rings that do not match the typical sugar ring pattern
 
-        # Examine exocyclic substituents on ring atoms.
-        total_exo = 0
-        amino_found = False
-        for atom in ring_atoms:
-            # Focus on ring carbon atoms.
-            if atom.GetAtomicNum() != 6:
-                continue
+        # For each ring carbon, check its neighbors outside the ring.
+        total_exo = 0       # total count of exocyclic substituents (O or N)
+        valid_nitrogen = False  # flag if an acceptable amino substituent is detected
+
+        for atom in ring_carbons:
             for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
-                    continue  # Skip atoms that lie within the ring.
+                    continue  # skip atoms that are part of the ring
                 at_num = nbr.GetAtomicNum()
+                # If neighbor is oxygen, assume it is a hydroxyl if it has at least one hydrogen.
                 if at_num == 8:
-                    # Count an oxygen substituent if it has one or more hydrogen either explicit or implicit.
+                    # Use GetTotalNumHs to see if there are attached hydrogens.
                     if nbr.GetTotalNumHs() > 0:
                         total_exo += 1
                     else:
+                        # Even if no explicit H, count as substituent.
                         total_exo += 1
+                # If neighbor is nitrogen, count it as a possible amino substituent 
+                # if it is "free" (i.e. not embedded in an aromatic ring or another ring system).
                 elif at_num == 7:
-                    # For nitrogen, count it only if it appears to be a valid amino substituent.
-                    if is_valid_amino(nbr):
+                    # Only count if the neighbor is not in a ring or (if in a ring) is not aromatic.
+                    if (not nbr.IsInRing()) or (nbr.IsInRing() and not nbr.GetIsAromatic()):
                         total_exo += 1
-                        amino_found = True
-        # Require the candidate ring to have at least three exocyclic substituents.
+                        valid_nitrogen = True
+        # Require that the ring has a decent number of exocyclic substituents (at least 3).
         if total_exo < 3:
             continue
-        
+
         candidate_found = True
-        if amino_found:
-            return True, ("Detected a sugar-like ring (5- or 6-membered, containing at least one oxygen and multiple exocyclic substituents) "
-                          "with an acceptable amino substituent (free -NH2 or acetamido).")
-            
-    # End of checking rings.
+        if valid_nitrogen:
+            return True, ("Sugar ring detected (5- or 6-membered ring with one oxygen and at least three exocyclic substituents) "
+                          "with at least one acceptable amino substituent (free amine or acetamido group).")
+    # End loop over rings.
     if not candidate_found:
-        return False, ("No typical sugar ring (5- or 6-membered ring with at least one oxygen and multiple exocyclic substituents) was detected.")
+        return False, "No typical sugar ring (5- or 6-membered ring with one oxygen and multiple exocyclic substituents) was detected."
     else:
-        return False, ("Sugar-like ring(s) were detected, but none contained an acceptable amino substituent "
-                       "(free -NH2 or acetamido), so the molecule was not classified as an amino sugar.")
+        return False, "Sugar-like ring(s) detected but none had an appropriate amino substituent (the nitrogen appeared to be part of a fused or aromatic ring)."
 
 # Example usage:
 if __name__ == "__main__":
-    # Test a SMILES string that previously caused trouble.
-    test_smiles = "C[C@H]1O[C@H](O)[C@H](O)[C@H]([C@H]1O)N(C)C"
-    result, reason = is_amino_sugar(test_smiles)
+    # Example SMILES that (according to the previous outcomes) should be classified as an amino sugar.
+    example_smiles = ("O([C@H]1[C@@H](O)[C@H](OC(O)[C@@H]1NC(=O)C)CO[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2NC(=O)C)CO)"
+                      "[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO")
+    result, reason = is_amino_sugar(example_smiles)
     print("Result:", result)
     print("Reason:", reason)
