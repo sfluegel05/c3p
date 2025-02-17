@@ -5,9 +5,10 @@ Classifies: CHEBI:38077 polypyrrole
 Classifies: polypyrrole
 Definition: A compound composed of two or more pyrrole units.
 A pyrrole unit is defined as a five‐membered aromatic ring containing exactly one nitrogen.
-In our improved classifier we not only count pyrrole matches (via SMARTS) but also
-require that (a) at least two pyrrole units appear in the same connected substructure and
-(b) that the atoms of that cluster form at least 15% of the heavy atoms in the molecule.
+This improved classifier not only finds pyrrole rings via SMARTS but also (a) filters only those rings 
+whose unique nitrogen bears exactly one hydrogen (as expected for pyrrole) and (b) requires that at least 
+two such pyrrole rings are connected (directly or via an adjoining bond) and that the union of atoms 
+in that connected cluster comprises at least 10% of the heavy atoms of the molecule.
 """
 
 from rdkit import Chem
@@ -17,50 +18,58 @@ def is_polypyrrole(smiles: str):
     Determines if a molecule is a polypyrrole based on its SMILES string.
     
     A polypyrrole is defined as a compound composed of two or more pyrrole units.
-    Here a pyrrole unit is detected by a SMARTS pattern for a five-membered aromatic ring
-    containing one nitrogen and four carbons. In addition,
-    we require that at least two such pyrrole rings are connected (either directly or via adjacent rings)
-    and that the combined pyrrole cluster represents a reasonable fraction of the heavy atoms.
+    Here a pyrrole unit is detected by a SMARTS pattern for a five‐membered aromatic ring
+    containing one nitrogen (with exactly one hydrogen). In addition,
+    we require that at least two such pyrrole rings are connected (in one cluster)
+    and that the combined pyrrole cluster represents at least 10% of the heavy atoms in the molecule.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
         bool: True if the molecule is classified as a polypyrrole, False otherwise.
-        str: Reason for the classification.
+        str: Reason for classification.
     """
-    
+    # Parse the molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern that matches an aromatic five-membered ring with exactly one nitrogen.
-    # [nR] matches an aromatic nitrogen atom in a ring; [cR] matches aromatic carbons in a ring.
+    # Define a SMARTS pattern that matches a five-membered aromatic ring with one nitrogen.
     pyrrole_smarts = Chem.MolFromSmarts("[nR]1[cR][cR][cR][cR]1")
     if pyrrole_smarts is None:
         return False, "Error in SMARTS pattern"
     
-    # Find all substructure matches (each a tuple of atom indices) matching the pyrrole pattern.
-    matches = mol.GetSubstructMatches(pyrrole_smarts, uniquify=True)
-    num_pyrroles = len(matches)
+    # Get all ring matches using the SMARTS.
+    raw_matches = mol.GetSubstructMatches(pyrrole_smarts, uniquify=True)
     
+    # Filter matches to ensure that the single nitrogen in the five-membered ring has exactly one hydrogen.
+    filtered_matches = []
+    for match in raw_matches:
+        atom_indices = list(match)
+        # Identify the nitrogen atom(s) in the match
+        n_atoms = [a for a in atom_indices if mol.GetAtomWithIdx(a).GetAtomicNum() == 7]
+        # A proper pyrrole should have exactly one nitrogen.
+        if len(n_atoms) != 1:
+            continue
+        n_atom = mol.GetAtomWithIdx(n_atoms[0])
+        # Check that the nitrogen atom has exactly one attached hydrogen (using total H count).
+        if n_atom.GetTotalNumHs() != 1:
+            continue
+        filtered_matches.append(set(match))
+    
+    num_pyrroles = len(filtered_matches)
     if num_pyrroles < 2:
         return False, f"Contains {num_pyrroles} pyrrole unit(s); need at least two for a polypyrrole"
     
-    # Deduplicate the matches (each match is a tuple of atom indices)
-    unique_matches = [set(match) for match in matches]
-    
-    # Build connectivity among pyrrole units: two pyrrole matches are 'connected'
-    # if any atom in one is directly bonded to any atom in the other.
-    n = len(unique_matches)
-    # Create a graph as an adjacency list:
+    # Build connectivity between pyrrole matches: two pyrrole rings are connected if any atom in one is directly bonded to an atom in the other.
+    n = len(filtered_matches)
     neighbors = {i: set() for i in range(n)}
     for i in range(n):
         for j in range(i+1, n):
-            # Check if any atom in set i is directly bonded to any atom in set j
             connected = False
-            for a in unique_matches[i]:
-                for b in unique_matches[j]:
+            for a in filtered_matches[i]:
+                for b in filtered_matches[j]:
                     if mol.GetBondBetweenAtoms(a, b) is not None:
                         connected = True
                         break
@@ -70,7 +79,7 @@ def is_polypyrrole(smiles: str):
                 neighbors[i].add(j)
                 neighbors[j].add(i)
     
-    # Find connected clusters (using a simple depth-first search)
+    # Find connected clusters among the pyrrole matches using depth-first search.
     visited = set()
     clusters = []
     for i in range(n):
@@ -86,26 +95,24 @@ def is_polypyrrole(smiles: str):
                 stack.extend(list(neighbors[current] - visited))
         clusters.append(cluster)
     
-    # For each cluster, take the union of atom indices of all pyrrole matches in that cluster.
+    # For each cluster, take the union of all atom indices from the pyrrole matches in that cluster.
     cluster_atoms = []
     for cluster in clusters:
-        atom_set = set()
+        atoms_in_cluster = set()
         for idx in cluster:
-            atom_set |= unique_matches[idx]
-        cluster_atoms.append(atom_set)
+            atoms_in_cluster |= filtered_matches[idx]
+        cluster_atoms.append(atoms_in_cluster)
     
     # Select the largest connected cluster.
     largest_cluster = max(cluster_atoms, key=lambda s: len(s))
     largest_cluster_size = len(largest_cluster)
     
-    # Compute total number of heavy atoms (atomic number > 1)
+    # Count total heavy atoms in the molecule (atomic number > 1)
     total_heavy = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1)
-    
-    # Compute the ratio of atoms in the largest pyrrole cluster to all heavy atoms.
     fraction = largest_cluster_size / total_heavy if total_heavy > 0 else 0
     
-    # We choose a threshold (e.g., 15%) to require that a significant portion of the molecule comes from connected pyrrole units.
-    threshold = 0.15
+    # Use a threshold of 10% (lowered from 15%) to allow for true positives that have smaller pyrrole portions.
+    threshold = 0.10
     if fraction < threshold:
         return False, (f"Found {num_pyrroles} pyrrole unit(s) but the largest connected pyrrole cluster covers "
                        f"{largest_cluster_size} of {total_heavy} heavy atoms ({fraction:.2%}); "
@@ -116,12 +123,11 @@ def is_polypyrrole(smiles: str):
 
 # Example test cases
 if __name__ == "__main__":
-    test_smiles_list = [
+    test_smiles = [
         "c1cc[nH]c1",                           # one pyrrole unit -> not polypyrrole
-        "c1cc[nH]c1-c2cc[nH]c2",                  # two pyrrole units connected -> polypyrrole
-        "c1cc[nH]c1.Cc2cc[nH]c2",                 # two pyrrole units but unconnected (separate fragments) -> not polypyrrole
+        "c1cc[nH]c1-c2cc[nH]c2",                  # two pyrrole units connected by a bond -> polypyrrole
+        "c1cc[nH]c1.Cc2cc[nH]c2"                  # two pyrrole units but in separate fragments -> not polypyrrole
     ]
-    
-    for s in test_smiles_list:
+    for s in test_smiles:
         result, reason = is_polypyrrole(s)
         print(f"SMILES: {s}\nResult: {result}\nReason: {reason}\n")
