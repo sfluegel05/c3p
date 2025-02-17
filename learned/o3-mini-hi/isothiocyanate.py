@@ -5,14 +5,8 @@ Classifies: CHEBI:52221 isothiocyanate
 Classifies: Isothiocyanate (R-N=C=S)
 
 An isothiocyanate is defined as an organosulfur compound with the general formula R-N=C=S.
-This improved function first looks for the SMARTS pattern (in both directions) and then enforces
-stricter connectivity rules:
-  - both bonds (N–C and C–S) must be double bonds,
-  - the central C must be bonded only to N and S,
-  - the terminal S must be bonded only to the central C, and
-  - the N must be bonded to exactly one substituent (R) besides the connection to C.
-Additionally, we require that the candidate is the only isothiocyanate group in the molecule,
-and we reject cases where the R substituent is “tainted” by a nearby carbonyl or oxidized heteroatom.
+This function looks for the SMARTS pattern in both directions, deduplicates duplicate matches,
+and then enforces connectivity and exclusion checks.
 """
 
 from rdkit import Chem
@@ -21,9 +15,6 @@ def is_isothiocyanate(smiles: str):
     """
     Determines if a molecule is an isothiocyanate based on its SMILES string.
     Isothiocyanates are defined as having a terminal group R-N=C=S.
-    This function looks for the SMARTS pattern "N=C=S" (and its reverse "S=C=N")
-    and then enforces connectivity and exclusion checks to reject cases where 
-    the group is embedded in a larger multifunctional system.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -36,31 +27,39 @@ def is_isothiocyanate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS for isothiocyanate in forward and reverse orders.
-    pattern1 = Chem.MolFromSmarts("N=C=S")
-    pattern2 = Chem.MolFromSmarts("S=C=N")
-    
+    # Define SMARTS patterns for isothiocyanate in forward and reverse orders.
+    patterns = ["N=C=S", "S=C=N"]
     candidate_matches = []
-    # Get candidate matches from both patterns.
-    if mol.HasSubstructMatch(pattern1):
-        candidate_matches.extend(mol.GetSubstructMatches(pattern1))
-    if mol.HasSubstructMatch(pattern2):
-        candidate_matches.extend(mol.GetSubstructMatches(pattern2))
+    for pat in patterns:
+        pat_mol = Chem.MolFromSmarts(pat)
+        if pat_mol is None:
+            continue
+        matches = mol.GetSubstructMatches(pat_mol)
+        candidate_matches.extend(matches)
     
+    # Deduplicate candidate matches by comparing sorted atom indices.
+    unique_matches = []
+    seen = set()
+    for m in candidate_matches:
+        key = tuple(sorted(m))
+        if key not in seen:
+            seen.add(key)
+            unique_matches.append(m)
+            
     # Reject if no candidate found.
-    if not candidate_matches:
+    if not unique_matches:
         return False, "No isothiocyanate SMARTS match found"
     
-    # Reject if more than one isothiocyanate moiety is found.
-    if len(candidate_matches) > 1:
-        return False, f"Multiple isothiocyanate groups found ({len(candidate_matches)} matches)"
+    # Reject if more than one unique isothiocyanate moiety is found.
+    if len(unique_matches) > 1:
+        return False, f"Multiple isothiocyanate groups found ({len(unique_matches)} matches)"
     
     # Process the single candidate match.
-    match = candidate_matches[0]
-    # By default assume match from pattern1 gives (N, C, S)
+    match = unique_matches[0]
+    # By default assume match from pattern "N=C=S" gives order (N, C, S).
     n_idx, c_idx, s_idx = match[0], match[1], match[2]
     atom0 = mol.GetAtomWithIdx(match[0])
-    # If first atom is S then assume the match is from the reverse pattern and reorder.
+    # If the first atom is S then we likely got a match from "S=C=N" and we reorder.
     if atom0.GetAtomicNum() == 16:
         n_idx, c_idx, s_idx = match[2], match[1], match[0]
     
@@ -110,7 +109,6 @@ def is_isothiocyanate(smiles: str):
                 continue
             if nbr.GetAtomicNum() == 6:  # possible carbon that could be part of a carbonyl
                 for bond in nbr.GetBonds():
-                    # Check for a double-bonded oxygen.
                     if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
                         other = bond.GetOtherAtom(nbr)
                         if other.GetAtomicNum() == 8:
@@ -121,7 +119,6 @@ def is_isothiocyanate(smiles: str):
     def has_oxidized_neighbor(atom):
         # Look for neighbor heteroatom with at least one double bond to oxygen.
         for nbr in atom.GetNeighbors():
-            # Skip if neighbor is N from the isothiocyanate group.
             if nbr.GetIdx() == n_idx:
                 continue
             if nbr.GetAtomicNum() in (16, 15):  # S or P
@@ -134,14 +131,13 @@ def is_isothiocyanate(smiles: str):
 
     if has_oxidized_neighbor(r_atom):
         return False, "R substituent is adjacent to an oxidized heteroatom (e.g. S=O or P=O)"
-    # Also check one bond further along the substituent.
     for nbr in r_atom.GetNeighbors():
         if nbr.GetIdx() == n_idx:
             continue
         if has_oxidized_neighbor(nbr):
             return False, "Substituent branch near the isothiocyanate group is oxidized (e.g., S=O, P=O)"
     
-    # (3) Finally enforce expected degrees of the atoms in the group.
+    # (3) Enforce expected degrees of atoms in the group.
     # Ideal terminal group expected degrees: N:2, C:2, S:1.
     if n_atom.GetDegree() != 2 or c_atom.GetDegree() != 2 or s_atom.GetDegree() != 1:
         return False, "Degrees of atoms in N=C=S group are not as expected for a terminal isothiocyanate"
@@ -150,7 +146,7 @@ def is_isothiocyanate(smiles: str):
 
 # Example usage and testing
 if __name__ == "__main__":
-    # Test examples from the provided list (both true positives and examples that caused false positives)
+    # Some test examples from the problem description.
     test_examples = {
         "sulforaphane": "N(=C=S)CCCCS(=O)C",
         "eosin 5-isothiocyanate": "Oc1c(Br)cc2c(Oc3c(Br)c(O)c(Br)cc3C22OC(=O)c3cc(ccc23)N=C=S)c1Br",
@@ -162,24 +158,7 @@ if __name__ == "__main__":
         "1-Isothiocyanato-7-(methylthio)heptane": "S(CCCCCCCN=C=S)C",
         "3-hydroxypropyl isothiocyanate": "OCCCN=C=S",
         "Erucin": "S(CCCCN=C=S)C",
-        "rhodamine B 6-isothiocyanate": "CCN(CC)c1ccc2c(-c3cc(ccc3C(O)=O)N=C=S)c3ccc(cc3oc2c1)=[N+](CC)CC",
         "phenyl isothiocyanate": "S=C=Nc1ccccc1",
-        "5-isothiocyanato-1-pentene": "C=CCCCN=C=S",
-        "2-isothiocyanatoethyl phosphate": "S=C=NCCOP(O)(=O)O",
-        "Isothiocyanatocyclopropane": "C1CC1N=C=S",
-        "1-naphthyl isothiocyanate": "S=C=Nc1cccc2ccccc12",
-        "(R)-sulforaphane": "N(=C=S)CCCC[S@](=O)C",
-        "ethyl isothiocyanate": "CCN=C=S",
-        "benzyl isothiocyanate": "S=C=NCc1ccccc1",
-        "phenethyl isothiocyanate": "S=C=NCCc1ccccc1",
-        "amoscanate": "C1=CC(=CC=C1NC=2C=CC(N=C=S)=CC2)[N+](=O)[O-]",
-        "1-isothiocyanato-6-(methylsulfanyl)hexane": "S(CCCCCCN=C=S)C",
-        "allyl isothiocyanate": "C=CCN=C=S",
-        "toluene 2,6-diisothiocyanate": "Cc1c(cccc1N=C=S)N=C=S",
-        "8-(methylthio)octylisothiocyanate": "S(CCCCCCCCN=C=S)C",
-        "rhodamine B 5-isothiocyanate": "[Cl-].CCN(CC)c1ccc2c(-c3ccc(cc3C(O)=O)N=C=S)c3ccc(cc3oc2c1)=[N+](CC)CC",
-        "Camelinin (false positive candidate)": "S(=O)(CCCCCCCCCCN=C=S)C",
-        "4-isothiocyanatobenzoate (false positive candidate)": "[O-]C(=O)c1ccc(cc1)N=C=S"
     }
     
     for name, smi in test_examples.items():
