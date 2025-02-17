@@ -6,9 +6,9 @@ Classifies: CHEBI:83139 long-chain fatty acyl-CoA(4-)
 Classifies: long-chain fatty acyl-CoA(4-)
 Definition: A fatty acyl-CoA(4-) arising from deprotonation of the phosphate and diphosphate OH groups
 of any long-chain fatty acyl-CoA; major species at pH 7.3.
-This implementation verifies that the molecule contains (a) an adenine nucleotide fragment (using several SMARTS variants),
-(b) a pantetheine fragment, (c) a thioester group linking a fatty acyl chain and (d) a linear (unbranched)
-hydrocarbon chain of 12–22 carbons attached to the thioester.
+This implementation verifies that the molecule contains (a) an adenine nucleotide fragment,
+(b) a pantetheine fragment, (c) a thioester group linking a fatty acyl chain and (d) an acyl chain 
+with a longest linear carbon path of 12–22 carbons.
 """
 
 from rdkit import Chem
@@ -16,36 +16,35 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     """
-    Determines whether a given SMILES string belongs to the class long-chain fatty acyl-CoA(4-).
+    Determines whether the given SMILES string belongs to the class long-chain fatty acyl-CoA(4-).
 
     Process:
-      1. Parse the SMILES string.
-      2. Verify that an adenine nucleotide fragment is present (using several alternative SMARTS).
-      3. Check for a pantetheine fragment characteristic of CoA.
-      4. Find a thioester group ([C;!R](=O)[S]) indicating the fatty acyl linkage.
-      5. From the thioester carbonyl carbon, trace the attached carbon (not the one bound to S) into a chain.
-         • The chain-ending routine is iterative and will only continue if a unique carbon neighbor is found
-           (enforcing linear—unbranched—connectivity).
-      6. Accept if at least one thioester leads into a linear carbon chain of 12–22 carbons.
+      1. Parse the SMILES.
+      2. Ensure that an adenine nucleotide fragment is present (via several SMARTS patterns).
+      3. Verify the presence of a pantetheine fragment.
+      4. Look for a thioester group ([C;!R](=O)[S]) which links the fatty acyl chain.
+      5. For each thioester hit, select the carbonyl carbon and, from its neighbor (the acyl group),
+         perform a DFS to compute the longest carbon–chain (all atoms are carbon) starting from that atom.
+         This helps to allow minor branching (as in iso–acyl species) while still counting the main chain.
+      6. Accept if at least one thioester leads to a longest chain path between 12 and 22 carbons.
 
     Args:
-        smiles (str): SMILES string of the candidate molecule.
+        smiles (str): SMILES of the molecule.
 
     Returns:
-        bool: True if the molecule meets all criteria; False otherwise.
-        str: Explanation for the classification.
+        (bool, str): A tuple with True and an explanation if the molecule fits the class,
+                     otherwise False with an explanation.
     """
-    # Parse the SMILES string.
+    # --- Step 1: Parse SMILES ---
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # --- Step 1: Check for adenine nucleotide fragment ---
-    # Use several SMARTS patterns to allow slightly different representations.
+    
+    # --- Step 2: Check for adenine fragment using alternative SMARTS patterns ---
     adenine_smarts = [
         "n1cnc2ncnc12",         # plain adenine core
         "n1cnc2c(n)ncnc12",      # variant with a methyl substituent
-        "n1cnc2c(N)ncnc12"       # variant with an NH2 substituent on one ring
+        "n1cnc2c(N)ncnc12"       # variant with an amino substituent
     ]
     found_adenine = False
     for smarts in adenine_smarts:
@@ -55,55 +54,50 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
             break
     if not found_adenine:
         return False, "Adenine nucleotide fragment not found; not a CoA derivative"
-
-    # --- Step 2: Check for the pantetheine fragment ---
-    # This SMARTS should match the key connectivity of pantetheine.
+    
+    # --- Step 3: Check for the pantetheine fragment ---
     pantetheine_patt = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)")
     if not pantetheine_patt or not mol.HasSubstructMatch(pantetheine_patt):
         return False, "Pantetheine fragment not found; not a CoA derivative"
-
-    # --- Step 3: Locate a thioester group ---
-    # A thioester is defined as a non-ring carbon (C;!R) with a =O and a single bond to a sulfur.
+    
+    # --- Step 4: Locate a thioester group ---
     thioester_patt = Chem.MolFromSmarts("[C;!R](=O)[S]")
     thioester_matches = mol.GetSubstructMatches(thioester_patt)
     if not thioester_matches:
         return False, "No thioester group (fatty acid linkage) found"
-
-    # --- Step 4: Once a thioester is found, follow the fatty acyl chain ---
-    # This iterative function walks from a given carbon atom into a chain.
-    def trace_linear_chain(start_atom, from_atom):
-        """Trace a chain iteratively starting from start_atom;
-           at each step only continue if there is exactly one carbon neighbor (excluding the atom we came from).
-           Returns the chain length (number of carbon atoms encountered, including start_atom)."""
-        length = 1  # start_atom counts as one carbon
-        prev_atom = from_atom
-        current_atom = start_atom
-        while True:
-            # Get neighboring carbons except the one we came from.
-            nbr_carbons = [nbr for nbr in current_atom.GetNeighbors() 
-                           if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom.GetIdx()]
-            # For a linear chain exactly one such neighbor must exist.
-            if len(nbr_carbons) != 1:
-                break
-            # If the current atom itself has extra carbon joiners (i.e. a branch), do not continue.
-            # (We count only if the continuation is unique.)
-            next_atom = nbr_carbons[0]
-            length += 1
-            prev_atom = current_atom
-            current_atom = next_atom
-        return length
+    
+    # --- Step 5: DFS to compute the longest carbon chain from the fatty acyl start ---
+    def dfs_longest_chain(atom, parent_idx, visited):
+        """
+        Performs depth-first search from the given atom over neighboring carbons to find
+        the length of the longest path (in number of carbon atoms). 'parent_idx' is used
+        to avoid immediately backtracking.
+        """
+        max_length = 1  # count this atom itself
+        for nbr in atom.GetNeighbors():
+            if nbr.GetAtomicNum() != 6:  # only follow carbon atoms
+                continue
+            if nbr.GetIdx() == parent_idx:
+                continue
+            if nbr.GetIdx() in visited:
+                continue
+            new_visited = visited | {nbr.GetIdx()}
+            length = 1 + dfs_longest_chain(nbr, atom.GetIdx(), new_visited)
+            if length > max_length:
+                max_length = length
+        return max_length
 
     MIN_CHAIN = 12
     MAX_CHAIN = 22
     acyl_chain_valid = False
     chain_length_found = 0
 
-    # For each thioester, try to find a fatty acyl chain.
+    # For each thioester match, try to assess the attached acyl chain.
     for match in thioester_matches:
         carbonyl_idx, sulfur_idx = match[0], match[1]
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
-        # From the carbonyl, choose a neighbor that is a carbon and not the sulfur.
         fatty_start = None
+        # From the carbonyl, pick a neighbor that is not the sulfur and is a carbon.
         for nbr in carbonyl_atom.GetNeighbors():
             if nbr.GetIdx() == sulfur_idx:
                 continue
@@ -111,28 +105,32 @@ def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
                 fatty_start = nbr
                 break
         if fatty_start is None:
-            continue  # no candidate fatty acyl carbon found with this thioester; try next
-
-        # Trace the potential fatty chain.
-        chain_length = trace_linear_chain(fatty_start, carbonyl_atom)
-        if MIN_CHAIN <= chain_length <= MAX_CHAIN:
+            continue  # try next thioester
+        
+        # To avoid backtracking into the carbonyl, start DFS from fatty_start
+        # Start with visited set containing fatty_start (its index) and treat carbonyl as parent.
+        longest_path = 1 + dfs_longest_chain(fatty_start, carbonyl_atom.GetIdx(), {fatty_start.GetIdx()})
+        if MIN_CHAIN <= longest_path <= MAX_CHAIN:
             acyl_chain_valid = True
-            chain_length_found = chain_length
+            chain_length_found = longest_path
             break
 
     if not acyl_chain_valid:
-        return False, f"Fatty acyl chain missing or not linear with required {MIN_CHAIN}-{MAX_CHAIN} carbons."
-
-    # If we reach here then the molecule meets all criteria.
+        return False, f"Fatty acyl chain missing or longest linear carbon path is not within {MIN_CHAIN}-{MAX_CHAIN}."
+    
     return True, (
-        f"Contains CoA moiety (adenine and pantetheine fragments), a thioester group with a fatty acyl chain of length {chain_length_found} carbons, "
-        "and expected connectivity for long-chain fatty acyl-CoA(4-)."
+        f"Contains CoA moiety (adenine and pantetheine fragments) and a thioester-linked fatty acyl chain "
+        f"with longest linear carbon path of {chain_length_found} carbons, as expected for long-chain fatty acyl-CoA(4-)."
     )
 
 
 # For testing purposes:
 if __name__ == "__main__":
-    # Example SMILES from one of the true positive cases.
-    test_smiles = "CCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12"
+    # Example test (one true positive)
+    test_smiles = (
+        "CCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)"
+        "[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)"
+        "OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12"
+    )
     result, explanation = is_long_chain_fatty_acyl_CoA_4__(test_smiles)
     print(result, explanation)
