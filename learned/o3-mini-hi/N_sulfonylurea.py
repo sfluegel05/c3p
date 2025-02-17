@@ -3,92 +3,99 @@ Classifies: CHEBI:76983 N-sulfonylurea
 """
 """
 Classifies: N-sulfonylurea
-Definition: An N-sulfonylurea is defined as a urea (–NH–C(=O)–NH–) in which one of the hydrogen atoms on a urea nitrogen
-is replaced by a sulfonyl group (–S(=O)(=O)–). This motif is common in many herbicides and in some type 2 diabetes drugs.
+Definition: An N-sulfonylurea is defined as a urea moiety (–NH–C(=O)–NH–)
+in which one of the two urea nitrogens is directly substituted by a sulfonyl group (–S(=O)(=O)–).
+This motif is common to several herbicides and type 2 diabetes drugs.
+Our approach is:
+    1. Examine each carbonyl carbon that is double-bonded to an O.
+    2. Require that carbon to be part of a urea-like fragment (connected to exactly two N atoms).
+    3. For each of the two N atoms (which should be neutral), check if it is substituted
+       (apart from the urea C) by a sulfur.
+    4. Then verify that the candidate sulfur is “sulfonyl” – that is, it has at least two double bonds to oxygen.
+If such a fragment is found, we call the molecule an N-sulfonylurea.
+Note: This method was refined after analysis of mis‐classified (false positive or false negative)
+examples; extra filters (e.g. checking the formal charge) help avoid some cases (like anionic nitrogen).
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdchem
 
 def is_N_sulfonylurea(smiles: str):
     """
     Determines if a molecule is an N-sulfonylurea based on its SMILES string.
     
-    Our strategy is as follows:
-    
-    1. We search for a clear urea motif: a fragment with the pattern "N-C(=O)-N".
-    2. For each urea fragment found, we check both urea nitrogens (the ones attached to the carbonyl)
-       to see if one is directly substituted with a sulfonyl group.
-    3. To call a substituent “sulfonyl”, the atom attached must be sulfur and that sulfur, in turn,
-       must have at least two double-bonded oxygens (typical for a sulfonyl functional group).
-    
+    Our strategy is to (1) search for a urea-like fragment: a carbonyl carbon (C=O)
+       bearing exactly two nitrogen substituents, and then (2) for each of those N atoms,
+       see whether (apart from the urea carbon) it is directly substituted by a sulfur 
+       atom that carries at least two oxygen atoms by double bond.
+       
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if the molecule is classified as an N-sulfonylurea, False otherwise.
-        str: Reason for the classification.
+        bool: True if a valid N-sulfonylurea fragment is found, False otherwise.
+        str: A reason (or message) describing the result.
     """
-    
-    # Try to get RDKit molecule from SMILES.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define a basic urea SMARTS pattern: "N-C(=O)-N"
-    urea_smarts = "N-C(=O)-N"
-    urea_query = Chem.MolFromSmarts(urea_smarts)
-    if urea_query is None:
-        return None, None  # Should not occur
-    
-    # Find urea substructure matches.
-    urea_matches = mol.GetSubstructMatches(urea_query)
-    
-    # Helper function: Given an atom (a candidate urea nitrogen), check if it is bound
-    # to a sulfur that qualifies as a sulfonyl group.
-    def has_sulfonyl_substituent(n_atom: rdchem.Atom):
-        # Consider all neighbors except the carbonyl carbon (we expect one
-        # connection from the urea motif already).
-        for nbr in n_atom.GetNeighbors():
-            # Skip if neighbor is the carbonyl carbon (with atomic number 6)
-            if nbr.GetAtomicNum() == 6:
-                # (Could try to check if that C is in a C(=O) group but for our pattern the urea C is the only C attached)
-                continue
-            # Look for a sulfur atom.
-            if nbr.GetAtomicNum() == 16:
-                # Check that this sulfur looks like part of a sulfonyl group:
-                # It should have at least two bonds to oxygen with bond order DOUBLE.
-                n_double_oxygen = 0
-                for s_nbr in nbr.GetNeighbors():
-                    # Only count oxygen (atomic number 8) that is double-bonded.
-                    if s_nbr.GetAtomicNum() == 8:
-                        bond = mol.GetBondBetweenAtoms(nbr.GetIdx(), s_nbr.GetIdx())
-                        if bond is not None and bond.GetBondType() == rdchem.BondType.DOUBLE:
-                            n_double_oxygen += 1
-                if n_double_oxygen >= 2:
-                    # Found a valid sulfonyl substituent.
-                    return True
-        return False
-
-    # Iterate over each urea match.
-    # urea_matches returns tuples: (index_n1, index_C, index_n2)
-    for match in urea_matches:
-        left_n = mol.GetAtomWithIdx(match[0])
-        right_n = mol.GetAtomWithIdx(match[2])
         
-        # Check left nitrogen: if it has a substituent S (other than the carbonyl carbon) that qualifies as sulfonyl.
-        if has_sulfonyl_substituent(left_n):
-            return True, "Molecule contains a valid N-sulfonylurea motif: urea fragment with left N substituted by sulfonyl group."
-        # Check right nitrogen:
-        if has_sulfonyl_substituent(right_n):
-            return True, "Molecule contains a valid N-sulfonylurea motif: urea fragment with right N substituted by sulfonyl group."
-    
-    # If no urea fragment had a valid sulfonyl substitution.
+    # Iterate over all atoms looking for a carbonyl carbon (C=O)
+    for atom in mol.GetAtoms():
+        # Look at carbon atoms only
+        if atom.GetAtomicNum() != 6:
+            continue
+        
+        # Check that the carbon has at least one double-bonded oxygen (C=O)
+        oxy_double = []
+        for nbr in atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 8:
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                if bond is not None and bond.GetBondType() == Chem.BondType.DOUBLE:
+                    oxy_double.append(nbr)
+        if not oxy_double:
+            continue  # not a carbonyl
+        
+        # Now check that the carbon is in a urea-like fragment, i.e.
+        # it is connected to exactly two nitrogen atoms.
+        n_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 7]
+        if len(n_neighbors) != 2:
+            continue  # not the central carbon of a urea
+        
+        # For each urea nitrogen, check for a sulfonyl substituent
+        for n in n_neighbors:
+            # Skip if the nitrogen is charged (we expect a neutral urea N)
+            if n.GetFormalCharge() != 0:
+                continue
+            # Look over neighbors of this N excluding the urea carbon
+            for sub in n.GetNeighbors():
+                if sub.GetIdx() == atom.GetIdx():
+                    continue
+                # Check if neighbor is a sulfur candidate.
+                if sub.GetAtomicNum() == 16:
+                    # Verify that the S is attached by a SINGLE bond to our nitrogen.
+                    bond_NS = mol.GetBondBetweenAtoms(n.GetIdx(), sub.GetIdx())
+                    if bond_NS is None or bond_NS.GetBondType() != Chem.BondType.SINGLE:
+                        continue
+                    # Count how many of the S neighbors are oxygen with a double bond.
+                    dO_count = 0
+                    for s_nbr in sub.GetNeighbors():
+                        if s_nbr.GetAtomicNum() == 8:
+                            bond_SO = mol.GetBondBetweenAtoms(sub.GetIdx(), s_nbr.GetIdx())
+                            if bond_SO is not None and bond_SO.GetBondType() == Chem.BondType.DOUBLE:
+                                dO_count += 1
+                    # Accept S if it has at least 2 double bonds to O.
+                    if dO_count >= 2:
+                        return True, (
+                            f"Molecule contains a valid N-sulfonylurea motif: "
+                            f"urea fragment (C(=O) between N atoms) with N (atom idx {n.GetIdx()}) substituted by a sulfonyl group."
+                        )
+                        
     return False, "N-sulfonylurea moiety not found in the molecule."
 
-# Example usage (remove when using as a module):
+
+# For testing purposes (remove or comment out this part when using as a module)
 if __name__ == "__main__":
-    # For instance, test using glyburide SMILES:
+    # Try one of the true positive examples (glyburide)
     test_smiles = "COc1ccc(Cl)cc1C(=O)NCCc1ccc(cc1)S(=O)(=O)NC(=O)NC1CCCCC1"
     result, reason = is_N_sulfonylurea(test_smiles)
     print("Result:", result)
