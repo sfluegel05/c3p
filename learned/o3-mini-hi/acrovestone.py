@@ -3,40 +3,39 @@ Classifies: CHEBI:2440 acrovestone
 """
 """
 Classifies: Acrovestone polyphenol.
-Definition: A polyphenol that is isolated from Acronychia pedunculata and exhibits moderate antioxidant and antityrosinase activities.
-This implementation first removes glycoside moieties using the FragmentParent function (from rdkit.Chem.MolStandardize)
-and then checks for either a flavone (2-phenylchromen-4-one) or isoflavone (3-phenylchromen-4-one) core.
+Definition: A polyphenol from Acronychia pedunculata with moderate antioxidant and antityrosinase activities.
+This implementation attempts to deglycosylate the molecule using rdMolStandardize.FragmentParent and then check for
+a flavone, isoflavone, or generic chromen-4-one core.
 """
 from rdkit import Chem
-# Import rdMolStandardize from the correct module
 try:
     from rdkit.Chem.MolStandardize import rdMolStandardize
 except ImportError:
-    # In case the import fails, set to None so that the function can report an error
     rdMolStandardize = None
 
 def is_acrovestone(smiles: str):
     """
     Determines if a molecule qualifies as an acrovestone-class polyphenol based on its SMILES string.
-    Given that many acrovestone examples are glycosylated, this function first removes common sugar fragments
-    (by taking the largest fragment via FragmentParent) and then checks for the presence of a flavone or isoflavone core.
+    Since many acrovestone examples are glycosylated, this function first tries to remove sugar moieties
+    (via FragmentParent) and then checks if the remaining core contains a flavone (2-phenylchromen-4-one),
+    an isoflavone (3-phenylchromen-4-one), or a more generic chromen-4-one structure.
     
     Args:
         smiles (str): SMILES string of the molecule.
-        
+    
     Returns:
         bool: True if the molecule is classified as acrovestone, False otherwise.
-        str: Explanation for the classification result.
+        str: Explanation for the classification.
     """
     if rdMolStandardize is None:
         return None, "rdMolStandardize module not available from rdkit.Chem.MolStandardize"
     
-    # Parse the SMILES string into a molecule object.
+    # Parse the molecule from the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Remove sugar moieties by obtaining the largest non-sugar fragment.
+    # Attempt to remove glycoside (sugar) moieties by obtaining the parent fragment.
     try:
         parent = rdMolStandardize.FragmentParent(mol)
     except Exception as e:
@@ -45,26 +44,30 @@ def is_acrovestone(smiles: str):
         return False, "Failed to determine the parent fragment after sugar removal"
     
     # Define SMARTS patterns for core structures.
-    # Flavone core (2-phenylchromen-4-one)
+    # Pattern 1: Flavone core (2-phenylchromen-4-one)
     flavone_smarts = "c1ccc2oc(=O)cc(c2)c1"
-    # Isoflavone core (3-phenylchromen-4-one)
+    # Pattern 2: Isoflavone core (3-phenylchromen-4-one)
     isoflavone_smarts = "O=C1C=C(c2ccccc2)Oc2ccccc12"
+    # Pattern 3: Broad chromen-4-one core pattern (any fused benzopyrone ring system)
+    generic_chromen_smarts = "O=C1C=CC2=CC=CC=C2O1"
     
+    # Compile SMARTS patterns.
     flavone_pattern = Chem.MolFromSmarts(flavone_smarts)
     isoflavone_pattern = Chem.MolFromSmarts(isoflavone_smarts)
-    if flavone_pattern is None or isoflavone_pattern is None:
-        return False, "Failed to compile core SMARTS pattern(s)"
+    generic_pattern = Chem.MolFromSmarts(generic_chromen_smarts)
+    if flavone_pattern is None or isoflavone_pattern is None or generic_pattern is None:
+        return False, "Failed to compile one or more SMARTS patterns for core detection"
     
-    # Check for the presence of the flavone core in the deglycosylated parent molecule.
+    # Check if the deglycosylated molecule has one of the expected cores.
     if parent.HasSubstructMatch(flavone_pattern):
         return True, "Deglycosylated molecule contains a flavone core typical of acrovestone-class polyphenols"
-    
-    # Check for the presence of the isoflavone core.
     if parent.HasSubstructMatch(isoflavone_pattern):
         return True, "Deglycosylated molecule contains an isoflavone core typical of acrovestone-class polyphenols"
+    if parent.HasSubstructMatch(generic_pattern):
+        return True, "Deglycosylated molecule contains a chromen-4-one core typical of acrovestone-class polyphenols"
     
-    # If neither core is found, classify the molecule as non-acrovestone.
-    return False, "Deglycosylated molecule does not contain a flavone or isoflavone core typical of acrovestone-class polyphenols"
+    # If none of the core patterns are found, then the molecule is not in the acrovestone class.
+    return False, "Deglycosylated molecule does not contain a recognizable flavone, isoflavone, or chromen-4-one core typical of acrovestone-class polyphenols"
 
 # Example usage for testing:
 if __name__ == "__main__":
