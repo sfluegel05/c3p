@@ -3,14 +3,22 @@ Classifies: CHEBI:64611 ether lipid
 """
 """
 Classifies: Ether Lipid
-Definition: A lipid similar in structure to a glycerolipid but in which one or more of the carbon atoms on glycerol 
-is bonded to an alkyl chain via an ether linkage (C-O-C) rather than the usual ester linkage.
-This improved approach does not demand an exact match to a fixed glycerol SMARTS.
-Instead, we require:
-  (1) a molecular weight above a threshold (to avoid small molecules),
-  (2) the presence of a C–O–C linkage that is not an ester (i.e. neither carbon is carbonyl),
-  (3) one side of the ether linkage is “polar” – that is, it bears at least one additional oxygen substituent (hinting at a glycerol headgroup),
-  (4) while the other side gives rise to a contiguous alkyl chain (of at least eight carbons).
+Definition: A lipid similar in structure to a glycerolipid but in which one or more of 
+the carbon atoms on glycerol is bonded to an alkyl chain via an ether linkage (C-O-C) 
+rather than the usual ester linkage.
+Heuristic criteria used:
+  (1) The molecule must have a molecular weight typical for a lipid (>=300 Da).
+  (2) There must be at least one ether linkage in which the central oxygen atom is bonded
+      exactly to two carbons.
+  (3) One side of that ether (the “polar” side) must carry at least one oxygen neighbor 
+      other than the ether oxygen (a rough sign of a glycerol-like headgroup).
+  (4) The other side (the “chain” side) must be attached to a long contiguous alkyl chain.
+      In our search we only follow carbons that are not in any ring (i.e. acyclic chain) 
+      and count the number of connected carbons (including the starting one). We require 
+      a chain length of at least 8.
+  (5) We also skip ether bonds if either carbon is “carbonyl‐like” (i.e. is double‐bonded 
+      to an oxygen) to avoid picking up ester linkages.
+This implementation is heuristic and may be further refined.
 """
 
 from rdkit import Chem
@@ -19,114 +27,129 @@ from rdkit.Chem import rdMolDescriptors
 def is_ether_lipid(smiles: str):
     """
     Determines if a molecule is an ether lipid based on its SMILES string.
-    Rather than matching a fixed glycerol SMARTS, the function uses the following heuristic:
-      - The molecule must have a molecular weight large enough for a lipid (here, >=300 Da).
-      - At least one C–O–C (ether) linkage must be found in which neither carbon is carbonyl.
-      - In that ether linkage one carbon must display polarity (i.e. have at least one oxygen neighbor other than
-        the ether oxygen; a rough indicator for a glycerol-like headgroup) while the other carbon is attached to a long, 
-        contiguous alkyl chain (with eight or more carbon atoms).
+    The approach is as follows:
+      - Ensure the molecular weight is above 300 Da.
+      - For every oxygen atom that has exactly two carbon neighbors (candidate ether oxygen):
+            * Check that neither attached carbon is part of a carbonyl.
+            * For each ordering of the two attached carbons, designate one as the
+              candidate polar (glycerol-like) carbon and the other as the candidate chain carbon.
+            * The polar candidate must have at least one additional oxygen neighbor (besides the ether oxygen).
+            * The candidate chain side must not be within a ring and must be attached to
+              a contiguous chain of (at least 8) carbon atoms.
+      - If any such ether bond is found, return True.
       
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is classified as an ether lipid, False otherwise.
+        bool: True if molecule is classified as an ether lipid, False otherwise.
         str: Explanation for the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Filter out very small molecules.
+    # Molecules that are too small are unlikely lipids.
     mw = rdMolDescriptors.CalcExactMolWt(mol)
     if mw < 300:
         return False, "Molecular weight too low for a lipid"
-        
-    # Define a SMARTS pattern for an ether linkage: a carbon-oxygen-carbon unit.
-    ether_smarts = "[#6]-O-[#6]"
-    ether_query = Chem.MolFromSmarts(ether_smarts)
-    ether_matches = mol.GetSubstructMatches(ether_query)
-    if not ether_matches:
-        return False, "No C-O-C ether linkage found"
-        
-    # Helper function: check whether a carbon atom is part of a carbonyl group.
+    
+    # Helper: check if a carbon atom is part of a carbonyl group
     def is_carbonyl(carbon):
         for bond in carbon.GetBonds():
+            # Look for a double bond to oxygen
             if bond.GetBondType() == Chem.BondType.DOUBLE:
                 other = bond.GetOtherAtom(carbon)
-                if other.GetAtomicNum() == 8:  # oxygen
+                if other.GetAtomicNum() == 8:
                     return True
         return False
-    
-    # Helper: determine if an atom is an aliphatic (non-aromatic) carbon.
-    def is_aliphatic_carbon(atom):
-        return atom.GetAtomicNum() == 6 and not atom.GetIsAromatic()
-    
-    # Helper: recursively determine the longest contiguous chain (by number of carbon atoms)
-    # starting from a given carbon atom. We allow bonds that are single or double (to include unsaturated chains).
-    def dfs_chain(atom, visited):
-        length = 1
+
+    # Helper: recursively compute the longest contiguous acyclic chain (counting carbon atoms)
+    # starting from a given carbon. We only walk through carbon atoms that are not in any ring.
+    def longest_chain(atom, visited):
+        # If this carbon is in a ring, we do not count it as part of a linear alkyl chain.
+        if atom.IsInRing():
+            return 0
+        max_length = 1  # count self
         visited.add(atom.GetIdx())
         for bond in atom.GetBonds():
-            if bond.GetBondType() in (Chem.BondType.SINGLE, Chem.BondType.DOUBLE):
-                nbr = bond.GetOtherAtom(atom)
-                if nbr.GetAtomicNum() == 6 and not nbr.GetIsAromatic() and nbr.GetIdx() not in visited:
-                    # Continue depth-first search from this neighbor.
-                    new_length = 1 + dfs_chain(nbr, visited.copy())
-                    if new_length > length:
-                        length = new_length
-        return length
+            # Only consider single bonds to carbons
+            if bond.GetBondType() != Chem.BondType.SINGLE:
+                continue
+            nbr = bond.GetOtherAtom(atom)
+            if nbr.GetAtomicNum() == 6 and (nbr.GetIdx() not in visited):
+                # Only follow neighbor if it is not in a ring.
+                if nbr.IsInRing():
+                    continue
+                branch_length = 1 + longest_chain(nbr, visited.copy())
+                if branch_length > max_length:
+                    max_length = branch_length
+        return max_length
 
-    # For each ether linkage found, check our criteria.
-    for match in ether_matches:
-        # match is a tuple (carbon1_idx, oxygen_idx, carbon2_idx)
-        c1 = mol.GetAtomWithIdx(match[0])
-        o_atom = mol.GetAtomWithIdx(match[1])
-        c2 = mol.GetAtomWithIdx(match[2])
-        
-        # Exclude ether bonds that are part of ester groups (one of the carbons is carbonyl).
+    # Now, go through all oxygen atoms to see if any qualifies as the ether oxygen.
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 8:
+            continue
+        # For an ether oxygen we expect exactly two neighbors.
+        if atom.GetDegree() != 2:
+            continue
+        nbrs = atom.GetNeighbors()
+        if not all(nbr.GetAtomicNum() == 6 for nbr in nbrs):
+            continue
+        c1, c2 = nbrs[0], nbrs[1]
+        # Exclude if either carbon is part of a carbonyl group.
         if is_carbonyl(c1) or is_carbonyl(c2):
             continue
         
-        # We now consider the two sides of the ether linkage.
-        # For each ordering, we will treat one carbon as "polar/glycerol-like" (must have at least one additional O neighbor)
-        # and the other as the "alkyl chain" (which must link to a long alkyl chain, here defined as >=8 contiguous carbons).
-        for polar_carbon, chain_carbon in [(c1, c2), (c2, c1)]:
-            # Check if the polar candidate has at least one additional oxygen neighbor (other than the ether oxygen).
-            has_extra_oxygen = False
-            for nbr in polar_carbon.GetNeighbors():
-                if nbr.GetAtomicNum() == 8 and nbr.GetIdx() != o_atom.GetIdx():
-                    has_extra_oxygen = True
+        # For each ordering, designate one carbon as the "polar" candidate, the other as "chain" candidate.
+        for polar_candidate, chain_candidate in [(c1, c2), (c2, c1)]:
+            # For the polar candidate, check for an extra oxygen neighbor (besides our ether oxygen).
+            extra_oxygen = False
+            for nbr in polar_candidate.GetNeighbors():
+                if nbr.GetIdx() == atom.GetIdx():
+                    continue
+                if nbr.GetAtomicNum() == 8:
+                    extra_oxygen = True
                     break
-            if not has_extra_oxygen:
-                continue  # This side does not appear polar enough
+            if not extra_oxygen:
+                continue  # not polar enough
             
-            # Now, for the candidate chain side, try to find a long contiguous alkyl chain.
-            longest_chain = 0
-            # Examine all neighbors of chain_carbon (except the oxygen already in the ether linkage).
-            for nbr in chain_carbon.GetNeighbors():
-                if nbr.GetIdx() == o_atom.GetIdx():
+            # For the chain candidate, require that it is not part of a ring.
+            if chain_candidate.IsInRing():
+                continue
+            
+            # Search for a contiguous acyclic alkyl chain on the chain candidate.
+            longest = 0
+            # Look at each neighbor of chain_candidate (except the ether oxygen).
+            for nbr in chain_candidate.GetNeighbors():
+                if nbr.GetIdx() == atom.GetIdx():
                     continue
                 if nbr.GetAtomicNum() == 6:
-                    chain_len = dfs_chain(nbr, set())
-                    if chain_len > longest_chain:
-                        longest_chain = chain_len
-            # If we have at least 8 connected carbon atoms then we consider this ether linkage as the one seen in an ether lipid.
-            if longest_chain >= 8:
-                return True, ("Molecule contains a glycerol-like moiety (carbon with extra oxygen substituent) "
-                              "and an ether linkage to a long alkyl chain (chain length %d >=8)" % longest_chain)
+                    # Calculate chain length starting from this neighbor.
+                    chain_length = longest_chain(nbr, set())
+                    if chain_length > longest:
+                        longest = chain_length
+            # Also count the chain candidate itself.
+            longest = max(longest, 1)
+            if longest >= 8:
+                return (True, 
+                        "Molecule contains a glycerol-like moiety (carbon with extra oxygen) "
+                        "and an ether linkage to a long alkyl chain (chain length {} >=8)".format(longest))
     
-    return False, "No suitable ether linkage attached to a glycerol-like headgroup and a long alkyl chain found"
+    return False, "No suitable ether linkage with a glycerol-like headgroup and a long alkyl chain found"
 
 # Example usage:
 if __name__ == "__main__":
-    # Provided test SMILES examples (only a few shown here for demonstration)
-    smiles_examples = [
-        "P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\CCCCCCCCCC)COCCCCCCCCCCCCCCCCCC)(O)(O)=O",
-        "C[C@H]1CCC[C@@H](C)CCC[C@@H](C)CC[C@H](C)CCC[C@H](C)CCC[C@H](C)CCC[C@H](C)CCOC(CO)COCC[C@@H](C)CCC1",
-        "CCCCCCCC\\C=C/CCCCCCCCOC[C@@H](O)COP([O-])(=O)OCC[N+](C)(C)C",
-        "C([C@@](CO/C=C\\CCCCCCCCCCCCCCCC)(O)[H])OP([O-])(=O)OCC[N+](C)(C)C"
+    # A small set of test SMILES from the provided examples.
+    test_smiles = [
+        "P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\CCCCCCCCCC)COCCCCCCCCCCCCCCCCCC)(O)(O)=O",  # expected positive
+        "C[C@H]1CCC[C@@H](C)CCC[C@@H](C)CC[C@H](C)CCC[C@H](C)CCC[C@H](C)CCC[C@H](C)CCOC(CO)COCC[C@@H](C)CCC1",  # expected missed previously
+        "CCCCCCCC\\C=C/CCCCCCCCOC[C@@H](O)COP([O-])(=O)OCC[N+](C)(C)C",  # expected positive ether lipid
+        "C([C@@](CO/C=C\\CCCCCCCCCCCCCCCC)(O)[H])OP([O-])(=O)OCC[N+](C)(C)C"  # expected negative
     ]
-    for s in smiles_examples:
-        result, reason = is_ether_lipid(s)
-        print(f"SMILES: {s}\nResult: {result}, Reason: {reason}\n")
+    for s in test_smiles:
+        res, reason = is_ether_lipid(s)
+        print("SMILES:", s)
+        print("Result:", res)
+        print("Reason:", reason)
+        print()
