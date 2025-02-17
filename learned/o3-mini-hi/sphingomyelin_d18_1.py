@@ -8,13 +8,14 @@ Improved heuristic criteria:
   1. Must contain the phosphocholine head group (SMARTS: "COP(=O)([O-])OCC[N+](C)(C)C").
   2. Must contain an amide bond (SMARTS: "NC(=O)").
   3. Must NOT contain ester bonds (SMARTS: "[CX3](=O)O[CX4]").
-  4. Must have a minimum overall number of carbon atoms (we require at least 40).
+  4. Must have a minimum overall carbon count (now relaxed to at least 35).
   5. Must have at least one isolated (nonaromatic) C=C double bond.
-  6. Must contain a sphingosine-like backbone. In sphingomyelin d18:1 the head group is attached
-     to a primary alcohol on C1 that is directly bonded to a carbon bearing an N-acyl (amide) substituent 
-     (C2) followed by a carbon carrying a free hydroxyl (C3). We use the SMARTS:
-       "[C;H1](OP(=O)([O-])OCC[N+](C)(C)C)-[C;H](NC(=O))-[C;H](O)"
-     and also require that it is found exactly once.
+  6. Must contain a sphingosine-like backbone fragment, defined as a three-carbon chain where:
+       - The first carbon is attached (via O) to the phosphocholine group,
+       - The second bears an N-acyl substituent (amide linkage),
+       - The third carries a free hydroxyl.
+     We capture this using a more permissive SMARTS:
+       "[C]-OP(=O)([O-])OCC[N+](C)(C)C-[C](NC(=O))-[C](O)"
      
 Note: These are heuristic rules; many borderline cases exist.
 """
@@ -30,9 +31,9 @@ def is_sphingomyelin_d18_1(smiles: str):
       1. The phosphocholine head group.
       2. An amide bond (indicative of the N-acyl linkage).
       3. Absence of ester bonds.
-      4. A sufficiently high overall carbon count.
+      4. A sufficiently high overall carbon count (>=35).
       5. At least one isolated C=C double bond.
-      6. The presence of a characteristic sphingosine backbone fragment.
+      6. The presence (exactly once) of a sphingosine-like backbone fragment.
       
     Args:
         smiles (str): SMILES string of the molecule.
@@ -57,15 +58,15 @@ def is_sphingomyelin_d18_1(smiles: str):
     if not mol.HasSubstructMatch(amide):
         return False, "Amide bond (N-acyl linkage) not found."
     
-    # 3. Reject molecules that have ester bonds (typical for glycerophospholipids).
+    # 3. Reject molecules that have ester bonds.
     ester_smarts = "[CX3](=O)O[CX4]"
     ester = Chem.MolFromSmarts(ester_smarts)
     if mol.HasSubstructMatch(ester):
         return False, "Ester bond detected; likely a glycerophospholipid."
     
-    # 4. Check for a minimum overall carbon count.
+    # 4. Check for a minimum overall carbon count (relaxed to 35).
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 40:
+    if c_count < 35:
         return False, f"Too few carbon atoms ({c_count}) for sphingomyelin d18:1."
     
     # 5. Check for at least one isolated (nonaromatic) C=C double bond.
@@ -74,29 +75,32 @@ def is_sphingomyelin_d18_1(smiles: str):
     if not mol.HasSubstructMatch(dbl_bond):
         return False, "No isolated C=C double bond found (unsaturation required)."
     
-    # 6. Check for the sphingosine backbone.
-    # The expected fragment: a carbon with a phosphocholine substituent; 
-    # followed by a carbon bearing the N-acyl (amide) group; followed by a carbon with an OH.
-    sphingosine_smarts = "[C;H1](OP(=O)([O-])OCC[N+](C)(C)C)-[C;H](NC(=O))-[C;H](O)"
+    # 6. Check for the sphingosine-like backbone fragment.
+    # Using a more permissive SMARTS pattern that does not force a fixed hydrogen count or chirality.
+    sphingosine_smarts = "[C]-OP(=O)([O-])OCC[N+](C)(C)C-[C](NC(=O))-[C](O)"
     sphingosine_frag = Chem.MolFromSmarts(sphingosine_smarts)
     sphingo_matches = mol.GetSubstructMatches(sphingosine_frag)
     if len(sphingo_matches) != 1:
         return False, f"Sphingosine-like backbone fragment not detected uniquely (found {len(sphingo_matches)} matches)."
     
-    # Passed all criteria.
-    return True, "Molecule contains a phosphocholine head group, N-acyl linkage, no ester bonds, adequate carbon count, unsaturation, and a sphingosine backbone fragment characteristic of sphingomyelin d18:1."
+    return True, "Molecule meets heuristic criteria for sphingomyelin d18:1 (phosphocholine head, N-acyl linkage, no ester, adequate C count, unsaturation, and sphingosine backbone)."
 
-# Example usage (for diagnostic purposes):
+# Example usage for testing
 if __name__ == "__main__":
     examples = [
-        # True positives (sphingomyelin d18:1)
-        "C(=C\\C/C=C\\CCCCC)\\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\\C=C\\CCCCCCCCCCCCC)O)O",  # N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine
-        "[H][C@@](O)(\\C=C\\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCCC",                           # N-pentadecanoylsphingosine-1-phosphocholine
-        "C(CCCCCCCCCC)CC\\C=C\\[C@@H](O)[C@@H](NC(=O)CCCCCCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C",                           # N-docosanoylsphingosine-1-phosphocholine
+        # Provided examples
+        ("C(=C\\C/C=C\\CCCCC)\\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\\C=C\\CCCCCCCCCCCCC)O)O",
+         "N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine"),
+        ("[H][C@@](O)(\\C=C\\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCCC",
+         "N-pentadecanoylsphingosine-1-phosphocholine"),
+        ("C(CCCCCCCCCC)CC\\C=C\\[C@@H](O)[C@@H](NC(=O)CCCCCCCCCCCCCCCCCCCCC)COP(=O)([O-])OCC[N+](C)(C)C",
+         "N-docosanoylsphingosine-1-phosphocholine"),
+        # Other examples can be added similarly...
     ]
     
-    for smi in examples:
+    for smi, name in examples:
         result, reason = is_sphingomyelin_d18_1(smi)
+        print("Name:", name)
         print("SMILES:", smi)
         print("Result:", result)
         print("Reason:", reason)
