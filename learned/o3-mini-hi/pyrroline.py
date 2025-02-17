@@ -2,9 +2,12 @@
 Classifies: CHEBI:23763 pyrroline
 """
 """
-Classifies: Any organic heteromonocyclic compound based on a dihydropyrrole motif (pyrroline).
-A pyrroline (here) is defined as a 5‐membered ring (from the symmetric SSSR list) that contains
-exactly one nitrogen atom and exactly one double bond (in a non‐aromatic, Kekulized ring).
+Classifies: Organic heteromonocyclic compounds based on a dihydropyrrole (pyrroline) core.
+A pyrroline (here) is defined as a 5‐membered ring that has exactly one nitrogen atom and
+exactly one multiple bond in the ring. The multiple bond may be an internal (in‐ring) double
+bond or an exocyclic double bond (e.g. a C=O or C=S where the C is in the ring).
+Note: Because many complex molecules may contain fused rings or exocyclic unsaturation,
+this heuristic may over– or under–classify some structures.
 """
 
 from rdkit import Chem
@@ -12,71 +15,90 @@ from rdkit.Chem import rdchem
 
 def is_pyrroline(smiles: str):
     """
-    Determines if the given molecule (via its SMILES string) contains a pyrroline (dihydropyrrole) core.
-    The pyrroline motif is recognized as a 5-membered ring, when Kekulized, that has:
-      - exactly one nitrogen atom in the ring, and
-      - exactly one double bond among the ring bonds.
-      
+    Determines if the given molecule (via its SMILES string) contains a pyrroline (dihydropyrrole)
+    core. For our purpose the ring is recognized if:
+      - It is a 5-membered ring (from the SSSR)
+      - It contains exactly one nitrogen atom (in the ring)
+      - It has exactly one “multiple bond” associated with the ring.
+        This multiple bond is counted as either:
+          (a) an intraring bond that is drawn as a double bond
+          (b) or an exocyclic double bond from a ring atom to an external oxygen or sulfur.
+          
     Args:
         smiles (str): SMILES string of the molecule.
-
     Returns:
         bool: True if a qualifying pyrroline core is found, False otherwise.
         str: Reason for classification.
     """
-    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Kekulize the molecule to convert aromatic bonds into explicit single/double bonds.
-    # This helps make the double bond count in the ring explicit.
+    # Attempt to Kekulize so that double bonds are explicit
     try:
         Chem.Kekulize(mol, clearAromaticFlags=True)
-    except Exception as e:
-        # In some cases Kekulize may fail; we can continue with the original flags.
+    except Exception:
+        # Some molecules may fail kekulization. Continue with original structure.
         pass
-
-    # Get the set of small rings via the Symmetry-unique SSSR method:
-    ssr = Chem.GetSymmSSSR(mol)
-    if not ssr:
+    
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()  # list of tuples of atom indices
+    
+    if not atom_rings:
         return False, "No rings found in the molecule"
     
-    # Loop over each 5-membered ring from the SSSR list
-    for ring in ssr:
+    # Loop over each 5-membered ring
+    for ring in atom_rings:
         if len(ring) != 5:
-            continue  # we only consider rings with exactly 5 atoms
+            continue  # only consider 5-membered rings
         
-        # Count the number of nitrogen atoms in this ring.
+        # Count number of nitrogen atoms in the ring
         n_nitrogen = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
         if n_nitrogen != 1:
-            continue  # not the desired dihydropyrrole if there isn't exactly one nitrogen
+            continue
         
-        # Collect all bonds that connect two atoms in this ring.
+        # Collect all bonds that connect atoms in the ring (intra-ring bonds)
         ring_atom_set = set(ring)
-        ring_bonds = []
+        intra_ring_bonds = []
         for bond in mol.GetBonds():
             a1 = bond.GetBeginAtomIdx()
             a2 = bond.GetEndAtomIdx()
             if a1 in ring_atom_set and a2 in ring_atom_set:
-                ring_bonds.append(bond)
-                
-        # For a clean 5-membered ring we expect exactly 5 bonds.
-        if len(ring_bonds) != 5:
+                intra_ring_bonds.append(bond)
+        
+        if len(intra_ring_bonds) != 5:
+            # Incomplete or weird ring – skip it.
             continue
         
-        # Count the number of bonds that are explicit double bonds.
-        double_bond_count = sum(1 for bond in ring_bonds if bond.GetBondType() == rdchem.BondType.DOUBLE)
+        # Count explicit double bonds among intra-ring bonds.
+        intra_double = sum(1 for bond in intra_ring_bonds if bond.GetBondType() == rdchem.BondType.DOUBLE)
         
-        # In a dihydropyrrole (pyrroline) we expect exactly one double bond.
-        if double_bond_count == 1:
-            return True, "Found a 5-membered ring with one nitrogen and one double bond (dihydropyrrole core)."
+        # Now also count “exocyclic” multiple bonds.
+        # For each atom in the ring, examine bonds to atoms not in the ring.
+        exo_double = 0
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            for bond in atom.GetBonds():
+                # if the neighbor is not in the ring
+                nb = bond.GetOtherAtom(atom)
+                if nb.GetIdx() in ring_atom_set:
+                    continue
+                # We count if the bond is a double bond.
+                if bond.GetBondType() == rdchem.BondType.DOUBLE:
+                    # For our purpose, only count exocyclic multiple bonds to heteroatoms O or S.
+                    if nb.GetAtomicNum() in (8, 16):
+                        exo_double += 1
+        total_multiple = intra_double + exo_double
+        
+        # For a dihydropyrrole core, we expect exactly one multiple bond.
+        if total_multiple == 1:
+            return True, "Found a 5-membered ring with one nitrogen and one multiple bond (dihydropyrrole core)."
     
-    return False, "No 5-membered dihydropyrrole ring with one nitrogen and one double bond found."
+    return False, "No 5-membered pyrroline (dihydropyrrole) core meeting our criteria found."
 
 # Example usage (for testing):
 if __name__ == '__main__':
-    # Test using one of the provided SMILES strings (2-acetyl-1-pyrroline)
+    # Test one known pyrroline: 2-acetyl-1-pyrroline
     test_smiles = "CC(=O)C1=NCCC1"
     result, reason = is_pyrroline(test_smiles)
     print(result, reason)
