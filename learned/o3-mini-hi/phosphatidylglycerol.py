@@ -5,15 +5,16 @@ Classifies: CHEBI:17517 phosphatidylglycerol
 Classifies: Phosphatidylglycerol 
 Definition: A glycerophosphoglycerol that is glycerol in which the hydrogen of one of 
 the primary hydroxy groups has been replaced by a phosphatidyl group.
-Criteria applied in this implementation:
-  1. Contains exactly one phosphorus atom.
-  2. Among the three oxygen substituents on phosphorus (ignoring the double‐bonded oxygen),
-     exactly one O leads to a branch that is “non‐acylated” (i.e. its immediately attached carbon 
-     does not bear a carbonyl) – we assign this as the phosphoglycerol headgroup.
-  3. The remaining branch (attached via a single P–O bond) should be a diacylglycerol.
-     To check this we perform a graph search (avoiding the phosphorus) and count the number 
-     of acyl ester groups (look for the substructure OC(=O)); there must be exactly two.
-If any of these conditions fail, a reason is given.
+Criteria (improved):
+  1. The molecule must contain exactly one phosphorus atom.
+  2. The phosphorus atom should be bound (via single bonds) to three oxygen atoms.
+     However, we ignore any oxygen that is a dead end (i.e. bonded only to P).
+  3. Among the remaining oxygen branches:
+       • Exactly one branch should contain no acyl ester groups and show glycerol-like connectivity.
+         (This is the phosphoglycerol headgroup branch.)
+       • Exactly one branch should contain exactly two acyl ester groups (i.e. “OC(=O)” fragments)
+         that are fully contained in that branch. (This is the diacylglycerol branch.)
+If any of these conditions are not met, an explanatory reason is returned.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -22,98 +23,58 @@ def is_phosphatidylglycerol(smiles: str):
     """
     Determines if a molecule is a phosphatidylglycerol based on its SMILES string.
     
-    Our approach:
-      1. Parse the molecule and check that it contains exactly one phosphorus atom.
-      2. For that phosphorus atom, look at each oxygen connected by a single bond.
-         (Skip the oxygen that is double-bonded to P.)
-         Among these, we designate an oxygen as belonging to the headgroup branch if 
-         the next atom (usually a carbon) is not “acylated” (i.e. is not directly bound 
-         to a carbonyl group). All other branches (with a nearby C=O) are considered part 
-         of the acyl (diacylglycerol) portion.
-      3. For the acyl branch, we do a breadth‐first search (avoiding phosphorus) to 
-         collect the branch atoms. Then we count all acyl esters (“OC(=O)”) that lie 
-         entirely within that branch. A true PG should have exactly 2 such acyl ester groups.
+    The algorithm:
+      1. Parse the molecule and ensure exactly one phosphorus atom is present.
+      2. For the phosphorus atom, scan its single-bond oxygen neighbors.
+         Ignore oxygen atoms which are “dead ends” (degree==1) as they are not part of a branch.
+      3. For each candidate branch (found by doing a breadth-first search from that oxygen
+         and not going back to the phosphorus), count the number of acyl ester groups,
+         defined by the pattern "OC(=O)" and check for a glycerol-like connectivity.
+      4. Expect one branch with exactly 2 acyl ester groups (the diacylglycerol branch)
+         and one branch with 0 acyl esters where at least one carbon appears to be bonded
+         to two oxygens (the glycerol headgroup branch).
     
     Args:
       smiles (str): SMILES string of the molecule.
       
     Returns:
-      bool: True if molecule is a phosphatidylglycerol, False otherwise.
-      str: Reason for classification.
+      bool: True if the molecule is classified as a phosphatidylglycerol.
+      str: Explanation of the classification decision.
     """
+    # Parse the molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Step 1: Check for exactly one phosphorus atom (atomic number 15)
-    phosphorus_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
-    if len(phosphorus_atoms) != 1:
-        return False, f"Expected exactly one phosphorus atom, found {len(phosphorus_atoms)}"
-    p_atom = phosphorus_atoms[0]
+    # 1. Check exactly one phosphorus atom (atomic number 15)
+    p_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
+    if len(p_atoms) != 1:
+        return False, f"Expected exactly one phosphorus atom, found {len(p_atoms)}"
+    p_atom = p_atoms[0]
     
-    # Get bonds of phosphorus. We only consider single bonds;
-    # skip the oxygen that is double-bonded (P=O).
-    single_O_neighbors = []
+    # 2. Get oxygen neighbors attached by a single bond.
+    candidate_oxygen_branches = []
     for bond in p_atom.GetBonds():
-        # Only consider bonds that are single
-        if bond.GetBondType() == Chem.BondType.SINGLE:
-            nbr = bond.GetOtherAtom(p_atom)
-            if nbr.GetAtomicNum() == 8:  # oxygen
-                single_O_neighbors.append(nbr)
-    
-    # We expect phosphorus to have exactly three substituents,
-    # of which one should lead to the phosphoglycerol headgroup and
-    # one should lead to the diacylglycerol (acyl) portion.
-    if len(single_O_neighbors) < 2:
-        return False, "Not enough oxygen substituents on phosphorus"
-    
-    headgroup_candidates = []
-    acyl_candidates = []
-    
-    # For each oxygen neighbor (from the P-O single bonds), decide if
-    # it is part of the headgroup or an acyl chain.
-    # The idea: if the oxygen (let’s call it O_sub) is bonded to a carbon (C_sub)
-    # that is directly connected to a carbonyl (C=O), then it is likely part of
-    # an acyl chain. Otherwise, we treat it as the headgroup candidate.
-    for o_atom in single_O_neighbors:
-        # Get the neighbor (other than phosphorus)
-        nbrs = [nbr for nbr in o_atom.GetNeighbors() if nbr.GetIdx() != p_atom.GetIdx()]
-        if not nbrs:
+        # We only consider single bonds (ignore the P=O double bond)
+        if bond.GetBondType() != Chem.BondType.SINGLE:
             continue
-        # In typical lipids there will be only one other atom attached to this oxygen.
-        c_atom = nbrs[0]
-        # If c_atom is not carbon, skip further.
-        if c_atom.GetAtomicNum() != 6:
+        neighbor = bond.GetOtherAtom(p_atom)
+        # Only consider oxygen atoms
+        if neighbor.GetAtomicNum() != 8:
             continue
-        
-        # Check if this carbon is directly involved in a carbonyl,
-        # i.e. if any bond (except the one from o_atom) is a double bond to an oxygen.
-        has_carbonyl = False
-        for bond in c_atom.GetBonds():
-            # skip the bond coming from o_atom
-            if bond.GetBeginAtom().GetIdx() == o_atom.GetIdx() or bond.GetEndAtom().GetIdx() == o_atom.GetIdx():
-                continue
-            # look for a double bond to oxygen
-            if (bond.GetBondType() == Chem.BondType.DOUBLE and
-                (bond.GetBeginAtom().GetAtomicNum() == 8 or bond.GetEndAtom().GetAtomicNum() == 8)):
-                has_carbonyl = True
-                break
-        
-        if has_carbonyl:
-            acyl_candidates.append(o_atom)
-        else:
-            headgroup_candidates.append(o_atom)
+        # Ignore oxygen if it is a dead end (only connected to phosphorus)
+        if neighbor.GetDegree() <= 1:
+            continue
+        candidate_oxygen_branches.append(neighbor)
     
-    if len(headgroup_candidates) != 1:
-        return False, f"Phosphoglycerol headgroup branch not found exactly once (found {len(headgroup_candidates)} candidate(s))"
-    if len(acyl_candidates) != 1:
-        return False, f"Diacylglycerol (acyl) branch not found exactly once (found {len(acyl_candidates)} candidate(s))"
-    
-    # Now, for the acyl branch we would like to count the acyl ester groups (the –OC(=O)– fragments)
-    # that belong to that branch. In a diacylglycerol we expect exactly 2.
-    # To do this, we extract (via a breadth-first search) the set of atom indices that
-    # belong to the acyl branch. We avoid traversing back to the phosphorus atom.
-    def get_branch_atoms(start_atom, forbidden_idxs):
+    # For a typical phosphatidylglycerol we expect exactly two branches:
+    # one diacylglycerol branch and one headgroup branch.
+    if len(candidate_oxygen_branches) != 2:
+        return False, f"Expected 2 nontrivial oxygen branches from phosphorus, found {len(candidate_oxygen_branches)}"
+
+    # Helper: Given a starting atom, get the set of atom indices reachable (branch)
+    # without traversing a set of forbidden atoms (here, the phosphorus).
+    def bfs_branch(start_atom, forbidden_idxs):
         branch = set()
         stack = [start_atom]
         while stack:
@@ -124,33 +85,77 @@ def is_phosphatidylglycerol(smiles: str):
             for nb in atom.GetNeighbors():
                 if nb.GetIdx() in forbidden_idxs:
                     continue
-                # We allow traversal along any single bond.
+                # Always traverse single bonds; we do not restrict due to bond order.
                 stack.append(nb)
         return branch
 
-    # For the acyl branch, our "forbidden" set includes the phosphorus atom.
     forbidden = {p_atom.GetIdx()}
-    acyl_branch_idxs = get_branch_atoms(acyl_candidates[0], forbidden)
     
-    # Now count acyl ester groups in the entire molecule that reside in the acyl branch.
-    # We define an ester group by the SMARTS: oxygen attached to a carbonyl: "OC(=O)"
+    # Define ester SMARTS: a fragment "OC(=O)". We will check that the oxygen in the match lies
+    # within the branch.
     ester_smarts = "OC(=O)"
     ester_pattern = Chem.MolFromSmarts(ester_smarts)
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
     
-    # Only count those matches where the oxygen of the ester is part of the acyl branch.
-    acyl_ester_count = 0
-    for match in ester_matches:
-        # match is a tuple of atom indices corresponding to (O, C, O)
-        # we check if the first atom (the O) is in the acyl branch
-        if match[0] in acyl_branch_idxs:
-            acyl_ester_count += 1
+    # Helper: Count acyl ester groups within a set of atom indices (branch)
+    def count_acyl_esters(branch_idxs):
+        count = 0
+        matches = mol.GetSubstructMatches(ester_pattern)
+        for match in matches:
+            # The match tuple is (O, C, O); we count the ester only if the first O is in our branch.
+            if match[0] in branch_idxs:
+                count += 1
+        return count
 
-    if acyl_ester_count != 2:
-        return False, f"Expected 2 acyl ester groups in the diacylglycerol branch, found {acyl_ester_count}"
+    # Helper: Check if the branch contains at least one carbon with at least two oxygen neighbors
+    # (a very loose indicator of a glycerol substructure).
+    def looks_like_glycerol(branch_idxs):
+        for idx in branch_idxs:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() == 6:  # carbon
+                oxy_count = 0
+                for nbr in atom.GetNeighbors():
+                    if nbr.GetAtomicNum() == 8 and nbr.GetIdx() in branch_idxs:
+                        oxy_count += 1
+                if oxy_count >= 2:
+                    return True
+        return False
+
+    headgroup_branch_found = False
+    acyl_branch_found = False
+    headgroup_branch_reason = ""
+    acyl_branch_reason = ""
     
-    # If all tests pass, we classify the molecule as a phosphatidylglycerol.
-    return True, "Molecule contains one phosphorus atom with a unique phosphoglycerol headgroup branch and a diacylglycerol branch with 2 acyl esters."
+    # Process each candidate branch:
+    for o_atom in candidate_oxygen_branches:
+        branch_idxs = bfs_branch(o_atom, forbidden)
+        ester_count = count_acyl_esters(branch_idxs)
+        # If branch contains acyl esters, we expect exactly 2 for the diacylglycerol branch.
+        if ester_count == 2:
+            if acyl_branch_found:
+                return False, "More than one branch with 2 acyl ester groups found"
+            acyl_branch_found = True
+            acyl_branch_reason = f"Found diacyl branch with {ester_count} acyl ester groups."
+        # If branch lacks acyl ester groups, try to check for glycerol connectivity.
+        elif ester_count == 0:
+            if looks_like_glycerol(branch_idxs):
+                if headgroup_branch_found:
+                    return False, "More than one branch appears to be a glycerol headgroup"
+                headgroup_branch_found = True
+                headgroup_branch_reason = "Found glycerol headgroup branch (no acyl ester groups and glycerol-like connectivity)."
+            else:
+                # If branch has 0 esters but does not look like glycerol, record information.
+                headgroup_branch_reason += "A branch with 0 acyl esters did not show glycerol-like connectivity. "
+        else:
+            # If a branch has a number of esters not equal to 0 or 2, we do not expect that.
+            return False, f"Unexpected acyl ester count ({ester_count}) in one branch."
+    
+    if not headgroup_branch_found:
+        return False, f"Phosphoglycerol headgroup branch not conclusively identified. {headgroup_branch_reason}"
+    if not acyl_branch_found:
+        return False, f"Diacylglycerol branch (with exactly 2 acyl ester groups) not found. {acyl_branch_reason}"
+    
+    return True, ("Molecule contains one phosphorus atom with a unique phosphoglycerol headgroup branch "
+                  "and a diacylglycerol branch featuring exactly 2 acyl ester groups.")
 
 # Example usage (testing with PG(8:0/8:0)):
 if __name__ == "__main__":
