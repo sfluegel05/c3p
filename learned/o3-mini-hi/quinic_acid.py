@@ -3,72 +3,96 @@ Classifies: CHEBI:26493 quinic acid
 """
 """
 Classifies: A cyclitol carboxylic acid (quinic acid and derivatives)
+Quinic acid and its natural derivatives have a very characteristic cyclitol core:
+  – A saturated, non‐aromatic 6-membered (cyclohexane) ring.
+  – The ring carries a carboxyl group (which may be free or esterified).
+  – Several oxygen substituents (e.g. hydroxy groups, acylated –OH groups) are attached.
+We require that the candidate ring has at least 3 oxygen–containing substituents with 
+at least one being a (esterified or free) carboxyl group.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is a quinic acid derivative based on its SMILES string.
-    For our purposes, quinic acid is defined as a cyclitol (here, a non‐aromatic cyclohexane)
-    that carries a carboxylic acid group. In many natural derivatives the cyclohexane ring may 
-    be decorated (e.g., by caffeoyl, feruloyl or coumaroyl esters) but the core remains a cyclohexanecarboxylate.
-
+    
+    For our purposes quinic acid (and derivatives) must have:
+      - A non-aromatic, saturated cyclohexane ring.
+      - At least one carboxyl (or esterified carboxyl) group attached directly to the ring.
+      - At least three oxygen substituents attached to the ring (including the carboxyl).
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+    
     Returns:
-        bool: True if molecule is classified as quinic acid derivative, False otherwise
-        str: Reason for classification
+        bool: True if molecule is classified as a quinic acid derivative, False otherwise.
+        str: Reason for the classification.
     """
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS patterns for the carboxylic acid group.
-    # One for the protonated acid and one for the deprotonated form.
-    acid_smarts = Chem.MolFromSmarts("C(=O)[O;H1]")   # C(=O)OH
-    acid_smarts2 = Chem.MolFromSmarts("C(=O)[O-]")      # C(=O)O- (deprotonated)
-
-    acid_matches = mol.GetSubstructMatches(acid_smarts)
-    acid_matches += mol.GetSubstructMatches(acid_smarts2)
     
-    if not acid_matches:
-        return False, "No carboxylic acid group found"
-
-    # Get ring information for use later
+    # Get ring information: list of rings (as tuples of atom indices)
     ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()  # each ring is a tuple of atom indices
-
-    # Now, for each carboxylic acid match, verify that the acid group is connected to a cyclohexane ring.
-    # In our SMARTS match, the carboxyl carbon is at index 0.
-    for match in acid_matches:
-        acid_carbon_idx = match[0]
-        acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
-        # Check the neighbors of the acid carbon (exclude O atoms from acid group)
-        for neighbor in acid_carbon.GetNeighbors():
-            # We expect the acid group to be attached to an sp3 carbon (atomic num 6) in a ring.
-            if neighbor.GetAtomicNum() != 6:
-                continue
-
-            # Check if this neighboring carbon is in any ring of size 6
-            for ring in atom_rings:
-                if neighbor.GetIdx() in ring and len(ring) == 6:
-                    # Verify that every atom in the ring is a non-aromatic carbon (sp3)
-                    ring_ok = True
-                    for idx in ring:
-                        atom = mol.GetAtomWithIdx(idx)
-                        if atom.GetAtomicNum() != 6 or atom.GetIsAromatic():
-                            ring_ok = False
-                            break
-                    if ring_ok:
-                        # Found a cyclohexane ring attached to a carboxylic acid group.
-                        return True, "Found cyclohexane carboxylic acid core (quinic acid derivative)"
-    return False, "No cyclohexane ring attached to a carboxylic acid was detected"
+    rings = ring_info.AtomRings()
     
-# Uncomment below lines for quick testing:
+    # Pre-calculate acid/ester pattern: this pattern catches the basic unit C(=O)O,
+    # which is common to both free carboxylic acids and many esters.
+    acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    acid_matches = mol.GetSubstructMatches(acid_pattern)
+    
+    # Check each candidate ring: we want a 6-membered ring that is non-aromatic, and all atoms are carbon.
+    for ring in rings:
+        if len(ring) != 6:
+            continue
+        
+        # Check that every atom in the ring is a non-aromatic carbon (sp3)
+        candidate = True
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() != 6 or atom.GetIsAromatic():
+                candidate = False
+                break
+        if not candidate:
+            continue
+        
+        # For this candidate cyclohexane ring, count the number of oxygen substituents
+        # attached to its atoms. (Neighbors not in the ring.)
+        oxy_substituents = 0
+        carboxyl_found = False
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            for nbr in atom.GetNeighbors():
+                # Only consider neighbors not in the ring
+                if nbr.GetIdx() in ring:
+                    continue
+                # Look for an oxygen directly attached to the ring (as -OH or as part of an ester group)
+                if nbr.GetAtomicNum() == 8:
+                    oxy_substituents += 1
+                # Also, sometimes the carboxyl is attached via a carbon.
+                # Check if a non-ring neighbor is a carbon that is part of a C(=O)O moiety.
+                if nbr.GetAtomicNum() == 6:
+                    # Check if this carbon is part of any match of acid_pattern.
+                    # The pattern's first atom (the carbon) should match.
+                    for match in acid_matches:
+                        # If the carbon (match[0]) is the neighbor, then mark carboxyl found.
+                        if match[0] == nbr.GetIdx():
+                            carboxyl_found = True
+                            break
+            # In case already found carboxyl, no need to check further for that atom.
+            # (We still want to count all oxygen substituents.)
+        
+        # We now decide on a candidate ring: must have at least one carboxyl group attached, 
+        # and at least 3 oxygen substituents in total (this threshold may help suppress false positives).
+        if carboxyl_found and oxy_substituents >= 3:
+            return True, "Found cyclohexane ring with sufficient oxygen substituents and an acid/ester group (quinic acid core)"
+    
+    # No candidate ring meeting the criteria was found.
+    return False, "No cyclohexane ring with required oxygen substituents and acid group detected"
+
+# Uncomment for testing:
 # test_smiles = "O[C@H]1C[C@@](O)(C[C@H](O)[C@H]1O)C(O)=O"  # (+)-quinic acid
 # result, reason = is_quinic_acid(test_smiles)
 # print(result, reason)
