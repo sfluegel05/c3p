@@ -5,9 +5,9 @@ Classifies: CHEBI:26167 polar amino acid
 """
 Classifies: Polar Amino Acid
 Definition: Any amino acid whose side chain is capable of forming one or more hydrogen bonds.
-This implementation identifies an amino acid backbone via SMARTS and then extracts
-the side chain for a search for polar functional groups (oxygen, nitrogen, or –SH).
-Note: Glycine, which has only a hydrogen as a side chain, is not considered polar.
+This implementation identifies a free (non‐peptide) amino acid backbone via a SMARTS pattern that
+accounts for neutral and ionized forms, and then extracts the side chain to search for polar functional groups.
+Note: Glycine, which has only a hydrogen as the side chain, is not considered polar.
 """
 
 from rdkit import Chem
@@ -16,119 +16,130 @@ def is_polar_amino_acid(smiles: str):
     """
     Determines whether the input molecule (SMILES string) is a polar amino acid.
     
-    The procedure is as follows:
-    1. Use a SMARTS pattern to detect the amino acid backbone.
-       The SMARTS used is: "[N:1][C:2]([*:3])C(=O)[O:4]"
-         - [N:1] is the amino group.
-         - [C:2] is the α‐carbon.
-         - [*:3] is the side chain attachment (which could be any atom).
-         - C(=O)[O:4] is the carboxyl group (note the extra unlabeled C in the pattern).
-    2. If the amino acid backbone is detected and there is only one match (to avoid peptides),
-       extract the indices corresponding to the labeled atoms.
-    3. Do a graph traversal starting from the side chain atom (labeled as 3) but do not go
-       back to the α‐carbon. Then, search among the side chain atoms for polar atoms: oxygen,
-       nitrogen, or a sulfur carrying at least one hydrogen (–SH).
-    4. Return True (and a reason) if a polar group is found; otherwise, return False.
-    
+    Procedure:
+      1. Use a modified SMARTS to detect the free amino acid backbone that allows for both neutral 
+         (NH2) and protonated (NH3+) amino groups, as well as carboxyl in either protonated (COOH)
+         or deprotonated (COO-) forms.
+         The pattern used is:
+             "[N:1;H2,H3+][C:2;H]([*:3])C(=O)[O:4;H0,H1,-]"
+         where:
+             - [N:1;H2,H3+] matches NH2 or NH3+,
+             - [C:2;H] is the α‐carbon,
+             - [*:3] is the branch point for the side chain, and 
+             - C(=O)[O:4;H0,H1,-] matches the carboxyl group.
+             
+      2. Gather all matches and then extract the unique α‐carbon indices (mapped as “2”).
+         If more than one unique α‐carbon is found, then the molecule likely is a peptide or larger.
+         
+      3. If exactly one backbone is identified, check if the side-chain branch (atom labeled “3”) is more than a hydrogen.
+      
+      4. Traverse the side chain (avoiding the backbone α‐carbon) and search for polar atoms:
+             - Oxygen (atomic number 8) or Nitrogen (7) are polar.
+             - Sulfur (16) is counted as polar only if it carries at least one hydrogen (–SH).
+             
+      5. Return True with an appropriate explanation if a polar feature is found; otherwise, return False.
+
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES string for the molecule.
         
     Returns:
-        (bool, str): True with an explanation if the molecule is a polar amino acid,
-                     False with a reason if it is not.
+        (bool, str): A boolean indicating whether the molecule is a polar amino acid and a string
+                     explaining the classification.
     """
-    # Parse the input SMILES string
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # SMARTS to capture the amino acid backbone.
-    # The pattern has an unlabeled C in the carboxyl group; hence overall 5 atoms.
-    aa_smarts = "[N:1][C:2]([*:3])C(=O)[O:4]"
+
+    # Define a SMARTS pattern that captures the free amino acid backbone.
+    # It allows for both NH2 and NH3+ (the [N:1]) and carboxyl groups in different states.
+    aa_smarts = "[N:1;H2,H3+][C:2;H]([*:3])C(=O)[O:4;H0,H1,-]"
     patt = Chem.MolFromSmarts(aa_smarts)
-    # Get all matching substructures in the molecule
+    if patt is None:
+        return False, "Invalid SMARTS pattern"
+    
+    # Get all substructure matches for the amino acid backbone
     matches = mol.GetSubstructMatches(patt)
-    
     if not matches:
-        return False, "Amino acid backbone (N-αC-C(=O)O) not detected"
+        return False, "Amino acid backbone (free form) not detected"
     
-    # If more than one amino acid backbone is found, assume the molecule is a peptide or larger.
-    if len(matches) > 1:
+    # Extract unique α‐carbon indices (mapped as atom "2") from the matches.
+    alpha_indices = set()
+    mapping_matches = []
+    for match in matches:
+        # match order: [N, α‐carbon, side-chain attachment, carboxyl oxygen]
+        alpha_idx = match[1]
+        alpha_indices.add(alpha_idx)
+        mapping_matches.append(match)
+    
+    # If more than one unique α‐carbon is found, assume a peptide or larger compound.
+    if len(alpha_indices) > 1:
         return False, "Multiple amino acid backbones detected; molecule appears to be a peptide or larger compound"
+
+    # In the accepted case, use the first match (all share the same α‐carbon)
+    match = mapping_matches[0]
+    idx_n = match[0]      # amino group N
+    idx_alpha = match[1]  # α‐carbon
+    idx_side = match[2]   # side chain branch point
+    # idx_o = match[3]   # carboxyl oxygen, not further used
     
-    # Only one match found; however, the match tuple length is 5 (including the unlabeled atom).
-    match = matches[0]
-    
-    # Create a mapping: for every query atom in the SMARTS pattern that has a molAtomMapNumber,
-    # map that number (as a string) to the corresponding atom index in the molecule.
-    labeled_mapping = {}
-    # Note: patt.GetAtoms() gives the atoms in the query in order.
-    for i, atom in enumerate(patt.GetAtoms()):
-        if atom.HasProp("molAtomMapNumber"):
-            mapnum = atom.GetProp("molAtomMapNumber")
-            labeled_mapping[mapnum] = match[i]
-    
-    # Ensure that the mapping has all 4 required entries.
-    if not all(x in labeled_mapping for x in ["1", "2", "3", "4"]):
-        return False, "SMARTS mapping incomplete, backbone not properly detected"
-    
-    idx_n = labeled_mapping["1"]      # Nitrogen of amino group
-    idx_alpha = labeled_mapping["2"]  # α‐Carbon
-    idx_side = labeled_mapping["3"]   # Side chain branch atom
-    # idx_o = labeled_mapping["4"]     # Carboxyl oxygen (not used further)
-    
-    # Check for glycine: if the side chain is just a hydrogen, it's typically considered non‐polar.
+    # Check if the side chain is just hydrogen (glycine) by checking the atomic number.
     side_atom = mol.GetAtomWithIdx(idx_side)
     if side_atom.GetAtomicNum() < 6:
         return False, "Side chain is hydrogen (glycine), thus not polar by our definition"
     
-    # Perform a depth-first traversal of the side chain subgraph.
-    # Start at the side chain branch and do not traverse back into the backbone (i.e. the α‐carbon).
+    # Traverse the side chain starting from the branch atom:
+    # We perform a depth-first search and avoid going back to the α‐carbon.
     sidechain_atoms = set()
+    visited = set()
     stack = [idx_side]
     while stack:
-        cur_idx = stack.pop()
-        if cur_idx in sidechain_atoms:
+        current = stack.pop()
+        if current in visited:
             continue
-        sidechain_atoms.add(cur_idx)
-        cur_atom = mol.GetAtomWithIdx(cur_idx)
-        for nb in cur_atom.GetNeighbors():
-            if nb.GetIdx() == idx_alpha:
-                continue  # do not go back to the backbone
-            if nb.GetIdx() not in sidechain_atoms:
-                stack.append(nb.GetIdx())
+        visited.add(current)
+        sidechain_atoms.add(current)
+        atom = mol.GetAtomWithIdx(current)
+        for nbr in atom.GetNeighbors():
+            if nbr.GetIdx() == idx_alpha:
+                continue  # do not backtrack to the backbone
+            if nbr.GetIdx() not in visited:
+                stack.append(nbr.GetIdx())
                 
-    # Analyze the collected side chain atoms for polar elements or polar groups.
+    # Check the gathered side chain atoms for polar features.
     polar_found = False
     polar_features = []
     for aidx in sidechain_atoms:
         atom = mol.GetAtomWithIdx(aidx)
-        anum = atom.GetAtomicNum()
-        # Oxygen (atomic number 8) or Nitrogen (atomic number 7) are polar.
-        if anum == 8 or anum == 7:
+        atomic_num = atom.GetAtomicNum()
+        if atomic_num in (7, 8):  # Nitrogen or Oxygen
             polar_found = True
             polar_features.append(atom.GetSymbol())
-        elif anum == 16:
-            # For sulfur, we require at least one hydrogen attached (–SH) to be polar.
+        elif atomic_num == 16:  # Sulfur: check for -SH condition (at least one hydrogen)
             if atom.GetTotalNumHs() > 0:
                 polar_found = True
                 polar_features.append("SH")
     
     if polar_found:
-        return True, f"Side chain contains polar feature(s): {', '.join(polar_features)}"
+        return True, "Side chain contains polar feature(s): " + ", ".join(polar_features)
     else:
         return False, "Side chain does not contain a polar functional group capable of hydrogen bonding"
 
-# Example usage (for testing purposes):
+# Example test cases (a subset from the provided list)
 if __name__ == "__main__":
-    test_smiles = [
-        "NC(CCC(N)=O)C(O)=O",        # glutamine, polar
-        "NC(CO)C(O)=O",             # serine, polar
-        "N[C@H](CS)C(O)=O",          # D-cysteine, polar due to –SH
-        "N[C@@H](Cc1c[nH]cn1)C(O)=O", # L-histidine, polar (N in side chain)
-        "N[C@@H](CCC(N)=O)C(O)=O",    # L-glutamine, polar
-        "NCCCC[C@@H](N)C(O)=O"        # D-lysine, polar (side chain N)
+    test_cases = [
+        ("NC(CCC(N)=O)C(O)=O", "glutamine"),
+        ("NC(CO)C(O)=O", "serine"),
+        ("N[C@H](CS)C(O)=O", "D-cysteine"),
+        ("N[C@@H](Cc1c[nH]cn1)C(O)=O", "L-histidine"),
+        ("N[C@@H](CCC(N)=O)C(O)=O", "L-glutamine"),
+        ("NCCCC[C@@H](N)C(O)=O", "D-lysine"),
+        ("OC(=O)[C@](N([2H])[2H])(C(C(CN=C(N)N)([2H])[2H])([2H])[2H])[2H]", "L-arginine-d7"),
+        ("N[C@H](CC(O)=O)C(O)=O", "D-aspartic acid"),
+        ("NC(Cc1ccc(O)cc1)C(O)=O", "tyrosine"),
+        ("N[C@H](CO)C(O)=O", "D-serine")
     ]
-    for s in test_smiles:
-        result, reason = is_polar_amino_acid(s)
-        print(f"SMILES: {s}\nIs polar amino acid? {result} ({reason})\n")
+    
+    for smi, name in test_cases:
+        result, reason = is_polar_amino_acid(smi)
+        print(f"SMILES: {smi}\nNAME: {name}\nResult: {result} ({reason})\n")
