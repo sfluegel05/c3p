@@ -5,162 +5,160 @@ Classifies: CHEBI:39418 straight-chain saturated fatty acid
 """
 Classifies: Straight-chain saturated fatty acid
 Definition: Any saturated fatty acid lacking a side-chain.
-Rules implemented here:
-  (1) Molecule must contain exactly one carboxyl group (COOH or COO–).
-  (2) When considering only carbon atoms connected via single bonds,
-      they must form precisely one linear (unbranched) chain.
-  (3) The carboxyl carbon must be at one end of that chain.
-  (4) For other carbons:
-         - Terminal (non‐carboxyl) carbons: at most one extra -OH group (oxygen attached via a SINGLE bond)
-         - Internal chain carbon: only a double-bonded oxygen (a keto oxygen) is allowed.
-  (5) No unsaturation is allowed in the main chain (all C–C bonds must be single).
-Any violation leads to a rejection.
+Improved rules here:
+  (1) Only single bonds between carbons (saturated).
+  (2) Exactly one carboxyl group (COOH or COO–) is present.
+  (3) When considering only carbon atoms connected by single bonds, they must
+      form a single linear (unbranched) chain.
+  (4) The carboxyl carbon must be at one end of that chain.
+  (5) Off-chain substituents on carbons are allowed only as follows:
+         - Carboxyl carbon: only the oxygens of the carboxyl group.
+         - The other terminal carbon (methyl end): at most one oxygen (–OH) is allowed.
+         - Internal carbons: must not have any non‐hydrogen substituents.
+Any violation leads to rejection.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_straight_chain_saturated_fatty_acid(smiles: str):
     """
-    Determines if a molecule is a straight-chain saturated fatty acid.
+    Determines if a molecule is a straight‐chain saturated fatty acid.
     Args:
          smiles (str): SMILES string of the molecule.
     Returns:
          (bool, str): Tuple where the boolean indicates whether the molecule meets
-                      the criteria and the string explains the reason.
+                      the criteria and the string explains the reasoning.
     """
-    # Parse SMILES and add explicit hydrogens (to catch substituents such as –OH)
+    # Parse SMILES and add explicit hydrogens (to see substituents clearly).
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     mol = Chem.AddHs(mol)
     
-    # (1) Check that there are only single bonds between connected carbons.
+    # (1) Ensure all carbon–carbon bonds are single bonds.
     for bond in mol.GetBonds():
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
         if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
             if bond.GetBondType() != Chem.BondType.SINGLE:
-                return False, "Found an unsaturated carbon–carbon bond"
+                return False, "Found one or more unsaturated C–C bonds."
     
-    # (2) Identify exactly one carboxyl group.
-    # Using a SMARTS pattern for carboxyl groups (works for COOH and COO–)
+    # (2) Find exactly one carboxyl group.
+    # Use a SMARTS pattern that covers COOH and COO– groups.
     carboxyl_smarts = "C(=O)[O;H1,-1]"
     carboxyl_pattern = Chem.MolFromSmarts(carboxyl_smarts)
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
     if len(carboxyl_matches) != 1:
-        return False, f"Found {len(carboxyl_matches)} carboxyl groups; expected exactly 1"
-    # In the matched tuple, assume the first atom is the carboxyl carbon.
+        return False, f"Found {len(carboxyl_matches)} carboxyl groups; expected exactly 1."
+    # In the match, assume the first atom is the carboxyl carbon and the subsequent atoms are the oxygens.
     carboxyl_match = carboxyl_matches[0]
-    carboxyl_carbon_idx = carboxyl_match[0]
-    allowed_for_carboxyl = set(carboxyl_match[1:])  # Allowed oxygen atoms on the carboxyl carbon
+    carboxyl_carbon = carboxyl_match[0]
+    allowed_carboxyl_oxygens = set(carboxyl_match[1:])
     
-    # (3) Build the connectivity graph for carbon atoms using only single bonds.
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    carbon_ids = [atom.GetIdx() for atom in carbon_atoms]
-    cgraph = {idx: [] for idx in carbon_ids}
+    # (3) Build the connectivity graph among carbon atoms (only using single bonds).
+    carbon_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    carbon_graph = { idx: [] for idx in carbon_indices }
     for bond in mol.GetBonds():
         if bond.GetBondType() == Chem.BondType.SINGLE:
-            a1 = bond.GetBeginAtom()
-            a2 = bond.GetEndAtom()
-            if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
-                i1 = a1.GetIdx()
-                i2 = a2.GetIdx()
-                if i1 in cgraph and i2 in cgraph:
-                    cgraph[i1].append(i2)
-                    cgraph[i2].append(i1)
+            i = bond.GetBeginAtomIdx()
+            j = bond.GetEndAtomIdx()
+            if i in carbon_graph and j in carbon_graph:
+                carbon_graph[i].append(j)
+                carbon_graph[j].append(i)
+    # Ensure the carboxyl carbon is a carbon.
+    if carboxyl_carbon not in carbon_graph:
+        return False, "Carboxyl carbon not found among carbon atoms."
     
-    # (4) Check that the carbon graph forms a linear chain:
-    # Exactly two carbons should have degree 1 (endpoints) and all others degree 2.
-    endpoints = [node for node, nbrs in cgraph.items() if len(nbrs)==1]
+    # Use a DFS from the carboxyl carbon to see if all carbons belong to a single connected component.
+    visited = set()
+    stack = [carboxyl_carbon]
+    while stack:
+        node = stack.pop()
+        if node not in visited:
+            visited.add(node)
+            for nbr in carbon_graph[node]:
+                if nbr not in visited:
+                    stack.append(nbr)
+    if set(carbon_indices) != visited:
+        return False, "Extra carbon atoms detected outside the main chain (branching present)."
+    
+    # (4) Check that the carbon connectivity graph forms a linear chain (path).
+    # In a valid chain, exactly two carbons have degree 1 (the endpoints) and all others degree 2.
+    endpoints = [node for node, nbrs in carbon_graph.items() if len(nbrs)==1]
     if len(endpoints) != 2:
-        return False, "Carbon connectivity graph is branched (expected 2 endpoints)"
-    for node, nbrs in cgraph.items():
-        if len(nbrs) > 2:
-            return False, f"Carbon atom {node} has degree {len(nbrs)} (>2), indicating branching"
+        return False, "Carbon connectivity graph is branched (expected exactly 2 endpoints)."
+    # The carboxyl carbon must be one of the endpoints.
+    if carboxyl_carbon not in endpoints:
+        return False, "Carboxyl carbon is not at one end of the carbon chain."
     
-    # (5) The carboxyl carbon must be one of the endpoints.
-    if carboxyl_carbon_idx not in endpoints:
-        return False, "Carboxyl carbon is not at an end of the carbon chain"
-    
-    # (6) Determine the linear chain order by traversing from the carboxyl carbon.
-    chain_order = [carboxyl_carbon_idx]
+    # (5) Determine the linear chain order by traversing from the carboxyl carbon.
+    chain_order = []
+    current = carboxyl_carbon
     prev = None
-    current = carboxyl_carbon_idx
     while True:
-        nbrs = cgraph[current]
-        next_atoms = [nbr for nbr in nbrs if nbr != prev]
-        if not next_atoms:
-            break  # reached the far endpoint
-        if len(next_atoms) != 1:
-            return False, "Ambiguous path in carbon chain detected"
-        next_atom = next_atoms[0]
-        chain_order.append(next_atom)
-        prev, current = current, next_atom
-    if set(chain_order) != set(carbon_ids):
-        return False, "Extra carbon atoms detected outside the main chain (branching present)"
+        chain_order.append(current)
+        nbrs = [nbr for nbr in carbon_graph[current] if nbr != prev]
+        if not nbrs:
+            break
+        if len(nbrs) != 1:
+            return False, "Ambiguous carbon chain structure detected."
+        prev, current = current, nbrs[0]
     
-    # Identify the two endpoints: carboxyl (must be one endpoint) and the other terminal.
-    terminal_idxs = {chain_order[0], chain_order[-1]}
-    
-    # (7) Check substituents on each carbon in the chain.
-    # Map atom index to atom for easy lookup.
+    # Make a lookup for atoms by index.
     atom_by_idx = {atom.GetIdx(): atom for atom in mol.GetAtoms()}
-    for pos, c_idx in enumerate(chain_order):
+    # Identify the non-acid endpoint.
+    other_endpoint = [pt for pt in endpoints if pt != carboxyl_carbon][0]
+    
+    # (6) For each carbon in the chain, examine all substituents (neighbors not in the chain).
+    # Allowed:
+    #  - At the carboxyl carbon: only oxygens that are part of the carboxyl group.
+    #  - At the terminal non-carboxyl carbon (methyl end): allow at most one extra oxygen, and it must be in an –OH group.
+    #  - For all internal carbons: no substituents (except hydrogens).
+    for c_idx in chain_order:
         atom = atom_by_idx[c_idx]
-        is_carboxyl = (c_idx == carboxyl_carbon_idx)
-        is_terminal = (c_idx in terminal_idxs)
-        # Loop through neighbors (these include hydrogens and other substituents)
-        # Ignore hydrogens (atomic num 1) as they are normal.
-        # Also ignore neighbors which are part of the main carbon chain.
-        extra_oxygens = []  # keep track of oxygen substituents attached to terminal (non-carboxyl)
+        # Gather all substituents on this carbon that are NOT in the main chain.
+        non_chain_subs = []
         for nbr in atom.GetNeighbors():
-            nbr_idx = nbr.GetIdx()
-            # Ignore hydrogen substituents.
+            if nbr.GetIdx() in chain_order:
+                continue
+            # Allow hydrogens (including deuterium which is atomic number 1).
             if nbr.GetAtomicNum() == 1:
                 continue
-            # Skip if the neighbor is in the main chain.
-            if nbr_idx in chain_order:
-                continue
-            # Get the bond between atom and nbr.
-            bond = mol.GetBondBetweenAtoms(c_idx, nbr_idx)
-            # (A) If this is the carboxyl carbon then only permit the oxygen atoms that are part of the carboxyl group.
-            if is_carboxyl:
-                if nbr.GetAtomicNum() != 8 or (nbr_idx not in allowed_for_carboxyl):
-                    return False, f"Carboxyl carbon (atom {c_idx}) has an extra substituent (atom {nbr_idx})"
-                continue
-            # (B) For a terminal (non-carboxyl) carbon:
-            if is_terminal:
-                if nbr.GetAtomicNum() == 8:
-                    # Allow an -OH if attached by a SINGLE bond.
-                    if bond.GetBondType() == Chem.BondType.SINGLE:
-                        extra_oxygens.append(nbr_idx)
-                    else:
-                        return False, f"Terminal carbon (atom {c_idx}) has an oxygen with improper bond (atom {nbr_idx})"
-                else:
-                    return False, f"Terminal carbon (atom {c_idx}) has an unexpected substituent (atom {nbr_idx}, atomic num {nbr.GetAtomicNum()})"
-            else:
-                # (C) For internal carbons: only allow a double-bonded oxygen (keto group).
-                if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
-                    continue
-                else:
-                    return False, f"Internal chain carbon (atom {c_idx}) has a disallowed substituent (atom {nbr_idx})"
-        if is_terminal and (not is_carboxyl):
-            if len(extra_oxygens) > 1:
-                return False, f"Terminal carbon (atom {c_idx}) has multiple oxygen substituents"
+            non_chain_subs.append(nbr)
+        # Now check rules for each carbon:
+        if c_idx == carboxyl_carbon:
+            # Only allowed substituents are the carboxyl oxygens.
+            for sub in non_chain_subs:
+                if sub.GetIdx() not in allowed_carboxyl_oxygens:
+                    return False, f"Carboxyl carbon (atom {c_idx}) has an extra substituent (atom {sub.GetIdx()})."
+        elif c_idx == other_endpoint:
+            # Terminal (non-carboxyl) carbon – allow at most one oxygen; if present it should be attached via a single bond.
+            if len(non_chain_subs) > 1:
+                return False, f"Terminal carbon (atom {c_idx}) has multiple substituents."
+            if len(non_chain_subs) == 1:
+                sub = non_chain_subs[0]
+                bond = mol.GetBondBetweenAtoms(c_idx, sub.GetIdx())
+                if sub.GetAtomicNum() != 8 or bond.GetBondType() != Chem.BondType.SINGLE:
+                    return False, f"Terminal carbon (atom {c_idx}) has an unexpected substituent (atom {sub.GetIdx()}, atomic num {sub.GetAtomicNum()})."
+        else:
+            # Internal carbon: no substituents (other than hydrogens) permitted.
+            if non_chain_subs:
+                return False, f"Internal chain carbon (atom {c_idx}) has a disallowed substituent (atom {non_chain_subs[0].GetIdx()})."
     
     return True, "Molecule is a straight‐chain saturated fatty acid with no side‐chain substituents"
 
-# Example usage for testing:
+# Example usage:
 if __name__ == "__main__":
     test_cases = [
         ("CC(=O)CCC(O)=O", "4-oxopentanoic acid"),
         ("CCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O", "heptacosanoic acid"),
         ("CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O", "nonacosanoic acid"),
         ("CCCCCCCCCCCCCCCCCCCCCC(O)=O", "tricosanoic acid"),
-        ("C(C(CCCCCCCCCCCCCCCC)=O)CCCCCCCCCCC(O)=O", "octacosanoic acid"),
+        ("C(C(C(C(C(C(C(C(C(C(C(C(C(C(=O)O)([2H])[2H])([2H])[2H])([2H])[2H])([2H])[2H])([2H])[2H])([2H])[2H])([2H])[2H])([2H])[2H])([2H])[2H])([2H])[2H])([2H])([2H])[2H]", "tetradecanoic-d27 acid"),
+        ("C(CCCCCCCCCCCCCCCC)CCCCCCCCCCC(O)=O", "octacosanoic acid"),
         ("CCCCCCCCCCCCCCCC(O)=O", "heptadecanoic acid"),
         ("CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O", "hexacosanoic acid"),
         ("CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O", "triacontanoic acid"),
+        ("[2H]C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C([2H])([2H])C(O)=O", "palmitic acid-d31"),
         ("CCCCCCCCCCCCCCCC(O)=O", "hexadecanoic acid"),
         ("CCCCCCC(O)=O", "heptanoic acid"),
         ("OCCCCCCCCCCCCCCC(O)=O", "15-hydroxypentadecanoic acid"),
@@ -178,7 +176,9 @@ if __name__ == "__main__":
         ("OCCCCCCCCCC(O)=O", "10-hydroxycapric acid"),
         ("C(CCCCCC)CCC(=O)O", "decanoic acid"),
         ("OCCCCCCCCCCCCC(O)=O", "13-hydroxytridecanoic acid"),
-        # Some of the provided examples with deuterium or stereochemistry should also work.
+        # The following examples (with extra functional groups) should be rejected:
+        ("OCCCCCC([O-])=O", "6-hydroxyhexanoate"),
+        ("CCCCCCCC([O-])=O", "nonanoate"),
     ]
     
     for smi, name in test_cases:
