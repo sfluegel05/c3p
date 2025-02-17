@@ -4,11 +4,11 @@ Classifies: CHEBI:26333 prostaglandin
 """
 Classifies: Prostanoid derivatives (prostaglandins)
 Definition: Naturally occurring compounds derived from the parent C20 acid, prostanoic acid.
-Heuristics used (improved):
- 1. Overall carbon count should be roughly in the range expected for prostaglandins (17 to 27 carbons).
- 2. The molecule must contain an isolated (non-fused) cyclopentane ring consisting solely of carbon atoms.
- 3. At least one substituent branch on that ring must be “long” (at least 5 carbons) and contain a carbonyl motif,
-    as a trace of derivation from prostanoic acid.
+Heuristics (improved):
+ 1. Total carbon atom count should be roughly in the range expected for prostaglandins (17-30).
+ 2. The molecule must contain at least one 5-membered ring composed exclusively of carbon atoms.
+ 3. The molecule must have a carbonyl as part of an acid/ester motif (SMARTS: C(=O)O).
+ 4. At least one substituent branch off the cyclopentane ring must be “long” (≥5 carbons) and contain a carbonyl (SMARTS: [CX3](=O)).
 If any condition is not met, the function returns False with an explanation.
 """
 
@@ -19,14 +19,14 @@ def is_prostaglandin(smiles: str):
     Determines whether the given SMILES string is likely a prostaglandin derivative.
     
     The algorithm uses the following steps:
-      1. Attempts to parse the SMILES and, if multiple fragments exist (e.g. counter-ions present),
-         selects the largest fragment.
-      2. Checks that the total number of carbon atoms is in the range 17 to 27.
-      3. Searches for an isolated cyclopentane ring (5-membered ring with only carbon atoms and not fused with another ring).
-      4. From that cyclopentane ring, examines substituent branches to verify that at least one branch:
-            - contains at least 5 carbon atoms, and
-            - features a carbonyl motif ([CX3](=O)[O,N]), capturing acids, esters, or amides.
-    
+      1. Parse the SMILES and if multiple fragments exist, select the largest.
+      2. Count the number of carbon atoms; if the count is not in the range 17-30, assume it is not prostaglandin.
+      3. Look for at least one 5-membered ring that is composed entirely of carbon atoms.
+      4. Verify that the molecule contains an acid/ester carbonyl motif (C(=O)O).
+      5. For at least one candidate cyclopentane ring, examine all substituent branches (neighbors not in the ring)
+         and recursively collect the branch atoms. If at least one branch contains at least 5 carbons and a carbonyl (using SMARTS [CX3](=O)), 
+         classify the molecule as a prostaglandin derivative.
+      
     Args:
         smiles (str): SMILES string of the molecule.
     
@@ -34,7 +34,7 @@ def is_prostaglandin(smiles: str):
         bool: True if the molecule appears to be a prostaglandin derivative, False otherwise.
         str: Explanation for the decision.
     """
-    # Attempt to create an RDKit molecule object
+    # Parse the SMILES string
     try:
         mol = Chem.MolFromSmiles(smiles)
     except Exception as e:
@@ -43,35 +43,40 @@ def is_prostaglandin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # If there are counter-ions or multiple fragments,
-    # select the largest fragment (by heavy atom count).
+    # If multiple fragments exist, select the largest by heavy atom count.
     try:
         frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
         if len(frags) > 1:
             mol = max(frags, key=lambda m: m.GetNumHeavyAtoms())
     except Exception:
-        # In case of any error, continue with the original mol
         pass
-
-    # Count the number of carbon atoms in the molecule
+    
+    # Count total carbon atoms.
     carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     c_count = len(carbons)
-    if not (17 <= c_count <= 27):
-        return False, f"Carbon count {c_count} outside expected range for prostaglandins (17-27)"
+    if not (17 <= c_count <= 30):
+        return False, f"Carbon count {c_count} outside expected range for prostaglandins (17-30)"
     
+    # Check if the molecule has an acid/ester carbonyl motif.
+    # (This SMARTS should capture carboxylic acids and simple esters.)
+    acid_ester_smarts = "C(=O)O"
+    acid_ester_pattern = Chem.MolFromSmarts(acid_ester_smarts)
+    if not mol.HasSubstructMatch(acid_ester_pattern):
+        return False, "No acid/ester carbonyl motif (C(=O)O) found"
+    
+    # Get ring information.
     ring_info = mol.GetRingInfo().AtomRings()
-    isolated_c5_list = []
-    # Look for isolated cyclopentane rings: ring of length 5 in which every atom is carbon and belongs only to that ring.
+    cyclopentane_rings = []
     for ring in ring_info:
         if len(ring) == 5 and all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
-            # Check that each atom in the ring is part of exactly 1 ring
-            if all(mol.GetRingInfo().NumAtomRings(idx) == 1 for idx in ring):
-                isolated_c5_list.append(set(ring))
-    if not isolated_c5_list:
-        return False, "No isolated cyclopentane (5-carbon) ring found as prostanoid core"
+            cyclopentane_rings.append(set(ring))
+    if not cyclopentane_rings:
+        return False, "No 5-membered cyclopentane ring (all carbon atoms) found as prostanoid core"
     
-    # Helper function: given a starting atom not in the core, return all connected atoms (branch),
-    # avoiding atoms that are in the core ring.
+    # Define SMARTS for a standalone carbonyl (e.g. part of a ketone, acid, or ester).
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)")
+    
+    # Recursive helper function: given a starting atom (by index) not in the core, get the full connected branch.
     def get_branch(atom_idx, core, visited=None):
         if visited is None:
             visited = set()
@@ -85,59 +90,46 @@ def is_prostaglandin(smiles: str):
             if nb_idx not in visited:
                 branch_atoms.update(get_branch(nb_idx, core, visited))
         return branch_atoms
-
-    # Count how many carbons are in a set of branch atom indices
-    def count_branch_carbons(atom_ids):
-        return sum(1 for idx in atom_ids if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
     
-    # Define the SMARTS for a carbonyl motif (captures acid, ester, amide patterns)
-    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)[O,N]")
-    
-    # For each isolated cyclopentane core, check substituent branches
-    for core in isolated_c5_list:
-        # Collect indices of atoms directly attached to the core (neighbors not in the core)
+    # For each candidate cyclopentane ring, check its substituent branches.
+    for core in cyclopentane_rings:
         substituent_indices = set()
+        # For every atom in the ring, collect neighbors not in the ring.
         for idx in core:
             atom = mol.GetAtomWithIdx(idx)
             for nb in atom.GetNeighbors():
                 nb_idx = nb.GetIdx()
                 if nb_idx not in core:
                     substituent_indices.add(nb_idx)
-        # For each substituent, analyze its branch
-        long_branch_found = False
-        carbonyl_found = False
+        long_branch_with_carbonyl_found = False
         for sub_idx in substituent_indices:
             try:
-                branch_atoms = get_branch(sub_idx, core)
+                branch_atom_ids = get_branch(sub_idx, core)
             except Exception as e:
                 return False, f"Error processing substituent branch: {e}"
-            branch_carbon_count = count_branch_carbons(branch_atoms)
-            # Create a submol corresponding to the branch to search the carbonyl motif
-            branch_atom_list = list(branch_atoms)
+            # Count carbons in the branch.
+            branch_carbons = sum(1 for idx in branch_atom_ids if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+            # Create a submolecule from branch atoms for substructure search.
             try:
-                submol = Chem.PathToSubmol(mol, branch_atom_list)
+                branch_mol = Chem.PathToSubmol(mol, list(branch_atom_ids))
             except Exception:
-                # If creation fails, skip this branch
                 continue
-            if submol.HasSubstructMatch(carbonyl_pattern):
-                carbonyl_found = True
-            if branch_carbon_count >= 5:
-                long_branch_found = True
-        if long_branch_found and carbonyl_found:
-            return True, ("Molecule has an isolated cyclopentane core with at least one long substituent "
-                          "that bears a carbonyl motif and an appropriate carbon count for a prostaglandin derivative")
+            if branch_carbons >= 5 and branch_mol.HasSubstructMatch(carbonyl_pattern):
+                long_branch_with_carbonyl_found = True
+                break
+        if long_branch_with_carbonyl_found:
+            return True, ("Molecule has a 5-membered carbocycle combined with a long substituent branch "
+                          "bearing a carbonyl motif (as expected for a prostanoid derivative) and a suitable carbon count.")
     
-    return False, "No cyclopentane core with suitable substituents (long branch with carbonyl motif) was found"
+    return False, "No cyclopentane core with a long substituent branch containing a carbonyl motif was found"
 
-
-# Uncomment below for some preliminary tests:
-# test_smiles = {
-#    "prostaglandin A2": "CCCC[C@H](O)\\C=C\\[C@H]1C=CC(=O)[C@@H]1C\\C=C/CCCC(O)=O", 
-#    "nonacosanoic acid": "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O",
-#    "prostaglandin E3": "CC\\C=C/C[C@H](O)\\C=C\\[C@H]1[C@H](O)CC(=O)[C@@H]1C\\C=C/CCCC(O)=O",
-#    "6alpha-Prostaglandin I1": "[C@@H]1([C@@H]([C@@H]2[C@H](C1)O[C@@H](C2)CCCCC(O)=O)/C=C/[C@H](CCCCC)O)O",
-# }
-#
-# for name, s in test_smiles.items():
-#    result, reason = is_prostaglandin(s)
-#    print(f"Name: {name}\nSMILES: {s}\nResult: {result}\nReason: {reason}\n")
+# Example usage:
+if __name__ == "__main__":
+    test_examples = {
+        "prostaglandin A2": "CCCC[C@H](O)\\C=C\\[C@H]1C=CC(=O)[C@@H]1C\\C=C/CCCC(O)=O",
+        "nonacosanoic acid": "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O",  # Fatty acid, should be false.
+        "prostaglandin E3": "CC\\C=C/C[C@H](O)\\C=C\\[C@H]1[C@H](O)CC(=O)[C@@H]1C\\C=C/CCCC(O)=O",
+    }
+    for name, s in test_examples.items():
+        result, reason = is_prostaglandin(s)
+        print(f"Name: {name}\nSMILES: {s}\nResult: {result}\nReason: {reason}\n")
