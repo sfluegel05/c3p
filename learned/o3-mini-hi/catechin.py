@@ -2,24 +2,8 @@
 Classifies: CHEBI:23053 catechin
 """
 """
-Classifies: Catechins
-Definition: Members of the class of hydroxyflavan that have a flavan-3-ol skeleton 
-            and its substituted derivatives.
-            
-Improved approach:
-  1. Parse the SMILES string and remove stereochemistry.
-  2. Look for the key structural motif using a relaxed, recursive SMARTS query.
-     Here we require a dihydropyran (chroman) ring that:
-       - has one oxygen in the ring,
-       - bears an –OH group (representing the 3-hydroxy substituent),
-       - and is fused to two aromatic rings (the A and B rings).
-     The aromatic rings are specified recursively so that extra substituents on them
-     do not preclude recognition of the core catechin skeleton.
-  
-  3. If the substructure is detected, the molecule is classified as a catechin.
-  
-Note: This rule‐based approach is heuristic, and while it should capture many substituted 
-catechin derivatives, some edge cases might still be missed.
+Classifies: Catechins (Members of the class of hydroxyflavan that have a flavan-3-ol skeleton 
+and its substituted derivatives).
 """
 
 from rdkit import Chem
@@ -27,51 +11,42 @@ from rdkit import Chem
 def is_catechin(smiles: str):
     """
     Determines if a molecule belongs to the catechin class based on its SMILES string.
-    
-    The algorithm:
-      1. Parse the SMILES string and remove stereochemistry.
-      2. Look for a relaxed catechin core as defined by the recursive SMARTS:
-           "[$(c1ccc(cc1))]C2CC([OX2H])C([$(c3ccc(cc3))])O2"
-         This matches a structure in which an aromatic ring (ring A) is directly attached 
-         to a dihydropyran (chroman) ring. That ring bears an –OH group (at the 3–position)
-         and has an aromatic substituent (ring B) attached at a neighboring carbon.
-      3. If the substructure is found, return True with a success message; otherwise, return False.
-    
+    Catechins are hydroxyflavans possessing a flavan-3-ol core (i.e. a 2-phenyl-3,4-dihydro-2H-chromene-3-ol skeleton)
+    and its substituted derivatives.
+
+    This implementation uses a simplified SMARTS to detect the fused-ring flavan-3-ol core.
+    The SMARTS below is defined as: 
+        "c1ccc(c(c1))C2C(O)Oc3ccccc23"
+    which represents a fused three-ring system in which a phenyl ring (B ring) is attached at position 2, 
+    and the chroman ring (A + C rings) carries a hydroxyl at the 3-position.
+
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+        smiles (str): SMILES string of the molecule
+
     Returns:
-        bool: True if the molecule is (or is closely related to) a catechin, False otherwise.
+        bool: True if the molecule is classified as a catechin derivative, False otherwise.
         str: Reason for classification.
     """
-    # Parse SMILES
+    # Parse the SMILES string using RDKit.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Remove stereochemical labels to ignore chiral differences
-    Chem.RemoveStereochemistry(mol)
+    # Define a simplified SMARTS pattern for a flavan-3-ol core:
+    # This pattern looks for a benzopyran fused system with an OH at the appropriate position.
+    # Note: Stereochemistry and additional substituents are ignored in this simplified search.
+    core_smarts = "c1ccc(c(c1))C2C(O)Oc3ccccc23"
+    core_pattern = Chem.MolFromSmarts(core_smarts)
+    if core_pattern is None:
+        return False, "Failed to create SMARTS pattern for flavan-3-ol core"
     
-    # Define a relaxed SMARTS pattern for the flavan-3-ol (catechin) core.
-    # Explanation:
-    #   [$(c1ccc(cc1))]  -> any aromatic ring (ring A)
-    #   C2               -> a saturated carbon (beginning of the chroman ring)
-    #   CC([OX2H])       -> next carbon in the ring bearing an -OH (C3)
-    #   C([$(c3ccc(cc3))]) -> next carbon that is attached to an aromatic ring (ring B)
-    #   O2               -> closing the dihydropyran (chroman) ring via an oxygen.
-    core_smarts = "[$(c1ccc(cc1))]C2CC([OX2H])C([$(c3ccc(cc3))])O2"
-    core_query = Chem.MolFromSmarts(core_smarts)
-    if core_query is None:
-        return False, "Failed to create SMARTS for catechin core"
-    
-    # Check for the flavan-3-ol (catechin) core in the molecule.
-    if mol.HasSubstructMatch(core_query):
-        return True, "Molecule contains a flavan-3-ol (catechin) core (relaxed match)"
+    # Check if the molecule has a matching substructure for the core.
+    if mol.HasSubstructMatch(core_pattern):
+        return True, "Molecule contains a flavan-3-ol core (catechin skeleton)"
     else:
-        return False, "Molecule does not contain the expected flavan-3-ol (catechin) core"
+        return False, "Molecule does not contain the expected flavan-3-ol core"
 
-# The below code can be used for simple manual testing.
-# if __name__ == "__main__":
-#     test_smiles = "O[C@@H]1Cc2c(O)cc(O)cc2O[C@H]1c1ccc(O)c(O)c1"  # (-)-catechin
-#     result, reason = is_catechin(test_smiles)
-#     print(result, reason)
+# Example testing (uncomment the lines below to run a simple test)
+# test_smiles = "O[C@@H]1Cc2c(O)cc(O)cc2O[C@H]1c1ccc(O)c(O)c1"  # (-)-catechin
+# result, reason = is_catechin(test_smiles)
+# print(result, reason)
