@@ -3,23 +3,28 @@ Classifies: CHEBI:27208 unsaturated fatty acid
 """
 """
 Classifies: Unsaturated Fatty Acid
-Definition:
-    An unsaturated fatty acid is defined herein as a molecule that meets all of the following:
-      1. The molecule is valid.
-      2. It contains exactly one carboxylic acid group (COOH or COO-), whose carbonyl carbon is attached 
-         to exactly one carbon (i.e. terminal acid functionality).
-      3. Starting from that sole chain‐attached carbon, the longest simple path (via carbon–carbon bonds) 
-         is at least 6 carbons in length (this heuristically ensures a long aliphatic chain).
-      4. The molecule contains at least one carbon–carbon double bond (C=C) and no triple bonds.
-      
+Definition (heuristic):
+  A molecule is deemed an unsaturated fatty acid if it meets all of the following:
+    1. The SMILES string represents a valid molecule.
+    2. It contains exactly one carboxylic acid group – as recognized by the SMARTS "C(=O)[O;H1,O-]".
+    3. The carboxyl (acid) carbon is terminal; that is, it is attached to exactly one carbon atom.
+    4. Starting from that attached carbon, if one finds the longest strictly carbon-based simple path,
+       its length (number of carbons) is at least MIN_CHAIN (here we use 4 as a relaxed requirement).
+    5. Along that chain at least one bond is a double bond (C=C).
+    6. The molecule does not contain any carbon–carbon triple bonds.
+    
 Note:
-  – This is a heuristic approach. Some free fatty acids may contain rings or substituents that complicate 
-    chain detection. Here we allow rings in parts of the molecule (so that e.g. leukotriene A4, juvenile hormone I acid,
-    etc. are not rejected solely for having rings) but we require that the acid group is terminal and that one can trace 
-    a sufficiently long carbon‐only path from it.
-      
-Examples that should be classified as unsaturated fatty acids include many with long aliphatic chains plus a C=C bond, 
-while molecules having extra acid groups, triple bonds, or an ambiguous/branched acid attachment are rejected.
+  – This is a heuristic approach. Some fatty acids (e.g. with rings or unusual branching) may be mis‐classified.
+  – The code “walks” from the acid’s neighbor along bonds between carbon atoms only.
+  
+Examples:
+  • resolvin D6, leukotriene A4, farnesoic acid ... are accepted
+  • Molecules with extra acid groups, very short chains (e.g. isocrotonic acid), or triple bonds are rejected.
+  
+Improvements over the previous approach:
+  – The longest chain is computed explicitly “walking” and the bond orders along that path are examined.
+  – The chain length threshold is relaxed so that known short-chain unsaturated acids (e.g. pent‐4‐enoic acid)
+    are successfully classified, while still eliminating many false positives.
 """
 
 from rdkit import Chem
@@ -30,25 +35,31 @@ def is_unsaturated_fatty_acid(smiles: str):
     
     The criteria are:
       1. Molecule must be valid.
-      2. It must contain exactly one carboxylic acid group (protonated or deprotonated) as defined by SMARTS.
-      3. The carboxyl carbon (the one in C(=O)[O;H1,O-]) should be terminal,
-         meaning it is attached to exactly one carbon atom.
-      4. The alkyl chain (as measured by the longest simple path of carbon atoms starting from
-         the acid’s neighbor) is at least 6 carbons long.
-      5. The molecule must contain at least one C=C double bond and must not contain any C#C triple bonds.
+      2. Must contain exactly one carboxylic acid group defined by SMARTS "C(=O)[O;H1,O-]".
+      3. The carboxyl carbon (from the acid group) must be terminal – attached to exactly one carbon.
+      4. The longest simple carbon-only path (starting from the acid’s only carbon neighbor)
+         must be at least MIN_CHAIN carbons long.
+      5. At least one bond in that path must be a C=C double bond.
+      6. The molecule must not contain any carbon–carbon triple bonds.
       
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule qualifies as an unsaturated fatty acid, False otherwise.
+        bool: True if molecule qualifies as an unsaturated fatty acid, False otherwise.
         str: Explanation of the result.
     """
+    # Parse the molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for a carboxylic acid group.
+    # Reject molecules with any carbon–carbon triple bonds.
+    triple_bond_pattern = Chem.MolFromSmarts("C#C")
+    if mol.HasSubstructMatch(triple_bond_pattern):
+        return False, "Contains carbon–carbon triple bonds which are not allowed"
+    
+    # Define SMARTS for a carboxylic acid group (either protonated or deprotonated)
     acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,O-]")
     acid_matches = mol.GetSubstructMatches(acid_pattern)
     if not acid_matches:
@@ -56,65 +67,69 @@ def is_unsaturated_fatty_acid(smiles: str):
     if len(acid_matches) != 1:
         return False, "Molecule should have exactly one carboxylic acid group"
     
-    # In our SMARTS, atom 0 is the carbonyl carbon.
+    # Our SMARTS has the acid carbon as atom 0.
     acid_match = acid_matches[0]
     acid_c_idx = acid_match[0]
     acid_c = mol.GetAtomWithIdx(acid_c_idx)
     
-    # For a terminal acid, the acid carbon should be attached to exactly one carbon.
+    # For a terminal acid group, the acid carbon must be attached to exactly one carbon.
     carbon_neighbors = [nbr.GetIdx() for nbr in acid_c.GetNeighbors() if nbr.GetAtomicNum() == 6]
     if len(carbon_neighbors) != 1:
         return False, "The carboxyl group is not terminal (acid carbon is attached to more than one carbon)"
+    
     chain_start_idx = carbon_neighbors[0]
     
-    # Now, we try to measure the “fatty acid chain length”:
-    # We define it as the length (number of carbons) of the longest simple path (no revisiting atoms)
-    # starting from the acid group’s attached carbon. We only consider atoms with atomic number 6.
-    # (This DFS-based approach is heuristic.)
-    def longest_carbon_path(current_idx, visited):
+    # Define a DFS routine to find the longest carbon-only simple path starting from a given atom.
+    # We also collect the bond orders along the path.
+    def dfs(current_idx, visited):
         visited.add(current_idx)
         current_atom = mol.GetAtomWithIdx(current_idx)
-        max_length = 1  # count the current carbon
+        # Store as (max_length, bond_info, path) where bond_info is a list of bond orders traversed.
+        best = (1, [], [current_idx])
         for nbr in current_atom.GetNeighbors():
             if nbr.GetAtomicNum() != 6:
                 continue
             nbr_idx = nbr.GetIdx()
             if nbr_idx in visited:
                 continue
-            # Recurse to get path length from neighbor.
-            new_length = 1 + longest_carbon_path(nbr_idx, visited.copy())
-            if new_length > max_length:
-                max_length = new_length
-        return max_length
+            # Get the bond between current and neighbor.
+            bond = mol.GetBondBetweenAtoms(current_idx, nbr_idx)
+            bond_order = bond.GetBondTypeAsDouble()  # 1.0 for single, 2.0 for double, etc.
+            new_length, new_bonds, new_path = dfs(nbr_idx, visited.copy())
+            candidate_length = 1 + new_length
+            candidate_bonds = [bond_order] + new_bonds
+            candidate_path = [current_idx] + new_path
+            if candidate_length > best[0]:
+                best = (candidate_length, candidate_bonds, candidate_path)
+        return best
 
-    chain_length = longest_carbon_path(chain_start_idx, set())
-    if chain_length < 6:
+    # Set a minimum chain length (number of carbons in the chain, not counting the acid carbon).
+    MIN_CHAIN = 4
+    chain_length, bonds_along_chain, path = dfs(chain_start_idx, set())
+    
+    if chain_length < MIN_CHAIN:
         return False, f"Alkyl chain too short for a fatty acid (chain length = {chain_length})"
     
-    # Check for unsaturation:
-    # Require at least one C=C double bond.
-    double_bond_pattern = Chem.MolFromSmarts("C=C")
-    if not mol.HasSubstructMatch(double_bond_pattern):
-        return False, "Contains no carbon–carbon double bonds (no unsaturation)"
+    # Check for unsaturation on the main chain: At least one bond in the chain should be a double (order == 2)
+    if not any(bond_order == 2.0 for bond_order in bonds_along_chain):
+        return False, "Main carbon chain does not contain any C=C double bonds (unsaturation missing)"
     
-    # Reject any triple bonds.
-    triple_bond_pattern = Chem.MolFromSmarts("C#C")
-    if mol.HasSubstructMatch(triple_bond_pattern):
-        return False, "Contains carbon–carbon triple bonds which are not allowed"
-    
-    return True, ("Contains a terminal carboxyl group, a sufficiently long carbon chain (length = "
-                  f"{chain_length}), and at least one C=C double bond (unsaturation)")
+    # All criteria met – accept the molecule.
+    return True, (f"Contains a terminal carboxyl group, a sufficiently long carbon chain (length = {chain_length}), "
+                  "and at least one C=C double bond in the main chain (unsaturation).")
 
-# Example usage (you can test with some of the examples listed):
+# Example usage (for testing purposes):
 if __name__ == '__main__':
     test_smiles = [
-        # True positives
+        # True positives:
         "C(C(O)=O)C[C@@H](/C=C/C=C\\C/C=C\\C/C=C\\C=C\\[C@H](C/C=C\\CC)O)O",  # resolvin D6
-        "CCCCCCC/C=C/CCCCCCC/C(=O)O",  # simplified (2E,4E,6E,8E,10E)-octadecapentaenoic acid-like
-        "CC(C)=CCCC(C)=CCCC(C)=CC(O)=O",  # farnesoic acid-like
-        "OC(=O)CCC=C",  # pent-4-enoic acid (should be rejected due to chain length)
-        "[H]C(C)=CC(O)=O",  # isocrotonic acid-like (chain too short)
-        "OC(=O)CC#CCCCCC#CCCCCCC",  # molecule with triple bonds (should be rejected)
+        "CCCC\\C=C/C\\C=C/C=C/C=C/[C@@H]1O[C@H]1CCCC(O)=O",  # leukotriene A4
+        "CCCCCCC/C=C/CCCCCCC/C(=O)O",  # (2E,4E,6E,8E,10E)-octadecapentaenoic acid-like
+        "CC\\C(CC[C@H]1O[C@@]1(C)CC)=C/CC\\C(C)=C\\C(O)=O",  # juvenile hormone I acid
+        "OC(=O)CCC=C",  # pent-4-enoic acid (chain length 4; now accepted)
+        "[H]C(C)=CC([H])=CC(O)=O",  # sorbic acid (chain length 3 or 4 depending on interpretation)
+        # False positive example:
+        "CCCCCCC\\C=C\\CCCCCCCCC([O-])=O",  # (10E)-octadecenoate – may be a salt derivative and complex
     ]
     
     for smi in test_smiles:
