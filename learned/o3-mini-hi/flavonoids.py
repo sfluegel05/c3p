@@ -3,19 +3,18 @@ Classifies: CHEBI:72544 flavonoids
 """
 #!/usr/bin/env python3
 """
-Classifies: Flavonoids (a superclass including flavonoid, isoflavonoid, chalcone, etc.)
-
-Heuristic:
-  1. Parse the SMILES string.
-  2. Require that the molecule has at least 15 carbon atoms.
-  3. Require that it contains at least 2 aromatic rings.
-  4. Compute the Murcko scaffold (to remove appended sugars or other large substituents).
-  5. Check whether the molecule (or its scaffold) contains one of several flavonoid core SMARTS patterns.
-     The patterns include flavone, isoflavone, chalcone, flavanone, flavan and aurone.
-  6. As an extra safeguard, if a candidate match is found then the scaffold is checked for a minimum carbon count.
-  
-Note: It is well known that flavonoids can be very diverse. This heuristic does not guarantee zero false positives
-or negatives but may be tuned further.
+Classifies: Flavonoids (superclass including flavonoid, isoflavonoid, chalcone, etc.)
+Improved heuristic:
+  1. Validate the SMILES.
+  2. Require ≥15 carbon atoms and ≥2 aromatic rings in the molecule.
+  3. Compute the Murcko scaffold (to remove appended sugars/side chains) and require ≥15 carbons.
+  4. Count the number of aromatic rings (using ring info) in the scaffold.
+     • If there are three or more aromatic rings (often indicative of a fused ring system as in flavones, etc.)
+       then try to match one of the “fused-core” SMARTS (flavone, isoflavone, flavanone, flavan, aurone).
+     • If exactly two aromatic rings are present (as commonly seen in chalcones) then only the chalcone pattern is used.
+  5. If a pattern is found and the scaffold’s carbon count is acceptable, the molecule is identified as a flavonoid.
+Note:
+  This heuristic remains approximate. Even with these changes, some false positives and negatives may occur.
 """
 
 from rdkit import Chem
@@ -26,94 +25,110 @@ def is_flavonoids(smiles: str):
     """
     Determines if a molecule is (putatively) a flavonoid based on its SMILES string.
     
-    The classification uses the following heuristic:
-      1. Validate the SMILES string.
+    The classification uses the following improved heuristic:
+      1. Validate the SMILES.
       2. Require that the molecule has at least 15 carbon atoms.
-      3. Require that it has at least 2 aromatic rings.
-      4. Compute the Murcko scaffold to remove sugars/side chains.
-      5. Check if either the molecule or its scaffold contains a flavonoid core as defined by several SMARTS patterns.
-         (The patterns aim to capture flavone, isoflavone, chalcone, flavanone, flavan, and aurone core motifs.)
-      6. For a candidate match the scaffold must also have at least 15 carbons.
+      3. Require that the molecule has at least 2 aromatic rings.
+      4. Compute the Murcko scaffold – to focus on the core structure.
+      5. Count the carbon atoms in the scaffold (require ≥15)
+      6. Count the number of aromatic rings in the scaffold.
+         • If the scaffold shows ≥3 aromatic rings, try matching flavone, isoflavone, flavanone, flavan, or aurone patterns.
+         • If the scaffold shows exactly 2 aromatic rings, try matching a chalcone pattern.
+      7. If a match is found from the respective list, return True with the pattern name;
+         otherwise return False with a reason.
     
     Args:
         smiles (str): SMILES string of the molecule.
-    
+        
     Returns:
-        bool: True if the molecule is classified as a flavonoid, False otherwise.
-        str: Reason for the classification decision.
+        bool: True if classified as flavonoid, False otherwise.
+        str: Description of the reasoning behind the decision.
     """
-    # Parse the input SMILES
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Count total carbon atoms in the molecule
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(carbon_atoms) < 15:
-        return False, f"Only {len(carbon_atoms)} carbon atoms found; need at least 15 for a flavonoid (C15/C16 skeleton)"
+    # Count total carbons in the molecule.
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if total_carbons < 15:
+        return False, f"Only {total_carbons} carbon atoms found; need ≥15 for a flavonoid skeleton."
     
-    # Count aromatic rings.
-    # We look at each ring in the ring information and require that it is at least 6-membered and completely aromatic.
-    ring_info = mol.GetRingInfo()
-    aromatic_ring_count = 0
-    for ring in ring_info.AtomRings():
+    # Count aromatic rings in the molecule.
+    mol_ring_info = mol.GetRingInfo()
+    arom_ring_count = 0
+    for ring in mol_ring_info.AtomRings():
         if len(ring) >= 6 and all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-            aromatic_ring_count += 1
-    if aromatic_ring_count < 2:
-        return False, f"Only {aromatic_ring_count} aromatic ring(s) found; flavonoids usually contain at least 2 aromatic rings"
+            arom_ring_count += 1
+    if arom_ring_count < 2:
+        return False, f"Only {arom_ring_count} aromatic ring(s) found; flavonoids usually contain ≥2 aromatic rings."
     
-    # Compute the Murcko scaffold for the molecule.
-    # This often removes appended sugars and other substituents so that the flavonoid aglycone is isolated.
+    # Compute the Murcko scaffold to focus on the core.
     try:
         scaffold = MurckoScaffold.GetScaffoldForMol(mol)
     except Exception:
         scaffold = None
+    if scaffold is None:
+        return False, "Could not compute Murcko scaffold."
     
-    # Helper function: count carbons in a molecule.
-    def count_carbons(mol_obj):
-        return sum(1 for atom in mol_obj.GetAtoms() if atom.GetAtomicNum() == 6)
+    # Count carbons in the scaffold.
+    scaffold_carbons = sum(1 for atom in scaffold.GetAtoms() if atom.GetAtomicNum() == 6)
+    if scaffold_carbons < 15:
+        return False, f"Scaffold has only {scaffold_carbons} carbons; too few for a full flavonoid skeleton."
     
-    scaffold_carbons = count_carbons(scaffold) if scaffold is not None else 0
+    # Count aromatic rings in the scaffold.
+    scaffold_ring_info = scaffold.GetRingInfo()
+    scaffold_arom_rings = []
+    for ring in scaffold_ring_info.AtomRings():
+        if len(ring) >= 6 and all(scaffold.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+            scaffold_arom_rings.append(set(ring))
+    num_scaffold_arom = len(scaffold_arom_rings)
     
-    # Define an expanded list of SMARTS patterns for flavonoid cores.
-    # The patterns are heuristic. Many flavonoids share a C6-C3-C6 backbone often arranged as two phenyl rings (A and B)
-    # joined by a pyran (C-ring) (flavones, flavonols, flavanones) or as an open chain (chalcones).
-    # Aurones (a minor subclass) are also included.
-    flavonoid_patterns = [
-        ("flavone",    "c1ccc2c(c1)oc(=O)c(c2)"),                   # Typical flavone / flavonol core
-        ("isoflavone", "c1ccc2c(c1)oc(=O)c(c2)-c3ccccc3"),           # Isoflavone with appended benzene ring
-        ("chalcone",   "c1ccc(cc1)C(=O)C=CC2=CC=CC=C2"),             # Chalcone skeleton
-        ("flavanone",  "c1ccc2c(c1)C(=O)C(O)cc2"),                  # Flavanone (saturated C-ring variant)
-        ("flavan",     "c1ccc2c(c1)CC(O)cc2"),                      # Generic flavan pattern (no carbonyl)
-        ("aurone",     "c1ccc2c(c1)OC(=O)C=CC2")                    # Aurone pattern: benzofuranone type
-    ]
+    # Define SMARTS for various flavonoid cores.
+    # These patterns are heuristic and are defined on the scaffold.
+    # For fused systems (typically ≥3 aromatic rings) we use these patterns:
+    fused_patterns = {
+        "flavone":    "c1cc2oc(=O)cc(c2c1)",      # typical flavone / flavonol core
+        "isoflavone": "c1ccc2c(c1)oc(=O)c(c2)",    # isoflavone-like core
+        "flavanone":  "c1ccc2c(c1)C(=O)[C@@H](O)cc2",  # flavanone (with a chiral center)
+        "flavan":     "c1ccc2c(c1)CC(O)cc2",       # flavan (without carbonyl)
+        "aurone":     "c1ccc2c(c1)OC(=O)C=CC2"     # aurone pattern (benzofuranone)
+    }
+    # For open-chain chalcones (commonly with 2 nonfused aromatic rings) we use a chalcone SMARTS.
+    chalcone_pattern = "c1ccc(cc1)C(=O)C=CC2=CC=CC=C2"
     
-    # Check for a flavonoid core match in either the full molecule or its scaffold.
-    for name, smarts in flavonoid_patterns:
+    # Based on the number of aromatic rings in the scaffold, decide which set to use.
+    # (If ≥3 fused aromatic rings are present => expect an intracyclic (fused) flavonoid; if only 2,
+    # then consider only chalcones.)
+    target_patterns = {}
+    if num_scaffold_arom >= 3:
+        target_patterns = fused_patterns
+    elif num_scaffold_arom == 2:
+        target_patterns = {"chalcone": chalcone_pattern}
+    else:
+        # Fall back: no clear aromatic core in scaffold.
+        return False, "Scaffold does not contain a recognizable aromatic ring system."
+    
+    # Now try to match one of the SMARTS patterns on the scaffold.
+    for name, smarts in target_patterns.items():
         pattern = Chem.MolFromSmarts(smarts)
-        if pattern is None:  # skip bad patterns
-            continue
-        
-        # Check if the pattern is found in the original molecule or if a scaffold is available, try that too.
-        if mol.HasSubstructMatch(pattern) or (scaffold is not None and scaffold.HasSubstructMatch(pattern)):
-            # To help rule out small non-flavonoid cores (e.g. simple coumarins), require that the scaffold itself has at least 15 carbons.
-            if scaffold is None or scaffold_carbons < 15:
-                # If scaffold is missing or too small, then even a match is likely spurious.
-                return False, f"Matches the {name} pattern but the core (scaffold) has too few carbons ({scaffold_carbons}), likely not a full flavonoid skeleton."
-            return True, f"Matches the {name} core pattern (scaffold has {scaffold_carbons} carbons)"
+        if pattern is None:
+            continue  # skip a bad pattern
+        if scaffold.HasSubstructMatch(pattern):
+            return True, f"Matches the {name} core pattern (scaffold has {scaffold_carbons} carbons, {num_scaffold_arom} aromatic rings)"
     
-    return False, "No recognized flavonoid core pattern detected"
+    return False, "No recognized flavonoid core pattern detected in the scaffold."
 
-# Optional test examples (only when this script is run directly)
+# Optional testing (only when this script is run directly)
 if __name__ == "__main__":
+    # A few test examples (names and SMILES) from the provided list.
     test_examples = {
         "4',8-Dimethylgossypetin 3-glucoside": "O1C(C(O)C(O)C(O)C1OC2=C(OC3=C(C2=O)C(O)=CC(O)=C3OC)C4=CC(O)=C(OC)C=C4)CO",
         "Erycristin": "O1C2C(C3=C1C(=C(OC)C=C3)CC=C(C)C)COC4=C2C=C(C(O)=C4)CC=C(C)C",
         "Alternanthin": "O1[C@@](CC(O)[C@H](O)[C@H]1C)(C2=C(O)C3=C(OC(=CC3=O)C4=CC(OC)=C(O)C=C4)C=C2O)[H]",
         "calycosin": "COc1ccc(cc1O)-c1coc2cc(O)ccc2c1=O",
-        "wogonin": "COc1c(O)cc(O)c2c1oc(cc2=O)-c1ccccc1"
+        "wogonin": "COc1c(O)cc(O)c2c1oc(cc2=O)-c1ccccc1",
     }
-    
     for name, s in test_examples.items():
         result, reason = is_flavonoids(s)
         print(f"{name}: {result} ({reason})")
