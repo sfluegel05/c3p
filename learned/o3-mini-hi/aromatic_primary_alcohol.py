@@ -3,89 +3,58 @@ Classifies: CHEBI:33857 aromatic primary alcohol
 """
 """
 Classifies: Aromatic Primary Alcohol
-Definition:
-  An aromatic primary alcohol is any primary alcohol in which the alcoholic hydroxy 
-  group (-OH) is attached to a carbon which is itself bonded to an aromatic ring.
-  
-Improved approach:
-  1. Parse the molecule and add explicit hydrogens.
-  2. Iterate over all carbon atoms.
-  3. For each carbon, check if it has a hydroxyl neighbor. Instead of using GetDegree() 
-     for the oxygen, count its heavy (non-hydrogen) neighbors: for a hydroxyl group, the oxygen
-     should have exactly one heavy neighbor (i.e. the carbon).
-  4. Verify that the carbon is primary by checking that it has exactly 2 hydrogens.
-  5. Also check that this carbon is connected to at least one aromatic atom.
-If all these conditions are met for at least one carbon, we classify the molecule as an aromatic primary alcohol.
-"""
 
+Definition:
+  An aromatic primary alcohol is any primary alcohol in which the alcoholic hydroxy group (-OH) 
+  is attached to a carbon (CH2) that is itself bonded to an aromatic ring.
+  
+Approach:
+  We use a SMARTS substructure search. The SMARTS "c[CH2;H2][OH]" means:
+    • "c": an aromatic carbon,
+    • "[CH2;H2]": a CH2 group (primary carbon having exactly 2 hydrogens),
+    • "[OH]": an oxygen bonded to a hydrogen (i.e. an –OH group).
+  If the molecule contains this substructure, we classify it as an aromatic primary alcohol.
+  
+If the SMILES string cannot be parsed or no match is found, we return False with a reason.
+"""
 from rdkit import Chem
 
 def is_aromatic_primary_alcohol(smiles: str):
     """
     Determines if a molecule is an aromatic primary alcohol based on its SMILES string.
-    
-    An aromatic primary alcohol is one where the hydroxyl group (-OH) is attached to a primary
-    carbon (CH2) and that carbon is also bonded (directly) to at least one aromatic atom.
-    
+
+    An aromatic primary alcohol is one where the -OH group is attached to a primary carbon (CH2)
+    that is directly bonded to an aromatic ring.
+
     Args:
         smiles (str): SMILES string of the molecule.
-    
+
     Returns:
-        bool: True if the molecule is classified as an aromatic primary alcohol, False otherwise.
+        bool: True if the molecule contains an aromatic primary alcohol group, False otherwise.
         str: Reason for the classification.
     """
-    
     # Parse the SMILES string into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens so that we can count them correctly.
+    # Add explicit hydrogens to ensure we have accurate hydrogen count on atoms.
     mol = Chem.AddHs(mol)
     
-    # Iterate over carbons to look for a candidate primary alcohol group.
-    for atom in mol.GetAtoms():
-        # Consider only carbon atoms.
-        if atom.GetAtomicNum() != 6:
-            continue
-
-        # Look for a hydroxyl oxygen among its neighbors.
-        oh_found = False
-        for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 8:  # oxygen
-                # Count "heavy" (non-hydrogen) neighbors of the oxygen.
-                heavy_neighbors = [n for n in nbr.GetNeighbors() if n.GetAtomicNum() != 1]
-                # For a terminal hydroxyl group, oxygen should have exactly one heavy neighbor (the carbon).
-                if len(heavy_neighbors) == 1:
-                    oh_found = True
-                    break
-                    
-        if not oh_found:
-            # No hydroxyl group on this carbon, so skip.
-            continue
-        
-        # Check that this carbon is primary: it should have exactly two hydrogens.
-        # GetTotalNumHs() includes all implicit and explicit hydrogens.
-        if atom.GetTotalNumHs() != 2:
-            continue
-        
-        # Now check that this carbon is bonded to at least one aromatic atom.
-        aromatic_neighbor = False
-        for nbr in atom.GetNeighbors():
-            # Exclude the oxygen we already used for -OH by ensuring neighbor is not oxygen 
-            # or, if oxygen, it might not be aromatic.
-            if nbr.GetAtomicNum() == 8:
-                continue
-            if nbr.GetIsAromatic():
-                aromatic_neighbor = True
-                break
-            
-        if aromatic_neighbor:
-            return True, "Molecule contains an aromatic primary alcohol group"
+    # Define SMARTS pattern for an aromatic primary alcohol.
+    # Explanation:
+    # "c"          : an aromatic carbon atom
+    # "[CH2;H2]"   : a CH2 group that has exactly 2 hydrogens (i.e. a primary carbon)
+    # "[OH]"       : a hydroxyl group (oxygen with a hydrogen attached)
+    pattern = Chem.MolFromSmarts("c[CH2;H2][OH]")
     
-    return False, "No aromatic primary alcohol group found"
+    # Check if the molecule contains the aromatic primary alcohol substructure.
+    if mol.HasSubstructMatch(pattern):
+        return True, "Molecule contains an aromatic primary alcohol group"
+    else:
+        return False, "No aromatic primary alcohol group found"
 
-# Example usage (for manual testing; can be removed when using as a module):
+# Example usage for manual testing; can be removed when using as a module.
 if __name__ == "__main__":
     examples = {
         "4-acetoxybenzyl alcohol": "CC(=O)OC1=CC=C(CO)C=C1",
