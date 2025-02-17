@@ -6,14 +6,13 @@ Classifies: Nucleoside 5'-phosphate
 Definition: A ribosyl or deoxyribosyl derivative of a pyrimidine or purine base 
 in which C-5 of the ribose ring is mono-, di-, tri- or tetra-phosphorylated.
 Heuristics used here:
-  - At least one nucleobase is detected (an aromatic ring with ≥2 nitrogen atoms).
-  - A sugar (ribose/deoxyribose) is detected either as a five-membered ring (4C+1O)
-    or as an open-chain fragment showing a CH2 group attached to a phosphate.
-  - The sugar part is directly connected to the nucleobase.
-  - A CH2 on the sugar (or sugar-like fragment) is attached via oxygen to a phosphorus,
-    corresponding to the phosphorylated C-5 position.
-  - The overall molecular weight is not excessive (here we require <=800 Da) to avoid
-    classifying large nucleotide-containing cofactors (e.g. CoA derivatives).
+  - The molecule must be of moderate size (molecular weight <=800 Da).
+  - A nucleobase is detected as any aromatic ring that contains at least 2 nitrogen atoms.
+    (All candidate rings are aggregated.)
+  - A sugar candidate is detected either as:
+       (a) a five-membered ring with exactly one oxygen and four carbons and which is directly bonded to the nucleobase, or
+       (b) an open‐chain fragment containing a CH2 group that is linked via oxygen to a phosphorus atom.
+  - Finally, a phosphate group (P atom attached via oxygen) must be found in the vicinity of the sugar candidate.
 """
 
 from rdkit import Chem
@@ -35,100 +34,85 @@ def is_nucleoside_5__phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # As a rough check, ensure the molecule is not huge.
+    # Reject molecules that are too heavy (to avoid large cofactors).
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt > 800:
         return False, f"Molecular weight {mol_wt:.1f} too high for a typical nucleoside phosphate (<800 Da)"
-        
-    # --------- Step 1. Look for an aromatic nucleobase candidate -----------
-    # We assume a nucleobase is an aromatic ring containing at least 2 nitrogen atoms.
+    
+    # ---------------- Step 1: Identify the nucleobase candidate ----------------
+    # We assume a nucleobase is an aromatic ring with at least 2 nitrogen atoms.
+    nucleobase_atoms = set()
     ring_info = mol.GetRingInfo()
-    nucleobase_atom_indices = set()
-    nucleobase_found = False
     for ring in ring_info.AtomRings():
-        # Check if all atoms in this ring are aromatic and count nitrogens.
+        # Only consider rings in which all atoms are aromatic.
         if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+            # Count nitrogen atoms in the ring.
             n_nitrogens = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
             if n_nitrogens >= 2:
-                nucleobase_found = True
-                nucleobase_atom_indices.update(ring)
-                # We consider the first candidate ring found.
-                break
-    if not nucleobase_found:
+                nucleobase_atoms.update(ring)
+    if not nucleobase_atoms:
         return False, "No nucleobase candidate (aromatic ring with ≥2 nitrogens) found"
     
-    # ---------- Step 2. Find the sugar (ribose/deoxyribose) candidate -----------
-    sugar_ring_found = False
-    sugar_ring_atoms = set()
+    # ---------------- Step 2: Locate the sugar candidate ----------------
+    sugar_candidate = None
+    # First, try to detect a closed (ring) sugar candidate.
     for ring in ring_info.AtomRings():
         if len(ring) == 5:
             n_oxygens = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
             n_carbons = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+            # Ribose or deoxyribose ring should have one oxygen and four carbons.
             if n_oxygens == 1 and n_carbons == 4:
-                sugar_ring_found = True
-                sugar_ring_atoms = set(ring)
-                break
-    sugar_candidate_found = False  # will be True if either closed or open candidate found
-    candidate_atoms = None          # indices making up the sugar (ring or chain)
-    
-    if sugar_ring_found:
-        sugar_candidate_found = True
-        candidate_atoms = sugar_ring_atoms
-    else:
-        # Try to find an open-chain sugar-like fragment by searching for a CH2 group 
-        # that is attached via an oxygen to a phosphorus.
-        # We use a SMARTS pattern for CH2-O-P.
+                # Check that at least one atom of this ring is directly attached to the nucleobase.
+                attached_to_base = False
+                for idx in ring:
+                    atom = mol.GetAtomWithIdx(idx)
+                    for nbr in atom.GetNeighbors():
+                        if nbr.GetIdx() in nucleobase_atoms:
+                            attached_to_base = True
+                            break
+                    if attached_to_base:
+                        break
+                if attached_to_base:
+                    sugar_candidate = set(ring)
+                    break
+    # If no ring sugar is found, try an open-chain sugar-like candidate.
+    if sugar_candidate is None:
+        # Look for a CH2 group connected via oxygen to a phosphorus.
+        # The SMARTS pattern below targets a CH2 group (-[CH2]-[O]-[P])
         open_chain_smarts = "[CH2]-[O]-[P]"
         patt = Chem.MolFromSmarts(open_chain_smarts)
-        if mol.HasSubstructMatch(patt):
-            # For our purposes, we take the CH2 group(s) of the match and then
-            # include their immediate neighbors (as the sugar candidate).
-            matches = mol.GetSubstructMatches(patt)
-            # Choose one match (if many)
-            ch2_idx, oxy_idx, p_idx = matches[0]
-            candidate_atoms = {ch2_idx, oxy_idx, p_idx}
-            sugar_candidate_found = True
-    if not sugar_candidate_found:
-        return False, "No sugar (closed 5-membered ring or open-chain CH2-O-P fragment) found"
-
-    # --------- Step 3. Check that the sugar candidate is attached to the nucleobase -----------
-    # We require that at least one atom from the sugar candidate is directly bonded to
-    # an atom from the nucleobase candidate.
+        if patt is not None and mol.HasSubstructMatch(patt):
+            # Pick the first match; note that this is a minimal fragment.
+            match = mol.GetSubstructMatches(patt)[0]
+            sugar_candidate = set(match)
+        else:
+            return False, "No sugar candidate (closed 5-membered ring or open-chain CH2-O-P fragment) found"
+    
+    # Verify again that the sugar candidate is attached to the nucleobase.
     attachment_found = False
-    for idx in candidate_atoms:
+    for idx in sugar_candidate:
         atom = mol.GetAtomWithIdx(idx)
         for nbr in atom.GetNeighbors():
-            if nbr.GetIdx() in nucleobase_atom_indices:
+            if nbr.GetIdx() in nucleobase_atoms:
                 attachment_found = True
                 break
         if attachment_found:
             break
     if not attachment_found:
         return False, "Sugar candidate not attached to a nucleobase candidate"
-
-    # --------- Step 4. Check for a phosphate group attached to the sugar (expected at C-5) -----------
-    # We look for an sp3 carbon (CH2) within the sugar candidate (if ring) or in its vicinity that has an
-    # oxygen neighbor which itself is bound to a phosphorus.
+    
+    # ---------------- Step 3: Verify the presence of a phosphate group ----------------
+    # We look for a phosphorus atom – attached via at least one oxygen – in the vicinity of the sugar candidate.
     phosphate_found = False
-    # We iterate over atoms in the whole molecule that are carbons (atomic number 6) and check if:
-    #   (a) They have at least 2 bound hydrogens
-    #   (b) They are adjacent to an atom in our sugar candidate (or candidate extension)
-    #   (c) They have a neighbor oxygen that is bound to a phosphorus.
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 6:
-            continue
-        # use GetTotalNumHs() to quickly check for CH2 (at least 2 H)
-        if atom.GetTotalNumHs() < 2:
-            continue
-        # Check if this atom is attached to the sugar candidate
-        attached_to_sugar = any(nbr.GetIdx() in candidate_atoms for nbr in atom.GetNeighbors())
-        if not attached_to_sugar:
-            continue
-        # Now look at its neighbors: want an oxygen that bonds to a phosphorus.
+    # Here we iterate over the atoms in our sugar candidate and check each oxygen neighbor.
+    for idx in sugar_candidate:
+        atom = mol.GetAtomWithIdx(idx)
         for nbr in atom.GetNeighbors():
+            # Look for oxygen neighbor.
             if nbr.GetAtomicNum() == 8:
+                # Check if this oxygen is linked to a phosphorus.
                 for nn in nbr.GetNeighbors():
-                    if nn.GetAtomicNum() == 15:  # phosphorus
+                    if nn.GetAtomicNum() == 15:
                         phosphate_found = True
                         break
                 if phosphate_found:
@@ -136,12 +120,13 @@ def is_nucleoside_5__phosphate(smiles: str):
         if phosphate_found:
             break
     if not phosphate_found:
-        return False, "No phosphate group found attached (via oxygen) to a CH2 (expected at C-5) of the sugar fragment"
+        return False, "No phosphate group found attached (via oxygen) to the sugar candidate"
     
-    # --------- All criteria are met -----------
-    return True, "Molecule contains a nucleobase (aromatic heterocycle with ≥2 N), a sugar (ribose/deoxyribose or open-chain sugar-like fragment) attached to it, and a phosphate at the likely C-5 position"
+    # ---------------- All criteria are met ----------------
+    return True, ("Molecule contains a nucleobase (aromatic heterocycle with ≥2 N), a sugar (ribose/deoxyribose or sugar-like open-chain fragment) "
+                  "directly attached to it, and a phosphate group (likely at the C-5 position)")
 
-# (Optional) Testing examples:
+# (Optional) Testing examples – Uncomment below to test specific SMILES:
 # test_smiles = "O[C@@H]1[C@@H](COP(O)(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O"  # uridine 5'-monophosphate
 # result, reason = is_nucleoside_5__phosphate(test_smiles)
 # print(result, reason)
