@@ -5,54 +5,47 @@ Classifies: CHEBI:73702 wax
 """
 Classifies: Wax
 Definition: A chemical substance that is an organic compound or mixture of compounds 
-           that is composed of long‐chain molecules and is malleable at ambient temperatures.
+           that is composed of long-chain molecules and is malleable at ambient temperatures.
 Approach:
- - Parse the molecule and check that it is organic (has carbons), has a high enough 
-   molecular weight (≥300 Da) and a sufficient number of rotatable bonds (≥5).
- - Find ester groups using the SMARTS "[CX3](=O)[OX2]".
- - For each ester group, separate the two sides:
-       • For the acyl (fatty acid) part: from the carbonyl carbon, 
-         ignore the bond to the ester oxygen and perform a DFS to count the longest contiguous carbon chain.
-       • For the alcohol (fatty alcohol) part: from the ester oxygen, 
-         ignore the bond back to the carbonyl carbon and perform a DFS to count the longest contiguous carbon chain.
-   The DFS is implemented with an exclude set to avoid crossing back over the ester bond.
- - Return True if any ester group has both chains ≥8 carbons.
-Note: This heuristic may be imperfect but should catch the majority of expected wax compounds.
+ - First, check that the molecule is organic (has carbon atoms), has sufficient molecular weight (>=300 Da)
+   and enough flexibility (>=5 rotatable bonds).
+ - Search for ester groups using the SMARTS pattern "[CX3](=O)[OX2]".
+ - For each ester group, look at the two sides of the ester:
+       • For the acyl side (from the carbonyl carbon), examine all neighbors except the ester oxygen.
+       • For the alcohol side (from the ester oxygen), examine all neighbors except the carbonyl carbon.
+   Use a backtracking depth‐first search (DFS) to calculate the longest contiguous chain of carbon atoms.
+ - If at least one ester group is found where both the acyl and alcohol chains have a longest contiguous chain 
+   length of at least 8 carbons, we classify the molecule as a wax.
+Note: This heuristic is approximate.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
-def longest_carbon_chain_from(mol, start_idx, exclude: set = None, visited: set = None) -> int:
+def longest_chain_from(mol, current_idx, exclude: set, visited: set) -> int:
     """
-    Recursively count the longest chain of connected carbon atoms starting at start_idx,
-    while not crossing into any atom index in the exclude set.
-    
+    Backtracking DFS to compute the longest contiguous chain of carbon atoms
+    starting from the atom given by current_idx.
     Args:
         mol (Chem.Mol): RDKit molecule.
-        start_idx (int): Starting atom index (should be carbon).
-        exclude (set): set of atom indices to not traverse.
-        visited (set): set of already visited atom indices (for this DFS branch).
-        
+        current_idx (int): Starting atom index (should be carbon).
+        exclude (set): Atom indices that should not be visited.
+        visited (set): Atom indices already visited along this path.
     Returns:
-        int: Length (number of carbons) of the longest contiguous chain from start_idx.
+        int: The length (number of carbons) of the longest chain from the starting atom.
     """
-    if exclude is None:
-        exclude = set()
-    if visited is None:
-        visited = set()
-    visited.add(start_idx)
-    max_length = 1  # count the current carbon
-
-    atom = mol.GetAtomWithIdx(start_idx)
+    visited.add(current_idx)
+    max_length = 1  # Count the current carbon
+    atom = mol.GetAtomWithIdx(current_idx)
     for nbr in atom.GetNeighbors():
         nbr_idx = nbr.GetIdx()
-        # Only continue if neighbor is carbon, not in visited, and not excluded.
         if nbr_idx in visited or nbr_idx in exclude:
             continue
+        # Only traverse into carbons (atomic number 6)
         if nbr.GetAtomicNum() == 6:
-            branch_length = 1 + longest_carbon_chain_from(mol, nbr_idx, exclude, visited.copy())
-            if branch_length > max_length:
-                max_length = branch_length
+            length = 1 + longest_chain_from(mol, nbr_idx, exclude, visited)
+            if length > max_length:
+                max_length = length
+    visited.remove(current_idx)
     return max_length
 
 def is_wax(smiles: str):
@@ -71,72 +64,80 @@ def is_wax(smiles: str):
     
     Returns:
         bool: True if molecule qualifies as wax, False otherwise.
-        str: Reason for classification decision.
+        str: Detailed reason for the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
+    # Sanitize the molecule to ensure proper valence and connectivity.
+    try:
+        Chem.SanitizeMol(mol)
+    except Exception as e:
+        return False, f"Sanitization failed: {e}"
     
-    # Check organic: must contain carbon atoms.
+    # Check that the molecule is organic (must have carbon atoms)
     if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
-        return False, "Not organic (contains no carbon atoms)."
+        return False, "Not organic (no carbon atoms found)."
     
-    # Check molecular weight.
+    # Check molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, f"Molecular weight ({mol_wt:.1f} Da) too low for a typical wax."
     
-    # Check rotatable bonds.
+    # Check rotatable bonds count
     n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
     if n_rotatable < 5:
         return False, f"Too few rotatable bonds ({n_rotatable}) for long-chain wax characteristics."
     
-    # Define ester SMARTS pattern.
+    # Define and find ester groups.
     ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if not ester_matches:
         return False, "No ester functional groups found (required for wax classification)."
     
-    # Loop over each ester group.
+    # Loop over each ester match
     for match in ester_matches:
-        # match[0]: carbonyl carbon; match[1]: ester oxygen.
+        # In the matched ester, match[0] is the carbonyl carbon and match[1] is the ester oxygen.
         carbonyl_idx = match[0]
         oxygen_idx = match[1]
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
         oxygen_atom = mol.GetAtomWithIdx(oxygen_idx)
         
-        # For the acyl (fatty acid) side: 
-        # select neighbors of the carbonyl carbon except the oxygen of the ester.
+        # For acyl (fatty acid) side: examine neighbors of carbonyl carbon excluding the ester oxygen.
         acyl_chain_length = 0
-        for neighbor in carbonyl_atom.GetNeighbors():
-            if neighbor.GetIdx() == oxygen_idx:
-                continue  # exclude the ester oxygen
-            if neighbor.GetAtomicNum() == 6:
-                # Exclude the carbonyl carbon itself from further traversal to avoid jumping back.
-                chain_length = longest_carbon_chain_from(mol, neighbor.GetIdx(), exclude={oxygen_idx})
-                if chain_length > acyl_chain_length:
-                    acyl_chain_length = chain_length
-        
-        # For the alcoholic (fatty alcohol) side:
-        # select neighbors of the oxygen atom except the carbonyl carbon.
+        acyl_valid = False
+        for nbr in carbonyl_atom.GetNeighbors():
+            if nbr.GetIdx() == oxygen_idx:
+                continue
+            if nbr.GetAtomicNum() == 6:  # must be carbon
+                # Compute the longest contiguous chain.
+                chain_len = longest_chain_from(mol, nbr.GetIdx(), exclude={oxygen_idx}, visited=set())
+                # Optionally, add 1 to include the neighbor itself (already done in our DFS)
+                if chain_len >= 8:
+                    acyl_chain_length = max(acyl_chain_length, chain_len)
+                    acyl_valid = True
+        # For alcoholic (fatty alcohol) side: examine neighbors of oxygen excluding the carbonyl carbon.
         alcohol_chain_length = 0
-        for neighbor in oxygen_atom.GetNeighbors():
-            if neighbor.GetIdx() == carbonyl_idx:
-                continue  # exclude the carbonyl carbon
-            if neighbor.GetAtomicNum() == 6:
-                chain_length = longest_carbon_chain_from(mol, neighbor.GetIdx(), exclude={carbonyl_idx})
-                if chain_length > alcohol_chain_length:
-                    alcohol_chain_length = chain_length
-
-        # Check if both chains are sufficiently long (≥8 carbons).
-        if acyl_chain_length >= 8 and alcohol_chain_length >= 8:
-            return True, (f"Found an ester group with acyl chain length {acyl_chain_length} "
-                          f"and alcohol chain length {alcohol_chain_length}, consistent with a wax.")
+        alcohol_valid = False
+        for nbr in oxygen_atom.GetNeighbors():
+            if nbr.GetIdx() == carbonyl_idx:
+                continue
+            if nbr.GetAtomicNum() == 6:
+                chain_len = longest_chain_from(mol, nbr.GetIdx(), exclude={carbonyl_idx}, visited=set())
+                if chain_len >= 8:
+                    alcohol_chain_length = max(alcohol_chain_length, chain_len)
+                    alcohol_valid = True
+        
+        # Check if both sides have a sufficiently long chain.
+        if acyl_valid and alcohol_valid:
+            return True, (f"Found an ester group with acyl chain length {acyl_chain_length} and "
+                          f"alcohol chain length {alcohol_chain_length}, consistent with wax compounds.")
     
     return False, "No ester group found with two sufficiently long (≥8 carbons) chains."
 
-# Example usage
+# Example usage:
 if __name__ == "__main__":
-    test_smiles = "CCCCCCCCCCCCCCCC(=O)OCC(CCCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCC"  # 2-palmitoyloxypalmityl palmitate
+    # Test with one of the provided SMILES: 2-palmitoyloxypalmityl palmitate
+    test_smiles = "CCCCCCCCCCCCCCCC(=O)OCC(CCCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCC"
     classification, reason = is_wax(test_smiles)
     print(f"Classification: {classification}\nReason: {reason}")
