@@ -3,70 +3,82 @@ Classifies: CHEBI:36615 triterpenoid
 """
 """
 Classifies: Triterpenoid (any terpenoid derived from a triterpene)
-Heuristic: Find the largest fused ring cluster and then “expand” its atom set by
-including neighboring carbon atoms that are likely part of the core if bonded to
-at least two atoms in the ring set. Then require that the (expanded) core contains
-roughly 27–35 carbons, that there are at least 4 fused rings, and that the overall
-molecular weight is consistent with a triterpenoid.
+Heuristic:
+  - Check that overall molecular weight > 400 Da.
+  - Enforce that the molecule is largely aliphatic (e.g. high fraction of sp3 carbons globally).
+  - Extract all rings, then build a fused ring cluster.
+  - Expand the fused ring “core” by including neighboring carbon atoms connected to at least two core atoms.
+  - Count the number of fused rings, the number of carbons in the core, and the aromatic fraction within that core.
+  - Require that there are at least 4 fused rings, that the expanded core has a carbon count between 15 and 40,
+    and that very few of the core carbons are aromatic (<30%).
+This heuristic was designed after noting that some triterpenoids (especially those derived from a C30 skeleton)
+can lose methyl groups or be rearranged, so the core might not have exactly 27–35 carbons.
+Also, many false‐positive non‐terpenoids had many aromatic atoms.
 """
 
 from rdkit import Chem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import Descriptors, rdMolDescriptors
 
 def is_triterpenoid(smiles: str):
     """
-    Determines if a molecule is a triterpenoid based on its SMILES string using a heuristic.
+    Determines if a molecule is a triterpenoid based on its SMILES string using an improved heuristic.
     
     Steps:
-      1. Parse the SMILES and extract all rings.
-      2. Build a graph where each ring is a node (edge if rings share atoms) and find
-         the largest connected (fused) ring cluster.
-      3. The initial core is the union of atoms in the rings. Then, we expand the core by
-         including any carbon atom outside the core if it touches at least two atoms already
-         in the core. (This helps capture bridging carbons and parts of a rearranged skeleton.)
-      4. Calculate the number of rings in the cluster and the number of carbon atoms in the
-         expanded core.
-      5. Apply the following criteria:
-            - At least 4 fused rings.
-            - The expanded core should have between 27 and 35 carbons.
-            - The overall molecular weight should be above 400 Da.
-            
+      1. Parse the SMILES.
+      2. Check overall molecular weight (>400 Da).
+      3. Check global saturation by computing fraction of sp3 carbons (should be >0.5).
+      4. Extract all rings and compute connectivity among them. Identify the largest fused ring cluster.
+      5. Expand the core of the fused-ring cluster by including neighboring carbon atoms that are connected
+         to at least two atoms already in the core.
+      6. Count the number of fused rings and the number of carbon atoms present in the expanded core.
+      7. Also calculate the fraction of aromatic carbon atoms in the core.
+      8. Require:
+           - At least 4 fused rings.
+           - The core has between 15 and 40 carbon atoms.
+           - The core’s aromatic carbon fraction is below 0.3.
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+    
     Returns:
         bool: True if the molecule is classified as a triterpenoid, False otherwise.
-        str: A message explaining the outcome.
+        str: Explanation for the decision.
     """
-    # Parse SMILES string
+    # Parse SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check overall molecular weight: triterpenoids are generally > 400 Da.
+        
+    # Check that overall molecular weight is high enough.
     mol_wt = Descriptors.ExactMolWt(mol)
     if mol_wt < 400:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) for triterpenoid"
-
-    # Get all rings in the molecule as tuples of atom indices
+    
+    # Check overall degree of saturation.
+    frac_sp3 = rdMolDescriptors.CalcFractionCSP3(mol)
+    if frac_sp3 < 0.5:
+        return False, f"Low fraction of sp3 carbons ({frac_sp3:.2f}); triterpenoids are typically largely saturated"
+    
+    # Get ring info: list of tuples of atom indices.
     ring_info = mol.GetRingInfo()
     all_rings = list(ring_info.AtomRings())
     if not all_rings:
-        return False, "No rings detected in the structure"
-
-    n_rings = len(all_rings)
-    # Build connectivity among rings: rings are considered adjacent if they share at least one atom.
-    adjacency = {i: set() for i in range(n_rings)}
-    for i in range(n_rings):
-        for j in range(i+1, n_rings):
+        return False, "No rings detected in the molecule."
+    
+    n_rings_total = len(all_rings)
+    
+    # Build a connectivity among rings: adjacent if they share at least one atom.
+    adjacency = {i: set() for i in range(n_rings_total)}
+    for i in range(n_rings_total):
+        for j in range(i + 1, n_rings_total):
             if set(all_rings[i]).intersection(all_rings[j]):
                 adjacency[i].add(j)
                 adjacency[j].add(i)
-
-    # Find connected components (fused clusters) of rings using depth-first search.
+    
+    # Identify connected clusters of rings.
     visited = set()
     components = []
-    for i in range(n_rings):
+    for i in range(n_rings_total):
         if i not in visited:
             stack = [i]
             comp = set()
@@ -78,57 +90,70 @@ def is_triterpenoid(smiles: str):
                 comp.add(node)
                 stack.extend(adjacency[node] - visited)
             components.append(comp)
-
-    # Choose the clustered set with the largest union of ring atoms.
+    
+    # Choose the fused ring cluster whose union of atoms is largest.
     best_union = set()
     best_component = None
     for comp in components:
         union_atoms = set()
-        for r in comp:
-            union_atoms.update(all_rings[r])
+        for ring_index in comp:
+            union_atoms.update(all_rings[ring_index])
         if len(union_atoms) > len(best_union):
             best_union = union_atoms
             best_component = comp
-
+    
     if best_component is None:
         return False, "No fused ring cluster detected."
-
-    # Count the number of fused rings in this cluster.
+    
     n_fused_rings = len(best_component)
-
-    # START: Expand the core.
-    # We start with the union of all atoms in the fused ring cluster.
+    
+    # Expand the fused ring core by iteratively adding carbon atoms outside the union if 
+    # they have at least two neighbors already in the core.
     core = set(best_union)
     added = True
     while added:
         added = False
-        # Check all atoms not yet in the core.
         for atom in mol.GetAtoms():
             idx = atom.GetIdx()
             if idx in core:
                 continue
-            # Only consider carbon atoms.
+            # Consider only carbon atoms.
             if atom.GetAtomicNum() != 6:
                 continue
-            # Count how many neighbors are already in the core.
+            # Count neighbors in the core.
             nbrs = atom.GetNeighbors()
-            count = sum(1 for nbr in nbrs if nbr.GetIdx() in core)
-            # If at least two neighbors belong to the core, add this atom.
-            if count >= 2:
+            neighbor_count = sum(1 for nbr in nbrs if nbr.GetIdx() in core)
+            if neighbor_count >= 2:
                 core.add(idx)
                 added = True
-    # END: Core expansion
-
-    # Count carbons in the (expanded) core.
-    n_carbons_in_core = sum(1 for idx in core if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-
-    # Use a relaxed threshold to allow for some rearrangement.
-    if n_fused_rings < 4:
-        return False, f"Fused ring cluster has only {n_fused_rings} rings (expected at least 4 for a triterpenoid core)"
-    if not (27 <= n_carbons_in_core <= 35):
-        return False, f"Expanded fused ring core has {n_carbons_in_core} carbon atoms (expected between 27 and 35 for a triterpenoid)"
     
-    return True, f"Fused ring core with {n_fused_rings} rings and {n_carbons_in_core} carbons is consistent with a triterpenoid"
+    # Count number of carbon atoms in core.
+    core_carbons = [idx for idx in core if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
+    n_core_carbons = len(core_carbons)
+    
+    # Also, count how many of these core carbons are aromatic.
+    aromatic_core_carbons = 0
+    for idx in core_carbons:
+        atom = mol.GetAtomWithIdx(idx)
+        if atom.GetIsAromatic():
+            aromatic_core_carbons += 1
+    if n_core_carbons > 0:
+        frac_aromatic_core = aromatic_core_carbons / n_core_carbons
+    else:
+        frac_aromatic_core = 0
+        
+    # Apply heuristic criteria.
+    if n_fused_rings < 4:
+        return False, f"Fused ring cluster has only {n_fused_rings} rings (expected at least 4 for triterpenoid)"
+    # Allow a wider range for modified/rearranged cores.
+    if not (15 <= n_core_carbons <= 40):
+        return False, f"Expanded fused ring core has {n_core_carbons} carbons (expected between 15 and 40 for triterpenoid core)"
+    if frac_aromatic_core >= 0.3:
+        return False, f"Aromatic fraction in core is {frac_aromatic_core:.2f} (expected below 0.3 since triterpenoids are mostly aliphatic)"
+    
+    return True, (f"Fused ring core with {n_fused_rings} rings and {n_core_carbons} carbons, "
+                  f"aromatic fraction in core: {frac_aromatic_core:.2f}, overall sp3 fraction: {frac_sp3:.2f}, "
+                  "is consistent with a triterpenoid.")
 
 # For testing purposes (this section may be removed or commented out in production)
 if __name__ == "__main__":
