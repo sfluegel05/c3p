@@ -3,94 +3,90 @@ Classifies: CHEBI:61905 short-chain fatty acyl-CoA
 """
 #!/usr/bin/env python3
 """
-Classifies: CHEBI short-chain fatty acyl-CoA
+Classifies: short-chain fatty acyl-CoA
 
-Definition:
-  A short-chain fatty acyl-CoA is defined as a fatty acyl-CoA where the acyl part 
-  (coming from a short-chain fatty acid, typically 2–6 carbons including the carbonyl carbon)
-  is attached via a thioester bond (C(=O)-S) to a coenzyme A (CoA) moiety.
-  
-Algorithm:
-  1. Parse the SMILES.
-  2. Search for a unique thioester bond using the SMARTS pattern "[CX3](=O)[SX2]".
-  3. Use FragmentOnBonds (with addDummies=True) to “cut” the molecule at the thioester bond.
-  4. Identify the acyl fragment by counting its carbon atoms (ignoring dummy atoms).
-     The acyl chain (including its carbonyl carbon) should contain 2–6 C atoms.
+A short-chain fatty acyl-CoA is defined as a fatty acyl-CoA whose acyl portion (derived from a short-chain fatty acid, typically 2–6 carbons in length) is attached via a thioester bond (C(=O)–S) to a coenzyme A (CoA) moiety.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_short_chain_fatty_acyl_CoA(smiles: str):
     """
-    Determines if a molecule is a short-chain fatty acyl-CoA based on its SMILES string.
+    Determines if a molecule is a short-chain fatty acyl-CoA.
     
     The classification checks for:
-      - A unique thioester bond (SMARTS: [CX3](=O)[SX2]).
-      - Fragmentation at that bond, and that the fragment corresponding to the acyl group
-        contains between 2 and 6 carbon atoms (including the carbonyl carbon).
-      - Implicitly, the remainder should represent a coenzyme A moiety.
+      - A thioester bond that indicates an acyl binding (pattern: [CX3](=O)[SX2])
+      - The presence of a CoA moiety (recognized via a substructure match, here simplified as "SCCNC(=O)CCNC(=O)")
+      - An acyl chain (the fragment which results when breaking the bond between the acyl carbon and sulfur)
+        having 2 to 6 carbon atoms (as is common for short-chain fatty acids).
     
     Args:
         smiles (str): SMILES string of the molecule.
-    
+        
     Returns:
         bool: True if the molecule qualifies as a short-chain fatty acyl-CoA, False otherwise.
-        str: Explanation for the decision.
+        str: Reason for the classification decision.
     """
-    # Parse the SMILES string into a molecule
+
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define the SMARTS pattern for the thioester bond (C(=O)-S)
+
+    # Look for a thioester bond: carbonyl (C=O) linked to sulfur (S)
     thioester_smarts = "[CX3](=O)[SX2]"
     thioester_pat = Chem.MolFromSmarts(thioester_smarts)
     thioester_matches = mol.GetSubstructMatches(thioester_pat)
     if not thioester_matches:
-        return False, "No thioester bond (C(=O)-S) found"
+        return False, "No thioester bond (C(=O)–S) found"
     if len(thioester_matches) > 1:
-        return False, f"Multiple thioester bonds found ({len(thioester_matches)}); expected exactly one"
+        return False, f"Multiple thioester bonds found ({len(thioester_matches)}); expected exactly one for a fatty acyl-CoA"
     
-    # Get the atoms from the unique match: assume first atom is the carbonyl carbon and second is sulfur.
+    # Get the unique thioester match.
+    # The SMARTS "[CX3](=O)[SX2]" should return a tuple (C_atom, S_atom),
+    # where the C atom is the one in the carbonyl group.
     carbonyl_idx, sulfur_idx = thioester_matches[0][0], thioester_matches[0][1]
-    bond = mol.GetBondBetweenAtoms(carbonyl_idx, sulfur_idx)
-    if bond is None:
-        return False, "Thioester bond not found in the molecule"
-    
-    # Now fragment the molecule at the thioester bond. We use addDummies=True so that dummy atoms [*]
-    # mark the cut sites and the fragments remain intact.
-    frag_mol = Chem.FragmentOnBonds(mol, [bond.GetIdx()], addDummies=True)
-    frags = Chem.GetMolFrags(frag_mol, asMols=True, sanitizeFrags=True)
-    
-    if len(frags) != 2:
-        return False, f"Expected 2 fragments after bond cleavage, but got {len(frags)}"
-    
-    # For each fragment, count the number of carbon atoms; ignore dummy atoms (atomic number 0).
-    def count_carbons(mol_fragment):
-        return sum(1 for atom in mol_fragment.GetAtoms() if atom.GetAtomicNum() == 6)
-    
-    frag_carbon_counts = [count_carbons(frag) for frag in frags]
-    
-    # The acyl chain (including its carbonyl carbon) should have between 2 and 6 carbons.
-    acyl_frag = None
-    acyl_count = None
-    for frag, count in zip(frags, frag_carbon_counts):
-        # If the fragment has a low carbon count, consider it the acyl chain.
-        if 2 <= count <= 6:
-            acyl_frag = frag
-            acyl_count = count
+
+    # Check for the presence of a CoA moiety.
+    # We use a simplified substructure pattern typical for CoA fragments found in our examples.
+    coa_smarts = "SCCNC(=O)CCNC(=O)"
+    coa_pat = Chem.MolFromSmarts(coa_smarts)
+    if not mol.HasSubstructMatch(coa_pat):
+        return False, "Coenzyme A moiety not detected"
+
+    # To isolate the acyl group, break the bond between the carbonyl carbon and sulfur.
+    # The acyl group is the fragment that contains the carbonyl carbon after removing the thioester bond.
+    rw_mol = Chem.RWMol(mol)
+    rw_mol.RemoveBond(carbonyl_idx, sulfur_idx)
+
+    # Obtain the fragments (each fragment is returned as a tuple of original atom indices)
+    frags = Chem.GetMolFrags(rw_mol, asMols=False)
+    acyl_frag_indices = None
+    for frag in frags:
+        if carbonyl_idx in frag:
+            acyl_frag_indices = frag
             break
+    if acyl_frag_indices is None:
+        return False, "Failed to isolate acyl fragment"
 
-    if acyl_frag is None:
-        return False, f"Acyl chain not identified; fragment carbon counts found: {frag_carbon_counts}"
+    # Count the number of carbon atoms in the acyl fragment.
+    # This count (including the carbonyl carbon) should be 2 to 6 for a short-chain fatty acid.
+    acyl_carbon_count = 0
+    for idx in acyl_frag_indices:
+        atom = rw_mol.GetAtomWithIdx(idx)
+        if atom.GetAtomicNum() == 6:  # Carbon
+            acyl_carbon_count += 1
 
-    # For a bit more clarity, provide the fragment counts.
-    return True, f"Contains a unique thioester bond. The acyl chain fragment has {acyl_count} carbon(s) (expected 2–6)."
+    if acyl_carbon_count < 2 or acyl_carbon_count > 6:
+        return False, f"Acyl chain has {acyl_carbon_count} carbon(s); expected a short-chain fatty acyl group (2–6 carbons)"
+
+    return True, f"Contains a thioester bond with a short-chain fatty acyl group ({acyl_carbon_count} carbons) attached to a CoA moiety"
 
 # Example usage (for testing purposes):
 if __name__ == "__main__":
-    # Test with one of the provided examples: 2-methylbutanoyl-CoA
-    test_smiles = "CCC(C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12"
+    # Test with one of the provided examples: isovaleryl-CoA
+    test_smiles = "CC(C)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12"
     result, reason = is_short_chain_fatty_acyl_CoA(test_smiles)
     print("Result:", result)
     print("Reason:", reason)
