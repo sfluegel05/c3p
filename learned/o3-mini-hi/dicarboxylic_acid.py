@@ -4,22 +4,21 @@ Classifies: CHEBI:35692 dicarboxylic acid
 """
 Classifies: Any carboxylic acid containing two carboxy groups (dicarboxylic acid)
 
-Improved Approach:
-  1. Parse the SMILES string and add explicit hydrogens.
-  2. Consider only the largest fragment (to remove salts/counterions).
-  3. Reject molecules that contain common metals.
-  4. Identify all carboxyl groups – both protonated ([CX3](=O)[OX2H]) and deprotonated ([CX3](=O)[OX1-]).
-     (Here we “tag” a carboxyl group by its carbon atom.)
-  5. Only if exactly two unique acid carbons are found do we proceed.
-  6. We then compute the shortest path (in bonds) between the two acid carbons. Since in classical
-     “dicarboxylic acids” the carboxyl groups are connected by a simple aliphatic (or aromatic) carbon–based 
-     backbone, we require that (a) every intermediate atom along the path is a carbon, and (b) the overall path
-     length falls within a reasonable range.
-  7. If these criteria do not hold then we reject the molecule.
-  
+Our approach:
+  1. We parse the molecule and work only on its largest fragment (to remove metal counterions).
+  2. We reject molecules that contain any amide bonds (C(=O)N) because many peptides and related molecules
+     are false positives for “dicarboxylic acid.”
+  3. We also reject molecules that contain common metals (such as Na, K, Ca, Fe, etc.).
+  4. We count the number of free carboxy groups by matching SMARTS patterns that capture a carboxyl group –
+     either protonated (–COOH) or deprotonated (–COO–). Note that the SMARTS is centered on the carbon in 
+     the –C(=O)O fragment.
+  5. Only if exactly two unique acid carbons are found do we classify the molecule as a dicarboxylic acid.
+
 Note:
-  We no longer outright reject molecules that contain amide bonds because some target compounds (e.g. nocardicin A, 
-  methotrexate) do include amide functionality yet are considered dicarboxylic acids by the “exactly two” rule.
+  There is an unavoidable balance here. Some compounds (for example, simple amino acids that contain two free 
+  acid groups) may be flagged by a naïve SMARTS match, yet chemists sometimes reserve the term “dicarboxylic acid” 
+  for non‐peptidic compounds. In our solution we therefore also filter by (a) rejecting compounds with any amide bond 
+  (which flags many peptides) and (b) rejecting molecules that contain any counterions/metals.
 """
 
 from rdkit import Chem
@@ -27,31 +26,33 @@ from rdkit import Chem
 def is_dicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a dicarboxylic acid (exactly two free carboxy acid groups)
-    based on its SMILES string.
+    based on its SMILES. 
 
     The algorithm is as follows:
-      1. Parse the SMILES and add explicit hydrogens.
-      2. Split the molecule into fragments and choose the largest (main fragment).
-      3. Reject if any metal atoms are present.
-      4. Identify carboxyl groups using two SMARTS patterns, and record the matching carbon atom.
-      5. If exactly two unique acid carbons are found, compute the shortest bond path between them.
-         Then require that:
-           a. All intermediate atoms on this path are carbon.
-           b. The path length (number of bonds) is neither too short (<2) nor too long (>12).
-      6. If these checks pass, return True; otherwise, return False with an explanation.
+      1. Parse the SMILES; if invalid, return False.
+      2. Add explicit hydrogens.
+      3. Split the molecule into fragments and choose the largest (main) fragment (to remove salt/counterions).
+      4. Reject if any amide bond (C(=O)N) is detected.
+      5. Reject if any metal atoms or common counterions are present.
+      6. Count carboxy groups using two SMARTS patterns:
+           a. For a protonated acid: "[CX3](=O)[OX2H]" 
+           b. For a deprotonated acid: "[CX3](=O)[OX1-]"
+         (We consider the matching carbon index as the “tag” for a carboxyl group.)
+      7. If exactly two unique acid carbons are found, return True. Otherwise, return False with an explanation.
 
     Args:
-        smiles (str): SMILES string representation of the molecule.
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        (bool, str): Tuple (True, explanation) for a dicarboxylic acid; else (False, explanation).
+        (bool, str): (True, explanation) if the molecule is classified as a dicarboxylic acid,
+                     (False, explanation) otherwise.
     """
-    # Parse the SMILES string.
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens (so that protons on -OH are visible).
+    # Add explicit hydrogens (necessary to see O–H groups)
     mol = Chem.AddHs(mol)
     
     # Remove salts/counterions: consider only the largest fragment.
@@ -60,61 +61,51 @@ def is_dicarboxylic_acid(smiles: str):
         return False, "No fragments found in molecule"
     main_frag = max(frags, key=lambda m: m.GetNumAtoms())
     
-    # Reject if any metal atoms or common counterions are present.
+    # Reject molecules containing amide bonds (C(=O)N) since these are common in peptides.
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    if amide_pattern is not None and main_frag.HasSubstructMatch(amide_pattern):
+        return False, "Molecule contains amide bonds, likely a peptide rather than a simple dicarboxylic acid"
+    
+    # Reject molecules that contain common metals or counterions.
+    # Here we reject if any atom symbol is one of the following:
     metals = {"Na", "K", "Ca", "Fe", "Zn", "Cu", "Mg", "Co", "Mn"}
     for atom in main_frag.GetAtoms():
         if atom.GetSymbol() in metals:
             return False, f"Molecule contains metal ({atom.GetSymbol()}); likely a salt form."
-    
+
     # Define SMARTS patterns for a carboxyl group.
-    acid_prot = Chem.MolFromSmarts("[CX3](=O)[OX2H]")   # protonated acid (–COOH)
-    acid_deprot = Chem.MolFromSmarts("[CX3](=O)[OX1-]")   # deprotonated acid (–COO-)
+    # Pattern 1: Protonated carboxylic acid (–COOH)
+    acid_prot = Chem.MolFromSmarts("[CX3](=O)[OX2H]")
+    # Pattern 2: Deprotonated carboxylate (–COO-)
+    acid_deprot = Chem.MolFromSmarts("[CX3](=O)[OX1-]")
     
-    # Use a set to record unique carboxyl carbon atom indices.
+    # We'll use a set to record unique carboxyl carbon atom indices (the matching portion is the carbon).
     acid_carbons = set()
     
     # Find matches for protonated acid groups.
     if acid_prot is not None:
-        for match in main_frag.GetSubstructMatches(acid_prot):
-            # In our SMARTS, the matching atom 0 is the carbon of the –COOH group.
+        matches = main_frag.GetSubstructMatches(acid_prot)
+        for match in matches:
+            # In our SMARTS, match[0] corresponds to the acid carbon.
             acid_carbons.add(match[0])
     
     # Find matches for deprotonated acid groups.
     if acid_deprot is not None:
-        for match in main_frag.GetSubstructMatches(acid_deprot):
+        matches = main_frag.GetSubstructMatches(acid_deprot)
+        for match in matches:
             acid_carbons.add(match[0])
     
-    num_acid = len(acid_carbons)
-    if num_acid != 2:
-        if num_acid < 2:
-            return False, f"Found only {num_acid} carboxylic acid group(s); need exactly two."
-        else:
-            return False, f"Found {num_acid} carboxylic acid groups; dicarboxylic acid must have exactly two."
+    num_acid_groups = len(acid_carbons)
     
-    # At this point, exactly two unique acid carbons were found.
-    acid_list = list(acid_carbons)
-    # Get the shortest path (list of atom indices) between the two acid carbons.
-    path = Chem.GetShortestPath(main_frag, acid_list[0], acid_list[1])
-    if not path or len(path) < 2:
-        return False, "Could not determine a valid connection between the two acid groups."
-    
-    path_length = len(path) - 1  # number of bonds
-    # Impose a reasonable path length
-    if path_length < 2:
-        return False, "Acid groups appear to be too close (not connected by an intervening chain)."
-    if path_length > 12:
-        return False, "Acid groups are separated by a long and complex structure; not a simple dicarboxylic acid."
-    
-    # Check that all intermediate atoms (excluding the acid carbons themselves) are carbon.
-    # (In a typical dicarboxylic acid, the two acid groups are connected by a hydrocarbon chain or an aromatic ring.)
-    for idx in path[1:-1]:
-        atom = main_frag.GetAtomWithIdx(idx)
-        if atom.GetSymbol() != "C":
-            return False, "Acid groups are not connected by a simple carbon chain (found heteroatoms in the connecting path)."
-    
-    return True, "Molecule contains exactly two carboxylic acid groups connected by a simple carbon backbone in its main fragment"
+    # Decide based on the count.
+    if num_acid_groups == 2:
+        return True, "Molecule contains exactly two carboxylic acid groups in its main fragment"
+    elif num_acid_groups < 2:
+        return False, f"Found only {num_acid_groups} carboxylic acid group(s); need exactly two."
+    else:
+        return False, f"Found {num_acid_groups} carboxylic acid groups; dicarboxylic acid must have exactly two."
 
-# For manual testing
+# For manual testing under __main__
 if __name__ == "__main__":
     examples = {
         "fumarylacetic acid": "OC(=O)CC(=O)\\C=C\\C(O)=O",
@@ -123,7 +114,7 @@ if __name__ == "__main__":
         "3-ethylmalic acid": "CCC(C(O)C(O)=O)C(O)=O",
         "(4Z)-2-oxohept-4-enedioic acid": "C(=C\\CC(C(O)=O)=O)\\CC(O)=O",
         "2-aminoadipic acid": "NC(CCCC(O)=O)C(O)=O",
-        "citraconate(2-)": "C\\C(=C/C([O-])=O)C([O-])=O",
+        "citraconate(2-)": "C\\C(=C/C([O-])=O)C([O-])=O",  # reported false positive previously
         "potassium L-tartrate": "[K+].[K+].O[C@H]([C@@H](O)C([O-])=O)C([O-])=O",
     }
     for name, smi in examples.items():
