@@ -14,7 +14,7 @@ def is_wax_ester(smiles: str):
     """
     Determines if a molecule is a wax ester based on its SMILES string.
     A wax ester is formed by the condensation of a fatty acid with a fatty alcohol,
-    which results in a single ester bond (C(=O)O) linking two long aliphatic chains.
+    resulting in a single ester bond (C(=O)O) linking two long aliphatic chains.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -27,29 +27,29 @@ def is_wax_ester(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
+
     # Define an ester group SMARTS pattern.
-    # This pattern looks for a carbonyl carbon (with a double bond O) attached to an oxygen.
+    # The pattern "[CX3](=O)[OX2]" matches three atoms:
+    #  1. A carbon (the carbonyl carbon)
+    #  2. Its double-bonded oxygen atom
+    #  3. The oxygen atom that links to the fatty alcohol fragment.
     ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
     if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups; expected exactly 1 for a wax ester."
+        return False, f"Found {len(ester_matches)} ester matches; expected exactly 1 for a wax ester."
         
-    # Get the match indices.
-    # In the SMARTS "[CX3](=O)[OX2]", the match returns two atoms:
-    #   match[0] --> the carbonyl carbon
-    #   match[1] --> the ester oxygen (that links to the fatty alcohol fragment)
-    carbonyl_idx, oxy_idx = ester_matches[0]
+    # Unpack the three indices from the match.
+    # ester_matches[0] contains (carbonyl_idx, dbl_bonded_oxygen_idx, alcohol_oxygen_idx)
+    carbonyl_idx, dbl_ox_idx, alcohol_ox_idx = ester_matches[0]
     
-    # Identify the two fragments: one containing the carbonyl carbon (the fatty acid part)
-    # and the other containing the ester oxygen (the fatty alcohol part).
-    bond = mol.GetBondBetweenAtoms(carbonyl_idx, oxy_idx)
+    # Get the bond between the carbonyl carbon and the alcohol oxygen.
+    bond = mol.GetBondBetweenAtoms(carbonyl_idx, alcohol_ox_idx)
     if bond is None:
         return False, "No bond found between carbonyl carbon and ester oxygen."
     bond_idx = bond.GetIdx()
     
-    # Break the ester bond by fragmenting the molecule on that bond.
+    # Fragment the molecule on the ester bond.
     frag_mol = Chem.FragmentOnBonds(mol, [bond_idx], addDummies=True)
     frags = Chem.GetMolFrags(frag_mol, asMols=True, sanitizeFrags=True)
     
@@ -60,36 +60,28 @@ def is_wax_ester(smiles: str):
     def count_carbons(fragment):
         return sum(1 for atom in fragment.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Determine which fragment is which:
-    # We check for the presence of our key atoms. In the fragmented molecule, dummy atoms (atomic number 0)
-    # appear at the broken bond. We use the original indices to figure out which fragment contains the carbonyl carbon.
+    # Identify the fatty acid (acyl) and fatty alcohol fragments.
+    # A fatty acid fragment should contain a carbonyl group, so we search for "[CX3](=O)".
+    acid_pattern = Chem.MolFromSmarts("[CX3](=O)")
     frag_acyl = None
     frag_alcohol = None
+
     for frag in frags:
-        atom_ids = [atom.GetIdx() for atom in frag.GetAtoms() if atom.GetAtomicNum()!=0]
-        # Get SMILES for debugging; alternatively, check if the fragment has a carbonyl functionality.
-        frag_smiles = Chem.MolToSmiles(frag)
-        # If the fragment contains a carbonyl pattern, assign it as the fatty acid part.
-        # We look for a "[CX3](=O)" pattern.
-        acid_pattern = Chem.MolFromSmarts("[CX3](=O)")
+        # Check if the fragment has a carbonyl group.
         if frag.HasSubstructMatch(acid_pattern):
             frag_acyl = frag
         else:
             frag_alcohol = frag
             
-    # If our assignment did not work via patterns, assign based on which fragment has a dummy atom 
-    # attached to an oxygen (typical of the alcohol side) and which one has a carbonyl.
+    # If our assignment did not work via pattern matching, assign based on dummy atoms.
     if frag_acyl is None or frag_alcohol is None:
-        # Fall back: assign based on the ester oxygen presence.
         for frag in frags:
-            frag_atoms = frag.GetAtoms()
-            has_ester_oxygen = any(atom.GetAtomicNum() == 8 and atom.GetSymbol() == "O" and atom.GetDegree() > 0 
-                                     for atom in frag_atoms)
-            if has_ester_oxygen and frag_alcohol is None:
+            # Look for dummy atoms (atomic number 0) which should be on the alcohol side.
+            if any(atom.GetAtomicNum() == 0 for atom in frag.GetAtoms()):
                 frag_alcohol = frag
             else:
                 frag_acyl = frag
-                
+
     if frag_acyl is None or frag_alcohol is None:
         return False, "Could not identify both fatty acid and fatty alcohol fragments."
         
@@ -97,14 +89,14 @@ def is_wax_ester(smiles: str):
     acid_carbons = count_carbons(frag_acyl)
     alcohol_carbons = count_carbons(frag_alcohol)
     
-    # Set a threshold for a long aliphatic chain (typically at least 6 carbons).
+    # Set a threshold for a long aliphatic chain (typically at least 6 carbons are required).
     min_chain_length = 6
     if acid_carbons < min_chain_length:
         return False, f"Fatty acid fragment too short ({acid_carbons} carbons; minimum {min_chain_length} required)."
     if alcohol_carbons < min_chain_length:
         return False, f"Fatty alcohol fragment too short ({alcohol_carbons} carbons; minimum {min_chain_length} required)."
         
-    # Optionally, one could add further checks on overall molecular weight or lipophilicity.
+    # Optionally, check overall molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) to be a typical wax ester."
