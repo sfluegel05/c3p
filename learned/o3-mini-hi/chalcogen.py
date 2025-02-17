@@ -3,61 +3,59 @@ Classifies: CHEBI:33303 chalcogen
 """
 """
 Classifies: CHALCOGEN - Any p-block element belonging to the group 16 family of the periodic table.
-Only molecules that are represented as a single isolated atom (with no additional atoms or bonds) are accepted.
-Allowed chalcogens: Oxygen (atomic number 8), Sulfur (16), Selenium (34), Tellurium (52),
-and Polonium (84).
+Valid chalcogens for this classification: Oxygen (O), Sulfur (S), Selenium (Se), Tellurium (Te), and Polonium (Po).
+A valid entry must be a neutral, single-atom species.
 """
 
 from rdkit import Chem
 
 def is_chalcogen(smiles: str):
     """
-    Determines if a molecule is represented as a neutral single isolated atom that is a 
-    group 16 (chalcogen) element based on its SMILES string.
+    Determines if a molecule is a neutral, single-atom chalcogen based on its SMILES string.
     
-    The molecule must be written as a single atom (for example, "[Se]" rather than "[H][Se][H]").
-    This ensures that species like water or selane, which contain additional atoms, are not 
-    misclassified.
+    A chalcogen is defined as any p-block element in group 16:
+      - Oxygen (atomic number 8)
+      - Sulfur (atomic number 16)
+      - Selenium (atomic number 34)
+      - Tellurium (atomic number 52)
+      - Polonium (atomic number 84)
+    
+    The molecule must be exactly one atom and must have a formal charge of 0.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is a valid single-atom chalcogen, False otherwise.
-        str: A reason describing the result.
+        bool: True if the molecule is a neutral, single-atom chalcogen, False otherwise.
+        str: A reason for the classification.
     """
     # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check if the molecule has exactly one atom.
-    # Some SMILES (like "O") may represent a single atom with implicit hydrogens,
-    # while others explicitly list additional atoms.
+    # Ensure that no bonds are present (i.e., the molecule is a single isolated atom).
+    # Note: Sometimes hydrogens are implicit; we rely on the fact that explicit atoms (even hydrogens)
+    # would increase the atom count.
     if mol.GetNumAtoms() != 1:
-        return False, "Molecule does not represent a single isolated atom (more than one atom present)"
+        return False, "Molecule does not represent a single isolated atom"
     
-    # Additionally ensure that there are no bonds (robust check for isolated atom)
-    if mol.GetNumBonds() != 0:
-        return False, "Molecule has bonds - not a single isolated atom"
-    
-    # Get the sole atom.
+    # Get the only atom in the molecule.
     atom = mol.GetAtomWithIdx(0)
     
-    # Check that the atom is neutral.
+    # Check formal charge; we require a neutral (zero charge) atom.
     if atom.GetFormalCharge() != 0:
         return False, f"Atom has a formal charge of {atom.GetFormalCharge()}, not neutral"
     
-    # Allowed atomic numbers for group 16 (chalcogens).
+    # Define allowed atomic numbers for group 16 chalcogens.
     allowed_atomic_nums = {8, 16, 34, 52, 84}
     atomic_num = atom.GetAtomicNum()
-    
     if atomic_num in allowed_atomic_nums:
         return True, f"Element with atomic number {atomic_num} is a chalcogen"
     else:
         return False, f"Element with atomic number {atomic_num} is not a chalcogen"
 
-# Example usage (for testing purposes):
+# Example test cases (uncomment for testing):
 # test_smiles = [
 #     "[218Po]", "[202Po]", "[208Po]", "[209Po]", "[190Po]", "[201Po]",
 #     "[19O]", "[216Po]", "[38S]", "[36S]", "[203Po]", "[Te]",
@@ -66,9 +64,12 @@ def is_chalcogen(smiles: str):
 #     "[33S]", "[125Te]", "[204Po]", "[S]", "[200Po]", "[15O]",
 #     "[196Po]", "[35S]", "[37S]", "[199Po]", "[191Po]", "[198Po]",
 #     "[34S]", "[17O]", "[214Po]",
-#     # False positives: these should be rejected because they are not strictly single-atom.
-#     "[H]O[H]", "[H][Se][H]", "[H][Te][H]", "[H]S([H])([H])[H]", "[H][Po][H]",
-#     "[Se][H]", "[O][H]", "[S][H]"  # Additional cases to ensure no extra atoms exist.
+#     # False positive examples:
+#     "[O+][H]", "[S--]", "[H][S+][H]", "[H]O[H]", "[H][Se][H]",
+#     "[Te+][H]", "[Se--]", "[Se-]", "[H][Te-][H]", "[Se+][H]",
+#     "[S-2]", "[S-]", "[H][Te][H]", "[Se++]", "[H]S([H])([H])[H]",
+#     "[H][Te+]([H])[H]", "[O-][H]", "[Te--]", "[S+2]", "[H][Po][H]",
+#     "[H][S+]([H])[H]", "[S+][H]", "[Se][H]", "[H][S-]([H])[H]", "[O-]"
 # ]
 #
 # for ts in test_smiles:
