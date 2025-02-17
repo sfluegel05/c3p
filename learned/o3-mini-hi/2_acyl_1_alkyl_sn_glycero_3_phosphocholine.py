@@ -1,61 +1,53 @@
 """
 Classifies: CHEBI:36702 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
 """
+#!/usr/bin/env python
 """
 Classifies: 2-acyl-1-alkyl-sn-glycero-3-phosphocholine
 Definition: An alkyl,acyl-sn-glycero-3-phosphocholine in which unspecified alkyl and acyl
 groups are located at positions 1 and 2 respectively.
+The strategy is to first locate the phosphocholine headgroup (using a SMARTS fragment),
+then trace the glycerol backbone starting from the oxygen bound to phosphorus.
+The glycerol backbone is expected to be a three-carbon chain where:
+  • The carbon (sn-3) directly linked to the phosphocholine oxygen is CH2.
+  • The neighboring carbon (sn-2) carries an oxygen that serves as an acyl (ester) branch,
+    i.e. an oxygen attached to a carbon which bears a C=O.
+  • The other carbon (sn-1) is bound to an oxygen that leads to a long alkyl (ether) chain.
+If these conditions all hold, then the structure is accepted.
 """
 
 from rdkit import Chem
 
 def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
     """
-    Determines if a molecule is a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine based on its SMILES string.
-    The algorithm is as follows:
-      1. Parse the molecule.
-      2. Verify that a phosphocholine headgroup is present using a SMARTS filter.
-      3. Identify a glycerol backbone substructure defined as a contiguous three-carbon chain, 
-         ideally CH2–CH–CH2.
-      4. For the three carbons (sn-1, sn-2, sn-3) check that a non-backbone oxygen is attached:
-             • sn-1: an oxygen whose branch is an alkyl (ether) chain (ideally long).
-             • sn-2: an oxygen whose branch is part of an ester (acyl) group (i.e. attached to C(=O)...).
-             • sn-3: an oxygen whose branch is the phosphocholine group (O–P with P attached to a trimethylammonium).
-      5. If such a backbone is found with the correct substituents, return True.
-      
+    Determines if a molecule is a 2-acyl-1-alkyl-sn-glycero-3-phosphocholine based on its SMILES.
     Args:
-        smiles (str): SMILES string of the molecule.
-        
+        smiles (str): SMILES representation of the molecule
     Returns:
-        bool: True if the molecule is in the class, False otherwise.
-        str: Explanation of the classification decision.
+        bool: True if the molecule matches the class, False otherwise.
+        str: Explanation for the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # First, check that a phosphocholine headgroup fragment is present.
-    # This SMARTS targets an oxygen attached to a phosphorus which in turn is linked to a positively charged nitrogen.
+
+    # --- STEP 1: Search for the phosphocholine headgroup ---
+    # We use a SMARTS pattern that is expected to match an oxygen attached to phosphorus and to a choline fragment.
     phospho_smarts = "COP(=O)([O-])OCC[N+](C)(C)C"
     phospho_frag = Chem.MolFromSmarts(phospho_smarts)
-    if not mol.HasSubstructMatch(phospho_frag):
+    phospho_matches = mol.GetSubstructMatches(phospho_frag)
+    if not phospho_matches:
         return False, "Phosphocholine headgroup not found"
-    
-    # Helper function to check if an oxygen leads to a phosphocholine branch.
-    def is_phospho_branch(o_atom):
-        # Look for a phosphorus neighbor connected to a nitrogen with positive formal charge.
-        for nbr in o_atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 15:  # phosphorus
-                for subnbr in nbr.GetNeighbors():
-                    if subnbr.GetAtomicNum() == 7 and subnbr.GetFormalCharge() == 1:
-                        return True
-        return False
 
-    # Helper function to check if an oxygen leads to an acyl (ester) branch
+    # --- HELPER FUNCTIONS ---
     def is_acyl_branch(o_atom):
+        """
+        Checks if an oxygen atom leads to an acyl (ester) branch.
+        We require that the oxygen is attached to a carbon which is double-bonded to another oxygen.
+        """
         for nbr in o_atom.GetNeighbors():
             if nbr.GetAtomicNum() == 6:  # carbon
-                # look for a double bond from this carbon to an oxygen (C=O)
+                # look for a double bond C=O from this carbon
                 for bond in nbr.GetBonds():
                     if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
                         other = bond.GetOtherAtom(nbr)
@@ -63,88 +55,92 @@ def is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smiles: str):
                             return True
         return False
 
-    # Helper function to check if an oxygen leads to an alkyl branch.
-    # Here we traverse a short fragment and count the number of carbon atoms.
-    def is_alkyl_branch(o_atom):
+    def is_alkyl_branch(o_atom, min_carbons=5):
+        """
+        Checks if an oxygen atom leads to an alkyl (ether) branch.
+        We perform a simple depth-first search (DFS) starting from the neighbor carbon
+        to see if we can count at least 'min_carbons' carbon atoms.
+        """
         for nbr in o_atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6:
-                # Start a simple DFS search from this neighbor (avoid going back to oxygen o_atom)
-                visited = set()
-                stack = [nbr]
-                c_count = 0
-                while stack:
-                    current = stack.pop()
-                    if current.GetIdx() in visited:
-                        continue
-                    visited.add(current.GetIdx())
-                    if current.GetAtomicNum() == 6:
-                        c_count += 1
-                    # Limit search depth to avoid going everywhere.
-                    if c_count > 5:
-                        return True
-                    for nn in current.GetNeighbors():
-                        # Do not go back to the oxygen branch or into heteroatoms.
-                        if nn.GetAtomicNum() == 6 and nn.GetIdx() not in visited:
-                            stack.append(nn)
+            if nbr.GetAtomicNum() != 6:
+                continue
+            visited = set()
+            stack = [nbr]
+            c_count = 0
+            while stack:
+                current = stack.pop()
+                if current.GetIdx() in visited:
+                    continue
+                visited.add(current.GetIdx())
+                if current.GetAtomicNum() == 6:
+                    c_count += 1
+                if c_count >= min_carbons:
+                    return True
+                for nn in current.GetNeighbors():
+                    # Avoid going back to the original oxygen atom.
+                    if nn.GetIdx() not in visited and nn.GetAtomicNum() == 6:
+                        stack.append(nn)
         return False
 
-    # Look for a glycerol backbone.
-    # We define a glycerol backbone as three connected carbons with pattern CH2-CH-CH2.
-    # The SMARTS below matches a chain of three carbons.
-    glycerol_smarts = "[CH2]-[CH]-[CH2]"
-    glycerol_pattern = Chem.MolFromSmarts(glycerol_smarts)
-    matches = mol.GetSubstructMatches(glycerol_pattern)
-    
-    if not matches:
-        return False, "No three-carbon backbone (potential glycerol) found"
-    
-    # For each potential glycerol backbone, test the three positions.
-    for match in matches:
-        # match is a tuple of atom indices corresponding to the three carbons.
-        c1 = mol.GetAtomWithIdx(match[0])
-        c2 = mol.GetAtomWithIdx(match[1])
-        c3 = mol.GetAtomWithIdx(match[2])
-        
-        # For each carbon in the backbone, we need to find a non-backbone oxygen neighbor.
-        # We record which branch matches which expected function.
-        branch_found = {"alkyl": False, "acyl": False, "phospho": False}
-        
-        # Helper: given a carbon and expected branch function, find if one non-backbone oxygen qualifies.
-        def check_branch(carbon, branch_type):
-            for nbr in carbon.GetNeighbors():
-                # Skip if neighbor is part of the backbone.
-                if nbr.GetIdx() in match:
+    # --- STEP 2: Identify the glycerol backbone by "walking" from phosphocholine ---
+    # Our assumption: in 2-acyl-1-alkyl-sn-glycero-3-phosphocholine, the phosphocholine attaches via an oxygen
+    # to the sn-3 carbon of a glycerol backbone.
+    for match in phospho_matches:
+        # The SMARTS "COP(=O)([O-])OCC[N+](C)(C)C" yields a match where:
+        #   match[0] : a carbon (from the "C" right before the bridging oxygen)
+        #   match[1] : the oxygen that bridges to phosphorus (this is our candidate connection point)
+        #   match[2] : the phosphorus atom, etc.
+        o_phospho = mol.GetAtomWithIdx(match[1])
+        # Get neighbors of the oxygen excluding the phosphorus (match[2]) to get the glycerol carbon.
+        glycerol_candidates = [nbr for nbr in o_phospho.GetNeighbors() if nbr.GetIdx() != match[2] and nbr.GetAtomicNum() == 6]
+        if not glycerol_candidates:
+            continue
+        for sn3 in glycerol_candidates:
+            # sn3 is expected to be the sn-3 carbon (a primary carbon, typically CH2).
+            # Find a candidate sn-2: a carbon neighbor of sn3 (other than the original oxygen).
+            sn3_neighbors = [atom for atom in sn3.GetNeighbors() if atom.GetIdx() != o_phospho.GetIdx() and atom.GetAtomicNum() == 6]
+            for sn2 in sn3_neighbors:
+                # Now, in glycerol, sn-2 (central carbon) should connect to both sn3 and sn1.
+                sn2_neighbors = [atom for atom in sn2.GetNeighbors() if atom.GetIdx() != sn3.GetIdx() and atom.GetAtomicNum() == 6]
+                if not sn2_neighbors:
                     continue
-                if nbr.GetAtomicNum() == 8:  # oxygen
-                    if branch_type == "phospho" and is_phospho_branch(nbr):
-                        return True
-                    if branch_type == "acyl" and is_acyl_branch(nbr):
-                        return True
-                    if branch_type == "alkyl" and is_alkyl_branch(nbr):
-                        return True
-            return False
-
-        # According to nomenclature for 2-acyl-1-alkyl-sn-glycero-3-phosphocholine:
-        # sn-1 carbon (c1) should carry the alkyl branch.
-        # sn-2 carbon (c2) should carry the acyl branch.
-        # sn-3 carbon (c3) should carry the phosphocholine branch.
-        if not check_branch(c1, "alkyl"):
-            continue  # try next backbone
-        if not check_branch(c2, "acyl"):
-            continue
-        if not check_branch(c3, "phospho"):
-            continue
-        
-        return True, ("Matches 2-acyl-1-alkyl-sn-glycero-3-phosphocholine structure "
-                      "(glycerol backbone with defined alkyl, acyl, and phosphocholine branches)")
+                for sn1 in sn2_neighbors:
+                    # At this stage we have a candidate glycerol backbone: sn1 - sn2 - sn3.
+                    # Now, check that each carbon bears the appropriate substituents.
+                    
+                    # 1. sn-2 should have an oxygen (other than those in the backbone) that leads to an acyl (ester) group.
+                    acyl_found = False
+                    for nbr in sn2.GetNeighbors():
+                        if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in [sn1.GetIdx(), sn3.GetIdx()]:
+                            if is_acyl_branch(nbr):
+                                acyl_found = True
+                                break
+                    if not acyl_found:
+                        continue
+                        
+                    # 2. sn-1 should have an oxygen (not linking to sn2) that leads to an alkyl (ether) chain.
+                    alkyl_found = False
+                    for nbr in sn1.GetNeighbors():
+                        if nbr.GetAtomicNum() == 8 and nbr.GetIdx() != sn2.GetIdx():
+                            if is_alkyl_branch(nbr):
+                                alkyl_found = True
+                                break
+                    if not alkyl_found:
+                        continue
+                        
+                    # 3. We already anchored sn-3 by its connection from phosphocholine.
+                    # If the above conditions are met, accept the candidate.
+                    return True, ("Matches 2-acyl-1-alkyl-sn-glycero-3-phosphocholine structure "
+                                  "with glycerol backbone (sn-1: alkyl, sn-2: acyl, sn-3: phosphocholine)")
     
-    return False, "No glycerol backbone with the required substituents (alkyl, acyl, and phosphocholine) found"
+    return False, "No glycerol backbone with required substituents (alkyl, acyl, and phosphocholine) found"
 
-# Example usage (you can remove or comment out these lines when deploying the module):
+# Example usage (the examples below correspond to various structures in the class):
 if __name__ == "__main__":
     test_smiles_list = [
         "C(C[N+](C)(C)C)OP(=O)([O-])OC[C@H](OC(=O)[H])COCCCCCCCCCCCCCCCC",  # 1-hexadecyl-2-formyl-sn-glycero-3-phosphocholine
-        "CCCCCCCCCCCCCCCCCOC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCC\\C=C/C\\C=C/C\\C=C/CCCCC"  # example with eicosatrienoyl branch
+        "CCCCCCCCCCCCCCCCCOC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCC\\C=C/C\\C=C/C\\C=C/CCCCC",  # 1-hexadecyl-2-[(8Z,11Z,14Z)-eicosatrienoyl]-sn-glycero-3-phosphocholine
+        "P(OC[C@@H](COCCCCCCCCCCCCCCCC)OC(CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)=O)(=O)(OCC[N+](C)(C)C)[O-]"  # 1-O-hexadecyl-2-arachidonoyl-sn-glycero-3-phosphocholine
     ]
     for smi in test_smiles_list:
         result, reason = is_2_acyl_1_alkyl_sn_glycero_3_phosphocholine(smi)
