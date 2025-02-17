@@ -3,8 +3,8 @@ Classifies: CHEBI:166828 saccharolipid
 """
 """
 Classifies: Saccharolipid – Lipids that contain a carbohydrate moiety.
-This function uses heuristic SMARTS patterns to detect a sugar ring (as a carbohydrate moiety)
-and a long hydrophobic (aliphatic) chain (as part of the lipid backbone).
+This function uses heuristic ring analysis to detect a sugar ring (carbohydrate moiety)
+and a substructure search for a long aliphatic chain for the lipid portion.
 """
 
 from rdkit import Chem
@@ -14,11 +14,12 @@ def is_saccharolipid(smiles: str):
     """
     Determines if a molecule is a saccharolipid based on its SMILES string.
     A saccharolipid is defined as a lipid that contains a carbohydrate moiety.
+    
     Heuristics used:
-      - A carbohydrate moiety is approximated by the presence of a pyranose or furanose ring,
-        i.e. a 6-membered ring (pyranose) or 5-membered ring (furanose) containing oxygen(s)
-        and several hydroxyl groups.
-      - A lipid is approximated by the presence of a long contiguous aliphatic chain (8 or more carbon atoms).
+      - A carbohydrate moiety is approximated by detecting at least one
+        ring of size 5 (furanose-like) or 6 (pyranose-like) that contains at least one oxygen atom.
+      - A lipid is approximated by the presence of a long contiguous aliphatic chain,
+        here defined as a chain of 8 or more carbon atoms.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -27,46 +28,36 @@ def is_saccharolipid(smiles: str):
         bool: True if the molecule is classified as a saccharolipid, False otherwise.
         str: Reason for the classification.
     """
-    # Parse the SMILES string into an RDKit molecule.
+    # Parse the SMILES string to a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for a pyranose-like ring (6-membered sugar ring).
-    # This pattern is a heuristic—it seeks a ring with 5 carbons and 1 oxygen in a typical sugar ring,
-    # with several hydroxyl substituents.
-    pyranose_smarts = "[OX2r6][C@H]1[C@@H]([OX2H])[C@H]([OX2H])[C@H]([OX2H])[C@H]1[OX2H]"
-    pyranose_pattern = Chem.MolFromSmarts(pyranose_smarts)
-    
-    # SMARTS pattern for a furanose-like ring (5-membered sugar ring).
-    furanose_smarts = "[OX2r5][C@H]1[C@@H]([OX2H])[C@H]([OX2H])[C@H]1[OX2H]"
-    furanose_pattern = Chem.MolFromSmarts(furanose_smarts)
-    
+    # Check for a sugar ring using ring info.
+    # A sugar ring is typically 5 or 6 atoms; we require that at least one heteroatom is oxygen.
+    ring_info = mol.GetRingInfo()
     sugar_found = False
-    # Try to find a pyranose-like sugar ring.
-    if mol.HasSubstructMatch(pyranose_pattern):
-        sugar_found = True
-    # If not found, try a furanose-like sugar ring.
-    elif mol.HasSubstructMatch(furanose_pattern):
-        sugar_found = True
-
+    for ring in ring_info.AtomRings():
+        if len(ring) in (5, 6):
+            # Count oxygen atoms in this ring.
+            oxygen_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
+            # For a typical sugar ring, at least one oxygen should be present.
+            if oxygen_count >= 1:
+                sugar_found = True
+                break
     if not sugar_found:
         return False, "No carbohydrate (sugar ring) moiety found"
     
-    # Define a simple SMARTS to detect a long aliphatic chain.
-    # Here we check for a chain of at least 8 contiguous carbon atoms.
+    # Use a simple SMARTS pattern to detect a long aliphatic chain.
+    # For our purposes, a substructure of 8 contiguous carbons is a crude indicator of a lipid chain.
     long_chain_smarts = "CCCCCCCC"
     long_chain_pattern = Chem.MolFromSmarts(long_chain_smarts)
-    
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "No long aliphatic (lipid-like) chain found"
     
-    # Optionally, one could perform further checks (e.g. molecular weight or rotatable bonds)
-    # to ensure the lipid part is sizeable.
-    
-    return True, "Molecule has both a carbohydrate moiety and a lipid-like aliphatic chain, classifying it as a saccharolipid"
+    # If both conditions are met, classify as saccharolipid.
+    return True, "Molecule has a sugar ring and a long aliphatic chain, classifying it as a saccharolipid"
 
-# Below are some example calls (which you might uncomment to test if needed).
-# For example, one could test one of the provided saccharolipid SMILES.
-# example_smiles = "[H][C@@]1(O[C@@](C[C@@H](O)[C@H]1O)..."
-# print(is_saccharolipid(example_smiles))
+# Example usage:
+# test_smiles = "CCCCCCCCCCCCCCCC[C@H](C)C[C@H](C)OC1OC(CO)C(O)C(O)C1O"  # A hypothetical saccharolipid SMILES
+# print(is_saccharolipid(test_smiles))
