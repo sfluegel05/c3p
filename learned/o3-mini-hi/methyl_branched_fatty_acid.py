@@ -3,172 +3,207 @@ Classifies: CHEBI:62499 methyl-branched fatty acid
 """
 """
 Classifies: Any branched‐chain fatty acid containing methyl branches only.
-This function, is_methyl_branched_fatty_acid, takes a SMILES string as input and returns a boolean and a reason.
+The function is_methyl_branched_fatty_acid takes a SMILES string as input and returns a boolean plus a reason.
 The approach:
-  1. Parse molecule and check for a carboxylic acid group.
-  2. Reject molecules with rings (non‐acyclic structures).
-  3. Build a carbon-only graph.
-  4. Enumerate all simple paths (starting at the acid carbon) as possible backbones.
-  5. For each candidate backbone (which must be at least 5 carbons long) check that for every carbon in the chain the branch 
-     (i.e. any adjacent carbons not in the backbone) is “methyl‐only”. For a branch we allow either a single CH3 group
-     or a star‐shaped (one–level only) branch (as in isopropyl or tert‐butyl) where the attached “root” carbon’s neighbors 
-     (all in the branch) are terminal methyl groups.
-  6. If one candidate backbone is found, return True and an explanation that reports the number of branches (each branch counts as one)
-     and the backbone length.
-  
-If no candidate is found, a False is returned along with a reason.
+  1. Parse molecule, require acyclic and presence of a carboxylic acid group.
+  2. Build a carbon–only graph from which we enumerate all simple paths beginning at the acid carbon.
+  3. For each candidate path (of at least 5 carbons) we check:
+       – that any additional carbon neighbors (i.e. branches) are terminal – thus are CH3 groups.
+       – that any non‐carbon neighbor attached to a backbone carbon is acceptable only when:
+            • on the acid carbon: any oxygen is allowed,
+            • on the terminal (non–acid) carbon: an –OH (oxygen with one hydrogen) is allowed,
+            • on any interior backbone carbon: no heteroatom is allowed.
+       – additionally, if a backbone carbon has a nitrogen substituent it is only allowed if the N has no hydrogens
+            (as in a quaternary ammonium, e.g. in a betaine) – this helps to reject amino acid cases.
+ 4. Among acceptable candidates we choose the one with maximal main–chain length.
+If none passes the tests then an error message is returned.
 """
+
 from rdkit import Chem
+from collections import deque
 
 def is_methyl_branched_fatty_acid(smiles: str):
-    # Parse the molecule
+    """
+    Determines if a molecule is a methyl–branched fatty acid (branched–chain fatty acid with methyl branches only)
+    based on its SMILES string.
+    
+    Args:
+      smiles (str): SMILES string.
+    
+    Returns:
+      bool: True if classified as methyl–branched fatty acid.
+      str: Explanation/reason for classification.
+    """
+    # Parse the molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Reject molecules with rings (fatty acids are expected acyclic)
+    # Only allow acyclic molecules (fatty acids are expected to be open–chain).
     if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains rings; not a straight-chain fatty acid"
-        
-    # Look for a carboxylic acid group (we allow for deprotonated forms too)
-    acid_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
-    acid_matches = mol.GetSubstructMatches(acid_pattern)
+        return False, "Molecule contains rings; not a straight–chain fatty acid"
+    
+    # Look for a carboxylic acid group.
+    # The SMARTS below matches protonated or deprotonated –COOH groups.
+    acid_smarts = "C(=O)[O;H,-]"
+    acid_query = Chem.MolFromSmarts(acid_smarts)
+    acid_matches = mol.GetSubstructMatches(acid_query)
     if not acid_matches:
         return False, "No carboxylic acid group found; not a fatty acid"
-    # choose the first carboxyl carbon (the carbonyl carbon)
-    carboxyl_idx = acid_matches[0][0]
+    # We choose the acid carbon from the first match.
+    acid_carbon = acid_matches[0][0]
     
-    # Build a carbon-only graph: dictionary mapping carbon atom index to set of neighboring carbon indices.
-    carbon_idx_set = {atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum()==6}
-    if not carbon_idx_set:
-        return False, "No carbon atoms present"
-    carbon_adj = {idx: set() for idx in carbon_idx_set}
-    for idx in carbon_idx_set:
-        atom = mol.GetAtomWithIdx(idx)
+    # For checking hydrogen counts we add explicit H to the molecule.
+    mol_h = Chem.AddHs(mol)
+    
+    # Build a carbon-only graph from the explicit–H molecule.
+    carbon_indices = {atom.GetIdx() for atom in mol_h.GetAtoms() if atom.GetAtomicNum() == 6}
+    if acid_carbon not in carbon_indices:
+        return False, "Carboxyl carbon not found among carbons"
+    carbon_adj = {idx: set() for idx in carbon_indices}
+    for idx in carbon_indices:
+        atom = mol_h.GetAtomWithIdx(idx)
         for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum()==6 and nbr.GetIdx() in carbon_idx_set:
+            if nbr.GetAtomicNum() == 6:
                 carbon_adj[idx].add(nbr.GetIdx())
-                
-    # Ensure that the carboxyl carbon is in the carbon graph.
-    if carboxyl_idx not in carbon_idx_set:
-        return False, "Carboxyl carbon not in carbon backbone"
-        
-    # Helper function: Check if a branch attached to a backbone atom is "methyl-only".
-    # The branch is defined as the connected subgraph (in carbon graph) starting at branch_root,
-    # staying completely outside the current backbone.
-    # We allow either a single carbon (which must be CH3) or a one-level star (the root with only terminal CH3 groups).
-    def valid_branch(branch_root, backbone_set):
-        # Perform a BFS on the branch subgraph (only nodes not in backbone_set)
-        from collections import deque
-        q = deque()
-        q.append((branch_root, 0))  # (node, distance from branch_root)
-        branch_nodes = {branch_root: 0}
-        while q:
-            current, dist = q.popleft()
-            # We do not allow depth > 1 (except for the root at depth 0).
-            if dist > 1:
-                return False, f"Branch starting at atom {branch_root} extends beyond allowed depth"
-            # For each neighbor in the carbon graph that is not in the backbone:
-            for nbr in carbon_adj[current]:
-                if nbr in backbone_set:
-                    continue
-                if nbr not in branch_nodes:
-                    branch_nodes[nbr] = dist+1
-                    if dist+1 > 1:
-                        return False, f"Branch starting at atom {branch_root} has chain length >1"
-                    q.append((nbr, dist+1))
-        # Now, if branch is a single carbon (only branch_root found)
-        branch_atom = mol.GetAtomWithIdx(branch_root)
-        if len(branch_nodes)==1:
-            # It must be a methyl: exactly 3 hydrogens.
-            if branch_atom.GetTotalNumHs() != 3:
-                return False, f"Atom {branch_root} is not a CH3 group"
-            return True, None
-        else:
-            # Multi-carbon branch: By construction, only two layers exist: the root (depth 0) and its immediate neighbors (depth 1).
-            # Let d1 be all branch nodes with distance 1.
-            d1 = [n for n,d in branch_nodes.items() if d==1]
-            # Check that the root's hydrogen count equals 3 - (number of neighbors in branch)
-            expected_root_H = 3 - len(d1)
-            if branch_atom.GetTotalNumHs() != expected_root_H:
-                return False, f"Branch root (atom {branch_root}) hydrogen count ({branch_atom.GetTotalNumHs()}) does not equal expected ({expected_root_H})"
-            # Now, each neighbor in d1 must be a terminal CH3 (no further branch in branch graph, so no other carbon neighbor in branch)
-            for nbr in d1:
-                nbr_atom = mol.GetAtomWithIdx(nbr)
-                # count how many neighbors are within branch_nodes (should be 1, linking back to branch root)
-                cnt = 0
-                for nn in carbon_adj[nbr]:
-                    if nn in branch_nodes:
-                        cnt += 1
-                # Terminal methyl should be attached only to the root.
-                if cnt != 1 or nbr_atom.GetTotalNumHs() != 3:
-                    return False, f"Atom {nbr} in branch is not a terminal CH3 group"
-            return True, None
-
-    # Helper: Enumerate all simple paths (backbones) starting from the carboxyl carbon.
-    # Because the carbon graph is acyclic (we rejected rings) we can use recursive DFS.
+    
+    # Enumerate all simple paths in the carbon graph starting from the acid carbon.
     all_paths = []
-    def dfs_path(current, path):
-        # Extend DFS by exploring all neighbors not already in path.
+    def dfs(current, path):
         extended = False
         for nbr in carbon_adj[current]:
             if nbr in path:
                 continue
-            dfs_path(nbr, path + [nbr])
+            dfs(nbr, path + [nbr])
             extended = True
-        # If no extension, record the current path as a candidate leaf path.
         if not extended:
             all_paths.append(path)
-    dfs_path(carboxyl_idx, [carboxyl_idx])
+    dfs(acid_carbon, [acid_carbon])
     
-    # Among the candidate paths, choose the one with maximal length that also meets the branched criteria.
+    if not all_paths:
+        return False, "No carbon chain found"
+    
+    # Helper function to decide if a heteroatom attached to a backbone carbon is acceptable.
+    def is_allowed_substituent(backbone_idx, nbr_atom, terminal=False):
+        sym = nbr_atom.GetSymbol()
+        # For the acid carbon, allow any oxygen (the acid group normally has two oxygens).
+        if backbone_idx == acid_carbon:
+            if sym == 'O':
+                return True
+            return False
+        # For the terminal backbone carbon (other than acid carbon), allow an -OH group.
+        if terminal:
+            if sym == 'O':
+                # Expect it to be hydroxyl (one H neighbor).
+                num_H = sum(1 for n in nbr_atom.GetNeighbors() if n.GetSymbol()=='H')
+                if num_H == 1:
+                    return True
+            # Also allow a quaternary nitrogen group here (if it has no H’s)
+            if sym == 'N' and nbr_atom.GetTotalNumHs() == 0:
+                return True
+            return False
+        # For interior backbone carbons, do not allow any non-carbon substituents
+        # except (optionally) a nitrogen that is quaternary.
+        if sym == 'N' and nbr_atom.GetTotalNumHs() == 0:
+            return True
+        return False
+    
+    # Check each candidate main chain (a simple path from the acid carbon).
+    # We require that the chain has at least 5 carbons.
+    # For each backbone carbon (each atom in the chain) we check:
+    #   (a) all attached atoms that are NOT carbons are allowed (using our simple rules);
+    #   (b) all carbon-atom attachments not in the chain are valid methyl branches.
+    # A valid methyl branch (as seen in the carbon graph) must be terminal (degree 1) and must, after H-addition,
+    # have exactly 3 hydrogens.
     valid_candidates = []
-    for chain in all_paths:
-        # Enforce a minimum chain length
+    def check_chain(chain):
         if len(chain) < 5:
-            continue
-        backbone_set = set(chain)
-        branch_errors = []
+            return False, "Main carbon chain is too short to be a fatty acid", None
         branch_count = 0
-        # For every atom in the chain, check neighbors not in the backbone.
-        for atom_idx in chain:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for nbr in carbon_adj[atom_idx]:
-                if nbr in backbone_set:
+        chain_set = set(chain)
+        # For each backbone carbon in the candidate chain…
+        for i, idx in enumerate(chain):
+            atom = mol_h.GetAtomWithIdx(idx)
+            # Check non-carbon neighbors (heteroatoms).
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 6:
                     continue
-                # Validate branch from this neighbor (each attached branch is counted only once).
-                valid, err = valid_branch(nbr, backbone_set)
-                if not valid:
-                    branch_errors.append(f"Invalid branch at backbone atom {atom_idx}: {err}")
+                # Only consider atoms NOT already part of a valid acid group.
+                # For acid carbon, any oxygen is allowed.
+                # For terminal backbone atoms (last in chain, and not the acid carbon) allow -OH or a quaternary N.
+                if idx == chain[0]:
+                    if not (nbr.GetSymbol() == 'O'):
+                        return False, f"Acid carbon has disallowed substituent {nbr.GetSymbol()}", None
+                elif idx == chain[-1]:
+                    if not is_allowed_substituent(idx, nbr, terminal=True):
+                        return False, f"Terminal backbone carbon has disallowed substituent {nbr.GetSymbol()}", None
                 else:
-                    branch_count += 1
-        if branch_errors:
-            continue  # chain candidate fails branch test.
-        valid_candidates.append((chain, branch_count))
-    
-    if not valid_candidates:
-        # If no candidate chain passed the branch test, try to supply one error reason from the longest overall chain.
-        longest_chain = max(all_paths, key=len)
-        if len(longest_chain) < 5:
+                    if not is_allowed_substituent(idx, nbr, terminal=False):
+                        return False, f"Interior backbone carbon has disallowed substituent {nbr.GetSymbol()}", None
+            # Now check carbon branches: take neighbors in the carbon graph that are not in the backbone.
+            for nbr_idx in carbon_adj[idx]:
+                if nbr_idx in chain_set:
+                    continue
+                # The branch (nbr_idx) must be terminal in the carbon graph.
+                if len(carbon_adj[nbr_idx]) != 1:
+                    return False, f"Branch at backbone atom {idx} is not a terminal carbon", None
+                branch_atom = mol_h.GetAtomWithIdx(nbr_idx)
+                # Check that the branch carbon is “methyl‐like”: exactly 3 hydrogens.
+                if branch_atom.GetTotalNumHs() != 3:
+                    return False, f"Branch carbon at index {nbr_idx} is not CH3", None
+                branch_count += 1
+        return True, "", branch_count
+
+    candidate_chains = []
+    for chain in all_paths:
+        valid, err, branches = check_chain(chain)
+        if valid:
+            candidate_chains.append((chain, branches))
+    if not candidate_chains:
+        # If none pass, report error from the longest chain candidate.
+        longest = max(all_paths, key=len)
+        if len(longest) < 5:
             return False, "Main carbon chain is too short to be a fatty acid"
-        else:
-            return False, "No candidate main chain found that yields only methyl branches"
-    
-    # Choose the candidate with maximal main chain length.
-    best_chain, best_branch_count = max(valid_candidates, key=lambda x: len(x[0]))
-    main_chain_length = len(best_chain)
+        return False, "No candidate main chain found that yields only methyl branches"
+    # Among candidates, choose the chain with maximal length.
+    best_chain, best_branch_count = max(candidate_chains, key=lambda x: len(x[0]))
     msg = (f"CORRECT Methyl-branched fatty acid with {best_branch_count} methyl branch(es) "
-           f"on a main chain of length {main_chain_length}")
+           f"on a main chain of length {len(best_chain)}")
     return True, msg
 
-# Example usage: (if run as a script, one could test on a few SMILES)
+# Example usage:
 if __name__ == '__main__':
     test_smiles_list = [
-        "CC(C)CCCCCCCCCCCCCCCCC(O)=O",  # 18-methylnonadecanoic acid (expected true)
-        "OC(=O)CCC(C)=C",              # 4-methyl-4-pentenoic acid (expected true)
-        "CC(C)(C)C(O)=O",              # pivalic acid (expected false: chain too short)
-        "OC(=O)CC(C(C)(C)C)=C",         # 3-tert-Butyl-3-butenoic acid (expected false if branch not allowed, but per our definition may be true)
+        "CC(C)CCCCCCCCCCCCCCCCC(O)=O",           # 18-methylnonadecanoic acid - expect True
+        "CC(CCCCCCC/C=C/C(=O)O)C",                # (E)-11-methyldodec-2-enoic acid - expect True
+        "CC(C)CCCCCCCCCCCCCCCCCCCCCCC(O)=O",      # 24-methylpentacosanoic acid - expect True
+        "OC(=O)CC(C)C=C",                        # 3-methyl-4-pentenoic acid - expect True
+        "CC(C)CCCCCCCCC(O)=O",                    # 10-methylundecanoic acid - expect True
+        "OC(=O)CCC(C)=C",                        # 4-methyl-4-pentenoic acid - expect True
+        "C(CCCCCCC(CC)C)CCCCC(O)=O",              # 13-methylpentadecanoic acid - expect True
+        "CC(C)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O",  # 28-methylnonacosanoic acid - expect True
+        "CC(C)CCCCCCCCCCCCCCCCCCC(O)=O",          # 20-methylhenicosanoic acid - expect True
+        "CC(CO)CCCCCCCCCCCCCC(O)=O",              # omega-hydroxy-15-methylpalmitic acid - expect True
+        "OC(CCCCCCCCCCCCCCCC(C)C)=O",             # 17-methyloctadecanoic acid - expect True
+        "CCC(C)CCCCCCCCCCCCCCCCCCCCC(O)=O",        # 22-methyltetracosanoic acid - expect True
+        "[O-]C(=O)CCC([N+](C)(C)C)C",              # 4-aminovaleric acid betaine - expect True
+        "OC(=O)/C=C(\\CC)/C",                     # 3-methyl-2Z-pentenoic acid - expect True
+        "CCC(C)CC(O)=O",                         # 3-methylvaleric acid - expect True
+        "OC(=O)C/C=C(\\C)/C(O)=O",                # 2-Methylglutaconic acid - expect True
+        "CCCCCCCC(C)CC(O)=O",                     # 3-methylundecanoic acid - expect True
+        "CCCCCCCCC(C)CCCCCC(C)CCCCCCCCCC(C)CC(O)=O",  # 3,13,19-trimethyltricosanoic acid - expect True
+        "OC(C(CCCCCCCCCCCCCCCC)C)=O",             # 2-methyloctadecanoic acid - expect True
+        "CC(C)CCCCCCCCCCCCCC(O)=O",               # isoheptadecanoic acid - expect True
+        "CC(C)CCCCCC(O)=O",                       # 7-methyloctanoic acid - expect True
+        "OC(=O)\\C=C\\C(C)C",                      # 4-Methyl-2-pentenoic acid - expect True
+        "OC(=O)C(CCCC(C)C)C",                      # 2,6-dimethylheptanoic acid - expect True
+        # The false positives and negatives from the previous attempt (allylglycine etc.) will now (hopefully)
+        # be rejected because their overall heteroatom pattern does not meet the fatty acid criteria.
+        "NC(CC=C)C(O)=O",                        # allylglycine – expect False
+        "O[C@@H]([C@H](O)CCCCCCCC(O)=O)CCCCCCCC",  # threo-9,10-dihydroxystearic acid – expect False
+        "OC(=O)CC(CC(O)=O)NC=O",                  # N-formylisoglutamic acid – expect False
+        "CC(=CCC)C(=O)O",                         # 2-propyl-2-pentenoic acid – expect False (non–methyl branch)
     ]
+    
     for smi in test_smiles_list:
         res, reason = is_methyl_branched_fatty_acid(smi)
         print(smi, res, reason)
