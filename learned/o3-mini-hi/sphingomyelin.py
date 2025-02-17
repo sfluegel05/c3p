@@ -3,8 +3,9 @@ Classifies: CHEBI:64583 sphingomyelin
 """
 """
 Classifies: Sphingomyelin – any phospholipid in which the amino group of a sphingoid base 
-is in amide linkage with a fatty acid and the terminal hydroxyl of that base is esterified 
-to a phosphorylcholine headgroup. In addition the molecule should not contain a glycerol backbone.
+is in amide linkage with a fatty acid while the terminal hydroxyl of that base is esterified 
+to a phosphorylcholine headgroup. Also, the molecule should not contain a glycerol backbone and 
+should be acyclic.
 """
 
 from rdkit import Chem
@@ -14,18 +15,15 @@ def is_sphingomyelin(smiles: str):
     """
     Determines if a molecule is a sphingomyelin based on its SMILES string.
     
-    The following checks are applied:
-      1. Verify the presence of a phosphorylcholine headgroup.
-         (Two variants are considered to account for explicit vs implicit charges.)
-      2. Exclude molecules that contain a glycerol backbone (common in glycerophospholipids).
-      3. Check for the presence of an amide linkage.
-      4. Look for a sphingoid base fragment.
-         Instead of requiring an explicit hydroxyl on the chiral carbon,
-         we search for an amide-linked nitrogen attached to a chiral carbon that is directly 
-         bonded to a "COP" fragment (capturing the headgroup esterification).
-      5. Ensure the presence of long aliphatic (fatty acid/sphingoid) chains.
-         At least two substructures of eight or more consecutive carbons are expected.
-      
+    The checks applied are:
+      1. Presence of a phosphorylcholine headgroup (using two SMARTS variants to capture charge differences).
+      2. Exclusion of a glycerol backbone (to avoid glycerophospholipids).
+      3. Presence of an amide linkage (C(=O)N) for the fatty acid attachment.
+      4. Presence of a sphingoid base fragment – we look for an N (not in a ring) bound to a chiral carbon 
+         bearing a hydroxyl and attached to a “COP” fragment (the linkage to the headgroup).
+      5. Verification that the molecule does NOT contain any ring structures (most sphingomyelin molecules are acyclic).
+      6. At least one long uninterrupted aliphatic chain (8 or more consecutive carbons) is required.
+    
     Args:
       smiles (str): SMILES string of the molecule.
       
@@ -33,15 +31,16 @@ def is_sphingomyelin(smiles: str):
       bool: True if the molecule is classified as sphingomyelin, False otherwise.
       str: Explanation of the classification decision.
     """
-    # Parse the SMILES string into an RDKit molecule
+    # Parse the SMILES string using RDKit.
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return False, "Invalid SMILES string"
     
-    # 1. Check for phosphorylcholine headgroup (two variants)
+    # 1. Check for phosphorylcholine headgroup.
+    #    We use two SMARTS patterns to account for explicit negative charges or not.
     pc_smarts_list = [
-        "P(=O)([O-])OCC[N+](C)(C)C",  # with explicit negative charge
-        "P(=O)(O)OCC[N+](C)(C)C"       # variant without explicit charge
+        "P(=O)([O-])OCC[N+](C)(C)C",
+        "P(=O)(O)OCC[N+](C)(C)C"
     ]
     pc_found = False
     for smarts in pc_smarts_list:
@@ -52,23 +51,22 @@ def is_sphingomyelin(smiles: str):
     if not pc_found:
         return False, "Missing phosphorylcholine headgroup"
     
-    # 2. Exclude glycerol backbone (common in glycerophospholipids).
-    #    Using a SMARTS pattern for the glycerol fragment "OCC(O)CO"
+    # 2. Exclude glycerol backbone.
+    #    If the common glycerol fragment "OCC(O)CO" is found, then this is likely a glycerophospholipid.
     glycerol_pattern = Chem.MolFromSmarts("OCC(O)CO")
     if glycerol_pattern and mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone detected; likely a glycerophospholipid"
     
-    # 3. Check for an amide linkage (C(=O)N pattern).
+    # 3. Check for an amide linkage. The presence of C(=O)N is required.
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "Missing amide linkage for fatty acid attachment"
     
     # 4. Check for a sphingoid base fragment.
-    #    Instead of requiring an explicit (O) on the chiral carbon,
-    #    we look for an N (not in a ring) connected to a chiral carbon that is bonded to a COP fragment.
+    # We search for an N (not in a ring) attached to a chiral carbon that is bonded to a COP fragment.
     sphingoid_patterns = [
-        "[N;!R][C@@H]COP",   # chiral carbon with phosphorylcholine fragment (one stereochemistry)
-        "[N;!R][C@H]COP"     # the other possible stereochemical assignment
+        "[N;!R][C@@H](O)COP",  # one stereochemistry
+        "[N;!R][C@H](O)COP"     # the other possibility
     ]
     sph_found = False
     for pat_str in sphingoid_patterns:
@@ -77,18 +75,27 @@ def is_sphingomyelin(smiles: str):
             sph_found = True
             break
     if not sph_found:
-        return False, "Missing sphingoid base fragment (expected N–chiral C(COP) linkage)"
+        return False, "Missing sphingoid base fragment (expected N–chiral C(O)COP linkage)"
     
-    # 5. Check for long aliphatic chains: at least two stretches of 8 consecutive carbons.
+    # 5. Exclude molecules with any ring structures.
+    # Sphingomyelins are typically acyclic in their sphingoid and fatty acid parts.
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains ring structures, unlikely to be sphingomyelin"
+    
+    # 6. Check for long aliphatic chain(s):
+    # A chain of 8 or more consecutive carbons is expected.
+    # (Relaxed requirement: at least one occurrence.)
     long_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
     chain_matches = mol.GetSubstructMatches(long_chain_pattern)
-    if len(chain_matches) < 2:
-        return False, "Missing long aliphatic chains (require at least two stretches of 8+ carbons)"
+    if len(chain_matches) < 1:
+        return False, "Missing long aliphatic chain (require at least one stretch of 8+ carbons)"
     
-    return True, "Contains phosphorylcholine headgroup, amide-linked fatty acid, and a sphingoid base fragment without glycerol backbone"
+    return True, "Contains phosphorylcholine headgroup, amide-linked fatty acid, and a sphingoid base fragment without glycerol backbone and rings; long aliphatic chain present"
+
 
 # Example usage:
 if __name__ == '__main__':
+    # Test with one of the provided sphingomyelin SMILES as an example.
     test_smiles = "CCCCCCCCCCCCCCCC(=O)N[C@@H](COP([O-])(=O)OCC[N+](C)(C)C)[C@H](O)\\C=C\\CCCCCCCCCC(C)C"
     result, reason = is_sphingomyelin(test_smiles)
     print("Result:", result)
