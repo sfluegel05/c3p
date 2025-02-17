@@ -3,8 +3,11 @@ Classifies: CHEBI:37142 organoiodine compound
 """
 """
 Classifies: CHEBI:? organoiodine compound
-An organoiodine compound is defined as a compound containing at least one carbon-iodine bond.
-We refine this by requiring that the iodine atom is monovalent (degree = 1) and its only neighbor is a carbon atom.
+
+An organoiodine compound is defined as a compound containing at least one carbon–iodine bond.
+Our improved classifier no longer restricts iodine to a monovalent bonding environment so that
+hypervalent (e.g. iodyl) iodine compounds are also captured. (Optionally one could filter out very
+simple compounds by, e.g., checking the total heavy-atom count.)
 """
 
 from rdkit import Chem
@@ -12,41 +15,44 @@ from rdkit import Chem
 def is_organoiodine_compound(smiles: str):
     """
     Determines if a molecule is an organoiodine compound based on its SMILES string.
-    An organoiodine compound is defined as one that contains at least one carbon-iodine bond,
-    where iodine is monovalently attached (degree == 1) and directly bonded to a carbon.
+    The definition is "compound contains at least one carbon–iodine bond" regardless of whether
+    the iodine atom carries additional substituents (for example I(=O)=O groups).
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is classified as an organoiodine compound, False otherwise.
+        bool: True if the molecule contains a carbon–iodine bond, False otherwise.
         str: Reason for the classification.
     """
-    # Parse the SMILES string into an RDKit molecule object.
+    # Parse the SMILES string to get the molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Iterate over all atoms in the molecule.
-    for atom in mol.GetAtoms():
-        # Check if the atom is iodine (atomic number 53)
-        if atom.GetAtomicNum() == 53:
-            # We require that the iodine atom has exactly one neighbor (monovalent iodine)
-            if atom.GetDegree() == 1:
-                # Get the single neighbor.
-                neighbor = atom.GetNeighbors()[0]
-                # Check if the neighbor is a carbon (atomic number 6)
-                if neighbor.GetAtomicNum() == 6:
-                    return True, "Compound contains at least one carbon-iodine bond."
+    # Optionally: filter out very trivial (low molecular weight) compounds.
+    # Uncomment the following lines if you wish to require, for example, at least 4 heavy atoms.
+    # heavy_atoms = mol.GetNumHeavyAtoms()
+    # if heavy_atoms < 4:
+    #     return False, f"Compound too simple ({heavy_atoms} heavy atoms) to be an organoiodine compound."
     
-    # If no iodine atom fulfills the criteria, we conclude the molecule is not of the class.
-    return False, "Compound does not contain any carbon-iodine bonds."
+    # Define a SMARTS pattern that matches any bond between a carbon (atomic num 6) and iodine (atomic num 53).
+    ci_pattern = Chem.MolFromSmarts("[#6]-I")
+    
+    # Check if the molecule contains at least one carbon–iodine bond.
+    if mol.HasSubstructMatch(ci_pattern):
+        return True, "Compound contains at least one carbon–iodine bond."
+    else:
+        return False, "Compound does not contain any carbon–iodine bonds."
 
-# Example usage (uncomment for testing):
-# compounds = [
-#     "IC1=CC(F)=C(NC(=O)CC2(CCCCC2)CC(O)=O)",  # true positive
-#     "C(O)C1OC(OC1)CI"                         # should be false positive if iodine is not monovalently attached
-# ]
-# for s in compounds:
-#     result, reason = is_organoiodine_compound(s)
-#     print(s, result, reason)
+# Example usage:
+if __name__ == "__main__":
+    test_smiles = [
+        "IC1=CC(F)=C(NC(=O)CC2(CCCCC2)CC(O)=O)",  # 2-{1-[2-(2-fluoro-4-iodoanilino)-2-oxoethyl]cyclohexyl}acetic acid (TP)
+        "CCOc1nc2ccc(I)cc2c(=O)n1CCC",              # proquinazid (TP)
+        "C(O)C1OC(OC1)CI",                          # domiodol (FP according to evaluation that considers this too trivial)
+        "CCI"                                       # iodoethane (FP: simple alkyl iodide)
+    ]
+    for smi in test_smiles:
+        result, reason = is_organoiodine_compound(smi)
+        print(f"SMILES: {smi}\nResult: {result}\nReason: {reason}\n")
