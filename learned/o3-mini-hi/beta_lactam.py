@@ -3,27 +3,23 @@ Classifies: CHEBI:35627 beta-lactam
 """
 """
 Classifies: beta-lactam
-A beta-lactam is defined as a lactam in which the amide bond is contained
-within a four-membered ring that includes the amide nitrogen and the carbonyl carbon.
-We use a SMARTS pattern that matches a 4-membered ring with a nitrogen and a carbonyl.
+A beta-lactam is defined as a lactam in which the amide bond is contained within a four-membered ring,
+which includes the amide nitrogen and the carbonyl carbon.
+This implementation first selects the largest fragment, then iterates over all 4-membered rings found in
+the molecule. For each ring, it checks if the ring contains a nitrogen and a carbon that is part of a carbonyl
+(i.e. has a double bond to an oxygen). It then ensures that this nitrogen and carbon are directly connected.
+If so, the molecule is classified as a beta-lactam.
 """
+
 from rdkit import Chem
 
 def is_beta_lactam(smiles: str):
     """
     Determines if a molecule is a beta-lactam based on its SMILES string.
     
-    We first sanitize the input molecule. Then, to avoid misclassification due to salts
-    or multiple fragments, we select the largest fragment. Finally, we use a SMARTS pattern
-    that matches a 4-membered ring (using the "R4" qualifier) which contains a nitrogen
-    atom and a carbon atom that is double-bonded to an oxygen.
-    
-    SMARTS explanation:
-      - [NX3;R4]     => any trivalent nitrogen that is a member of a ring of exactly 4 atoms.
-      - [C;R4](=O)   => any carbon in a ring of 4 that is double-bonded to an oxygen.
-      - [C;R4]      => a 4-membered ring carbon (the remaining ring atom).
-      - [C;R4]      => the fourth atom in the ring.
-    The ring order in the SMARTS pattern can match in any rotational order.
+    This function processes the SMILES, selects the largest fragment (to avoid misclassification with salts),
+    and then examines each 4-membered ring to identify if it contains an amide bond in the ring (i.e. a bond
+    between a nitrogen and a carbon that is double-bonded to oxygen).
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -32,38 +28,77 @@ def is_beta_lactam(smiles: str):
         bool: True if the molecule is classified as a beta-lactam, False otherwise.
         str: A reason supporting the classification decision.
     """
-    # Parse the SMILES string
+    # Parse the SMILES string into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Remove salts by selecting the largest fragment
+    # Remove salts or multiple fragments by selecting the largest fragment.
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
     if not frags:
         return False, "No fragments could be parsed from SMILES"
-    # Pick the fragment with the most heavy atoms as the main fragment
     main_frag = max(frags, key=lambda m: m.GetNumHeavyAtoms())
     
-    # Define a SMARTS pattern for a beta-lactam ring.
-    # This pattern looks for a 4-membered ring ("R4") that contains:
-    # - A nitrogen atom ([NX3;R4])
-    # - A carbon that is double-bonded to an oxygen ([C;R4](=O))
-    # - And two additional ring atoms ([C;R4] twice)
-    beta_lactam_smarts = "[NX3;R4][C;R4](=O)[C;R4][C;R4]"
-    pattern = Chem.MolFromSmarts(beta_lactam_smarts)
-    if pattern is None:
-        return False, "Invalid beta-lactam SMARTS pattern"
+    # Get the ring information from the main fragment.
+    ring_info = main_frag.GetRingInfo()
+    atom_rings = ring_info.AtomRings()  # A tuple of tuples containing atom indices for each ring.
     
-    # Search for the beta-lactam motif in the main fragment
-    if main_frag.HasSubstructMatch(pattern):
-        return True, "Beta-lactam ring detected: 4-membered ring with a carbonyl carbon and an adjacent nitrogen"
+    # Loop over all rings
+    for ring in atom_rings:
+        if len(ring) != 4:
+            continue  # Only interested in 4-membered rings.
+        
+        # Collect atoms in the ring.
+        ring_atoms = [main_frag.GetAtomWithIdx(idx) for idx in ring]
+        
+        # Identify nitrogen atoms in the ring.
+        nitrogens = [atom for atom in ring_atoms if atom.GetAtomicNum() == 7]
+        if not nitrogens:
+            continue  # A beta-lactam must contain a nitrogen.
+        
+        # Identify any carbon in the ring that is carbonyl.
+        # We define a carbonyl carbon as one that is a carbon (atomic number 6) with at least one double bond to oxygen.
+        carbonyl_carbons = []
+        for atom in ring_atoms:
+            if atom.GetAtomicNum() != 6:
+                continue
+            # Check neighbors for a double-bonded oxygen.
+            for nbr in atom.GetNeighbors():
+                # Skip if neighbor not oxygen.
+                if nbr.GetAtomicNum() != 8:
+                    continue
+                bond = main_frag.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                if bond and bond.GetBondTypeAsDouble() == 2.0:  # BondType DOUBLE: we check if it is a double bond.
+                    carbonyl_carbons.append(atom)
+                    break  # Found a carbonyl for this atom.
+        
+        if not carbonyl_carbons:
+            continue  # No carbonyl group in this ring
+        
+        # Now check if any carbonyl carbon is directly bonded to any nitrogen in the ring.
+        for c in carbonyl_carbons:
+            for n in nitrogens:
+                bond = main_frag.GetBondBetweenAtoms(c.GetIdx(), n.GetIdx())
+                if bond:
+                    # We have found a nitrogen-carbon bond inside a 4-membered ring where the carbon is carbonyl.
+                    return True, ("Beta-lactam ring detected: found 4-membered ring with a carbonyl carbon " 
+                                  "and an adjacent nitrogen representing an amide bond")
     
+    # If we get here, no 4-membered ring meets the beta-lactam criteria.
     return False, "No beta-lactam ring found (4-membered ring with the required amide bond was not detected)"
 
 # Example usage:
 if __name__ == "__main__":
-    # Testing on the simplest beta-lactam: azetidin-2-one
-    test_smiles = "O=C1CCN1"
-    result, reason = is_beta_lactam(test_smiles)
-    print("Result:", result)
-    print("Reason:", reason)
+    # Test on several examples:
+    test_smiles = [
+        "O=C1CCN1",  # azetidin-2-one, simplest beta-lactam
+        "[H][C@]12SCC(C)=C(N1C(=O)[C@H]2N)C(O)=O",  # 7beta-aminodeacetoxycephalosporanic acid
+        "C[C@H]1[C@@H](C(=O)N1S(=O)(=O)O)NC(=O)C(=NOC(C)(C)C(=O)O)C2=CSC(=N2)N"  # A complex beta-lactam example
+    ]
+    
+    for smi in test_smiles:
+        result, reason = is_beta_lactam(smi)
+        print("SMILES:", smi)
+        print("Result:", result)
+        print("Reason:", reason)
+        print("------")
