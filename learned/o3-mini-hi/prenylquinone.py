@@ -4,9 +4,8 @@ Classifies: CHEBI:26255 prenylquinone
 """
 Classifies: prenylquinone
 A prenylquinone is defined as a quinone substituted by a polyprenyl‐derived side chain.
-This version improves upon the previous heuristics by:
-  - Using more relaxed SMARTS for quinone cores (allowing some substitutions)
-  - Requiring that the prenyl fragment be directly attached to the quinone core.
+This version improves upon the previous heuristics by broadening the quinone core SMARTS 
+to capture common substituted benzoquinones and naphthoquinones.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -15,17 +14,15 @@ def is_prenylquinone(smiles: str):
     """
     Determines if a molecule is a prenylquinone based on its SMILES string.
     This routine requires that the molecule contains:
-      1. A quinone core (detected by one of two SMARTS patterns that allow for substituents)
-      2. A prenyl-derived side chain that is directly attached to the quinone core. 
-         We look for a typical isoprene fragment "[CH2]C=C([CH3])", and verify that at least one
-         matching fragment is bonded to an atom in the quinone core.
-         
+      1. A quinone core (detected by one or more SMARTS patterns that allow for substitution)
+      2. A prenyl-derived side chain directly attached to an atom in the quinone core.
+      
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
         bool: True if molecule is classified as a prenylquinone, False otherwise.
-        str: Reason for classification decision.
+        str: Reason explaining the classification decision.
     """
     # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
@@ -33,30 +30,35 @@ def is_prenylquinone(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns for quinone cores.
-    # The first is a relaxed pattern for a substituted 1,4-benzoquinone.
-    # The second is a simplified naphthoquinone pattern.
+    # We include a more flexible set of patterns to capture benzoquinones and naphthoquinones.
     quinone_smarts = [
-        "[#6]1:[#6]:[#6](=O):[#6]:[#6](=O):1",  # substituted 1,4-benzoquinone pattern
-        "c1ccc2C(=O)c(c1)C(=O)cc2"              # simplified naphthoquinone pattern
+        "c1cc(=O)cc(=O)c1",               # Simple 1,4-benzoquinone pattern (aromatic ring with two C=O groups)
+        "[#6]1:[#6]:[#6](=O):[#6]:[#6](=O):1", # Alternate benzoquinone representation
+        "c1ccc2C(=O)c(c1)C(=O)cc2",        # Naphthoquinone pattern variant 1
+        "c1cc2cc(=O)cc(=O)c2c1"            # Naphthoquinone pattern variant 2
     ]
     
-    quinone_core_found = False
     quinone_atom_indices = set()
+    quinone_core_found = False
+    # Try each quinone SMARTS pattern; if any pattern matches, we record the atom indices.
     for qs in quinone_smarts:
         pattern = Chem.MolFromSmarts(qs)
         if pattern is None:
             continue
         matches = mol.GetSubstructMatches(pattern)
         if matches:
-            # Take the first match and record its atom indices
             quinone_core_found = True
-            # (We could union all, but one clear attached match is enough.)
-            quinone_atom_indices.update(matches[0])
+            # Union all atoms from all matches of this pattern to capture the full core.
+            for match in matches:
+                for idx in match:
+                    quinone_atom_indices.add(idx)
+            # We break once we have at least one quinone core match.
             break
     if not quinone_core_found:
         return False, "No quinone core detected"
     
-    # Define a SMARTS pattern for a typical prenyl fragment:
+    # Define a SMARTS pattern for a typical prenyl fragment (isoprene-derived).
+    # This pattern can capture the [CH2]C=C([CH3]) fragment.
     prenyl_pattern = Chem.MolFromSmarts("[CH2]C=C([CH3])")
     if prenyl_pattern is None:
         return False, "Error in prenyl SMARTS pattern"
@@ -65,10 +67,10 @@ def is_prenylquinone(smiles: str):
     if not prenyl_matches:
         return False, "No prenyl fragment detected"
     
-    # Require that at least one prenyl fragment is directly attached to the quinone core.
+    # Look for at least one prenyl fragment that is directly attached to the quinone core.
     attached_prenyl_found = False
     for match in prenyl_matches:
-        # For each atom in the prenyl fragment match, check its neighbors
+        # For each atom in the prenyl fragment match, check neighboring atoms
         for atom_idx in match:
             atom = mol.GetAtomWithIdx(atom_idx)
             for neighbor in atom.GetNeighbors():
@@ -83,12 +85,12 @@ def is_prenylquinone(smiles: str):
     if not attached_prenyl_found:
         return False, "Prenyl fragment not directly attached to the quinone core"
     
-    # If both a quinone core and an attached prenyl fragment are present, then classify as prenylquinone.
+    # If both a quinone core and an attached prenyl fragment are present, classify as prenylquinone.
     return True, "Molecule contains a quinone core with an attached prenyl-derived side chain"
 
 # For simple testing, you might run:
 if __name__ == "__main__":
-    # Example: ubiquinone-2 from the provided examples.
+    # Example test: ubiquinone-2 from the provided examples.
     test_smiles = "COC1=C(OC)C(=O)C(C\\C=C(/C)CCC=C(C)C)=C(C)C1=O"
     result, reason = is_prenylquinone(test_smiles)
     print(f"Result: {result}, Reason: {reason}")
