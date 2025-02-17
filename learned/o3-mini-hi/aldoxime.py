@@ -4,78 +4,78 @@ Classifies: CHEBI:22307 aldoxime
 """
 Classifies: Oximes of aldehydes (aldoxime).
 Definition: Aldoximes are oximes derived from aldehydes having the structure R–CH=N–OH,
-where the carbon of the C=N bond (originally forming the aldehyde) bears exactly one hydrogen.
-This program identifies an oxime‐like group and then further verifies that the carbon
-attached to the =N–OH has exactly one hydrogen and exactly two heavy (non‐hydrogen) neighbors.
+where the carbon in the C=N bond (originally from the aldehyde) bears exactly one hydrogen.
+This program identifies an aldoxime group using a SMARTS pattern that explicitly enforces the hydrogen count
+and then further verifies that the aldehyde-derived carbon has exactly two heavy (non‐hydrogen) neighbors.
 """
 
 from rdkit import Chem
 
 def is_aldoxime(smiles: str):
     """
-    Determines if a molecule is an aldoxime (an oxime of an aldehyde) based on its SMILES string.
-    
-    The function first adds explicit hydrogens and looks for oxime-like groups using a loose
-    SMARTS pattern. Then for each candidate match it checks:
-      - The carbon (C) atom bonded via a double bond to the nitrogen has exactly one hydrogen.
-      - That carbon is connected to exactly two heavy atoms (its neighbors excluding hydrogens),
-        one of which is the oxime nitrogen.
-      - The oxygen bonded to that nitrogen (–OH) has exactly one hydrogen.
+    Determines if a molecule is an aldoxime (oxime of an aldehyde) based on its SMILES string.
+    An aldoxime has the structure R–CH=N–OH, where the carbon (CH) double-bonded to nitrogen has
+    exactly one hydrogen and exactly two heavy neighbors (one must be the oxime nitrogen).
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        (bool, str): A tuple with True and a correct classification reason if
-            the molecule is an aldoxime, otherwise False and a reason for the failure.
+        (bool, str): Tuple containing True and a success message if an aldoxime group is found,
+                     otherwise False and a message for the failure.
     """
-    # Parse SMILES
+    # Parse the SMILES into a molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens so that hydrogen counts are explicit.
+    # Add explicit hydrogens so that hydrogen counts are available.
     mol = Chem.AddHs(mol)
     
-    # Define a loose SMARTS pattern to identify an oxime moiety.
-    # The pattern "[C]=[N]-[O]" catches a carbon double-bonded to a nitrogen that is single-bonded to an oxygen.
-    aldoxime_pattern = Chem.MolFromSmarts("[C]=[N]-[O]")
+    # Define a SMARTS pattern that explicitly requires:
+    # - a carbon atom (atomic number 6) with exactly one hydrogen (CH1)
+    # - double-bonded to a nitrogen
+    # - nitrogen single-bonded to an oxygen which is part of an -OH group.
+    # This pattern will capture R–CH=N–OH where the CH is correctly substituted.
+    aldoxime_pattern = Chem.MolFromSmarts("[#6;H1]=[N]-[OH]")
     if aldoxime_pattern is None:
         return False, "Error creating SMARTS pattern for aldoxime"
     
-    # Find all substructure matches for the pattern.
+    # Look for substructure matches.
     matches = mol.GetSubstructMatches(aldoxime_pattern)
     if not matches:
         return False, "Aldoxime functional group (R-CH=N-OH) not found"
     
-    # Iterate over each found match and perform stricter checks.
+    # For each found match, further verify the substitution pattern.
     for match in matches:
-        # match ordering as defined by the SMARTS:
-        # match[0]: the carbon, match[1]: the nitrogen, match[2]: the oxygen.
+        # According to our SMARTS, the match order is:
+        #   match[0] : the carbon (CH1)
+        #   match[1] : the nitrogen
+        #   match[2] : the oxygen (of the OH group)
         c_idx, n_idx, o_idx = match
         c_atom = mol.GetAtomWithIdx(c_idx)
         n_atom = mol.GetAtomWithIdx(n_idx)
         o_atom = mol.GetAtomWithIdx(o_idx)
         
-        # Check that the carbon (C) atom has exactly one hydrogen.
+        # Double-check that the carbon has exactly one hydrogen (should be true by SMARTS, but we verify).
         if c_atom.GetTotalNumHs() != 1:
-            continue  # Not consistent with an aldehyde-derived carbon.
-        
-        # Check that the carbon atom has exactly two heavy neighbors (non-hydrogen atoms).
-        heavy_neighbors = [nbr for nbr in c_atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
-        # One heavy neighbor must be the oxime nitrogen. In an aldehyde, there should be exactly 2 heavy neighbors.
-        if len(heavy_neighbors) != 2 or not any(nbr.GetIdx() == n_idx for nbr in heavy_neighbors):
             continue
         
-        # Check that the oxygen has exactly one hydrogen (making it an OH group).
+        # Verify that the carbon has exactly two heavy neighbors (non-hydrogen atoms).
+        heavy_neighbors = [nbr for nbr in c_atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
+        # In an aldehyde originally, the carbon should have its two heavy neighbors: one is the oxime nitrogen,
+        # and the other is belonging to R.
+        if len(heavy_neighbors) != 2 or n_idx not in [nbr.GetIdx() for nbr in heavy_neighbors]:
+            continue
+        
+        # Check that the oxygen atom in the -OH group has exactly one hydrogen.
         if o_atom.GetTotalNumHs() != 1:
             continue
         
-        # Passed all criteria: We have identified an aldoxime group.
-        return True, ("Molecule contains an aldoxime functional group (R-CH=N-OH) "
-                      "with the correct aldehyde substitution pattern")
+        # If all criteria are met, we've successfully identified an aldoxime functional group.
+        return True, "Molecule contains an aldoxime functional group (R-CH=N-OH) with correct aldehyde substitution"
     
-    # If no candidate passed the additional substitution criteria.
+    # If none of the matches passed the criteria, return false with a specific reason.
     return False, ("Oxime-like group found, but none of the matches have the expected aldehyde substitution "
                    "(carbon must have exactly one hydrogen and two heavy neighbors)")
 
