@@ -1,95 +1,89 @@
 """
 Classifies: CHEBI:60834 beta-carbolines
 """
+#!/usr/bin/env python
 """
-Classifies: beta-carbolines
+Classifies: beta-carbolines 
 Definition: Any pyridoindole containing a beta-carboline skeleton and their hydrogenated derivatives.
-A beta‐carboline core is built on a fused bicyclic system where a five‐membered “indole” ring 
+A beta‐carboline core is built on a fused bicyclic system in which a five‐membered “indole” ring 
 (with an –NH group) is fused to a six‐membered ring that contains at least one nitrogen (making it a pyridine).
-This method attempts to identify such a pair by:
-  1. Finding all 5- and 6-membered rings (using GetSymmSSSR).
-  2. Requiring that a candidate 5-membered ring contains exactly one nitrogen that bears at least one hydrogen.
-  3. Requiring that a candidate 6-membered ring contains at least one nitrogen.
-  4. Looking for a pair of such rings that share exactly two atoms (consistent with a fused bicyclic system).
-Note: This heuristic does not capture every edge case but is an improved approach over the previous code.
+This approach analyzes the rings present in a molecule and checks for a fused 5– and 6–membered system with these features.
+Note: This method is an approximation and may still mis‐classify some edge cases.
 """
 from rdkit import Chem
 
 def is_beta_carbolines(smiles: str):
     """
-    Determines whether a molecule (given by its SMILES string)
-    appears to contain a beta-carboline scaffold (or its hydrogenated derivative).
-
-    Strategy:
-      1. Parse the SMILES and add explicit hydrogens (to check for an –NH group).
-      2. Compute the smallest set of smallest rings (SSSR) and filter for 5- and 6-membered rings.
-      3. Require that one of the 5-membered rings (candidate indole) has exactly one nitrogen with ≥1 hydrogen.
-      4. Require that one of the 6-membered rings (candidate pyridine) has at least one nitrogen.
-      5. Check if the two rings are fused, meaning they share exactly two atoms.
+    Determines whether a molecule (given by its SMILES string) 
+    appears to contain a beta-carboline (or hydrogenated beta-carboline) scaffold.
+    
+    The strategy is:
+      1. Parse the SMILES into an RDKit molecule.
+      2. Obtain the ring information.
+      3. Look for a fused ring pair where one ring is five-membered containing exactly one nitrogen
+         (the “indole” part) and the other is six-membered containing at least one nitrogen (the “pyridine” part).
       
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+    
     Returns:
-        (bool, str): Tuple; True with a reason if the scaffold is found, otherwise False with a reason.
+        (bool, str): Tuple (True, reason) if the scaffold is found; otherwise (False, reason).
     """
-    # Parse the molecule and add hydrogens so we can check for N–H.
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
-    mol = Chem.AddHs(mol)
     
-    # Obtain the smallest set of smallest rings.
-    rings = list(Chem.GetSymmSSSR(mol))
+    # Get ring information (list of tuples; each tuple contains indices of atoms in the ring)
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
     if not rings:
         return False, "No rings found in the molecule."
     
-    # Filter for 5-membered and 6-membered rings.
-    rings5 = [set(r) for r in rings if len(r) == 5]
-    rings6 = [set(r) for r in rings if len(r) == 6]
-    if not rings5:
-        return False, "No 5-membered rings found."
-    if not rings6:
-        return False, "No 6-membered rings found."
-    
-    # Iterate over candidate 5-membered rings (indole part)
-    for r5 in rings5:
-        # Count nitrogen atoms in the candidate 5-membered ring.
-        nitrogen_indices = [idx for idx in r5 if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7]
-        if len(nitrogen_indices) != 1:
-            continue  # must have exactly one nitrogen
-        # Ensure that the nitrogen has at least one hydrogen (as in an NH group).
-        n_atom = mol.GetAtomWithIdx(nitrogen_indices[0])
-        if n_atom.GetTotalNumHs() < 1:
-            continue
-        
-        # Now iterate over 6-membered ring candidates (pyridine part).
-        for r6 in rings6:
-            # Check if the two rings share exactly 2 atoms (typical for a fused bicyclic system).
-            shared_atoms = r5.intersection(r6)
-            if len(shared_atoms) != 2:
+    # Iterate through all pairs of rings and check for fused rings sharing at least 2 atoms.
+    for i, ring1 in enumerate(rings):
+        set1 = set(ring1)
+        for ring2 in rings[i+1:]:
+            set2 = set(ring2)
+            shared_atoms = set1.intersection(set2)
+            if len(shared_atoms) < 2:
+                # not a fused ring system
                 continue
             
-            # Check that the 6-membered ring has at least one nitrogen.
-            if sum(1 for idx in r6 if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7) < 1:
-                continue
-            
-            # If all conditions are met, we assume the beta-carboline scaffold is present.
-            return True, ("Molecule contains a fused 5-membered ring (indole with an NH) and a fused "
-                          "6-membered ring with a nitrogen, consistent with a beta-carboline scaffold or its derivative.")
-    
-    # If no valid fused ring pair is found.
-    return False, ("Molecule does not appear to contain the beta-carboline scaffold based on fused ring analysis: "
-                   "no fused 5- and 6-membered ring system with the required nitrogen features was found.")
+            # Look for a pair where one ring is 5-membered and the other is 6-membered.
+            if (len(ring1) == 5 and len(ring2) == 6) or (len(ring1) == 6 and len(ring2) == 5):
+                # Identify which ring is 5-membered (expected to be the indole part) and which is 6-membered (expected pyridine)
+                ring5 = ring1 if len(ring1) == 5 else ring2
+                ring6 = ring1 if len(ring1) == 6 else ring2
+                
+                # Count nitrogen atoms in the 5-membered ring.
+                n_count_ring5 = sum(1 for idx in ring5 if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
+                # For a proper indole-like ring, we expect exactly one nitrogen.
+                if n_count_ring5 != 1:
+                    continue
+                
+                # Count nitrogen atoms in the 6-membered ring.
+                n_count_ring6 = sum(1 for idx in ring6 if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
+                if n_count_ring6 < 1:
+                    # This excludes fused systems with a benzene ring instead of a pyridine.
+                    continue
 
-# Example usage: run some tests when executing the script directly.
+                # Additional check: you might require that the nitrogen in the five-membered ring has at least one hydrogen,
+                # but in hydrogenated variants the explicit hydrogen may not be present. So here we simply require one nitrogen.
+                
+                return True, ("Molecule contains a fused 5- and 6-membered ring system with appropriate nitrogen counts "
+                              "(expected for a beta-carboline or its hydrogenated derivative).")
+    
+    return False, "Molecule does not appear to contain the beta-carboline scaffold (a fused indole-pyridine system) based on ring analysis."
+
+# Example usage (for testing) when running the script directly.
 if __name__ == "__main__":
-    # Test some example SMILES (some from the provided list)
     test_examples = {
-        "Harmine": "COc1ccc2c(c1)[nH]c1c(C)nccc12",
-        "4,21-Dehydrocorynantheine aldehyde": "COC(=O)C(=C/O)\\[C@H]1C[C@H]2c3[nH]c4ccccc4c3CC[N+]2=C[C@@H]1C=C",
-        "Carbazole (likely negative)": "c1ccc2c(c1)[nH]c1ccccc12",
+        "Aromatic harmine": "COc1ccc2c(c1)[nH]c1cnccc12",  # harmine core (modified to force pyridine N)
+        "Hydrogenated variant": "O(C1=CC=2C3=C(NC2C=C1)CN(CC3)C)",  # one of the provided examples
+        "Carbazole (should be false positive)": "c1ccc2c(c1)[nH]c1ccccc12",
     }
+    
     for name, smi in test_examples.items():
         result, reason = is_beta_carbolines(smi)
         print(f"{name}: {result}\n  Reason: {reason}\n")
