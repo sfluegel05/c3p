@@ -5,8 +5,9 @@ Classifies: CHEBI:61655 steroid saponin
 """
 Classifies: Saponin derived from a hydroxysteroid (steroid saponin)
 Definition: Any saponin derived from a hydroxysteroid.
-This program uses substructure searches to detect a steroid nucleus with at least one hydroxyl group
-and the presence of at least one sugar-like ring.
+This improved version uses a more relaxed SMARTS pattern for the steroid nucleus to capture variations
+found in natural products, and then ensures that at least one hydroxyl group is directly attached to the nucleus.
+It also looks for a sugar-like ring (5- or 6-membered with at least 2 oxygen atoms).
 """
 
 from rdkit import Chem
@@ -14,48 +15,49 @@ from rdkit import Chem
 def is_steroid_saponin(smiles: str):
     """
     Determines if a molecule is a steroid saponin based on its SMILES string.
-    A steroid saponin is defined here as a molecule that contains a hydroxysteroid nucleus (i.e. a steroid
-    backbone in which at least one carbon carries an -OH group) covalently linked to a sugar moiety.
+    A steroid saponin is defined here as a molecule that contains a hydroxysteroid nucleus (a steroid backbone
+    that is hydroxylated) and at least one sugar moiety.
     
-    The steroid nucleus is approximated using a SMARTS pattern for a fused tetracyclic system (three six-membered rings
-    and one five-membered ring; the cyclopentanoperhydrophenanthrene skeleton).
-    The sugar is approximated by detecting at least one five- or six-membered ring that contains at least 2 oxygen atoms.
+    The steroid nucleus is approximated with a relaxed SMARTS pattern for a fused tetracyclic system (3 six-membered rings
+    and 1 five-membered ring) typical of many steroids. The hydroxylation is checked by finding at least one -OH group
+    attached to an atom of the steroid core.
+    
+    The sugar moiety is approximated by detecting at least one 5- or 6-membered ring that contains at least 2 oxygen atoms.
     
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+    
     Returns:
         bool: True if the molecule meets the criteria for a steroid saponin, False otherwise.
-        str: Reason for classification.
+        str: Reason for the classification.
     """
-    # Parse SMILES string
+    # Parse the input SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for a steroid nucleus.
-    # This is an approximation of a cyclopentanoperhydrophenanthrene skeleton.
-    # Pattern: three fused cyclohexanes and one cyclopentane.
-    steroid_core_smarts = "C1CC2CCC3C(C2)CCC4C3(CC1)CC4"
+    # Define a more relaxed SMARTS pattern for a steroid nucleus.
+    # This pattern aims to cover a cyclopentanoperhydrophenanthrene-like core.
+    # It may match molecules with unsaturation or substituents that still represent a steroid skeleton.
+    steroid_core_smarts = "C1CCC2C3CCC4C(C3)C2C1C4"
     steroid_core = Chem.MolFromSmarts(steroid_core_smarts)
     if steroid_core is None:
         return False, "Failed to construct steroid core pattern"
     
-    if not mol.HasSubstructMatch(steroid_core):
+    # Check if the molecule contains a substructure matching the steroid nucleus.
+    steroid_matches = mol.GetSubstructMatches(steroid_core)
+    if not steroid_matches:
         return False, "No steroid nucleus found"
     
-    # Check that the steroid nucleus is hydroxylated.
-    # We assume that in at least one match of the steroid core, one of the atoms (typically a carbon)
-    # is attached to a hydroxyl (an oxygen having at least one hydrogen neighbor).
-    steroid_matches = mol.GetSubstructMatches(steroid_core)
+    # Verify that at least one steroid core instance has a hydroxyl (-OH) substituent.
     hydroxyl_on_steroid = False
     for match in steroid_matches:
-        # For each atom in the steroid nucleus match, check if any neighbor is an -OH group.
-        for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            # Check neighbors for an oxygen that is also bound to a hydrogen
             for nbr in atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 8:  # oxygen
-                    # Check if this oxygen is bound to a hydrogen
+                if nbr.GetAtomicNum() == 8:  # oxygen atom
+                    # Check if oxygen is bound to at least one hydrogen
                     for subnbr in nbr.GetNeighbors():
                         if subnbr.GetAtomicNum() == 1:
                             hydroxyl_on_steroid = True
@@ -69,14 +71,13 @@ def is_steroid_saponin(smiles: str):
     if not hydroxyl_on_steroid:
         return False, "Steroid nucleus found, but no hydroxyl substituent detected on it"
     
-    # Now check for sugar moieties.
-    # We define a sugar-like ring as a ring of size 5 or 6 that contains at least 2 oxygen atoms.
+    # Check for at least one sugar-like ring.
+    # A sugar-like ring is defined as a 5- or 6-membered ring with at least 2 oxygen atoms.
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
     sugar_found = False
     for ring in atom_rings:
         if len(ring) in (5, 6):
-            # Count oxygen atoms in the ring
             oxygen_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
             if oxygen_count >= 2:
                 sugar_found = True
@@ -86,7 +87,7 @@ def is_steroid_saponin(smiles: str):
     
     return True, "Molecule contains a hydroxysteroid nucleus linked to a sugar moiety (steroid saponin)"
 
-# For testing (you can uncomment the following lines)
-# test_smiles = "O(C1C(C2(C(C3C(C4(C(=CC3)CC(O)CC4OC5OC(C(OC6OC(C(O)C(O)C6O)CO)C(O)C5O)C)CC2)C1)C)C(C(O)CCC(C)C)C)C7OC(C(O)C(O)C7O)CO"  # Example SMILES from prompt
+# For testing, you may uncomment lines below to try sample SMILES strings:
+# test_smiles = "O(C1C(C2(C(C3C(C4(C(=CC3)CC(O)CC4OC5OC(C(OC6OC(C(O)C(O)C6O)CO)C(O)C5O)C)CC2)C1)C)C(C(O)CCC(C)C)C)C7OC(C(O)C(O)C7O)CO"
 # result, reason = is_steroid_saponin(test_smiles)
 # print(result, reason)
