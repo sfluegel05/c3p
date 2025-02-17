@@ -1,114 +1,67 @@
 """
 Classifies: CHEBI:35436 D-glucoside
 """
-#!/usr/bin/env python3
 """
-Classifies: D-Glucoside
-Definition: Any glucoside in which the glycoside group is derived from D‐glucose.
-For our purposes a positive is declared if we can find a six‐membered (pyranose) ring 
-composed of five carbons and one oxygen that:
-  (i) bears at least one exocyclic –CH2OH (or acyl‐modified CH2OH) branch, and 
- (ii) is linked via at least one external oxygen (the glycosidic bond) to a fragment 
-     outside that ring.
-Note: Many borderline cases exist.
+Classifies: D-Glucoside (Any glucoside in which the glycoside group is derived from D-glucose)
+We look for a D-glucopyranose substructure (as found in many natural glycosides)
+and then verify that it is attached to an aglycone (not the whole molecule).
 """
+
 from rdkit import Chem
 
 def is_D_glucoside(smiles: str):
     """
-    Determines whether a molecule is a D-glucoside.
-    
-    Algorithm:
-      1. Parse the SMILES string.
-      2. Loop over all rings. For each ring of exactly 6 atoms:
-           a. Confirm the ring contains exactly 1 oxygen and 5 carbons.
-           b. Look for at least one ring carbon that has a substituent which is 
-              a carbon (CH2 or longer) having at least one oxygen neighbor (i.e. a 
-              relaxed –CH2OH check – even acylated groups are accepted).
-           c. Look for at least one ring carbon that is linked via an external oxygen 
-              (a potential glycosidic bond) to another heavy atom. In a typical hydroxyl 
-              group (–OH) the oxygen is attached only to one heavy atom (the sugar). 
-              A bridging (glycosidic) oxygen will connect to the sugar ring and at least 
-              one additional heavy atom.
-      3. If a candidate ring passes these tests, we declare the molecule to be a 
-         D-glucoside.
-    
+    Determines if a molecule is a D-glucoside based on its SMILES string.
+    A D-glucoside is defined as any glucoside in which the glycoside group is derived
+    from D-glucose. In practice, we require the molecule to contain a D-glucopyranose
+    ring (in either alpha or beta configuration) that is connected to additional moiety.
+
     Args:
-      smiles (str): The SMILES string of the molecule.
-    
+        smiles (str): SMILES string of the molecule.
+
     Returns:
-      bool: True if a candidate D-glucopyranose ring attached via a (likely) glycosidic bond is found, 
-            False otherwise.
-      str: Explanation of the classification.
+        bool: True if molecule is classified as a D-glucoside, False otherwise.
+        str: Reason for classification decision.
     """
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    ring_info = mol.GetRingInfo()
-    for ring in ring_info.AtomRings():
-        # Consider only 6-membered rings (pyranoses)
-        if len(ring) != 6:
-            continue
-
-        atoms_in_ring = [mol.GetAtomWithIdx(i) for i in ring]
-        # Count atoms: pyranose ring should have 5 carbons and 1 oxygen.
-        n_oxygens = sum(1 for a in atoms_in_ring if a.GetAtomicNum() == 8)
-        n_carbons  = sum(1 for a in atoms_in_ring if a.GetAtomicNum() == 6)
-        if n_oxygens != 1 or n_carbons != 5:
-            continue  # not a glucopyranose-like ring
-
-        # Check for the characteristic exocyclic CH2OH substituent.
-        found_ch2oh = False
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            # only consider ring carbons
-            if atom.GetAtomicNum() != 6:
-                continue
-            # Look among neighbors that lie outside the ring
+    
+    # Define two SMARTS patterns for a D-glucopyranose ring.
+    # These patterns match common depictions of the sugar ring in its beta and alpha forms.
+    # Note: The sugar ring is a 6-membered ring with 5 carbons and 1 oxygen,
+    # with a CH2OH branch on the carbon next to the ring oxygen.
+    # The following SMARTS are examples and may not be perfect but work for many cases.
+    pattern_beta = Chem.MolFromSmarts("O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O")
+    pattern_alpha = Chem.MolFromSmarts("O[C@H]1O[C@@H](CO)[C@@H](O)[C@H](O)[C@H]1O")
+    
+    # Get matches for both patterns
+    matches_beta = mol.GetSubstructMatches(pattern_beta)
+    matches_alpha = mol.GetSubstructMatches(pattern_alpha)
+    all_matches = list(matches_beta) + list(matches_alpha)
+    
+    if not all_matches:
+        return False, "No D-glucopyranose substructure found"
+    
+    # For each sugar-ring match, verify that it is connected to the rest of the molecule.
+    # A proper glycoside will have at least one bond from an atom inside the sugar to an atom outside.
+    for match in all_matches:
+        match_set = set(match)
+        # For every atom in the match, check bonds to atoms not in the match.
+        for atom_idx in match_set:
+            atom = mol.GetAtomWithIdx(atom_idx)
             for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() in ring:
-                    continue
-                # We accept an exocyclic carbon even if it is modified (e.g. acylated)
-                if nbr.GetAtomicNum() == 6:
-                    # Check that this exocyclic carbon has at least one oxygen in its neighbors
-                    if any(nbr2.GetAtomicNum() == 8 and nbr2.GetIdx() not in ring for nbr2 in nbr.GetNeighbors()):
-                        found_ch2oh = True
-                        break
-            if found_ch2oh:
-                break
-        if not found_ch2oh:
-            continue  # No characteristic CH2OH branch found
-
-        # Check for a glycosidic bond: at least one ring carbon must connect via an external oxygen
-        # to another heavy atom. (A simple hydroxyl would only have 1 heavy neighbor.)
-        glycosidic_found = False
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() != 6:
-                continue
-            for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() in ring:
-                    continue
-                if nbr.GetAtomicNum() == 8:
-                    # Count the heavy (non-hydrogen) neighbors of this oxygen
-                    heavy_neighbors = [n for n in nbr.GetNeighbors() if n.GetAtomicNum() > 1]
-                    # In a free hydroxyl group, the oxygen typically has only one heavy neighbor.
-                    # In a glycosidic bond, the oxygen bridges the sugar ring and at least one other heavy atom.
-                    if len(heavy_neighbors) >= 2:
-                        glycosidic_found = True
-                        break
-            if glycosidic_found:
-                break
-
-        if glycosidic_found:
-            return True, "Contains D-glucopyranose ring attached via a glycosidic bond"
-
-    return False, "No D-glucopyranose ring attached via a glycosidic bond found"
-
-# Example usage:
+                if nbr.GetIdx() not in match_set:
+                    # Found a connecting bond from the sugar to an aglycone.
+                    return True, "Contains a D-glucopyranose ring attached via a glycosidic bond"
+    
+    # If no atom in any matched sugar has a bond to an outside atom then the molecule may be free glucose.
+    return False, "Found an isolated D-glucopyranose ring but no glycosidic bond to an aglycone"
+    
+# Example usage (these lines can be removed in production):
 if __name__ == '__main__':
-    # Test with a positive example: beta-D-glucosyl-N-eicosanoylsphingosine.
+    # Example: beta-D-glucosyl-N-eicosanoylsphingosine
     test_smiles = "CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCCCCC"
     result, reason = is_D_glucoside(test_smiles)
     print(result, reason)
