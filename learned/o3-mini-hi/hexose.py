@@ -7,7 +7,7 @@ Classifies: hexose
 Definition: Any six‐carbon monosaccharide which in its linear form contains either an aldehyde group
 at position 1 (aldohexose) or a ketone group at position 2 (ketohexose). Many hexoses exist in cyclic form
 (either as a pyranose or a furanose) so we also attempt to detect a sugar‐like ring.
-Note: This is a heuristic method – sugars can appear as derivatives so false positives/negatives may occur.
+Note: Heuristics are used. Many modifications (e.g. glycosidic linkages) may affect the match.
 """
 
 from rdkit import Chem
@@ -17,128 +17,141 @@ def is_hexose(smiles: str):
     """
     Determines if a molecule qualifies as a hexose.
 
-    A hexose (six‐carbon monosaccharide) is defined here as a molecule that in its open‐chain form presents 
-    either an aldehyde group at carbon 1 (aldohexose) or a ketone group at carbon 2 (ketohexose); or that contains 
-    a cyclic (pyranose or furanose) motif with several hydroxyl (or similar) substituents on the core.
-
-    The function applies two heuristic strategies:
-      1. Open‐chain detection using two SMARTS patterns (one for aldo‑, one for keto‑hexoses).
-      2. Cyclic detection:
-          a. Pyranose: a six‐membered ring with one oxygen (and hence five carbons) where at least four of the ring carbons 
-             have a small oxygen substituent (–OH or similar).
-          b. Furanose: a five‐membered ring with one oxygen and four carbons that features at least one exocyclic –CH2OH.
+    We use three heuristic strategies:
+      1. Reject molecules with phosphorus atoms (commonly signaling nucleotides or related structures).
+      2. Open–chain detection using loose SMARTS patterns for an aldohexose (terminal aldehyde)
+         or ketohexose (internal ketone).
+      3. Cyclic (ring) detection for sugar–like motifs:
+            a. Pyranose candidate: a six–membered ring with exactly one oxygen. Of the five ring–carbons,
+               at least 3 should carry an –OH (or similar) group.
+            b. Furanose candidate: a five–membered ring with exactly one oxygen and at least one exocyclic –CH2OH group.
+         In either case the candidate substructure should not be a very minor portion of a large molecule.
     
     Args:
-        smiles (str): SMILES string
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if classified as a hexose, False otherwise.
+        bool: True if the molecule is classified as a hexose, otherwise False.
         str: Explanation for the classification decision.
     """
-    # Parse SMILES
+    # Parse SMILES and add explicit hydrogens.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # ===== Attempt 1: Open-chain detection =====
-    #
-    # For an aldohexose, the linear form is:
-    #   C1: aldehyde (CHO)
-    #   C2: CH(OH)
-    #   C3: CH(OH)
-    #   C4: CH(OH)
-    #   C5: CH(OH)
-    #   C6: CH2OH
-    #
-    # We use a SMARTS that does not constrain chirality too strictly.
-    aldo_hexose_smarts = "[CH1](=O)[C]([OH])[C]([OH])[C]([OH])[C]([OH])[CH2][OH]"
-    aldo_query = Chem.MolFromSmarts(aldo_hexose_smarts)
+    mol = Chem.AddHs(mol)
+    
+    # ----- Step 1: Quick rejection (e.g. nucleotides have phosphorus) -----
+    if any(atom.GetSymbol() == "P" for atom in mol.GetAtoms()):
+        return False, "Contains phosphorus which indicates a nucleotide or related structure"
+    
+    # ----- Step 2: Open-chain detection via SMARTS -----
+    # We use a loose SMARTS for a six–carbon chain.
+    # For an aldohexose the open-chain (linear) molecule should have a terminal aldehyde group.
+    # The pattern below does not require all –OH groups to be unmodified.
+    aldo_smarts = "[H][C;X3](=O)[C;X4][C;X4][C;X4][C;X4][CH2][OX2H]"
+    aldo_query = Chem.MolFromSmarts(aldo_smarts)
     if aldo_query and mol.HasSubstructMatch(aldo_query):
         return True, "Matches open-chain aldohexose pattern (aldehyde at C1)"
-
-    #
-    # For a ketohexose (hexulose), the typical open-chain form is:
-    #   C1: CH2OH
-    #   C2: CH(OH)
-    #   C3: C(=O)
-    #   C4: CH(OH)
-    #   C5: CH(OH)
-    #   C6: CH2OH
-    #
-    keto_hexose_smarts = "[CH2][OH][CH]([OH])C(=O)[CH]([OH])[CH]([OH])[CH2][OH]"
-    keto_query = Chem.MolFromSmarts(keto_hexose_smarts)
+    
+    # For a ketohexose we expect the carbonyl to be internal.
+    keto_smarts = "[CH2][OX2H][C;X4][C;X4]C(=O)[C;X4][CH2][OX2H]"
+    keto_query = Chem.MolFromSmarts(keto_smarts)
     if keto_query and mol.HasSubstructMatch(keto_query):
-        return True, "Matches open-chain ketohexose pattern (ketone at C3)"
-
-    # ===== Attempt 2: Cyclic detection =====
-
+        return True, "Matches open-chain ketohexose pattern (ketone in-chain)"
+    
+    # ----- Step 3: Cyclic (ring) detection for sugar rings -----
     ring_info = mol.GetRingInfo()
-    # Loop over all rings in the molecule
+    total_atoms = mol.GetNumAtoms()
+    candidate_found = False
+    
     for ring in ring_info.AtomRings():
-        # ----- Pyranose detection (six-membered ring) -----
-        if len(ring) == 6:
-            ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
-            # Count oxygen and carbon atoms in the ring
-            num_ox = sum(1 for atom in ring_atoms if atom.GetSymbol() == "O")
-            num_c  = sum(1 for atom in ring_atoms if atom.GetSymbol() == "C")
-            if num_ox == 1 and num_c == 5:
-                # Check substituents on ring carbons.
-                oh_count = 0
-                for idx in ring:
-                    atom = mol.GetAtomWithIdx(idx)
-                    if atom.GetSymbol() != "C":
+        ring_size = len(ring)
+        # Get the atoms in the ring.
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        
+        # Pyranose candidate: 6-membered ring with exactly one oxygen.
+        if ring_size == 6:
+            num_ox_in_ring = sum(1 for atom in ring_atoms if atom.GetSymbol() == "O")
+            if num_ox_in_ring != 1:
+                continue
+            # Count ring-carbon substituents that are -OH.
+            oh_count = 0
+            ch2oh_found = False
+            for idx in ring:
+                atom = mol.GetAtomWithIdx(idx)
+                # Consider only carbons in the ring.
+                if atom.GetSymbol() != "C":
+                    continue
+                # Look at neighbors that are not in the ring.
+                for nbr in atom.GetNeighbors():
+                    if nbr.GetIdx() in ring:
                         continue
-                    # Look at neighbors not in the ring
-                    for nbr in atom.GetNeighbors():
-                        if nbr.GetIdx() in ring:
-                            continue
-                        # A typical hydroxyl group should be an oxygen with at least one hydrogen.
-                        # (We use GetTotalNumHs as a loose check.)
-                        if nbr.GetSymbol() == "O" and nbr.GetTotalNumHs() >= 1:
-                            oh_count += 1
-                            break  # count at most one OH per ring carbon
-                # Heuristic: require at least 4 of 5 ring carbons bear an OH.
-                if oh_count >= 4:
-                    return True, "Contains a pyranose ring pattern (six-membered ring with one oxygen and several -OH groups)"
-        # ----- Furanose detection (five-membered ring) -----
-        if len(ring) == 5:
-            ring_atoms = [mol.GetAtomWithIdx(i) for i in ring]
-            num_ox = sum(1 for atom in ring_atoms if atom.GetSymbol() == "O")
-            num_c  = sum(1 for atom in ring_atoms if atom.GetSymbol() == "C")
-            if num_ox == 1 and num_c == 4:
-                # Look for an exocyclic CH2OH group attached to one of the ring carbons.
-                found_exo = False
-                for idx in ring:
-                    atom = mol.GetAtomWithIdx(idx)
-                    if atom.GetSymbol() != "C":
+                    # Look for hydroxyl: oxygen atom with at least one hydrogen.
+                    if nbr.GetSymbol() == "O" and nbr.GetTotalNumHs() >= 1:
+                        oh_count += 1
+                        # Additionally, check if this oxygen is attached to a CH2 group (exocyclic –CH2OH)
+                        for o_nbr in nbr.GetNeighbors():
+                            if o_nbr.GetIdx() == atom.GetIdx():
+                                continue
+                            if o_nbr.GetSymbol() == "C" and o_nbr.GetTotalNumHs() >= 2:
+                                ch2oh_found = True
+                        break  # count only one substituent per ring carbon
+            # Heuristic: require at least 3 of 5 ring carbons bear –OH.
+            if oh_count >= 3:
+                # Also, the sugar part should be a fair fraction of the whole molecule.
+                if len(ring) < total_atoms * 0.8:  # if the ring is not just a minor decoration
+                    candidate_found = True
+                    return True, "Contains a pyranose ring pattern (6-membered ring with one oxygen and multiple -OH substituents)"
+        
+        # Furanose candidate: 5-membered ring with exactly one oxygen.
+        if ring_size == 5:
+            num_ox_in_ring = sum(1 for atom in ring_atoms if atom.GetSymbol() == "O")
+            if num_ox_in_ring != 1:
+                continue
+            exo_ch2oh = False
+            for idx in ring:
+                atom = mol.GetAtomWithIdx(idx)
+                if atom.GetSymbol() != "C":
+                    continue
+                # Check neighbors outside ring for a -CH2OH fragment.
+                for nbr in atom.GetNeighbors():
+                    if nbr.GetIdx() in ring:
                         continue
-                    # Examine neighbors not in the ring.
-                    for nbr in atom.GetNeighbors():
-                        if nbr.GetIdx() in ring:
-                            continue
-                        # Check if neighbor is an oxygen that is terminal (typical of CH2OH)
-                        # We also check that the oxygen is attached to a CH2 (i.e. has 2 hydrogens roughly)
-                        if nbr.GetSymbol() == "O" and nbr.GetTotalNumHs() >= 1:
-                            found_exo = True
-                            break
-                    if found_exo:
+                    if nbr.GetSymbol() == "C" and nbr.GetTotalNumHs() >= 2:
+                        # Look for attached oxygen with at least one hydrogen.
+                        for subnbr in nbr.GetNeighbors():
+                            if subnbr.GetIdx() == atom.GetIdx():
+                                continue
+                            if subnbr.GetSymbol() == "O" and subnbr.GetTotalNumHs() >= 1:
+                                exo_ch2oh = True
+                                break
+                    if exo_ch2oh:
                         break
-                if found_exo:
-                    return True, "Contains a furanose ring pattern (five-membered ring with one oxygen and an exocyclic -CH2OH group)"
+                if exo_ch2oh:
+                    break
+            if exo_ch2oh:
+                if len(ring) < total_atoms * 0.8:
+                    candidate_found = True
+                    return True, "Contains a furanose ring pattern (5-membered ring with one oxygen and an exocyclic -CH2OH group)"
+    
+    # If no strategy succeeded then return negative.
+    if not candidate_found:
+        return False, "Does not match recognized hexose patterns"
 
-    return False, "Does not match recognized hexose patterns"
+    # Fallback (should not reach here)
+    return False, "Failed to classify molecule"
 
 # ----- Example usage -----
 if __name__ == '__main__':
-    # A small set of test SMILES including examples from the prompt.
+    # Test a few examples (these include examples from true positives and known problematic cases)
     test_smiles = [
-        "OC(C(O)CNCCCCCCC)C(O)C(O)CO",  # 1-Deoxy-1-(heptylamino)hexitol: an open-chain hexitol derivative
-        "O=C(OC1OC(C(O)C(C1O)O)C)C2=CC=CC=C2",  # 1-O-Benzoyl-alpha-L-rhamnopyranoside (cyclic, pyranose core)
-        "OC[C@H]1OC(O)[C@H](O)[C@H](O)[C@@H]1O",  # D-allopyranose (pyranose)
-        "[H]C(=O)[C@H](O)[C@@H](O)[C@@H](O)[C@H](O)CO",  # aldehydo-D-galactose (open-chain)
-        "C[C@H](O)[C@H](O)[C@@H](O)C(=O)CO",  # L-rhamnulose (open-chain keto? might be drawn open-chain)
-        "[H]C([H])([C@]([H])(O)C=O)[C@]([H])(O)[C@@]([H])(C)O",  # tyvelose (open-chain variant with deoxy substitution)
-        "OC[C@H]1O[C@@](O)(CO)[C@@H](O)[C@H]1O",  # alpha-D-tagatofuranose (furanose)
+        "OC(C(O)CNCCCCCCC)C(O)C(O)CO",                         # 1-Deoxy-1-(heptylamino)hexitol (open-chain derivative)
+        "O=C(OC1OC(C(O)C(C1O)O)C)C2=CC=CC=C2",                 # 1-O-Benzoyl-alpha-L-rhamnopyranoside (cyclic but with extra acyl group)
+        "OC[C@H]1OC(O)[C@H](O)[C@H](O)[C@@H]1O",               # D-allopyranose
+        "[H]C(=O)[C@H](O)[C@@H](O)[C@@H](O)[C@H](O)CO",         # aldehydo-D-galactose (open-chain)
+        "C[C@H](O)[C@H](O)[C@@H](O)C(=O)CO",                   # L-rhamnulose (open-chain keto variant)
+        "[H]C([H])([C@]([H])(O)C=O)[C@]([H])(O)[C@@]([H])(C)O",  # tyvelose (open-chain with deoxy substitution)
+        "OC[C@H]1O[C@@](O)(CO)[C@@H](O)[C@H]1O",               # alpha-D-tagatofuranose (cyclic furanose)
     ]
     for s in test_smiles:
         result, reason = is_hexose(s)
