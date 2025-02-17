@@ -6,12 +6,10 @@ Classifies: Endocannabinoids – A class of cannabinoids present in mammalian bi
 and tissues that activate cannabinoid receptors.
 This classifier uses improved heuristics:
   • Excludes molecules with phosphorus.
-  • Requires that the molecule have exactly one acyl group:
-       – For N‐acylethanolamines: exactly one amide (C(=O)N) and exactly one ethanolamide fragment (C(=O)NCCO)
-         with exactly one nitrogen.
-       – For monoacylglycerols/glyceryl ethers: exactly one ester (C(=O)O) and exactly one glycerol fragment (C(CO)CO)
-         with no nitrogen.
-  • In addition, the overall molecule must have at least 18 carbons, at least 15 rotatable bonds,
+  • Requires that the molecule have exactly one acyl linkage:
+       – For N‐acylethanolamines: exactly one amide (C(=O)N) with an ethanolamide fragment (C(=O)NCCO) and exactly one nitrogen.
+       – For monoacylglycerols/glyceryl ethers: a glycerol fragment that is directly linked (via an ester or an ether) to one long fatty acyl chain.
+  • In addition, the overall molecule must be “lipid‐like” with at least 18 carbons, at least 15 rotatable bonds,
     and a molecular weight between 250 and 900 Da.
 """
 
@@ -21,98 +19,151 @@ from rdkit.Chem import rdMolDescriptors
 def is_endocannabinoid(smiles: str):
     """
     Determines whether a molecule is an endocannabinoid based on its SMILES string.
-    Endocannabinoids should contain either:
-      • an N‐acylethanolamine head group (with one amide bond, pattern C(=O)NCCO, and exactly one nitrogen), or
-      • a monoacylglycerol/glyceryl ether head group (with one ester bond, pattern C(=O)O, and no nitrogen).
-    In addition, phosphorus atoms are forbidden; the molecule must be “lipid‐like”
-    with at least 18 carbons, at least 15 rotatable bonds, and a molecular weight between 250 and 900 Da.
-    
+    Endocannabinoids are expected to contain either:
+      (a) an N‐acylethanolamine head group defined by an amide bond and an ethanolamine fragment (SMARTS: C(=O)NCCO) 
+          with exactly one amide and one nitrogen in the whole molecule, or
+      (b) a monoacylglycerol/glyceryl ether head group defined by the presence of a glycerol fragment (SMARTS: OC(CO)CO)
+          that is directly linked to a long fatty chain via either an ester bond or an ether linkage.
+    In addition, molecules with phosphorus are excluded and the overall molecule’s size must be “lipid‐like”
+    (at least 18 carbons, at least 15 rotatable bonds, molecular weight between 250 and 900 Da).
+
     Args:
         smiles (str): SMILES string of the molecule.
-        
+    
     Returns:
         bool: True if the molecule is classified as an endocannabinoid, False otherwise.
         str: Reason for the classification decision.
     """
-    # Parse the SMILES string.
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # 1. Reject molecules containing phosphorus (atomic num 15)
+
+    # 1. Exclude any molecule containing phosphorus (atomic number 15)
     if any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms()):
         return False, "Contains phosphorus; likely a phospholipid rather than an endocannabinoid"
-    
-    # Define SMARTS patterns for groups we want to check.
-    # For ethanolamides (N‐acylethanolamines) our head group is defined by C(=O)NCCO.
-    ethanolamide_pattern = Chem.MolFromSmarts("C(=O)NCCO")
-    # A more general amide pattern (to count acyl connections in ethanolamides)
-    amide_group = Chem.MolFromSmarts("C(=O)N")
-    # For glycerol derivatives the head group fragment is defined by C(CO)CO.
-    glycerol_pattern = Chem.MolFromSmarts("C(CO)CO")
-    # General ester pattern (to count the acyl group in monoacylglycerols)
-    ester_group = Chem.MolFromSmarts("C(=O)O")
-    
-    # Count overall nitrogen atoms.
+
+    # --- Define SMARTS patterns ---
+    # Ethanolamide head group: should include a C(=O)NCCO fragment.
+    ethanolamide_pat = Chem.MolFromSmarts("C(=O)NCCO")
+    # A general amide group for counting (C(=O)N)
+    amide_pat = Chem.MolFromSmarts("C(=O)N")
+    # Glycerol head group (we use a relaxed pattern that ignores chirality): O[C@@H](CO)CO, written without stereo here.
+    glycerol_pat = Chem.MolFromSmarts("OC(CO)CO")
+    # Ester (acyl) bond pattern: C(=O)O
+    ester_pat = Chem.MolFromSmarts("C(=O)O")
+
+    # Count total nitrogen (for ethanolamide, we expect exactly 1)
     nN = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    
+
     head_valid = False
+    head_type = None  # "ethanolamide" or "glycerol"
     head_reason = ""
-    
-    # Check for ethanolamide head group.
-    eth_matches = mol.GetSubstructMatches(ethanolamide_pattern)
+
+    # --- Strategy A: Ethanolamide head group ---
+    eth_matches = mol.GetSubstructMatches(ethanolamide_pat)
     if eth_matches:
-        # Expect exactly one ethanolamide fragment and exactly one nitrogen in the whole molecule.
-        if len(eth_matches) == 1 and nN == 1:
-            # Count amide groups: should be exactly one.
-            n_amide = len(mol.GetSubstructMatches(amide_group))
-            if n_amide == 1:
-                head_valid = True
-                head_reason = "Ethanolamide head group found with correct amide and nitrogen counts (1 each)"
-            else:
-                head_reason = f"Ethanolamide fragment found but number of amide groups is {n_amide} (expected 1)"
+        # To be an ethanolamide, we expect (ideally) one ethanolamide fragment,
+        # exactly one amide group and one nitrogen (the head group nitrogen).
+        amide_matches = mol.GetSubstructMatches(amide_pat)
+        if len(eth_matches) == 1 and len(amide_matches) == 1 and nN == 1:
+            head_valid = True
+            head_type = "ethanolamide"
+            head_reason = "Ethanolamide head group found with correct amide and nitrogen counts (1 each)"
         else:
-            head_reason = f"Ethanolamide fragment count = {len(eth_matches)} and nitrogen count = {nN} (expected 1 and 1, respectively)"
-    
-    # If no valid ethanolamide detected, try glycerol head.
+            head_reason = (f"Ethanolamide fragment count = {len(eth_matches)}, amide count = {len(amide_matches)}, "
+                           f"and nitrogen count = {nN} (expected 1, 1, and 1 respectively)")
+
+    # --- Strategy B: Glycerol-based head group (monoacylglycerol or glyceryl ether) ---
     if not head_valid:
-        gly_matches = mol.GetSubstructMatches(glycerol_pattern)
+        gly_matches = mol.GetSubstructMatches(glycerol_pat)
         if gly_matches:
-            # For a glycerol-based endocannabinoid, expect exactly one glycerol fragment and no nitrogen.
-            if len(gly_matches) == 1 and nN == 0:
-                n_ester = len(mol.GetSubstructMatches(ester_group))
-                if n_ester == 1:
-                    head_valid = True
-                    head_reason = "Glycerol head group found with correct ester and nitrogen counts (1 and 0, respectively)"
-                else:
-                    head_reason = f"Glycerol fragment found but number of ester groups is {n_ester} (expected 1)"
+            # For glycerol-based endocannabinoids,
+            # we require that one of the glycerol fragments is linked to exactly one acyl chain.
+            # We'll check two possibilities:
+            # Option 1. The acyl chain is attached as an ester:
+            ester_matches = mol.GetSubstructMatches(ester_pat)
+            acyl_count = 0
+            # Count ester bonds that appear to connect a glycerol fragment to an acyl chain.
+            for gmatch in gly_matches:
+                # gmatch is a tuple of atom indices corresponding to the glycerol fragment.
+                gset = set(gmatch)
+                for ematch in ester_matches:
+                    # In an ester match, the oxygen (the second atom) is the one connecting to the alcohol.
+                    # If that oxygen is part of our glycerol fragment, then count that ester as the acyl linkage.
+                    if ematch[1] in gset:
+                        acyl_count += 1
+            if acyl_count == 1 and nN == 0:
+                head_valid = True
+                head_type = "glycerol (ester)"
+                head_reason = "Glycerol head group found with one ester acyl linkage and no nitrogen"
             else:
-                head_reason = f"Glycerol fragment count = {len(gly_matches)} and nitrogen count = {nN} (expected 1 and 0, respectively)"
-    
+                # Option 2. If no ester bond was found from the glycerol fragment, try to detect an ether linkage.
+                # We check each glycerol fragment: for each oxygen atom in the fragment, consider neighbors
+                # not in the fragment. If one such neighbor is carbon and is part of a long alkyl chain, count it.
+                def count_ether_acyl(gmatch):
+                    count = 0
+                    for idx in gmatch:
+                        atom = mol.GetAtomWithIdx(idx)
+                        if atom.GetSymbol() == "O":
+                            for nbr in atom.GetNeighbors():
+                                if nbr.GetIdx() not in gmatch and nbr.GetAtomicNum() == 6:
+                                    # Count carbons in the branch starting from nbr (simple DFS, not counting rings)
+                                    seen = set()
+                                    stack = [nbr]
+                                    branch_carbons = 0
+                                    while stack:
+                                        a = stack.pop()
+                                        if a.GetIdx() in seen:
+                                            continue
+                                        seen.add(a.GetIdx())
+                                        if a.GetAtomicNum() == 6:
+                                            branch_carbons += 1
+                                        # Only follow non-oxygen neighbors to stay in the hydrocarbon chain
+                                        for nn in a.GetNeighbors():
+                                            if nn.GetIdx() not in seen and nn.GetAtomicNum() == 6:
+                                                stack.append(nn)
+                                    # If the branch has at least 6 carbons, consider it an acyl chain.
+                                    if branch_carbons >= 6:
+                                        count += 1
+                    return count
+
+                ether_acyl_total = 0
+                for gmatch in gly_matches:
+                    ether_count = count_ether_acyl(gmatch)
+                    ether_acyl_total += ether_count
+                if ether_acyl_total == 1 and nN == 0:
+                    head_valid = True
+                    head_type = "glycerol (ether)"
+                    head_reason = "Glycerol head group found with one ether-linked acyl chain and no nitrogen"
+                else:
+                    head_reason = (f"Glycerol head group found but acyl linkage count from ester bonds = {acyl_count} "
+                                   f"and ether-linked count = {ether_acyl_total} (expected exactly 1) "
+                                   f"with nitrogen count = {nN} (expected 0)")
+
     if not head_valid:
         return False, "No valid head group found. " + head_reason
 
-    # 2. Check that the molecule overall has a long fatty acyl chain.
-    # Require at least 18 carbons.
+    # --- Global lipid criteria ---
+    # Total carbon atoms (require at least 18)
     nC = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if nC < 18:
         return False, f"Too few carbon atoms ({nC}); expected at least 18 for a fatty acyl chain."
+
+    # At least 15 rotatable bonds
+    n_rot = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rot < 15:
+        return False, f"Too few rotatable bonds ({n_rot}); expected at least 15 for a flexible lipid chain."
+
+    # Molecular weight in [250, 900] Da
+    mw = rdMolDescriptors.CalcExactMolWt(mol)
+    if mw < 250:
+        return False, f"Molecular weight ({mw:.1f} Da) is too low for an endocannabinoid."
+    if mw > 900:
+        return False, f"Molecular weight ({mw:.1f} Da) is too high for an endocannabinoid."
+
+    overall_reason = (f"Valid head group ({head_reason}), no phosphorus, exactly one acyl linkage "
+                      f"({head_type} based), {nC} carbons, {n_rot} rotatable bonds and a molecular weight of {mw:.1f} Da "
+                      "indicate a lipid‐like structure typical of an endocannabinoid.")
     
-    # 3. Check for chain flexibility: require at least 15 rotatable bonds.
-    rot_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if rot_bonds < 15:
-        return False, f"Too few rotatable bonds ({rot_bonds}); expected at least 15 for a flexible lipid chain."
-    
-    # 4. Ensure molecular weight is within the typical endocannabinoid range (250 to 900 Da).
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250:
-        return False, f"Molecular weight ({mol_wt:.1f} Da) is too low for an endocannabinoid."
-    if mol_wt > 900:
-        return False, f"Molecular weight ({mol_wt:.1f} Da) is too high for an endocannabinoid."
-    
-    # Build the detailed reason.
-    reason = (f"Valid head group ({head_reason}), no phosphorus, exactly one acyl linkage, "
-              f"{nC} carbons, {rot_bonds} rotatable bonds and a molecular weight of {mol_wt:.1f} Da "
-              "indicate a lipid‐like structure typical of an endocannabinoid.")
-    
-    return True, reason
+    return True, overall_reason
