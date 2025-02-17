@@ -1,19 +1,13 @@
 """
 Classifies: CHEBI:17389 2-monoglyceride
 """
-#!/usr/bin/env python3
 """
 Classifies: 2-monoglyceride
-
-A 2-monoglyceride is defined as a monoglyceride in which the acyl substituent is located 
-at the 2-position. That is, the glycerol backbone is modified from HOCH2–CH(OH)–CH2OH 
-into HOCH2–CH(O–C(=O)R)–CH2OH.
-
-This program uses a SMARTS substructure to identify the key fragment:
-    HOCH2–CH(O–C(=O)R)–CH2OH
-
-If a valid fragment is found and the acyl chain (R) has at least 5 contiguous aliphatic carbons,
-the molecule is classified as a 2-monoglyceride.
+A 2-monoglyceride is defined as a monoglyceride where the acyl substituent is located at position 2.
+That is, the glycerol backbone (normally HOCH2–CHOH–CH2OH) has its central –OH replaced by an ester function 
+so that the key substructure is: HOCH2–CH(OC(=O)R)–CH2OH.
+This implementation uses a SMARTS pattern that explicitly captures the connectivity of the glycerol backbone 
+with an ester at the 2‑position.
 """
 from rdkit import Chem
 
@@ -21,103 +15,56 @@ def is_2_monoglyceride(smiles: str):
     """
     Determines if a molecule is a 2-monoglyceride based on its SMILES string.
     
-    A 2-monoglyceride contains a glycerol backbone where the acyl (ester) group is attached 
-    at the central (2-) position. That is, one of the –OH groups of glycerol is replaced by an acyl ester.
+    A 2-monoglyceride contains a glycerol backbone where the acyl (ester) group is attached at the 
+    secondary (2-) position, i.e. HOCH2–CH(OC(=O)R)–CH2OH.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if molecule is a 2-monoglyceride, False otherwise.
+        bool: True if the molecule is classified as a 2-monoglyceride, False otherwise.
         str: Reason for the classification.
     """
+    # Parse the SMILES string into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens to get reliable connectivity
-    mol = Chem.AddHs(mol)
+    # Add explicit hydrogens so that –OH groups are represented explicitly.
+    mol_with_H = Chem.AddHs(mol)
     
-    # Define a SMARTS query for the 2-monoglyceride motif.
-    # This pattern aims to match a glycerol fragment with two terminal CH2OH groups and 
-    # an esterified group at the central carbon.
-    # The pattern: [CH2](O)[C;H]([CH2](O))O[C](=O)[*]
-    #  • [CH2](O): matches a CH2 bearing an OH group (terminal glycerol arm).
-    #  • [C;H]: matches the central glycerol carbon (with one hydrogen).
-    #  • ([CH2](O)) : the other terminal glycerol arm.
-    #  • O[C](=O)[*]: represents the ester linkage to an acyl group.
-    smarts = "[CH2](O)[C;H]([CH2](O))O[C](=O)[*]"
-    query = Chem.MolFromSmarts(smarts)
-    if query is None:
-        return False, "Failed to parse SMARTS pattern for 2-monoglyceride"
+    # Define the SMARTS pattern for a glycerol backbone that is substituted at the 2-position.
+    # This pattern looks for:
+    #   - a primary carbon (CH2) that bears an –OH group ([CH2;H2]([OX2H])),
+    #   - connected to a secondary carbon (CH with one hydrogen, [C;H1]) that carries an ester substituent (O[C;X3](=O)[*]),
+    #   - and joined to another primary CH2 group with an –OH ([CH2;H2]([OX2H])).
+    pattern_smarts = "[CH2;H2]([OX2H])-[C;H1](O[C;X3](=O)[*])-[CH2;H2]([OX2H])"
+    pattern = Chem.MolFromSmarts(pattern_smarts)
+    if pattern is None:
+        return False, "Failed to generate SMARTS pattern"
     
-    matches = mol.GetSubstructMatches(query)
+    # Find substructure matches for the pattern.
+    matches = mol_with_H.GetSubstructMatches(pattern)
+    
     if not matches:
-        return False, "No valid 2-monoglyceride fragment found"
+        return False, "No 2-monoglyceride (sn-2 ester on glycerol) fragment found"
     
-    # For each match, check the acyl chain length (heuristic: require at least 5 contiguous aliphatic carbons)
-    # In the SMARTS, mapping is as follows:
-    #   idx0: terminal CH2(O)
-    #   idx1: central glycerol carbon
-    #   idx2: second terminal CH2(O)
-    #   idx3: ester oxygen
-    #   idx4: carbonyl carbon
-    #   idx5: first acyl atom (start of the acyl chain)
-    for match in matches:
-        if len(match) < 6:
-            continue  # not enough mapped atoms
-        
-        acyl_start_idx = match[5]
-        acyl_start = mol.GetAtomWithIdx(acyl_start_idx)
-        
-        # Perform a breadth-first search from the acyl start atom to count contiguous aliphatic carbon atoms.
-        # Exclude the carbonyl carbon (the neighbor that is part of the ester) to avoid going backwards.
-        visited = set()
-        queue = [acyl_start_idx]
-        acyl_carbons = 0
-        
-        # Get the ester carbonyl atom index to exclude that branch.
-        carbonyl_idx = match[4]
-        
-        while queue:
-            current_idx = queue.pop(0)
-            if current_idx in visited:
-                continue
-            visited.add(current_idx)
-            atom = mol.GetAtomWithIdx(current_idx)
-            # Only count aliphatic carbons (atomic number 6, not aromatic)
-            if atom.GetAtomicNum() == 6 and not atom.GetIsAromatic():
-                acyl_carbons += 1
-            # Continue traversing neighbors if they are aliphatic carbons. Do not go back into the ester linkage.
-            for nbr in atom.GetNeighbors():
-                nbr_idx = nbr.GetIdx()
-                if nbr_idx in visited:
-                    continue
-                if nbr_idx == carbonyl_idx:
-                    continue
-                # We only traverse into atoms that are part of an aliphatic chain (carbon atoms)
-                if nbr.GetAtomicNum() == 6 and not nbr.GetIsAromatic():
-                    queue.append(nbr_idx)
-        if acyl_carbons < 5:
-            # This branch's acyl chain is too short; try next match.
-            continue
-        
-        # If a match with a sufficiently long acyl chain is found, return True.
-        return True, "Contains glycerol backbone with an acyl ester at the 2-position (2-monoglyceride)"
+    # Expect exactly one glycerol backbone fragment matching the 2-monoglyceride definition.
+    if len(matches) > 1:
+        return False, f"Found {len(matches)} glycerol ester fragments; expected exactly one for a monoglyceride"
     
-    # If none of the matches qualify (e.g., acyl chain too short)
-    return False, "2-monoglyceride fragment found but acyl chain is too short"
+    return True, "Contains a glycerol backbone with an acyl ester at the 2-position (2-monoglyceride)"
 
-# Example usage (for testing purposes):
-if __name__ == '__main__':
-    test_examples = [
-        "O(C(CO)CO)C(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC",  # MG(0:0/22:6(...)/0:0)
+
+# Example usage (for testing):
+if __name__ == "__main__":
+    test_smiles = [
+        "O(C(CO)CO)C(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC",  # MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0)
         "C(\\C[C@H]1[C@H](CC([C@@H]1/C=C/[C@H](CCCCC)O)=O)O)=C\\CCCC(=O)OC(CO)CO",  # prostaglandin D2 2-glyceryl ester
-        "O(C(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCC)C(CO)CO",  # MG(0:0/24:6(...)/0:0)
-        "[H]C(CO)(CO)OC(=O)CCC/C=C/C/C=C/C/C=C/C/C=C/CCCCC",  # 2-arachidonoylglycerol
-        "CCO",  # obviously not a 2-monoglyceride
+        "CCCCCCCCCCCCCCCC(=O)OC(CO)CO",  # 2-palmitoylglycerol
+        "CCO",  # Clearly not a 2-monoglyceride
     ]
     
-    for s in test_examples:
+    for s in test_smiles:
         valid, reason = is_2_monoglyceride(s)
-        print(f"SMILES: {s}\nResult: {valid}\nReason: {reason}\n")
+        print(f"SMILES: {s}\nResult: {valid}, Reason: {reason}\n")
