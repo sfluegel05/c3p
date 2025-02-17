@@ -1,150 +1,129 @@
 """
 Classifies: CHEBI:33848 polycyclic arene
 """
+#!/usr/bin/env python
 """
-Classifies: Polycyclic Arene – defined as a polycyclic aromatic hydrocarbon (PAH).
-
-This improved version revises the previous algorithm by:
-  • Lowering the overall heavy atom threshold to 10 (so that small PAHs like naphthalene are included).
-  • Computing coverage over the molecule’s aromatic carbon atoms rather than all heavy atoms.
-  • Lowering the minimum coverage threshold for the fused aromatic candidate system (from 0.55 to 0.50).
-  • Requiring that a fused system is made of at least 2 candidate rings and at least 7 atoms.
-  
-A molecule is classified as a PAH if there is a connected (i.e. fused) group of rings, where each candidate ring is composed solely of aromatic carbons,
-and the union of these rings covers at least 50% of the molecule’s aromatic carbon atoms.
+Classifies: Polycyclic Arene, defined as a polycyclic aromatic hydrocarbon.
+A polycyclic arene must contain at least two fused candidate rings.
+Candidate rings are defined as rings in which every atom is aromatic and is a carbon.
+In addition, since polycyclic aromatic hydrocarbons (PAHs) are almost entirely made of carbons and hydrogens,
+we require that the overall heavy-atom composition (ignoring hydrogens) is strongly dominated by carbon.
+This extra criterion helps filter false positives arising from molecules that have only a small fused aromatic
+substructure amidst many heteroatoms.
 """
 
 from rdkit import Chem
 
 def is_polycyclic_arene(smiles: str):
     """
-    Determines if a molecule is a polycyclic arene (polycyclic aromatic hydrocarbon, PAH)
+    Determines if a molecule is a polycyclic arene (a PAH)
     based on its SMILES string.
     
-    The algorithm:
-      - Parses the SMILES string.
-      - Computes the set of aromatic carbon atoms in the molecule.
-      - Obtains ring information from the molecule.
-      - Flags each ring as a candidate if every atom in the ring is aromatic and is carbon.
-      - Constructs a connectivity graph among rings, where two rings are fused if they share at least 2 atoms.
-      - For each connected component of candidate rings, if there are at least 2 candidate rings and
-        their union (the fused candidate system) has at least 7 atoms, then we compute its “coverage” – the fraction
-        of aromatic carbon atoms of the molecule that lie in those fused rings. If this coverage is at least 0.50,
-        the molecule is classified as a PAH.
-        
+    The algorithm works by:
+      1. Converting the SMILES string to an RDKit molecule.
+      2. Extracting ring information and flagging rings as candidate rings:
+         a candidate ring is one where every atom is aromatic and is carbon.
+      3. Building a connectivity graph among rings (two rings are fused if they share at least 2 atoms).
+      4. Finding connected components among rings and flagging any component that contains
+         at least two candidate rings.
+      5. Finally, we check that the molecule’s heavy atoms (non‐hydrogen atoms) are dominated by carbon.
+         A ratio of carbon atoms to heavy atoms of at least 0.85 is required.
+    
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
-        (bool, str): Tuple. First element is True if the molecule is classified as a PAH, False otherwise;
-                     second element gives the rationale.
+        (bool, str): Tuple where the first element is True if the molecule is classified as a
+                      polycyclic aromatic hydrocarbon. The second element is a string giving
+                      the reason.
     """
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get aromatic carbons (only consider atoms that are aromatic and carbon)
-    aromatic_carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6 and atom.GetIsAromatic()]
-    total_aromatic_carb = len(aromatic_carbons)
-    if total_aromatic_carb < 4:  # too few aromatic carbons; most PAHs will be larger than naphthalene (10 aromatic C's)
-        return False, f"Total aromatic carbon count ({total_aromatic_carb}) is too low for a PAH"
-    
-    # Also check overall heavy atom count; lower threshold to include naphthalene
-    heavy_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1]
-    total_heavy = len(heavy_atoms)
-    if total_heavy < 10:
-        return False, f"Total heavy atom count ({total_heavy}) is below the minimum required for a PAH"
-    
-    # Get the ring information from the molecule.
+    # Get ring information (each ring is represented as a tuple of atom indices)
     ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
-    if not rings:
+    atom_rings = [set(ring) for ring in ring_info.AtomRings()]
+    if not atom_rings:
         return False, "No rings detected in the molecule"
     
-    # Candidate ring: each ring must be made entirely of aromatic carbons.
-    def is_candidate_ring(ring):
+    # Define helper to decide if a ring is an aromatic carbon ring.
+    def is_aromatic_carbon_ring(ring):
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            if not (atom.GetIsAromatic() and atom.GetAtomicNum() == 6):
+            # Check that the atom is aromatic and is carbon (atomic number 6)
+            if not atom.GetIsAromatic() or atom.GetAtomicNum() != 6:
                 return False
         return True
-
-    candidate_flags = [is_candidate_ring(ring) for ring in rings]
-    ring_atom_sets = [set(ring) for ring in rings]
     
-    # Build connectivity graph among rings
-    # Two rings are considered fused if they share at least 2 atoms.
-    n = len(rings)
+    # Flag each ring if it is a candidate (fully aromatic and all carbon)
+    candidate_flags = [is_aromatic_carbon_ring(ring) for ring in atom_rings]
+    
+    # Build a ring connectivity graph.
+    # Two rings are fused if they share at least 2 atoms.
+    n = len(atom_rings)
     ring_graph = {i: set() for i in range(n)}
     for i in range(n):
         for j in range(i + 1, n):
-            if len(ring_atom_sets[i].intersection(ring_atom_sets[j])) >= 2:
+            if len(atom_rings[i].intersection(atom_rings[j])) >= 2:
                 ring_graph[i].add(j)
                 ring_graph[j].add(i)
     
-    # Tunable thresholds:
-    min_component_candidate_rings = 2    # at least 2 candidate rings in a fused aromatic system
-    min_candidate_atoms = 7              # fused system must have at least 7 atoms
-    coverage_threshold = 0.50            # fused system must cover at least 50% of aromatic carbons in the molecule
-    
-    # Search for connected components using a depth-first search
+    # Find connected components in the ring graph.
     visited = set()
     for i in range(n):
         if i in visited:
             continue
-        # Get the connected component via DFS
+        # Depth-first search to get the full connected component.
         stack = [i]
         component = set()
         while stack:
-            current = stack.pop()
-            if current not in component:
-                component.add(current)
-                stack.extend(ring_graph[current] - component)
+            node = stack.pop()
+            if node not in component:
+                component.add(node)
+                stack.extend(ring_graph[node] - component)
         visited |= component
         
         # Count candidate rings in this component.
         candidate_count = sum(1 for idx in component if candidate_flags[idx])
-        if candidate_count < min_component_candidate_rings:
-            continue
-        
-        # Build union of atoms only for candidate rings in this component.
-        candidate_atoms = set()
-        for idx in component:
-            if candidate_flags[idx]:
-                candidate_atoms |= ring_atom_sets[idx]
-        if len(candidate_atoms) < min_candidate_atoms:
-            continue
-        
-        # Now compute coverage as ratio of candidate aromatic carbons (from fused candidate rings)
-        # to the molecule’s total aromatic carbons.
-        coverage = len(candidate_atoms.intersection({atom.GetIdx() for atom in aromatic_carbons})) / total_aromatic_carb
-        
-        if coverage < coverage_threshold:
-            # Although a fused candidate system was detected, it covers a low fraction of aromatic carbons.
-            return False, (f"Found a fused aromatic candidate system with {candidate_count} candidate rings, "
-                           f"but it only covers {coverage:.2f} of the molecule's aromatic carbons")
-        
-        # If criteria are met, classify as PAH.
-        return True, (f"Found a fused aromatic hydrocarbon system with {candidate_count} candidate rings "
-                      f"covering {coverage:.2f} of the aromatic carbons (candidate system atoms: {len(candidate_atoms)})")
-        
+        if candidate_count >= 2:
+            # We now perform an additional check on the overall composition.
+            # PAHs are mainly hydrocarbons.
+            heavy_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1]  # exclude H's
+            if not heavy_atoms:
+                return False, "No heavy atoms found"
+            total_heavy = len(heavy_atoms)
+            carbon_count = sum(1 for atom in heavy_atoms if atom.GetAtomicNum() == 6)
+            carbon_ratio = carbon_count / total_heavy
+            
+            if carbon_ratio < 0.85:
+                return False, ("Found a fused aromatic candidate system but the molecule's heavy-atom composition " +
+                               f"is only {carbon_ratio:.2f} carbon, suggesting significant heteroatom content")
+            # Optionally, one might also require that the fused candidate system covers a large fraction of the molecule.
+            # For example, one may compute the union of candidate ring atoms and compare to the total heavy atoms.
+            component_candidate_atoms = set()
+            for idx in component:
+                if candidate_flags[idx]:
+                    component_candidate_atoms |= atom_rings[idx]
+            if len(component_candidate_atoms) < 10:
+                # Many simple substituent aromatic rings can have only 6-8 atoms total; we choose 10 as a heuristic.
+                return False, ("Fused candidate system found but overall number of ring atoms is low " +
+                               f"({len(component_candidate_atoms)}), so the molecule likely is not a large PAH")
+            
+            return True, f"Found a fused aromatic hydrocarbon system with {candidate_count} candidate rings"
+    
     return False, "No fused aromatic hydrocarbon system detected"
 
 
-# Example testing code (can be removed when integrating)
+# Example testing code (you may remove this block when integrating into a larger system)
 if __name__ == '__main__':
     test_smiles = [
-        "c1ccc2c(c1)ccc1cc3c(ccc4ccccc34)cc21",  # dibenz[a,h]anthracene (expected True)
-        "c1ccc2cc3ccccc3cc2c1",                  # anthracene (expected True)
-        "Oc1cc2ccc3cc4ccccc4c4ccc(c1)c2c34",      # 2-Hydroxybenzo[a]pyrene (expected True)
-        "Cn1c2ccccc2c(=O)c2c(O)cc3occc3c12",       # Furofoline I (expected False)
-        "Clc1cc(Cl)c2[C@@H](c3ccccc3CCc2c1)n1ccnc1",  # (R)-eberconazole (expected False)
-        "c1ccc2c(c1)cc1C=Cc3cccc2c13",            # acephenanthrylene (expected True)
-        "c1ccc2ccccc2c1",                        # naphthalene (expected True)        
-        "Cc1cc(O)c2c3c1c1c(CO)cc(O)c4c1c1c5c(c(O)cc(O)c5c4=O)c4c(O)cc(O)c(c4c31)c2=O"  # pseudohypericin (expected True)
+        "c1ccc2c(c1)ccc1cc3c(ccc4ccccc34)cc21",  # dibenz[a,h]anthracene (should be True)
+        "c1ccc2cc3ccccc3cc2c1",                  # anthracene (should be True)
+        "Oc1cc2ccc3cc4ccccc4c4ccc(c1)c2c34",      # 2-Hydroxybenzo[a]pyrene (should be True)
+        "O1C(OC=2C3=C(OC)C=C(OC)C=C3C=C4C2CO[C@H](C4)C)C(O)C(O)C(C1CO)OC",  # An example false positive
     ]
-    
     for smi in test_smiles:
         result, reason = is_polycyclic_arene(smi)
         print(smi, "=>", result, ":", reason)
