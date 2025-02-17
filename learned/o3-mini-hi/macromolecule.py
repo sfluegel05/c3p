@@ -10,17 +10,19 @@ Definition:
    the structure of which essentially comprises the multiple repetition 
    of units derived, actually or conceptually, from molecules of low relative molecular mass."
 
-This version uses several features:
-  • Molecular weight (using RDKit’s exact molecular weight).
-  • Total atom count as a proxy for overall size.
-  • Number of amide bonds (using a SMARTS search for the C(=O)N motif).
-  • Number of repeated sugar-like units (detected via a common hexose pattern).
-Based on these, different conditions are applied:
-  - If weight is ≥1000 Da then even a small number of amide bonds or at least one sugar unit support macromolecular classification.
-  - If weight is between 800 and 1000 Da, we require at least 4 amide bonds or ≥2 sugar units plus a sufficiently high atom count.
-  - If weight is between 500 and 800 Da, we require at least 5 amide bonds or ≥3 sugar units and enough atoms.
+Improvement:
+  • We have observed that simply checking for high weight and a minimal atom count (or one repeated unit)
+    caused many false positives – e.g. molecules >1000 Da that do not obviously come from repeated subunits.
+  • We now require that the “repetition evidence” (the sum of amide bonds and detected sugar‐like rings)
+    meets a minimum count that scales with molecular weight.
+  • In addition, the minimum number of atoms is raised so that “small” high–molecular‐weight molecules
+    are not mistaken.
   
-Note: This heuristic still has limitations since “macromolecule” is an ambiguous concept.
+Heuristic:
+   - If weight ≥ 1000 Da then require at least 2 repeating units (amide bonds + sugar units ≥ 2) and ≥40 atoms.
+   - If weight is [800, 1000) Da, require at least 3 repeating units and ≥50 atoms.
+   - If weight is [500, 800) Da, require at least 4 repeating units and ≥60 atoms.
+   - Otherwise, the molecule is not classified as a macromolecule.
   
 Usage: Call is_macromolecule(smiles) and it returns a boolean plus a reason.
 """
@@ -32,79 +34,88 @@ def is_macromolecule(smiles: str):
     """
     Determines if a molecule is a macromolecule based on its SMILES string.
     
-    Heuristics used:
-      1. If molecular weight ≥ 1000 Da then the molecule is considered macromolecular if it
-         shows any evidence of being built from repeat units (e.g. one or more amide bonds or sugar units).
-      2. For molecular weight between 800 and 1000 Da, at least 4 amide bonds or 2 sugar repeats 
-         and at least 40 atoms are required.
-      3. For molecular weight between 500 and 800 Da, at least 5 amide bonds or 3 sugar repeats 
-         and at least 50 atoms are required.
-      4. Otherwise, it is not classified as a macromolecule.
-         
+    Revised heuristics after observing many false positive errors:
+      - If molecular weight ≥ 1000 Da, then the molecule is judged macromolecular only if:
+            (amide bonds + sugar units) >= 2   AND
+            total atom count >= 40.
+      - For weight between 800 and 1000 Da:
+            (amide bonds + sugar units) >= 3   AND
+            total atom count >= 50.
+      - For weight between 500 and 800 Da:
+            (amide bonds + sugar units) >= 4   AND
+            total atom count >= 60.
+      - Otherwise, it is not classified as a macromolecule.
+      
     Args:
         smiles (str): SMILES string of the molecule.
     Returns:
         bool: True if the molecule is classified as a macromolecule, False otherwise.
         str: Explanation of the classification decision.
     """
-    # Parse SMILES into a molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Compute molecular weight.
+    # Compute the exact molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    # Count total number of atoms.
+    # Total number of atoms.
     num_atoms = mol.GetNumAtoms()
-    # Count amide bonds using the SMARTS pattern for a C(=O)N group.
+    
+    # Count amide bonds using a SMARTS pattern "C(=O)N" (roughly one per peptide residue).
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     num_amide = len(amide_matches)
     
-    # Also count sugar-like repeating units.
-    # We choose a common hexose pattern: it roughly matches a pyranose ring with hydroxyls.
+    # Count sugar‐like repeated motifs. Here we use a simple pyranose-like SMARTS.
     sugar_pattern = Chem.MolFromSmarts("O[C@H]1OC(O)C(O)C(O)C1O")
     sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     num_sugar = len(sugar_matches)
     
-    # Now apply our heuristic conditions.
+    # Define repetition evidence as the sum of amide bonds and sugar units.
+    repetition_evidence = num_amide + num_sugar
+    
+    # Apply different thresholds based on the molecular weight range.
     if mol_wt >= 1000:
-        # If really high weight, even minimal signs of repetition qualify.
-        if num_amide >= 1 or num_sugar >= 1 or num_atoms >= 40:
+        if repetition_evidence >= 2 and num_atoms >= 40:
             reason = (f"Molecular weight is {mol_wt:.1f} Da which is high for a macromolecule. "
-                      f"Found {num_amide} amide bonds and {num_sugar} sugar units, with {num_atoms} atoms overall.")
+                      f"Found {num_amide} amide bonds and {num_sugar} sugar units (total evidence: {repetition_evidence}), "
+                      f"with {num_atoms} atoms overall.")
             return True, reason
         else:
-            reason = (f"Molecular weight is {mol_wt:.1f} Da but no clear repetitive bonds were detected "
-                      f"(0 amide bonds and 0 sugar units) in a {num_atoms}-atom structure.")
+            reason = (f"Molecular weight is {mol_wt:.1f} Da but repetition evidence is low "
+                      f"(only {num_amide} amide bonds + {num_sugar} sugar units = {repetition_evidence}) "
+                      f"and atom count is {num_atoms}; criteria for repeated subunits are not met.")
             return False, reason
     elif 800 <= mol_wt < 1000:
-        if (num_amide >= 4 or num_sugar >= 2) and num_atoms >= 40:
+        if repetition_evidence >= 3 and num_atoms >= 50:
             reason = (f"Molecular weight is {mol_wt:.1f} Da, and the molecule has {num_atoms} atoms "
-                      f"with {num_amide} amide bonds and {num_sugar} sugar units, suggesting repeated subunits.")
+                      f"with repetition evidence of {repetition_evidence} (from {num_amide} amide bonds and {num_sugar} sugar units), "
+                      "suggesting repeated units.")
             return True, reason
         else:
-            reason = (f"Molecular weight is {mol_wt:.1f} Da but only {num_amide} amide bonds and "
-                      f"{num_sugar} sugar units were detected in a {num_atoms}-atom structure; criteria for repeated units are not met.")
+            reason = (f"Molecular weight is {mol_wt:.1f} Da but repetition evidence is only {repetition_evidence} "
+                      f"and atom count is {num_atoms}; criteria for repeated subunits are not met.")
             return False, reason
     elif 500 <= mol_wt < 800:
-        if (num_amide >= 5 or num_sugar >= 3) and num_atoms >= 50:
+        if repetition_evidence >= 4 and num_atoms >= 60:
             reason = (f"Molecular weight is {mol_wt:.1f} Da, and the molecule has {num_atoms} atoms "
-                      f"with {num_amide} amide bonds and {num_sugar} sugar units, suggesting multiple repeat units.")
+                      f"with repetition evidence of {repetition_evidence} (from {num_amide} amide bonds and {num_sugar} sugar units), "
+                      "suggesting multiple repeat units.")
             return True, reason
         else:
-            reason = (f"Molecular weight is {mol_wt:.1f} Da with {num_atoms} atoms and only {num_amide} amide bonds "
-                      f"and {num_sugar} sugar units; criteria for a macromolecule are not met.")
+            reason = (f"Molecular weight is {mol_wt:.1f} Da with {num_atoms} atoms and only {repetition_evidence} "
+                      f"(amide bonds + sugar units) found; criteria for a macromolecule are not met.")
             return False, reason
     else:
-        reason = (f"Molecular weight is {mol_wt:.1f} Da with only {num_atoms} atoms, {num_amide} amide bonds, "
-                  f"and {num_sugar} sugar units; criteria for a macromolecule (high MW and repeated units) are not met.")
+        reason = (f"Molecular weight is {mol_wt:.1f} Da with only {num_atoms} atoms and "
+                  f"{repetition_evidence} repeating units (from {num_amide} amide bonds and {num_sugar} sugar units); "
+                  "criteria for a macromolecule are not met.")
         return False, reason
 
 # Example usage:
 if __name__ == '__main__':
-    # Test with an example peptide SMILES.
-    test_smiles = "CC[C@H](C)[C@H](NC(=O)CN)C(=O)NCC(=O)N[C@@H](C)C(=O)N[C@@H](C(C)C)C(=O)N[C@@H](CC(C)C)C(=O)N[C@@H](C(C)C)C(=O)N[C@@H]([C@@H](C)O)C(=O)N[C@@H]([C@@H](C)O)C(=O)NCC(=O)N[C@@H](CC(C)C)C(=O)N1CCC[C@H]1C(=O)N[C@@H](C)C(=O)N[C@@H](CC(C)C)C(=O)N[C@@H]([C@@H](C)CC)C(=O)N"
+    # An example peptide with many amide bonds.
+    test_smiles = "CC[C@H](C)[C@H]1C(=O)N[C@@H](C(=O)N[C@H](C(=O)N[C@@H](C(=O)N[C@H](C(=O)NCCCC[C@@H](C(=O)N[C@@H](C(=O)N1)CCCN)NC(=O)[C@H]([C@@H](C)CC)NC(=O)[C@@H](CCC(=O)O)NC(=O)[C@H](CC(C)C)NC(=O)C2CSC(=N2)C(C(C)CC)N)CC(=O)N)CC(=O)O)CC3=CN=CN3)CC4=CC=CC=C4"
     flag, explanation = is_macromolecule(test_smiles)
-    print(flag)
-    print(explanation)
+    print("Is macromolecule?", flag)
+    print("Reason:", explanation)
