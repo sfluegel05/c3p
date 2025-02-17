@@ -5,19 +5,21 @@ Classifies: CHEBI:55493 1-O-acylglycerophosphoethanolamine
 Classifies: 1-O-acylglycerophosphoethanolamine
 Definition: A glycerophosphoethanolamine having an unspecified O-acyl substituent 
 at the 1-position of the glycerol fragment.
-
-This improved heuristic checks for the full combined motif:
-  (1) A glycerol backbone bound at one end to a phosphate that is in turn attached to an ethanolamine headgroup.
-  (2) The glycerol backbone is required to have an ester linkage (i.e. an acyl group attached via a C(=O)O– bond)
-      on the sn-1 position.
-      
-The SMARTS below (ignoring stereochemistry) 
-   O[CH2][CH](O)[CH2]O[P](=O)(O)OCCN
-matches a glycerophosphoethanolamine (GPE) motif in which the glycerol is represented as three carbons 
-(implicitly CH2-CH(OH)-CH2) and the phosphate is attached to the terminal CH2.
-Once this GPE motif is found, we identify the oxygen immediately preceding the sn-1 CH2 
-(i.e. the first “O” in the SMARTS) and require that it be part of an ester bond:
-that is, it must be connected to a carbon (the acyl carbon) that is doubly bonded to an oxygen.
+Heuristic:
+  (1) The molecule must contain a glycerophosphoethanolamine (GPE) headgroup.
+      We demand a substructure matching a glycerol fragment esterified at sn-1 (via oxygen)
+      and linked to a phosphate that carries an ethanolamine (must match exactly “OCCN”).
+      The SMARTS used is:
+           O[CH2][CH](O)[CH2]O[P](=O)(O)OCCN
+      which assumes the glycerol is represented as: O-CH2-CH(OH)-CH2-O-
+      followed by the phosphate: P(=O)(O) attached to an ethanolamine headgroup: OCCN.
+  (2) In that match the first atom (an oxygen) should be the one bridging an acyl group.
+      We then require that this oxygen (the ester-O) be connected (besides the sn-1 CH2)
+      to a carbon that is part of a carbonyl group (i.e. has a double bond to oxygen).
+  (3) We also require that the ester oxygen have exactly two neighbors
+      (one to the glycerol and the other to the acyl carbon)
+      so as to avoid spurious matches.
+If these are satisfied, we return True.
 """
 
 from rdkit import Chem
@@ -26,87 +28,80 @@ def is_1_O_acylglycerophosphoethanolamine(smiles: str):
     """
     Determines if a molecule is a 1-O-acylglycerophosphoethanolamine based on its SMILES string.
     
-    Heuristic:
-      1. The molecule must contain a glycerophosphoethanolamine (GPE) headgroup.
-         We require the substructure matching a glycerol fragment attached to a phosphate and ethanolamine:
-           O[CH2][CH](O)[CH2]O[P](=O)(O)OCCN
-      2. In that fragment, the oxygen preceding the sn-1 CH2 must come from an ester bond.
-         That is, that oxygen (call it ester-O) should be bonded to an acyl carbon (C)
-         which in turn is double-bonded to an oxygen (a carbonyl).
-    
     Args:
       smiles (str): SMILES string of the molecule.
-      
+
     Returns:
-      bool: True if the molecule matches this 1-O-acylglycerophosphoethanolamine motif, else False.
+      bool: True if the molecule is classified as a 1-O-acylglycerophosphoethanolamine, else False.
       str: Explanation of the decision.
     """
-    # Parse the SMILES string
+    # Parse SMILES into an RDKit molecule object.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
     # Define the SMARTS pattern for the glycerophosphoethanolamine backbone.
     # The pattern (ignoring stereochemistry) is:
-    #   A terminal oxygen (of the ester linkage),
-    #   followed by a CH2 (sn-1 carbon),
-    #   then a CH with an OH (sn-2),
-    #   then a CH2,
-    #   then an oxygen connected to phosphorus which is double-bonded to an O and has O attached to CCN.
+    #   O[CH2][CH](O)[CH2]O[P](=O)(O)OCCN
+    # Here the very first "O" is the putative ester oxygen (ester_O) that should be part of an
+    # acyl linkage at the glycerol sn-1 position.
     gpe_smarts = "O[CH2][CH](O)[CH2]O[P](=O)(O)OCCN"
     gpe_pattern = Chem.MolFromSmarts(gpe_smarts)
     if gpe_pattern is None:
-        return False, "Error in GPE SMARTS pattern"
+        return False, "Error in constructing SMARTS for GPE pattern"
     
     matches = mol.GetSubstructMatches(gpe_pattern)
     if not matches:
         return False, "Glycerophosphoethanolamine headgroup not identified"
 
-    # Now, for each GPE match, check the acyl substitution.
-    # According to our SMARTS, the atoms in the match are (by order):
-    #   idx0: The oxygen that should come from the ester linkage (ester_O).
-    #   idx1: The sn-1 CH2 carbon.
-    #   idx2: The sn-2 CH bearing the free OH.
-    #   idx3: The sn-3 CH2 (attached to phosphate).
-    #   idx4: The oxygen linking glycerol to phosphorus.
-    #   idx5: The phosphorus atom.
-    #   idx6, idx7, idx8: The remainder of the ethanolamine headgroup (O, C, C, N... as applicable).
-    # We then verify that the ester_O (atom idx0) is connected to an acyl carbon that is in a carbonyl.
+    # For each match of the GPE headgroup, verify the acyl substitution on the sn-1 oxygen.
+    # Based on our SMARTS the match indices are assumed (in order) as:
+    #   idx0: ester oxygen (expected to be connected to an acyl carbon as well as the sn-1 CH2)
+    #   idx1: sn-1 CH2 (glycerol)
+    #   idx2: sn-2 CH with free OH
+    #   idx3: sn-3 CH2 (attached to the phosphate)
+    #   idx4: oxygen that links to phosphorus
+    #   idx5: phosphorus
+    #   idx6, idx7, idx8: atoms making up the ethanolamine (O, C, C, N) – where we demand "OCCN"
     for match in matches:
-        # Get the atom index for the ester oxygen from our pattern:
         ester_oxygen_idx = match[0]
         sn1_idx = match[1]
         ester_oxygen = mol.GetAtomWithIdx(ester_oxygen_idx)
-        
-        # Look at neighbors of the ester oxygen.
-        # One neighbor should be the sn-1 carbon (we already know that) and the other should be from the acyl chain.
+
+        # Enforce that the candidate ester oxygen must have exactly two neighbors.
+        if ester_oxygen.GetDegree() != 2:
+            continue
+
+        # Look among the neighbors: one must be the sn-1 carbon (already identified) and the other should be
+        # the acyl chain (expected to be a carbon that bears a carbonyl group).
         acyl_carbon = None
         for nbr in ester_oxygen.GetNeighbors():
-            nbr_idx = nbr.GetIdx()
-            if nbr_idx == sn1_idx:
-                continue  # skip the glycerol part
-            # Otherwise assume this neighbor is from the acyl chain:
+            if nbr.GetIdx() == sn1_idx:
+                continue  # Skip the glycerol connection.
             acyl_carbon = nbr
             break
         if acyl_carbon is None:
-            continue  # no acyl chain detected in this match; check next match
+            continue  # No candidate acyl carbon found in this match.
 
-        # Check that the acyl_carbon is indeed in a carbonyl environment,
-        # i.e. that it has at least one double bond to an oxygen.
+        # Check that the acyl carbon is indeed part of a carbonyl: at least one of its bonds
+        # must be a double bond to an oxygen.
         has_carbonyl = False
+        # Iterate over bonds of the acyl carbon:
         for bond in acyl_carbon.GetBonds():
-            if bond.GetBondTypeAsDouble() == 2:  # double bond?
-                other_atom = bond.GetOtherAtom(acyl_carbon)
-                if other_atom.GetAtomicNum() == 8:  # oxygen
+            # bond.GetBondTypeAsDouble() returns 2.0 if it is a double bond.
+            if bond.GetBondTypeAsDouble() == 2:
+                other = bond.GetOtherAtom(acyl_carbon)
+                if other.GetAtomicNum() == 8:  # oxygen
                     has_carbonyl = True
                     break
         if has_carbonyl:
-            return True, "Molecule contains a phosphoethanolamine headgroup with 1-O-acyl substitution on glycerol"
+            return True, ("Molecule contains a phosphoethanolamine headgroup with 1-O-acyl substitution on glycerol, "
+                          "with the ester oxygen showing proper connectivity to a carbonyl-bearing acyl chain.")
+    return False, ("Glycerophosphoethanolamine headgroup found but acyl substitution at sn-1 not clearly identified, "
+                   "or the ester oxygen does not display the expected bonding environment.")
     
-    return False, "Glycerophosphoethanolamine headgroup found but acyl substitution at sn-1 not clearly identified"
-
-
-# Example usage (uncomment to try):
+# Example usage:
+# Uncomment the following lines to test with one of the provided SMILES:
 # smiles_example = "CCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OCCN"  # 1-heptadecanoyl-sn-glycero-3-phosphoethanolamine
 # result, reason = is_1_O_acylglycerophosphoethanolamine(smiles_example)
 # print(result, reason)
