@@ -2,29 +2,28 @@
 Classifies: CHEBI:73080 hemiaminal
 """
 """
-Classifies: Hemi-aminal compounds
-Definition: Any organic amino compound that has an amino group and a hydroxy group 
-attached to the same tetrahedral (sp3) carbon that carries exactly one hydrogen.
-Hemiaminals are intermediates in imine formation.
-Improvement: Instead of strictly requiring exactly three heavy atom bonds, we 
-simply require that an sp3 (non-aromatic) carbon with exactly one hydrogen has at 
-least one single-bonded OH group (oxygen with ≥1 hydrogen) and at least one single-
-bonded amino group (nitrogen). This "looser" matching may catch hemiaminals embedded
-in complex architectures while hopefully reducing false negatives.
+Classifies: Hemi-aminal compounds.
+Definition: A hemiaminal is any organic amino compound that has an amino group
+and a hydroxy group attached to the same tetrahedral (sp3, non‐aromatic) carbon that 
+carries exactly one hydrogen. In a correct hemiaminal motif the candidate carbon must 
+have exactly three heavy-atom (non-hydrogen) neighbors: one is –OH (with the oxygen bearing 
+at least one hydrogen) and one is –NH (which may be primary, secondary, or tertiary).
 """
+
 from rdkit import Chem
 
 def is_hemiaminal(smiles: str):
     """
     Determines if a molecule contains a hemiaminal motif.
-    A hemiaminal is defined here as a tetrahedral (sp3, non-aromatic) carbon 
-    carrying exactly one hydrogen that is connected via single bonds to both a
-    hydroxyl group (-OH) (where the oxygen itself has at least one hydrogen) and an 
-    amino group (-NH, -NHR, or -NR2).
-
+    
+    A hemiaminal here is defined as a tetrahedral (sp3, non-aromatic) carbon carrying exactly one hydrogen,
+    with exactly three heavy atom (non-hydrogen) neighbors. Two of these neighbors must be:
+      - An oxygen that is itself bonded to at least one hydrogen (i.e. an -OH group),
+      - A nitrogen (i.e. an amino group, which can be -NH, -NHR, or -NR2).
+    
     Args:
         smiles (str): SMILES representation of the molecule.
-
+    
     Returns:
         bool: True if the molecule contains a hemiaminal motif, False otherwise.
         str: Explanation of the classification.
@@ -33,55 +32,73 @@ def is_hemiaminal(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Iterate over all atoms to search for candidate hemiaminal carbons.
+    
+    # Add explicit hydrogens to catch implicit ones.
+    mol = Chem.AddHs(mol)
+    
+    # Iterate over all atoms and look for candidate carbons.
     for atom in mol.GetAtoms():
-        # Focus on carbon atoms.
+        # We are interested only in carbons.
         if atom.GetAtomicNum() != 6:
             continue
-        # Require sp3 hybridization and non-aromatic carbon.
+        
+        # Must be sp3 hybridized and non-aromatic.
         if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3 or atom.GetIsAromatic():
             continue
         
-        # We require that the carbon carries exactly one hydrogen (implicit plus explicit).
-        if atom.GetTotalNumHs() != 1:
+        # Get the neighbors of the candidate carbon.
+        neighbors = atom.GetNeighbors()
+        # Count how many heavy atoms (non-H) are attached.
+        heavy_neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() != 1]
+        # In a tetrahedral carbon with exactly one H, there must be exactly 3 heavy atom bonds.
+        if len(heavy_neighbors) != 3:
             continue
-
-        # Flags for hydroxyl and amino substituents.
+        
+        # Count hydrogen atoms attached to the carbon.
+        # Since we added explicit hydrogens, we can simply count by atomic number.
+        h_count = sum(1 for nbr in neighbors if nbr.GetAtomicNum() == 1)
+        if h_count != 1:
+            continue
+        
+        # Flags for the two required substituents.
         found_OH = False
         found_NH = False
-
-        # Check each neighbor; allow additional substituents.
-        for neighbor in atom.GetNeighbors():
-            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
-            # Only consider single bonds.
+        
+        # Check each neighbor (only consider heavy atoms for the substituents).
+        for nbr in heavy_neighbors:
+            # Get the bond between atom and neighbor.
+            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+            # We require that the connecting bond is a single bond.
             if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
                 continue
-
-            # Check for hydroxyl group: neighbor is oxygen and has at least one H.
-            if neighbor.GetAtomicNum() == 8:
-                # For an -OH group, ensure the oxygen has at least one hydrogen, 
-                # either explicit or implicit.
-                if neighbor.GetTotalNumHs() >= 1:
+            
+            # If neighbor is oxygen, check that it is part of an -OH (has at least one hydrogen bound)
+            if nbr.GetAtomicNum() == 8:
+                # Count hydrogens on the oxygen (explicit only now)
+                h_on_o = sum(1 for sub in nbr.GetNeighbors() if sub.GetAtomicNum() == 1)
+                if h_on_o >= 1:
                     found_OH = True
-
-            # Check for amine group: neighbor is nitrogen.
-            elif neighbor.GetAtomicNum() == 7:
+            
+            # If neighbor is nitrogen, we consider it as the needed amino group.
+            elif nbr.GetAtomicNum() == 7:
                 found_NH = True
-
-        # If both -OH and -NH groups are attached, we consider the motif found.
+        
         if found_OH and found_NH:
-            reason = ("Molecule contains a hemiaminal motif: a tetrahedral, non-aromatic sp3 carbon with exactly one hydrogen "
-                      "that is directly bound (via single bonds) to both a hydroxyl group (-OH) and an amino group (-NH, -NHR, or -NR2).")
+            reason = ("Molecule contains a hemiaminal motif: a tetrahedral, non-aromatic sp3 carbon carrying exactly one hydrogen "
+                      "and exactly three heavy-atom neighbors, with at least one substituent being a hydroxyl (-OH) group (oxygen with "
+                      "≥1 hydrogen) and one being an amino (-NH, -NHR, or -NR2) group."
+                      )
             return True, reason
 
-    return False, "No hemiaminal motif (an sp3 carbon with one hydrogen bound to both -OH and -NH groups) was found."
+    return False, "No hemiaminal motif (an sp3 carbon with exactly one hydrogen and exactly 3 heavy-atom neighbors, including one -OH and one -NH) was found."
 
-# Example usage (for testing, uncomment the following lines):
-# test_smiles_list = [
-#     "NC(O)C(O)=O",  # alpha-hydroxyglycine, should be positive.
-#     "C1CCCCC1"     # Cyclohexane, should be negative.
+# Example usage (for testing purposes):
+# Uncomment the lines below to run a few examples.
+# test_smiles = [
+#     "NC(O)C(O)=O",          # alpha-hydroxyglycine (should be True)
+#     "OC(N)CC",              # 2-Aminopropanol (should be True)
+#     "C1CCCCC1"              # Cyclohexane (should be False)
 # ]
-# for smi in test_smiles_list:
+# for smi in test_smiles:
 #     result, explanation = is_hemiaminal(smi)
 #     print(f"SMILES: {smi}\nResult: {result}\nExplanation: {explanation}\n")
