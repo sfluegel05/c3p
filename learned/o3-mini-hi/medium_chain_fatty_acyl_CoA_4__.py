@@ -36,14 +36,14 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the thioester bond with a carbonyl: pattern [#6](=O)S
+    # Check for the thioester bond with a carbonyl bound to sulfur.
+    # Pattern: a carbon (with a double bond to oxygen) bonded to a sulfur.
     thioester_pattern = Chem.MolFromSmarts("[#6](=O)S")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester (acyl-CoA) bond found"
     
-    # For CoA moiety we look for an adenine fragment.
-    # Many CoA compounds include a nucleoside portion containing adenine.
+    # Look for an adenine-like fragment to mark the CoA portion.
     coa_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA (adenine/nucleoside) fragment found"
@@ -53,46 +53,46 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if net_charge != -4:
         return False, f"Net charge is {net_charge}, but expected -4 for this class"
     
-    # Now, try to isolate the fatty acyl chain length.
-    # We look at one of the thioester matches. (In many acyl-CoAs there is only one thioester.)
-    # thioester Match: tuple of atom indices; the first index is the carbonyl carbon.
-    # From the carbonyl carbon, its neighbors include oxygen (of the carbonyl) and S.
-    # The acyl chain is the chain attached to the carbonyl (not the S side).
+    # Now, isolate the fatty acyl chain.
+    # We use one of the thioester matches (usually there is only one).
+    # The thioester match is a tuple of atom indices; we take the first index
+    # as the carbonyl carbon and find the connected carbon (not the sulfur) that forms the acyl chain.
     chain_found = False
     chain_length = 0
     for match in thioester_matches:
         carbonyl_idx = match[0]
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
-        # find neighbor that is a carbon (this is the acyl chain substituent)
-        acyl_neighbors = [nbr for nbr in carbonyl_atom.GetNeighbors() 
-                          if nbr.GetSymbol() == "C"]
+        # Identify the neighbor atoms of the carbonyl carbon that are carbons.
+        acyl_neighbors = [nbr for nbr in carbonyl_atom.GetNeighbors() if nbr.GetSymbol() == "C"]
         if not acyl_neighbors:
             continue  # try next match if exists
-        # choose the first candidate (or the longest path among candidates)
-        # We will count the chain length using a DFS on carbon atoms.
-        # Starting count includes the carbonyl carbon as part of the chain.
-        def dfs(atom, came_from_idx):
-            """Return the longest path length (number of carbons) starting from atom.
-               Only follow bonds between carbon atoms."""
-            max_len = 1  # Count current atom
+
+        # Define a DFS routine that tracks visited atoms to account for cycles.
+        def dfs(atom, visited):
+            """Return the longest chain length (number of carbons) starting from atom,
+               while avoiding cycles.
+               visited is a set of atom indices already being traversed."""
+            current_idx = atom.GetIdx()
+            visited.add(current_idx)
+            max_len = 1  # Count current carbon atom.
             for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() == came_from_idx:
-                    continue
                 if nbr.GetSymbol() != "C":
                     continue
-                # Continue DFS on neighbor.
-                length = 1 + dfs(nbr, atom.GetIdx())
+                nbr_idx = nbr.GetIdx()
+                if nbr_idx in visited:
+                    continue
+                length = 1 + dfs(nbr, visited.copy())  # copy visited for independent branch traversal.
                 if length > max_len:
                     max_len = length
             return max_len
         
-        # Get the maximum chain length by considering each acyl neighbor.
+        # For each acyl neighbor, calculate chain length and pick the longest.
         candidate_max = 0
         for acyl_atom in acyl_neighbors:
-            path_len = 1 + dfs(acyl_atom, carbonyl_idx)  # plus the carbonyl carbon
+            # Include the carbonyl carbon.
+            path_len = 1 + dfs(acyl_atom, set([carbonyl_idx]))
             if path_len > candidate_max:
                 candidate_max = path_len
-        # If a chain was found, record it and break out.
         if candidate_max:
             chain_found = True
             chain_length = candidate_max
@@ -109,7 +109,7 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
 
 # Example usage:
 if __name__ == "__main__":
-    # Test with one example SMILES (e.g., cis-dec-3-enoyl-CoA(4-))
+    # Test with one example SMILES string
     test_smiles = "[C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC(C)([C@H](C(NCCC(NCCSC(=O)C/C=C\\CCCCCC)=O)=O)O)C)(=O)[O-])(=O)[O-])[C@H]([C@H]1O)OP([O-])([O-])=O"
     result, reason = is_medium_chain_fatty_acyl_CoA_4__(test_smiles)
     print(result, reason)
