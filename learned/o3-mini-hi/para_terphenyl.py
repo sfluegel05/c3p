@@ -4,9 +4,8 @@ Classifies: CHEBI:75874 para-terphenyl
 """
 Classifies: para-terphenyl derivatives
 Definition: A ring assembly based on a 1,4-diphenylbenzene skeleton and its substituted derivatives thereof.
-A true para-terphenyl contains a central benzene ring (non-fused) that is para-substituted 
-(i.e. substituents at positions 1 and 4; in a hexagon these positions are 3 bonds apart along the ring)
-with benzene rings attached via a single (non-fused) bond.
+A true para-terphenyl contains a central benzene ring (non-fused, all six atoms are carbon and aromatic)
+with benzene rings attached via a single (non-fused) bond at the para positions (i.e. separated by three atoms).
 """
 
 from rdkit import Chem
@@ -15,17 +14,21 @@ def is_para_terphenyl(smiles: str):
     """
     Determines if a molecule is a para-terphenyl derivative based on its SMILES string.
     
-    The algorithm first finds all benzene rings (six-membered aromatic carbocyles) in the molecule.
-    For each benzene ring candidate, it reconstructs the cyclic order of its atoms.
-    Then it checks whether at least two atoms on the candidate ring have substituents that are parts
-    of other benzene rings connected by a single bond (i.e. the candidate ring and the substituent ring 
-    share exactly one atom), and whether these two substituents are in para positions (separated by three bonds along the cycle).
-    
+    The algorithm does the following:
+     1) Uses a SMARTS pattern ("c1ccccc1") to find all benzene rings.
+     2) Filters for central ring candidates that are pure carbon.
+     3) For each candidate ring, it determines an ordering (cyclic order) of its atoms.
+     4) For each atom of the candidate, it looks for bonds to an external atom that belongs to
+        a benzene ring (again using the benzene SMARTS) such that the external benzene ring shares
+        exactly one atom with the candidate ring (to ensure non-fused attachment).
+     5) It then checks whether two such bonds occur on the candidate ring in para positions 
+        (i.e. opposite, 3 positions apart in a 6-membered cycle).
+        
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule has a para-terphenyl skeleton, False otherwise.
+        bool: True if the molecule displays a para-terphenyl motif, False otherwise.
         str: Explanation for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
@@ -36,101 +39,100 @@ def is_para_terphenyl(smiles: str):
     except Exception as e:
         return False, f"Error sanitizing molecule: {e}"
     
-    ring_info = mol.GetRingInfo().AtomRings()  # list of tuples, each a set of atom indices in a ring
-
-    # Helper: Check if the ring (given as tuple of atom indices) is a benzene ring.
-    def is_benzene_ring(ring):
-        if len(ring) != 6:
-            return False
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetSymbol() != "C" or not atom.GetIsAromatic():
-                return False
-        return True
-
-    # Get all benzene rings as sets.
-    benzene_rings = [set(ring) for ring in ring_info if is_benzene_ring(ring)]
-    if not benzene_rings:
-        return False, "No benzene rings found"
-
-    # Helper: Given a candidate ring (set of atom indices), determine its cyclic ordering.
-    # Since every atom in a proper benzene ring has exactly two neighbors within the ring,
-    # we can do a simple traversal starting from an arbitrary atom.
-    def get_cycle_ordering(candidate):
-        candidate = set(candidate)  # ensure it's a set
-        # Pick an arbitrary starting atom.
-        start = next(iter(candidate))
-        ordering = [start]
+    # Define benzene SMARTS: a six-membered aromatic ring.
+    benzene_smarts = Chem.MolFromSmarts("c1ccccc1")
+    benzene_matches = mol.GetSubstructMatches(benzene_smarts)
+    if not benzene_matches:
+        return False, "No benzene rings found in the molecule"
+    
+    # Make a unique set of benzene rings (each as a frozenset of atom indices)
+    benzene_rings = []
+    for match in benzene_matches:
+        fs = frozenset(match)
+        if fs not in benzene_rings:
+            benzene_rings.append(fs)
+    
+    # Helper: order the atoms of a six-membered ring (assumes it is a proper cycle)
+    def get_cycle_ordering(mol, ring_set):
+        # Convert ring_set to list so we can choose a starting atom.
+        ring_atoms = set(ring_set)
+        ordering = []
+        # Choose an arbitrary starting atom.
+        start = next(iter(ring_atoms))
+        ordering.append(start)
         prev = None
         current = start
-        # In a benzene ring there are 6 atoms.
-        while len(ordering) < len(candidate):
-            curr_atom = mol.GetAtomWithIdx(current)
-            # Look for neighbors that are also in the candidate set and are not the previous atom.
+        while len(ordering) < len(ring_set):
+            current_atom = mol.GetAtomWithIdx(current)
             found = False
-            for nbr in curr_atom.GetNeighbors():
+            for nbr in current_atom.GetNeighbors():
                 nbr_idx = nbr.GetIdx()
-                if nbr_idx in candidate and nbr_idx != prev:
+                if nbr_idx in ring_atoms and nbr_idx != prev:
                     ordering.append(nbr_idx)
                     prev = current
                     current = nbr_idx
                     found = True
                     break
             if not found:
-                # this should not happen for a proper ring
-                break
+                break  # Incomplete ordering
         return ordering
-
-    # Now, for each benzene ring candidate,
-    # try to identify it as the central ring of a para-terphenyl skeleton.
-    for candidate_ring in benzene_rings:
-        # Reconstruct the cyclic ordering.
-        ordering = get_cycle_ordering(candidate_ring)
+    
+    # The central ring of a para-terphenyl should be a benzene ring with no heteroatoms.
+    central_candidates = []
+    for ring in benzene_rings:
+        # Check that all atoms in the ring are carbon:
+        if all(mol.GetAtomWithIdx(idx).GetSymbol() == "C" for idx in ring):
+            if len(ring) == 6:  # Only proper six-membered rings are considered.
+                central_candidates.append(ring)
+    
+    if not central_candidates:
+        return False, "No pure carbon six-membered (benzene) rings found suitable as central rings"
+    
+    # Now check each central candidate for two para-attached benzene rings.
+    for candidate in central_candidates:
+        ordering = get_cycle_ordering(mol, candidate)
         if len(ordering) != 6:
-            continue  # not a proper benzene cycle
-        
-        # For each atom on the candidate ring, check for a substituent benzene ring.
-        # A valid substituent is an aromatic benzene ring that shares exactly one atom with the candidate.
+            continue  # not a proper cycle; skip
         substituent_positions = []
+        # For each atom (by position) in the candidate ring, look for a substituent benzene ring.
         for pos, atom_idx in enumerate(ordering):
             atom = mol.GetAtomWithIdx(atom_idx)
-            valid_substituent_found = False
+            found_substituent = False
             for nbr in atom.GetNeighbors():
                 nbr_idx = nbr.GetIdx()
-                # Only consider if neighbor is NOT part of the candidate ring.
-                if nbr_idx in candidate_ring:
+                # Only consider atoms not in candidate ring (i.e. external connection)
+                if nbr_idx in candidate:
                     continue
-                # Look for any benzene ring that contains this neighbor.
-                for benzene in benzene_rings:
-                    # To be a substituent the benzene ring should share exactly one atom (the candidate atom)
-                    if nbr_idx in benzene:
-                        overlap = candidate_ring.intersection(benzene)
-                        if len(overlap) == 1:
-                            valid_substituent_found = True
-                            break
-                if valid_substituent_found:
-                    substituent_positions.append(pos)
-                    break  # Only one substituent per candidate atom
-        # We need at least two substituents.
+                # Now look for any benzene ring (from our list) that includes this neighbor.
+                # To be a non-fused substituent, the overlap between the candidate ring and the external benzene must be exactly one atom.
+                for ext_ring in benzene_rings:
+                    if nbr_idx in ext_ring and len(candidate.intersection(ext_ring)) == 1:
+                        substituent_positions.append(pos)
+                        found_substituent = True
+                        break
+                if found_substituent:
+                    break
+        # Must have at least two substituents on the central ring.
         if len(substituent_positions) < 2:
-            continue  # try next candidate central ring
-        
-        # Check if any two substituents are para to each other.
-        n = 6  # number of atoms in the ring
+            continue
+        # Check if any two substituents are para (difference of 3 positions in a 6-membered ring)
+        n = 6
         for i in range(len(substituent_positions)):
             for j in range(i+1, len(substituent_positions)):
                 diff = abs(substituent_positions[i] - substituent_positions[j])
                 circular_diff = min(diff, n - diff)
-                if circular_diff == 3:  # exactly para in benzene
-                    return True, "Found para-terphenyl skeleton: central benzene ring with benzene substituents in para positions attached via single (non-fused) bonds."
-    return False, "Could not find a central benzene ring with two para-substituted benzene rings (non-fused) required for para-terphenyl."
+                if circular_diff == 3:
+                    return True, ("Found para-terphenyl skeleton: central benzene ring with two benzene substituents in para positions "
+                                  "attached via single (non-fused) bonds.")
+    return False, "Could not find a central benzene ring with two para-substituted benzene rings (non-fused) required for para-terphenyl"
 
 # Example usage:
-# Uncomment below to test on sample SMILES:
-# smiles_list = [
-#     "O=C(OC1=C(OC(=O)C)C(=C(O)C(=C1C2=CC(O)=C(O)C=C2)O)C3=CC=C(O)C=C3)C",  # 2',3'-diacetoxy-... p-terphenyl
-#     "COc1cc(-c2ccccc2)c(OC)c(O)c1-c1ccc(O)c(O)c1",  # 3-hydroxyterphenyllin, similar derivative
+# Uncomment the following lines to test with provided SMILES examples:
+# test_smiles = [
+#    "O=C(OC1=C(OC(=O)C)C(=C(O)C(=C1C2=CC(O)=C(O)C=C2)O)C3=CC=C(O)C=C3)C",  # 2',3'-diacetoxy-3,4,5',6',4''-pentahydroxy-p-terphenyl
+#    "O=C(OC1=C(O)C(=C(OC(=O)C[C@@H](OC(=O)C)C)C(=C1C2=CC=C(O)C=C2)O)C3=CC=C(O)C=C3)C[C@@H](OC(=O)C)C",  # Curtisian M
+#    "COc1cc(-c2ccccc2)c(OC)c(O)c1-c1ccc(O)c(O)c1",  # A simplified p-terphenyl derivative
 # ]
-# for s in smiles_list:
-#     result, reason = is_para_terphenyl(s)
-#     print(f"SMILES: {s}\nResult: {result}, Reason: {reason}\n")
+# for s in test_smiles:
+#    result, reason = is_para_terphenyl(s)
+#    print(f"SMILES: {s}\nResult: {result}, Reason: {reason}\n")
