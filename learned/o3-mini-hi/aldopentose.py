@@ -3,62 +3,109 @@ Classifies: CHEBI:33916 aldopentose
 """
 """
 Classifies: aldopentose, defined as 'A pentose with a (potential) aldehyde group at one end.'
-Examples include various forms of xylose, ribose, arabinose, lyxose, etc.
+
+An aldopentose can appear as an open‐chain (with a free aldehyde group) or as a cyclic sugar
+(a hemiacetal) that is in equilibrium with its open‐chain form. To be an aldopentose the molecule’s 
+“main‐chain” should contain exactly 5 carbons and 5 oxygens (as for C5H10O5). 
+
+To avoid false positives (e.g. lactones) we:
+  • compute the longest contiguous carbon chain (only carbons connected by C–C bonds) – 
+    this should be 5 for a pentose.
+  • require the overall count of oxygen atoms to be 5.
+  • if the open‐chain aldehyde (SMARTS “[CX3H1](=O)”) is detected, the sugar is classified as aldopentose;
+    if not, then (provided the molecule is cyclic and does not contain a lactone (ester C=O–O pattern)),
+    it is assumed to be a cyclized aldopentose.
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
+
+def longest_carbon_chain(mol):
+    """
+    Computes the longest contiguous path (chain) through carbon atoms only.
+    In the sugar backbone, the longest carbon chain should be 5 for an aldopentose.
+    """
+    # Get the indices of all carbon atoms.
+    carbon_inds = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    # Build a graph (dictionary) where each key is a carbon atom index and 
+    # each value is a list of neighboring carbon atom indices.
+    graph = {idx: [] for idx in carbon_inds}
+    for idx in carbon_inds:
+        atom = mol.GetAtomWithIdx(idx)
+        for nbr in atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 6:
+                graph[idx].append(nbr.GetIdx())
+    max_length = 0
+    # A simple DFS to go through all paths (since molecules are small this is acceptable)
+    def dfs(current, visited):
+        nonlocal max_length
+        # Update the maximum path length encountered so far.
+        if len(visited) > max_length:
+            max_length = len(visited)
+        for neighbor in graph[current]:
+            if neighbor not in visited:
+                dfs(neighbor, visited | {neighbor})
+    for idx in carbon_inds:
+        dfs(idx, {idx})
+    return max_length
 
 def is_aldopentose(smiles: str):
     """
     Determines if a molecule is an aldopentose based on its SMILES string.
-    An aldopentose is a five‐carbon sugar that either shows an aldehyde group in the open-chain form 
-    or exists in a cyclic form (hemiacetal) capable of generating an aldehyde upon ring opening.
+    
+    An aldopentose is defined as a 5‐carbon sugar with a (potential) aldehyde group at one end.
+    It can exist in an open-chain form, in which an aldehyde is detected, or in a cyclic
+    (hemiacetal) form which is in equilibrium with the open-chain form. 
+
+    The classification uses several criteria:
+      1. The longest contiguous carbon chain (using only C–C bonds) is expected to have exactly 5 carbons.
+      2. The molecule must have exactly 5 oxygen atoms (consistent with C5H10O5).
+      3. If an open-chain aldehyde group (SMARTS "[CX3H1](=O)") is found on the structure, 
+         the molecule is classified as an open‐chain aldopentose.
+      4. In the absence of a free aldehyde, the molecule must be cyclic. However, if there is an ester 
+         (lactone) fingerprint—indicated by a pattern "[CX3](=O)[O]"—the structure is rejected.
+         (Cyclic aldoses should display a hemiacetal functionality rather than a lactone.)
     
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+        smiles (str): SMILES string for the molecule.
+        
     Returns:
-        bool: True if the molecule is an aldopentose, False otherwise.
-        str: The reason for the classification.
+        bool: True if the molecule is an aldopentose; False otherwise.
+        str: Explanation for the classification decision.
     """
-    
-    # Parse SMILES string to get a molecule object
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+        
+    # 1. Verify that the longest carbon chain among carbon atoms is 5.
+    chain_length = longest_carbon_chain(mol)
+    if chain_length != 5:
+        return False, f"Longest contiguous carbon chain is {chain_length}; expected 5 for an aldopentose"
     
-    # Count the number of carbon atoms in the molecule.
-    # An aldopentose should have exactly 5 carbon atoms.
-    carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(carbon_atoms) != 5:
-        return False, f"Number of carbon atoms is {len(carbon_atoms)}; expected exactly 5 for a pentose"
+    # 2. Count oxygen atoms.
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count != 5:
+        return False, f"Number of oxygen atoms is {oxygen_count}; expected 5 for C5H10O5"
     
-    # Count the number of oxygen atoms.
-    # For a typical aldopentose (C5H10O5), there should be exactly 5 oxygen atoms.
-    oxygen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8]
-    if len(oxygen_atoms) != 5:
-        return False, f"Number of oxygen atoms is {len(oxygen_atoms)}; expected 5 for C5H10O5"
-    
-    # Count hydroxyl groups (-OH) using a SMARTS pattern.
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # oxygen with one hydrogen
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 3:
-        return False, f"Found only {len(hydroxyl_matches)} -OH groups; expected at least 3 for an aldopentose"
-    
-    # Check for an aldehyde group in the open-chain form.
-    # Aldehyde group SMARTS: a carbon with one hydrogen bound to =O.
+    # 3. Define SMARTS patterns.
+    # Aldehyde pattern: carbonyl carbon with one hydrogen.
     aldehyde_pattern = Chem.MolFromSmarts("[CX3H1](=O)")
+    # Lactone (ester) pattern: carbonyl carbon connected to an oxygen (without an H).
+    lactone_pattern = Chem.MolFromSmarts("[CX3](=O)[O]")
+    
+    # 4. Classification based on presence/absence of aldehyde.
     if mol.HasSubstructMatch(aldehyde_pattern):
         return True, "Open-chain aldopentose: aldehyde group detected."
     else:
-        # If an aldehyde group is not detected, check if the molecule is cyclic.
-        # In cyclic forms the aldehyde group is 'hidden' as a hemiacetal.
+        # Molecule is cyclic. Many aldopentoses exist in a hemiacetal (cyclic) form.
         if mol.GetRingInfo().NumRings() > 0:
-            return True, "Cyclized aldopentose: potential open-chain aldehyde form upon ring opening."
+            # If a lactone functionality is detected then likely this is not a true sugar.
+            if mol.HasSubstructMatch(lactone_pattern):
+                return False, "Cyclic molecule contains lactone functionality; not an aldopentose."
+            else:
+                return True, "Cyclized aldopentose: potential open-chain aldehyde form upon ring opening."
         else:
-            return False, "No aldehyde group detected and the molecule is not cyclic; does not match aldopentose criteria."
-    
-# (Optional: for testing, one might call the function with one of the sample SMILES)
-# e.g., print(is_aldopentose("[H]C(=O)[C@@H](O)[C@H](O)[C@@H](O)CO"))
+            return False, "No aldehyde group detected and molecule is acyclic; does not meet aldopentose criteria."
+
+# (Optional debug/testing calls could go here, but per instructions we provide a single code block.)
