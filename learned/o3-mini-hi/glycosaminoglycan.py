@@ -6,16 +6,18 @@ Classifies: CHEBI:18085 glycosaminoglycan
 Classifies: Glycosaminoglycan 
 (defined as any polysaccharide containing a substantial proportion of aminomonosaccharide residues).
 
-Revised strategy:
+Improved strategy:
 1. Check that the molecule is “big” (e.g. molecular weight > 500 Da).
-2. Identify candidate sugar rings as non‐aromatic 5‐ or 6‐membered rings that have at least one oxygen atom in the ring
-   but no more than 2 total heteroatoms (oxygen and nitrogen) in the ring.
-3. For each candidate ring, check whether any ring carbon has a neighbor outside the ring that is a nitrogen (amino substituent).
-4. Build connectivity among candidate rings (two rings are “connected” if any atom in one is directly bonded to any atom in the other).
+2. Identify candidate sugar rings as non‐aromatic, 5‐ or 6‐membered rings that:
+   a. Have at least one ring oxygen and at most 2 total heteroatoms (O and N).
+   b. Contain only single bonds (to capture the typical saturated sugar rings).
+   c. Show at least 2 external substituents that are either hydroxyl (O with at least one hydrogen) or amino groups.
+3. For each candidate ring, flag it if at least one ring carbon has an external amino substituent 
+   (a neighboring N atom that carries at least one hydrogen).
+4. Build connectivity among candidate rings (two rings are “connected” if any atom in one is bonded to any atom in the other).
 5. Require that the largest connected component of candidate rings has at least three rings and that at least 50% of them are “amino sugar” rings.
-6. If these conditions are met, the molecule is classified as a glycosaminoglycan.
- 
-Note: This is a heuristic algorithm that may still fail in borderline cases.
+6. If these conditions are met, classify the molecule as a glycosaminoglycan.
+Note: This heuristic algorithm is imperfect.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -24,10 +26,13 @@ def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
     
-    The approach is to (1) ensure the molecule is big enough (MW > 500),
-    (2) identify candidate sugar rings using a less strict rule (non‐aromatic, 5‐ or 6‐membered, with 1–2 ring heteroatoms),
-    (3) build a connectivity graph of such rings (requiring at least 3 to call it a polysaccharide),
-    and (4) check that at least 50% of those rings have an external amino substituent.
+    The approach is to (1) ensure the molecule is big enough (MW > 500 Da),
+    (2) identify candidate sugar rings that are non‐aromatic 5‐ or 6‐membered rings with only single bonds,
+        have at least one oxygen, no more than 2 heteroatoms (N or O),
+        and that display at least 2 external substituents that are hydroxyl or amino groups,
+    (3) flag rings that show an external amino substituent (N with at least one H),
+    (4) build a connectivity graph of such rings (requiring at least 3 to call it a polysaccharide),
+    and (5) check that at least 50% of those rings have the amino flag.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -40,7 +45,7 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string."
 
-    # Step 0: Check if molecular weight is high enough.
+    # Step 0: Basic check on molecular weight
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 500:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) to be a polysaccharide."
@@ -48,61 +53,87 @@ def is_glycosaminoglycan(smiles: str):
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
     
-    candidate_rings = []      # each candidate is a set of atom indices
-    ring_amino_flags = []     # flag for each candidate: True if ring shows external amino substitution
-
-    # Step 1: Identify candidate sugar rings.
-    # Accept rings of size 5 or 6 that are non‐aromatic and have at least one oxygen in the ring.
-    # Also allow at most 2 heteroatoms (oxygen and nitrogen) in the ring.
+    candidate_rings = []      # Each candidate is a set of atom indices
+    ring_amino_flags = []     # For each candidate, True if ring shows external amino substitution
+    
+    # Iterate over all rings
     for ring in atom_rings:
+        # Only consider rings of size 5 or 6
         if len(ring) not in (5, 6):
             continue
-        # Get atoms corresponding to indices in the ring.
+        # Get atoms in the ring
         atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
-        # Skip if any atom in the ring is aromatic.
+        # Exclude rings with any aromatic atom
         if any(atom.GetIsAromatic() for atom in atoms_in_ring):
             continue
-        # Count heteroatoms in the ring (only consider O and N).
+        
+        # Check that all bonds in the ring are single (sugar rings are generally saturated)
+        bonds_in_ring = []
+        for i in range(len(ring)):
+            a_idx = ring[i]
+            b_idx = ring[(i+1) % len(ring)]
+            bond = mol.GetBondBetweenAtoms(a_idx, b_idx)
+            if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
+                bonds_in_ring = None
+                break
+            bonds_in_ring.append(bond)
+        if bonds_in_ring is None:
+            continue  # Skip rings with non-single bonds
+
+        # Count heteroatoms (only consider oxygen and nitrogen)
         hetero_count = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() in (7, 8))
-        # Require at least one oxygen.
+        # At least one oxygen must be present
         oxygen_count = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 8)
         if oxygen_count < 1:
             continue
-        # Accept rings that have no more than 2 heteroatoms (to avoid rings with extra heteroatoms not typical for sugars).
         if hetero_count > 2:
             continue
-        
+
+        # Count external substituents on ring atoms that look like hydroxyl or amino groups.
+        substituent_count = 0
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            for neighbor in atom.GetNeighbors():
+                # Consider only neighbors outside the ring.
+                if neighbor.GetIdx() in ring:
+                    continue
+                # We'll assume a substituent is hydroxyl or amino if it is O or N and has at least one hydrogen.
+                if neighbor.GetAtomicNum() in (7, 8) and neighbor.GetTotalNumHs() > 0:
+                    substituent_count += 1
+        # Require at least 2 such substituents to favor sugar-like topology.
+        if substituent_count < 2:
+            continue
+
+        # Add the ring as a candidate.
         candidate_rings.append(set(ring))
         
-        # Step 2: Check for external amino substituents.
-        # For each carbon in the ring, see if it has a neighbor (outside the ring) that is nitrogen.
+        # Check for external amino substituents:
         amino_found = False
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            # Typically we look at carbons. (Many sugars are mainly carbons.)
+            # Look typically at carbon atoms in the ring.
             if atom.GetAtomicNum() != 6:
                 continue
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetIdx() in ring:
-                    continue  # skip atoms that are part of the ring
-                if neighbor.GetAtomicNum() == 7:
+                    continue
+                if neighbor.GetAtomicNum() == 7 and neighbor.GetTotalNumHs() > 0:
                     amino_found = True
                     break
             if amino_found:
                 break
         ring_amino_flags.append(amino_found)
-
+    
     total_candidates = len(candidate_rings)
     if total_candidates == 0:
         return False, "No candidate sugar rings found."
     
-    # Step 3: Build connectivity among candidate rings.
-    # Two candidate rings are considered connected if any atom in one is bonded to any atom in the other.
+    # Build connectivity among candidate rings.
+    # Two rings are considered connected if any atom in one is bonded to any atom in the other.
     n = total_candidates
     connections = {i: set() for i in range(n)}
     for i in range(n):
         for j in range(i + 1, n):
-            # Check each pair of atoms (one in ring i, one in ring j) to see if there is a bond.
             connected = False
             for a in candidate_rings[i]:
                 for b in candidate_rings[j]:
@@ -115,7 +146,7 @@ def is_glycosaminoglycan(smiles: str):
                 connections[i].add(j)
                 connections[j].add(i)
     
-    # Find connected components among candidate rings using depth-first search.
+    # Find connected components among candidate rings using DFS.
     visited = set()
     components = []
     for i in range(n):
@@ -132,13 +163,13 @@ def is_glycosaminoglycan(smiles: str):
             stack.extend(connections[cur] - comp)
         components.append(comp)
     
-    # Get the largest connected component.
+    # Select the largest connected component.
     largest_comp = max(components, key=len) if components else set()
     comp_size = len(largest_comp)
     if comp_size < 3:
         return False, f"Not a polysaccharide: largest connected candidate sugar network has only {comp_size} ring(s)."
     
-    # Step 4: Within the largest connected network, count how many rings have an external amino substituent.
+    # Within the largest connected network, count rings with an external amino substituent.
     comp_amino = sum(1 for i in largest_comp if ring_amino_flags[i])
     ratio = comp_amino / comp_size
 
@@ -149,10 +180,10 @@ def is_glycosaminoglycan(smiles: str):
         return False, (f"Candidate polysaccharide with {comp_size} connected sugar ring(s) "
                        f"but only {comp_amino} ({ratio*100:.1f}%) appear to be amino sugars.")
 
-# Example (for testing purposes):
+# Example usage (for testing purposes):
 if __name__ == "__main__":
-    # Example SMILES (one of the given glycosaminoglycan examples)
-    test_smiles = "O=C1O[C@@H](C=C[C@@H](CC(C=O)C=2C3=C([C@@]4([C@H](C=C1C)C(=O)NC4=CC3=O)O)C=C(C)C2O)CC)[C@@H](O)C=C(C)C"  # Divergolide D
+    # You can test with one of the provided SMILES strings.
+    test_smiles = "O=C1O[C@@H](C=C[C@@H](CC(C=O)C=2C3=C([C@@]4([C@H](C=C1C)C(=O)NC4=CC3=O)O)C=C(C)C2O)CC)[C@@H](O)C=C(C)C"  # Example: Divergolide D
     result, reason = is_glycosaminoglycan(test_smiles)
     print("Result:", result)
     print("Reason:", reason)
