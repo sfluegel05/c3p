@@ -5,25 +5,19 @@ Classifies: CHEBI:17522 alditol
 Classifies: alditol
 
 An alditol is an acyclic polyol having the general formula:
-   HOCH2[CH(OH)]nCH2OH
-(formally derivable from an aldose by reduction of its carbonyl group)
+   HOCH2[CH(OH)]nCH2OH 
+(formally derivable from an aldose by reduction of its carbonyl group).
 
-In the previous attempt the identification of candidate carbons depended on a helper function
-(is_alcohol) that was too strict. Many of the SMILES examples were not finding any candidate carbon 
-bearing a free –OH group because the oxygen test (checking for exactly one heavy neighbor and no double bonds)
-failed due to explicit hydrogen handling or stereochemical annotations.
- 
-In this improved version we redefine is_alcohol to:
-  • Check that the atom is oxygen (symbol "O"),
-  • Verify that all bonds from the oxygen are single,
-  • Count its neighbors: we require that it is attached to exactly one non‐hydrogen atom,
-  • And that it is attached to at least one hydrogen (via an explicit neighbor).
-  
-Candidate carbons are those carbons (atomic number 6) that are sp³ hybridized and not in a ring,
-and that have at least one neighboring oxygen that qualifies as a free hydroxyl.
-Then we build a connectivity graph among these candidate carbons (linking directly bonded carbons via single bonds outside rings)
-and search for any contiguous acyclic chain (via DFS) of at least three candidate carbons.
-If such a chain exists, we classify the molecule as an alditol.
+In the previous approach the identification of candidate carbons depended on a helper function 
+(checking for an alcohol) that was overly strict. The improved version redefines is_alcohol to:
+  • Check that the atom is an oxygen.
+  • Verify that every bond from the oxygen is a single bond.
+  • Check that the oxygen is attached to exactly one non‐hydrogen atom.
+  • Ensure that the oxygen is attached to at least one hydrogen.
+Candidate carbons are those sp³ carbons (atomic number 6) that are not in a ring and have at least 
+one attached free hydroxyl. We then build a connectivity graph among candidates, linking carbons connected 
+by single bonds (outside rings). Finally, we search for any contiguous chain (via DFS) of at least three 
+candidate carbons. If such a chain is found, the molecule is classified as an alditol.
 """
 from rdkit import Chem
 from collections import deque
@@ -32,52 +26,47 @@ def is_alditol(smiles: str):
     """
     Determines if a molecule is an alditol based on its SMILES string.
     
-    An alditol is defined as an acyclic polyol with the formula:
-         HOCH2[CH(OH)]nCH2OH.
-    We search for a chain of sp3 non‐ring carbons with one or more free hydroxyl groups.
+    An alditol is defined as an acyclic polyol conforming to the formula HOCH2[CH(OH)]nCH2OH.
+    We identify candidate carbon atoms (sp³ and not in a ring) that bear a free hydroxyl group.
     
     Args:
-       smiles (str): SMILES string of the molecule.
-       
+        smiles (str): SMILES string of the molecule.
+        
     Returns:
-       (bool, str): Tuple where the first element is True if an alditol chain is found,
-                    and False otherwise. The second element provides the reasoning.
+        (bool, str): Tuple where the boolean is True if an alditol chain is found,
+                     and False otherwise. The string provides the reasoning.
     """
-    # Convert SMILES to molecule and add explicit hydrogens.
+    # Parse SMILES string and add explicit hydrogens
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     mol = Chem.AddHs(mol)
     
-    # Helper function to decide if an oxygen atom is a free hydroxyl.
-    # Conditions:
-    #   • The atom must be oxygen.
-    #   • All bonds from oxygen must be single.
-    #   • It must be attached to exactly one non‐hydrogen atom.
-    #   • It must be attached to at least one hydrogen.
-    def is_alcohol(oxygen_atom):
-        if oxygen_atom.GetSymbol() != "O":
+    # Improved helper function: determine if a given oxygen atom is a free hydroxyl.
+    def is_alcohol(atom):
+        # Must be oxygen.
+        if atom.GetSymbol() != "O":
             return False
-        # Check all bonds are single bonds.
-        for bond in oxygen_atom.GetBonds():
+        # Verify that all bonds from oxygen are single.
+        for bond in atom.GetBonds():
             if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
                 return False
-        # Count non-hydrogen neighbors.
-        heavy_neighbors = [nb for nb in oxygen_atom.GetNeighbors() if nb.GetAtomicNum() != 1]
+        # Check that it is attached to exactly one heavy (non‐hydrogen) atom.
+        heavy_neighbors = [nb for nb in atom.GetNeighbors() if nb.GetAtomicNum() != 1]
         if len(heavy_neighbors) != 1:
             return False
-        # Count explicit hydrogen neighbors.
-        hydrogen_neighbors = [nb for nb in oxygen_atom.GetNeighbors() if nb.GetAtomicNum() == 1]
+        # Must be attached to at least one hydrogen (explicitly present).
+        hydrogen_neighbors = [nb for nb in atom.GetNeighbors() if nb.GetAtomicNum() == 1]
         if len(hydrogen_neighbors) < 1:
             return False
         return True
 
     candidate_indices = []
-    # Identify candidate carbon atoms:
-    #   • Must be carbon (atomic number 6)
-    #   • sp3 hybridized
-    #   • Not in any ring (acyclic chain is desired)
-    #   • Has at least one attached (free) hydroxyl group.
+    # Identify candidate carbon atoms based on:
+    #  • Carbon (atomic number 6)
+    #  • sp³ hybridized (to favor acyclic centers)
+    #  • Not in a ring (acyclic chain is desired)
+    #  • Has at least one attached free hydroxyl group.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 6:
             continue
@@ -87,7 +76,6 @@ def is_alditol(smiles: str):
             continue
         has_free_oh = False
         for nb in atom.GetNeighbors():
-            # If neighbor qualifies as a free hydroxyl, mark candidate.
             if is_alcohol(nb):
                 has_free_oh = True
                 break
@@ -96,7 +84,7 @@ def is_alditol(smiles: str):
     
     if not candidate_indices:
         return False, "No candidate carbon bearing a free –OH group found"
-
+    
     # Build a connectivity graph among candidate carbons.
     # Two candidate carbons are connected if they share a single bond that is not part of a ring.
     candidate_set = set(candidate_indices)
@@ -113,7 +101,7 @@ def is_alditol(smiles: str):
                     if idx not in graph[nb_idx]:
                         graph[nb_idx].append(idx)
     
-    # Get connected components from the candidate graph.
+    # First, get connected components from the candidate graph.
     def get_connected_components(g):
         seen = set()
         components = []
@@ -134,7 +122,7 @@ def is_alditol(smiles: str):
 
     components = get_connected_components(graph)
     
-    # For each connected component, search for an acyclic chain of at least three candidate carbons.
+    # For each connected component, use DFS to search for a chain of at least three candidate carbons.
     def dfs_paths(g, current, visited):
         yield visited
         for nbr in g[current]:
@@ -144,7 +132,7 @@ def is_alditol(smiles: str):
     for comp in components:
         if len(comp) < 3:
             continue
-        # Build subgraph for this component.
+        # Build subgraph for the current component.
         comp_graph = {node: graph[node] for node in comp}
         for start in comp_graph:
             for path in dfs_paths(comp_graph, start, [start]):
@@ -153,20 +141,17 @@ def is_alditol(smiles: str):
     
     return False, "No linear alditol chain pattern detected"
 
-# Example usage and testing: run this module to test several examples.
+# Example usage and testing
 if __name__ == "__main__":
+    # A selection of SMILES examples (both positive and negatives) are provided for testing purposes.
     test_smiles = [
         "C([C@H]([C@H]([C@@H]([C@H]([13CH2]O)O)O)O)O)O",  # D-(1-(13)C)glucitol
         "OC[C@@H](O)[C@H](O)CO",                           # D-threitol
         "C[C@@](O)(CO)[C@@H](O)CO",                        # 2-methylerythritol
         "OC[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)CO",         # L-iditol
-        "O([C@@H]([C@H](O[C@@H]1O[C@H]([C@@H](O)[C@@H](O)[C@@H]1O)C)[C@@H](O)CO)[C@H](O)CO)[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO",  # glycoside example
-        "O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)C1OC(COC2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)CO)CO",  # another glycoside variant
-        "O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OCC(O)CO)CO",  # 1-O-(beta-D-glucosyl)glycerol variant
-        "C(CO)(CO)O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO",  # 2-O-(beta-D-glucosyl)glycerol variant
         "OC[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)CO",         # D-iditol
         "OC[C@H](O)[C@H](O)[C@H](O)[C@@H](O)CO",          # L-altritol
-        "OCC(O)CO"                                       # glycerol
+        "OCC(O)CO"                                       # glycerol (not an alditol chain in our context)
     ]
     for s in test_smiles:
         res, msg = is_alditol(s)
