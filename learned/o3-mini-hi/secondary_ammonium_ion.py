@@ -6,15 +6,16 @@ Classifies: Secondary ammonium ion
 Definition:
     "An organic cation obtained by protonation of any secondary amino compound; 
      major species at pH 7.3."
-A secondary ammonium ion arises from protonation of a secondary amine (R₂NH) to give R₂NH₂⁺.
-Thus the key chemical features we use are:
+
+A secondary ammonium ion arises from protonation of a secondary amine (R2NH) to give R2NH2+.
+Key chemical features used here are:
   - A nitrogen (atomic number 7) carrying a formal charge of +1.
-  - The nitrogen is sp3-hybridized.
-  - It is bonded to exactly 2 heavy (non-hydrogen) atoms.
-  - Its total hydrogen count (explicit + implicit) is exactly 2 (so that the sum of bonds equals 4).
-  - The overall molecule must be a cation (net charge > 0) so as to not mis‐classify zwitterions.
-  - We also screen out cases where a heavy neighbor is “amidic” (i.e. bonded to a double-bonded oxygen) 
-    because protonation of an amide is extremely uncommon.
+  - The nitrogen (after adding hydrogens) must have a total of 4 bonds.
+  - Exactly 2 of these bonds are made to heavy (non-hydrogen) atoms.
+  - Total number of attached hydrogens (explicit + implicit) is 2.
+  - The overall molecule must be a cation (net charge > 0).
+  - We screen out cases where a heavy neighbor is “amidic” (i.e. has a double bond to oxygen)
+    on a bond other than the one to the candidate nitrogen.
 """
 
 from rdkit import Chem
@@ -22,11 +23,14 @@ from rdkit import Chem
 def is_secondary_ammonium_ion(smiles: str):
     """
     Determines if the molecule (given by a SMILES string) contains at least one
-    secondary ammonium ion center. Specifically, it looks for a positively charged nitrogen
-    (formal charge +1) that is sp3 hybridized and bonded to exactly two heavy (non-hydrogen)
-    atoms with a total of 2 hydrogen atoms attached (i.e. mimicking the structure R2NH2+ from a
-    protonated secondary amine).
-    
+    secondary ammonium ion center. Specifically, it looks for a nitrogen atom that is:
+      - Positively charged (+1 formal charge)
+      - sp3 hybridized
+      - Has been protonated so that its total connectivity (after adding hydrogens) is 4,
+        with exactly 2 of these bonds going to non-hydrogen (heavy) atoms and 2 hydrogens.
+      - Its heavy neighbors (non-hydrogen atoms) do not have a double bond to oxygen 
+        (aside from the bond they share with the candidate nitrogen).
+
     Args:
         smiles (str): SMILES string of the molecule.
         
@@ -34,71 +38,102 @@ def is_secondary_ammonium_ion(smiles: str):
         bool: True if a secondary ammonium ion center is found, False otherwise.
         str: Reason message detailing the classification.
     """
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens so that hydrogen counts are correct.
+    # Add explicit hydrogens to accurately count attached H's.
     mol = Chem.AddHs(mol)
     
-    # Calculate overall molecule charge by summing formal charge on each atom.
+    # Calculate overall molecular charge: must be > 0.
     net_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
     if net_charge <= 0:
         return False, "Molecule overall is not a cation (net charge <= 0)."
     
-    # Iterate over atoms to find candidate nitrogen centers.
+    # Loop over atoms to find candidate ammonium centers.
     for atom in mol.GetAtoms():
-        # Look for nitrogen with a positive formal charge.
+        # Check if atom is nitrogen with positive charge.
         if atom.GetAtomicNum() != 7 or atom.GetFormalCharge() != +1:
             continue
-        # Require sp3 hybridization.
+        
+        # Ensure nitrogen is sp3 hybridized.
         if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
             continue
+
+        # After adding H's, the candidate ammonium ion must be tetra-coordinated.
+        if atom.GetDegree() != 4:
+            continue
         
-        # Count heavy (non-hydrogen) neighbors.
+        # Count heavy (non-H) neighbors.
         heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
         if len(heavy_neighbors) != 2:
             continue
 
-        # Count total hydrogens attached (explicit+implicit).
-        total_H = atom.GetTotalNumHs()
-        if total_H != 2:
+        # Count total hydrogens attached (explicit + implicit)
+        total_h = atom.GetTotalNumHs()
+        if total_h != 2:
             continue
 
-        # Now check the environment of each heavy neighbor.
-        # We want to avoid cases where a heavy neighbor is part of an amide (i.e. a carbonyl group)
-        is_amidic = False
+        # Check each heavy neighbor's environment to screen out "amidic" groups.
+        # We want to ignore bonds that are to the candidate nitrogen.
+        amidic_flag = False
         for nbr in heavy_neighbors:
-            # if neighbor is carbon, examine bonds for a double bond to oxygen
-            if nbr.GetAtomicNum() == 6:
-                for bond in nbr.GetBonds():
-                    # Check if the bond is a double bond and the other atom is oxygen.
+            for bond in nbr.GetBonds():
+                # Skip the bond that connects this heavy neighbor to our candidate N.
+                if bond.GetOtherAtom(nbr).GetIdx() == atom.GetIdx():
+                    continue
+                # If neighbor is carbon, and has a double bond (C=O) with oxygen, mark it as amidic.
+                if nbr.GetAtomicNum() == 6:
                     other = bond.GetOtherAtom(nbr)
                     if other.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        is_amidic = True
+                        amidic_flag = True
                         break
-            if is_amidic:
+            if amidic_flag:
                 break
-        if is_amidic:
-            continue  # Skip candidate if one substituent appears carbonyl-like.
+        if amidic_flag:
+            continue
+
+        # If a candidate ammonium ion center is found, return success.
+        return True, ("Found a sp3 nitrogen with formal charge +1 that is tetra-coordinated "
+                       "with exactly 2 heavy atoms and 2 hydrogens. This is consistent with a "
+                       "protonated secondary amine (secondary ammonium ion).")
         
-        # If we reach here, we have a candidate center meeting our criteria.
-        return True, ("Found a sp3 nitrogen with formal charge +1, bonded to exactly 2 heavy atoms "
-                       "and 2 hydrogens. This is consistent with a protonated secondary amine (secondary ammonium ion).")
-    
     return False, "No secondary ammonium ion center found based on the defined criteria."
 
-# If this script is run as main, include a few tests.
+# If this script is run as the main program, run a few tests.
 if __name__ == "__main__":
     test_smiles = [
-        # True positives (some examples from the provided list)
+        # Example structures belonging to the secondary ammonium ion class:
         "[H]\\C(C)=C1/C[NH2+][C@@]2([H])CC3=C(NC4=CC=CC=C34)C(=O)C[C@]1([H])[C@]2([H])C(=O)OC",  # perivine(1+)
         "C1COCC[NH2+]1",  # morpholinium
-        "C[NH2+]C",  # dimethylaminium
+        "CC(C[NH2+]C)C",  # N-methyl-2-methylpropan-1-aminium
+        "[C@]12([C@]3([C@@]([C@@]4(C(C[C@@H](O)CC4)=CC3)C)(CC[C@]2(C)[C@]5([C@@H]([C@]6(O[C@]5(C1)[H])CC[C@@H](C)C[NH2+]6)C)[H])[H])[H])[H]",  # solasodine(1+)
+        "[H][C@]12CN(C)[C@]([H])(C[NH2+]1)CC1=C[C@]([H])(C(=O)CC1)[C@]1([H])C=C(CCC1=O)C2",  # herquline B(1+)
+        "C1=C(C(=CC2=C1[C@H]([NH2+]CC2)CC3=CC=C(C(=C3)O)OC)OC)O",  # (R)-norreticuline(1+)
         "C=1C=CC=C2C(=CNC12)CC[NH2+]C",  # N-methyltryptaminium
-        # A false positive example: a zwitterion should be rejected.
-        "O[C@@H]1C[NH2+][C@@H](C1)C([O-])=O",  # cis-4-hydroxy-L-proline zwitterion
+        "C[NH2+]C",  # dimethylaminium
+        "[H][C@]12C[C@@]3([H])[C@]4([H])CC=C5C[C@H](CC[C@]5(C)[C@@]4([H])CC[C@]3(C)[C@@]1([H])[C@H](C)[C@@]1(CC[C@@H](C)C[NH2+]1)O2)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O",  # solasodine 3-beta-D-glucoside(1+)
+        "[C@]12(C(CCC(=C1)C[C@H]3CN[C@H](C[NH2+]3)CC4=C[C@]2(C(CC4)=O)[H])=O)[H]",  # (1S,7R,8R,14S)-6,9-dioxo-15,17-diazatetracyclo[...] (truncated)
+        "[H][C@]12CN(C)[C@]([H])(C[NH2+]1)CC1=C[C@@]([H])(C(=O)CC1)[C@@]1([H])C=C(CCC1=O)C2",  # herquline C(1+)
+        "C=1C=C(OCC[NH2+][C@H](CC2=CC=C(C(=C2)S(N)(=O)=O)OC)C)C(=CC1)OCC",  # ent-tamsulosin(1+)
+        "C1C[C@]2([C@@](CC[C@@]3([C@@]2(CC[C@@H](C3)O)C)[H])([C@]4([C@]1([C@@]5([C@](C4)(O[C@@]6([C@H]5C)[NH2+]C[C@@H](C)CC6)[H])[H])C)[H])[H])[H]",  # tomatidine(1+)
+        "OC1=CC2=C(C[NH2+]CC2)C=C1O",  # norsalsolinol(1+)
+        "C[NH2+]CC1=CC=C(C=C1)C1=CC2=CC(F)=CC(C(N)=O)=C2O1",  # mefuparib(1+)
+        "C[NH2+]CCC1=CC(OC)=C(OC)C(OC)=C1",  # N-methylmescalinium
+        "C[C@H](CCC1=CC=CC=C1)[NH2+]C[C@H](O)C1=CC(C(N)=O)=C(O)C=C1",  # dilevalol(1+)
+        "C(C[NH3+])CCC[NH2+]CC([C@@H](CO)O)=O",  # N-(D-erythrulosyl)-cadaverine(2+)
+        "[C@@H]12[C@H](O[C@@]3(O[C@H](C)CC([C@@]3(O1)O)=O)[H])[C@H]([C@H]([NH2+]C)[C@@H]([C@@H]2NC)O)O",  # spectinomycin(1+)
+        "CCC[C@H]([NH2+][C@H]1CCC2=CC(F)=CC(F)=C2C1)C(=O)NC1=CN(C=N1)C(C)(C)C[NH2+]CC(C)(C)C",  # nirogacestat(2+)
+        "CC(C)[NH2+]CC(Cl)C1=CC2=CC=CC=C2C=C1",  # N-[2-chloro-2-(naphthalen-2-yl)ethyl]propan-2-aminium
+        "C(CC[NH3+])CC[NH+](C)C",  # N,N-dimethyl-cadaverine(+2)
+        "C1=C(C(=CC2=C1C([NH2+]CC2)CC3=CC=C(C(=C3)O)OC)OC)O",  # norreticuline(1+)
+        "O=S(=O)(N1CCC[NH2+]CC1)C1=CC=CC2=C1C=CN=C2",  # fasudil(1+)
+        "CC[NH2+]CC",  # diethylammonium
+        "C1=C(C(=CC2=C1[C@@H]([NH2+]CC2)CC3=CC=C(C(=C3)O)OC)OC)O",  # (S)-norreticuline(1+)
+        "C1CCCC[NH2+]1",  # piperidinium
     ]
-    for s in test_smiles:
-        result, reason = is_secondary_ammonium_ion(s)
-        print(f"SMILES: {s}\nResult: {result}\nReason: {reason}\n")
+    
+    for smiles in test_smiles:
+        result, reason = is_secondary_ammonium_ion(smiles)
+        print("SMILES: {}\nResult: {}\nReason: {}\n".format(smiles, result, reason))
