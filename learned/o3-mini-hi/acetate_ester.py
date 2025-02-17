@@ -2,10 +2,9 @@
 Classifies: CHEBI:47622 acetate ester
 """
 """
-Classifies: Acetate ester — Any carboxylic ester where the carboxylic acid component is acetic acid.
-This program checks whether the molecule contains an ester fragment having an acyl part of CH3C(=O)-.
-We improve upon the previous version by verifying that the methyl group is truly CH3
-and ensuring that the oxygen linking the acyl part is not bonded to interfering elements (e.g. phosphorus).
+Classifies: Acetate ester — Any carboxylic ester where the acid component is acetic acid.
+This module determines if a molecule contains an acetate ester moiety, defined as an ester substructure 
+where the acyl part is CH3C(=O)-.
 """
 
 from rdkit import Chem
@@ -16,9 +15,9 @@ def is_acetate_ester(smiles: str):
     An acetate ester is defined as any carboxylic ester where the acid component is acetic acid,
     meaning the molecule must contain an ester group in which the acyl part is CH3C(=O)-.
     
-    This function searches for the fragment O-C(=O)-CH3. Then for each match it verifies:
-      • the methyl carbon truly represents a CH3 group,
-      • the oxygen linking to the carbonyl is not bonded to a phosphorus atom (which might indicate a phosphoester).
+    The function searches for the fragment O-C(=O)-CH3. For each match it checks:
+      • The methyl group is truly CH3 (a carbon atom with three hydrogens attached),
+      • The oxygen linking the acyl part is not bonded to a phosphorus atom.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -27,54 +26,60 @@ def is_acetate_ester(smiles: str):
         bool: True if the molecule is an acetate ester, False otherwise.
         str: Explanation of the classification decision.
     """
-    # Parse SMILES
+    # Parse the SMILES into an RDKit molecule object.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for the basic acetate ester substructure:
-    # This pattern looks for an oxygen (with two connections) linked to a carbonyl carbon,
-    # which in turn is bonded to a methyl group.
+    # Define SMARTS for the acetate ester substructure.
+    # We look for an oxygen atom (with degree exactly 2) connected to a carbonyl carbon
+    # which is further bonded to a methyl group (CH3).
     acetate_pattern = Chem.MolFromSmarts("[O;D2]-C(=O)-[CH3]")
+    
+    # Get all substructure matches.
     matches = mol.GetSubstructMatches(acetate_pattern)
     
     if not matches:
         return False, "Does not contain the acetate ester moiety (O-C(=O)-CH3)"
     
-    # Now check each match for additional characteristics.
+    # Loop over each match and check detailed criteria.
     for match in matches:
-        # match is a tuple (idx_oxygen, idx_carbonyl, idx_methyl)
-        o_idx, c_idx, m_idx = match
+        # Use only the first three atoms of the match to ensure proper unpacking,
+        # even if the returned tuple has extra atoms.
+        if len(match) < 3:
+            continue  # Skip if match is unexpectedly short
+        o_idx, c_idx, m_idx = match[:3]
+        
+        # Retrieve the oxygen atom (linking oxygen) and the methyl carbon.
         o_atom = mol.GetAtomWithIdx(o_idx)
         m_atom = mol.GetAtomWithIdx(m_idx)
         
-        # Check that m_atom is truly a methyl: atomic number 6 and exactly three hydrogens are attached.
-        # (GetTotalNumHs returns both implicit and explicit hydrogens.)
+        # Check that the methyl atom is a carbon with exactly three attached hydrogens.
         if m_atom.GetAtomicNum() != 6 or m_atom.GetTotalNumHs() != 3:
-            continue  # Skip this match if methyl is not exactly CH3.
+            continue  # Skip this match if the CH3 condition is not met.
         
-        # Optional extra check: ensure the linking oxygen is not bonded to phosphorus 
-        # (common in phosphoester units that we would like to exclude).
-        o_neighbors = o_atom.GetNeighbors()
+        # Optional extra check: ensure that the oxygen atom is not bonded to any phosphorus atoms.
+        # This helps avoid phosphoester conflicts.
         interfering = False
-        for nb in o_neighbors:
+        for nb in o_atom.GetNeighbors():
+            # Skip the bond to the carbonyl carbon.
             if nb.GetIdx() == c_idx:
-                continue  # skip the carbonyl carbon
-            if nb.GetAtomicNum() == 15:  # phosphorus
+                continue
+            if nb.GetAtomicNum() == 15:  # Phosphorus atomic number.
                 interfering = True
                 break
         if interfering:
             continue
         
-        # If we pass all checks, we accept the compound as containing an acetate ester group.
+        # If all checks pass, the molecule qualifies as an acetate ester.
         return True, "Contains the acetate ester moiety (O-C(=O)-CH3)"
     
-    # If no match passes our stricter criteria, then we classify the molecule as lacking the acetate ester.
+    # If none of the matches satisfy the detailed criteria, return false.
     return False, "Does not contain a validated acetate ester moiety (O-C(=O)-CH3)"
 
-# For testing, you might call:
+# Example usage:
 if __name__ == "__main__":
-    # Example: methyl acetate should be True.
+    # Testing with methyl acetate as it should return True.
     test_smiles = "COC(C)=O"
     result, reason = is_acetate_ester(test_smiles)
     print(result, reason)
