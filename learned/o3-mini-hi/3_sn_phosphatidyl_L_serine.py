@@ -5,16 +5,17 @@ Classifies: CHEBI:11750 3-sn-phosphatidyl-L-serine
 Classifies: 3-sn-phosphatidyl-L-serine
 Definition:
   A 3-sn-glycerophosphoserine compound having acyl substituents at the 1- and 2-hydroxy positions.
-  
 Heuristic approach:
-1. Parse the SMILES and check for key atoms (phosphorus and nitrogen) that must be found in a phosphoserine.
-2. Look for a simplified serine fragment (using the SMARTS "C(N)C(=O)O") so that the head-group is likely present.
-3. Identify ester carbonyl centers typical of an acyl ester. We do this by iterating over all carbon atoms
-   that are carbonyl centers (i.e. have a double-bonded oxygen) and also are bonded to a single-bonded oxygen.
-4. For each such carbonyl we then identify the substituent that is a carbon (and hence likely the acyl chain)
-   and compute the length of the carbon-only chain (the longest contiguous path of carbon atoms).
-5. Count only those acyl substituents with chain length ≥6. We expect exactly two acyl chains (on sn1 and sn2).
-6. Return classification True only if the molecule passes the above tests.
+1. Parse the SMILES and verify that the molecule contains a phosphorus atom (for the phospho group)
+   and a chiral serine fragment defined by "[C@H](N)C(O)=O".
+2. To find fatty acyl chains we iterate over all carbon atoms that are part of a carbonyl group:
+   these carbons must have one double-bonded oxygen and one single-bonded oxygen (the ester oxygen).
+3. For each such candidate, we identify the unique carbon substituent on the carbonyl carbon (the acyl chain,
+   not the oxygen that links to the glycerol head-group) and measure the chain length.
+4. The chain length is determined by a depth-first search that traverses only carbon atoms (atomic number 6)
+   and does not cross back into the rest of the molecule (for example via the carbonyl carbon) once it has branched.
+5. Only acyl chains with chain length ≥6 are accepted.
+6. Exactly two acyl chains are expected.
 """
 
 from rdkit import Chem
@@ -22,13 +23,13 @@ from rdkit import Chem
 def is_3_sn_phosphatidyl_L_serine(smiles: str):
     """
     Determines if a molecule is a 3-sn-phosphatidyl-L-serine based on its SMILES string.
-    The molecule must contain a glycerophosphoserine head-group (indicated by the presence of P,
-    a serine fragment, and by the expected connectivity) and exactly two acyl chains (attached via ester bonds)
-    that are sufficiently long (at least 6 carbons).
+    The molecule must contain a glycerophosphoserine head-group (demonstrated by the presence of P and
+    a serine fragment) and exactly two acyl chains (attached via ester bonds) that are sufficiently long
+    (chain length of at least 6 carbon atoms, counting the carbonyl carbon).
 
     Args:
         smiles (str): SMILES string of the molecule
-    
+
     Returns:
         bool: True if the molecule is classified as a 3-sn-phosphatidyl-L-serine, else False.
         str: Explanation of the classification decision.
@@ -37,87 +38,93 @@ def is_3_sn_phosphatidyl_L_serine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for required atoms: phosphorus (P) must be present and nitrogen (N) to indicate serine.
-    atoms = list(mol.GetAtoms())
-    if not any(atom.GetAtomicNum() == 15 for atom in atoms):
+    # Check required atoms: phosphorus indicates the phosphate.
+    if not any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms()):
         return False, "Missing phosphorus (P) required for phosphoserine head-group"
-    if not any(atom.GetAtomicNum() == 7 for atom in atoms):
-        return False, "Missing nitrogen (N) required for serine"
+    # Check for nitrogen (serine amino group)
+    if not any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms()):
+        return False, "Missing nitrogen (N) required for serine head-group"
     
-    # Check for a serine fragment using a simplified SMARTS: C(N)C(=O)O
-    serine_smarts = "C(N)C(=O)O"
-    serine_pattern = Chem.MolFromSmarts(serine_smarts)
-    if serine_pattern is None:
+    # Check for a serine fragment.
+    # We use a chiral serine SMARTS: a carbon with amino and carboxyl groups.
+    serine_smarts = "[C@H](N)C(O)=O"
+    serine_pat = Chem.MolFromSmarts(serine_smarts)
+    if serine_pat is None:
         return False, "Internal error processing serine SMARTS pattern"
-    if not mol.HasSubstructMatch(serine_pattern):
-        return False, "Serine fragment (C(N)C(=O)O) not found in molecule"
+    if not mol.HasSubstructMatch(serine_pat):
+        return False, "Serine fragment ([C@H](N)C(O)=O) not found in molecule"
     
-    # Helper: calculate longest contiguous carbon chain starting from a given carbon atom.
-    # We use depth-first search (not worrying about cycles beyond visited atoms).
-    def longest_carbon_chain(atom_idx, visited):
-        atom = mol.GetAtomWithIdx(atom_idx)
-        # If the atom is not carbon, chain length is 0.
-        if atom.GetAtomicNum() != 6:
-            return 0
-        max_length = 1
-        visited.add(atom_idx)
-        for nbr in atom.GetNeighbors():
-            nbr_idx = nbr.GetIdx()
-            if nbr_idx in visited:
+    # Define a helper function to compute the longest contiguous carbon chain
+    # starting from a given atom (by index) while preventing to traverse any non-carbon.
+    # We also pass an exclusion set so that once we leave the acyl branch we don't cross back.
+    def dfs_chain_length(start_idx, banned):
+        max_length = 0
+        stack = [(start_idx, 0, set())]  # (current_atom_idx, current_length, visited)
+        while stack:
+            cur_idx, cur_len, visited = stack.pop()
+            # Count current carbon if not seen already in current path.
+            if cur_idx in visited:
                 continue
-            if nbr.GetAtomicNum() == 6:
-                chain_length = 1 + longest_carbon_chain(nbr_idx, visited.copy())
-                if chain_length > max_length:
-                    max_length = chain_length
+            visited = visited | {cur_idx}
+            cur_len += 1
+            if cur_len > max_length:
+                max_length = cur_len
+            atom = mol.GetAtomWithIdx(cur_idx)
+            for nbr in atom.GetNeighbors():
+                nbr_idx = nbr.GetIdx()
+                # Only follow bonds to carbon and avoid any banned indices.
+                if nbr.GetAtomicNum() == 6 and nbr_idx not in banned:
+                    stack.append((nbr_idx, cur_len, visited))
         return max_length
 
-    # Now scan for potential acyl ester bonds. In an acyl ester group (R-C(=O)-O-R'),
-    # the carbonyl carbon (R-C(=O)) should be:
-    #   - bonded via a double bond to an oxygen,
-    #   - bonded via a single bond to an oxygen (the ester oxygen).
-    # We then assume the acyl chain is the substituent bonded directly to the carbonyl carbon that is a carbon.
-    acyl_chain_ids = set()
+    # Look for acyl chains attached via an ester group.
+    # We iterate over carbons that are part of a carbonyl group (C=O).
+    acyl_carbonyl_ids = set()
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 6:
             continue
-        # Look for a double-bonded oxygen neighbor
-        dobnd_oxygen = None
-        single_oxygens = []
-        for bond in atom.GetBonds():
-            nbr = bond.GetOtherAtom(atom)
+        # Identify double-bonded oxygen neighbor and collect single-bonded oxygens.
+        dbl_oxy = None
+        single_oxys = []
+        for b in atom.GetBonds():
+            nbr = b.GetOtherAtom(atom)
             if nbr.GetAtomicNum() == 8:
-                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                    dobnd_oxygen = nbr
-                elif bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-                    single_oxygens.append(nbr)
-        # We expect a carbonyl carbon to have one double-bonded oxygen and one single-bonded oxygen.
-        if dobnd_oxygen is None or not single_oxygens:
+                if b.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    dbl_oxy = nbr
+                elif b.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                    single_oxys.append(nbr)
+        # For an ester carbonyl, we expect one double-bonded O and at least one single-bonded O.
+        # (In a typical ester, there is exactly one of each.)
+        if dbl_oxy is None or len(single_oxys) < 1:
             continue
-        # From the single-bonded oxygen(s), the acyl chain is attached directly to the carbonyl carbon.
-        # In a simple ester group, the carbonyl carbon already bears the acyl substituent.
-        # (It has three neighbors: the double-bonded oxygen, the ester oxygen, and the acyl chain carbon.)
-        # So find the neighbor(s) that are not oxygen.
-        acyl_candidate = None
+        # Identify the acyl chain branch.
+        # The carbonyl carbon should have one carbon neighbor attached by a single bond
+        # that is not the one coming from the ester linkage (which goes to O).
+        acyl_neighbor = None
         for nbr in atom.GetNeighbors():
+            # Exclude oxygens.
             if nbr.GetAtomicNum() == 6:
-                acyl_candidate = nbr
+                # In an ester, there should be only one carbon neighbor which is the start of the acyl chain.
+                acyl_neighbor = nbr
                 break
-        if acyl_candidate is None:
+        if acyl_neighbor is None:
             continue
-        # Compute chain length starting at the acyl candidate.
-        chain_length = longest_carbon_chain(acyl_candidate.GetIdx(), set())
-        # Require at least 6 carbons for a valid acyl chain.
-        if chain_length >= 6:
-            # Use the index of the carbonyl carbon as a unique handle for the acyl group.
-            acyl_chain_ids.add(atom.GetIdx())
-    
-    # We expect exactly 2 acyl chains on the glycerol backbone (sn1 and sn2)
-    if len(acyl_chain_ids) != 2:
-        return False, f"Expected 2 acyl groups with sufficiently long chains; found {len(acyl_chain_ids)}"
 
+        # Now, to compute the acyl chain length we consider the path starting from the acyl branch.
+        # We do not want to "turn back" into the carbonyl carbon (which might lead to the ester oxygen branch);
+        # so we set the carbonyl carbon index as banned.
+        chain_length = 1 + dfs_chain_length(acyl_neighbor.GetIdx(), banned={atom.GetIdx()})
+        # Use a threshold of 6 carbons (including the carbonyl carbon) to consider it a valid fatty acyl chain.
+        if chain_length >= 6:
+            acyl_carbonyl_ids.add(atom.GetIdx())
+    
+    # We expect exactly 2 acyl chains (one on sn-1 and one on sn-2).
+    if len(acyl_carbonyl_ids) != 2:
+        return False, f"Expected 2 acyl groups with sufficiently long chains; found {len(acyl_carbonyl_ids)}"
+    
     return True, "Molecule contains a phosphoserine head-group and 2 acyl groups with long carbon chains"
 
-# Example usage (you can remove or comment out the lines below):
+# Example usage (can be commented out or used for testing):
 if __name__ == "__main__":
     test_smiles = "CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OC[C@H](N)C(O)=O)OC(=O)CCCCCCCCCCCCCCCCC"
     result, reason = is_3_sn_phosphatidyl_L_serine(test_smiles)
