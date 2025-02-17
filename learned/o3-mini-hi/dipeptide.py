@@ -4,13 +4,27 @@ Classifies: CHEBI:46761 dipeptide
 """
 Classifies: dipeptide
 Definition: Any molecule that contains two amino‐acid residues connected via peptide linkages.
-This implementation accepts both linear dipeptides (one backbone peptide bond)
-and cyclic dipeptides (diketopiperazines – a 6‐membered ring with 2 peptide bonds).
-The strategy is to identify candidate backbone bonds using an amide SMARTS pattern
-but then to “break” those bonds and check that exactly two fragments result,
-with fragment sizes in a range typical of amino‐acid residues. We also check that 
-the overall molecule is small (e.g. heavy atom count below a cutoff). Finally, 
-we look for the cyclic dipeptide (diketopiperazine) case as an alternate.
+
+Improvements over previous attempt:
+  - Instead of rejecting molecules with more than one candidate backbone bond we pick the candidate cleavage
+    that yields the two fragments with the most balanced heavy atom counts.
+  - We narrow the allowed heavy atom count for each fragment (set here between 4 and 35).
+  - We continue to check for cyclic dipeptides (diketopiperazines) as an alternate classification.
+  
+The strategy:
+  1. Parse the molecule and add hydrogens to make the connectivity more explicit.
+  2. Check overall size; if too many heavy atoms, it is unlikely a dipeptide.
+  3. Find all candidate amide bonds using a SMARTS pattern ([C](=O)[N]).
+     For each match, if the bond is not aromatic, not in a ring, break the bond and check that exactly two fragments appear.
+  4. For each candidate, count heavy atoms (atomic number > 1) in each fragment.
+     Only consider candidates where both fragments have between 4 and 35 heavy atoms.
+  5. If more than one candidate qualifies (which can happen when side chain amides also match), choose the candidate where the
+     difference in heavy atom count between fragments is minimized.
+  6. If one candidate is selected, return True with the explanation that a (linear) dipeptide was detected.
+  7. Otherwise, check for cyclic dipeptides: search for a six-membered ring that contains two non‐aromatic peptide bonds.
+  8. If none of these tests pass, return False.
+  
+If SMILES cannot be parsed, return (False, "Invalid SMILES string.").
 """
 
 from rdkit import Chem
@@ -20,13 +34,10 @@ def is_dipeptide(smiles: str):
     """
     Determines if the given SMILES corresponds to a dipeptide.
     
-    For a linear dipeptide, we require that exactly one backbone peptide bond is found.
-    This candidate peptide bond is subject to several filters:
-      - It must match the basic amide pattern ([C](=O)[N]) and not be inside an aromatic ring.
-      - Breaking that bond yields exactly two fragments.
-      - Each fragment has a reasonable number of heavy atoms (i.e. between 3 and 40).
-    For cyclic dipeptides (diketopiperazines), we look for a 6–membered ring
-    that contains exactly two backbone peptide bonds.
+    Our method accepts both linear dipeptides and cyclic dipeptides (diketopiperazines)
+    by looking for valid peptide bonds (amide bonds that are not aromatic and not in rings)
+    that, if "broken", yield two reasonably sized residues. For cyclic dipeptides we look 
+    for a six-membered ring having exactly two such peptide bonds.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -35,106 +46,106 @@ def is_dipeptide(smiles: str):
         bool: True if molecule is classified as a dipeptide, False otherwise.
         str: Explanation for the classification decision.
     """
-    # Parse the SMILES and add hydrogens (so that potential alpha-carbons are explicit)
+    # Parse the SMILES and add explicit hydrogens
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     mol = Chem.AddHs(mol)
     
-    # Check overall size. Typically dipeptides are small molecules.
-    heavy_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1]
-    if len(heavy_atoms) > 60:
-        return False, f"Too many heavy atoms ({len(heavy_atoms)}) for a typical dipeptide."
+    # Check overall size: dipeptides should be relatively small.
+    heavy_atoms_total = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1]
+    if len(heavy_atoms_total) > 60:
+        return False, f"Too many heavy atoms ({len(heavy_atoms_total)}) for a typical dipeptide."
     
-    # Define a basic amide bond pattern without atom mapping (we will extract indices later)
-    # We use pattern: carbon with a double-bonded oxygen and a single-bonded nitrogen.
+    # Define SMARTS for basic amide (peptide) bond: carbonyl carbon single-bonded to nitrogen.
     amide_pattern = Chem.MolFromSmarts("[C](=O)[N]")
     matches = mol.GetSubstructMatches(amide_pattern)
     if not matches:
         return False, "No amide (peptide) bond pattern detected."
     
-    valid_linear_bonds = []
-    # For each match, extract candidate bond and apply filters
+    # Prepare to store candidate cleavage bonds.
+    candidate_cleavages = []
+    
+    # Allowed heavy atom count per fragment for a typical amino acid residue.
+    lower_bound = 4
+    upper_bound = 35
+    
+    # Evaluate each candidate amide bond.
     for match in matches:
-        # match is a tuple of atom indices; by our SMARTS the first is carbonyl carbon and last is N.
+        # According to our SMARTS, first atom is carbonyl carbon, last is amide nitrogen.
         c_idx = match[0]
         n_idx = match[-1]
-        # Get the bond between these atoms
         bond = mol.GetBondBetweenAtoms(c_idx, n_idx)
         if bond is None:
             continue
-        # Skip candidate if either atom is aromatic (often artifacts in non-peptide amides)
+        # Exclude bonds if either atom is aromatic.
         if mol.GetAtomWithIdx(c_idx).GetIsAromatic() or mol.GetAtomWithIdx(n_idx).GetIsAromatic():
             continue
-        # For a linear dipeptide we do not want the bond to be in a ring.
+        # Exclude bonds that are in a ring (handle cyclic separately).
         if bond.IsInRing():
-            # We'll treat cyclic candidates later.
             continue
-        # Now “break” the bond and see if we get exactly two fragments.
+        
+        # Attempt to cleave this bond.
         try:
-            # FragmentOnBonds will add dummy atoms ([*]) at the break sites.
+            # FragmentOnBonds returns a molecule with dummy atoms ([*]) added at the cleavage sites.
             frag_mol = rdmolops.FragmentOnBonds(mol, [bond.GetIdx()], addDummies=True)
-        except Exception as e:
+        except Exception:
             continue
-        frags = Chem.GetMolFrags(frag_mol, asMols=True)
+        
+        frags = Chem.GetMolFrags(frag_mol, asMols=True, sanitizeFrags=True)
         if len(frags) != 2:
             continue
-        # For each fragment, count heavy atoms (non-hydrogen).
-        frag_ok = True
+        
+        # Count heavy atoms (atomic number > 1) in each fragment.
+        counts = []
         for frag in frags:
-            frag_heavy = [atom for atom in frag.GetAtoms() if atom.GetAtomicNum() > 1]
-            # Typical amino acid residue (with protecting groups removed) has at least 3 heavy atoms,
-            # and in dipeptides residues are usually not huge; set an arbitrary upper bound.
-            if not (3 <= len(frag_heavy) <= 40):
-                frag_ok = False
-                break
-        if frag_ok:
-            valid_linear_bonds.append((c_idx, n_idx))
+            count = sum(1 for atom in frag.GetAtoms() if atom.GetAtomicNum() > 1)
+            counts.append(count)
+        # Both fragments should have a size typical of residues.
+        if all(lower_bound <= cnt <= upper_bound for cnt in counts):
+            diff = abs(counts[0] - counts[1])
+            candidate_cleavages.append((bond.GetIdx(), counts, diff))
     
-    # If exactly one valid non‐ring peptide bond candidate is found then we classify as a linear dipeptide.
-    if len(valid_linear_bonds) == 1:
-        return True, "Dipeptide detected: a single peptide bond connects two amino acid residues."
-    elif len(valid_linear_bonds) > 1:
-        return False, f"Found {len(valid_linear_bonds)} valid peptide bond candidates; ambiguous for a dipeptide."
+    # If we found at least one candidate, choose the one with the smallest difference (most balanced)
+    if candidate_cleavages:
+        best = min(candidate_cleavages, key=lambda x: x[2])
+        return True, ("Dipeptide detected (linear): selected peptide bond cleavage yields fragments "
+                      f"with heavy atom counts {best[1][0]} and {best[1][1]}.")
     
-    # Next, check for cyclic dipeptide (diketopiperazine).
-    # In a diketopiperazine, the two peptide bonds appear in a 6–membered ring.
+    # Next, check for cyclic dipeptides: a diketopiperazine has a 6-membered ring containing 2 peptide bonds.
     ring_info = mol.GetRingInfo()
     for ring in ring_info.AtomRings():
         if len(ring) != 6:
             continue
-        # Count candidate peptide bonds whose both atoms lie in the ring.
         bond_count_in_ring = 0
         for match in matches:
             c_idx = match[0]
             n_idx = match[-1]
-            # Get the bond
             bond = mol.GetBondBetweenAtoms(c_idx, n_idx)
             if bond is None:
                 continue
-            # For cyclic dipeptide, we expect the two amide bonds to be part of the same 6-membered ring.
+            # Check that both atoms in the matched bond are in the ring.
             if c_idx in ring and n_idx in ring:
-                # Also skip aromatic bonds even in rings.
+                # Exclude if aromatic.
                 if mol.GetAtomWithIdx(c_idx).GetIsAromatic() or mol.GetAtomWithIdx(n_idx).GetIsAromatic():
                     continue
                 bond_count_in_ring += 1
         if bond_count_in_ring == 2:
-            return True, "Cyclic dipeptide (diketopiperazine) detected: 6-membered ring with 2 peptide bonds."
+            return True, ("Cyclic dipeptide (diketopiperazine) detected: a 6-membered ring contains two peptide bonds.")
     
-    # If we reach here, no valid linear or cyclic dipeptide candidate is found.
     return False, "No valid peptide bond connecting two appropriate fragments was found."
 
-# Example usage for testing:
+# Example usage with some test SMILES:
 if __name__ == "__main__":
     test_smiles_list = [
-        # These examples are known dipeptides (linear or cyclic)
-        "S(=O)(=N)(CC[C@H](NC(=O)CC[C@H](N)C(=O)O)C(=O)O",  # gamma-glutamylmethionine sulfoximine
-        "SCC(NC(=O)C(N)C(O)C)C(O)=O",  # Threoninyl-Cysteine
-        "CC(C)[C@H](NC(=O)[C@H](C)N)C(O)=O",  # Ala-Val
-        "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)NCC(O)=O",  # Trp-Gly
-        "C1C[C@@]2([H])C(N[C@H](C(N2C1)=O)CC(C)C)=O",  # cyclo(L-Leu-L-Pro) cyclic dipeptide example
-        # A molecule that is too large or ambiguous:
-        "NCC(N1[C@@H](CCC1)C(=O)NC=2C=CC3=C(C2)C=CC=C3)=O"  # glycyl-L-proline 2-naphthylamide (ambiguous)
+        # True positives (dipeptides)
+        "S(=O)(=N)(CC[C@H](NC(=O)CC[C@H](N)C(=O)O)C(=O)O",   # gamma-glutamylmethionine sulfoximine
+        "SCC(NC(=O)C(N)C(O)C)C(O)=O",                         # Threoninyl-Cysteine
+        "CC(C)[C@H](NC(=O)[C@H](C)N)C(O)=O",                   # Ala-Val
+        "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)NCC(O)=O",            # Trp-Gly
+        "C1C[C@@]2([H])C(N[C@H](C(N2C1)=O)CC(C)C)=O",         # cyclo(L-Leu-L-Pro) cyclic dipeptide
+        # True negatives / ambiguous cases:
+        "NCC(N1[C@@H](CCC1)C(=O)NC=2C=CC3=C(C2)C=CC=C3)=O",   # glycyl-L-proline 2-naphthylamide (ambiguous extra amide bonds)
     ]
     for sm in test_smiles_list:
         res, reason = is_dipeptide(sm)
