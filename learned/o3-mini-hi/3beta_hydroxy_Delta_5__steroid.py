@@ -4,9 +4,10 @@ Classifies: CHEBI:1722 3beta-hydroxy-Delta(5)-steroid
 """
 Classifies: 3beta-hydroxy-Delta(5)-steroid
 Definition: Any 3β-hydroxy-steroid that contains a double bond between positions 5 and 6.
-Improvement: In addition to the previous heuristics (a six-membered ring with a double bond and 
-a ring-bound chiral carbon carrying an –OH) we try to ensure that these features come from a fused 
-ring system of at least three rings (i.e. a steroid nucleus).
+Improvement: In addition to requiring a fused steroid nucleus (≥3 rings), we now look for a 
+six-membered ring that contains both a double bond and, in a position that is not directly 
+involved in the double bond, a chiral (stereogenic) carbon with an –OH substituent. We also 
+require that the –OH group be at least two atoms away (along the ring) from the double bond.
 """
 
 from rdkit import Chem
@@ -16,45 +17,45 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
     """
     Determines if the given SMILES string represents a 3β-hydroxy-Δ5-steroid.
 
-    The method checks three conditions:
-      1. The molecule must contain a fused steroid nucleus – here we require a cluster of at least 
-         three rings (fused meaning they share at least two atoms).
-      2. Within the fused nucleus, there must be at least one six-membered ring that contains a 
-         C=C double bond (a proxy for the Δ5 feature).
-      3. Also within the fused nucleus, there must be at least one chiral carbon that is part of 
-         a ring and has an attached hydroxyl group (a proxy for the 3β-hydroxy substituent).
+    This function applies several heuristics:
+      1. It extracts all rings from the molecule and builds a graph of fused rings (rings that share ≥2 atoms).
+         It then selects the largest connected (fused) ring system. A steroid nucleus is assumed to have ≥3 rings.
+      2. It iterates over each six-membered ring in the nucleus. For each ring it checks:
+           (a) Does the ring contain a double bond? (We require at least one bond in the ring to be double.)
+           (b) Does the ring contain a chiral (stereogenic) carbon with at least one hydroxyl (–OH) substituent?
+               Moreover, the candidate –OH bearing carbon should not be one of the atoms forming the double bond,
+               and (as a crude proxy for position 3) its distance (in ring order) from either end of the double bond should be >= 2.
+      3. Only if at least one six‐membered ring in the steroid nucleus meets these requirements do we return True.
 
     Args:
         smiles (str): SMILES string of the molecule.
-
+    
     Returns:
         bool: True if the molecule meets the criteria, False otherwise.
-        str: Brief reason for classification.
+        str: Reason for the classification.
     """
-
-    # Parse the molecule
+    # Parse SMILES into an RDKit Mol
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # (A) Collect ring atom sets from the molecule.
+    # Get ring information (each ring is a tuple of atom indices)
     ring_info = mol.GetRingInfo().AtomRings()
     if not ring_info:
-        return False, "No rings found in molecule"
+        return False, "No rings detected"
     
-    # (B) Build a graph where each node is a ring (represented by its atom set)
-    # Two rings are considered "fused" if they share at least 2 atoms.
+    # Build an adjacency for rings: two rings are fused if they share at least 2 atoms.
     n_rings = len(ring_info)
-    adj = {i: set() for i in range(n_rings)}
+    ring_adj = {i: set() for i in range(n_rings)}
     for i in range(n_rings):
-        set_i = set(ring_info[i])
+        atoms_i = set(ring_info[i])
         for j in range(i+1, n_rings):
-            set_j = set(ring_info[j])
-            if len(set_i.intersection(set_j)) >= 2:
-                adj[i].add(j)
-                adj[j].add(i)
+            atoms_j = set(ring_info[j])
+            if len(atoms_i.intersection(atoms_j)) >= 2:
+                ring_adj[i].add(j)
+                ring_adj[j].add(i)
     
-    # (C) Find connected clusters (i.e. fused ring systems) using DFS.
+    # Find clusters (connected components) of fused rings using DFS.
     visited = set()
     clusters = []
     for i in range(n_rings):
@@ -66,63 +67,91 @@ def is_3beta_hydroxy_Delta_5__steroid(smiles: str):
                 if cur in cluster:
                     continue
                 cluster.add(cur)
-                for nb in adj[cur]:
-                    if nb not in cluster:
-                        stack.append(nb)
+                stack.extend(ring_adj[cur] - cluster)
             clusters.append(cluster)
             visited |= cluster
     
-    # We now choose the largest fused ring cluster. For a steroid nucleus we require at least three rings.
-    largest_cluster = max(clusters, key=lambda c: len(c))
+    # Choose the largest fused ring cluster as the steroid nucleus candidate.
+    largest_cluster = max(clusters, key=lambda x: len(x))
     if len(largest_cluster) < 3:
         return False, "No fused ring system (steroid nucleus) of at least 3 rings found"
     
-    # Create a set of atom indices part of the fused steroid nucleus.
+    # Get a set of all atom indices belonging to the nucleus.
     nucleus_atoms = set()
     for ring_idx in largest_cluster:
         nucleus_atoms.update(ring_info[ring_idx])
     
-    # (D) Heuristic 1: Within the nucleus, find at least one six-membered ring that contains a double bond.
-    delta5_found = False
+    # Look for a six-membered ring in the nucleus that meets the Δ5 and 3β-OH criteria.
     for ring_idx in largest_cluster:
-        ring = ring_info[ring_idx]
-        if len(ring) == 6:
-            # For each bond in the ring, check if it is a double bond.
-            ring_atoms = list(ring)
-            for i in range(len(ring_atoms)):
-                a1 = ring_atoms[i]
-                a2 = ring_atoms[(i+1)%len(ring_atoms)]
-                bond = mol.GetBondBetweenAtoms(a1, a2)
-                if bond is not None and bond.GetBondType() == Chem.BondType.DOUBLE:
-                    # Also require that both atoms are in the fused nucleus (should normally be true)
-                    if a1 in nucleus_atoms and a2 in nucleus_atoms:
-                        delta5_found = True
+        ring = list(ring_info[ring_idx])
+        if len(ring) != 6:
+            continue  # must be a six-membered ring
+        
+        # Identify bonds within the ring that are double bonds.
+        # Also record the indices (within the ring ordering) of the atoms involved.
+        double_bond_positions = []
+        ring_order = ring[:]  # the order as provided by RDKit ring info
+        n = len(ring_order)
+        for i in range(n):
+            a1 = ring_order[i]
+            a2 = ring_order[(i+1) % n]
+            bond = mol.GetBondBetweenAtoms(a1, a2)
+            if bond is not None and bond.GetBondType() == Chem.BondType.DOUBLE:
+                double_bond_positions.append(i)  # record position of the first atom of this bond
+        
+        if not double_bond_positions:
+            continue  # no double bond in this ring
+        
+        # Now check for a chiral carbon with a hydroxyl group in the same ring.
+        # The candidate should not be one of the double bond atoms and should be at least 2 bonds away (along the ring)
+        # from any atom that is part of a double bond.
+        for pos, atom_idx in enumerate(ring_order):
+            atom = mol.GetAtomWithIdx(atom_idx)
+            # Skip if this atom is involved in any double bond in the ring.
+            involved_in_db = False
+            for db_pos in double_bond_positions:
+                # double bond spans positions db_pos and db_pos+1 mod n
+                if pos == db_pos or pos == (db_pos+1)%n:
+                    involved_in_db = True
+                    break
+            if involved_in_db:
+                continue
+            
+            # Check if atom has a chiral tag (_CIPCode property can be used as a proxy for stereochemistry)
+            if not atom.HasProp("_CIPCode"):
+                continue
+
+            # Check if atom is sp3 carbon
+            if atom.GetAtomicNum() != 6 or atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+                continue
+
+            # Look among neighbors for an oxygen that is part of an –OH group.
+            # We require that the oxygen bears at least one hydrogen.
+            has_OH = False
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 8:
+                    # Check bonded hydrogens (include implicit and explicit)
+                    if nbr.GetTotalNumHs() >= 1:
+                        has_OH = True
                         break
-            if delta5_found:
-                break
-    if not delta5_found:
-        return False, "No six-membered ring with a double bond (Δ5 feature) found in the steroid nucleus"
+            if not has_OH:
+                continue
+
+            # Check ring-distance from this candidate atom to each double bond position.
+            valid_distance = False
+            for db_pos in double_bond_positions:
+                # Calculate circular distance along the ring.
+                d1 = abs(pos - db_pos)
+                d2 = n - d1
+                if min(d1, d2) >= 2:
+                    valid_distance = True
+                    break
+            if not valid_distance:
+                continue
+            
+            # Found a valid candidate in this ring!
+            return True, ("Molecule contains a fused steroid nucleus (≥3 fused rings) with a six-membered ring "
+                          "that has a double bond and a chiral carbon bearing an –OH group (not part of the double bond), "
+                          "consistent with a 3β-hydroxy-Δ5-steroid.")
     
-    # (E) Heuristic 2: Within the nucleus, look for a ring-bound chiral carbon that carries an –OH.
-    hydroxy_found = False
-    for atom in mol.GetAtoms():
-        # Only consider atoms that are in the nucleus
-        if atom.GetIdx() not in nucleus_atoms:
-            continue
-        if atom.GetAtomicNum() == 6 and atom.IsInRing():
-            # Check if chirality has been assigned (this is a rough proxy for beta orientation)
-            if atom.HasProp('_CIPCode'):
-                # Check neighbors for an oxygen that is part of an –OH (at least one hydrogen)
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 8:
-                        if neighbor.GetTotalNumHs() >= 1:
-                            hydroxy_found = True
-                            break
-        if hydroxy_found:
-            break
-    if not hydroxy_found:
-        return False, "No ring-bound chiral carbon with an attached hydroxyl group (3β-hydroxy) found in the nucleus"
-    
-    return True, ("Molecule contains a fused steroid nucleus (≥3 fused rings), a six-membered ring with a "
-                  "double bond (Δ5 feature) and a ring-bound chiral carbon with a hydroxyl (proxy for 3β-hydroxy), "
-                  "consistent with a 3β-hydroxy-Δ5-steroid.")
+    return False, "No six-membered ring in the steroid nucleus with both a double bond and an appropriately positioned hydroxyl group was found"
