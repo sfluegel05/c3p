@@ -4,170 +4,190 @@ Classifies: CHEBI:10615 omega-hydroxy fatty acid
 """
 Classifies: Omega-hydroxy fatty acid
 Definition: A naturally-occurring straight-chain fatty acid (acyclic, unbranched)
-            composed only of C, H, O that contains one carboxyl group (-COOH) at C1
+            composed only of C, H, and O that contains one carboxyl group (-COOH) at the terminus (position 1)
             and a hydroxyl (-OH) group on the opposite terminal (omega) carbon.
             Optionally, one additional hydroxyl may occur on an internal carbon.
-            (Sugar acids and cyclic molecules are rejected.)
+            Any extra substituents (other than hydrogens) on the carbon chain are not allowed.
 """
 
 from rdkit import Chem
 
 def is_omega_hydroxy_fatty_acid(smiles: str):
     """
-    Determines if the given molecule (as a SMILES string) is an omega-hydroxy fatty acid.
+    Check whether the given SMILES corresponds to an omega-hydroxy fatty acid.
     
-    The criteria are:
-      1. The molecule contains only C, H, and O.
-      2. The molecule is acyclic.
-      3. There is exactly one carboxylic acid (-COOH) group (identified via SMARTS "[CX3](=O)[OX2H]").
-      4. When considering the carbon atoms, they form a single unbranched chain.
-         (That is, exactly two carbons (the termini) have only one neighbor within the set.)
-      5. The acid carbon (of the -COOH group) must be one terminal carbon.
-      6. The non-acid terminal ("omega carbon") must bear exactly one hydroxyl (-OH) substituent.
-      7. Aside from the omega OH, at most one interior chain carbon may bear an extra OH.
-         (This helps to reject polyhydroxylated sugar acids.)
-    
+    Steps:
+      1. Check the molecule is valid, acyclic, and composed only of C, H, and O.
+      2. Confirm the presence of exactly one carboxylic acid group (SMARTS "[CX3](=O)[OX2H]").
+      3. Create the subgraph of all carbon atoms. For this tree we compute its longest chain.
+         (For a tree the longest path can be computed by two passes of DFS.)
+      4. Confirm that the acid carbon is one of the endpoints of the longest chain.
+      5. For the chain, ensure that every consecutive bond is either single or double (reject triple bonds).
+      6. Check that the omega (other terminal) carbon has exactly one hydroxyl (-OH) substituent.
+          Also, count any additional –OH groups on interior chain carbons; allow at most one extra.
+      7. Reject if any chain carbon has any non-O, non-H substituent.
+      
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+      smiles (str): SMILES string of the molecule.
+      
     Returns:
-        bool: True if the molecule meets the omega-hydroxy fatty acid criteria; False otherwise.
-        str: Explanation of the result.
+      (bool, str): Tuple of classification and explanation.
     """
-    # Parse the molecule.
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # 1. Check that only C, H, and O are present.
+    # 1. Check allowed atoms: only C (6), H (1), and O (8)
     allowed_atoms = {1, 6, 8}
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in allowed_atoms:
             return False, "Molecule contains atoms other than C, H, and O"
     
-    # 2. Molecule must be acyclic.
+    # Molecule must be acyclic.
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule is cyclic; expected a straight-chain (acyclic) structure"
-    
-    # It will be useful to have explicit hydrogens.
+
+    # Work with explicit hydrogens so that we can reliably test for OH.
     mol = Chem.AddHs(mol)
     
-    # 3. Identify the carboxylic acid group.
+    # 2. Identify carboxylic acid group (SMARTS: acid carbon attached to =O and -OH)
     acid_smarts = "[CX3](=O)[OX2H]"
     acid_pattern = Chem.MolFromSmarts(acid_smarts)
     acid_matches = mol.GetSubstructMatches(acid_pattern)
     if not acid_matches:
         return False, "No carboxylic acid (-COOH) group found"
     if len(acid_matches) > 1:
-        return False, "Multiple carboxylic acid groups found; fatty acid should contain just one"
-    # We assume the first atom in the match is the acid carbon.
+        return False, "Multiple carboxylic acid groups found; expected exactly one"
+    # Assume the first atom in the match (the carbon) is our acid carbon.
     acid_carbon_idx = acid_matches[0][0]
     
-    # 4. Build the induced carbon graph.
-    # Get indices for all carbon atoms.
+    # 3. Build a carbon-only graph from the molecule
     carbon_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    # Build dictionary: key = carbon idx, value = list of neighboring carbon indices and bond types
     carbon_graph = {}
     for idx in carbon_indices:
         atom = mol.GetAtomWithIdx(idx)
-        # Count only carbon neighbors.
-        neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        neighbors = []
+        for bond in atom.GetBonds():
+            nbr = bond.GetOtherAtom(atom)
+            if nbr.GetAtomicNum() == 6:
+                neighbors.append((nbr.GetIdx(), bond.GetBondType()))
         carbon_graph[idx] = neighbors
     
-    # Check connectivity in the carbon subgraph.
-    visited = set()
-    stack = [acid_carbon_idx]
-    while stack:
-        current = stack.pop()
-        if current not in visited:
-            visited.add(current)
-            stack.extend(carbon_graph[current])
-    if set(carbon_indices) != visited:
-        return False, "Not all carbon atoms are connected in a single chain"
-    
-    # In a linear (unbranched) chain, exactly two carbons have degree 1.
+    # For the following, we consider the induced subgraph on carbons.
+    # First, find all terminal carbons (degree 1 in the carbon graph).
     terminal_nodes = [idx for idx, nbrs in carbon_graph.items() if len(nbrs) == 1]
-    for idx, nbrs in carbon_graph.items():
-        if idx not in terminal_nodes and len(nbrs) != 2:
-            return False, "Carbon subgraph is branched; expected a straight-chain fatty acid"
-    if len(terminal_nodes) != 2:
-        return False, "Carbon subgraph does not have exactly two termini; found %d" % len(terminal_nodes)
+    if len(terminal_nodes) < 2:
+        return False, "Carbon subgraph does not appear linear (cannot find enough terminal carbons)"
     
-    # 5. The acid carbon must be one terminal.
-    if acid_carbon_idx not in terminal_nodes:
-        return False, "Carboxylic acid group is not located on a terminal carbon"
-    # Designate the other terminal as the omega candidate.
-    omega_idx = terminal_nodes[0] if terminal_nodes[1] == acid_carbon_idx else terminal_nodes[1]
+    # Because our molecule is acyclic, the carbon graph is a tree.
+    # Find the longest path in the tree. We use a two-pass DFS.
+    def dfs_longest(start, visited):
+        # returns (farthest_node, distance, path)
+        stack = [(start, 0, [start])]
+        farthest_node = start
+        max_dist = 0
+        max_path = [start]
+        while stack:
+            current, dist, path = stack.pop()
+            if dist > max_dist:
+                max_dist = dist
+                farthest_node = current
+                max_path = path
+            for nbr, _ in carbon_graph.get(current, []):
+                if nbr not in visited:
+                    visited.add(nbr)
+                    stack.append((nbr, dist+1, path+[nbr]))
+        return farthest_node, max_dist, max_path
+
+    # Pick an arbitrary terminal to start
+    start_node = terminal_nodes[0]
+    visited = {start_node}
+    node_a, _, _ = dfs_longest(start_node, visited.copy())
+    # Second DFS from node_a:
+    visited = {node_a}
+    node_b, _, longest_path = dfs_longest(node_a, visited.copy())
+    # Note: longest_path is the list of carbon indices that form the longest chain.
     
-    # 6. Order the carbon chain starting from the acid carbon.
-    chain = [acid_carbon_idx]
-    current = acid_carbon_idx
-    prev = -1
-    # Because the chain is unbranched there is exactly one neighbor (other than prev) each time.
-    while current != omega_idx:
-        # Get the neighbor in the chain that is not the previous carbon.
-        nxt = [nbr for nbr in carbon_graph[current] if nbr != prev]
-        if len(nxt) != 1:
-            return False, "Unable to determine unique linear ordering of the carbon chain"
-        nxt = nxt[0]
-        chain.append(nxt)
-        prev, current = current, nxt
-    # Now chain[0] is acid carbon and chain[-1] is omega carbon.
+    # 4. Check that the acid carbon is an endpoint of the longest chain.
+    if acid_carbon_idx not in (longest_path[0], longest_path[-1]):
+        return False, "Carboxylic acid group is not located on a terminal carbon of the longest chain"
+    # Designate the omega (non-acid) end:
+    omega_idx = longest_path[-1] if longest_path[0] == acid_carbon_idx else longest_path[0]
     
-    # 7. Check substituents on chain carbons.
-    # Define a helper: a neighbor is considered an -OH substituent if it is an oxygen
-    # that in turn has at least one hydrogen.
-    def is_hydroxyl(os_atom):
-        # os_atom is expected to be an oxygen.
-        for nbr in os_atom.GetNeighbors():
+    # 5. Check that every bond along the chain is acceptable (only single or double bonds).
+    for i in range(len(longest_path)-1):
+        a = longest_path[i]
+        b = longest_path[i+1]
+        bond = mol.GetBondBetweenAtoms(a, b)
+        # Reject triple bonds (which are not expected in naturally‐occurring fatty acids)
+        if bond is None:
+            return False, "Chain break encountered unexpectedly"
+        if bond.GetBondType() not in (Chem.rdchem.BondType.SINGLE, Chem.rdchem.BondType.DOUBLE):
+            return False, "Chain contains a bond type (e.g. triple) that is not permitted"
+    
+    # Helper: determine if an oxygen atom represents an -OH group.
+    def is_hydroxyl(oxygen_atom):
+        # oxygen should have at least one hydrogen neighbor.
+        for nbr in oxygen_atom.GetNeighbors():
             if nbr.GetAtomicNum() == 1:
                 return True
         return False
-
-    interior_OH_count = 0  # count OH's on carbons excluding acid and omega.
     
-    # For each carbon in the chain:
-    for i, c_idx in enumerate(chain):
+    # 6. Now analyze substituents on the carbons in our main chain.
+    chain_set = set(longest_path)
+    # We now count OH substituents that are directly attached to chain carbons (but not those
+    # that are part of the backbone connectivity).
+    # We also require that (a) the omega carbon (the chain terminus not having the COOH group)
+    # carries exactly one OH, and (b) interior chain carbons may carry at most one extra OH.
+    total_chain_OH = 0
+    for i, c_idx in enumerate(longest_path):
         atom = mol.GetAtomWithIdx(c_idx)
-        # Get all neighbors that are not part of the carbon chain:
-        non_chain_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() not in chain and nbr.GetAtomicNum() != 1]
-        
-        # For the acid carbon (chain[0]), we expect the -COOH group.
-        if i == 0:
-            # The acid carbon is already confirmed by SMARTS.
+        # Get substituents that are not the chain neighbor (i.e. not in chain_set).
+        off_chain = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() not in chain_set]
+        # Also for the acid carbon we expect the -COOH group.
+        if i == 0 and c_idx == acid_carbon_idx:
+            # We already matched the acid -- do not count its OH (the O in COOH is part of the acid).
+            # However, check that it does not have any unexpected substituents.
+            for nbr in off_chain:
+                # Allow oxygen only if part of COOH; we assume the acid pattern already matched.
+                if nbr.GetAtomicNum() != 8:
+                    return False, "Acid carbon has an unexpected substituent"
             continue
-        # For the omega carbon, check that it has exactly one -OH substituent.
-        if i == len(chain) - 1:
+        # For the omega carbon, we require exactly one -OH substituent.
+        if c_idx == omega_idx:
             oh_count = 0
-            for nbr in non_chain_neighbors:
+            for nbr in off_chain:
                 if nbr.GetAtomicNum() == 8 and is_hydroxyl(nbr):
                     oh_count += 1
+                elif nbr.GetAtomicNum() != 1:  # anything that is not hydrogen is not allowed
+                    return False, "Omega carbon has an unexpected substituent"
             if oh_count != 1:
                 return False, "Terminal (omega) carbon does not have exactly one hydroxyl (-OH) group"
-            continue
-        # For an interior carbon, ideally there are no extra substituents.
-        # However, some fatty acids may have one extra -OH.
-        oh_here = 0
-        for nbr in non_chain_neighbors:
-            # If attached atom is oxygen and displays a hydroxyl, count it.
-            if nbr.GetAtomicNum() == 8 and is_hydroxyl(nbr):
-                oh_here += 1
-            else:
-                # If there is any non-oxygen substituent (or oxygen not behaving like -OH),
-                # then the chain is not a simple alkyl backbone.
-                return False, "Interior chain carbon has an unexpected substituent (non hydroxyl)"
-        if oh_here > 1:
-            return False, "An interior carbon has >1 hydroxyl substituents (unexpected)"
-        interior_OH_count += oh_here
+            total_chain_OH += oh_count
+        else:
+            # Interior carbon. They should ideally have no substituents,
+            # but optionally allow one extra -OH per molecule (only on one interior carbon overall).
+            oh_here = 0
+            for nbr in off_chain:
+                if nbr.GetAtomicNum() == 8 and is_hydroxyl(nbr):
+                    oh_here += 1
+                elif nbr.GetAtomicNum() != 1:
+                    return False, "Interior chain carbon has an unexpected substituent (non hydroxyl)"
+            total_chain_OH += oh_here
 
-    # Allow at most one interior hydroxyl (so total OH=omega + interior is either 1 or 2).
-    if interior_OH_count > 1:
-        return False, f"Too many hydroxyl substituents on the chain; found {1 + interior_OH_count} total"
-    
-    return True, "Molecule is a straight-chain fatty acid with a COOH at C1 and an -OH at the omega position"
+    # 7. The total count of OH groups directly attached to the chain (excluding those in the acid group)
+    # must be either exactly 1 (only omega hydroxyl) or 2 (omega + one extra internal hydroxyl)
+    if total_chain_OH not in (1, 2):
+        return False, f"Number of hydroxyl substituents attached to the chain is {total_chain_OH}; expected 1 or 2"
+        
+    return True, "Molecule is a straight-chain fatty acid with a COOH at a terminal carbon and an -OH at the omega position (with at most one extra internal hydroxyl allowed)"
 
     
 # Example test (you may remove or modify as needed)
 if __name__ == '__main__':
-    test_smiles = "OCCCCCCCCCCCCCCC\\C=C\\C(O)=O"  # (2E)-18-hydroxyoctadec-2-enoic acid
+    # Test with one example: (2E)-18-hydroxyoctadec-2-enoic acid
+    test_smiles = "OCCCCCCCCCCCCCCC\\C=C\\C(O)=O"
     result, reason = is_omega_hydroxy_fatty_acid(test_smiles)
     print(result, reason)
