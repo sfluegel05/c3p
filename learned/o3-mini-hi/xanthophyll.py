@@ -7,7 +7,7 @@ Heuristic:
   - Must have a large carbon backbone (at least 30 carbons) – typical carotenoids have ~40.
   - Must have at least one oxygenated functional group.
       We first check common groups (hydroxyl, methoxy, carbonyl, epoxide) and if those fail,
-      we check if any oxygen is attached to an sp2 (conjugated) carbon.
+      we check if any oxygen is attached to an sp² (conjugated) carbon.
   - Must contain a long, conjugated polyene chain.
     We first look for a quick pattern of three consecutive C=C bonds; if that fails,
     we compute the longest chain of connected conjugated double bonds (non‐aromatic) using DFS
@@ -27,7 +27,8 @@ def longest_conjugated_chain(mol):
     # Build adjacency list over bonds that are double, conjugated, and not aromatic.
     adj = {}
     for bond in mol.GetBonds():
-        if (bond.GetBondTypeAsDouble() == 2.0 and bond.GetIsConjugated() and (not bond.GetIsAromatic())):
+        # Check if the bond is a double bond, conjugated, and not aromatic.
+        if bond.GetBondTypeAsDouble() == 2.0 and bond.GetIsConjugated() and not bond.GetIsAromatic():
             i = bond.GetBeginAtomIdx()
             j = bond.GetEndAtomIdx()
             adj.setdefault(i, set()).add(j)
@@ -54,7 +55,7 @@ def is_xanthophyll(smiles: str):
       - Have a large number of carbons (≥30).
       - Contain one or more oxygenated functional groups. We check for common groups
         (hydroxyl, methoxy, carbonyl, epoxide) and if none are found, we check if any oxygen
-        is attached to an sp2-hybridized (conjugated) carbon.
+        is attached to an sp²-hybridized (conjugated) carbon.
       - Possess a long conjugated polyene chain (quick match for three conjugated C=C bonds or a 
         computed chain of at least 12 atoms).
     
@@ -94,19 +95,21 @@ def is_xanthophyll(smiles: str):
     if not has_oxygen_group:
         # Check if any oxygen is attached directly to an sp2 (conjugated) carbon.
         for atom in mol.GetAtoms():
-            if atom.GetAtomicNum() == 8:
+            if atom.GetAtomicNum() == 8:  # oxygen atom
                 for nbr in atom.GetNeighbors():
-                    if (nbr.GetAtomicNum() == 6 and nbr.GetIsConjugated() and 
-                        nbr.GetHybridization() in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]):
-                        has_oxygen_group = True
-                        break
+                    if nbr.GetAtomicNum() == 6 and nbr.GetHybridization() in [Chem.rdchem.HybridizationType.SP2, Chem.rdchem.HybridizationType.SP]:
+                        # Instead of calling GetIsConjugated on the atom, check the connecting bond.
+                        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                        if bond and bond.GetIsConjugated():
+                            has_oxygen_group = True
+                            break
                 if has_oxygen_group:
                     break
     if not has_oxygen_group:
         return False, "No oxygenated functional groups detected"
-
+    
     # Check for a long conjugated polyene chain.
-    # First try a quick SMARTS search for 3 consecutive conjugated C=C bonds.
+    # First, try a quick SMARTS search for three consecutive conjugated C=C bonds.
     polyene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
     if mol.HasSubstructMatch(polyene_pattern):
         conjugation_ok = True
@@ -117,11 +120,10 @@ def is_xanthophyll(smiles: str):
         conjugation_ok = True
 
     if conjugation_ok:
-        return True, "Molecule has a long conjugated polyene chain, a large carbon backbone (≥30 carbons), " \
-                     "and oxygenated groups consistent with a xanthophyll structure"
+        return True, "Molecule has a long conjugated polyene chain, a large carbon skeleton (≥30 carbons), and oxygenated groups consistent with a xanthophyll structure"
     return False, "Criteria not met"
-    
+
 # Example usage:
-# test_smiles = "OC1CC(C(=C(C1)C)/C=C/C(/C)=C/C=C/C(/C)=C/C=C/C=C(/C=C/C=C(/C=C/C1=C(C)C[C@@H](O)CC1(C)C"  # shorten for testing
+# test_smiles = "CC(/C=C/C=C(C)/C=C/C1=C(C)CCCC1(C)C)=C\\C=C\\C=C(C)\\C=C\\C=C(/C)C1OC2(C)CCCC(C)(C)C2=C1"
 # result, reason = is_xanthophyll(test_smiles)
 # print(result, reason)
