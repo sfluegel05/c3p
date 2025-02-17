@@ -4,9 +4,13 @@ Classifies: CHEBI:138675 gas molecular entity
 """
 Classifies: Gas Molecular Entity
 Definition: Any main group molecular entity that is gaseous at standard temperature and pressure (STP; 0°C and 100 kPa)
-This improved classifier applies tighter criteria based on molecular weight and the number of heavy atoms.
-It also adjusts for highly halogenated compounds.
-Note: This classifier is heuristic and may not be 100% accurate.
+This classifier uses a heuristic based on the allowed elements and a strict limit on the number of heavy atoms.
+It also makes two further adjustments:
+ - Monoatomic species are accepted only if they are noble gases.
+ - If a molecule has no heavy atoms (i.e. only hydrogens) then it is accepted only if it contains exactly two atoms.
+ - For molecules with 4 heavy atoms, a combination of S + O together with ≥2 halogen atoms (F, Cl, Br, I)
+   is taken as a warning sign that the molecule is likely to be a liquid/solid.
+Note: This is just one heuristic approach.
 """
 from rdkit import Chem
 from rdkit.Chem import Descriptors
@@ -16,73 +20,95 @@ def is_gas_molecular_entity(smiles: str):
     Determines if a given molecule (specified as a SMILES string) is a gas molecular entity at STP.
     
     Heuristic criteria used:
-      1. The SMILES must represent a valid, connected molecule.
-      2. Every atom must be a main group element (allowed: H, He, B, C, N, O, F, Ne, Na, Mg,
-         Al, Si, P, S, Cl, Ar, K, Ca, Br, Kr, I, Xe, Rn).
-      3. The exact molecular weight must be below 300 Da.
-      4. The molecule must be “small” – we use a tight cutoff on the number of heavy atoms 
-         (atoms with atomic number > 1). For most molecules we allow at most 7 heavy atoms.
-      5. However, if the molecule is heavily halogenated (F, Cl, Br, I), we allow a higher heavy–atom limit.
-         Specifically, if more than 50% of the heavy atoms are halogens, we allow up to 15 heavy atoms.
-    
+      1. The SMILES must represent a valid, single connected molecule.
+      2. Every atom must be a main group element (allowed atomic numbers: 1, 2, 5,6,7,8,9,10,11,12,
+         13,14,15,16,17,18,19,20,35,36,53,54,86).
+      3. If the molecule is monoatomic then it is accepted only if it is a noble gas.
+      4. Molecules composed solely of hydrogen isotopes (zero “heavy atoms”) are accepted only if they
+         consist of exactly two atoms (e.g. H2, [1H][1H], [3H][3H]).
+      5. For a bound molecular entity built from more than one atom, we restrict to very “small” molecules,
+         accepting only those with at most 4 heavy atoms.
+      6. An additional check for molecules with exactly 4 heavy atoms: if the molecule contains both sulfur (S)
+         and oxygen (O) and at least 2 halogen atoms (F, Cl, Br, I) then it is rejected (this catches e.g. thionyl chloride).
+         
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
         bool: True if the molecule is classified as a gas molecular entity, False otherwise.
-        str: Reason for the classification.
+        str: Explanation for the classification.
     """
     # Parse SMILES to a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Allowed main group atomic numbers:
+    
+    # Ensure the molecule is a single connected species.
+    frags = Chem.GetMolFrags(mol)
+    if len(frags) > 1:
+        return False, "Molecule is disconnected; should be a single molecular entity"
+    
+    # Allowed main group atomic numbers: 
     allowed_atomic_numbers = {1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13,
                               14, 15, 16, 17, 18, 19, 20, 35, 36, 53, 54, 86}
-    # Check each atom
+    # Noble gases (by symbol)
+    noble_gases = {"He", "Ne", "Ar", "Kr", "Xe", "Rn"}
+    
+    # Check that every atom is allowed.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in allowed_atomic_numbers:
             return False, f"Atom {atom.GetSymbol()} (atomic number {atom.GetAtomicNum()}) is not a main group element"
     
-    # Ensure the molecule is a single connected species
-    frags = Chem.GetMolFrags(mol)
-    if len(frags) > 1:
-        return False, "Molecule is disconnected; should be a single molecular entity"
-
-    # Calculate exact molecular weight
-    mw = Descriptors.ExactMolWt(mol)
-    if mw >= 300:
-        return False, f"Molecular weight {mw:.1f} Da is too high for a typical gas molecular entity"
-    
-    # Count heavy atoms (non-hydrogen atoms) and halogen atoms
+    # Count total atoms and heavy atoms (atomic number > 1)
+    total_atoms = mol.GetNumAtoms()
     heavy_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1]
     n_heavy = len(heavy_atoms)
     
-    # Define halogen atomic numbers for F, Cl, Br, I
-    halogen_atomic_numbers = {9, 17, 35, 53}
-    n_halogen = sum(1 for atom in heavy_atoms if atom.GetAtomicNum() in halogen_atomic_numbers)
+    # Special case: monoatomic molecules.
+    if total_atoms == 1:
+        atom = mol.GetAtomWithIdx(0)
+        if atom.GetSymbol() in noble_gases:
+            mw = Descriptors.ExactMolWt(mol)
+            return True, f"Monoatomic noble gas ({atom.GetSymbol()}, MW {mw:.1f} Da) is classified as a gas"
+        else:
+            return False, f"Monoatomic {atom.GetSymbol()} is not typically a gas at STP"
     
-    # If there are no heavy atoms then something is off
+    # Special case: molecules with no heavy atoms (only H isotopes).
     if n_heavy == 0:
-        return False, "No heavy atoms found; not a typical molecular entity"
+        if total_atoms == 2:
+            mw = Descriptors.ExactMolWt(mol)
+            return True, f"Molecule composed solely of hydrogens (MW {mw:.1f} Da) is classified as a gas"
+        else:
+            return False, "Molecule composed solely of hydrogen isotopes and with unexpected atom count"
     
-    # Determine maximum allowed heavy atoms:
-    # If more than 50% of heavy atoms are halogens, allow up to 15 heavy atoms (e.g., perfluorocarbons).
-    # Otherwise, require at most 7 heavy atoms.
-    halogen_fraction = n_halogen / n_heavy
-    if halogen_fraction >= 0.5:
-        max_heavy_allowed = 15
-    else:
-        max_heavy_allowed = 7
+    # For multi-atom molecules (n_heavy >= 1), impose a cutoff on heavy atom count.
+    if n_heavy > 4:
+        return False, f"Too many heavy atoms ({n_heavy}); typical gas molecular entities have ≤4 heavy atoms"
     
-    if n_heavy > max_heavy_allowed:
-        return False, f"Too many heavy atoms ({n_heavy}); maximum allowed is {max_heavy_allowed} for a gaseous molecule"
+    # For cases with exactly 4 heavy atoms, apply an additional check:
+    if n_heavy == 4:
+        # Count occurrences of S, O, and halogen atoms (F, Cl, Br, I)
+        symbols = [atom.GetSymbol() for atom in heavy_atoms]
+        count_S = symbols.count("S")
+        count_O = symbols.count("O")
+        halogens = {"F", "Cl", "Br", "I"}
+        count_halogen = sum(1 for sym in symbols if sym in halogens)
+        # If we have both S and O and at least 2 halogens, reject.
+        if count_S >= 1 and count_O >= 1 and count_halogen >= 2:
+            return False, "Molecule contains S, O, and multiple halogens; likely a condensed (non‐gas) entity"
     
-    return True, f"Molecule (MW {mw:.1f} Da, {n_heavy} heavy atoms, halogen fraction {halogen_fraction:.2f}) is classified as a gas molecular entity"
+    # Otherwise, compute some basic properties for the explanation.
+    mw = Descriptors.ExactMolWt(mol)
+    # For reporting, we calculate a “halogen fraction” among heavy atoms.
+    halogen_atomic_numbers = {9, 17, 35, 53}  # F, Cl, Br, I
+    n_halogen = sum(1 for atom in heavy_atoms if atom.GetAtomicNum() in halogen_atomic_numbers)
+    halogen_fraction = n_halogen / n_heavy if n_heavy else 0
+    
+    return True, (f"Molecule (MW {mw:.1f} Da, {n_heavy} heavy atoms, halogen fraction {halogen_fraction:.2f}) "
+                  "is classified as a gas molecular entity")
 
-# Example usage (uncomment to test):
-# examples = [
+# Example usage (uncomment the lines below to test):
+# test_smiles = [
 #     "[H]\\C(C)=C(\\[H])C",  # trans-but-2-ene
 #     "FC=C",                # fluoroethene
 #     "[H]N([H])[H]",        # ammonia
@@ -107,7 +133,19 @@ def is_gas_molecular_entity(smiles: str):
 #     "CCC=C",               # but-1-ene
 #     "CC#C",                # propyne
 #     "CC(C)C",              # isobutane
+#     "[H]C(C)=C([H])C",      # but-2-ene
+#     "[O][O]",              # triplet dioxygen
+#     "[C-]#[O+]",           # carbon monoxide
+#     "[4He]",               # helium-4 atom
+#     "[Kr]",                # krypton atom
+#     "C1CO1",               # oxirane
+#     "[Ar]",                # argon atom
+#     "O=C=O",               # carbon dioxide
+#     "[222Rn]",             # radon-222 atom
+#     "O=[13C]=O",           # ((13)C)carbon dioxide
+#     "[3H][3H]",            # ditritium
+#     "[C]",                 # carbon atom
 # ]
-# for smi in examples:
+# for smi in test_smiles:
 #     result, reason = is_gas_molecular_entity(smi)
 #     print(f"SMILES: {smi} -> {result}: {reason}")
