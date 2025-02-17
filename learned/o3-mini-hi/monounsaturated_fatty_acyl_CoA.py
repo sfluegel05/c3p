@@ -3,16 +3,7 @@ Classifies: CHEBI:139575 monounsaturated fatty acyl-CoA
 """
 """
 Classifies: Monounsaturated fatty acyl-CoA
-
-Definition: Any unsaturated fatty acyl-CoA in which the fatty acyl chain contains one carbon–carbon double bond.
-
-Strategy:
-  - Look for the thioester linkage [CX3](=O)[SX2] linking the fatty acyl chain to the CoA.
-  - From the carbonyl carbon, identify the carbon neighbor (the α‐carbon) from which the fatty acyl chain extends.
-  - Traverse the fatty acyl chain (following non-aromatic, non-ring carbon atoms) and count its carbons.
-  - Count the number of carbon–carbon double bonds in that chain (exactly one is required).
-  - Verify the presence of the CoA moiety by searching for an adenine-like substructure. 
-    To improve the matching, stereochemistry will be removed from the molecule and multiple adenine SMARTS patterns will be used.
+Definition: Any unsaturated fatty acyl-CoA in which the fatty acyl chain contains one carbon-carbon double bond.
 """
 
 from rdkit import Chem
@@ -21,103 +12,79 @@ from rdkit.Chem import rdMolDescriptors
 def is_monounsaturated_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a monounsaturated fatty acyl-CoA.
-    It requires the molecule to have:
-      (a) a thioester linkage [CX3](=O)[SX2],
-      (b) an aliphatic fatty acyl chain (starting at the alpha carbon off the carbonyl) that is at
-          least 6 carbons long and contains exactly one carbon–carbon double bond,
-      (c) a CoA moiety which is identified by the presence of an adenine-like substructure.
-      
+    That is, the molecule must (a) contain a thioester linkage typical of a fatty acyl-CoA,
+    (b) contain a CoA fragment, and (c) its fatty acyl chain (the chain connected to the carbonyl
+    carbon of the thioester) contains exactly one carbon-carbon double bond.
+    
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if all criteria are met, otherwise False.
-        str: A reason string explaining the decision.
+        bool: True if molecule is a monounsaturated fatty acyl-CoA, False otherwise.
+        str: Reason for classification.
     """
-    # Parse the SMILES string.
+    # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Remove stereochemistry to ease matching of adenine substructure.
-    Chem.RemoveStereochemistry(mol)
     
-    # --- 1. Locate the thioester linkage: [CX3](=O)[SX2]
+    # First, check for a thioester group. Fatty acyl-CoAs have a thioester bond in the form of [C](=O)[S]
     thioester_pattern = Chem.MolFromSmarts("[CX3](=O)[SX2]")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
-        return False, "No thioester group found (fatty acyl linkage missing)"
+        return False, "No thioester group found (lack of fatty acyl linkage)"
     
-    # Choose the first match (assuming it represents the fatty acyl thioester).
-    thioester_match = thioester_matches[0]
-    # The first atom in the match is the carbonyl carbon.
-    carbonyl_idx = thioester_match[0]
-    carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
+    # We assume the first thioester match corresponds to the linkage between the fatty acyl chain and CoA.
+    # In a thioester match, atom0 is the carbonyl carbon.
+    acyl_carbon_idx = thioester_matches[0][0]
+    acyl_carbon = mol.GetAtomWithIdx(acyl_carbon_idx)
     
-    # --- 2. Identify the α-carbon in the acyl chain. 
-    # This is the neighbor to the carbonyl carbon that is a carbon (not sulfur).
-    alpha_atom = None
-    for neighbor in carbonyl_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:
-            alpha_atom = neighbor
-            break
-    if alpha_atom is None:
-        return False, "No fatty acyl chain detected from thioester linkage (missing R-group)"
+    # Check that the molecule has a CoA-related fragment.
+    # Many CoA compounds share the fragment "SCCNC(=O)CCNC(=O)". This SMARTS is a heuristic.
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "CoA moiety not found"
     
-    # --- 3. Traverse the acyl chain via depth-first search (DFS) starting from the α-carbon.
-    # Only follow carbon atoms that are not aromatic and not part of any ring.
-    chain_atom_indices = set()
-    stack = [alpha_atom]
+    # Now, extract the fatty acyl chain atoms.
+    # We start from the carbonyl carbon (which is part of the acyl chain) and perform a DFS 
+    # but only follow bonds to carbon atoms (atomic number 6). This avoids traversing into the
+    # thioester sulfur or other CoA portions.
+    fatty_chain_atoms = set()
+    stack = [acyl_carbon]
     while stack:
         atom = stack.pop()
-        idx = atom.GetIdx()
+        if atom.GetIdx() in fatty_chain_atoms:
+            continue
+        # only consider carbon atoms (atomic num 6)
         if atom.GetAtomicNum() != 6:
             continue
-        if atom.GetIsAromatic() or atom.IsInRing():
-            continue
-        if idx in chain_atom_indices:
-            continue
-        chain_atom_indices.add(idx)
-        for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6 and (not nbr.GetIsAromatic()) and (not nbr.IsInRing()):
-                if nbr.GetIdx() not in chain_atom_indices:
-                    stack.append(nbr)
-                    
-    if len(chain_atom_indices) < 6:
-        return False, f"Extracted fatty acyl chain is too short ({len(chain_atom_indices)} carbons found)"
+        fatty_chain_atoms.add(atom.GetIdx())
+        for neighbor in atom.GetNeighbors():
+            # Only traverse if neighbor is a carbon.
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in fatty_chain_atoms:
+                stack.append(neighbor)
     
-    # --- 4. Count the carbon–carbon double bonds within the extracted fatty acyl chain.
+    if not fatty_chain_atoms:
+        return False, "No fatty acyl chain detected"
+
+    # Count carbon-carbon double bonds within the fatty chain.
     double_bond_count = 0
     for bond in mol.GetBonds():
-        a1 = bond.GetBeginAtom()
-        a2 = bond.GetEndAtom()
-        # Count the bond if both atoms are in the chain and the bond is a double bond.
-        if a1.GetIdx() in chain_atom_indices and a2.GetIdx() in chain_atom_indices:
+        # Check if both ends are in our fatty chain and the bond type is DOUBLE.
+        a1 = bond.GetBeginAtom().GetIdx()
+        a2 = bond.GetEndAtom().GetIdx()
+        if a1 in fatty_chain_atoms and a2 in fatty_chain_atoms:
             if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
                 double_bond_count += 1
-    if double_bond_count != 1:
-        return False, f"Fatty acyl chain has {double_bond_count} C=C double bond(s); exactly one is required"
-    
-    # --- 5. Verify the presence of the CoA moiety by detecting an adenine-like fragment.
-    # Use multiple SMARTS patterns to capture different representations of adenine.
-    adenine_smarts_list = [
-        "N1C=NC2=C1N=CN=C2",   # common representation
-        "n1cnc2ncnc(n2)n1"      # alternative pattern ignoring stereochem details
-    ]
-    adenine_found = False
-    for smarts in adenine_smarts_list:
-        adenine_pattern = Chem.MolFromSmarts(smarts)
-        if mol.HasSubstructMatch(adenine_pattern):
-            adenine_found = True
-            break
-    if not adenine_found:
-        return False, "CoA moiety (adenine fragment) not found"
-    
-    return True, "Contains fatty acyl chain with exactly one C=C double bond and a CoA moiety"
 
-# Example usage: testing the function with one of the provided SMILES strings.
+    if double_bond_count != 1:
+        return False, f"Fatty acyl chain has {double_bond_count} carbon-carbon double bond(s), but exactly one is required"
+    
+    return True, "Contains a fatty acyl chain with exactly one C=C double bond and a CoA moiety"
+
+# The function can be tested with one or more of the sample SMILES strings provided.
 if __name__ == "__main__":
-    # Test with (E)-hexadec-2-enoyl-CoA.
-    test_smiles = "[C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC([C@H](C(NCCC(NCCSC(=O)/C=C/CCCCCCCCCCCCC)=O)=O)O)(C)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O"
+    # Example test with one of the provided SMILES (oleoyl-CoA)
+    test_smiles = "CCCCCCCC\\C=C/CCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N"
     result, reason = is_monounsaturated_fatty_acyl_CoA(test_smiles)
     print(result, reason)
