@@ -2,9 +2,19 @@
 Classifies: CHEBI:25448 myo-inositol phosphate
 """
 """
-Classifies: myo-inositol phosphate – an inositol phosphate in which the inositol component has myo-configuration.
-This heuristic checks for a six-membered saturated ring whose carbons are all individually chiral 
-and each bear at least one oxygen substituent—with at least one of these oxygens being attached to a phosphorus atom.
+Classifies: myo-inositol phosphate – an inositol phosphate in which the inositol component 
+has myo-configuration.
+
+This improved heuristic checks for:
+  1. A valid molecule with at least one six-membered ring.
+  2. The ring must consist solely of carbon atoms, each with assigned chirality.
+  3. Every ring carbon must have at least one substituent (non‐ring neighbor) that is an oxygen.
+     Furthermore, to avoid cases with lipid or large organic substituents, the branch starting 
+     at that oxygen must contain only oxygen and phosphorus atoms (plus implicit hydrogens).
+  4. At least one of these oxygen branches must contain a phosphorus atom.
+  
+These criteria are intended to capture the myo–inositol phosphate core while filtering out larger 
+substituted molecules (e.g. inositol lipids).
 """
 
 from rdkit import Chem
@@ -16,94 +26,133 @@ def is_myo_inositol_phosphate(smiles: str):
     The heuristic applied is:
       1. The molecule must be valid.
       2. There should be at least one six-membered ring in which:
-           - Every ring atom is carbon.
-           - Every ring atom is chiral (i.e. its chiral tag is set).
-           - Each ring carbon has at least one non-ring oxygen substituent.
-      3. At least one of these non-ring oxygen substituents is connected to a phosphorus atom.
+           - Every ring atom is carbon with a defined chiral center.
+           - Every ring carbon has at least one substituent (atom other than those in the ring)
+             that is oxygen.
+           - Each oxygen substituent (examined via a short breadth-first search) must not lead into 
+             any atoms other than oxygen or phosphorus.
+      3. At least one oxygen substituent must eventually include a phosphorus atom.
       
-    These features are characteristic of the myo-inositol core with phosphate substituents.
-    
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES representation of the molecule.
     
     Returns:
-        bool: True if the molecule is classified as a myo-inositol phosphate, False otherwise.
-        str: Reason for the classification decision.
+        bool: True if the molecule is classified as myo-inositol phosphate, False otherwise.
+        str: Explanation of the classification decision.
     """
-    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Ensure that stereochemistry is assigned
+    # Ensure stereochemistry is assigned.
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
     
+    # Get ring information.
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
     if not rings:
         return False, "No ring system found in the molecule"
     
-    # Loop over rings to see if any corresponds to a myo-inositol type ring
+    # Define allowed atomic numbers in a substituent branch: oxygen (8) and phosphorus (15)
+    allowed_atoms = {8, 15}
+    
+    # Loop over rings and search for a six-membered candidate.
     for ring in rings:
         if len(ring) != 6:
-            continue  # Only interested in six-membered rings
+            continue  # we only check six-membered rings
         
-        # Check that all atoms in the ring are carbon and have defined chirality.
-        all_carbons = True
-        all_chiral = True
-        oxygen_substituent_found = False
-        phosphate_on_ring = False
+        valid_ring = True
+        branch_has_phosphorus = False
         
+        # Loop over atoms in the ring.
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            # Check atomic number: carbon = 6
+            # Check that the ring atom is a carbon.
             if atom.GetAtomicNum() != 6:
-                all_carbons = False
+                valid_ring = False
                 break
-            # Check chirality: must be set (i.e. not CHI_UNSPECIFIED)
+            # Ensure chirality is explicitly set.
             if atom.GetChiralTag() == Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
-                all_chiral = False
+                valid_ring = False
                 break
-            # Now: Check the neighbors that are not part of the ring.
-            neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() not in ring]
-            # We expect at least one oxygen (could be OH or OP... groups).
-            oxygen_found_here = False
-            for nbr in neighbors:
-                if nbr.GetAtomicNum() == 8:
-                    oxygen_found_here = True
-                    # Also check if this oxygen is connected to a phosphorus (atomic number 15)
-                    for subnbr in nbr.GetNeighbors():
-                        if subnbr.GetAtomicNum() == 15:
-                            phosphate_on_ring = True
-                            break
-                    # if we already found a phosphate substituent on this atom, no need to check further
-                    if phosphate_on_ring:
+            
+            # Check substituents: atoms not in the ring.
+            # At least one non-ring neighbor must be present.
+            non_ring_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() not in ring]
+            if not non_ring_neighbors:
+                valid_ring = False
+                break
+            
+            oxygen_found = False
+            for nbr in non_ring_neighbors:
+                # We require that the substituent is oxygen.
+                if nbr.GetAtomicNum() != 8:
+                    # Found a substituent that is not oxygen; disqualify this ring.
+                    valid_ring = False
+                    break
+                
+                # Do a short breadth-first search starting at this oxygen (nbr)
+                # to ensure that further atoms in the substituent branch (if any)
+                # are ONLY oxygen and/or phosphorus.
+                visited = set()
+                queue = [nbr.GetIdx()]
+                branch_valid = True
+                this_branch_has_P = False
+                # Limit search to a small neighborhood.
+                while queue:
+                    curr_idx = queue.pop(0)
+                    if curr_idx in visited:
+                        continue
+                    visited.add(curr_idx)
+                    curr_atom = mol.GetAtomWithIdx(curr_idx)
+                    # Check allowed atoms; note: the branch includes the starting oxygen.
+                    if curr_atom.GetAtomicNum() not in allowed_atoms:
+                        branch_valid = False
                         break
-            if oxygen_found_here:
-                oxygen_substituent_found = True
-            else:
-                # If one ring carbon does not have an oxygen substituent, skip this ring
-                oxygen_substituent_found = False
+                    # If a phosphorus is found along the branch, note this.
+                    if curr_atom.GetAtomicNum() == 15:
+                        this_branch_has_P = True
+                    # Traverse neighbors, but do not go back into the ring.
+                    for nb in curr_atom.GetNeighbors():
+                        if nb.GetIdx() in ring:
+                            continue
+                        if nb.GetIdx() not in visited:
+                            queue.append(nb.GetIdx())
+                if not branch_valid:
+                    # This substituent branch contains disallowed atoms (e.g. carbon).
+                    continue  # skip this substituent branch
+                # If branch is valid, then we consider that this ring atom has an acceptable oxygen.
+                oxygen_found = True
+                if this_branch_has_P:
+                    branch_has_phosphorus = True
+                # We do not require every oxygen branch to include phosphorus;
+                # just at least one among all ring atoms.
+            if not oxygen_found:
+                # If a ring carbon does not bear any oxygen substituent of acceptable type, skip the ring.
+                valid_ring = False
                 break
         
-        if not all_carbons:
-            continue  # not a carbon-only ring
-        if not all_chiral:
-            continue  # the ring atoms do not all have defined chirality
-        if not oxygen_substituent_found:
-            continue  # ring atoms are missing oxygen substituents
+        # Check that the ring had at least one oxygen branch that leads to a phosphorus.
+        if valid_ring and not branch_has_phosphorus:
+            valid_ring = False
         
-        # Ensure that at least one substituent on the ring is phosphorylated.
-        if not phosphate_on_ring:
-            continue
-        
-        # If we found a valid ring, we classify it as a myo-inositol phosphate.
-        return True, "Found six-membered ring with chiral carbon atoms bearing oxygen substituents and phosphate attachment, consistent with myo-inositol phosphate."
+        if valid_ring:
+            return True, "Found six-membered ring of chiral carbons with oxygen substituents (only O/P allowed) and at least one branch with a phosphate attachment, consistent with myo-inositol phosphate."
     
-    return False, "No six-membered inositol-like ring with appropriate stereo centers and phosphate substituents was found."
+    return False, "No six-membered inositol-like ring with appropriate chiral centers, oxygen-only substituents, and phosphate attachment was found."
 
 # Example usage (for testing purposes):
 if __name__ == "__main__":
-    test_smiles = "O[C@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@@H]1O"  # 1D-myo-inositol 4-phosphate example
-    result, reason = is_myo_inositol_phosphate(test_smiles)
-    print(result, reason)
+    # Test a few myo-inositol phosphate examples:
+    test_smiles_examples = [
+        # 1D-myo-inositol 1,2,3,4,5-pentakisphosphate
+        "O[C@H]1[C@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@@H]1OP(O)(O)=O",
+        # 1D-myo-inositol 4-phosphate
+        "O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@H]1O",
+        # A known false positive: a lipid conjugate (should be rejected)
+        "CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCCC"
+    ]
+    
+    for smi in test_smiles_examples:
+        result, reason = is_myo_inositol_phosphate(smi)
+        print(result, reason)
