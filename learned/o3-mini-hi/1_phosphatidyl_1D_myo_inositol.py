@@ -7,83 +7,75 @@ Definition:
     A phosphatidylinositol in which the inositol moiety is the 1D-myo isomer 
     and the phosphatidyl group is located at its position 1.
     
-Heuristics in this implementation (improved):
-1. Check that the molecule contains at least two ester bonds (a C(=O)O substructure).
-2. Look through all six-membered rings that consist solely of carbon atoms. For each such ring,
-   count substituents: expect exactly five free hydroxyl groups (oxygen with at least one hydrogen)
-   and one oxygen that is NOT free – but instead is linked to a phosphorus atom.
-3. If a candidate inositol ring is found, follow the oxygen attached to P and then verify that the P atom
-   is connected to exactly two ester bonds (i.e. two oxygens that are attached to carbonyl carbons).
-This further check helps to ensure that the phosphatidyl group is diacyl and attached at the proper site.
-Note: This is a heuristic method that uses substructure and connectivity analyses,
-and it does NOT completely guarantee proper stereochemical assignment.
+Heuristics in this implementation:
+1. Verify that the molecule has at least two ester bonds (the C(=O)O substructure).
+2. Identify a six-membered inositol ring (a ring of six carbons) that has five free –OH groups and one –OH that is substituted with a phosphorus.
+3. From that candidate oxygen substituent on the ring, follow to the phosphorus atom and verify that the phosphate has exactly 4 oxygen neighbors: one from the inositol ring, one phosphoryl oxygen (double-bonded to P) and two ester oxygens (each attached to a carbon that bears a double-bonded oxygen).
+Note: This is inherently a heuristic method and it does not capture all stereochemical and connectivity nuances.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
     """
-    Determines if a molecule is a 1-phosphatidyl-1D-myo-inositol
-    based on its SMILES string.
+    Determines if a molecule is a 1-phosphatidyl-1D-myo-inositol based on its SMILES string.
     
     Args:
-        smiles (str): SMILES string of the molecule.
-
+        smiles (str): The SMILES string of the molecule.
+    
     Returns:
         bool: True if the molecule is classified as 1-phosphatidyl-1D-myo-inositol, else False.
-        str: Explanation for the classification result.
+        str: An explanation of the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # --- Criterion 1: Global check for diacylglycerol ester bonds ---
-    # Count all ester bonds (we look for the C(=O)O substructure)
+    
+    # ------ Step 1: Global check for at least two ester bonds ------
+    # We look for the C(=O)O substructure in the overall molecule.
     ester_smarts = "C(=O)O"
     ester_pattern = Chem.MolFromSmarts(ester_smarts)
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) < 2:
-        return False, f"Found only {len(ester_matches)} ester bond(s); at least 2 are required for the phosphatidyl moiety"
-
-    # --- Criterion 2: Identify a candidate six-membered inositol ring ---
-    # Look for a six-membered ring composed entirely of carbons.
-    # In a correct 1-phosphatidyl-1D-myo-inositol headgroup,
-    # 5 of the ring carbons should have a free hydroxyl (-OH) substituent,
-    # and 1 carbon (the 1-position) should have an oxygen that is not free,
-    # but rather is linked to a phosphorus atom (which should be further part of the diacyl chain).
+        return False, f"Found only {len(ester_matches)} ester bond(s); at least 2 are required for a diacyl phosphatidyl moiety"
+    
+    # ------ Step 2: Identify candidate inositol ring ------
+    # Look for a six-membered ring containing only carbons.
+    # In a correct 1-phosphatidyl-1D-myo-inositol headgroup, 5 carbons in the ring should have a free -OH,
+    # while the 6th carbon carries an oxygen that is substituted by phosphorus.
     ring_info = mol.GetRingInfo().AtomRings()
     candidate_inositol = None
-    candidate_phospho_O_idx = None  # index of the oxygen substituent on the ring that is linked to P
+    candidate_phospho_O_idx = None  # index of the oxygen substituent on the ring that connects to P
     for ring in ring_info:
         if len(ring) != 6:
             continue  # only interested in six-membered rings
-        # Check that all atoms in the ring are carbon.
+
+        # Check that all atoms in the ring are carbons.
         if not all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
             continue
-
+        
         free_oh_count = 0
         phospho_sub_count = 0
         phospho_O_candidate = None
-        # Loop through each ring carbon.
+        # For each ring carbon, look at substituents not part of the ring.
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            neighbors = atom.GetNeighbors()
-            # Only consider neighbors that are not in the ring.
-            for nbr in neighbors:
+            for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
                     continue
+                # Focus on oxygen substituents.
                 if nbr.GetAtomicNum() == 8:
-                    # Check if this oxygen is bound to a phosphorus atom.
+                    # Check if this oxygen is attached to a phosphorus atom.
                     attached_to_P = any(nbr2.GetAtomicNum() == 15 for nbr2 in nbr.GetNeighbors() if nbr2.GetIdx() != atom.GetIdx())
-                    # Check if oxygen has at least one hydrogen (free hydroxyl).
+                    # Check if oxygen carries any hydrogen(s) (i.e. is free hydroxyl).
                     has_H = nbr.GetTotalNumHs() > 0
                     if attached_to_P:
                         phospho_sub_count += 1
                         phospho_O_candidate = nbr
                     elif has_H:
                         free_oh_count += 1
-        # For a genuine 1-phosphatidyl-1D-myo-inositol,
-        # we require exactly 1 substitution by a phosphate and 5 free -OH groups.
+        # For a genuine 1-phosphatidyl-1D-myo-inositol headgroup, we expect exactly 1 phospho substitution and 5 free hydroxyls.
         if phospho_sub_count == 1 and free_oh_count == 5:
             candidate_inositol = ring
             candidate_phospho_O_idx = phospho_O_candidate.GetIdx()
@@ -91,10 +83,9 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
 
     if candidate_inositol is None:
         return False, "No six-membered inositol ring with 1 phosphate substituent and 5 free hydroxyls found"
-
-    # --- Criterion 3: Check connectivity of the phosphate group ---
-    # From the candidate oxygen on the ring (attached to P), follow to the phosphorus atom,
-    # and ensure that the P is connected to exactly two ester bonds (i.e. two oxygens that connect to a carbonyl carbon).
+    
+    # ------ Step 3: Examine connectivity of the phosphate group ------
+    # From the inositol oxygen, follow to the phosphorus atom.
     phospho_O = mol.GetAtomWithIdx(candidate_phospho_O_idx)
     phosphorus = None
     for nbr in phospho_O.GetNeighbors():
@@ -102,45 +93,58 @@ def is_1_phosphatidyl_1D_myo_inositol(smiles: str):
             phosphorus = nbr
             break
     if phosphorus is None:
-        return False, "Phospho substituent not attached to a phosphorus atom"
+        return False, "The oxygen substituent on the inositol ring is not attached to any phosphorus atom"
+    
+    # For a proper phosphatidyl group, phosphorus should have 4 oxygen neighbors.
+    p_neighbors = [nbr for nbr in phosphorus.GetNeighbors() if nbr.GetAtomicNum() == 8]
+    if len(p_neighbors) != 4:
+        return False, f"Phosphorus atom is bonded to {len(p_neighbors)} oxygen(s); expected 4 (including the inositol oxygen, a phosphoryl O, and 2 ester O's)"
 
-    # Count the number of ester bonds on the phosphorus (excluding the oxygen coming from the ring).
-    ester_bond_count = 0
-    for nbr in phosphorus.GetNeighbors():
-        # Skip the oxygen from the inositol ring.
-        if nbr.GetIdx() == phospho_O.GetIdx():
+    # Identify the inositol oxygen among the phosphorus neighbors.
+    remaining_Os = []
+    for o_atom in p_neighbors:
+        if o_atom.GetIdx() == candidate_phospho_O_idx:
+            continue  # this is the inositol oxygen
+        remaining_Os.append(o_atom)
+    
+    # Now, verify that among the remaining three oxygens one is a phosphoryl oxygen and two are ester oxygens.
+    phosphoryl_count = 0
+    ester_count = 0
+    for o_atom in remaining_Os:
+        bond_PO = phosphorus.GetBondBetweenAtoms(phosphorus.GetIdx(), o_atom.GetIdx())
+        if bond_PO is None:
             continue
-        if nbr.GetAtomicNum() != 8:
-            continue
-        # Look for an ester oxygen: attached to a carbon that is doubly bonded to oxygen.
-        for nbr2 in nbr.GetNeighbors():
-            # Exclude the phosphorus
-            if nbr2.GetIdx() == phosphorus.GetIdx():
-                continue
-            # Check if nbr2 is carbon and has at least one double bond to oxygen.
-            if nbr2.GetAtomicNum() == 6:
-                bonds = nbr2.GetBonds()
-                for bond in bonds:
-                    # Check for double bond to oxygen.
-                    if bond.GetBondTypeAsDouble() == 2.0:
-                        atom1 = bond.GetBeginAtom()
-                        atom2 = bond.GetEndAtom()
-                        if (atom1.GetAtomicNum() == 8 or atom2.GetAtomicNum() == 8):
-                            ester_bond_count += 1
+        # Check if the bond is a double bond (P=O).
+        if bond_PO.GetBondType() == rdchem.BondType.DOUBLE:
+            phosphoryl_count += 1
+        else:
+            # For a potential ester oxygen, check that this oxygen is connected to a carbon that is itself double-bonded to at least one oxygen.
+            is_ester = False
+            for nbr in o_atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 6:  # carbon candidate
+                    for bond in nbr.GetBonds():
+                        # Skip oxygen that is our current o_atom
+                        other = bond.GetOtherAtom(nbr)
+                        if other.GetAtomicNum() == 8 and bond.GetBondType() == rdchem.BondType.DOUBLE:
+                            is_ester = True
                             break
-                break
-    if ester_bond_count != 2:
-        return False, f"Phosphorus atom is connected to {ester_bond_count} ester bond(s) instead of 2 expected for a diacyl phosphatidyl moiety"
+                    if is_ester:
+                        break
+            if is_ester:
+                ester_count += 1
+    if phosphoryl_count != 1:
+        return False, f"Phosphorus atom is connected to {phosphoryl_count} phosphoryl (P=O) bond(s); expected exactly 1"
+    if ester_count != 2:
+        return False, f"Phosphorus atom is connected to {ester_count} ester bond(s) (via O-C(=O) groups) instead of 2 expected for a diacyl phosphatidyl moiety"
+    
+    return True, ("Molecule contains a candidate 1D-myo-inositol headgroup (with 1 phospho substitution on a six-membered carbon ring "
+                  "and 5 free hydroxyls) and its phosphate group is connected to a phosphoryl oxygen and 2 ester oxygens as expected.")
 
-    # If all criteria are met, the molecule is accepted.
-    return True, ("Molecule contains a candidate 1D-myo-inositol headgroup (with 1 phospho substitution at the ring "
-                  "and 5 free hydroxyls) and its phosphate is linked to two ester bonds as expected for a diacyl phosphatidyl moiety.")
-
-
-# Example usage (for testing purposes):
+# ----- For testing purposes -----
 if __name__ == "__main__":
-    # Test with one of the provided correct examples:
-    test_smiles = "CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O)OC(=O)CCCCCCC\\C=C/C\\C=C/CCCCC"
+    # Test with one of the provided correct examples.
+    test_smiles = ("CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)"
+                   "[C@@H](O)[C@H]1O)OC(=O)CCCCCCC\\C=C/C\\C=C/CCCCC")
     result, explanation = is_1_phosphatidyl_1D_myo_inositol(test_smiles)
     print("Classification:", result)
     print("Explanation:", explanation)
