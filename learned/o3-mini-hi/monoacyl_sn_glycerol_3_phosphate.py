@@ -5,145 +5,120 @@ Classifies: CHEBI:17088 monoacyl-sn-glycerol 3-phosphate
 Classifies: monoacyl-sn-glycerol 3-phosphate
 
 Definition:
-  An sn-glycero-3-phosphate compound that has exactly one acyl ester
-  (an acyl group replacing one –OH at either sn-1 or sn-2) while the phosphate
-  group (at sn-3) remains the only additional ester substituent. Additional
-  heteroatoms (for example nitrogen from choline, ethanolamine, serine, etc.) 
-  are not allowed.
+  An sn-glycero-3-phosphate compound having a single unspecified acyl group
+  at either position 1 or position 2. That means exactly one of the two
+  hydroxyl groups (sn-1 or sn-2) in glycerol is acylated (via an ester bond)
+  while the phosphate group on sn-3 is retained as an ester and no additional
+  heteroatoms (e.g. nitrogen) are present.
   
-The approach is to:
+Approach:
   1. Parse the SMILES.
-  2. Require that the molecule contains exactly one phosphorus atom.
-  3. Reject molecules that contain nitrogen atoms.
-  4. Count the number of acyl ester groups (using the pattern "OC(=O)[#6]") and
-     require exactly one.
-  5. Look for either an sn-1–acyl or sn-2–acyl glycerol–phosphate backbone.
-     The SMARTS below demand three connected carbons where (for sn1) the first
-     carbon bears an acyl ester and the second bears a free hydroxyl or (for sn2)
-     vice‐versa. In both cases the third carbon is bound to the phosphate group.
-  6. As an extra check the free –OH oxygen (atom map “oh”) is examined to ensure
-     that it is not “over‐substituted” (i.e. it should have only one heavy–atom
-     neighbor, its glycerol carbon).
+  2. Require exactly one phosphorus atom.
+  3. Reject any molecule containing nitrogen.
+  4. Count acyl ester groups using the SMARTS "OC(=O)[#6]"; there must be exactly one.
+  5. Look for a glycerol–phosphate backbone that has been acylated exactly at either sn‑1 or sn‑2.
+     We do that with two SMARTS patterns (one for acylation at sn‑1 and one for sn‑2):
+       • sn1: "[C:1](OC(=O)[C:5])[C:2]([O:4])[C:3]OP(=O)(O)O"
+       • sn2: "[C:1]([O:4])[C:2](OC(=O)[C:5])[C:3]OP(=O)(O)O"
+     In these patterns the free hydroxyl oxygen is explicitly tagged with mapping number 4.
+  6. If a backbone match is found, ensure that the free OH (atom mapped as "4") is free,
+     i.e. that in the target molecule it is bonded only to the corresponding glycerol carbon.
      
-If all tests are satisfied, the molecule is accepted.
+If all tests pass, the molecule is classified as monoacyl-sn-glycerol 3-phosphate.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     """
     Determines if a molecule is a monoacyl-sn-glycerol 3-phosphate.
     
-    A monoacyl-sn-glycerol 3-phosphate (also often called lysophosphatidic acid)
-    is defined as a glycerol-3-phosphate molecule in which exactly one of the
-    sn-1 or sn-2 hydroxyl groups is acylated.
-    
-    The test requires:
-      - exactly one phosphorus atom (for the phosphate)
-      - no nitrogen present (to avoid e.g. choline, ethanolamine, serine, inositol headgroups)
-      - exactly one acyl ester group (matching the SMARTS "OC(=O)[#6]")
-      - the presence of one (and only one) glycerol-phosphate backbone with acylation 
-        at sn-1 or sn-2. Two SMARTS patterns are used:
-           • sn1 pattern (acyl at sn-1): "[C:1](OC(=O)[*:a])[C:2]([O:oh])[C:3]OP(=O)(O)O"
-           • sn2 pattern (acyl at sn-2): "[C:1]([O:oh])[C:2](OC(=O)[*:a])[C:3]OP(=O)(O)O"
-        In both patterns the free hydroxyl (atom mapped as 'oh') is explicitly labeled.
-        Finally, we check that the free OH atom is indeed “free” (has only one heavy–atom neighbor).
-        
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        (bool, str): A tuple containing a boolean decision and a reason for classification.
+        (bool, str): Tuple indicating if the molecule was classified as a monoacyl-sn-glycerol 
+                     3-phosphate and a reason.
     """
-    # 1. Parse the SMILES string.
+    # 1. Parse SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # 2. Ensure exactly one phosphorus atom is present.
+    # 2. Require exactly one phosphorus atom.
     phosphorus_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
     if len(phosphorus_atoms) != 1:
         return False, f"Molecule must contain exactly one phosphorus atom (found {len(phosphorus_atoms)})"
     
-    # 3. Reject if any nitrogen atoms are present (eliminates many unwanted headgroups).
+    # 3. Reject molecules containing nitrogen.
     nitrogen_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
     if nitrogen_atoms:
-        return False, "Molecule contains nitrogen atoms suggesting an alternative headgroup"
+        return False, "Molecule contains nitrogen atoms, indicating an alternative headgroup"
     
-    # 4. Count acyl ester bonds.
-    # We define an acyl ester as an oxygen connected to a carbonyl: OC(=O)[#6]
+    # 4. Count acyl ester groups.
+    # Define an acyl ester as an oxygen directly connected to a carbonyl carbon: OC(=O)[#6]
     acyl_pattern = Chem.MolFromSmarts("OC(=O)[#6]")
+    if acyl_pattern is None:
+        return False, "Invalid SMARTS pattern for acyl ester"
     acyl_matches = mol.GetSubstructMatches(acyl_pattern)
     if len(acyl_matches) != 1:
         return False, f"Molecule must contain exactly one acyl ester group (found {len(acyl_matches)})"
     
-    # 5. Define SMARTS patterns for the glycerol-phosphate backbone.
-    # Atom mapping is used so that the free hydroxyl oxygen (tagged as [O:oh])
-    # can be checked later.
-    # sn1: acylated at sn-1; free OH at sn-2; phosphate on sn-3.
-    sn1_smarts = "[C:1](OC(=O)[*:a])[C:2]([O:oh])[C:3]OP(=O)(O)O"
-    # sn2: free OH at sn-1; acylated at sn-2; phosphate on sn-3.
-    sn2_smarts = "[C:1]([O:oh])[C:2](OC(=O)[*:a])[C:3]OP(=O)(O)O"
-    
+    # 5. Define SMARTS for glycerol-phosphate backbone.
+    # The free hydroxyl oxygen is tagged with mapping number 4.
+    sn1_smarts = "[C:1](OC(=O)[C:5])[C:2]([O:4])[C:3]OP(=O)(O)O"  # acyl at sn-1; free OH on C2
+    sn2_smarts = "[C:1]([O:4])[C:2](OC(=O)[C:5])[C:3]OP(=O)(O)O"  # acyl at sn-2; free OH on C1
     patt_sn1 = Chem.MolFromSmarts(sn1_smarts)
     patt_sn2 = Chem.MolFromSmarts(sn2_smarts)
     
+    if patt_sn1 is None or patt_sn2 is None:
+        return False, "Invalid SMARTS pattern for glycerol-phosphate backbone"
+    
     matches_sn1 = mol.GetSubstructMatches(patt_sn1)
     matches_sn2 = mol.GetSubstructMatches(patt_sn2)
-    total_matches = len(matches_sn1) + len(matches_sn2)
+    total_backbone_matches = len(matches_sn1) + len(matches_sn2)
     
-    # Exactly one backbone match is required.
-    if total_matches == 0:
-        return False, "No glycerol-3-phosphate backbone with appropriate acyl substitution found"
-    if total_matches > 1:
-        return False, f"Multiple ({total_matches}) backbone matches found; expected exactly one"
-    
-    # 6. Check that the free hydroxyl oxygen is indeed free (i.e. not further substituted).
-    # Identify the match and extract the atom corresponding to [O:oh].
+    if total_backbone_matches == 0:
+        return False, "No glycerol-phosphate backbone with appropriate acyl substitution found"
+    if total_backbone_matches > 1:
+        return False, f"Multiple ({total_backbone_matches}) backbone matches found; expected exactly one"
+        
+    # Identify which pattern (sn1 or sn2) provided the match.
     backbone_match = matches_sn1[0] if matches_sn1 else matches_sn2[0]
-    # In our SMARTS the free hydroxyl oxygen is not directly in the match tuple because it is not a heavy atom
-    # in the main backbone pattern.
-    # So we retrieve the free-O by following from the corresponding glycerol carbon.
-    # For sn1, atom mapping [C:2] should have a neighbor that is an oxygen representing the free OH.
-    # Similarly for sn2.
-    # We attempt to locate an oxygen neighbor with atomic number 8 that is not part of an ester.
-    free_oh_found = False
-    for atom_idx in backbone_match:  # backbone_match contains indices for mapped carbons [C:1], [C:2], and [C:3]
-        atom = mol.GetAtomWithIdx(atom_idx)
-        # Look for oxygen neighbors that are not involved in a C=O (part of an acyl ester)
-        for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 8:
-                # Check that this oxygen does not have a double-bond to carbon (which would mark a carbonyl)
-                is_carbonyl = False
-                for sub_nbr in nbr.GetNeighbors():
-                    if sub_nbr.GetAtomicNum() == 6:
-                        for bond in nbr.GetBonds():
-                            if bond.GetBeginAtom() == nbr or bond.GetEndAtom() == nbr:
-                                if bond.GetBondTypeAsDouble() == 2:
-                                    is_carbonyl = True
-                                    break
-                    if is_carbonyl:
-                        break
-                # We further demand that the oxygen itself is not bonded to any other heavy atoms
-                # (free hydroxyl oxygen should have a degree of 1 when excluding implicit hydrogens).
-                if not is_carbonyl and nbr.GetDegree() == 1:
-                    free_oh_found = True
-                    break
-        if free_oh_found:
-            break
-
-    if not free_oh_found:
-        return False, "Glycerol backbone free hydroxyl group is not in the expected form"
+    # The backbone_match is a tuple of target atom indices corresponding to the query atoms.
+    # However, to locate the atom corresponding to mapping number 4 (free hydroxyl oxygen),
+    # we need to know which query index held that mapping.
+    # We'll search the query (patt_sn1 if sn1 matched, else patt_sn2) for an atom with the property "molAtomMapNumber" equal to "4".
+    query = patt_sn1 if matches_sn1 else patt_sn2
+    free_oh_query_idx = None
+    for atom in query.GetAtoms():
+        if atom.HasProp("molAtomMapNumber"):
+            if atom.GetProp("molAtomMapNumber") == "4":
+                free_oh_query_idx = atom.GetIdx()
+                break
+    if free_oh_query_idx is None:
+        return False, "Failed to identify free hydroxyl atom in the backbone pattern"
+    
+    # Now get the corresponding atom from the target molecule.
+    free_oh_atom_idx = backbone_match[free_oh_query_idx]
+    free_oh_atom = mol.GetAtomWithIdx(free_oh_atom_idx)
+    # Check that the free OH oxygen (atomic num 8) is only bound to one heavy atom.
+    heavy_neighbor_count = sum(1 for nbr in free_oh_atom.GetNeighbors() if nbr.GetAtomicNum() > 1)
+    if heavy_neighbor_count != 1:
+        return False, "The free hydroxyl oxygen is over-substituted; expected a free OH group"
     
     return True, "Molecule has a glycerol-phosphate backbone with exactly one acyl ester group at sn-1 or sn-2"
 
-# For testing purposes:
+
+# For testing purposes, one may run:
 if __name__ == "__main__":
-    # Examples of positively classified structures:
+    # List of example SMILES strings for monoacyl-sn-glycerol 3-phosphate molecules.
     test_smiles_list = [
-        "CCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O",  # 1-icosanoyl-sn-glycero-3-phosphate
-        "P(OC[C@H](O)COC(=O)CCCCCCCCCCCC)(O)(O)=O",     # 1-nonadecanoyl-glycero-3-phosphate
+        "CCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O",   # 1-icosanoyl-sn-glycero-3-phosphate
+        "P(OC[C@H](O)COC(=O)CCCCCCCCCCCC)(O)(O)=O",      # 1-nonadecanoyl-glycero-3-phosphate
+        "P(OCC(O)COC(=O)CCCCCCCCCCCCCCCCC)(O)(O)=O",      # Example: 1-stearoyl-sn-glycero-3-phosphate
     ]
     for smi in test_smiles_list:
-        result, reason = is_monoacyl_sn_glycerol_3_phosphate(smi)
-        print(smi, result, reason)
+        res, msg = is_monoacyl_sn_glycerol_3_phosphate(smi)
+        print(f"SMILES: {smi}\nResult: {res}\nReason: {msg}\n")
