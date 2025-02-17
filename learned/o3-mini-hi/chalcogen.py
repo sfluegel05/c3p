@@ -3,21 +3,21 @@ Classifies: CHEBI:33303 chalcogen
 """
 """
 Classifies: CHALCOGEN - Any p-block element belonging to the group 16 family of the periodic table.
-Only molecules that are represented as a single isolated atom (with no explicit additional atoms)
-are accepted. Allowed chalcogens: Oxygen (atomic number 8), Sulfur (16), Selenium (34),
-Tellurium (52), and Polonium (84).
+Only molecules that are represented as a single isolated atom (with no additional atoms) are accepted.
+Allowed chalcogens: Oxygen (atomic number 8), Sulfur (16), Selenium (34), Tellurium (52),
+and Polonium (84).
 """
 
 from rdkit import Chem
 
 def is_chalcogen(smiles: str):
     """
-    Determines if a molecule is represented as a neutral, single isolated atom that is
-    a group 16 (chalcogen) element based on its SMILES string.
+    Determines if a molecule is represented as a neutral single isolated atom that is a 
+    group 16 (chalcogen) element based on its SMILES string.
     
     The molecule must be written as a single atom (for example, "[Se]" rather than "[H][Se][H]").
-    This ensures that species like water, selane, or tellane, where additional atoms are explicitly
-    provided, are not misclassified.
+    This ensures that species like water or selane, which contain additional atoms, are not 
+    misclassified.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -31,20 +31,22 @@ def is_chalcogen(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Ensure that the molecule is a single isolated atom.
+    # Reject if the molecule does not represent a single isolated atom.
+    # This check ensures molecules like "[H]O[H]" (water) or "[H][Se][H]" are rejected.
     if mol.GetNumAtoms() != 1:
         return False, "Molecule does not represent a single isolated atom"
     
     # Get the sole atom.
     atom = mol.GetAtomWithIdx(0)
     
-    # Check that the atom has no formal charge.
+    # Check that the atom is neutral.
     if atom.GetFormalCharge() != 0:
         return False, f"Atom has a formal charge of {atom.GetFormalCharge()}, not neutral"
     
     # Allowed atomic numbers for group 16 (chalcogens).
     allowed_atomic_nums = {8, 16, 34, 52, 84}
     atomic_num = atom.GetAtomicNum()
+    
     if atomic_num in allowed_atomic_nums:
         return True, f"Element with atomic number {atomic_num} is a chalcogen"
     else:
@@ -59,7 +61,7 @@ def is_chalcogen(smiles: str):
 #     "[33S]", "[125Te]", "[204Po]", "[S]", "[200Po]", "[15O]",
 #     "[196Po]", "[35S]", "[37S]", "[199Po]", "[191Po]", "[198Po]",
 #     "[34S]", "[17O]", "[214Po]",
-#     # False positive examples: these should be rejected since they are not strictly single-atom.
+#     # False positives: these should be rejected because they are not strictly single-atom.
 #     "[H]O[H]", "[H][Se][H]", "[H][Te][H]", "[H]S([H])([H])[H]", "[H][Po][H]"
 # ]
 #
