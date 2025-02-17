@@ -2,20 +2,19 @@
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
 """
-Classifies: very long-chain fatty acid (chain length > C22; > C27 = ultra-long-chain)
-Heuristic improvements:
-  1. Ensure a valid carboxylic acid group is present (protonated or deprotonated).
-  2. For the acid carbon, only one carbon neighbor is allowed.
-  3. Starting from that neighbor, follow the chain atom–by–atom. At each step, the carbon (ignoring the atom we came from)
-     must have exactly one carbon neighbor. (That is, no extra branches.)
-  4. Also require that none of the chain carbons lie in a ring.
-  5. As an extra filter, make sure that nearly all carbon atoms in the molecule belong to the chain (allowing a small allowance for minor substituents,
-     such as a methoxy group at C2).
-  6. Finally, count the chain length (including the acid carbon); if >22 then the molecule qualifies as a very long‐chain fatty acid.
-     If >27, note it is ultra-long‐chain.
+Classifies: very long-chain fatty acid.
+Heuristic:
+  1. The molecule must contain a free (protonated) carboxylic acid group (SMARTS: C(=O)O).
+  2. The acid carbon (first atom in the pattern) must have exactly one carbon neighbor.
+  3. From that neighbor, follow a chain atom-by-atom. At each step, the carbon (ignoring the one we came from)
+     must be unique (i.e. no branches) and not be in a ring.
+  4. In addition, no chain atom may have extra carbon substituents attached directly.
+  5. Finally, the total number of carbons in the main chain (including the acid carbon) must be >22
+     (long-chain) and >27 is noted as ultra-long-chain.
      
-Note: In fatty acid nomenclature the “chain length” is often taken to be the total number of carbons (including the acid carbon).
-This heuristic is not perfect but improves on the previous one.
+Note: This heuristic does allow a small substituent (if linked via an intervening heteroatom, e.g. a methoxy)
+attached to the chain. However, any extra direct (C–C) substituents not incorporated in the main unbranched chain
+will cause the molecule to be rejected.
 """
 
 from rdkit import Chem
@@ -24,14 +23,15 @@ def is_very_long_chain_fatty_acid(smiles: str):
     """
     Determines if a molecule is a very long-chain fatty acid based on its SMILES string.
     
-    A very long-chain fatty acid is (heuristically) defined as a molecule having a carboxylic acid group
-    (protonated [C(=O)O] or deprotonated [C(=O)[O-]]) where the acid carbon is attached to a single unbranched, 
-    acyclic (non-ring) linear chain of carbons. To be classified, the total number of carbons in the main chain
-    (starting from the acid carbon) must be greater than 22. If the chain is even longer (>27 carbons), 
-    it is noted as ultra-long-chain.
+    A very long-chain fatty acid is heuristically defined as a molecule containing a single free (protonated)
+    carboxylic acid group (C(=O)O) whose acid carbon is attached to a single, unbranched acyclic chain.
+    This chain is “walked” atom-by-atom by requiring that each chain carbon (after the acid carbon) 
+    has exactly one other carbon neighbor (aside from the previous atom). Furthermore, if any chain atom 
+    has an extra directly attached carbon (i.e. a branch) the molecule is rejected – note that groups such as 
+    methoxy are allowed since the chain atom is attached to oxygen and then to a carbon.
     
-    In addition to tracing the chain, an extra “purity” filter is applied:
-    nearly all carbon atoms in the molecule (all but up to two) should lie in the main chain.
+    Finally, the number of carbons in the main chain (counting the acid carbon) must be >22. If >27 we note it as 
+    ultra-long-chain.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -40,80 +40,90 @@ def is_very_long_chain_fatty_acid(smiles: str):
         bool: True if the molecule qualifies as a very long-chain fatty acid, False otherwise.
         str: Reason for the decision.
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS for carboxylic acid: allow both protonated and deprotonated forms.
-    acid_pattern1 = Chem.MolFromSmarts("C(=O)[OH]")
-    acid_pattern2 = Chem.MolFromSmarts("C(=O)[O-]")
-    acid_matches = mol.GetSubstructMatches(acid_pattern1) + mol.GetSubstructMatches(acid_pattern2)
+    
+    # Only consider the free (protonated) carboxylic acid: C(=O)O
+    acid_pattern = Chem.MolFromSmarts("C(=O)O")
+    acid_matches = mol.GetSubstructMatches(acid_pattern)
     if not acid_matches:
-        return False, "No carboxylic acid group found"
+        return False, "No free (protonated) carboxylic acid group found"
 
-    # For now, we use the first found acid group.
-    # In the SMARTS match the first atom is the acid C.
+    # Use first matching acid group.
+    # In the SMARTS the acid carbon appears as the first atom.
     acid_carbon_idx = acid_matches[0][0]
     acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
-
-    # Among acid carbon's neighbors, select only carbon atoms.
-    carbon_neighbors = [nbr for nbr in acid_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
-    if len(carbon_neighbors) != 1:
-        return False, f"Expected exactly one carbon neighbor off the acid carbon, found {len(carbon_neighbors)}."
-
-    # Now, walk the potential fatty acid chain starting from that unique neighbor.
-    # We also record the set of carbon atoms that are part of the main chain.
-    chain_indices = {acid_carbon_idx}  # include the acid carbon
-    current_atom = carbon_neighbors[0]
+    
+    # The acid carbon should have exactly one carbon neighbor (the start of the chain)
+    c_neighbors = [nbr for nbr in acid_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
+    if len(c_neighbors) != 1:
+        return False, f"Acid carbon has {len(c_neighbors)} carbon neighbors; expected exactly one chain initiation"
+    
+    chain_indices = set()
+    chain_indices.add(acid_carbon_idx)
+    chain_atoms = []  # list of atoms along the chain (in order)
+    chain_atoms.append(acid_carbon)
+    
+    # Start with the unique chain neighbor.
+    current_atom = c_neighbors[0]
     chain_indices.add(current_atom.GetIdx())
-    chain_length = 2  # count acid carbon and its first neighbor
+    chain_atoms.append(current_atom)
+    chain_length = 2  # acid carbon + first neighbor
 
-    # Walk while the chain is unbranched, and check that no chain atom is in a ring.
     prev_idx = acid_carbon_idx
+    
+    # Walk the chain as long as exactly one carbon neighbor (other than the atom we came from) is present.
     while True:
         # Check that current atom is not in any ring.
         if current_atom.IsInRing():
-            return False, "Chain atom is in a ring; fatty acid chain must be acyclic."
-
-        # Get current carbon neighbors excluding the one we just came from.
-        nbr_carbons = [nbr for nbr in current_atom.GetNeighbors()
+            return False, f"Chain atom with idx {current_atom.GetIdx()} is in a ring; chain must be acyclic"
+        
+        # Check for extra direct carbon substituents on the current chain atom.
+        # (Allow the atom we came from; all other C neighbors not in the main chain are not allowed.)
+        for nbr in current_atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in chain_indices:
+                return False, f"Extra carbon substituent detected on chain atom idx {current_atom.GetIdx()}; chain is branched"
+        
+        # Get carbon neighbors (exclude what we came from)
+        nbr_carbons = [nbr for nbr in current_atom.GetNeighbors() 
                        if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_idx]
-        # If no further carbon neighbor, chain terminates.
+        
         if len(nbr_carbons) == 0:
+            # Chain terminated
             break
-        # If more than one, then a branch is encountered.
         if len(nbr_carbons) > 1:
-            return False, "Fatty acid chain is branched, not a single unbranched linear chain."
-        # Otherwise, exactly one; continue the chain.
+            return False, "Fatty acid chain is branched, not a single unbranched linear chain"
+        
+        # Continue the chain.
         next_atom = nbr_carbons[0]
-        chain_indices.add(next_atom.GetIdx())
         chain_length += 1
+        chain_indices.add(next_atom.GetIdx())
+        chain_atoms.append(next_atom)
+        
+        # Step along the chain.
         prev_idx = current_atom.GetIdx()
         current_atom = next_atom
 
-    # Now, use the heuristic that for a free fatty acid almost all carbon atoms in the molecule
-    # should be in the main chain. Allow a small difference (allow up to two extra carbons)
+    # As an additional purity filter, nearly all carbon atoms of the molecule should be in the main chain.
     total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     extra_carbons = total_carbons - len(chain_indices)
-    if extra_carbons > 2:
-        return False, (f"Too many carbon atoms outside the main chain "
-                       f"({extra_carbons} extra carbons detected), so unlikely to be a free fatty acid.")
-
-    # Check chain length against the threshold.
-    # Here the chain length includes the acid carbon.
-    if chain_length > 22:
-        reason = f"Longest carbon chain from the acid carbon has {chain_length} carbons; qualifies as very long-chain fatty acid"
-        if chain_length > 27:
-            reason += " (ultra-long-chain fatty acid)"
-        return True, reason
-    else:
-        return False, f"Longest carbon chain from the acid carbon has {chain_length} carbons, which is not >22."
-
+    # Allow up to 1 extra carbon (this may cover minor substituents attached via heteroatoms)
+    if extra_carbons > 1:
+        return False, f"Too many extra carbons outside the main chain ({extra_carbons} extra carbons detected)"
+    
+    if chain_length <= 22:
+        return False, f"Longest carbon chain from the acid carbon has {chain_length} carbons, which is not >22"
+    
+    reason = f"Longest carbon chain from the acid carbon has {chain_length} carbons; qualifies as very long-chain fatty acid"
+    if chain_length > 27:
+        reason += " (ultra-long-chain fatty acid)"
+    
+    return True, reason
 
 # Example usage (this code block is self-contained):
 if __name__ == "__main__":
-    # Test one example from the provided list:
-    test_smiles = "CCCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCC(O)=O"
+    # A test example from the provided list. You can replace this with other SMILES strings.
+    test_smiles = "CCCC C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC(O)=O".replace(" ", "")
     result, msg = is_very_long_chain_fatty_acid(test_smiles)
     print(result, msg)
