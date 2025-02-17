@@ -1,15 +1,14 @@
 """
 Classifies: CHEBI:16158 steroid sulfate
 """
+#!/usr/bin/env python
 """
 Classifies: steroid sulfate
 Definition: A sulfuric ester obtained by the formal condensation of a hydroxy group 
 of any steroid with sulfuric acid. For our purposes a valid steroid sulfate must have a sulfate ester group (either anionic or neutral) 
-that is attached either directly or via one intervening saturated (sp3 non‐aromatic) linker to a steroid nucleus.
-A steroid nucleus is heuristically defined as a fused polycyclic system composed solely of 5‐ and 6‐membered rings,
-with at least four rings overall (and with at least one 5‐membered ring and three 6‐membered rings). 
-The improvement over the previous attempt is that now “fused” rings are only merged when they share an entire bond (≥2 atoms)
-and the connectivity from the sulfate oxygen to the nucleus is checked via a shortest‐path search.
+that is attached either directly or via one intervening saturated (sp3 non‐aromatic) linker to a steroid nucleus. 
+Our heuristic for a steroid nucleus is a fused polycyclic system composed solely
+of 5‐ and 6‐membered rings with at least four rings (and with at least one 5‐membered ring and three 6‐membered rings).
 """
 
 from rdkit import Chem
@@ -21,19 +20,17 @@ def is_steroid_sulfate(smiles: str):
     
     Process:
     1. Parse the molecule.
-    2. Identify candidate steroid nucleus:
-       - Collect rings of size 5 or 6.
-       - Build a graph of rings that are truly fused (share ≥2 atoms).
-       - For each connected group, count the rings and their sizes.
-         Accept if one group contains at least 4 rings (≥1 five‐membered and ≥3 six‐membered).
-    3. Identify candidate sulfate group(s):
-       - For each oxygen atom bonded to a sulfur via a single bond,
-         check that the connected sulfur is “sulfate‐like” (bonded to at least 3 oxygens via single bonds).
-    4. For each candidate sulfate ester oxygen, look for a connection to the nucleus:
-       - Compute the shortest bond path from the candidate oxygen to any nucleus atom.
-         Accept if the path length is 1 (direct attachment).
-       - Or if the path length is 2, check that the intervening atom is sp3 and non‐aromatic.
-    
+    2. Identify a candidate steroid nucleus:
+       - Extract all rings of size 5 or 6.
+       - Group rings that are fused (share at least one atom, merging also indirect fusion).
+       - Accept if any fused group contains at least 4 rings overall with at least 1 five‐membered ring and 3 six‐membered rings.
+    3. Identify sulfate ester attachment oxygens:
+       - Look for O atoms that are single-bonded to a S atom.
+       - The sulfur must be “sulfate‐like” (bonded to at least three oxygens).
+    4. For each candidate attachment oxygen, check connectivity:
+       - If the oxygen’s neighbor (other than the sulfate S) is in the nucleus, accept.
+       - Otherwise, if that neighbor is sp3, non‐aromatic and has any neighbor that belongs to the steroid nucleus, accept.
+       
     Args:
         smiles (str): SMILES string of the molecule.
         
@@ -56,111 +53,112 @@ def is_steroid_sulfate(smiles: str):
     if not rings_5_or_6:
         return False, "No 5- or 6-membered rings found; not a steroid nucleus"
     
-    # Build a graph among rings - nodes are indices of rings in rings_5_or_6;
-    # add an edge if two rings share at least 2 atoms (an entire bond).
-    n_rings = len(rings_5_or_6)
-    adj = {i: set() for i in range(n_rings)}
-    for i in range(n_rings):
-        for j in range(i+1, n_rings):
-            # If the two rings share at least 2 atoms, consider them fused.
-            if len(rings_5_or_6[i] & rings_5_or_6[j]) >= 2:
-                adj[i].add(j)
-                adj[j].add(i)
-    
-    # Determine connected components in the ring graph.
-    visited = set()
-    fused_components = []
-    for i in range(n_rings):
-        if i in visited:
-            continue
-        comp = set()
-        stack = [i]
-        while stack:
-            node = stack.pop()
-            if node in visited:
-                continue
-            visited.add(node)
-            comp.add(node)
-            stack.extend(adj[node] - visited)
-        fused_components.append(comp)
-    
-    # For each fused component, get the union of atoms, and count how many rings (by original list)
-    steroid_nucleus = None
-    for comp in fused_components:
-        # comp is a set of indices into rings_5_or_6
-        component_rings = [rings_5_or_6[i] for i in comp]
-        # Count rings by size (note that rings may share atoms, but count the ring instances)
-        count_5 = sum(1 for ring in component_rings if len(ring) == 5)
-        count_6 = sum(1 for ring in component_rings if len(ring) == 6)
-        if len(component_rings) >= 4 and count_5 >= 1 and count_6 >= 3:
-            # Use the union of all atoms in these rings as the nucleus
-            nucleus_atoms = set()
-            for ring in component_rings:
-                nucleus_atoms.update(ring)
-            steroid_nucleus = nucleus_atoms
-            break
-    
-    if steroid_nucleus is None:
+    # Group fused rings (rings sharing at least one atom)
+    fused_groups = []
+    for ring in rings_5_or_6:
+        merged = False
+        for group in fused_groups:
+            if ring & group:  # if they share at least one atom
+                group.update(ring)
+                merged = True
+                break
+        if not merged:
+            fused_groups.append(set(ring))
+    # Merge indirectly fused groups in a second pass.
+    merged_any = True
+    while merged_any:
+        merged_any = False
+        new_groups = []
+        while fused_groups:
+            grp = fused_groups.pop()
+            found = False
+            for idx, other in enumerate(new_groups):
+                if grp & other:
+                    new_groups[idx] = other.union(grp)
+                    found = True
+                    merged_any = True
+                    break
+            if not found:
+                new_groups.append(grp)
+        fused_groups = new_groups
+
+    # Next, from all rings, count which fused groups yield a steroid nucleus prediction.
+    steroid_candidate = None
+    for group in fused_groups:
+        # Count rings (from our rings_5_or_6) that are fully contained in this group.
+        contained_rings = [ring for ring in rings_5_or_6 if ring.issubset(group)]
+        if len(contained_rings) >= 4:
+            count_5 = sum(1 for ring in contained_rings if len(ring)==5)
+            count_6 = sum(1 for ring in contained_rings if len(ring)==6)
+            if count_5 >= 1 and count_6 >= 3:
+                steroid_candidate = group
+                break
+    if steroid_candidate is None:
         return False, ("No fused tetracyclic (steroid) nucleus found "
-                       "(requires at least 4 fused rings [with ≥1 five-membered and ≥3 six-membered rings])")
+                       "(requires at least 4 fused rings with at least 1 five-membered and 3 six-membered rings)")
+    nucleus_atoms = steroid_candidate  # set of atom indices in the nucleus
     
-    # ----- Step 2: Identify candidate sulfate ester oxygen(s) -----
+    # ----- Step 2: Identify sulfate ester attachment oxygens -----
     candidate_oxy_indices = []
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 8:
-            continue  # only oxygens
+            continue  # not oxygen
+        # Check if bonded to a sulfur
         for nbr in atom.GetNeighbors():
             if nbr.GetAtomicNum() == 16:  # sulfur
                 bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                # require single bond (to exclude S=O double bonds)
+                # must be a single bond
                 if bond.GetBondType() != rdchem.BondType.SINGLE:
                     continue
-                # Check that this sulfur is “sulfate‐like”: at least three oxygen neighbors via single bonds.
+                # Check that this sulfur is “sulfate-like”
+                # Count oxygen neighbors of the sulfur.
                 oxy_count = 0
                 for snbr in nbr.GetNeighbors():
                     if snbr.GetAtomicNum() == 8:
-                        bnd = mol.GetBondBetweenAtoms(nbr.GetIdx(), snbr.GetIdx())
-                        if bnd.GetBondType() == rdchem.BondType.SINGLE:
-                            oxy_count += 1
+                        oxy_count += 1
                 if oxy_count < 3:
                     continue
-                # We have a candidate connection oxygen for the sulfate group.
+                # Make sure our oxygen is not one that is double-bonded to S.
+                if bond.GetBondTypeAsDouble() >= 2.0:
+                    continue
                 candidate_oxy_indices.append(atom.GetIdx())
-                break  # no need to check further neighbors for this oxygen
+                break  # no need to check additional neighbors for this oxygen
 
     if not candidate_oxy_indices:
         return False, "No sulfate ester attachment oxygen found"
-
-    # ----- Step 3: Check connectivity from candidate sulfate oxygen to the steroid nucleus -----
-    # For each candidate oxygen, we check the shortest path (number of bonds) to ANY nucleus atom.
+    
+    # ----- Step 3: Check connectivity from candidate oxygen to the steroid nucleus -----
     attached_found = False
     for oxy_idx in candidate_oxy_indices:
-        for nuc_idx in steroid_nucleus:
-            # Get shortest path between candidate oxygen and this nucleus atom.
-            path = Chem.GetShortestPath(mol, oxy_idx, nuc_idx)
-            if not path:
-                continue
-            path_len = len(path) - 1  # number of bonds
-            # Direct attachment:
-            if path_len == 1:
+        oxy_atom = mol.GetAtomWithIdx(oxy_idx)
+        # Look at neighbors other than the sulfur (usually there is only one such neighbor)
+        for nbr in oxy_atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 16:
+                continue  # skip the sulfate sulfur neighbor
+            # Case 1: Direct attachment of the oxygen to an atom in the nucleus.
+            if nbr.GetIdx() in nucleus_atoms:
                 attached_found = True
                 break
-            # One-linker attachment is allowed if path length is 2.
-            if path_len == 2:
-                # path structure: [candidate oxygen] - X - nucleus_atom.
-                linker_idx = path[1]
-                linker = mol.GetAtomWithIdx(linker_idx)
-                if linker.GetHybridization() == rdchem.HybridizationType.SP3 and not linker.GetIsAromatic():
+            # Case 2: One-linker attachment.
+            # The oxygen is attached to a linker atom that is not in the nucleus but that linker must be sp3 and non-aromatic.
+            # Then that linker should be attached to at least one nucleus atom.
+            if nbr.GetHybridization() != rdchem.HybridizationType.SP3 or nbr.GetIsAromatic():
+                continue
+            for nn in nbr.GetNeighbors():
+                if nn.GetIdx() == oxy_idx:
+                    continue
+                if nn.GetIdx() in nucleus_atoms:
                     attached_found = True
                     break
+            if attached_found:
+                break
         if attached_found:
             break
 
     if not attached_found:
-        return False, "Sulfate group not attached (even via one saturated sp3 linker) to the steroid nucleus"
-
-    return True, ("Contains sulfate ester group attached (directly or via one sp³ linker) "
-                  "to steroid nucleus (fused tetracyclic system)")
+        return False, "Sulfate group not attached (even via one saturated linker) to the steroid nucleus"
+    
+    return True, "Contains sulfate ester group attached (directly or via one saturated linker) to steroid nucleus (fused tetracyclic system)"
 
 # Example usage (testing with sample SMILES):
 if __name__ == "__main__":
@@ -169,12 +167,9 @@ if __name__ == "__main__":
         "[Na+].C[C@]12CC[C@H]3C(=CCc4cc(OS([O-])(=O)=O)ccc34)[C@@H]1CCC2=O",  # equilin sodium sulfate
         "C[C@]12CC[C@@H]3[C@H]([C@H]1CCC2=O)CCC4=C3C=CC(=C4)OS(=O)(=O)O",  # sulfuric acid ester example
         "S(O[C@H]1C[C@@]2([C@@]3([C@]([C@]4([C@](CC3)([C@H]([C@@H](O)[C@H]4O)C=C)C)[H])(CC[C@]2([C@@H](O)[C@H]1O)[H])[H])[H])C)(O)(=O)=O",  # Ptilosteroid A
-        "S(O[C@H]1C[C@@]2([C@@](C3C(C4[C@](CC3)(C(=O)CC4)C)CC2)(CC1)C)[H])(O)(=O)=O",  # Etiocholanolone sulfate
-        # False negatives (should be classified as steroid sulfate):
+        # False negatives (should be steroid sulfate):
         "S(OCC(=O)[C@@H]1[C@@]2([C@]([C@]3([C@@]([C@@]4(C(=CC3)C[C@@H](O)CC4)C)(CC2)[H])[H])(CC1)[H])C)(O)(=O)=O",  # 21-hydroxypregnenolone monosulfate
-        # One more: the examples (e.g., 5beta-scymnol sulfate) where the sulfate is connected via a linker.
-        "[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(CO)COS(O)(=O)=O",
-        # Molecules that are NOT steroid sulfates:
+        # Molecules that are NOT steroid sulfates (should be rejected):
         "O[S](=O)(=O)O",  # pure sulfate group
         "CCCC",         # non-cyclic aliphatic
     ]
