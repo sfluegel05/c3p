@@ -3,23 +3,24 @@ Classifies: CHEBI:50477 butyrate ester
 """
 """
 Classifies: butyrate ester
-Definition: Any carboxylic ester where the acid (acyl) component is butyric acid.
-That is the acyl group is butyrate (CH3CH2CH2CO–); we look for an ester fragment:
-    –O–C(=O)–CH2–CH2–C
-and then verify that the last carbon is terminal (i.e. its only neighbor is the previous methylene).
-This improves on a naïve SMARTS by:
-  • Allowing for deuterated terminal methyl groups.
-  • Checking that the putative butyrate acyl portion is not “embedded” in a larger system.
+Definition: Any carboxylic ester where the acyl (acid) component is butyric acid.
+That is, the ester fragment should have the form:
+   [O;H0;!$([O-])]-C(=O)[CH2][CH2][C]
+and further the terminal carbon (the last C) must be isolated:
+it should only be bonded to the preceding methylene (i.e. be a terminal methyl group),
+even when deuterated.
 """
 
 from rdkit import Chem
 
 def is_butyrate_ester(smiles: str):
     """
-    Determines if a molecule contains a butyrate ester fragment (i.e. one in which the acid part is butyric acid).
-    Here we search for a substructure that looks like:
+    Determines if a molecule contains a validated butyrate ester fragment.
+    We first search for the substructure pattern that looks like:
        [O;H0;!$([O-])]-C(=O)[CH2][CH2][C]
-    and we then verify that the terminal C is in fact terminal (has only the expected connection).
+    This corresponds to the ester oxygen, the carbonyl carbon, two methylene groups,
+    and a terminal carbon. We then verify that the terminal carbon is in fact terminal,
+    i.e. it has only one explicit heavy-atom neighbor.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -33,46 +34,43 @@ def is_butyrate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string."
     
-    # Define a SMARTS pattern for a butyrate ester fragment.
-    # Instead of insisting that the terminal group is exactly [CH3;D1],
-    # we require a sequence of atoms: ester oxygen bonded to a carbonyl carbon,
-    # then two methylenes, and finally a carbon (which may be CH3 or deuterated).
-    # Later we check that the last carbon is terminal.
+    # Define and compile a SMARTS pattern for a butyrate ester fragment.
+    # The pattern corresponds to:
+    # Ester oxygen that is not protonated and not negatively charged,
+    # followed by a carbonyl C, two CH2 groups, and finally a carbon.
     pattern_smarts = "[O;H0;!$([O-])]-C(=O)[CH2][CH2][C]"
     butyrate_pattern = Chem.MolFromSmarts(pattern_smarts)
     if butyrate_pattern is None:
         return False, "Invalid SMARTS pattern."
     
     # Look for all substructure matches in the molecule.
-    # The match tuple will have indices corresponding to:
-    # (ester O, carbonyl C, first CH2, second CH2, terminal C)
+    # The match tuple indices are:
+    # (ester oxygen, carbonyl C, first CH2, second CH2, terminal C).
     matches = mol.GetSubstructMatches(butyrate_pattern)
     if not matches:
-        return False, "No butyrate ester fragment (%s) found in the molecule." % pattern_smarts
-
-    # Post-filter each match to verify that the terminal carbon is really terminal.
-    # (This check helps catch cases where the pattern might be hit in contorted settings,
-    # or where the terminal atom is not acting as a methyl group from a free butyric acid unit.)
+        return False, f"No butyrate ester fragment ({pattern_smarts}) found in the molecule."
+    
+    # Post-filter each match to verify that the terminal carbon is really a terminal methyl group.
+    # For an isolated CH3, its explicit heavy atom degree should be exactly 1 (i.e. it is only bonded
+    # to the preceding CH2 in the butyrate fragment).
     for match in matches:
-        # Get the atom corresponding to the terminal carbon
         term_atom = mol.GetAtomWithIdx(match[4])
-        # Use GetTotalDegree() to count all bonds (explicit+implicit). For a terminal methyl,
-        # its only connection should be to the previous methylene.
-        if term_atom.GetTotalDegree() == 1:
-            return True, "Found validated butyrate ester fragment (%s) in the molecule." % pattern_smarts
-
+        if term_atom.GetDegree() == 1:  # Check only explicit (heavy-atom) neighbors.
+            return True, f"Found validated butyrate ester fragment ({pattern_smarts}) in the molecule."
+    
     # If none of the matches pass the terminality check, then reject.
-    return False, "Butyrate ester fragment (%s) found but not validated (terminal atom not isolated)." % pattern_smarts
+    return False, f"Butyrate ester fragment ({pattern_smarts}) found but not validated (terminal atom not isolated)."
 
 # Example usage (for testing)
 if __name__ == "__main__":
     test_smiles = [
-        # True positives – these molecules contain the expected butyrate ester fragment.
-        "CCCC(=O)OCC(COC(=O)CCC)OC(=O)CCC",   # tributyrin
-        "CCCC(=O)OCC",                        # ethyl butyrate
-        "[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])[C@@H](O)C[C@@]1(C)[C@@]2([H])CC[C@]1(OC(=O)CCC)C(=O)CO", # cortisol 17-butyrate
-        # False negatives (should not classify as butyrate ester):
-        "C(CCCOC(C(CC)C)=O)CC",                # hexyl 2-methylbutanoate (not butyric acid)
+        # Should be classified as butyrate esters.
+        "[H][C@]12CC(=C)[C@H](CC[C@@](C)(OC(=O)CCC)[C@]([H])(O1)[C@]1([H])[C@]3([H])C[C@@]([H])(OC[C@@H]3C)[C@](C)(O)[C@]21[H])OO",  # Tritoniopsin B, rel-
+        "CCCC(=O)OCC(COC(=O)CCC)OC(=O)CCC",  # tributyrin
+        "[H][C@@]12CCC3=CC(=O)CC[C@]3(C)[C@@]1([H])[C@@H](O)C[C@@]1(C)[C@@]2([H])CC[C@]1(OC(=O)CCC)C(=O)CO",  # cortisol 17-butyrate
+        "CCCC(=O)O[C@H]1[C@H](C)O[C@H](C[C@@]1(C)O)O[C@@H]1[C@@H](C)O[C@@H](O[C@H]2[C@@H](CC=O)C[C@@H](C)[C@@H](O)\\C=C\\C=C\\C[C@@H](C)OC(=O)C[C@@H](O)[C@@H]2OC)[C@H](O)[C@H]1N(C)C",  # Leucomycin A5
+        # Examples that are not butyrate esters (should be false).
+        "C(CCCOC(C(CC)C)=O)CC",  # hexyl 2-methylbutanoate
         "O[C@@](C([N+](CC(=O)CCC)(C)C)([2H])[2H])(CC([O-])=O)[2H]",  # butyryl-L-carnitine-d3 test case
     ]
     
