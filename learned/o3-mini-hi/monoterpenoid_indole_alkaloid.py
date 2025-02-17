@@ -3,15 +3,14 @@ Classifies: CHEBI:65323 monoterpenoid indole alkaloid
 """
 """
 Classifies: monoterpenoid indole alkaloid
+
 A monoterpenoid indole alkaloid is biosynthesised from L-tryptophan and a diisoprenoid (usually secologanin)
 building block. The heuristic approach:
-  1. Look for an indole core:
-       • First try a free (or N-substituted) indole via SMARTS.
-       • If not found, look for a fused ring system where a 5-membered ring containing at least one nitrogen
-         shares ≥2 atoms with a fully aromatic 6-membered ring.
-  2. Look for a terpene-like fragment. Instead of any non‐aromatic vinyl bond, we require that at least one non‐aromatic 
-     C=C bond (vinyl fragment) is “attached” to the indole by being near (within 4 bonds) to any atom of the indole core.
-  3. Basic size check (minimum number of carbons and molecular weight).
+  1. Identify an indole core (free, N-substituted, or via fused ring system).
+  2. Look for a non‐aromatic C=C bond near the indole core.
+     Then “grow” the attached fragment (excluding the indole) and require that this fragment contains
+     at least a threshold number of carbon atoms (proxy for a terpenoid moiety).
+  3. Basic size check (total carbon count and molecular weight).
   
 Note: This heuristic will not capture every nuance of biosynthesis.
 """
@@ -24,8 +23,9 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     
     The classification is based on:
       - The presence of an indole core (free, substituted, or detected via ring fusion).
-      - The presence of a non‐aromatic vinyl (C=C) bond that is found in close proximity (within 4 bonds)
-        to the indole core (serving as a proxy for a terpene attachment).
+      - The presence of a non‐aromatic vinyl (C=C) bond close (within 4 bonds) to the indole core.
+        Moreover, the vinyl bond should be part of a fragment (excluding the indole core)
+        that contains at least 5 carbon atoms (proxy for a terpenoid unit).
       - Basic size requirements in terms of carbon count and molecular weight.
       
     Args:
@@ -61,7 +61,7 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
                         if len(ring2) == 6:
                             # Check that every atom in the 6-membered ring is aromatic.
                             if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring2):
-                                # Check for fusion: share at least 2 atoms.
+                                # Must share at least 2 atoms for a fused system.
                                 if len(set(ring1).intersection(ring2)) >= 2:
                                     indole_atoms = set(ring1).union(ring2)
                                     break
@@ -70,31 +70,68 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if indole_atoms is None:
         return False, "No indole core (free, substituted, or fused) found"
     
-    # ----- 2. Look for terpene-like (isoprenoid) fragment -----
-    # We iterate over all bonds; for each non-aromatic C=C bond, we check if it is "attached" to the indole core.
+    # ----- 2. Look for an attached terpene-like fragment -----
+    # We search for non-aromatic C=C bonds.
     terpene_found = False
     dm = Chem.GetDistanceMatrix(mol)  # distance matrix for path lengths
+    
+    # Helper function: given a starting atom idx, perform a BFS over atoms that are NOT in the indole core.
+    def bfs_fragment(start_idx, excluded_set):
+        visited = set()
+        queue = [start_idx]
+        while queue:
+            current = queue.pop(0)
+            if current in visited:
+                continue
+            visited.add(current)
+            atom = mol.GetAtomWithIdx(current)
+            for neighbor in atom.GetNeighbors():
+                nid = neighbor.GetIdx()
+                # Only traverse atoms not in the indole core.
+                if nid not in excluded_set and nid not in visited:
+                    queue.append(nid)
+        return visited
+
+    # Iterate over bonds to find non-aromatic double bonds between carbons.
+    candidate_bonds = []
     for bond in mol.GetBonds():
-        # Check if bond is a double bond and non-aromatic.
+        # Check if bond is a double bond (using GetBondTypeAsDouble()==2) and is non-aromatic.
         if bond.GetBondTypeAsDouble() == 2 and not bond.GetIsAromatic():
             i = bond.GetBeginAtomIdx()
             j = bond.GetEndAtomIdx()
             atom_i = mol.GetAtomWithIdx(i)
             atom_j = mol.GetAtomWithIdx(j)
-            # We require that both atoms are carbons (typical for a vinyl fragment).
+            # Only consider if both atoms are carbons.
             if atom_i.GetAtomicNum() != 6 or atom_j.GetAtomicNum() != 6:
                 continue
-            # Now check distance to the indole core:
-            # If either atom of the double bond is within 4 bonds of any atom in the indole core,
-            # we consider the vinyl (terpene) fragment as attached.
+            # Check if either end is close (within 4 bonds) to any indole atom.
+            attached = False
             for idx in indole_atoms:
                 if dm[i][idx] <= 4 or dm[j][idx] <= 4:
-                    terpene_found = True
+                    attached = True
                     break
-            if terpene_found:
-                break
-    if not terpene_found:
+            if attached:
+                candidate_bonds.append((i,j))
+                
+    if not candidate_bonds:
         return False, "No attached non‐aromatic vinyl fragment (terpenoid moiety proxy) detected"
+    
+    # For each candidate we now “grow” the fragment outside the indole core.
+    for i, j in candidate_bonds:
+        external_atoms = set()
+        # If an atom of the double bond is not in the indole, start BFS from it.
+        if i not in indole_atoms:
+            external_atoms |= bfs_fragment(i, indole_atoms)
+        if j not in indole_atoms:
+            external_atoms |= bfs_fragment(j, indole_atoms)
+        # Count carbon atoms in the external fragment.
+        ext_carbons = sum(1 for idx in external_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+        if ext_carbons >= 5:
+            terpene_found = True
+            break
+
+    if not terpene_found:
+        return False, "No attached non‐aromatic vinyl fragment with sufficient terpenoid fragment size detected"
     
     # ----- 3. Basic size and composition checks -----
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
@@ -105,7 +142,7 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol_wt < 250:
         return False, "Molecular weight too low for a typical monoterpenoid indole alkaloid"
     
-    return True, "Contains an indole core and an attached terpene-related vinyl fragment with adequate size"
+    return True, "Contains an indole core and an attached terpene-related fragment of adequate size"
 
-# (Optional) You can run tests by calling the function with example SMILES.
-# e.g., print(is_monoterpenoid_indole_alkaloid("C/C=C\\1/CN2[C@]3(C[C@@]1(C(CO)(C(=O)OC)[C@@]45C[C@@]2(O[C@@]34NC6=CC=CC=C65)[H])[H])[H]"))
+# (Optional) To run tests, you may call the function with SMILES strings, e.g.:
+# print(is_monoterpenoid_indole_alkaloid("C/C=C\\1/CN2[C@]3(C[C@@]1(C(CO)(C(=O)OC)[C@@]45C[C@@]2(O[C@@]34NC6=CC=CC=C65)[H])[H])[H]"))
