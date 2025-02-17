@@ -3,16 +3,12 @@ Classifies: CHEBI:35359 carboxamidine
 """
 """
 Classifies: Carboxamidine-containing compounds.
-Definition: Compounds having the structure RC(=NR)NR2, i.e. a -C(=NH)NH2 group or a substituted variant.
-This improved algorithm refines the SMARTS match and filtering criteria:
-  • Uses both neutral and cationic SMARTS for the carboxamidine motif.
-  • Excludes cases where the double‐bonded N is attached to an oxygen bearing at least one hydrogen.
-  • Checks that the carboxamidine carbon (after adding hydrogens) has a proper heavy-atom environment:
-       – Its heavy (non‐H) neighbors should total either 2 (if R is H) or 3 (if R is not hydrogen)
-         and exactly two of these must be nitrogen atoms.
-  • Rejects molecules that appear peptide-like (many amide bonds in a heavy molecule).
+Definition: Compounds having the structure RC(=NR)NR2 (e.g. -C(=NH)NH2 and substituted variants).
+This algorithm uses SMARTS for both neutral and cationic variants,
+applies filters to exclude amidoxime-like moieties, verifies heavy-atom connectivity,
+ensures proper sp2 hybridization for the carboxamidine carbon and double-bonded nitrogen,
+and flags peptide-like molecules.
 """
-
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
@@ -34,22 +30,25 @@ def is_carboxamidine(smiles: str):
     # Add explicit hydrogens so that neighbor analysis is unambiguous.
     mol = Chem.AddHs(mol)
     
-    # Define two SMARTS patterns for carboxamidine:
+    # Define SMARTS patterns for the carboxamidine motif:
+    # Pattern for neutral carboxamidine: carbon double-bonded to an [NX2] and single-bonded to an [NX3]
     pattern_neutral = Chem.MolFromSmarts("[CX3](=[NX2])[NX3]")
+    # Pattern for a cationic variant (sometimes encountered)
     pattern_cationic = Chem.MolFromSmarts("[CX3](=[NX2+])[NX3]")
     if pattern_neutral is None or pattern_cationic is None:
         return False, "Error defining SMARTS patterns."
     
-    # Get all substructure matches from both patterns.
+    # Gather all matches from both patterns.
     matches_neutral = mol.GetSubstructMatches(pattern_neutral)
     matches_cationic = mol.GetSubstructMatches(pattern_cationic)
     all_matches = set(matches_neutral) | set(matches_cationic)
     if not all_matches:
-        return False, "Carboxamidine moiety (-C(=NH)NH2 or substituted equivalent) not found."
+        return False, "Carboxamidine moiety (-C(=NH)NH2 or substituted variant) not found."
     
     valid_matches = []
+    # Loop over each match.
     for match in all_matches:
-        # According to our SMARTS match order we expect:
+        # Expect the order according to our SMARTS:
         #   match[0] = carboxamidine carbon,
         #   match[1] = double-bonded nitrogen,
         #   match[2] = single-bonded nitrogen.
@@ -60,54 +59,53 @@ def is_carboxamidine(smiles: str):
         atom_ndbl = mol.GetAtomWithIdx(idx_ndbl)
         atom_nsingle = mol.GetAtomWithIdx(idx_nsingle)
         
-        # Filter A: Exclude if the double-bonded nitrogen is attached (via a single bond)
-        # to any oxygen that carries at least one hydrogen (i.e. avoid amidoxime groups).
+        # Filter A: Exclude if the double-bonded nitrogen is attached (by a single bond)
+        # to any oxygen that carries at least one hydrogen, to avoid amidoxime groups.
         skip_match = False
         for nbr in atom_ndbl.GetNeighbors():
-            # Skip atoms which are part of the carboxamidine motif.
+            # Skip atoms that are part of this motif.
             if nbr.GetIdx() in (idx_c, idx_nsingle):
                 continue
             if nbr.GetAtomicNum() == 8:  # Oxygen
-                bond = mol.GetBondBetweenAtoms(idx_ndbl, nbr.GetIdx())
-                if bond is not None and bond.GetBondType() == Chem.BondType.SINGLE:
+                bond = mol.GetBondBetweenAtoms(atom_ndbl.GetIdx(), nbr.GetIdx())
+                if bond and bond.GetBondType() == Chem.BondType.SINGLE:
                     if nbr.GetTotalNumHs() > 0:
                         skip_match = True
                         break
         if skip_match:
             continue
         
-        # Filter B: Check that the carboxamidine carbon has exactly the expected heavy-atom environment.
-        # Get heavy (non-hydrogen) neighbors of the carbon.
+        # Filter B: Check that the carboxamidine carbon has the expected heavy-atom environment.
+        # Count heavy (non-hydrogen) neighbors.
         heavy_nbrs = [nbr for nbr in atom_c.GetNeighbors() if nbr.GetAtomicNum() != 1]
-        # In a true carboxamidine group, the carboxamidine carbon is bound to the two N atoms of the motif
-        # plus one extra substituent. When R = H the heavy-neighbor count is 2 (only nitrogens),
-        # when R ≠ H it is 3. So acceptable counts are 2 or 3 and exactly 2 must be N.
         if len(heavy_nbrs) not in (2, 3):
             continue
+        # Exactly 2 of these must be nitrogen atoms.
         num_nitrogen = sum(1 for nbr in heavy_nbrs if nbr.GetAtomicNum() == 7)
         if num_nitrogen != 2:
             continue
         
-        # Filter C: Ensure the carboxamidine carbon is exocyclic (not aromatic).
-        if atom_c.GetIsAromatic():
+        # Filter C: Ensure that the carboxamidine carbon is sp2-hybridized (for proper amidine geometry).
+        if atom_c.GetHybridization() != Chem.rdchem.HybridizationType.SP2:
             continue
-
-        # (Optional) Filter D: Ensure that the double-bonded N is sp2-hybridized.
+        
+        # Filter D: Ensure that the double-bonded nitrogen is sp2-hybridized.
         if atom_ndbl.GetHybridization() != Chem.rdchem.HybridizationType.SP2:
             continue
-
+        
+        # If we reached here, we count this match as valid.
         valid_matches.append(match)
     
     if not valid_matches:
         return False, "Carboxamidine moiety not found after refined filtering."
     
-    # In heavy molecules, many amide bonds are a good indication of peptide-like systems.
+    # Optionally, reject molecules that appear peptide-like:
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     num_amide = len(amide_matches)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if num_amide >= 4 and mol_wt > 600:
-        return False, "Molecule appears to be peptide-like (many amide bonds in a heavy molecule), likely a false positive."
+        return False, "Molecule appears peptide-like (many amide bonds in a heavy molecule), likely a false positive."
     
     return True, f"Found carboxamidine group in {len(valid_matches)} location(s)."
 
@@ -119,13 +117,19 @@ if __name__ == "__main__":
         "CC(=N)NCC1=CC(CN)=CC=C1",  # N-[3-(aminomethyl)benzyl]acetamidine.
         "CN1CCCN=C1\\C=C\\c1cccs1",  # pyrantel.
         "CC1=N[C@@H]([C@@H](O)CN1)C(O)=O",  # 5-hydroxyectoine.
-        "CNC(N)=N",  # acetamidine.
-        "NC(=N)c1ccccc1",  # benzamidine.
+        "CN(Cc1ccc(Cl)nc1)C(C)=NC#N",  # acetamiprid.
+        "CCCCCCOC(=O)\\N=C(\\N)c1ccc(NCc2nc3cc(ccc3n2C)C(=O)N(CCC(=O)OCC)c2ccccn2)cc1",  # dabigatran etexilate.
+        "[H][C@]1(CCN1C(=O)[C@H](NCC(O)=O)C1CCCCC1)C(=O)NCc1ccc(cc1)C(N)=N",  # melagatran.
+        "NC(=N)c1ccc(NN=Nc2ccc(cc2)C(N)=N)cc1",  # diminazene.
+        "NC(N)=N",  # guanidine (expected to be classified as carboxamidine).
         # A known false positive from previous attempt:
         "N(CC1=CC=CC=C1)(C/C(=N/O)/N)C2=CC=CC=C2",  # cetoxime.
         # A peptide-like false positive:
-        "O=C(N[C@@H](CC(C)C)C(O)=O)[C@@H](NC(=O)[C@@H](N)C(C)C)CCCN=C(N)N",  # Val-Arg-Leu.
-        # A known false negative previously:
+        "O=C(N[C@@H](CC(C)C)C(O)=O)[C@@H](NC(=O)[C@@H](N)C(C)C)CCCN=C(N)N",  # Val-Arg-Leu peptide fragment.
+        # Previously missed cases:
+        "NC(=N)N1CC(O)c2ccccc2C1",  # 4-hydroxydebrisoquin.
+        "NC(=N)N1CCc2ccccc2C1",  # debrisoquin.
+        "CCCCCNC(=N)N\\N=C\\c1c[nH]c2ccc(OC)cc12",  # tegaserod.
         "CNC(NCCSCc1csc(CN(C)C)n1)=C[N+]([O-])=O",  # nizatidine.
     ]
     
