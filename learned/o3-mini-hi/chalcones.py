@@ -4,8 +4,9 @@ Classifies: CHEBI:23086 chalcones
 #!/usr/bin/env python3
 """
 Classifies: Chalcones – compounds containing a 1,3-diphenylpropenone core (benzylideneacetophenone)
-or the dihydro derivative, that is, molecules that in one part have an exocyclic carbonyl,
-with one substituent being directly part of an aromatic ring and the other substituent continuing via a 2-carbon (unsaturated or saturated) chain ending in an aromatic ring.
+or the dihydro derivative. In these molecules one part has an exocyclic ketone (C=O) with one substituent
+being directly aromatic and the other substituent continuing via a two-atom linker (unsaturated, CH=CH, or
+saturated, CH2CH2) to a terminal aromatic ring.
 """
 
 from rdkit import Chem
@@ -13,13 +14,14 @@ from rdkit import Chem
 def is_chalcones(smiles: str):
     """
     Determines if a molecule belongs to the chalcone (or chalcone derivative) class based on its SMILES.
-    Our approach is to (1) find an exocyclic carbonyl (C=O) on a ketone,
-    (2) verify that one side of the carbonyl is directly attached to an aromatic ring (a benzene ring),
-    and (3) check that the other side leads via a 2-atom linker (either unsaturated, i.e. CH=CH, or saturated, i.e. CH2CH2)
-        to a terminal aromatic ring.
-        
+    
+    The routine first searches for a carbonyl (C=O) center that is not in a ring and that has exactly two
+    carbon neighbors. It then requires that one of these neighbors is aromatic (the “direct” aryl group) and
+    that the other neighbor (the “linker side”) is not aromatic but leads via a two-atom chain (either via a double
+    bond or via two single bonds) to an aromatic atom.
+    
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
         bool: True if the molecule is classified as a chalcone (or chalcone derivative), False otherwise.
@@ -28,92 +30,87 @@ def is_chalcones(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Helper: check unsaturated (α,β-unsaturated) branch.
-    def check_unsaturated_branch(alpha, parent_idx):
-        # Look for a neighbor of alpha (other than the carbonyl carbon) connected by a double bond.
-        for nbr in alpha.GetNeighbors():
+        
+    # Helper: check unsaturated (vinyl) branch.
+    # Given a candidate branch atom (alpha carbon) attached to the ketone,
+    # look for at least one double-bonded neighbor (beta carbon) that is aromatic.
+    def check_unsaturated_branch(branch_atom, parent_idx):
+        for nbr in branch_atom.GetNeighbors():
             if nbr.GetIdx() == parent_idx:
                 continue
-            bond = mol.GetBondBetweenAtoms(alpha.GetIdx(), nbr.GetIdx())
-            if bond.GetBondType() == Chem.BondType.DOUBLE:
-                # For the candidate beta = nbr, check if one of its other neighbors is aromatic.
-                for betaNbr in nbr.GetNeighbors():
-                    if betaNbr.GetIdx() == alpha.GetIdx():
-                        continue
-                    if betaNbr.GetIsAromatic():
-                        return True
-        return False
-
-    # Helper: check saturated (dihydrochalcone) branch.
-    def check_saturated_branch(alpha, parent_idx):
-        # Expect a chain of two single-bonded carbons ending in an aromatic fragment.
-        for nbr in alpha.GetNeighbors():
-            if nbr.GetIdx() == parent_idx:
-                continue
-            bond1 = mol.GetBondBetweenAtoms(alpha.GetIdx(), nbr.GetIdx())
-            if bond1.GetBondType() != Chem.BondType.SINGLE:
-                continue
-            # Now from this candidate second atom, search for a single-bond neighbor (not alpha)
-            for nbr2 in nbr.GetNeighbors():
-                if nbr2.GetIdx() == alpha.GetIdx():
-                    continue
-                bond2 = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
-                if bond2.GetBondType() != Chem.BondType.SINGLE:
-                    continue
-                if nbr2.GetIsAromatic():
+            bond = mol.GetBondBetweenAtoms(branch_atom.GetIdx(), nbr.GetIdx())
+            # Look for a double bond from alpha (branch_atom) to beta
+            if bond is not None and bond.GetBondType() == Chem.BondType.DOUBLE:
+                if nbr.GetIsAromatic():
                     return True
         return False
 
-    # Go through all atoms and search for a suitable carbonyl center.
+    # Helper: check saturated (ethylene) branch.
+    # Given the branch atom (alpha carbon, non-aromatic) attached to the ketone,
+    # look for a single-bonded neighbor (beta carbon) that is aromatic.
+    def check_saturated_branch(branch_atom, parent_idx):
+        for nbr in branch_atom.GetNeighbors():
+            if nbr.GetIdx() == parent_idx:
+                continue
+            bond = mol.GetBondBetweenAtoms(branch_atom.GetIdx(), nbr.GetIdx())
+            if bond is not None and bond.GetBondType() == Chem.BondType.SINGLE:
+                if nbr.GetIsAromatic():
+                    return True
+        return False
+
+    # Iterate over all atoms searching for an exocyclic ketone carbon.
     for atom in mol.GetAtoms():
-        # Look only for carbon atoms
+        # Consider only carbon atoms (atomic number 6)
         if atom.GetAtomicNum() != 6:
             continue
 
-        # Check if this carbon is part of a carbonyl group: i.e. it has at least one double-bonded oxygen neighbor.
-        oxy_neighbors = []
+        # Must have at least one double-bonded oxygen (C=O)
+        oxy_double = []
         for nbr in atom.GetNeighbors():
             if nbr.GetAtomicNum() == 8:
                 bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                if bond.GetBondType() == Chem.BondType.DOUBLE:
-                    oxy_neighbors.append(nbr)
-        if len(oxy_neighbors) < 1:
+                if bond is not None and bond.GetBondType() == Chem.BondType.DOUBLE:
+                    oxy_double.append(nbr)
+        if len(oxy_double) < 1:
             continue  # not a carbonyl
 
-        # In chalcones the carbonyl carbon is exocyclic (not part of a ring).
+        # In chalcones the ketone carbon should be exocyclic (not inside a ring)
         if atom.IsInRing():
             continue
 
-        # Now get the two carbon neighbors (excluding the oxygen)
-        carbon_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
-        # We expect a ketone so two carbon substituents.
-        if len(carbon_neighbors) != 2:
+        # Get carbon neighbors (exclude oxygen)
+        c_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        # For a simple ketone we expect exactly two carbon atoms attached.
+        if len(c_neighbors) != 2:
             continue
 
-        # We require that one of the two neighbors be directly aromatic.
-        # Try both assignments (one branch will be the direct aromatic side, the other the linker branch)
+        # Now decide which branch is the “direct aromatic” side and which is the linker side.
+        # We require that one substituent is aromatic and the other is not (so that it can be the linking chain).
         for i in range(2):
-            direct_side = carbon_neighbors[i]
-            linker_side = carbon_neighbors[1-i]
+            direct_side = c_neighbors[i]
+            linker_side = c_neighbors[1-i]
+            # The direct side must be aromatic.
             if not direct_side.GetIsAromatic():
-                continue  # direct side must be aromatic
+                continue
+            # The linker side must NOT be aromatic (it must serve as the linking atom not part of an aromatic ring).
+            if linker_side.GetIsAromatic():
+                continue
 
-            # Try unsaturated branch first: expect linker_side -> (via double bond) -> next atom -> aromatic.
+            # Check linker side for unsaturated (vinyl) possibility
             unsat_ok = check_unsaturated_branch(linker_side, atom.GetIdx())
-            # Alternatively, try saturated branch: expect linker_side -> (via two single bonds) -> aromatic.
+            # Check linker side for saturated (ethylene) possibility
             sat_ok = check_saturated_branch(linker_side, atom.GetIdx())
             if unsat_ok or sat_ok:
                 if unsat_ok:
-                    branch_desc = "α,β-unsaturated ketone variant with terminal aromatic ring via a vinyl linker"
+                    variant = "α,β-unsaturated ketone variant with terminal aromatic ring via a vinyl linker"
                 else:
-                    branch_desc = "dihydrochalcone variant with terminal aromatic ring via an ethylene linker"
-                reason = f"Contains chalcone core (direct aromatic group attached to carbonyl and linker branch: {branch_desc})"
+                    variant = "dihydrochalcone variant with terminal aromatic ring via an ethylene linker"
+                reason = f"Contains chalcone core (direct aromatic group attached to carbonyl and linker branch: {variant})"
                 return True, reason
+    return False, ("Chalcone core not found – expected a non‐ring ketone (C=O) with one aromatic substituent "
+                   "and one non‐aromatic linker leading (via CH=CH or CH2CH2) to an aromatic ring.")
 
-    return False, "Chalcone core not found (expected connectivity: aromatic ring - C(=O) - (CH=CH or CH2CH2) - aromatic ring)"
-
-# You can uncomment the test lines below to try the function:
+# Uncomment the lines below to perform a test:
 # test_smiles = "O=C(\\C=C\\c1ccccc1)c1ccccc1"  # trans-chalcone
 # result, reason = is_chalcones(test_smiles)
 # print(result, reason)
