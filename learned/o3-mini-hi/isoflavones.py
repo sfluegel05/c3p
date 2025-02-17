@@ -2,21 +2,15 @@
 Classifies: CHEBI:38757 isoflavones
 """
 """
-Classifies: isoflavones – any isoflavonoid with a 3-aryl-1-benzopyran-4-one (3-aryl-4H-chromen-4-one) skeleton and its substituted derivatives.
-Algorithm:
-  1. Parse the molecule from the given SMILES.
-  2. Loop over all rings (using RDKit ring info) looking for a six‐membered candidate “pyran” ring that:
-       • contains exactly one oxygen (the hetero atom in the pyran ring) 
-       • has at least one carbon that is part of a carbonyl (a double‐bonded oxygen, which should be at position 4).
-  3. Identify a fused benzene ring. In flavonoids the benzopyran core is fused to an aromatic (benzene) ring. 
-     We mark those atoms shared with a fully aromatic six‐membered ring.
-  4. In the candidate (“pyran”) ring, atoms that are neither the oxygen nor the carbonyl and are not part of 
-     the fusion with the benzene ring are potential “3‑position” atoms.
-  5. Check whether any of these candidate atoms carries an external substituent that is itself part of 
-     a fully aromatic six‐membered ring (this is taken as the “3‑aryl” group).
-  6. If so, return True with a message; otherwise return False.
-  
-Note: This method is heuristic and may fail in borderline cases.
+Classifies: isoflavones – any isoflavonoid with a 3-aryl-1-benzopyran-4-one (3-aryl-4H-chromen-4-one) skeleton 
+and its substituted derivatives.
+
+The strategy is to use a SMARTS query that captures the critical core:
+    c1ccc2c(c1)oc(=O)c(c2)c3ccccc3
+
+This pattern describes a benzopyran-4-one (chromen-4-one) where the pyran (ring C) bears an aryl substituent at its 3‐position.
+Substructure matching via RDKit then allows extra substituents and decorations (e.g. methoxy groups, glycosidic linkages),
+so that many substituted isoflavones are still detected.
 """
 
 from rdkit import Chem
@@ -25,103 +19,53 @@ def is_isoflavones(smiles: str):
     """
     Determines if a molecule is an isoflavone (3-aryl-1-benzopyran-4-one) based on its SMILES string.
     
+    The approach uses a SMARTS pattern designed to match the isoflavone core.
+    The pattern used is:
+         c1ccc2c(c1)oc(=O)c(c2)c3ccccc3
+    which searches for:
+      • A benzopyran-4-one (chromen-4-one) framework (the fused benzene + pyran-one)
+      • With a phenyl (aryl) substituent attached to the pyran ring (at its 3‑position)
+    
     Args:
          smiles (str): SMILES string of the molecule.
          
     Returns:
-         bool: True if the molecule is classified as an isoflavone, False otherwise.
-         str: Reason explaining the classification decision.
+         bool: True if the molecule contains an isoflavone skeleton; False otherwise.
+         str: A reason explaining the classification decision.
     """
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get ring information for the whole molecule.
-    ring_info = mol.GetRingInfo().AtomRings()
+    # Define the SMARTS pattern for the isoflavone core.
+    # This pattern looks for a fused benzene-pyranone ring system with an attached aryl group.
+    isoflavone_smarts = "c1ccc2c(c1)oc(=O)c(c2)c3ccccc3"
+    core = Chem.MolFromSmarts(isoflavone_smarts)
+    if core is None:
+        return False, "Failed to compile the SMARTS pattern"
     
-    # Loop over rings looking for a candidate six-membered pyran ring.
-    for ring in ring_info:
-        if len(ring) != 6:
-            continue
-        # Count the number of oxygen atoms in the ring.
-        oxygen_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
-        if oxygen_count != 1:
-            continue
-        
-        # Look for a carbon in the ring that is part of a carbonyl (C=O)
-        has_carbonyl = False
-        carbonyl_atom = None
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() != 6:
-                continue
-            for nbr in atom.GetNeighbors():
-                # Check if the neighbor is oxygen and the bond is a double bond.
-                if nbr.GetAtomicNum() == 8:
-                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                    if bond is not None and bond.GetBondType().name == "DOUBLE":
-                        has_carbonyl = True
-                        carbonyl_atom = atom.GetIdx()  # mark the carbonyl carbon (expected to be the 4-position)
-                        break
-            if has_carbonyl:
-                break
-        if not has_carbonyl:
-            continue
-        
-        candidate_ring = set(ring)
-        
-        # Identify fused benzene rings. In an isoflavone the benzopyran core is fused to a benzene ring.
-        fused_atoms = set()
-        for other_ring in ring_info:
-            if set(other_ring) == candidate_ring:
-                continue
-            if len(other_ring) != 6:
-                continue
-            # Check if every atom in the other ring is aromatic.
-            if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in other_ring):
-                continue
-            intersection = candidate_ring.intersection(other_ring)
-            if len(intersection) >= 2:
-                fused_atoms.update(intersection)
-                
-        # Identify candidate positions on the pyran ring for the 3-aryl substituent.
-        # We do not want the oxygen or the carbonyl carbon, nor atoms in the fusion with the benzene ring.
-        candidate_positions = []
-        for idx in candidate_ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 8:  # skip oxygen
-                continue
-            if carbonyl_atom is not None and idx == carbonyl_atom:
-                continue
-            if idx in fused_atoms:
-                continue
-            candidate_positions.append(idx)
-        
-        # For each candidate position, check if it has an external aromatic substituent.
-        for pos in candidate_positions:
-            atom = mol.GetAtomWithIdx(pos)
-            for nbr in atom.GetNeighbors():
-                # Skip neighbor if it belongs to the candidate (pyran) ring.
-                if nbr.GetIdx() in candidate_ring:
-                    continue
-                if not nbr.GetIsAromatic():
-                    continue
-                # Look if this neighbor is part of a fully aromatic six-membered ring.
-                for ring2 in ring_info:
-                    if len(ring2) == 6 and nbr.GetIdx() in ring2 and all(mol.GetAtomWithIdx(a).GetIsAromatic() for a in ring2):
-                        return True, "Molecule contains a 3-aryl-1-benzopyran-4-one skeleton and its substituted derivatives."
-    return False, "Molecule does not contain a suitable 3-aryl-1-benzopyran-4-one skeleton."
+    # Check if the molecule contains the isoflavone core.
+    if mol.HasSubstructMatch(core):
+        return True, "Molecule contains a 3-aryl-1-benzopyran-4-one skeleton and its substituted derivatives."
+    else:
+        return False, "Molecule does not contain a suitable 3-aryl-1-benzopyran-4-one skeleton."
 
-# Example test cases – note that the outcome on borderline examples may vary with heuristic methods.
+# Example test cases (a few examples from the list provided)
 if __name__ == "__main__":
-    test_smiles = [
-        # Expected to be isoflavones:
-        "COc1ccc(cc1)-c1coc2cc(O)ccc2c1=O",  # formononetin
-        "O1C2=C(CC=C(C)C)C(O)=CC(O)=C2C(=O)C(C3=CC=C(O)C=C3)=C1",  # Lupiwighteone
-        "COc1cc2c(cc1O)occ(-c1ccc(O)cc1)c2=O",  # glycitein
-        # Expected negatives:
-        "O=C1OC2=C(C(O)=C(O)C=C2C=3C1=C(O)C=C(OC)C3)C4=C(O)C(O)=CC5=C4C6=C(C(O)=CC(=C6)OC)C(O5)=O",  # Verrulactone B (false positive previously)
-    ]
-    for smi in test_smiles:
+    test_cases = {
+        "formononetin": "COc1ccc(cc1)-c1coc2cc(O)ccc2c1=O",
+        "Lupiwighteone": "O1C2=C(CC=C(C)C)C(O)=CC(O)=C2C(=O)C(C3=CC=C(O)C=C3)=C1",
+        "2',4',5,7-Tetrahydroxy-8-prenylisoflavone": "O1C2=C(CC=C(C)C)C(O)=CC(O)=C2C(=O)C(C3=C(O)C=C(O)C=C3)=C1",
+        "5,6,7-trimethoxy-3-(3,4,5-trimethoxyphenyl)-1-benzopyran-4-one": "COC1=CC(=CC(=C1OC)OC)C2=COC3=CC(=C(C(=C3C2=O)OC)OC)OC",
+        "2'-hydroxydaidzein": "Oc1ccc(c(O)c1)-c1coc2cc(O)ccc2c1=O",
+        "glycitein": "COc1cc2c(cc1O)occ(-c1ccc(O)cc1)c2=O",
+        "millewanin H": "CC(C)=CCc1c(O)c(CC(O)C(C)=C)c2occ(-c3ccc(O)c(O)c3)c(=O)c2c1O",
+        "7,4'-dihydroxy-3'-methoxyisoflavone": "COc1cc(ccc1O)-c1coc2cc(O)ccc2c1=O",
+        "bowdichione": "COC1=CC(=O)C(=CC1=O)c1coc2cc(O)ccc2c1=O",
+        # A false positive example (should return False): 
+        "quercetin 3,3'-bissulfate": "Oc1ccc(cc1OS([O-])(=O)=O)-c1oc2cc([O-])cc(O)c2c(=O)c1OS([O-])(=O)=O",
+    }
+    for name, smi in test_cases.items():
         result, reason = is_isoflavones(smi)
-        print(f"SMILES: {smi}\nResult: {result}, Reason: {reason}\n")
+        print(f"Name: {name}\nSMILES: {smi}\nResult: {result}, Reason: {reason}\n")
