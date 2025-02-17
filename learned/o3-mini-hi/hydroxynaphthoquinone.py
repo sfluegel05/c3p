@@ -4,16 +4,17 @@ Classifies: CHEBI:132155 hydroxynaphthoquinone
 """
 Classifies: hydroxynaphthoquinone
 Definition: Any naphthoquinone in which the naphthoquinone moiety 
-            (a fused bicyclic ring system that is "naphthalene‐like" comprising 10 carbon atoms,
-             two of which bear a double‐bonded oxygen) is substituted by at least one hydroxy group.
+            (a fused bicyclic ring system that is “naphthalene‐like” and
+             contains two carbonyl (C=O) groups attached to two of the 10 carbons)
+            is substituted by at least one hydroxy group directly attached
+            to one of the ring carbons.
             
-A valid hydroxynaphthoquinone is defined here as having:
-1. A fused bicyclic ring system formed by two 6–membered rings sharing exactly 2 atoms 
-   (i.e. a candidate naphthalene core consisting of 10 atoms).
-2. Every atom in the candidate core must be carbon (atomic number 6).
-3. At least two carbonyl groups (a double bond from a core carbon to an oxygen outside the core).
-4. And at least one hydroxy substituent (-OH group) attached directly to a core carbon.
-Note: This method is heuristic and may miss some edge–cases.
+This implementation uses an explicit SMARTS pattern to search for a 1,4–naphthoquinone core,
+and then inspects all atoms in the matched core for external –OH groups.
+
+Note that many natural products have additional fused rings, and the pattern
+may miss or wrongly count some substituents when the core is “extended.”
+This heuristic therefore may need further refinement for high‐accuracy.
 """
 from rdkit import Chem
 
@@ -23,88 +24,80 @@ def is_hydroxynaphthoquinone(smiles: str):
     
     The function:
     1. Parses the SMILES string.
-    2. Uses ring information to find candidate fused bicyclic (naphthalene-like) systems.
-    3. For each candidate of exactly 10 atoms, checks that all atoms are carbon.
-    4. For each candidate, counts carbonyl groups (direct double bonds to an oxygen, not in the core)
-       and hydroxy substituents (single bonds to oxygen that carries at least one attached hydrogen).
-    5. If a candidate has at least two such carbonyl groups and at least one hydroxy, it is classified as a hydroxynaphthoquinone.
-    
+    2. Searches for a naphthoquinone‐like substructure; here we use a SMARTS pattern
+       for a 1,4–naphthoquinone core (an aromatic bicyclic system with two C=O groups).
+       (This pattern may not catch other isomers.)
+    3. For each match (the candidate naphthoquinone core), inspects every atom in the matched
+       set for external substituents. In particular, a valid hydroxy substituent is a single bond
+       from a core carbon to an oxygen atom that has at least one hydrogen (as determined by GetTotalNumHs()).
+    4. If any candidate core has at least one hydroxy substituent, the molecule is classified 
+       as a hydroxynaphthoquinone.
+       
     Args:
-        smiles (str): SMILES string of the molecule
-
+         smiles (str): SMILES string representation of the molecule.
+    
     Returns:
-        bool: True if the molecule is classified as a hydroxynaphthoquinone, False otherwise.
-        str: A reason explaining the classification decision.
+         bool: True if successfully classified as hydroxynaphthoquinone, False otherwise.
+         str: A reason explaining the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    ring_info = mol.GetRingInfo().AtomRings()
-    rings6 = []
-    # Collect all rings having 6 atoms (do not force aromatic flag, because carbonyl groups sometimes unset aromaticity)
-    for ring in ring_info:
-        if len(ring) == 6:
-            rings6.append(set(ring))
-    if not rings6:
-        return False, "No six‐membered rings found in molecule"
+    # Define a SMARTS for a 1,4–naphthoquinone core.
+    # This pattern looks for an aromatic bicyclic system “c1ccc2c(c1)C(=O)C=CC2=O”.
+    # Adaptations might be needed for edge–cases.
+    naphthoquinone_smarts = "c1ccc2c(c1)C(=O)C=CC2=O"
+    core_query = Chem.MolFromSmarts(naphthoquinone_smarts)
+    if core_query is None:
+        return False, "Error in SMARTS definition"
     
-    candidate_cores = []
-    n_rings = len(rings6)
-    # Look for pairs of rings that share exactly 2 atoms and whose union forms a 10–atom fused core.
-    for i in range(n_rings - 1):
-        for j in range(i + 1, n_rings):
-            shared = rings6[i].intersection(rings6[j])
-            if len(shared) == 2:
-                core = rings6[i].union(rings6[j])
-                if len(core) == 10:
-                    # Check if every atom in the core is carbon (atomic number 6)
-                    if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in core):
-                        candidate_cores.append(core)
-                        
-    if not candidate_cores:
-        return False, "No fused 10–atom (naphthalene-like) carbon core found"
+    matches = mol.GetSubstructMatches(core_query)
+    if not matches:
+        return False, "No naphthoquinone core found"
 
-    # Now evaluate each candidate core
-    for core in candidate_cores:
-        carbonyl_count = 0
+    # For each naphthoquinone match, check for at least one hydroxy (-OH) substituent 
+    # attached directly to one of the core atoms.
+    for match in matches:
+        core_atom_idxs = set(match)
         hydroxy_count = 0
-        # For each atom in the core:
-        for idx in core:
+        
+        # We iterate over atoms in the core match.
+        for idx in core_atom_idxs:
             atom = mol.GetAtomWithIdx(idx)
+            # For each neighbor outside of the core, check if it is an oxygen in an -OH group.
             for bond in atom.GetBonds():
                 neighbor = bond.GetOtherAtom(atom)
-                # Only consider bonds going out of the core
-                if neighbor.GetIdx() in core:
+                # Only consider substituents that are not part of the core match.
+                if neighbor.GetIdx() in core_atom_idxs:
                     continue
-                # Check for a carbonyl group:
-                # It should be a double bond from a core carbon to an oxygen (outside the core).
-                if bond.GetBondType() == Chem.BondType.DOUBLE and neighbor.GetAtomicNum() == 8:
-                    carbonyl_count += 1
-                # Check for a hydroxy group:
-                # A single bond from a core carbon to oxygen that carries at least one hydrogen.
-                if bond.GetBondType() == Chem.BondType.SINGLE and neighbor.GetAtomicNum() == 8:
-                    # Sometimes the number of implicit/explicit hydrogens is not updated.
-                    # We ask for total hydrogens on the oxygen.
-                    if neighbor.GetTotalNumHs() > 0:
-                        hydroxy_count += 1
-        
-        # Now require at least two carbonyl groups and at least one hydroxy group
-        if carbonyl_count >= 2 and hydroxy_count >= 1:
-            return True, (f"Found a naphthalene-like 10–atom carbon core with {carbonyl_count} carbonyl group(s) "
-                          f"and {hydroxy_count} hydroxy substituent(s) attached")
+                # Check if the bond is a single bond, the neighbor atom is oxygen,
+                # and the oxygen carries at least one hydrogen.
+                if (bond.GetBondType() == Chem.BondType.SINGLE and 
+                    neighbor.GetAtomicNum() == 8 and 
+                    neighbor.GetTotalNumHs() > 0):
+                    hydroxy_count += 1
+        if hydroxy_count >= 1:
+            return True, (f"Found a naphthoquinone core with {hydroxy_count} hydroxy substituent(s) attached")
     
-    return False, ("Fused naphthalene-like core(s) were found, but none with both at least 2 carbonyl group(s) "
-                   "and at least 1 hydroxy substituent attached")
+    # If none of the candidate cores are substituted by an -OH group, then reject.
+    return False, "Naphthoquinone core(s) found, but none with at least one hydroxy substituent attached"
 
-# (Optional) Testing examples – uncomment the following lines to run some tests:
+# (Optional) Testing examples – uncomment to run some tests:
 # if __name__ == '__main__':
-#     test_smiles_list = [
-#         "O[C@H](C)(C)C1=CC(=O)c2ccccc2C1=O",  # lawsone-like: expected True
-#         "Oc1cccc2C(=O)C=CC(=O)c12",            # juglone-like: expected True
-#         "Cc1cc(O)c2C(=O)C=CC(=O)c2c1",          # Ramentaceone-like: expected True
-#         "COC1=C(C)C(=O)c2c(O)cc(OC\\C=C(/C)CCC=C(C)C)cc2C1=O",  # 7-O-geranyl-2-O,3-dimethylflaviolin: may be rejected by our filter
+#     test_examples = [
+#         # True positives examples:
+#         ("COC1=C(C)C(=O)c2c(O)cc(OC\\C=C(/C)CCC=C(C)C)cc2C1=O", "7-O-geranyl-2-O,3-dimethylflaviolin"),
+#         ("CC(=O)OC(CC=C(C)C)C1=CC(=O)c2c(O)ccc(O)c2C1=O", "Acetylshikonin"),
+#         ("Oc1ccc(O)c2C(=O)C=CC(=O)c12", "naphthazarin"),
+#         ("Oc1cccc2C(=O)C=CC(=O)c12", "juglone"),
+#         ("OC1=CC(=O)c2ccccc2C1=O", "lawsone"),
+#         ("Cc1cc(O)c2C(=O)C=CC(=O)c2c1", "Ramentaceone"),
+#         ("C1=CC=C(C2=C1C(C=C(C2=O)O)=O)O", "2,8-dihydroxy-1,4-naphthoquinone"),
+#         # False negative examples (expected to be classified here if the core is found and -OH detected):
+#         ("[C@H](C)([C@@H]([C@@H]([C@H](\\C=C\\O[C@]1(OC=2C(C1=O)=C3C(C(C(=C(C3=O)/C=N/N4CCN(CC4)C)[O-])=O)=C(C2C)[O-])C)OC)C)OC(=O)C)[C@H](O)[C@@H]([C@@H](O)[C@@H](C)/C=C/C=C(/C)C(N)=O)C",
+#          "rifampicin para-naphthoquinone carboxamide(2-)"),
 #     ]
-#     for smi in test_smiles_list:
+#     for smi, name in test_examples:
 #         result, reason = is_hydroxynaphthoquinone(smi)
-#         print(f"SMILES: {smi}\nResult: {result}\nReason: {reason}\n")
+#         print(f"NAME: {name}\nSMILES: {smi}\nResult: {result}\nReason: {reason}\n")
