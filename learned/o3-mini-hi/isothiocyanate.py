@@ -5,8 +5,9 @@ Classifies: CHEBI:52221 isothiocyanate
 Classifies: Isothiocyanate (R-N=C=S)
 
 An isothiocyanate is defined as an organosulfur compound with the general formula R-N=C=S.
-This function looks for the SMARTS pattern in both directions, deduplicates duplicate matches,
-and then enforces connectivity and exclusion checks.
+This function inspects all occurrences of the N=C=S moiety and accepts the compound if at least one shows
+a terminal, “free‐standing” N=C=S fragment (i.e. the -N=C=S group can be disconnected cleanly by breaking
+the bond between the nitrogen and its substituent R).
 """
 
 from rdkit import Chem
@@ -14,7 +15,8 @@ from rdkit import Chem
 def is_isothiocyanate(smiles: str):
     """
     Determines if a molecule is an isothiocyanate based on its SMILES string.
-    Isothiocyanates are defined as having a terminal group R-N=C=S.
+    For our purposes the molecule must contain at least one terminal group
+    of the form R-N=C=S (where the -N=C=S unit is terminal, i.e. not embedded in a network).
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -23,130 +25,134 @@ def is_isothiocyanate(smiles: str):
         bool: True if the molecule qualifies as an isothiocyanate, False otherwise.
         str: Reason for the classification.
     """
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for isothiocyanate in forward and reverse orders.
+    # List of SMARTS patterns to identify possible isothiocyanate groups.
     patterns = ["N=C=S", "S=C=N"]
     candidate_matches = []
+    
+    # Get all substructure matches for each pattern.
     for pat in patterns:
         pat_mol = Chem.MolFromSmarts(pat)
-        if pat_mol is None:
+        if not pat_mol:
             continue
         matches = mol.GetSubstructMatches(pat_mol)
         candidate_matches.extend(matches)
     
-    # Deduplicate candidate matches by comparing sorted atom indices.
+    # Deduplicate matches by sorting the tuple of indices.
     unique_matches = []
     seen = set()
-    for m in candidate_matches:
-        key = tuple(sorted(m))
+    for match in candidate_matches:
+        key = tuple(sorted(match))
         if key not in seen:
             seen.add(key)
-            unique_matches.append(m)
-            
-    # Reject if no candidate found.
+            unique_matches.append(match)
+    
     if not unique_matches:
         return False, "No isothiocyanate SMARTS match found"
     
-    # Reject if more than one unique isothiocyanate moiety is found.
-    if len(unique_matches) > 1:
-        return False, f"Multiple isothiocyanate groups found ({len(unique_matches)} matches)"
-    
-    # Process the single candidate match.
-    match = unique_matches[0]
-    # By default assume match from pattern "N=C=S" gives order (N, C, S).
-    n_idx, c_idx, s_idx = match[0], match[1], match[2]
-    atom0 = mol.GetAtomWithIdx(match[0])
-    # If the first atom is S then we likely got a match from "S=C=N" and we reorder.
-    if atom0.GetAtomicNum() == 16:
-        n_idx, c_idx, s_idx = match[2], match[1], match[0]
-    
-    n_atom = mol.GetAtomWithIdx(n_idx)
-    c_atom = mol.GetAtomWithIdx(c_idx)
-    s_atom = mol.GetAtomWithIdx(s_idx)
-    
-    # Check that the bonds N-C and C-S exist and are double bonds.
-    bond_nc = mol.GetBondBetweenAtoms(n_idx, c_idx)
-    bond_cs = mol.GetBondBetweenAtoms(c_idx, s_idx)
-    if bond_nc is None or bond_cs is None:
-        return False, "Expected bonds not found"
-    if bond_nc.GetBondType() != Chem.rdchem.BondType.DOUBLE or bond_cs.GetBondType() != Chem.rdchem.BondType.DOUBLE:
-        return False, "One or both bonds in the N=C=S group are not double bonds"
-    
-    # Enforce terminal heavy-atom connectivity.
-    # Central carbon should have only N and S as heavy neighbors.
-    heavy_neighbors_c = [nbr.GetIdx() for nbr in c_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-    if len(heavy_neighbors_c) != 2:
-        return False, "Central carbon does not have exactly two heavy neighbors"
-    
-    # Terminal sulfur should have only the central carbon as heavy neighbor.
-    heavy_neighbors_s = [nbr.GetIdx() for nbr in s_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-    if len(heavy_neighbors_s) != 1:
-        return False, "Terminal sulfur is not terminal (unexpected heavy neighbors)"
-    
-    # Nitrogen should have exactly two heavy neighbors: one is the central carbon, and one is the R substituent.
-    heavy_neighbors_n = [nbr.GetIdx() for nbr in n_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-    if len(heavy_neighbors_n) != 2:
-        return False, "Nitrogen in the isothiocyanate group does not have exactly two heavy neighbors"
-    
-    # Identify the substituent R attached to nitrogen (the neighbor that is not the central C).
-    r_idx = None
-    for idx in heavy_neighbors_n:
-        if idx != c_idx:
-            r_idx = idx
-            break
-    if r_idx is None:
-        return False, "Could not identify substituent (R) attached to nitrogen"
-    r_atom = mol.GetAtomWithIdx(r_idx)
-    
-    # --- Exclusion filters on the R substituent ---
-    # (1) If the R substituent is aromatic and directly attached to a carbonyl group, reject.
-    if r_atom.GetIsAromatic():
-        for nbr in r_atom.GetNeighbors():
-            if nbr.GetIdx() == n_idx: 
-                continue
-            if nbr.GetAtomicNum() == 6:  # possible carbon that could be part of a carbonyl
-                for bond in nbr.GetBonds():
-                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        other = bond.GetOtherAtom(nbr)
-                        if other.GetAtomicNum() == 8:
-                            return False, "R substituent is aromatic and attached to a carbonyl group"
-    
-    # (2) If the R substituent (or its immediate neighbor) is linked to an oxidized heteroatom,
-    # for instance S=O or P(=O), then reject.
-    def has_oxidized_neighbor(atom):
-        # Look for neighbor heteroatom with at least one double bond to oxygen.
-        for nbr in atom.GetNeighbors():
-            if nbr.GetIdx() == n_idx:
-                continue
-            if nbr.GetAtomicNum() in (16, 15):  # S or P
-                for bond in nbr.GetBonds():
-                    if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        other = bond.GetOtherAtom(nbr)
-                        if other.GetAtomicNum() == 8:
-                            return True
-        return False
-
-    if has_oxidized_neighbor(r_atom):
-        return False, "R substituent is adjacent to an oxidized heteroatom (e.g. S=O or P=O)"
-    for nbr in r_atom.GetNeighbors():
-        if nbr.GetIdx() == n_idx:
+    # Iterate over each unique candidate match.
+    # We allow a molecule to qualify if at least one occurrence of a terminal isothiocyanate group is found.
+    for match in unique_matches:
+        # We expect 3 atoms. They might be in order (N, C, S) or (S, C, N). We'll reorder if needed.
+        if len(match) != 3:
+            continue  # unexpected match, skip
+        first_atom = mol.GetAtomWithIdx(match[0])
+        # If the first atom is sulfur (atomic num 16), assume the match came from "S=C=N" so reorder.
+        if first_atom.GetAtomicNum() == 16:
+            n_idx, c_idx, s_idx = match[2], match[1], match[0]
+        else:
+            n_idx, c_idx, s_idx = match[0], match[1], match[2]
+        
+        n_atom = mol.GetAtomWithIdx(n_idx)
+        c_atom = mol.GetAtomWithIdx(c_idx)
+        s_atom = mol.GetAtomWithIdx(s_idx)
+        
+        # Check that bonds N-C and C-S exist and are double.
+        bond_nc = mol.GetBondBetweenAtoms(n_idx, c_idx)
+        bond_cs = mol.GetBondBetweenAtoms(c_idx, s_idx)
+        if bond_nc is None or bond_cs is None:
             continue
-        if has_oxidized_neighbor(nbr):
-            return False, "Substituent branch near the isothiocyanate group is oxidized (e.g., S=O, P=O)"
-    
-    # (3) Enforce expected degrees of atoms in the group.
-    # Ideal terminal group expected degrees: N:2, C:2, S:1.
-    if n_atom.GetDegree() != 2 or c_atom.GetDegree() != 2 or s_atom.GetDegree() != 1:
-        return False, "Degrees of atoms in N=C=S group are not as expected for a terminal isothiocyanate"
-    
-    return True, "Contains terminal isothiocyanate group (R-N=C=S)"
+        if bond_nc.GetBondType() != Chem.rdchem.BondType.DOUBLE or bond_cs.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+            continue
+        
+        # Terminal connectivity check for the isothiocyanate group:
+        # - Central carbon should have exactly 2 heavy neighbors (N and S).
+        # - Sulfur must have exactly one heavy neighbor (the carbon).
+        # - Nitrogen should have exactly 2 heavy neighbors; one is the carbon in the group and one is the substituent R.
+        heavy_neighbors_c = [nbr.GetIdx() for nbr in c_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+        heavy_neighbors_s = [nbr.GetIdx() for nbr in s_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+        heavy_neighbors_n = [nbr.GetIdx() for nbr in n_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+        
+        if len(heavy_neighbors_c) != 2:
+            continue
+        if len(heavy_neighbors_s) != 1:
+            continue
+        if len(heavy_neighbors_n) != 2:
+            continue
+        
+        # Identify the substituent R group: the neighbor of nitrogen NOT in the N=C=S group.
+        r_idx = None
+        for idx in heavy_neighbors_n:
+            if idx != c_idx:
+                r_idx = idx
+                break
+        if r_idx is None:
+            continue
+        
+        # To ensure that the N=C=S group is terminal, we break the bond between the nitrogen and its R substituent
+        # and then check if the group (N, C, S) becomes an isolated fragment.
+        bond_nr = mol.GetBondBetweenAtoms(n_idx, r_idx)
+        if bond_nr is None:
+            continue
+        bond_idx = bond_nr.GetIdx()
+        
+        # Fragment the molecule by breaking the N-R bond; add dummy atoms to mark the break.
+        frag_mol = Chem.FragmentOnBonds(mol, [bond_idx], addDummies=True)
+        frags = Chem.GetMolFrags(frag_mol, asMols=True, sanitizeFrags=True)
+        
+        # Now check if one of the fragments contains exactly the 3 atoms of our candidate.
+        # Note that after fragmentation, dummy atoms (atomic num 0) may be present. We look for fragments whose heavy
+        # atom indices (ignoring dummies) correspond exactly to {n_idx, c_idx, s_idx} from the original molecule.
+        valid_terminal = False
+        # First, we create a set of our candidate atom indices.
+        candidate_set = {n_idx, c_idx, s_idx}
+        for frag in frags:
+            # Get the map numbers of atoms (if set during fragmentation) or try to retrieve original indices.
+            atom_ids = []
+            for atom in frag.GetAtoms():
+                # Dummy atoms have atomicNum 0.
+                if atom.GetAtomicNum() == 0:
+                    continue
+                # Use the atom property '_fragAtomMapping' if available;
+                # if not, we can try to use GetIdx() but that index is local to the fragment.
+                amap = atom.GetUnsignedProp("molAtomMapNumber") if atom.HasProp("molAtomMapNumber") else None
+                if amap is not None:
+                    atom_ids.append(amap)
+            # Sometimes the fragmentation does not carry mapping numbers – in that case we fall back to matching size.
+            # We compare fragment heavy atom count.
+            if len(atom_ids) == 0:
+                # if no mapping info is available, use number of heavy atoms.
+                if frag.GetNumHeavyAtoms() == 3:
+                    valid_terminal = True
+                    break
+            else:
+                if set(atom_ids) == candidate_set:
+                    valid_terminal = True
+                    break
+        
+        if valid_terminal:
+            return True, "Contains terminal isothiocyanate group (R-N=C=S)"
+        
+    # If no candidate match passes all tests, return False.
+    return False, "No terminal isothiocyanate group (R-N=C=S) found"
 
 # Example usage and testing
 if __name__ == "__main__":
-    # Some test examples from the problem description.
+    # Test examples that should be classified as isothiocyanates.
     test_examples = {
         "sulforaphane": "N(=C=S)CCCCS(=O)C",
         "eosin 5-isothiocyanate": "Oc1c(Br)cc2c(Oc3c(Br)c(O)c(Br)cc3C22OC(=O)c3cc(ccc23)N=C=S)c1Br",
@@ -159,6 +165,24 @@ if __name__ == "__main__":
         "3-hydroxypropyl isothiocyanate": "OCCCN=C=S",
         "Erucin": "S(CCCCN=C=S)C",
         "phenyl isothiocyanate": "S=C=Nc1ccccc1",
+        "5-isothiocyanato-1-pentene": "C=CCCCN=C=S",
+        "2-isothiocyanatoethyl phosphate": "S=C=NCCOP(O)(=O)O",
+        "Isothiocyanatocyclopropane": "C1CC1N=C=S",
+        "1-naphthyl isothiocyanate": "S=C=Nc1cccc2ccccc12",
+        "(R)-sulforaphane": "N(=C=S)CCCC[S@](=O)C",
+        "ethyl isothiocyanate": "CCN=C=S",
+        "benzyl isothiocyanate": "S=C=NCc1ccccc1",
+        "phenethyl isothiocyanate": "S=C=NCCc1ccccc1",
+        "amoscanate": "C1=CC(=CC=C1NC=2C=CC(N=C=S)=CC2)[N+](=O)[O-]",
+        "1-isothiocyanato-6-(methylsulfanyl)hexane": "S(CCCCCCN=C=S)C",
+        "allyl isothiocyanate": "C=CCN=C=S",
+        "toluene 2,6-diisothiocyanate": "Cc1c(cccc1N=C=S)N=C=S",
+        "8-(methylthio)octylisothiocyanate": "S(CCCCCCCCN=C=S)C",
+        "rhodamine B 5-isothiocyanate": "[Cl-].CCN(CC)c1ccc2c(-c3ccc(cc3C(O)=O)N=C=S)c3ccc(cc3oc2c1)=[N+](CC)CC",
+        "Berteroin": "S(CCCCCN=C=S)C",
+        "iberin": "N(CCCS(C)=O)=C=S",
+        "Bis(4-isothiocyanatobutyl) disulfide": "S(SCCCCN=C=S)CCCCN=C=S",
+        "toluene 2,4-diisothiocyanate": "Cc1ccc(cc1N=C=S)N=C=S",
     }
     
     for name, smi in test_examples.items():
