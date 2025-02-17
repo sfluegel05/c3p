@@ -8,15 +8,17 @@ Definition: "An aliphatic alcohol consisting of a chain of 3 to greater than 27 
              Fatty alcohols may be saturated or unsaturated and may be branched or unbranched."
 
 This implementation:
-  1. Checks that the molecule parses.
-  2. Rejects molecules with a carboxylic acid/carboxylate group.
-  3. Searches for alcohol groups defined as sp³ carbons bound to –OH.
-  4. For each candidate alcohol group we require that the alcohol carbon is free – i.e. not in a ring and 
-     not attached to any heteroatoms (other than the one –OH).
-  5. We then “grow” from that carbon over acyclic, non‐aromatic carbon atoms (i.e. a fatty chain)
-     and require that at least one such contiguous chain has a minimum length (here, 7 carbons).
-     
-If one candidate alcohol passes these checks, we classify the molecule as a fatty alcohol.
+  1. Parses the molecule using RDKit.
+  2. Searches for alcohol groups defined as a saturated (or stereochemically annotated) carbon attached to –OH.
+  3. For each candidate –OH we require that the alcohol carbon is not in a ring and its non‐OH neighbors are carbon.
+  4. We then build a graph of acyclic, non‐aromatic carbon atoms (including sp2 carbons from unsaturated chains).
+  5. We “grow” the longest simple (non‐repeating) chain (using DFS) starting from the alcohol carbon.
+  6. To avoid “contaminated” chains we also require that each carbon in the candidate chain does not have an extra substituent
+     that is a heteroatom.
+  7. If one candidate –OH gives a longest chain of at least MIN_CHAIN_LENGTH (here 7) carbons, we classify the molecule as fatty alcohol.
+  
+Note:
+  We no longer reject molecules with other oxygenated (or carboxylate) groups.
 """
 
 from rdkit import Chem
@@ -27,83 +29,100 @@ def is_fatty_alcohol(smiles: str):
     
     The molecule must:
       - Parse correctly.
-      - NOT contain a carboxylic acid or carboxylate group.
-      - Contain at least one alcohol group (an sp3 carbon bound to –OH) where the alcohol carbon is not in a ring
-        and is connected only to carbon neighbors (besides the hydroxyl).
-      - Have at least one contiguous, acyclic, non‐aromatic carbon chain (attached to the alcohol carbon) with at 
-        least 7 carbons.
+      - Contain at least one alcohol group defined as an sp3 (or stereochemically annotated) carbon bound to an -OH.
+      - The candidate alcohol carbon must be acyclic (not in a ring) and, apart from the hydroxyl oxygen,
+        be bound only to carbons.
+      - From that alcohol carbon, one must be able to follow a contiguous chain of non‐aromatic, non‐ring carbon atoms
+        (allowing unsaturation) that is “pure” (i.e. none of the carbons in that chain have extra connections to heteroatoms)
+        and has at least MIN_CHAIN_LENGTH atoms.
     
     Args:
       smiles (str): SMILES string of the molecule.
     
     Returns:
-      (bool, str): A tuple where the boolean is True if the molecule is classified as a fatty alcohol, else False,
-                   and the second element is a reason for the decision.
+      (bool, str): A tuple; True if classified as a fatty alcohol, False otherwise,
+                   plus a human‐readable reason.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Reject molecules that contain a carboxylic acid or carboxylate group.
-    acid_smarts = "C(=O)[O;H1,-]"  # matches -COOH or -COO-
-    acid_query = Chem.MolFromSmarts(acid_smarts)
-    if mol.HasSubstructMatch(acid_query):
-        return False, "Molecule contains a carboxylic acid/carboxylate group"
-    
-    # Define SMARTS for an alcohol group: saturated carbon [CX4] attached to hydroxyl (–OH).
-    alcohol_smarts = "[CX4][OX2H]"
+    # Define SMARTS for an alcohol group: a saturated (or annotated) carbon attached to a hydroxyl.[1]
+    # (This will catch [CX4] or stereochemically specified [C@H] or [C@@H] when bonded to [OX2H])
+    alcohol_smarts = "[C;!R][OX2H]"
     alcohol_query = Chem.MolFromSmarts(alcohol_smarts)
     alcohol_matches = mol.GetSubstructMatches(alcohol_query)
     if not alcohol_matches:
-        return False, "No alcohol (-OH) group found on a saturated carbon"
+        return False, "No proper alcohol (-OH) group found on a non‐ring carbon"
     
-    # Build a set of indices for acyclic, non‐aromatic (aliphatic) carbons.
-    aliphatic_carbons = set()
+    # Build a graph (dictionary) of carbons that are aliphatic (non-aromatic and not in a ring)
+    # We include sp3 and non-aromatic sp2 carbons, so that unsaturated fatty chains count.
+    carbon_nodes = set()
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6 and (not atom.GetIsAromatic()) and (not atom.IsInRing()):
-            aliphatic_carbons.add(atom.GetIdx())
-    if not aliphatic_carbons:
-        return False, "No acyclic aliphatic carbon atoms found"
-    
-    # Build a graph (dictionary) that connects each aliphatic, acyclic carbon to its aliphatic, acyclic neighbors.
-    carbon_graph = {idx: [] for idx in aliphatic_carbons}
-    for idx in aliphatic_carbons:
+            carbon_nodes.add(atom.GetIdx())
+    # Build a connectivity graph: only between carbons in carbon_nodes.
+    carbon_graph = {idx: [] for idx in carbon_nodes}
+    for idx in carbon_nodes:
         atom = mol.GetAtomWithIdx(idx)
         for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() in aliphatic_carbons:
+            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() in carbon_nodes:
                 carbon_graph[idx].append(nbr.GetIdx())
     
-    # Helper DFS function to compute the longest simple chain (number of carbons) starting from current node.
-    def dfs(current, visited):
-        max_length = 1  # count the current atom
+    # DFS function that returns (length, path) for the longest simple path starting from 'current'.
+    def dfs_longest(current, visited):
+        best_path = [current]
         for nbr in carbon_graph.get(current, []):
             if nbr not in visited:
-                length = 1 + dfs(nbr, visited | {nbr})
-                if length > max_length:
-                    max_length = length
-        return max_length
+                path = dfs_longest(nbr, visited | {nbr})
+                if len(path) + 1 > len(best_path):
+                    best_path = [current] + path
+        return best_path
 
-    # Minimum chain length required (e.g., octan-2-ol has 7 carbon chain from the alcohol carbon).
-    MIN_CHAIN_LENGTH = 7
-    candidate_found = False
-    best_chain_length = 0
+    # Helper function to check “purity” of a candidate chain:
+    # For each carbon in the chain, besides its chain neighbors, it should not have attached heteroatoms.
+    def chain_is_pure(chain):
+        for cid in chain:
+            atom = mol.GetAtomWithIdx(cid)
+            chain_neighbors = set()
+            # In the chain, consider next and previous (if any)
+            # (We check only the bonds along the chain.)
+            for other in chain:
+                if other == cid:
+                    continue
+                # If atoms are directly bonded, add them.
+                if mol.GetAtomWithIdx(cid).HasBondBetween(mol.GetAtomWithIdx(other)):
+                    chain_neighbors.add(other)
+            # Now examine all neighbors of this atom.
+            for nbr in atom.GetNeighbors():
+                # If neighbor is not in the chain and is not hydrogen,
+                # then if it is not carbon then the chain is “decorated” with a heteroatom.
+                if nbr.GetAtomicNum() != 1 and nbr.GetIdx() not in chain_neighbors:
+                    if nbr.GetAtomicNum() != 6:
+                        return False
+        return True
+
+
+    # Use a minimum chain length requirement.
+    MIN_CHAIN_LENGTH = 7  # counting the alcohol carbon itself
     
-    # Loop over alcohol matches.
+    best_chain_length = 0
+    candidate_found = False
+    candidate_reason = ""
+    
+    # Loop over candidate alcohol groups.
     for match in alcohol_matches:
-        # match is a tuple, where the first element is the alcohol carbon and the second is the oxygen.
+        # match is a tuple: first element is the candidate alcohol carbon and the second the hydroxyl oxygen.
         alc_c_idx = match[0]
         alc_o_idx = match[1]
         alc_atom = mol.GetAtomWithIdx(alc_c_idx)
-        # Only consider alcohol carbon if it is not in a ring.
+        # Skip if the alcohol carbon is in a ring (we want acyclic chain)
         if alc_atom.IsInRing():
             continue
         
-        # Additional filter: the neighbors (other than the hydroxyl oxygen) must be carbon.
-        # (This helps exclude cases where the –OH is on a carbon in a decorated environment.)
-        neighbors = alc_atom.GetNeighbors()
+        # Check that aside from the -OH, the alcohol carbon's neighbors are all carbons.
         valid = True
-        for nbr in neighbors:
-            # Skip the oxygen that is part of the –OH.
+        for nbr in alc_atom.GetNeighbors():
             if nbr.GetIdx() == alc_o_idx:
                 continue
             if nbr.GetAtomicNum() != 6:
@@ -111,28 +130,44 @@ def is_fatty_alcohol(smiles: str):
                 break
         if not valid:
             continue
-
-        # Now, check if there is a contiguous chain of aliphatic (acyclic, non‐aromatic) carbons.
+        
+        # Check that the candidate alcohol carbon is in our aliphatic carbon graph.
         if alc_c_idx not in carbon_graph:
             continue
-        chain_length = dfs(alc_c_idx, {alc_c_idx})
-        # Track best chain length for reporting.
+        
+        # Compute the longest chain (simple path) from the alcohol carbon.
+        longest_path = dfs_longest(alc_c_idx, {alc_c_idx})
+        chain_length = len(longest_path)
         if chain_length > best_chain_length:
             best_chain_length = chain_length
+        
+        # Check chain “purity”: along the chain, no carbon should have extra hetero-atom substituents.
+        if not chain_is_pure(longest_path):
+            # Skip this candidate if the chain is "decorated" by non-carbon atoms.
+            continue
+        
         if chain_length >= MIN_CHAIN_LENGTH:
             candidate_found = True
-            best_chain_length = chain_length
-            # We stop at the first acceptable candidate.
-            break
+            candidate_reason = (f"Molecule contains an alcohol group attached to a "
+                                f"{chain_length}-carbon acyclic aliphatic chain (chain path: {longest_path}).")
+            break  # accept the first acceptable candidate
 
-    if not candidate_found:
-        return False, f"Longest aliphatic chain starting from an alcohol carbon is only {best_chain_length} atoms (need at least {MIN_CHAIN_LENGTH})"
-    
-    return True, f"Molecule contains an alcohol group attached to a {best_chain_length}-carbon acyclic aliphatic chain"
-
+    if candidate_found:
+        return True, candidate_reason
+    else:
+        return False, (f"Longest acyclic aliphatic chain from any candidate alcohol group is only "
+                       f"{best_chain_length} carbons (need at least {MIN_CHAIN_LENGTH}).")
+        
 # Example usage (for testing):
 if __name__ == "__main__":
-    # Test with a true positive example: octan-2-ol (SMILES: CCCCCCC(C)O)
-    example_smiles = "CCCCCCC(C)O"
-    is_fatty, reason = is_fatty_alcohol(example_smiles)
-    print(f"SMILES: {example_smiles}\nClassified as fatty alcohol? {is_fatty}\nReason: {reason}")
+    # A true positive example: octan-2-ol (SMILES: CCCCCCC(C)O)
+    test_smiles = [
+        "CCCCCCC(C)O",                       # octan-2-ol (should be true)
+        "CCCC[C@H](C)O",                      # (2S)-2-heptanol (borderline; our minimum chain length is 7)
+        "OC(CCCCCCCCCCCCCCC)CC(=O)C1=CC=CC=C1",# 3-Hydroxy-1-phenyl-1-octadecanone
+        "OC1=CC(O)=CC(=C1)CCCCCCCCCCCCCCC[C@@H](O)C", # Hansfordiol A
+        "O=C(O[C@@H](CCCCCCCCCCCCC[C@H](O)C)[C@H](C1=C)C(=O)O"  # Allo-murolic acid (has extra acid groups)
+    ]
+    for smi in test_smiles:
+        result, reason = is_fatty_alcohol(smi)
+        print(f"SMILES: {smi}\nClassified as fatty alcohol? {result}\nReason: {reason}\n{'-'*60}")
