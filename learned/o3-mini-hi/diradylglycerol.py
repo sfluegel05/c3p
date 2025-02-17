@@ -4,22 +4,19 @@ Classifies: CHEBI:76578 diradylglycerol
 """
 Classifies: Diradylglycerol
 Definition:
-  Any lipid that is glycerol bearing two substituent groups - either acyl, alkyl, or alk-1-enyl -
+  Any lipid that is glycerol bearing two substituent groups – either acyl, alkyl, or alk-1-enyl –
   at any two of the three possible positions.
   
-Heuristic in this revision:
-  1. Parse the SMILES and require a valid molecule.
-  2. Exclude molecules with phosphorus (as these usually belong to phospholipids).
-  3. Search for an acyclic (non-ring) linear chain of 3 sp3 carbons (candidate glycerol backbone).
-     We require that the two end carbons are not directly connected.
-  4. For each backbone carbon, collect oxygen neighbors (ignoring backbone atoms).
-  5. For each oxygen neighbor (skipping those connected to phosphorus), check if its other neighbor(s)
-     (i.e. the branch attached) includes at least 3 carbon atoms in a connected substructure.
-  6. If exactly two of the three backbone carbons are substituted with such a branch, then we classify
-     the molecule as a diradylglycerol.
-     
-Note: This is a heuristic approach – it may reject some valid structures or report false positives,
-but it is tuned to improve over the previous version.
+This improved heuristic:
+  1. Parses the SMILES and rejects invalid input.
+  2. Immediately excludes molecules containing phosphorus (commonly phospholipids).
+  3. Searches for a non‐ring, linear three–carbon “backbone” (candidate glycerol) where each carbon is sp3.
+  4. For each backbone carbon, examines non‐backbone oxygen neighbors.
+     If an oxygen has an attached hydrogen (using GetTotalNumHs) we interpret it as an unmodified –OH.
+     Otherwise (as in an ester or ether), we see if the oxygen leads into a branch containing ≥3 carbons.
+  5. If exactly two backbone carbons have a valid substituent branch, we return a positive classification.
+  
+Note: This is still a heuristic approach and may both reject some valid diradylglycerols and pick up some false positives.
 """
 
 from rdkit import Chem
@@ -29,26 +26,25 @@ def is_diradylglycerol(smiles: str):
     """
     Determines if a molecule is a diradylglycerol based on its SMILES string.
     A diradylglycerol is defined as a glycerol backbone (a linear chain of three sp3 carbons,
-    none in a ring) with exactly two substituent groups (acyl, alkyl, or alk-1-enyl) attached
-    on two of the three positions.
+    none in a ring) in which exactly two positions are substituted with an acyl/alkyl/alk-1-enyl chain.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
         bool: True if the molecule is classified as a diradylglycerol, otherwise False.
-        str: Reason for classification.
+        str: Explanation for classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Exclude molecules containing phosphorus; these are typically phospholipids.
+    # Exclude molecules that contain phosphorus; these are more likely phospholipids.
     if any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms()):
         return False, "Contains phosphorus; likely a phospholipid, not a diradylglycerol"
-    
-    # Helper function: count the number of carbon atoms reachable from a starting atom,
-    # excluding atoms in the given set (e.g. backbone or the oxygen itself).
+
+    # Helper function: count the number of carbon atoms in a connected branch from a given start_atom,
+    # while excluding atoms whose indices are in the provided set.
     def count_carbons(start_atom, exclude_idxs):
         count = 0
         seen = set()
@@ -58,88 +54,84 @@ def is_diradylglycerol(smiles: str):
             if atom.GetIdx() in seen:
                 continue
             seen.add(atom.GetIdx())
-            if atom.GetAtomicNum() == 6:  # carbon
+            if atom.GetAtomicNum() == 6:
                 count += 1
             for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in exclude_idxs or nbr.GetIdx() in seen:
                     continue
-                # Only traverse heavy atoms
+                # Traverse only heavy atoms.
                 if nbr.GetAtomicNum() > 1:
                     queue.append(nbr)
         return count
 
-    # Identify candidate backbone atoms: sp3 carbons that are not in rings.
+    # Find candidate backbone atoms: sp3 carbons that are not in rings.
     candidate_carbons = [atom for atom in mol.GetAtoms() 
-                         if atom.GetAtomicNum() == 6 
-                         and atom.GetHybridization() == rdchem.HybridizationType.SP3
-                         and not atom.IsInRing()]
+                         if atom.GetAtomicNum() == 6 and atom.GetHybridization() == rdchem.HybridizationType.SP3 and not atom.IsInRing()]
     
-    # Loop over candidate "middle" atoms to build a linear chain backbone
+    # Look for a set of three carbons arranged in a linear chain.
     for mid in candidate_carbons:
-        # Get sp3 carbon neighbors (acyclic, not in ring) to serve as possible ends.
+        # Get sp3 carbon neighbors (also not in ring) for a candidate middle.
         nbr_carbons = [nbr for nbr in mid.GetNeighbors() 
-                       if nbr.GetAtomicNum() == 6 
-                       and nbr.GetHybridization() == rdchem.HybridizationType.SP3 
-                       and not nbr.IsInRing()]
+                       if nbr.GetAtomicNum() == 6 and nbr.GetHybridization() == rdchem.HybridizationType.SP3 and not nbr.IsInRing()]
         if len(nbr_carbons) < 2:
             continue
-        # Try every unordered pair from these neighbors
+        # Try each unordered pair as the two ends.
         for i in range(len(nbr_carbons)):
             for j in range(i+1, len(nbr_carbons)):
                 c1 = nbr_carbons[i]
                 c3 = nbr_carbons[j]
-                # For a linear chain, ensure that the two ends are not directly bonded.
+                # For a linear chain, the two end carbons should not be directly bonded.
                 if mol.GetBondBetweenAtoms(c1.GetIdx(), c3.GetIdx()) is not None:
                     continue
                 backbone = [c1, mid, c3]
-                # Confirm none of the backbone carbons is in a ring.
+                # Double-check that none of the backbone atoms is in a ring.
                 if any(atom.IsInRing() for atom in backbone):
                     continue
 
-                # Now, for each backbone carbon, assess substitution.
-                # We expect that in a genuine glycerol backbone, each carbon was originally –OH substituted.
-                # Here, a substituent is considered valid if the oxygen attached to the carbon (and not part of the backbone)
-                # is connected to a branch that has at least 3 carbon atoms (heuristic for an acyl/alkyl chain).
-                substituted_count = 0
+                # Now assess the substituents: originally each glycerol carbon bears an –OH.
+                # For each backbone carbon, get oxygen neighbors that are not part of the backbone.
+                subst_count = 0
                 valid_backbone = True
-                backbone_idxs = {a.GetIdx() for a in backbone}
+                backbone_idxs = {atom.GetIdx() for atom in backbone}
                 for carbon in backbone:
-                    # Get oxygen neighbors not belonging to the backbone.
-                    oxy_neighbors = [nbr for nbr in carbon.GetNeighbors() 
-                                     if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in backbone_idxs]
-                    if not oxy_neighbors:
-                        # A backbone carbon without any oxygen is unlikely to be a glycerol-derived carbon.
+                    oxygens = [nbr for nbr in carbon.GetNeighbors() 
+                               if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in backbone_idxs]
+                    if not oxygens:
+                        # If a backbone carbon lacks an oxygen neighbor, it is unlikely to be part of a glycerol structure.
                         valid_backbone = False
                         break
-                    # For this carbon, see if at least one oxygen carries a sufficiently long substituent.
-                    found_valid_subs = False
-                    for oxy in oxy_neighbors:
-                        # Skip an oxygen that is connected to phosphorus (e.g. in phospholipids).
-                        if any(nbr.GetAtomicNum() == 15 for nbr in oxy.GetNeighbors()):
+                    # Determine if this carbon is substituted.
+                    # A free hydroxyl is expected to have at least one hydrogen on the oxygen.
+                    # Otherwise, if the oxygen (with no H attached) leads to a branch with ≥3 carbons,
+                    # we consider that position substituted.
+                    is_substituted = False
+                    for oxy in oxygens:
+                        # Check if the oxygen has any hydrogen; if so, it is likely still a free –OH.
+                        # (Hydrogens may not be explicit so use GetTotalNumHs.)
+                        if oxy.GetTotalNumHs() > 0:
                             continue
-                        # Examine each neighbor of the oxygen, excluding the backbone carbon.
+                        # Otherwise, check its other neighbors (besides our backbone carbon).
                         for nbr in oxy.GetNeighbors():
                             if nbr.GetIdx() == carbon.GetIdx():
                                 continue
-                            # Check if neighbor is carbon and its branch (excluding oxy and backbone)
                             if nbr.GetAtomicNum() == 6:
-                                exclude_set = backbone_idxs.union({oxy.GetIdx()})
-                                branch_size = count_carbons(nbr, exclude_set)
+                                # Exclude the backbone and this oxygen from the branch search.
+                                branch_size = count_carbons(nbr, backbone_idxs.union({oxy.GetIdx()}))
                                 if branch_size >= 3:
-                                    found_valid_subs = True
+                                    is_substituted = True
                                     break
-                        if found_valid_subs:
+                        if is_substituted:
                             break
-                    if found_valid_subs:
-                        substituted_count += 1
-                # For a diradylglycerol we require exactly two substituted positions.
-                if valid_backbone and substituted_count == 2:
+                    if is_substituted:
+                        subst_count += 1
+                # For a diradylglycerol, exactly 2 of the 3 backbone carbons must be substituted.
+                if valid_backbone and subst_count == 2:
                     return True, "Found a glycerol backbone with exactly 2 substituted positions"
-    return False, "No glycerol backbone found with exactly 2 substituent groups"
+    return False, "No glycerol backbone with exactly 2 valid substituent branches found"
 
-# Example usage: (this part could be run to test the classification)
+# Example usage:
 if __name__ == "__main__":
-    # A test SMILES string for a DG (diradylglycerol) candidate:
+    # Here is one candidate SMILES for a DG (diradylglycerol) structure.
     test_smiles = "O(C(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)C[C@@H](O)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\CCCCC"
     result, reason = is_diradylglycerol(test_smiles)
     print("Is Diradylglycerol:", result)
