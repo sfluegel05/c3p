@@ -3,29 +3,32 @@ Classifies: CHEBI:35381 monosaccharide
 """
 """
 Classifies: Parent monosaccharide.
-A parent monosaccharide is defined (heuristically) as either:
-  (a) a polyhydroxy aldehyde (or ketone) in open‐chain form – having an open-chain aldehyde (or internal ketone)
-      plus at least a majority of the carbons decorated with –OH groups (ratio ≥ 0.5) or
-  (b) a cyclic sugar (5‐ or 6‐membered ring containing oxygen) with several –OH groups.
-Only compounds with 3–9 carbon atoms and no extraneous heteroatoms (like P or S) are allowed.
+A parent monosaccharide is defined heuristically as either:
+  (a) An open‐chain polyhydroxy aldehyde (or ketone) with a terminal aldehyde (or internal ketone)
+      if sufficient –OH groups are present, or
+  (b) A cyclic sugar (5‐ or 6‐membered ring containing oxygen) with several –OH groups.
+Only molecules consisting solely of carbon and oxygen (with formal charge 0 on all atoms)
+and having 3–9 carbon atoms and a single fragment are accepted.
+If no typical sugar motifs are found, the compound is rejected.
 Note: This is a heuristic; if the task is too difficult we may return (None, None).
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monosaccharide(smiles: str):
     """
     Determines if a molecule is a parent monosaccharide based on its SMILES string.
-    Heuristics used:
-      1. Must be a single fragment (no glycosidic bonds to other units).
-      2. Carbon atom count must be between 3 and 9.
-      3. Reject if containing extraneous heteroatoms such as phosphorus (P) or sulfur (S).
-      4. Look for a sugar-like cyclic structure: a 5- or 6-membered ring that contains at least one oxygen.
-         - If found, require at least 3 hydroxyl groups (SMARTS "[OX2H]") and a hydroxyl/carbon ratio ≥ 0.5.
-      5. If no typical sugar ring is found, look for an open-chain carbonyl:
-         - For aldoses, require a terminal aldehyde pattern ("[H]C(=O)").
-         - For ketoses, require the presence of a carbonyl (pattern "[CX3]=[OX1]") but also a hydroxyl/carbon ratio ≥ 0.5.
-      6. Reject molecules that have evidence of additional fragments (e.g. multiple disconnected parts) or aromatic carbonyls.
+    Improved heuristics:
+      1. Only allow molecules with C and O atoms (H is implicit).
+      2. Must be a single fragment and all atoms must have formal charge zero.
+      3. Carbon atoms count must be between 3 and 9.
+      4. Count hydroxyl groups using the SMARTS "[OX2H]".
+      5. Check for a typical cyclic sugar ring: a 5- or 6-membered ring containing at least one oxygen.
+         – If found, require at least 3 hydroxyl groups and an OH/C ratio ≥ 0.5.
+      6. If no ring is found, seek an open‐chain carbonyl:
+         – For an aldose: a terminal aldehyde pattern "[H]C(=O)" is required and expect roughly (C-1) –OH groups.
+         – For a ketose: require an internal carbonyl pattern "C(=O)C" and expect roughly (C-2) –OH groups.
+      7. Reject if any extraneous elements (other than C and O) are present.
+      8. Reject molecules with any non‐zero formal charge.
       
     Args:
         smiles (str): SMILES string of the molecule
@@ -34,102 +37,93 @@ def is_monosaccharide(smiles: str):
         bool: True if the molecule is classified as a parent monosaccharide, False otherwise.
         str: Reason for the classification decision.
     """
-    try:
-        mol = Chem.MolFromSmiles(smiles)
-    except Exception:
-        return False, "Invalid SMILES string (exception during parsing)"
+    # Parse SMILES string
+    mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string (could not parse molecule)"
-    
-    # 1. Check connectivity: must be a single fragment.
+        return False, "SMILES parsing failed"
+
+    # 1. Check connectivity: single fragment only.
     frags = Chem.GetMolFrags(mol, asMols=False)
     if len(frags) > 1:
-        return False, "Multiple fragments detected; likely not a single monosaccharide unit"
-    
-    # 2. Reject molecules containing extraneous heteroatoms: phosphorus (15) or sulfur (16)
+        return False, "Multiple fragments detected; not a single monosaccharide unit"
+
+    # 2. Check that every atom is either carbon (6) or oxygen (8)
+    # and atom formal charge is zero.
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() in (15, 16):
-            return False, f"Contains extraneous heteroatom {atom.GetSymbol()}; likely not a parent monosaccharide"
-    
-    # 3. Count carbons.
+        if atom.GetAtomicNum() not in (6, 8):
+            return False, f"Extraneous atom found: {atom.GetSymbol()} (only C and O allowed)"
+        if atom.GetFormalCharge() != 0:
+            return False, f"Atom {atom.GetSymbol()} has non-zero formal charge"
+
+    # 3. Count carbon atoms.
     atoms = mol.GetAtoms()
     c_count = sum(1 for atom in atoms if atom.GetAtomicNum() == 6)
     if c_count < 3:
-        return False, f"Too few carbon atoms ({c_count}); a monosaccharide must have at least 3 carbons"
+        return False, f"Too few carbon atoms ({c_count}); monosaccharides require 3–9 carbons"
     if c_count > 9:
         return False, f"Too many carbon atoms ({c_count}); parent monosaccharides are expected to have 3–9 carbons"
     
-    # 4. Count hydroxyl groups.
-    # Use a SMARTS for hydroxyl: oxygen with hydrogen attached.
+    # 4. Count hydroxyl groups using SMARTS "[OX2H]"
     hydroxyl_smarts = Chem.MolFromSmarts("[OX2H]")
     oh_matches = mol.GetSubstructMatches(hydroxyl_smarts)
     num_oh = len(oh_matches)
-    
-    # Calculate ratio of hydroxyl groups per carbon.
-    oh_ratio = num_oh / c_count if c_count > 0 else 0
-    
-    # 5. Check for cyclic sugar rings:
+    oh_ratio = num_oh / c_count
+
+    # 5. Detect a cyclic sugar ring if present.
     ring_found = False
-    ring_type = None
-    ri = mol.GetRingInfo()
-    for ring in ri.AtomRings():
+    ring_size = None
+    ring_info = mol.GetRingInfo()
+    for ring in ring_info.AtomRings():
         if len(ring) in (5, 6):
-            # Verify that at least one atom in the ring is oxygen.
+            # Check if there is at least one oxygen in the ring.
             if any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring):
                 ring_found = True
-                ring_type = f"{len(ring)}-membered"
+                ring_size = len(ring)
                 break
-    
-    # 6. Check for carbonyl group(s). We look for any [CX3]=[OX1].
-    carbonyl_smarts = Chem.MolFromSmarts("[CX3]=[OX1]")
-    has_carbonyl = mol.HasSubstructMatch(carbonyl_smarts)
-    
-    # Also, for aldoses, we want a terminal aldehyde: pattern "[H]C(=O)"
+
+    # 6. Check for open-chain carbonyl signatures.
+    # For terminal aldehyde: pattern "[H]C(=O)"
     aldehyde_smarts = Chem.MolFromSmarts("[H]C(=O)")
     has_terminal_aldehyde = mol.HasSubstructMatch(aldehyde_smarts)
-    
-    # 7. Reject if a conjugated aromatic carbonyl is detected.
-    aromatic_carbonyl_smarts = Chem.MolFromSmarts("[$([c][CX3]=[OX1])]")
-    if mol.HasSubstructMatch(aromatic_carbonyl_smarts):
-        return False, "Contains aromatic carbonyl; likely not a parent monosaccharide"
-    
-    # Decision making:
-    reason_details = f"Carbons: {c_count}, Hydroxyls: {num_oh} (ratio {oh_ratio:.2f})"
-    if ring_found:
-        # With a typical sugar ring, even if the OH count is a bit low we may accept.
-        if num_oh < 3:
-            return False, f"Ring ({ring_type}) found but too few hydroxyl groups detected ({num_oh}); expect at least 3 for a cyclic sugar. {reason_details}"
-        if oh_ratio < 0.5:
-            return False, f"Ring found but the hydroxyl/carbon ratio ({oh_ratio:.2f}) is too low; expected ≥ 0.5. {reason_details}"
-        extra = f"Contains a typical cyclic sugar ring ({ring_type})."
-        return True, f"Matches monosaccharide criteria: {reason_details}. {extra}"
-    else:
-        # Open-chain case. We then require a proper carbonyl group.
-        if has_terminal_aldehyde:
-            # Likely an aldose.
-            expected_oh = c_count - 1  # most aldoses have one carbonyl and remaining OH-attached carbons.
-            if num_oh < expected_oh:
-                return False, f"Open-chain aldose detected (terminal aldehyde) but insufficient hydroxyl groups ({num_oh} vs expected at least {expected_oh}). {reason_details}"
-            if oh_ratio < 0.5:
-                return False, f"Open-chain aldose detected but hydroxyl/carbon ratio ({oh_ratio:.2f}) is too low; expected at least 0.5. {reason_details}"
-            extra = "Contains a terminal aldehyde indicating an open-chain aldose."
-            return True, f"Matches monosaccharide criteria: {reason_details}. {extra}"
-        elif has_carbonyl:
-            # Possibly a ketose. In that case we require sufficient OH groups.
-            expected_oh = c_count - 2  # ketoses typically have one less OH than aldoses.
-            if num_oh < expected_oh:
-                return False, f"Open-chain ketose detected (internal carbonyl) but insufficient hydroxyl groups ({num_oh} vs expected at least {expected_oh}). {reason_details}"
-            if oh_ratio < 0.5:
-                return False, f"Open-chain ketose detected but hydroxyl/carbon ratio ({oh_ratio:.2f}) is too low; expected at least 0.5. {reason_details}"
-            extra = "Contains an internal carbonyl indicating an open-chain ketose."
-            return True, f"Matches monosaccharide criteria: {reason_details}. {extra}"
-        else:
-            return False, "No cyclic sugar ring or open-chain carbonyl group detected; not a parent monosaccharide"
+    # For internal ketone: pattern "C(=O)C"
+    ketone_smarts = Chem.MolFromSmarts("C(=O)C")
+    has_internal_ketone = mol.HasSubstructMatch(ketone_smarts)
 
-# Example usage (for testing purposes):
+    # Decision branch:
+    details = f"Carbons: {c_count}, Hydroxyls: {num_oh} (OH/C ratio: {oh_ratio:.2f})"
+    if ring_found:
+        # With a cyclic structure, expect at least 3 -OH groups and ratio >=0.5.
+        if num_oh < 3:
+            return False, f"Cyclic {ring_size}-membered sugar ring found but too few –OH groups ({num_oh}); expected at least 3. {details}"
+        if oh_ratio < 0.5:
+            return False, f"Cyclic sugar ring found but OH/C ratio ({oh_ratio:.2f}) is below 0.5. {details}"
+        return True, f"Matches cyclic monosaccharide criteria: {details}. Contains a {ring_size}-membered ring with oxygen."
+    else:
+        # Open-chain: must contain a carbonyl group.
+        if has_terminal_aldehyde:
+            # For an aldose, most carbons (except the carbonyl) should be hydroxylated.
+            expected_oh = c_count - 1
+            if num_oh < expected_oh:
+                return False, f"Open-chain aldose (terminal aldehyde detected) but only {num_oh} –OH groups (expected ~{expected_oh}). {details}"
+            if oh_ratio < 0.5:
+                return False, f"Open-chain aldose detected but OH/C ratio ({oh_ratio:.2f}) is too low. {details}"
+            return True, f"Matches open-chain aldose criteria: {details}. Contains a terminal aldehyde."
+        elif has_internal_ketone:
+            # For a ketose, expect somewhat fewer OH groups (rough heuristic: expected ~C-2).
+            expected_oh = c_count - 2
+            if num_oh < expected_oh:
+                return False, f"Open-chain ketose (internal ketone detected) but only {num_oh} –OH groups (expected ~{expected_oh}). {details}"
+            if oh_ratio < 0.5:
+                return False, f"Open-chain ketose detected but OH/C ratio ({oh_ratio:.2f}) is too low. {details}"
+            return True, f"Matches open-chain ketose criteria: {details}. Contains an internal ketone."
+        else:
+            return False, "No cyclic sugar ring or recognizable open-chain carbonyl (aldehyde/ketone) detected."
+
+# Example usage for testing
 if __name__ == "__main__":
     test_examples = {
-        # True positives:
+        # True positives (monosaccharides)
+        "beta-ascarylopyranose": "C[C@@H]1O[C@H](O)[C@H](O)C[C@H]1O",
         "aldehydo-D-fucose": "[H]C(=O)[C@H](O)[C@@H](O)[C@@H](O)[C@@H](C)O",
         "alpha-D-idopyranose": "O1[C@@H]([C@H](O)[C@@H](O)[C@H](O)[C@@H]1O)CO",
         "aldehydo-L-glucose": "[H]C(=O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H](O)CO",
@@ -154,7 +148,7 @@ if __name__ == "__main__":
         "beta-D-glucofuranose": "O1[C@@]([C@H](O)[C@@H](O)[C@@H]1O)([C@H](O)CO)[H]",
         "alpha-D-mannose": "OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O",
         "beta-D-fructopyranose": "OC[C@@]1(O)OC[C@@H](O)[C@@H](O)[C@@H]1O",
-        # False positives (should be rejected):
+        # False positives (should be rejected)
         "Diglycolic acid": "O(CC(O)=O)CC(O)=O",
         "alpha-(hydroxymethyl)serine zwitterion": "C(C([O-])=O)(CO)(CO)[NH3+]"
     }
