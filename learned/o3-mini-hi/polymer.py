@@ -2,9 +2,9 @@
 Classifies: CHEBI:60027 polymer
 """
 """
-Classifies: A polymer is a mixture composed of macromolecules of different kinds,
-which may be differentiated by composition, length, degree of branching etc..
-This program implements a simple heuristic for classifying a SMILES string as polymer.
+Classifies: A polymer is defined as a mixture composed of macromolecules of different kinds,
+which may be differentiated by composition, length, degree of branching etc.
+This program implements a heuristic for classifying a SMILES string as a polymer.
 """
 
 from rdkit import Chem
@@ -12,52 +12,57 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_polymer(smiles: str):
     """
-    Determines if a given SMILES string represents a polymer (i.e. a mixture
-    of macromolecules of different kinds). This heuristic splits the molecule into
-    disconnected fragments, ignores very small fragments (such as ions) and then
-    checks if there are at least two different large fragments.
+    Determines if a given SMILES string represents a polymer—
+    i.e. a mixture of distinct macromolecules (with different composition, size, branching, etc.).
+    
+    Heuristic:
+      - Parse the molecule.
+      - Split into disconnected fragments.
+      - Discard fragments that are too small (likely counterions or salts) using a minimal
+        molecular weight (e.g. 150 Da) and requiring at least 5 heavy atoms.
+      - Check if at least two remaining fragments exist and that they are chemically distinct.
     
     Args:
-        smiles (str): SMILES string of the substance
+        smiles (str): SMILES string for the substance.
         
     Returns:
-        bool: True if classified as a polymer, False otherwise.
+        bool: True if classified as polymer, False otherwise.
         str: Reason for the classification.
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Split the molecule into fragments (each fragment is a disconnected component)
-    frags = Chem.GetMolFrags(mol, asMols=True)
+    # Split molecule into disconnected fragments
+    fragments = Chem.GetMolFrags(mol, asMols=True)
     
-    # We ignore very small fragments (e.g. common counter ions) by filtering on molecular weight.
-    # Here, a threshold of 100 Da is used (this can be tuned).
-    large_frags = [frag for frag in frags if rdMolDescriptors.CalcExactMolWt(frag) >= 100]
+    # Define minimum criteria for a fragment to be considered a macromolecular component:
+    # Here, fragments with molecular weight >= 150 Da and at least 5 heavy atoms.
+    def is_large_fragment(frag):
+        mw = rdMolDescriptors.CalcExactMolWt(frag)
+        heavy_atoms = sum(1 for atom in frag.GetAtoms() if atom.GetAtomicNum() > 1)  # exclude hydrogens
+        return (mw >= 150) and (heavy_atoms >= 5)
     
-    # If we have two or more large fragments, then check if they are chemically different.
-    # A polymer (by our definition) is a mixture of macromolecules of different kinds.
-    if len(large_frags) >= 2:
-        # Get canonical SMILES for each fragment to compare their structure.
-        frag_smiles = [Chem.MolToSmiles(frag) for frag in large_frags]
-        unique_fragments = set(frag_smiles)
-        if len(unique_fragments) >= 2:
-            return True, ("Detected a mixture of at least two distinct macromolecular components "
-                          "(each with molecular weight >= 100 Da)")
-        else:
-            return False, ("Multiple fragments were found but they appear to be identical; "
-                           "this is more likely a salt than a polymer mixture")
+    # Filter out small fragments such as simple ions or counterions.
+    large_frags = [frag for frag in fragments if is_large_fragment(frag)]
     
-    # Note: If the substance is represented as a single fragment,
-    # it is usually a defined compound. Even if the compound is very large,
-    # by our definition it does not represent a mixture.
-    if len(large_frags) == 1:
-        frag = large_frags[0]
-        if frag.GetNumAtoms() > 100:
-            return False, ("A single macromolecule with more than 100 atoms was detected; "
-                           "while this may be a large (macromolecular) compound, it is not a mixture "
-                           "of different macromolecules as required for a polymer")
+    if len(large_frags) < 2:
+        # If only one or no “large” fragment is detected,
+        # then by our definition, this is not a polymer mixture.
+        return False, "Does not meet the criteria for a polymer (fewer than two distinct macromolecular fragments)"
     
-    # If no large fragments or no mixture of different parts was found, it is not a polymer.
-    return False, "Does not meet the criteria for a polymer (mixture of distinct macromolecules)"
+    # Compare fragments for distinctiveness using their canonical SMILES.
+    frag_smiles = [Chem.MolToSmiles(frag, canonical=True) for frag in large_frags]
+    unique_fragments = set(frag_smiles)
+    
+    if len(unique_fragments) >= 2:
+        return True, ("Detected a mixture of at least two distinct macromolecular components "
+                      "(each with molecular weight >=150 Da and at least 5 heavy atoms)")
+    else:
+        return False, ("Multiple large fragments were found but they appear to be chemically identical; "
+                       "this is more likely a salt than a polymer mixture")
+                       
+# Example usage (uncomment to test):
+# print(is_polymer("C=1(N(C(N=C(N1)N)(C)C)C=2C=CC(=CC2)Cl)N.C3=CC=CC4=C3C=C(C(=C4CC=5C6=C(C=C(C5O)C(=O)O)C=CC=C6)O)C(=O)O.C=7(N(C(N=C(N7)N)(C)C)C=8C=CC(=CC8)Cl)N"))
