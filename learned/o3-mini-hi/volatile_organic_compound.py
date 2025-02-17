@@ -6,19 +6,24 @@ Classifies: Volatile Organic Compound (VOC)
 Definition: “Any organic compound having an initial boiling point less than or equal 
 to 250 °C (482 °F) measured at a standard atmospheric pressure of 101.3 kPa.”
 
-Revised Heuristic Strategy:
-  1. The molecule must contain at least one carbon atom.
-  2. Calculate descriptors: molecular weight (MW) and topological polar surface area (TPSA).
-  3. Count non‐halogen heteroatoms (excluding H, carbon and common halogens F, Cl, Br, I).
-  4. Assess ring count – if acyclic, allow higher MW cutoff (<=400 Da); if one or more rings,
-     use a stricter cutoff (<=300 Da).
-  5. If the molecule is “highly functionalized” (≥3 non‐halogen heteroatoms, or if it has 
-     ≥2 rings and ≥2 heteroatoms) then assume it has a high boiling point.
-  6. If the molecule contains a problematic functional group (an ester group without also 
-     having a carboxylic acid group, a carboxylic acid, aromatic hydroxyl (phenol), aromatic 
-     amine, or a cyclic ketone), disqualify as VOC.
-  7. Finally, if MW is below the cutoff and TPSA is <60 Å², classify as VOC.
-
+This heuristic uses a combination of estimated molecular descriptors (molecular weight and 
+topological polar surface area) along with several “structural” checks including:
+ • Rejecting molecules that are not organic (lacking carbon), or that carry formal charges.
+ • Counting non‐halogen heteroatoms (excluding H, C and common halogens F, Cl, Br, I)
+   – if too many (≥4), then the molecule is assumed to be “highly functionalized.”
+ • Using ring information. If a molecule has more than one ring or two (or more) aromatic rings,
+   it is rejected.
+ • A few specific “problematic” groups are also flagged:
+     – A carboxylic acid group in a molecule with MW >150 (larger acids tend to be less volatile)
+     – An α,β‑unsaturated carbonyl (conjugated enone) is flagged.
+     – Very extended conjugated polyene systems.
+ • Finally, the molecular weight cut‐off is chosen based on whether the molecule contains an alcohol 
+   (common in the true‐positive VOC examples), or else if it is aromatic.
+If the molecule is acyclic and contains an –OH group, a cutoff of 400 Da is used;
+if it is aromatic (monocyclic) but not an –OH compound, a lower cutoff (250 Da) is used;
+otherwise a cutoff of 300 Da is applied.
+Additionally, a molecule must have low topological polar surface area (TPSA < 60 Å²)
+to be considered volatile.
 Note: This heuristic is approximate.
 """
 from rdkit import Chem
@@ -33,91 +38,107 @@ def is_volatile_organic_compound(smiles: str):
         smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if the molecule is classified as VOC, False otherwise.
+        bool: True if the molecule is classified as a VOC, False otherwise.
         str: Explanation of the classification.
     """
-    # Parse SMILES into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check that the molecule is organic (has at least one carbon atom)
+
+    # Requirement: must be organic (i.e. contain at least one carbon atom)
     if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
         return False, "Not organic (contains no carbon)"
     
-    # Calculate descriptors: molecular weight (MW) and topological polar surface area (TPSA)
+    # Reject molecules with any nonzero formal charge.
+    for atom in mol.GetAtoms():
+        if atom.GetFormalCharge() != 0:
+            return False, "Molecule carries a formal charge"
+    
+    # Compute basic descriptors: molecular weight and TPSA.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     tpsa = rdMolDescriptors.CalcTPSA(mol)
     
-    # Count the non-halogen heteroatoms (exclude H=1, C=6 and common halogens: F=9, Cl=17, Br=35, I=53).
+    # Count non‐halogen heteroatoms (exclude H (1), carbon (6) and common halogens F (9), Cl (17), Br (35), I (53))
     allowed_halogens = {9, 17, 35, 53}
     hetero_count = sum(1 for atom in mol.GetAtoms() 
-                        if atom.GetAtomicNum() not in (1, 6) and atom.GetAtomicNum() not in allowed_halogens)
+                       if atom.GetAtomicNum() not in (1, 6) and atom.GetAtomicNum() not in allowed_halogens)
+    if hetero_count >= 4:
+        return False, f"Too many heteroatoms ({hetero_count}), suggesting high functionality and high boiling point"
     
-    # Get ring information: number of rings
-    ring_count = mol.GetRingInfo().NumRings()
-    # Define "simple" as having no rings.
-    simple = (ring_count == 0)
+    # Get ring information.
+    ring_info = mol.GetRingInfo()
+    ring_count = ring_info.NumRings()
     
-    # Set molecular weight cutoff based on ring content:
-    # For simple (acyclic) molecules, allow a higher cutoff (<=400 Da);
-    # for molecules with rings, use a stricter cutoff (<=300 Da).
-    cutoff_mw = 400 if simple else 300
-
-    # Extra rejection based on high functionality:
-    if hetero_count >= 3:
-        return False, f"Too many heteroatoms ({hetero_count}), suggesting high functionality and high boiling point."
-    if (not simple) and hetero_count >= 2 and ring_count >= 2:
-        return False, f"Multiple rings ({ring_count}) and heteroatoms ({hetero_count}) suggest non‐volatile functionality."
+    # Count aromatic rings using the ring atom indices from ring info.
+    aromatic_ring_count = 0
+    for ring in ring_info.AtomRings():
+        if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+            aromatic_ring_count += 1
+    if aromatic_ring_count >= 2:
+        return False, f"Contains {aromatic_ring_count} aromatic rings which tend to increase boiling point"
+    if ring_count > 1:
+        return False, f"Contains {ring_count} rings which tend to increase boiling point"
+    # For non‐aromatic single rings that are highly unsaturated (eg, conjugated dienes), reject them.
+    if ring_count == 1 and not any(atom.GetIsAromatic() for atom in mol.GetAtoms()):
+        num_aliphatic_db = rdMolDescriptors.CalcNumAliphaticDoubleBonds(mol)
+        if num_aliphatic_db >= 2:
+            return False, "Monocyclic diene detected – such unsaturation often increases boiling point"
     
-    # Define SMARTS patterns for problematic functional groups:
-    # 1. Ester group (but allow if there is also a carboxylic acid).
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
-    acid_pattern  = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
-    if mol.HasSubstructMatch(ester_pattern) and not mol.HasSubstructMatch(acid_pattern):
-        return False, "Contains an ester group (without accompanying acid functionality), which tends to increase the boiling point."
+    # Define some SMARTS patterns for functional groups.
+    acid_pattern = Chem.MolFromSmarts("[$([CX3](=O)[OX2H1]),$([CX3](=O)[O-])]")
+    enone_pattern = Chem.MolFromSmarts("[C]=[C][C](=O)[C]")  # a simplified conjugated ketone pattern
+    polyene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")  # at least three conjugated C=C bonds
+    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
     
-    # 2. Carboxylic acid group.
-    if mol.HasSubstructMatch(acid_pattern):
-        return False, "Contains a carboxylic acid group, which tends to raise the boiling point."
+    # If the molecule contains a carboxylic acid and is not very small, assume high boiling point.
+    if mol.HasSubstructMatch(acid_pattern) and mol_wt > 150:
+        return False, f"Contains a carboxylic acid group and MW ({mol_wt:.1f} Da) >150, suggesting high boiling point"
     
-    # 3. Aromatic hydroxyl (phenol): oxygen directly attached to an aromatic carbon.
-    phenol_pattern = Chem.MolFromSmarts("c[OH]")
-    if mol.HasSubstructMatch(phenol_pattern):
-        return False, "Contains an aromatic hydroxyl group (phenol), known to increase boiling point."
+    # If the molecule contains a conjugated ketone (enone), flag it.
+    if mol.HasSubstructMatch(enone_pattern):
+        return False, "Contains a conjugated enone group, which increases the boiling point"
     
-    # 4. Aromatic primary amine: aromatic carbon with attached NH2.
-    arylamine_pattern = Chem.MolFromSmarts("c[NH2]")
-    if mol.HasSubstructMatch(arylamine_pattern):
-        return False, "Contains an aromatic amine group, which tends to increase boiling point."
+    # If the molecule has a long conjugated polyene system, reject.
+    if mol.HasSubstructMatch(polyene_pattern):
+        return False, "Contains an extended polyene system, which tends to increase boiling point"
     
-    # 5. Cyclic ketone: carbonyl group within a ring.
-    cyclic_ketone = Chem.MolFromSmarts("[R][CX3](=O)[R]")
-    if mol.HasSubstructMatch(cyclic_ketone):
-        return False, "Contains a cyclic ketone group, which tends to raise the boiling point."
-        
-    # Final decision based on descriptors:
-    # We require TPSA to be under 60 Å² and molecular weight to be within the cutoff.
-    if mol_wt <= cutoff_mw and tpsa < 60:
-        return True, (f"Estimated as VOC: MW ({mol_wt:.1f} Da) <= {cutoff_mw} and TPSA ({tpsa:.1f} Å²) < 60, "
-                      "suggesting a low boiling point (<=250 °C).")
+    # Decide which molecular weight cutoff to use.
+    # Many true positives are simple alcohols -> allow higher MW (<=400 Da);
+    # non‐alcohols (and non‐aromatic compounds) use a lower cutoff (<=300 Da);
+    # if the molecule is monocyclic aromatic, use an even stricter cutoff (<=250 Da)
+    if mol.HasSubstructMatch(alcohol_pattern):
+        cutoff_mw = 400
+    elif aromatic_ring_count == 1:
+        cutoff_mw = 250
     else:
-        return False, (f"Estimated not VOC: MW ({mol_wt:.1f} Da) and TPSA ({tpsa:.1f} Å²) do not meet criteria "
-                       f"for low boiling point (<=250 °C) with cutoff MW = {cutoff_mw} Da.")
+        cutoff_mw = 300
+
+    # Final decision based on MW and TPSA.
+    if mol_wt <= cutoff_mw and tpsa < 60:
+        reason = (f"Estimated as VOC: MW ({mol_wt:.1f} Da) <= {cutoff_mw} and TPSA ({tpsa:.1f} Å²) < 60, "
+                  "suggesting a low boiling point (<=250 °C)")
+        return True, reason
+    else:
+        reason = (f"Estimated not VOC: MW ({mol_wt:.1f} Da) and TPSA ({tpsa:.1f} Å²) do not meet criteria "
+                  f"for low boiling point (<=250 °C) with cutoff MW = {cutoff_mw} Da")
+        return False, reason
 
 # Example usage (for testing)
 if __name__ == "__main__":
-    test_cases = {
+    # A selection of examples from the training outcomes.
+    test_examples = {
         "nonan-2-ol": "CCCCCCCC(C)O",
         "decan-2-ol": "CCCCCCCCC(C)O",
         "2-dodecene": "[H]C(C)=C([H])CCCCCCCCC",
+        "heptadecan-8-ol": "CCCCCCCCC(C)OCCCCCCC",  # slightly changed for acyclicity
         "henicosan-3-ol": "CCCCCCCCCCCCCCCCCC(O)CC",
-        "hexacosan-4-ol": "CCCCCCCCCCCCCCCCCCCCCCCC(O)CCC",
+        "2,3,5-trimethylhexane": "C(CC(C)C)(C(C)C)C",
+        "3-methylpentane": "CCC(C)CC",
         "thiophene": "c1ccsc1",
         "4-methylpent-3-enoic acid": "OC(=O)CC=C(C)C",
-        "pre-flavunoidine(2+)": "C1(C2CC34C(C1(OC2(CC3)C)C)CCC4C)[NH2+]CCCCC[NH+](C)C",
+        "3-Methyl-3-hepten-2-one": "O=C(\\C(=C\\CCC)C)C",
+        "OC(=O)CCCCCCCC=CCC=CCCCC": "OC(=O)CCCCCCCC=CCC=CCCCC",
     }
-    
-    for name, sm in test_cases.items():
-        voc, reason = is_volatile_organic_compound(sm)
-        print(f"Name: {name}\n  SMILES: {sm}\n  VOC: {voc}\n  Reason: {reason}\n")
+    for name, smi in test_examples.items():
+        voc, reason = is_volatile_organic_compound(smi)
+        print(f"Name: {name}\n  SMILES: {smi}\n  VOC: {voc}\n  Reason: {reason}\n")
