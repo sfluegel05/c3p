@@ -1,20 +1,24 @@
 """
 Classifies: CHEBI:25448 myo-inositol phosphate
 """
+#!/usr/bin/env python
 """
 Classifies: myo-inositol phosphate – an inositol phosphate in which the inositol component 
 has myo-configuration.
 
-This improved heuristic checks for:
-  1. A valid molecule with at least one six-membered ring.
-  2. The ring must consist solely of carbon atoms, each with assigned chirality.
-  3. Every ring carbon must have at least one substituent (non‐ring neighbor) that is an oxygen.
-     Furthermore, to avoid cases with lipid or large organic substituents, the branch starting 
-     at that oxygen must contain only oxygen and phosphorus atoms (plus implicit hydrogens).
-  4. At least one of these oxygen branches must contain a phosphorus atom.
+This heuristic checks for:
+  1. A valid molecule that is neutral (formal charge = 0).
+  2. At least one six‐membered ring in which every ring atom:
+       • Is carbon.
+       • Has an explicitly assigned chiral configuration.
+       • Carries at least one non‐ring substituent.
+  3. For each ring atom, at least one substituent must be an oxygen branch whose atoms 
+     (found via a short breadth‐first search) are limited to oxygen and phosphorus – and 
+     importantly each such atom must be uncharged.
+  4. At least one oxygen branch on the ring eventually contains a phosphorus atom.
   
-These criteria are intended to capture the myo–inositol phosphate core while filtering out larger 
-substituted molecules (e.g. inositol lipids).
+These criteria are intended to capture a neutral myo–inositol phosphate core (as illustrated 
+by the provided examples) while filtering out overly ionized (or extended lipid‐like) species.
 """
 
 from rdkit import Chem
@@ -23,136 +27,135 @@ def is_myo_inositol_phosphate(smiles: str):
     """
     Determines whether a given molecule is a myo-inositol phosphate based on its SMILES string.
     
-    The heuristic applied is:
-      1. The molecule must be valid.
-      2. There should be at least one six-membered ring in which:
-           - Every ring atom is carbon with a defined chiral center.
-           - Every ring carbon has at least one substituent (atom other than those in the ring)
-             that is oxygen.
-           - Each oxygen substituent (examined via a short breadth-first search) must not lead into 
-             any atoms other than oxygen or phosphorus.
-      3. At least one oxygen substituent must eventually include a phosphorus atom.
-      
+    The heuristic requires that:
+      - The molecule parses correctly and carries zero net formal charge.
+      - There is at least one six‐membered ring in which every atom is carbon with explicitly 
+        assigned chirality.
+      - Every ring carbon has at least one substituent (atom not in the ring) that is oxygen.
+      - For each such oxygen substituent, a short breadth‐first search confirms that the branch 
+        contains only oxygen and phosphorus atoms (each with formal charge 0) and that at least one branch 
+        contains phosphorus.
+    
     Args:
         smiles (str): SMILES representation of the molecule.
     
     Returns:
-        bool: True if the molecule is classified as myo-inositol phosphate, False otherwise.
-        str: Explanation of the classification decision.
+        (bool, str): Tuple where the boolean indicates correct classification and the string 
+                     provides an explanation.
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Ensure stereochemistry is assigned.
+    # Enforce neutrality: reject molecules with non-zero overall formal charge.
+    if Chem.GetFormalCharge(mol) != 0:
+        return False, "Molecule carries non-zero formal charge; likely a deprotonated ionized form."
+    
+    # Ensure that stereochemistry is assigned.
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
     
-    # Get ring information.
+    # Get ring information from the molecule.
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
     if not rings:
         return False, "No ring system found in the molecule"
     
-    # Define allowed atomic numbers in a substituent branch: oxygen (8) and phosphorus (15)
+    # In substituent branches we allow only oxygen (atomic number 8) and phosphorus (15),
+    # but we require that these atoms be uncharged.
     allowed_atoms = {8, 15}
     
-    # Loop over rings and search for a six-membered candidate.
+    # Loop over all rings; look for a six-membered ring meeting our criteria.
     for ring in rings:
         if len(ring) != 6:
-            continue  # we only check six-membered rings
+            continue  # only consider six-membered rings
         
         valid_ring = True
         branch_has_phosphorus = False
         
-        # Loop over atoms in the ring.
+        # Process each atom in the ring:
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            # Check that the ring atom is a carbon.
+            # The ring atom must be carbon.
             if atom.GetAtomicNum() != 6:
                 valid_ring = False
                 break
-            # Ensure chirality is explicitly set.
+            # The carbon must have its chiral tag explicitly assigned.
             if atom.GetChiralTag() == Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
                 valid_ring = False
                 break
             
-            # Check substituents: atoms not in the ring.
-            # At least one non-ring neighbor must be present.
+            # Identify non‐ring neighbors as possible substituents.
             non_ring_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() not in ring]
             if not non_ring_neighbors:
                 valid_ring = False
                 break
             
             oxygen_found = False
+            # Examine each substituent branch.
             for nbr in non_ring_neighbors:
-                # We require that the substituent is oxygen.
+                # We require that the immediate neighbor be an oxygen.
                 if nbr.GetAtomicNum() != 8:
-                    # Found a substituent that is not oxygen; disqualify this ring.
-                    valid_ring = False
-                    break
+                    continue  # if not oxygen, skip it
                 
-                # Do a short breadth-first search starting at this oxygen (nbr)
-                # to ensure that further atoms in the substituent branch (if any)
-                # are ONLY oxygen and/or phosphorus.
-                visited = set()
-                queue = [nbr.GetIdx()]
+                # Do a BFS on this branch (starting at the oxygen) to ensure that all atoms 
+                # are either oxygen or phosphorus AND that they all carry formal charge 0.
                 branch_valid = True
-                this_branch_has_P = False
-                # Limit search to a small neighborhood.
+                queue = [nbr.GetIdx()]
+                visited = set()
+                branch_contains_P = False
                 while queue:
-                    curr_idx = queue.pop(0)
-                    if curr_idx in visited:
+                    current_idx = queue.pop(0)
+                    if current_idx in visited:
                         continue
-                    visited.add(curr_idx)
-                    curr_atom = mol.GetAtomWithIdx(curr_idx)
-                    # Check allowed atoms; note: the branch includes the starting oxygen.
-                    if curr_atom.GetAtomicNum() not in allowed_atoms:
+                    visited.add(current_idx)
+                    current_atom = mol.GetAtomWithIdx(current_idx)
+                    # Check that the atom type is allowed.
+                    if current_atom.GetAtomicNum() not in allowed_atoms:
                         branch_valid = False
                         break
-                    # If a phosphorus is found along the branch, note this.
-                    if curr_atom.GetAtomicNum() == 15:
-                        this_branch_has_P = True
-                    # Traverse neighbors, but do not go back into the ring.
-                    for nb in curr_atom.GetNeighbors():
+                    # Reject atoms that are not neutrally charged.
+                    if current_atom.GetFormalCharge() != 0:
+                        branch_valid = False
+                        break
+                    if current_atom.GetAtomicNum() == 15:
+                        branch_contains_P = True
+                    # Traverse neighbors that are not in the ring.
+                    for nb in current_atom.GetNeighbors():
                         if nb.GetIdx() in ring:
                             continue
                         if nb.GetIdx() not in visited:
                             queue.append(nb.GetIdx())
                 if not branch_valid:
-                    # This substituent branch contains disallowed atoms (e.g. carbon).
-                    continue  # skip this substituent branch
-                # If branch is valid, then we consider that this ring atom has an acceptable oxygen.
+                    continue  # try the next substituent branch
+                # Accept this branch for the ring atom.
                 oxygen_found = True
-                if this_branch_has_P:
+                if branch_contains_P:
                     branch_has_phosphorus = True
-                # We do not require every oxygen branch to include phosphorus;
-                # just at least one among all ring atoms.
             if not oxygen_found:
-                # If a ring carbon does not bear any oxygen substituent of acceptable type, skip the ring.
                 valid_ring = False
                 break
         
-        # Check that the ring had at least one oxygen branch that leads to a phosphorus.
-        if valid_ring and not branch_has_phosphorus:
-            valid_ring = False
-        
-        if valid_ring:
-            return True, "Found six-membered ring of chiral carbons with oxygen substituents (only O/P allowed) and at least one branch with a phosphate attachment, consistent with myo-inositol phosphate."
+        # We require at least one substituent branch on the ring to eventually contain phosphorus.
+        if valid_ring and branch_has_phosphorus:
+            return True, ("Found six‐membered ring of chiral carbons with substituents that are limited "
+                          "to uncharged oxygen/phosphorus atoms and at least one branch bearing a phosphate, "
+                          "consistent with myo-inositol phosphate.")
     
-    return False, "No six-membered inositol-like ring with appropriate chiral centers, oxygen-only substituents, and phosphate attachment was found."
+    # If no ring passes the criteria return false.
+    return False, "No six‐membered inositol-like ring with appropriate chiral centers, oxygen branches, and a phosphate attachment was found."
 
 # Example usage (for testing purposes):
 if __name__ == "__main__":
-    # Test a few myo-inositol phosphate examples:
-    test_smiles_examples = [
-        # 1D-myo-inositol 1,2,3,4,5-pentakisphosphate
+    test_smiles = [
+        # 1D-myo-inositol 1,2,3,4,5-pentakisphosphate (neutral)
         "O[C@H]1[C@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@@H]1OP(O)(O)=O",
-        # 1D-myo-inositol 4-phosphate
+        # 1D-myo-inositol 4-phosphate (neutral)
         "O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@H]1O",
-        # A known false positive: a lipid conjugate (should be rejected)
-        "CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCCC"
+        # A known false positive; note the deprotonated phosphate groups:
+        "[O-]P([O-])(=O)O[C@@H]1[C@H](OP([O-])([O-])=O)[C@H](OP([O-])([O-])=O)"
+        " [C@@H](OP([O-])([O-])=O)[C@H](OP([O-])([O-])=O)[C@H]1OP([O-])([O-])=O"
     ]
-    
-    for smi in test_smiles_examples:
+    for smi in test_smiles:
         result, reason = is_myo_inositol_phosphate(smi)
         print(result, reason)
