@@ -3,10 +3,19 @@ Classifies: CHEBI:36498 galactosylceramide
 """
 """
 Classifies: Galactosylceramide – any cerebroside in which the monosaccharide head group is galactose.
-A galactosylceramide is a glycosphingolipid consisting of a ceramide (sphingoid base plus a fatty acid attached via an amide bond)
-linked by an O‐glycosidic bond to a galactose sugar. 
-The improved strategy looks for exactly one amide bond, a pyranose sugar ring decorated with oxygens,
-and the presence of a long aliphatic chain.
+
+A galactosylceramide is a glycosphingolipid consisting of a ceramide portion (a sphingoid base plus a fatty acid
+attached via an amide bond) linked by an O‐glycosidic bond to a galactose sugar. 
+
+This improved version applies several filters:
+  1. The molecule is in the expected size range (30–150 heavy atoms).
+  2. It has exactly one amide bond (the C(=O)N motif typical of ceramides).
+  3. It contains at least one long, linear alkyl chain (here defined as a pattern of 8 consecutive carbons).
+  4. It contains exactly one candidate sugar ring. Candidate rings are defined as six‐membered rings 
+     that have exactly one ring oxygen and at least three exocyclic oxygen substituents.
+     
+This extra check on the number of candidate sugar rings is intended to filter out multi‐sugar glycosphingolipids
+(such as glucosylceramides or disaccharide derivatives) that could otherwise be falsely flagged.
 """
 
 from rdkit import Chem
@@ -15,89 +24,84 @@ from rdkit.Chem import rdMolDescriptors
 def is_galactosylceramide(smiles: str):
     """
     Determines if a molecule is a galactosylceramide based on its SMILES string.
-    
+
     The algorithm applies several filters:
-    
-      1. The SMILES must be valid and the molecule must be of moderate size (heavy atoms between 30 and 100).
-      2. The molecule must contain exactly one amide bond via a -C(=O)N- fragment (the ceramide motif).
-      3. The molecule must contain a six-membered (pyranose) ring with exactly one ring oxygen and at least three 
-         external oxygen substituents. This is taken as a proxy for a decorated sugar ring (such as galactose) 
-         even if some -OH groups are modified (e.g. sulfonated).
-      4. The molecule must include at least one long linear alkyl chain (as expected for the fatty acyl chain).
-    
+      1. Checks that the molecule is of moderate size (30–150 heavy atoms).
+      2. Requires exactly one amide bond (the ceramide C(=O)N motif).
+      3. Ensures the presence of at least one long alkyl chain (8 or more consecutive carbons).
+      4. Searches for candidate sugar rings defined as six-membered rings with exactly one ring oxygen
+         and at least three exocyclic oxygen substituents. Exactly one such candidate must be found.
+
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if molecule is classified as a galactosylceramide, else False.
+        bool: True if molecule is a galactosylceramide, else False.
         str: Explanation for the classification decision.
     """
-    # Parse the molecule
+    
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     
+    # Check heavy atom count to ensure molecule is in a typical size range.
     heavy_atoms = mol.GetNumHeavyAtoms()
-    # Require a moderate size; many glycosphingolipids fall in an intermediate range.
     if heavy_atoms < 30:
         return False, "Molecule appears too small to be a galactosylceramide."
     if heavy_atoms > 150:
         return False, "Molecule appears too large to be a typical galactosylceramide."
     
-    # --- Step 1. Check for exactly one amide bond ---
-    # The amide pattern is used to capture the ceramide C(=O)N motif.
+    # --- Step 1. Check for exactly one amide bond (the ceramide motif) ---
+    # Using a SMARTS to capture a carbonyl (C=O) directly bonded to an N.
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     if len(amide_matches) != 1:
         return False, f"Expected exactly 1 amide bond, found {len(amide_matches)}. (Not a typical ceramide)"
     
-    # --- Step 2. Look for a long alkyl chain ---
-    # A simple pattern: 8 or more consecutive aliphatic carbons.
+    # --- Step 2. Check for a long alkyl chain ---
+    # A simple SMARTS pattern: 8 consecutive aliphatic carbons.
     chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
     if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Missing a long alkyl chain expected in fatty acyl or sphingoid base."
+        return False, "Missing a long alkyl chain (expected from fatty acyl or sphingoid base)."
     
-    # --- Step 3. Identify a candidate galactose (pyranose) ring ---
+    # --- Step 3. Look for candidate sugar rings ---
+    # A candidate sugar ring is defined as one that:
+    #    - has exactly 6 atoms (pyranose),
+    #    - contains exactly one ring oxygen,
+    #    - and has at least 3 exocyclic oxygen substituents on ring atoms.
     ring_info = mol.GetRingInfo()
-    found_sugar = False
-    # Loop over all rings in the molecule
+    candidate_sugar_count = 0
     for ring in ring_info.AtomRings():
         if len(ring) != 6:
-            continue  # we expect a six-membered ring (pyranose)
-        # Count how many ring atoms are oxygen.
-        ring_oxygens = 0
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 8:
-                ring_oxygens += 1
-        # Most pyranose rings have exactly one ring oxygen.
+            continue  # only consider six-membered rings
+        # Count ring oxygens.
+        ring_oxygens = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
         if ring_oxygens != 1:
             continue
         
-        # Count the number of external oxygen substituents on the ring.
+        # Count external oxygen substituents (neighbors that are not in the ring).
         external_oxygen_count = 0
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
             for nbr in atom.GetNeighbors():
-                # Exclude atoms that are in the ring.
                 if nbr.GetIdx() in ring:
                     continue
-                # Count if neighbor is oxygen (this could be hydroxyl or modified substituent like sulfo)
                 if nbr.GetAtomicNum() == 8:
                     external_oxygen_count += 1
-        # For a decorated sugar we expect at least three oxygen substituents.
         if external_oxygen_count >= 3:
-            found_sugar = True
-            break
-    
-    if not found_sugar:
-        return False, "No candidate pyranose sugar ring with sufficient oxygen substituents detected."
-    
-    # --- If all checks pass, we assume the molecule is a galactosylceramide ---
-    return True, "Contains one ceramide amide bond, a pyranose sugar ring (galactose) and a long alkyl chain, consistent with a galactosylceramide."
+            candidate_sugar_count += 1
 
-# Example usage (uncomment for testing):
-# Example SMILES (one of the true positives given in the description):
+    if candidate_sugar_count == 0:
+        return False, "No candidate pyranose sugar ring with sufficient oxygen substituents detected."
+    if candidate_sugar_count > 1:
+        return False, f"Found {candidate_sugar_count} candidate sugar rings; expected exactly 1 for a galactosylceramide."
+    
+    # --- All tests pass. Return a positive classification.
+    return True, "Contains one ceramide amide bond, exactly one candidate pyranose sugar ring and a long alkyl chain, consistent with a galactosylceramide."
+
+# Example usage:
+# (Uncomment the following lines to test with a sample SMILES string.)
 # smiles_example = "C(=C/CCCCCCCCCCCCC)\\[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCC)=O)CO[C@H]1[C@@H]([C@H]([C@H]([C@H](O1)CO)O)OS(O)(=O)=O)O"
 # result, reason = is_galactosylceramide(smiles_example)
 # print(result, reason)
