@@ -6,27 +6,15 @@ Classifies: CHEBI:83820 non-proteinogenic amino acid
 Classifies: Non-proteinogenic amino acid
 Definition: Any amino-acid that is not naturally encoded in the genetic code of any organism.
 
-The function is_non_proteinogenic_amino_acid takes a SMILES string as input and returns:
-    (bool, str) -> (True, reason) if the molecule presents as a free amino acid (with at least one free carboxyl group
-                     and at least one free amino group) and is not one of the 20 canonical proteinogenic amino acids;
-                     (False, reason) otherwise.
-
-Revised Heuristics:
-  1. Parse the SMILES and add explicit hydrogens.
-  2. Look for a carboxyl group using a SMARTS pattern that allows either –OH or a deprotonated –O⁻.
-  3. Look for a free amino group defined as a nitrogen atom with at least one hydrogen that is not directly bound
-     to a carbonyl carbon (i.e. avoiding an amide-bond situation).
-  4. Compute the InChIKey and reject if the molecule matches one of the 20 canonical amino acids.
-  
-Note: Some non-proteinogenic amino acids contain additional amide bonds (intramolecular or in cyclic structures)
-that are inherent to their backbone. Therefore, we do not outright reject the molecule for containing any amide linkages;
-we simply require that the free acid and free amine functionalities can be found.
+This function examines whether a molecule (given by its SMILES string) qualifies as a free amino acid (containing at least one 
+carboxyl group and at least one free amino group) and is not one of the 20 canonical proteinogenic amino acids.
 """
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 # Pre-compute InChIKeys for the 20 canonical proteinogenic amino acids.
+# (The canonical amino acids are defined by their SMILES strings.)
 _PROTEINOGENIC_SMILES = [
     "NCC(=O)O",                         # Glycine
     "CC(N)C(=O)O",                       # Alanine
@@ -35,79 +23,77 @@ _PROTEINOGENIC_SMILES = [
     "CC[C@H](C)[C@H](N)C(=O)O",           # Isoleucine
     "C1CC[C@@H](NC1)C(=O)O",              # Proline
     "N[C@@H](Cc1ccccc1)C(=O)O",           # Phenylalanine
-    "N[C@@H](Cc1ccc(O)cc1)C(=O)O",         # Tyrosine
-    "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O",    # Tryptophan
-    "N[C@@H](CO)C(=O)O",                  # Serine
-    "N[C@@H]([C@@H](O)C)C(=O)O",          # Threonine
-    "N[C@@H](CS)C(=O)O",                  # Cysteine
-    "N[C@@H](CCSC)C(=O)O",                # Methionine
-    "N[C@@H](CC(=O)O)C(=O)O",             # Aspartic acid
-    "N[C@@H](CCC(=O)O)C(=O)O",            # Glutamic acid
-    "N[C@@H](CC(=O)N)C(=O)O",             # Asparagine
-    "N[C@@H](CCC(=O)N)C(=O)O",            # Glutamine
-    "N[C@@H](CCCCN)C(=O)O",               # Lysine
-    "N[C@@H](CCCNC(=N)N)C(=O)O",          # Arginine
-    "N[C@@H](Cc1cnc[nH]1)C(=O)O",          # Histidine
+    "N[C@@H](Cc1ccc(O)cc1)C(=O)O",        # Tyrosine
+    "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O",   # Tryptophan
+    "N[C@@H](CO)C(=O)O",                 # Serine
+    "N[C@@H]([C@@H](O)C)C(=O)O",         # Threonine
+    "N[C@@H](CS)C(=O)O",                 # Cysteine
+    "N[C@@H](CCSC)C(=O)O",               # Methionine
+    "N[C@@H](CC(=O)O)C(=O)O",            # Aspartic acid
+    "N[C@@H](CCC(=O)O)C(=O)O",           # Glutamic acid
+    "N[C@@H](CC(=O)N)C(=O)O",            # Asparagine
+    "N[C@@H](CCC(=O)N)C(=O)O",           # Glutamine
+    "N[C@@H](CCCCN)C(=O)O",              # Lysine
+    "N[C@@H](CCCNC(=N)N)C(=O)O",         # Arginine
+    "N[C@@H](Cc1cnc[nH]1)C(=O)O",         # Histidine
 ]
 _PROTEINOGENIC_INCHIKEYS = set()
 for smi in _PROTEINOGENIC_SMILES:
     mol = Chem.MolFromSmiles(smi)
     if mol is not None:
+        # Note: We compute the InChIKey on the canonical form of the amino acid.
         ik = Chem.MolToInchiKey(mol)
         _PROTEINOGENIC_INCHIKEYS.add(ik)
 
 def is_non_proteinogenic_amino_acid(smiles: str):
     """
-    Determines whether the SMILES string represents a free amino acid that is
-    non-proteinogenic (i.e. not one of the 20 canonical amino acids), using revised heuristics.
-    
-    The function checks:
-      - That the molecule parses and explicit hydrogens are added.
-      - That the molecule contains at least one carboxyl group. Here we use a SMARTS pattern that
-        allows matching either a protonated carboxylic acid or a deprotonated carboxylate.
-      - That the molecule contains at least one free amino group. A free amino group is defined as a
-        nitrogen (atomic number 7) with at least one hydrogen, where the nitrogen is not directly bonded
-        to a carbonyl carbon (to avoid classifying an amide as a free amine).
-      - That the molecule’s InChIKey is not found among the 20 canonical proteinogenic amino acids.
+    Determines whether the SMILES string represents a non-proteinogenic amino acid.
+    A valid amino acid here must have:
+      - At least one carboxyl group (either as a deprotonated carboxylate or a protonated carboxylic acid).
+      - At least one free amino group that is not in an amide linkage.
+      - An InChIKey that does not match one of the 20 canonical proteinogenic amino acids.
       
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        (bool, str): (True, reason) if classified as a non‐proteinogenic amino acid;
+        (bool, str): (True, reason) if it qualifies as a non-proteinogenic amino acid;
                      (False, reason) otherwise.
     """
-    # Parse the SMILES.
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Add explicit hydrogens.
+        
+    # Add explicit hydrogens to reliably detect attached H atoms.
     mol = Chem.AddHs(mol)
     
-    # Look for at least one carboxyl group.
-    # The SMARTS below matches a carboxyl functional group including both protonated ([OX1]) and deprotonated ([O-]) forms.
-    carboxyl_smarts = "[CX3](=O)[OX1,$([O-])]"
-    carboxyl_pattern = Chem.MolFromSmarts(carboxyl_smarts)
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if not carboxyl_matches:
+    # Define two SMARTS patterns for a carboxyl group:
+    # 1. Protonated carboxylic acid: C(=O)O (where O has at least one hydrogen)
+    # 2. Deprotonated carboxylate: C(=O)[O-]
+    carboxy_acid = Chem.MolFromSmarts("[CX3](=O)[O;H]")
+    carboxy_deprot = Chem.MolFromSmarts("[CX3](=O)[O-]")
+    
+    # Get matches for either pattern.
+    acid_matches = mol.GetSubstructMatches(carboxy_acid)
+    deprot_matches = mol.GetSubstructMatches(carboxy_deprot)
+    if not acid_matches and not deprot_matches:
         return False, "No carboxyl group found"
     
-    # Look for at least one free amino group.
-    # We will loop over nitrogen atoms and require that:
-    #   - They have at least one attached hydrogen.
-    #   - They are not directly bonded to a carbonyl carbon.
+    # Search for at least one free amino group.
+    # A free amino group is defined here as a nitrogen (atomic number 7) that has at least one hydrogen,
+    # and which is not directly bonded to a carbonyl carbon.
     free_amino_found = False
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 7:
             continue
-        # Check number of attached hydrogens; use explicit+implicit count.
+        # Check that the nitrogen has at least one hydrogen.
         if atom.GetTotalNumHs() < 1:
             continue
-        # Check if this nitrogen is bonded to any carbon that is doubly-bonded to oxygen.
+        # Check if this nitrogen is directly bound to a carbon that is doubly-bonded to oxygen.
         is_amide_like = False
         for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6:  # carbon candidate
+            if nbr.GetAtomicNum() == 6:  # potential carbon
                 for nbr2 in nbr.GetNeighbors():
                     if nbr2.GetAtomicNum() == 8:
                         bond = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
@@ -122,24 +108,23 @@ def is_non_proteinogenic_amino_acid(smiles: str):
     if not free_amino_found:
         return False, "No free amino group found"
     
-    # Compute the InChIKey of the hydrogen-added molecule.
+    # Compute the InChIKey for the molecule.
     try:
         inchi_key = Chem.MolToInchiKey(mol)
     except Exception as e:
         return False, f"Failed to generate InChIKey: {e}"
-    
+        
+    # Check if the molecule matches one of the 20 canonical amino acids.
     if inchi_key in _PROTEINOGENIC_INCHIKEYS:
         return False, "Matches a canonical proteinogenic amino acid"
     
     return True, "Contains at least one carboxyl group and a free amino group and is non-proteinogenic"
 
-# Example usage (uncomment to test):
+# Example usage (to test the function, uncomment and run):
 # test_smiles = [
-#     "[C@H]1(C(N(C1)[C@H](C=2C=CC(=CC2)O)C(=O)O)=O)NC([C@@H](C3=CC=C(C=C3)OCC[C@H](C(O)=O)N)=O",  # nocardicin C 
-#     "NCCCC[C@H](N)CC(O)=O",  # (3S)-3,7-diaminoheptanoic acid 
-#     "[H][C@]1(O[C@@](C[C@H](O)[C@H]1NC(C)=O)(OC[C@H]1O[C@H](OC[C@H](N)C(O)=O)[C@H](NC(C)=O)[C@@H](O)[C@H]1O)C(O)=O)[C@H](O)[C@H](O)CO",  # O-[N-acetyl-alpha-neuraminyl-(2->6)-N-acetyl-alpha-D-galactosaminyl]-L-serine 
-#     "N[C@@H](CC1=CC(=O)C(O)=CC1=O)C(O)=O",  # L-topaquinone 
-#     "C[C@H](N)C[C@@H](N)C(O)=O",  # (2R,4S)-2,4-diaminopentanoic acid 
+#     "[C@H]1(C(N(C1)[C@H](C=2C=CC(=CC2)O)C(=O)O)=O)NC([C@@H](C3=CC=C(C=C3)OCC[C@H](C(O)=O)N)=O",  # nocardicin C
+#     "NCCCC[C@H](N)CC(O)=O",  # (3S)-3,7-diaminoheptanoic acid
+#     "[H][C@]1(O[C@@](C[C@H](O)[C@H]1NC(C)=O)(OC[C@H]1O[C@H](OC[C@H](N)C(O)=O)[C@H](NC(C)=O)[C@@H](O)[C@H]1O)C(O)=O)[C@H](O)[C@H](O)CO",  # O-[N-acetyl-alpha-neuraminyl-(2->6)-N-acetyl-alpha-D-galactosaminyl]-L-serine
 # ]
 # for smi in test_smiles:
 #     result, reason = is_non_proteinogenic_amino_acid(smi)
