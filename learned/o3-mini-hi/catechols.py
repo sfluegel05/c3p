@@ -3,86 +3,104 @@ Classifies: CHEBI:33566 catechols
 """
 #!/usr/bin/env python3
 """
-Classifies: Catechols (Any compound containing an o-diphenol component)
-
-A catechol is defined as a molecule containing a benzene ring (6-membered aromatic ring)
-with two adjacent hydroxyl (-OH) substituents. This implementation scans all aromatic rings,
-and for each six-membered ring it looks for two adjacent atoms that are substituted with –OH.
+Classifies: Catechols 
+Definition: Any compound containing an o-diphenol component.
+A catechol is defined as an aromatic benzene ring (six-membered ring where every atom is aromatic)
+bearing two adjacent substituents that are hydroxyl groups (–OH or their deprotonated/esterified form)
+provided that the oxygen is directly bound to the aromatic carbon via a single bond and not further bonded to a carbon.
 """
 
 from rdkit import Chem
 
 def is_catechols(smiles: str):
     """
-    Determines if a molecule is a catechol (contains an o-diphenol component) based on its SMILES string.
-    A catechol is identified as any benzene ring (six-membered aromatic ring) that bears two adjacent -OH substituents.
+    Determines if a molecule contains a catechol moiety (an o-diphenol component)
+    based on its SMILES string.
+    
+    The algorithm works by:
+      1. Converting the SMILES to an RDKit molecule.
+      2. For every bond between two aromatic carbons that are part of at least one six‐membered ring, 
+         checking if both atoms have a substituent oxygen attached by a single bond.
+      3. In qualifying the oxygen substituent, we require that aside from being bonded to the aromatic carbon,
+         the oxygen is not further bonded to any carbon (so that –OCH3 is excluded), but may be attached to a hydrogen
+         (as in –OH) or to another heteroatom (e.g. as in sulfate esters).
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule contains a catechol moiety, False otherwise.
+        bool: True if the molecule contains an o-diphenol (catechol) moiety, False otherwise.
         str: Reason for the classification.
     """
     # Parse the SMILES string into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Make all hydrogens explicit to better detect -OH groups.
-    mol = Chem.AddHs(mol)
 
-    # Obtain information about all rings in the molecule.
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()  # returns tuples of atom indices
-    
-    # Function to check if an atom in a ring has a hydroxyl (-OH) group attached.
-    def has_hydroxyl(atom, ring_indices):
-        # Look at neighbors that are not part of the ring (i.e. substituents)
+    # Obtain ring information (list of tuples: each is a set of atom indices in a ring)
+    rings = mol.GetRingInfo().AtomRings()
+
+    # Helper: does a given aromatic carbon atom (in a six-membered ring) have a qualifying oxygen substituent?
+    def has_qualifying_oxygen(atom):
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() not in ring_indices:
-                # Check if neighbor is oxygen.
-                if neighbor.GetAtomicNum() == 8:
-                    # Check if this oxygen has at least one hydrogen bonded.
-                    # With explicit hydrogens added, hydrogens appear as atoms with atomic number 1.
-                    for sub in neighbor.GetNeighbors():
-                        if sub.GetAtomicNum() == 1:
-                            return True
+            # Exclude atoms that are part of the ring when attached via a bond in a six-membered aromatic ring.
+            # We are looking for an external substituent.
+            if neighbor.GetAtomicNum() != 8:
+                continue
+            # The bond between the aromatic atom and the oxygen must be single (exclude e.g. carbonyl oxygens)
+            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+            if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
+                continue
+            # Now check that this oxygen is NOT further bonded to a carbon (other than the aromatic atom).
+            qualifies = True
+            for o_nb in neighbor.GetNeighbors():
+                # skip the aromatic atom itself
+                if o_nb.GetIdx() == atom.GetIdx():
+                    continue
+                # If the oxygen is attached to any carbon, then it is likely a methoxy (or similar), not a free hydroxyl.
+                # (Exceptions such as sulfate esters are allowed since S, for example, is not carbon.)
+                if o_nb.GetAtomicNum() == 6:
+                    qualifies = False
+                    break
+            if qualifies:
+                return True
         return False
 
-    # Loop over all rings
-    for ring in atom_rings:
-        # We are interested only in six-membered rings.
-        if len(ring) != 6:
+    # Now iterate over all bonds in the molecule.
+    for bond in mol.GetBonds():
+        a1 = bond.GetBeginAtom()
+        a2 = bond.GetEndAtom()
+        # Consider only bonds connecting two aromatic carbons.
+        if not (a1.GetIsAromatic() and a2.GetIsAromatic()):
             continue
 
-        # Check that every atom in the ring is aromatic (benzene ring)
-        if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+        # Check if the two atoms a1 and a2 are part of a six‐membered ring.
+        in_six_membered_ring = False
+        for ring in rings:
+            # Only consider rings of exactly six atoms.
+            if len(ring) == 6 and (a1.GetIdx() in ring) and (a2.GetIdx() in ring):
+                in_six_membered_ring = True
+                break
+        if not in_six_membered_ring:
             continue
 
-        # For each atom in the ring, record whether it carries an -OH substituent
-        hydroxyl_flags = []
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            hydroxyl_flags.append(has_hydroxyl(atom, ring))
-        
-        # Since the ring is cyclic, check each pair of adjacent atoms.
-        n = len(hydroxyl_flags)
-        for i in range(n):
-            if hydroxyl_flags[i] and hydroxyl_flags[(i+1) % n]:
-                return True, "Contains o-diphenol (catechol) moiety on an aromatic ring"
-    
-    return False, "No adjacent hydroxyl groups on an aromatic ring found"
+        # For this aromatic bond (i.e. adjacent atoms on the ring), check for qualifying oxygen substituents.
+        if has_qualifying_oxygen(a1) and has_qualifying_oxygen(a2):
+            return True, "Contains o-diphenol (catechol) moiety on a six-membered aromatic ring"
 
-# Example testing when running standalone:
-# examples = [
-#     ("[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O)O[C@H]2/C(/[C@](C(=CO2)C(=O)OC)([H])CC(=O)OCCC=3C=CC(=C(C3)O)O)=C/C", "oleuropein"),
-#     ("C1=CC(=C(C(=C1O)O)[N+]([O-])=O)C", "4-methyl-3-nitrocatechol"),
-#     ("C1(=CC=C(C=C1O)[N+]([O-])=O)O", "4-nitrocatechol"),
-#     ("C=1(C=CC(=C(C1)O)O)/C=C/C(OCC)=O", "ethyl trans-caffeate"),
-#     ("S(OC1=C(O)C=C([C@@H](O)CN)C=C1)(O)(=O)=O", "norepinephrine sulfate"),
-# ]
-#
-# for smi, name in examples:
-#     result, reason = is_catechols(smi)
-#     print(f"NAME: {name} -> {result}: {reason}")
+    return False, "No adjacent qualifying hydroxyl substituents found on a six-membered aromatic ring"
+
+# Example usage (for testing):
+if __name__ == '__main__':
+    examples = [
+        ("[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O)O[C@H]2/C(/[C@](C(=CO2)C(=O)OC)([H])CC(=O)OCCC=3C=CC(=C(C3)O)O)=C/C", "oleuropein"),
+        ("C1=CC(=C(C(=C1O)O)[N+]([O-])=O)C", "4-methyl-3-nitrocatechol"),
+        ("C1(=CC=C(C=C1O)[N+]([O-])=O)O", "4-nitrocatechol"),
+        ("C=1(C=CC(=C(C1)O)O)/C=C/C(OCC)=O", "ethyl trans-caffeate"),
+        ("S(OC1=C(O)C=C([C@@H](O)CN)C=C1)(O)(=O)=O", "norepinephrine sulfate"),
+        ("O[C@H](CC\\C=C\\c1ccc(O)cc1)CCc1ccc(O)c(O)c1", "(-)-(3S)-1-(3,4-dihydroxyphenyl)-7-(4-hydroxyphenyl)-(6E)-6-hepten-3-ol"),
+        ("CC(C)c1cccc(O)c1O", "3-isopropylcatechol"),
+    ]
+    for smi, name in examples:
+        result, reason = is_catechols(smi)
+        print(f"NAME: {name} -> {result}: {reason}")
