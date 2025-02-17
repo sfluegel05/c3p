@@ -6,16 +6,19 @@ Classifies: CHEBI:52603 1-acyl-sn-glycero-3-phosphoserine
 Classifies: 1-acyl-sn-glycero-3-phosphoserine compounds
 Defined as: An sn-glycerophosphoserine compound having an acyl substituent 
 at the 1-hydroxy position.
-Our improved algorithm checks that:
-  (1) The molecule contains at least one phosphorus atom.
-  (2) There is a serine branch attached to phosphorus, defined by the SMARTS
-      pattern for a phosphoserine head group: P(OCC(N)C(O)=O)
-  (3) There is an acyl ester substituent on phosphorus (sn-1) defined by the SMARTS
-      pattern: P(OCC(O)COC(=O)[#6])
-  (4) Both substructure matches share the SAME phosphorus atom (i.e. come from the same branch).
-  (5) The acyl branch is found exactly once on that phosphorus atom.
-If these conditions are met the molecule is classified as a 1-acyl-sn-glycero-3-phosphoserine.
-If not, an appropriate reason is returned.
+
+Improvement rationale:
+  The previous approach separately looked for a phosphoserine head group pattern 
+  (P(OCC(N)C(O)=O)) and an acyl branch pattern (P(OCC(O)COC(=O)[#6])). However, some 
+  false positives had extra acyl functionalities that still allowed one of these pieces 
+  to match on the same phosphorus atom. To minimize this problem we now build a composite 
+  SMARTS pattern that requires a phosphorus to simultaneously have:
+    – a P=O (double bonded oxygen),
+    – an acyl branch of the form O[CX4][CX4](O)COC(=O)[#6],
+    – and a serine-containing branch of the form [O][CX4][CX4](N)C(O)=O.
+  If the molecule contains a substructure matching
+    P(=O)([O][CX4][CX4](N)C(O)=O)(O[CX4][CX4](O)COC(=O)[#6])
+  (the order is irrelevant) then it is classified as a 1‑acyl‑sn‑glycero‑3‑phosphoserine.
 """
 
 from rdkit import Chem
@@ -24,81 +27,74 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     """
     Determines whether a molecule is a 1-acyl-sn-glycero-3-phosphoserine compound.
     
-    The algorithm searches for a phosphorus atom that directly bears two substituents:
-      - A serine head group (P(OCC(N)C(O)=O))
-      - An acyl ester branch (P(OCC(O)COC(=O)[#6]))
-    and ensures that the acyl branch is present exactly once.
+    We require that the molecule contain a phosphorus center that meets all of the following:
+      • It is double-bonded to an oxygen (P(=O)).
+      • It bears a serine head branch attached via an oxygen; the branch should
+        match [O][CX4][CX4](N)C(O)=O.
+      • It bears an acyl ester branch at the 1-hydroxy position that matches
+        O[CX4][CX4](O)COC(=O)[#6].
+    These three groups together are encoded in the composite SMARTS pattern:
+      P(=O)([O][CX4][CX4](N)C(O)=O)(O[CX4][CX4](O)COC(=O)[#6])
+    We ignore chirality in the match.
     
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+        smiles (str): SMILES string for the molecule.
+        
     Returns:
-        (bool, str): Tuple where the first item is True if the molecule is of this class and
-                     False otherwise, and the second item is a reason explaining the decision.
+        (bool, str): Tuple where first element is True if the compound is classified as 
+                     1-acyl-sn-glycero-3-phosphoserine, else False; the second element is 
+                     a reason for the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # (1) Get all phosphorus atoms in the molecule.
-    phosphorus_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
-    if not phosphorus_atoms:
-        return False, "No phosphorus atom found"
     
-    # (2) Define SMARTS patterns that are anchored on phosphorus.
-    # The serine branch is expected to be: P(OCC(N)C(O)=O)
-    serine_smarts = "P(OCC(N)C(O)=O)"
+    # Define the composite SMARTS pattern
+    # Explanation:
+    #  P(=O)([O][CX4][CX4](N)C(O)=O)(O[CX4][CX4](O)COC(=O)[#6])
+    #   • P(=O) ensures a phosphorus atom double-bonded to an oxygen.
+    #   • ([O][CX4][CX4](N)C(O)=O) captures the serine head branch.
+    #   • (O[CX4][CX4](O)COC(=O)[#6]) captures the acyl branch.
+    composite_smarts = "P(=O)([O][CX4][CX4](N)C(O)=O)(O[CX4][CX4](O)COC(=O)[#6])"
+    composite_query = Chem.MolFromSmarts(composite_smarts)
+    if composite_query is None:
+        # Should never happen unless there is an error in the SMARTS syntax.
+        return False, "Error in composite SMARTS pattern"
+    
+    # Check for serine head group separately for a better diagnostic.
+    serine_smarts = "[O][CX4][CX4](N)C(O)=O"
     serine_query = Chem.MolFromSmarts(serine_smarts)
     if serine_query is None:
         return False, "Error in serine SMARTS pattern"
-
-    # The acyl branch is expected to be: P(OCC(O)COC(=O)[#6])
-    acyl_smarts = "P(OCC(O)COC(=O)[#6])"
+    
+    # Check for acyl branch separately for a better diagnostic.
+    acyl_smarts = "O[CX4][CX4](O)COC(=O)[#6]"
     acyl_query = Chem.MolFromSmarts(acyl_smarts)
     if acyl_query is None:
-        return False, "Error in acyl SMARTS pattern"
-
-    # (3) Find all substructure matches for each pattern (they are tuples with the phosphorus atom first).
-    serine_matches = mol.GetSubstructMatches(serine_query, useChirality=False)
-    acyl_matches = mol.GetSubstructMatches(acyl_query, useChirality=False)
-
-    if not serine_matches:
+        return False, "Error in acyl branch SMARTS pattern"
+    
+    # First do individual checks to give specific reasons if missing
+    if not mol.HasSubstructMatch(serine_query, useChirality=False):
         return False, "Phosphoserine head group not found"
-    if not acyl_matches:
+    if not mol.HasSubstructMatch(acyl_query, useChirality=False):
         return False, "Acyl ester substituent at the 1-hydroxy position not found"
-
-    # (4) We now check whether there is at least one phosphorus atom for which
-    # both the serine and acyl branch are attached.
-    # In our SMARTS both patterns have the P at index 0.
-    serine_P = {match[0] for match in serine_matches}
-    acyl_P = {match[0] for match in acyl_matches}
-    common_P = serine_P.intersection(acyl_P)
-    if not common_P:
-        return False, "No single phosphorus atom has both a serine head group and an acyl branch"
-
-    # (5) For each phosphorus in common_P, enforce that the acyl branch occurs exactly once.
-    for p_idx in common_P:
-        acyl_count = sum(1 for match in acyl_matches if match[0] == p_idx)
-        serine_count = sum(1 for match in serine_matches if match[0] == p_idx)
-        if serine_count < 1:
-            continue  # Should not happen because of the intersection test.
-        if acyl_count == 1:
-            return True, "Contains phosphoserine head group with an acyl substituent at the 1-hydroxy position"
-        else:
-            return False, f"Found {acyl_count} acyl ester substituents on the phosphorus atom; expected exactly 1"
-
-    return False, "No phosphorus substituent with valid serine and acyl branches found"
+    
+    # Now require that a phosphorus atom carries both branches in the correct overall connectivity.
+    if mol.HasSubstructMatch(composite_query, useChirality=False):
+        return True, "Contains phosphoserine head group with an acyl substituent at the 1-hydroxy position"
+    else:
+        return False, "Combined pattern of phosphoserine head group and acyl branch not found on a single phosphorus atom"
 
 
-# Quick testing when running this script directly
+# For quick testing when running this script directly:
 if __name__ == "__main__":
     test_smiles = [
-        # Expected positives
-        "P(OCC(O)COC(=O)CCCCCCC/C=C/CCCCCCCC)(OCC(N)C(O)=O)(O)=O",  # 1-Oleoylglycerophosphoserine
-        "P(OC[C@H](O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O",  # PS(16:0/0:0)
-        "P(OC[C@H](O)COC(=O)CCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O",       # PS(12:0/0:0)
-        "CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OC[C@H](N)C(O)=O",  # 1-stearoyl-sn-glycero-3-phosphoserine
-        # An example false positive from previous attempts might be added here for testing.
+        # Expected positives (from provided examples)
+        "P(OCC(O)COC(=O)CCCCCCC/C=C/CCCCCCCC)(OCC(N)C(O)=O)(O)=O",   # 1-Oleoylglycerophosphoserine
+        "P(OC[C@H](O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O",   # PS(16:0/0:0)
+        "P(OC[C@H](O)COC(=O)CCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O",        # PS(12:0/0:0)
+        "CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OC[C@H](N)C(O)=O",   # 1-stearoyl-sn-glycero-3-phosphoserine
+        # Additional molecules could be tested here.
     ]
     for sm in test_smiles:
         res, reason = is_1_acyl_sn_glycero_3_phosphoserine(sm)
