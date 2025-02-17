@@ -3,31 +3,30 @@ Classifies: CHEBI:32877 primary amine
 """
 """
 Classifies: Primary amine
-A primary amine is formally derived from ammonia (NH3) by replacing exactly one hydrogen with a hydrocarbyl group.
-Thus the defining functional group is –NH2 connected to exactly one non‐hydrogen atom (usually carbon) and not adjacent to a carbonyl (i.e. not an amide).
-In addition, if a molecule is large and contains several amide bonds (as in a peptide), then the incidental free NH2 is not considered to define
-the chemical class “primary amine”.
+A primary amine is a compound formally derived from ammonia (NH3) by replacing exactly one hydrogen with a hydrocarbyl group.
+Thus the defining functional group is –NH2 (with exactly one non‐hydrogen substituent) and not connected to a carbonyl (i.e. not an amide).
 """
 
 from rdkit import Chem
 
 def is_primary_amine(smiles: str):
     """
-    Determines if a molecule is (primarily) a primary amine based on its SMILES string.
+    Determines if a molecule qualifies as a primary amine based on its SMILES string.
     
-    The algorithm works by:
-      1. Parsing the SMILES string and adding explicit hydrogens.
-      2. Searching for at least one nitrogen atom that has exactly 2 hydrogens (when counted with GetTotalNumHs)
-         and exactly one heavy-atom (non-H) neighbor.
-      3. Discarding candidate N if its single heavy neighbor is a carbon that is double-bonded to an oxygen (i.e. part of an amide group).
-      4. As a heuristic, if the molecule is large (many heavy atoms) and it has more than one amide bond (substructure C(=O)N),
-         we assume it is a multifunctional (e.g. peptide) compound and not classified as simply a primary amine.
+    The algorithm works as follows:
+      1. Parse the SMILES string and add explicit hydrogens.
+      2. Count amide bonds in the molecule (substructure: C(=O)N). If the molecule is both large and polyamide,
+         we assume it is a complex multifunctional compound (e.g. a peptide) rather than a simple primary amine.
+      3. Iterate over each nitrogen atom (atomic number 7) and, using the explicit hydrogen count,
+         check if it is a potential primary amine: exactly two hydrogens and exactly one heavy-atom (non-H) neighbor.
+      4. For the candidate nitrogen, check that its single heavy neighbor is not part of a carbonyl (i.e. a C double-bonded to O)
+         because that would suggest an amide.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is considered a primary amine, False otherwise.
+        bool: True if the molecule is considered to have a primary amine group, False otherwise.
         str: Explanation for the classification decision.
     """
     # Parse the SMILES string.
@@ -35,64 +34,66 @@ def is_primary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens so that hydrogen counts are correct.
+    # Add explicit hydrogens (ensuring hydrogens are not just implicit).
     mol = Chem.AddHs(mol)
     
-    # Count amide bonds (pattern: C(=O)N) in the molecule.
+    # Count amide bonds using SMARTS. (Pattern: carbonyl directly bonded to a nitrogen.)
     amide_smarts = Chem.MolFromSmarts("C(=O)N")
-    num_amide = len(mol.GetSubstructMatches(amide_smarts))
+    amide_matches = mol.GetSubstructMatches(amide_smarts)
+    num_amide = len(amide_matches)
     
-    primary_count = 0  # count of nitrogen atoms that qualify as primary amine groups
+    primary_count = 0  # Count candidate primary amine groups
     
+    # Iterate over all nitrogen atoms.
     for atom in mol.GetAtoms():
-        # Focus only on nitrogen atoms.
         if atom.GetAtomicNum() != 7:
             continue
-        # Get total number of hydrogens attached (explicit+implicit now explicit).
-        num_H = atom.GetTotalNumHs()
-        # A primary amine (R–NH2) must have exactly two hydrogens.
-        if num_H != 2:
+        
+        # Get the number of explicit hydrogens on this nitrogen.
+        n_explicit_H = atom.GetNumExplicitHs()
+        # For a primary amine (R–NH2), we expect exactly two attached hydrogens.
+        if n_explicit_H != 2:
             continue
         
-        # Get heavy-atom neighbors (non-hydrogen connected atoms)
+        # Get heavy atom (non-hydrogen) neighbors.
         heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
-        # For a primary amine group the nitrogen should have exactly one heavy-atom neighbor.
+        
+        # The nitrogen in a primary amine should have exactly one non-hydrogen substituent.
         if len(heavy_neighbors) != 1:
             continue
         
         neighbor = heavy_neighbors[0]
-        # Exclude cases where the nitrogen is attached to a carbonyl group (i.e. an amide).
-        is_adjacent_to_carbonyl = False
+        # Exclude if the heavy neighbor is part of a carbonyl:
+        # Check if neighbor is double-bonded to an oxygen atom.
+        is_adjacent_carbonyl = False
         for bond in neighbor.GetBonds():
-            # Check if the bond is a double bond.
+            # Check if bond is a double bond.
             if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
                 other = bond.GetOtherAtom(neighbor)
-                # If the neighbor of the heavy atom is oxygen then assume a carbonyl.
-                if other.GetAtomicNum() == 8:
-                    is_adjacent_to_carbonyl = True
+                if other.GetAtomicNum() == 8:  # oxygen
+                    is_adjacent_carbonyl = True
                     break
-        if is_adjacent_to_carbonyl:
+        if is_adjacent_carbonyl:
             continue
         
-        # If we reach here, we have found a candidate primary amine group.
+        # If passes all checks, we have found a candidate primary amine group.
         primary_count += 1
 
-    # In case no qualifying primary amine group was found:
+    # If no candidate primary amine group was found, report failure.
     if primary_count == 0:
         return False, "No primary amine group (R–NH2) found"
     
-    # Heuristic to avoid false positives in large multifunctional molecules (e.g. peptides)
-    # If the molecule is large (many heavy atoms) and has more than one amide bond, it might be a peptide
-    # in which the free amine is incidental.
+    # Apply a heuristic: if the molecule is large and contains multiple amide bonds,
+    # its free primary amine may be incidental (e.g., in a peptide).
     num_heavy_atoms = mol.GetNumHeavyAtoms()
     if num_amide > 1 and num_heavy_atoms > 50:
-        return False, ("Molecule appears to be large and contains multiple amide bonds, " 
-                       "suggesting it is a peptide or multifunctional compound rather than a primary amine")
+        return False, ("Molecule appears large and contains multiple amide bonds, "
+                       "suggesting it is a multifunctional compound rather than a primary amine")
     
-    return True, "Contains a primary amine group (R–NH2) as defined by exactly one non‐hydrogen substituent and two hydrogens"
+    return True, "Contains a primary amine group (R–NH2) defined by exactly one non‐hydrogen substituent and two hydrogens"
 
-    
-# Example usage for testing on a few SMILES (feel free to add more cases):
+
+# Example usage (for testing a few cases):
 if __name__ == "__main__":
     test_smiles = [
         "Nc1ccc(cc1)\\N=N\\c1ccccc1",              # 4-(phenylazo)aniline
@@ -120,11 +121,11 @@ if __name__ == "__main__":
         "Cl.Cl.NCCCCN",                            # 1,4-Diaminobutane dihydrochloride
         "NCC1(CCCC1)c1ccccc1",                      # 1-(1-phenylcyclopentyl)methylamine
         "C[C@H](C(=O)N[C@@H](CC1=CNC2=CC=CC=C21)C(=O)O)NC(=O)[C@@H](CC3=CC=CC=C3)N",  # sevadicin
-        "COC(=O)[C@H]1[C@@H]([C@H]2CN3C(=O)C=CC=C3[C@@H]1N2CCC4=CC=CC=C4)CO",  # LSM-13982 (note: similar to LSM-12804)
+        "COC(=O)[C@H]1[C@@H]([C@H]2CN3C(=O)C=CC=C3[C@@H]1N2CCC4=CC=CC=C4)CO",  # LSM-13982
         "NCCC=C",                                  # 3-buten-1-amine
         "CC(=O)[C@H](CCCCN)NS(=O)(=O)c1ccc(C)cc1",  # p-Ts-L-Lys-Me
         "NCc1ccccc1",                              # benzylamine
-        # ... additional test SMILES can be added here.
+        # Additional test SMILES can be added here.
     ]
     
     for smi in test_smiles:
