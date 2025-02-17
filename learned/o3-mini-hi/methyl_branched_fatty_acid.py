@@ -4,17 +4,24 @@ Classifies: CHEBI:62499 methyl-branched fatty acid
 """
 Classifies: Any branched-chain fatty acid containing methyl branches only.
 This program defines the function is_methyl_branched_fatty_acid that takes a SMILES string as input,
-and returns a bool along with a string explaining the classification.
+and returns a bool along with a reason string for the classification.
 """
 from rdkit import Chem
 
 def is_methyl_branched_fatty_acid(smiles: str):
     """
     Determines if a molecule is a methyl-branched fatty acid.
+
+    A methyl-branched fatty acid is defined as a fatty acid containing a carboxylic acid group 
+    with a long carbon chain that has one or more substituents, 
+    where every branch is a simple methyl (-CH3) group.
     
-    A methyl-branched fatty acid is defined as a fatty acid (i.e. containing a carboxylic acid group)
-    with a long carbon chain that has one or more branches, 
-    where each branch consists solely of a methyl (CH3) group.
+    This function first confirms that a carboxylic acid group is present.
+    Then it builds a subgraph of carbons and uses DFS to find the longest carbon chain starting
+    from the carboxyl carbon. Once that main chain is established, it checks that any extra carbon
+    (i.e. any branch off the main chain) is a methyl group (attached only to the main chain with exactly 3 hydrogens).
+    Finally, if there are extra carbons in the molecule beyond the main chain, they must be exactly those
+    methyl branches.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -23,24 +30,24 @@ def is_methyl_branched_fatty_acid(smiles: str):
         bool: True if the molecule meets the criteria, False otherwise.
         str: Explanation supporting the classification.
     """
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for the presence of a carboxylic acid functional group.
-    # The SMARTS "C(=O)[O;H,-]" will match a carbonyl connected to an -OH (or its deprotonated form).
+
+    # Check for carboxylic acid: pattern matches carbonyl bonded to hydroxyl (or its deprotonated form)
     acid_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
-    if not mol.HasSubstructMatch(acid_pattern):
+    acid_matches = mol.GetSubstructMatches(acid_pattern)
+    if not acid_matches:
         return False, "No carboxylic acid group found; not a fatty acid"
     
-    # Identify the carboxyl carbon (first atom in the matching substructure)
-    matches = mol.GetSubstructMatches(acid_pattern)
-    carboxyl_atom_idx = matches[0][0]
+    # Use the first match; assume the first atom is the carboxyl carbon.
+    carboxyl_idx = acid_matches[0][0]
     
-    # Build a carbon-only subgraph.
-    # Consider only atoms with atomic number 6 and bonds between them.
+    # Build a carbon-only graph: a dictionary mapping carbon atom index to a list of neighboring carbon indices.
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    if not carbon_atoms:
+        return False, "No carbon atoms found in molecule"
     carbon_idx_set = set(atom.GetIdx() for atom in carbon_atoms)
     carbon_adj = {idx: [] for idx in carbon_idx_set}
     for idx in carbon_idx_set:
@@ -48,58 +55,78 @@ def is_methyl_branched_fatty_acid(smiles: str):
         for nbr in atom.GetNeighbors():
             if nbr.GetAtomicNum() == 6:
                 n_idx = nbr.GetIdx()
-                # Add neighbor if it is also a carbon.
                 if n_idx in carbon_idx_set:
                     carbon_adj[idx].append(n_idx)
+                    
+    # Check that the carboxyl carbon is in our carbon set.
+    if carboxyl_idx not in carbon_idx_set:
+        return False, "Carboxyl carbon not found in carbon backbone"
     
-    # Use a depth-first search starting at the carboxyl carbon to determine the longest carbon chain.
+    # Find the longest simple carbon chain starting from the carboxyl carbon.
     longest_chain = []
     def dfs(current, path, visited):
         nonlocal longest_chain
-        # Update the longest chain found so far.
+        # Update the longest chain if current path is longer.
         if len(path) > len(longest_chain):
             longest_chain = path.copy()
-        for neighbor in carbon_adj[current]:
+        for neighbor in carbon_adj.get(current, []):
             if neighbor not in visited:
                 visited.add(neighbor)
                 path.append(neighbor)
                 dfs(neighbor, path, visited)
                 path.pop()
                 visited.remove(neighbor)
+                
+    dfs(carboxyl_idx, [carboxyl_idx], {carboxyl_idx})
+    main_chain = longest_chain
+    main_chain_set = set(main_chain)
     
-    # Ensure the carboxyl carbon is in our carbon set (it should be, as it is carbon).
-    if carboxyl_atom_idx not in carbon_idx_set:
-        return False, "Carboxyl carbon not found in carbon backbone"
-    dfs(carboxyl_atom_idx, [carboxyl_atom_idx], {carboxyl_atom_idx})
-    main_chain_set = set(longest_chain)
+    # Enforce a minimum main chain length to qualify as a fatty acid.
+    if len(main_chain) < 5:
+        return False, "Main carbon chain is too short to be a fatty acid"
     
-    # Check for branching: each branch is a carbon attached to a main chain carbon that is not part of the main chain.
-    # We require that each such branch is a methyl group (i.e. it has only one carbon neighbor and exactly 3 hydrogens).
+    # Helper: Determine whether an atom is a methyl group attached to the main chain.
+    def is_simple_methyl(atom, attached_to_idx):
+        # It must be a carbon, not in the main chain.
+        if atom.GetAtomicNum() != 6:
+            return False
+        # Among its neighbors, if we only see the one it is attached to (i.e. degree one in the carbon graph) then it is methyl.
+        carbon_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        if len(carbon_neighbors) != 1 or carbon_neighbors[0].GetIdx() != attached_to_idx:
+            return False
+        # Check that it has exactly 3 hydrogens (implicit+explicit).
+        if atom.GetTotalNumHs() != 3:
+            return False
+        return True
+    
     branch_count = 0
-    for main_idx in main_chain_set:
+    # For each carbon in the main chain, check neighbors not in the main chain.
+    for main_idx in main_chain:
         main_atom = mol.GetAtomWithIdx(main_idx)
         for nbr in main_atom.GetNeighbors():
             if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in main_chain_set:
-                # For a methyl branch, the sole carbon neighbor should be the main chain atom.
-                carbon_neighbors = [n for n in nbr.GetNeighbors() if n.GetAtomicNum() == 6]
-                if len(carbon_neighbors) != 1:
-                    return False, f"Found a branch attached to atom index {main_idx} that has more than one carbon neighbor (i.e. not a simple methyl group)"
-                # Check the hydrogen count. (Implicit hydrogens are taken into account with GetTotalNumHs.)
-                if nbr.GetTotalNumHs() != 3:
-                    return False, f"Branch attached to atom index {main_idx} is not a methyl (expected 3 hydrogens, got {nbr.GetTotalNumHs()})"
+                # It must be a simple methyl.
+                if not is_simple_methyl(nbr, main_idx):
+                    return False, f"Found a branch attached to atom index {main_idx} that is not a simple methyl group"
                 branch_count += 1
 
     if branch_count == 0:
         return False, "No branches found; the fatty acid appears to be a straight-chain acid"
     
-    # (Optional) Verify that the main chain is long enough to be considered a fatty acid.
-    if len(main_chain_set) < 5:
-        return False, "Main carbon chain is too short to be a fatty acid"
+    # Count all carbons in molecule and subtract those in main chain.
+    total_carbons = len(carbon_idx_set)
+    extra_carbons = total_carbons - len(main_chain_set)
+    if extra_carbons != branch_count:
+        return False, ("Extra carbon atoms beyond the methyl branches were found "
+                       f"({extra_carbons} extra vs {branch_count} methyl branch(es)).")
     
-    return True, f"Methyl-branched fatty acid with {branch_count} methyl branch(es) on a main chain of length {len(main_chain_set)}"
-    
+    # Build classification message.
+    return True, (f"CORRECT Methyl-branched fatty acid with {branch_count} methyl branch(es) "
+                  f"on a main chain of length {len(main_chain_set)}")
+
 # Example usage (if run as a script, one could test on an example SMILES):
 if __name__ == '__main__':
-    test_smiles = "CC(C)CCCCCCCCCCCCCCCCC(O)=O"  # 18-methylnonadecanoic acid
+    # Test on one of the given examples: 18-methylnonadecanoic acid
+    test_smiles = "CC(C)CCCCCCCCCCCCCCCCC(O)=O"
     result, reason = is_methyl_branched_fatty_acid(test_smiles)
     print(result, reason)
