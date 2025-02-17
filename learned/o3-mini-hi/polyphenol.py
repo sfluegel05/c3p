@@ -3,55 +3,46 @@ Classifies: CHEBI:26195 polyphenol
 """
 """
 Classifies: polyphenol
-Defined as: members of the class of phenols that contain 2 or more benzene rings,
-each of which is substituted by at least one hydroxy (–OH) group (or derivative such as an O‐glycoside).
-We use a heuristic: for each six‐membered aromatic ring (benzene), we check whether
-there exists at least one exocyclic oxygen attached via a single bond that is not part of an unsaturated (e.g. carbonyl) system.
-This relaxed criterion will allow recognition of both free phenolic –OH groups as well as cases where the –OH is masked (e.g. as an O‐glycoside).
+Defined as 'Members of the class of phenols that contain 2 or more benzene rings 
+each of which is substituted by at least one hydroxy group.'
 """
 from rdkit import Chem
 
 def is_polyphenol(smiles: str):
     """
-    Determines if a molecule is a polyphenol based on the following heuristic:
-    • The molecule must have at least 2 benzene rings (6-membered aromatic rings whose atoms are all carbons).
-    • For each such ring, at least one ring carbon must be substituted by an oxygen atom via a single bond,
-      where that oxygen is not a carbonyl oxygen (i.e. not double‐bonded to another carbon).
-      This relaxed rule accepts both free –OH groups (oxygen bearing an explicit hydrogen)
-      and cases where the hydroxyl has been substituted with a glycoside.
-    
+    Determines if a molecule is a polyphenol based on its SMILES string.
+    A polyphenol is defined as a molecule that contains at least 2 benzene rings
+    (aromatic 6-membered rings of carbons) with at least one free hydroxy (-OH)
+    substituent on each ring.
+
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+        smiles (str): SMILES string of the molecule
+
     Returns:
         bool: True if the molecule is classified as a polyphenol, False otherwise.
-        str: Explanation for the decision.
+        str: Reason explaining the classification decision.
     """
-    # Parse the SMILES to get a molecule.
+    # Parse the SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+
+    # Update properties (like ring info) to be safe.
+    mol.UpdatePropertyCache()
     
-    # Add explicit hydrogens so that substitutions are clearer.
-    mol = Chem.AddHs(mol)
-    try:
-        Chem.SanitizeMol(mol)
-    except Exception as e:
-        return False, f"Sanitization failed: {e}"
+    # Get the ring information from the molecule.
+    ring_info = mol.GetRingInfo()  # returns an object with AtomRings() method
+    atom_rings = ring_info.AtomRings()  # each ring is a tuple of atom indices
 
-    # Get ring information.
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
+    phenol_ring_count = 0  # count of benzene rings with at least one -OH substituent
 
-    valid_benzene_ring_count = 0
-
-    # Iterate over each detected ring.
+    # Iterate over all rings to find benzene rings.
     for ring in atom_rings:
-        # Only consider six-membered rings.
+        # We require the ring to have exactly 6 atoms.
         if len(ring) != 6:
             continue
         
-        # Check that every atom in the ring is a carbon and is aromatic.
+        # Check that every atom in the ring is aromatic carbon.
         is_benzene = True
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
@@ -61,65 +52,38 @@ def is_polyphenol(smiles: str):
         if not is_benzene:
             continue
 
-        # For each candidate benzene ring, look for an oxygen substituent that meets our relaxed criteria.
-        found_valid_substituent = False
-        for atom_idx in ring:
-            ring_atom = mol.GetAtomWithIdx(atom_idx)
-            for nbr in ring_atom.GetNeighbors():
-                # Only consider neighbors not in the ring (exocyclic substituents).
+        # For the benzene ring, check if it has at least one -OH substituent.
+        has_hydroxy = False
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            # Check every neighbor of the ring atom that is not in the ring.
+            for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
                     continue
-                if nbr.GetAtomicNum() == 8:
-                    # Get the bond between the ring carbon and the oxygen.
-                    bond = mol.GetBondBetweenAtoms(ring_atom.GetIdx(), nbr.GetIdx())
-                    if bond is None:
-                        continue
-                    # Consider only single bonds.
-                    if bond.GetBondTypeAsDouble() != 1.0:
-                        continue
-
-                    # Now check that this oxygen is not part of a carbonyl arrangement.
-                    # In a carbonyl oxygen the oxygen is double-bonded to another carbon.
-                    skip = False
-                    for oxy_bond in nbr.GetBonds():
-                        # Skip the bond to the ring atom.
-                        if oxy_bond.GetBeginAtomIdx() == ring_atom.GetIdx() or oxy_bond.GetEndAtomIdx() == ring_atom.GetIdx():
-                            continue
-                        # If any other bond from oxygen is a double bond, we assume the oxygen is in a carbonyl.
-                        if oxy_bond.GetBondTypeAsDouble() > 1.0:
-                            skip = True
-                            break
-                    if skip:
-                        continue
-
-                    # Passed our criteria – this oxygen substituent is acceptable.
-                    found_valid_substituent = True
+                # Check that the bond is a single bond (typical for -OH groups).
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
+                    continue
+                # Identify an oxygen with at least one hydrogen attached.
+                if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() >= 1:
+                    has_hydroxy = True
                     break
-            if found_valid_substituent:
+            if has_hydroxy:
                 break
-        
-        if found_valid_substituent:
-            valid_benzene_ring_count += 1
 
-    if valid_benzene_ring_count >= 2:
-        return True, (f"Found {valid_benzene_ring_count} benzene ring(s) each with a valid oxygen substituent "
-                      "(not involved in a carbonyl), classifying as a polyphenol")
+        if has_hydroxy:
+            phenol_ring_count += 1
+
+    # Based on the count of benzene rings that are substituted with a hydroxy group,
+    # decide on polyphenol classification.
+    if phenol_ring_count < 2:
+        return False, f"Only {phenol_ring_count} benzene ring(s) with a hydroxy group found"
     else:
-        return False, (f"Only {valid_benzene_ring_count} benzene ring(s) with a valid oxygen substituent were found")
+        return True, f"Found {phenol_ring_count} benzene rings each substituted with a hydroxy group, classifying as a polyphenol"
 
-# Example usage:
-if __name__ == "__main__":
-    test_smiles = [
-        # True positives:
-        "O1C2=C(OC)C(=C(C3=C(O)C=4OCOC4C(=C3C)OC)C(=C2OC1)O)C",  # Benzocamphorin E
-        "OC1C(O)c2c(O)cc(O)cc2OC1c1cc(O)c(O)c(O)c1",  # flavan-3,3',4,4',5,5',7-heptol
-        "O=C(OC1=CC(O)=CC(=C1)CCCCC)C2=C(O[C@@H]3O[C@H](C(=O)O)[C@H](O)[C@@H]([C@H]3O)O)C=C(O)C=C2CCCCC",  # Ascotricin B
-        # False negatives (previously missed; may now be captured due to relaxed criteria):
-        "O([C@H]1[C@H](O)C(O[C@@H](OC2=CC=3OC=C(C(=O)C3C=C2)C4=CC=5OCOC5C=C4)C1O)CO)[C@@H]6OC([C@@H](O)[C@H](O)C6O)CO",  # Pseudobaptigenin 7-O-laminaribioside
-    ]
-    for smi in test_smiles:
-        result, reason = is_polyphenol(smi)
-        print("SMILES:", smi)
-        print("Result:", result)
-        print("Reason:", reason)
-        print("-" * 60)
+# For testing purposes (uncomment if needed):
+# if __name__ == "__main__":
+#     test_smiles = "OC1C(O)c2c(O)cc(O)cc2OC1c1cc(O)c(O)c(O)c1"  # flavan-3,3',4,4',5,5',7-heptol
+#     result, reason = is_polyphenol(test_smiles)
+#     print("Result:", result)
+#     print("Reason:", reason)
