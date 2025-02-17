@@ -2,131 +2,112 @@
 Classifies: CHEBI:29017 1-acyl-sn-glycero-3-phosphoethanolamine
 """
 """
-Classifies: 1-acyl-sn-glycero-3-phosphoethanolamine
+Classifies: CHEBI:1-acyl-sn-glycero-3-phosphoethanolamine
 Definition: A 1-O-acylglycerophosphoethanolamine having (R)-configuration.
-Due to known RDKit CIP assignment issues for glycerol backbone stereochemistry,
-this code relaxes the requirement so that either an explicit chiral center
-or a glycerol backbone substructure is accepted.
-It requires:
-  (1) A phosphoethanolamine headgroup:
-      – a neutral OCCN fragment that is near a phosphorus atom.
-  (2) Exactly one acyl ester linkage – an ester of the form C(=O)O[C] where the
-      O-linked carbon does not connect to any phosphorus.
-  (3) The presence of either an explicitly defined chiral center or a glycerol-like backbone.
-  (4) A molecular weight typical for a lipid (< 1000 Da) and exactly one phosphorus.
+This classifier requires:
+  (1) Exactly one phosphorus atom.
+  (2) A phosphoethanolamine headgroup in which an "OCCN" fragment is present;
+      the oxygen of that fragment must be directly bonded to the phosphorus.
+  (3) Exactly one acyl ester linkage (i.e. a C(=O)O–C fragment) where the O-linked carbon
+      is not linked to any phosphorus.
+  (4) A glycerol backbone substructure as seen in many glycerophospholipids.
+  (5) A molecular weight below 1000 Da.
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolDescriptors
+from rdkit.Chem import AllChem, rdMolDescriptors, rdmolops
 
 def is_1_acyl_sn_glycero_3_phosphoethanolamine(smiles: str):
     """
-    Determines whether a molecule (given by a SMILES string) is a 1-acyl-sn-glycero-3-phosphoethanolamine.
+    Determines whether a molecule (given via its SMILES string) is a 1-acyl-sn-glycero-3-phosphoethanolamine.
     
     Returns:
-       (bool, str): True with a reason if classified as 1-acyl-GPE, False otherwise.
+       bool: True if the molecule meets the criteria, False otherwise.
+       str: The reason for the decision.
     """
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Ensure the molecule is sanitized and stereochemistry is assigned.
+
+    # Sanitize and assign stereochemistry.
     try:
         Chem.SanitizeMol(mol)
     except Exception as e:
         return False, "Molecule could not be sanitized: " + str(e)
     AllChem.AssignStereochemistry(mol, force=True, cleanIt=True)
-
-    # --- Additional filter: exactly one phosphorus atom ---
+    
+    # (1) Exactly one phosphorus atom.
     phosphorus = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
     if len(phosphorus) != 1:
         return False, f"Expected exactly one phosphorus atom; found {len(phosphorus)}"
     
-    # --- Check for phosphoethanolamine headgroup ---
-    # First, look for a neutral OCCN substructure.
-    headgroup_smarts = "OCCN"
-    headgroup_pat = Chem.MolFromSmarts(headgroup_smarts)
+    # (2) Phosphoethanolamine headgroup check.
+    # Look for an OCCN fragment.
+    headgroup_pat = Chem.MolFromSmarts("OCCN")
     headgroup_matches = mol.GetSubstructMatches(headgroup_pat)
-    if not headgroup_matches:
-        return False, "Phosphoethanolamine headgroup (OCCN) not found"
-    
     headgroup_found = False
-    # Check that at least one OCCN instance has a neutral N and is near the phosphorus.
     for match in headgroup_matches:
-        # Expecting match indices [O, C, C, N]
-        n_atom = mol.GetAtomWithIdx(match[3])
-        if n_atom.GetAtomicNum() == 7 and n_atom.GetFormalCharge() == 0:
-            # Check distance from the nitrogen to the phosphorus.
-            # Here we demand that a phosphorus atom is within 3 bonds.
-            dist_found = False
-            for p_atom in phosphorus:
-                p_idx = p_atom.GetIdx()
-                # Get bond path lengths between the N and P.
-                if Chem.rdmolops.GetShortestPath(mol, n_atom.GetIdx(), p_idx):
-                    # In our simple approach we assume a found path implies they are connected.
-                    if len(Chem.rdmolops.GetShortestPath(mol, n_atom.GetIdx(), p_idx)) - 1 <= 3:
-                        dist_found = True
-                        break
-            if dist_found:
-                headgroup_found = True
-                break
+        # The match is a tuple of atom indices: (O, C, C, N)
+        o_idx = match[0]  # the oxygen that should be connected to phosphorus
+        o_atom = mol.GetAtomWithIdx(o_idx)
+        # Check that one neighbor of this oxygen is a phosphorus.
+        for neighbor in o_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 15:
+                # Also check that the nitrogen is neutral.
+                n_atom = mol.GetAtomWithIdx(match[3])
+                if n_atom.GetAtomicNum() == 7 and n_atom.GetFormalCharge() == 0:
+                    headgroup_found = True
+                    break
+        if headgroup_found:
+            break
     if not headgroup_found:
-        return False, "Phosphoethanolamine headgroup found but no neutral OCCN fragment is near a phosphorus atom"
+        return False, "Phosphoethanolamine headgroup (neutral OCCN attached directly to P) not found"
     
-    # --- Check for exactly one acyl ester linkage ---
-    # Look for ester fragments of the form: carbonyl C attached to O which is attached to a carbon.
-    ester_smarts = "C(=O)O[C]"
-    ester_pat = Chem.MolFromSmarts(ester_smarts)
+    # (3) Exactly one acyl ester linkage.
+    # Look for ester fragments of the form: carbonyl C attached to oxygen attached to another carbon.
+    ester_pat = Chem.MolFromSmarts("C(=O)O[C]")
     ester_matches = mol.GetSubstructMatches(ester_pat)
     acyl_ester_count = 0
     for match in ester_matches:
-        # match indices: 0 -> carbonyl carbon, 1 -> carbonyl oxygen, 2 -> O-linked carbon.
-        o_attached_idx = match[2]
-        o_attached_atom = mol.GetAtomWithIdx(o_attached_idx)
-        # Exclude this ester if the O-linked carbon is attached to any phosphorus.
-        if any(neigh.GetAtomicNum() == 15 for neigh in o_attached_atom.GetNeighbors()):
+        # Match indices: 0 -> carbonyl carbon; 1 -> carbonyl oxygen; 2 -> O-linked carbon.
+        o_linked_atom = mol.GetAtomWithIdx(match[2])
+        # Exclude if this O-linked carbon is attached to any phosphorus.
+        if any(neigh.GetAtomicNum() == 15 for neigh in o_linked_atom.GetNeighbors()):
             continue
         acyl_ester_count += 1
     if acyl_ester_count != 1:
         return False, f"Found {acyl_ester_count} acyl ester linkage(s); exactly one is required"
     
-    # --- Check for a glycerol backbone signature ---
-    # First try finding an explicitly defined chiral center.
-    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=False)
-    if not chiral_centers:
-        # If no chiral center is explicitly defined, try to find a glycerol-like substructure.
-        # Many lipid structures contain a glycerol backbone fragment such as: O C C(O) C O C(=O)
-        glycerol_smarts = "OCC(O)COC(=O)"
-        glycerol_pat = Chem.MolFromSmarts(glycerol_smarts)
-        if not mol.HasSubstructMatch(glycerol_pat):
-            return False, "No chiral center found and glycerol backbone substructure (OCC(O)COC(=O)) missing"
-        else:
-            chiral_reason = "No explicit chiral center found, but glycerol backbone substructure present"
-    else:
-        chiral_reason = "At least one chiral center is defined in the structure"
+    # (4) Detect glycerol backbone.
+    # Many glycerophospholipids have a backbone fragment like: O-C-C(O)-C-O-P .
+    # We use a SMARTS pattern "OCC(O)COP" (ignoring chirality markers) as a heuristic.
+    glycerol_pat = Chem.MolFromSmarts("OCC(O)COP")
+    if not mol.HasSubstructMatch(glycerol_pat):
+        return False, "Glycerol backbone substructure (OCC(O)COP) not detected"
     
-    # --- Filter by molecular weight (typical for a lipid; avoid large peptides) ---
+    # (5) Molecular weight typical for a lipid: below 1000 Da.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt > 1000:
         return False, f"Molecular weight too high for a typical 1-acyl-GPE lipid (found {mol_wt:.1f} Da)"
     
-    return True, ("Molecule passes all tests: it has a phosphoethanolamine headgroup with neutral OCCN adjacent to P, "
-                  "exactly one acyl ester linkage not involving P, and " + chiral_reason + 
-                  f", with a molecular weight of {mol_wt:.1f} Da.")
+    reason = (f"Molecule passes all tests: it contains a phosphoethanolamine headgroup (OCCN directly linked to P), "
+              f"exactly one acyl ester linkage not bonded to P, a glycerol backbone substructure (OCC(O)COP), "
+              f"and has a molecular weight of {mol_wt:.1f} Da.")
+    return True, reason
 
-# Optional testing block – remove or adjust as desired.
+
+# Optional testing block.
 if __name__ == "__main__":
+    # A list of example SMILES strings.
     test_smiles = [
-        # True positives:
         "P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)(OCCN)(O)=O",  # LysoPE(18:3(9Z,12Z,15Z)/0:0)
         "P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\CCCCC)(OCCN)(O)=O",             # PE(15:1(9Z)/0:0)
+        "P(OCC(O)COC(=O)CCCCCCCC=CCCCCCCCC)(OCC[NH3+])([O-])=O",           # 2-Azaniumylethyl (2-hydroxy-3-octadec-9-enoyloxypropyl) phosphate
         "P(OC[C@H](O)COC(=O)CCCCCCCCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)(OCCN)(O)=O",  # LysoPE(20:3(5Z,8Z,11Z)/0:0)
         "CCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OCCN",                  # 1-heptadecanoyl-sn-glycero-3-phosphoethanolamine
         "CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OCCN",             # 1-oleoyl-sn-glycero-3-phosphoethanolamine
-        # A molecule that previously was a false negative due to missing chiral flag:
-        "P(OCC(O)COC(=O)CCCCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)(OCCN)(O)=O",    # LPE 22:3
-        # False positive (peptide-like; should be rejected due to weight or lack of headgroup connectivity):
-        "BrC1=C(O)C=CC(=C1)C2NC(=O)[C@H](N(C(=O)[C@@H](NC(=O)[C@@H](C)CC(=C[C@@H]([C@H](OC([C@H]2OC)=O)C)C)C)C)CC=3C4=C(C=CC=C4)NC3"
+        "C([C@@](COC(CCCCCCCCC/C=C\\CCCCCC)=O)(O)[H])OP(=O)(O)OCCN",         # PE(18:1(11Z)/0:0)
     ]
     for smi in test_smiles:
         result, reason = is_1_acyl_sn_glycero_3_phosphoethanolamine(smi)
