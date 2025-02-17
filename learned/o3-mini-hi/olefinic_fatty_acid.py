@@ -4,144 +4,148 @@ Classifies: CHEBI:53339 olefinic fatty acid
 """
 Classifies: Olefinic Fatty Acid
 Definition: Any fatty acid (free or as an acyl chain) that contains at least one C=C double bond.
-A fatty acid is identified by the presence of either a carboxylic acid group (free acid) or an acyl ester group
-and by having a long, predominantly aliphatic carbon chain. For this classifier we require the chain length
-(from the acid/ester “handle”) to be at least 6 carbon atoms and to contain at least one C=C bond.
+A fatty acid is defined as a linear, unbranched chain (attached via a free acid or acyl ester “handle”)
+of at least 6 contiguous carbon atoms that has at least one carbon–carbon double bond.
 """
 from rdkit import Chem
 from rdkit.Chem import rdchem
 
-# Helper function: Find the longest contiguous chain (list of atom indices) that consists only of carbon atoms.
-# We use DFS starting from a given atom and return the longest carbon path.
-def longest_carbon_chain(atom, mol, visited=None):
-    if visited is None:
-        visited = set()
-    curr_idx = atom.GetIdx()
-    visited.add(curr_idx)
-    best_path = [curr_idx]
-    # Look at neighbors that are carbons and not yet visited.
-    for nbr in atom.GetNeighbors():
-        if nbr.GetAtomicNum() != 6:
-            continue
-        nbr_idx = nbr.GetIdx()
-        if nbr_idx in visited:
-            continue
-        # Recurse with a copy of visited.
-        path = [curr_idx] + longest_carbon_chain(nbr, mol, visited.copy())
-        if len(path) > len(best_path):
-            best_path = path
-    return best_path
+# Helper function to check if an atom is a carbon and is not in a ring.
+def is_linear_carbon(atom):
+    return atom.GetAtomicNum() == 6 and not atom.IsInRing()
 
-# Check if there is at least one double bond (C=C) in the given chain.
-def chain_has_double_bond(chain_atom_indices, mol):
-    # iterate over consecutive pairs in the chain (in order)
-    # Note: the DFS path may not be “linear” if branched, but our DFS returns one linear path
-    for i in range(len(chain_atom_indices) - 1):
-        a_idx = chain_atom_indices[i]
-        b_idx = chain_atom_indices[i + 1]
-        bond = mol.GetBondBetweenAtoms(a_idx, b_idx)
-        if bond is not None and bond.GetBondType() == rdchem.BondType.DOUBLE:
-            return True
-    return False
+# Helper function: starting from a carbon atom that is presumed to be terminal (has one neighbor aside from the handle),
+# walk along the chain (always following the unique next carbon) and return:
+#   length: number of carbons in this linear chain
+#   has_double: whether at least one bond in the chain is a C=C double bond.
+def get_linear_chain_info(atom, mol, coming_from_idx):
+    # We count the current atom
+    length = 1
+    has_double = False
+    current_atom = atom
+    current_idx = atom.GetIdx()
+    while True:
+        # Get neighbors that are carbon and not the atom we came from.
+        nbrs = [nbr for nbr in current_atom.GetNeighbors() 
+                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != coming_from_idx and not nbr.IsInRing()]
+        # In a truly linear (unbranched) fatty acyl chain the current carbon should have at most one next carbon.
+        if len(nbrs) != 1:
+            break
+        next_atom = nbrs[0]
+        bond = mol.GetBondBetweenAtoms(current_idx, next_atom.GetIdx())
+        if bond is None:
+            break
+        if bond.GetBondType() == rdchem.BondType.DOUBLE:
+            has_double = True
+        # Update for next step
+        coming_from_idx = current_idx
+        current_atom = next_atom
+        current_idx = current_atom.GetIdx()
+        length += 1
+    return length, has_double
 
+# Main function: classify if the molecule (given as a SMILES string) is an olefinic fatty acid.
 def is_olefinic_fatty_acid(smiles: str):
     """
     Determines if a molecule is an olefinic fatty acid.
     
-    It now does more refined checks:
-    1. Look for either a free carboxylic acid group (C(=O)[O;H1,O-]) or an acyl ester motif (C(=O)O[C]).
-    2. For each match, take the “handle” carbon (alpha carbon) connected to the acid (or ester) group.
-    3. From the starting carbon, compute the longest contiguous (carbon-only) chain.
-    4. Require that this chain is at least 6 carbons long.
-    5. Require that at least one bond in the chain is a C=C double bond.
+    The rules:
+      1. Look for either a free carboxylic acid group (defined by pattern "C(=O)[O;H1,O-]")
+         or an acyl ester motif ("C(=O)O[C]").
+      2. For each match, identify the “handle” carbon (the one attached to the C=O group) that is expected
+         to be the start of a fatty acyl chain.
+      3. The handle must be terminal (i.e. it has no extra carbon neighbors except the one connecting 
+         to the acid/ester carbonyl).
+      4. From this handle, “walk” along a strictly linear carbon chain. Require that the chain includes 
+         at least 6 carbons and that at least one bond in the chain is a C=C double bond.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
         bool: True if the molecule is classified as an olefinic fatty acid, False otherwise.
-        str: Reason for the classification.
+        str: Reason for classification.
     """
-    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Quick screening: there must be at least one carbon-carbon double bond somewhere.
+    MIN_CHAIN_LENGTH = 6  # Minimum number of carbon atoms in the acyl chain
+
+    # Quick global screening: there must be a C=C somewhere in the molecule.
     dbl_bond_smarts = Chem.MolFromSmarts("[C]=[C]")
     if not mol.HasSubstructMatch(dbl_bond_smarts):
         return False, "No carbon–carbon double bond (C=C) found in molecule"
     
-    # Define SMARTS patterns for free acid and acyl ester.
-    free_acid_smarts = Chem.MolFromSmarts("C(=O)[O;H1,O-]")  # free carboxylic acid (COOH or COO-)
-    acyl_ester_smarts = Chem.MolFromSmarts("C(=O)O[C]")       # acyl ester motif: fatty acid in a lipid
-    
-    # Minimum length of the acyl chain (number of carbon atoms in the chain beyond the carbonyl)
-    MIN_CHAIN_LENGTH = 6
-
-    # This flag will be set if at least one qualifying acyl chain is found.
-    chain_found = False
     reasons = []
-    
-    # Check free acid matches.
-    free_matches = mol.GetSubstructMatches(free_acid_smarts)
+    # First, try free acid group: expect a free acid group to be defined by "C(=O)[O;H1,O-]"
+    free_acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,O-]")
+    free_matches = mol.GetSubstructMatches(free_acid_pattern)
     if free_matches:
         for match in free_matches:
-            # In the free acid SMARTS "C(=O)[O;H1,O-]", match[0] is the carbonyl carbon.
-            carboxyl_c = mol.GetAtomWithIdx(match[0])
-            # For a free fatty acid, the acid group is terminal; the alpha carbon is any carbon neighbor
-            # of the carboxyl carbon that is not the oxygen in the acid.
-            alpha_c_found = False
-            for nbr in carboxyl_c.GetNeighbors():
-                if nbr.GetAtomicNum() == 6:
-                    alpha_c_found = True
-                    start_atom = nbr
-                    # Get the longest contiguous carbon chain from this starting point.
-                    chain = longest_carbon_chain(start_atom, mol)
-                    if len(chain) < MIN_CHAIN_LENGTH:
-                        reasons.append(f"Free acid chain too short (length {len(chain)} < {MIN_CHAIN_LENGTH})")
-                        continue
-                    # Check that at least one bond in the chain is a double bond.
-                    if not chain_has_double_bond(chain, mol):
-                        reasons.append("Free acid chain does not contain a C=C double bond")
-                        continue
-                    # If this chain qualifies, we classify the molecule as an olefinic fatty acid.
-                    return True, ("Contains a fatty acyl chain (via free acid) with sufficient length and a C=C double bond.")
-            if not alpha_c_found:
-                reasons.append("Free acid group found but no alpha carbon attached")
-                
-    # Check acyl ester matches (for cases such as phospholipids).
-    ester_matches = mol.GetSubstructMatches(acyl_ester_smarts)
+            # In the free acid SMARTS, match[0] is the carbonyl carbon.
+            acid_carbon = mol.GetAtomWithIdx(match[0])
+            # For a free fatty acid, the acid carbon should have exactly one neighboring carbon (the alpha carbon).
+            carbon_neighbors = [nbr for nbr in acid_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
+            if len(carbon_neighbors) != 1:
+                reasons.append("Free acid group is not terminal (acid carbon has >1 carbon neighbor)")
+                continue
+            alpha_c = carbon_neighbors[0]
+            # Ensure the handle is a linear (non-branched) carbon.
+            # The alpha carbon should have only one carbon neighbor other than the acid carbon.
+            alpha_neigh = [nbr for nbr in alpha_c.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != acid_carbon.GetIdx()]
+            if len(alpha_neigh) != 1:
+                reasons.append("Alpha carbon for free acid is branched")
+                continue
+            # Walk down the chain starting from the alpha carbon.
+            chain_length, has_double = get_linear_chain_info(alpha_c, mol, acid_carbon.GetIdx())
+            if chain_length < MIN_CHAIN_LENGTH:
+                reasons.append(f"Free acid chain too short (length {chain_length} < {MIN_CHAIN_LENGTH})")
+                continue
+            if not has_double:
+                reasons.append("Free acid chain does not contain a C=C double bond")
+                continue
+            return True, "Contains a fatty acyl chain (via free acid) with sufficient length and a C=C double bond."
+    
+    # Next, try acyl ester motif: defined as the three-atom substring "C(=O)O[C]"
+    acyl_ester_pattern = Chem.MolFromSmarts("C(=O)O[C]")
+    ester_matches = mol.GetSubstructMatches(acyl_ester_pattern)
     if ester_matches:
         for match in ester_matches:
-            # In the acyl ester SMARTS "C(=O)O[C]", match[0] is the carbonyl carbon,
-            # match[1] is the ester oxygen, and match[2] is the acyl chain starting carbon.
+            # In this SMARTS, match[0] is the carbonyl carbon, match[1] is the ester oxygen and match[2] is the handle.
             if len(match) < 3:
                 continue
-            start_atom = mol.GetAtomWithIdx(match[2])
-            chain = longest_carbon_chain(start_atom, mol)
-            if len(chain) < MIN_CHAIN_LENGTH:
-                reasons.append(f"Acyl ester chain too short (length {len(chain)} < {MIN_CHAIN_LENGTH})")
+            handle_atom = mol.GetAtomWithIdx(match[2])
+            # For acyl esters, we similarly require that the handle is terminal.
+            handle_neigh = [nbr for nbr in handle_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != match[1]]
+            if len(handle_neigh) != 1:
+                reasons.append("Acyl ester handle is branched")
                 continue
-            if not chain_has_double_bond(chain, mol):
+            chain_length, has_double = get_linear_chain_info(handle_atom, mol, match[1])
+            if chain_length < MIN_CHAIN_LENGTH:
+                reasons.append(f"Acyl ester chain too short (length {chain_length} < {MIN_CHAIN_LENGTH})")
+                continue
+            if not has_double:
                 reasons.append("Acyl ester chain does not contain a C=C double bond")
                 continue
-            return True, ("Contains a fatty acyl chain (via acyl ester) with sufficient length and a C=C double bond.")
+            return True, "Contains a fatty acyl chain (via acyl ester) with sufficient length and a C=C double bond."
     
-    # If we get here, no qualifying fatty acyl chain was found.
+    # If nothing qualified, report the reasons encountered (if any) or a default message.
     if reasons:
-        return False, " ".join(reasons)
+        return False, " ; ".join(reasons)
     else:
-        return False, "No free acid or acyl ester substructure (with long enough chain and unsaturation) found"
+        return False, "No free acid or acyl ester substructure with a qualifying fatty acyl chain found."
 
-# Example usage (you can remove or comment these lines when integrating the function into a larger codebase).
+# Example usage (for testing; remove or comment out during integration).
 if __name__ == "__main__":
     test_smiles_list = [
         "O[C@H](CCC)C/C=C\\C/C=C\\CCCCCCCC(O)=O",  # Avenoleic acid (should be True)
-        "CC\\C=C/C\\C=C/CCC\\C=C\\C=C\\C=C/CCCC(O)=O",  # Icosapentaenoic acid (should be True)
-        "CC\\C=C\\C(O)=O",  # trans-pent-2-enoic acid (should be False due to short chain)
-        "OC[C@H](COP(OCC[N+](C)(C)C)(=O)[O-])OC(=O)CCCCCCC/C=C\\CCCCCC"  # a phospholipid fatty acyl chain (should be True)
+        "O=C(CCC/C=C\\C/C=C\\CC(/C=C/C(C(CCCCC)O)O)O)O",  # 11,14,15-trihydroxy-(5Z,8Z,12E)-icosatrienoic acid (True)
+        "CC\\C=C/C\\C=C/CCC\\C=C\\C=C\\C=C/CCCC(O)=O",  # (5Z,7E,9E,14Z,17Z)-icosapentaenoic acid (True)
+        "O(C(C[N+](C)(C)C)CC([O-])=O)C(=O)CC/C=C/C/C=C/C/C=C/C\\C=C\\CC(O)/C=C/C=C/CC",  # False positive example from phospholipid-like structure
+        "O=C1N(C(=O)C=2N=CN=NC2N1C)",  # Fervenulin (should be False: no C=C present)
     ]
+    
     for s in test_smiles_list:
-        result, reason = is_olefinic_fatty_acid(s)
-        print(f"SMILES: {s}\nResult: {result}\nReason: {reason}\n{'-'*50}")
+        res, msg = is_olefinic_fatty_acid(s)
+        print(f"SMILES: {s}\nResult: {res}\nReason: {msg}\n{'-'*60}")
