@@ -3,8 +3,8 @@ Classifies: CHEBI:64583 sphingomyelin
 """
 """
 Classifies: Sphingomyelin – any phospholipid where the amino group of a sphingoid base 
-is in amide linkage with a fatty acid, and the terminal hydroxyl group is esterified 
-to a phosphorylcholine headgroup.
+is in amide linkage with one of several fatty acids and the terminal hydroxyl of the 
+sphingoid base is esterified to a phosphorylcholine headgroup.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -12,65 +12,80 @@ from rdkit.Chem import rdMolDescriptors
 def is_sphingomyelin(smiles: str):
     """
     Determines if a molecule is a sphingomyelin based on its SMILES string.
-    Sphingomyelins must have an amide bond linking a fatty acid to a sphingoid base,
-    the sphingoid base must have an amino group linked to a hydroxylated chiral center,
-    and the terminal hydroxyl group should be esterified to a phosphorylcholine headgroup.
+    
+    Requirements:
+      - It has a phosphorylcholine headgroup.
+      - It contains an amide linkage (for fatty acid attachment).
+      - It contains a sphingoid base fragment that can be identified by the pattern:
+        a fatty acyl carbonyl attached to a nitrogen and then two consecutive chiral carbons,
+        the second of which bears an OH.
+      - It also has a long aliphatic (fatty acid) chain.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if molecule is classified as sphingomyelin, False otherwise.
-        str: Reason for the classification.
+        bool: True if the molecule is classified as a sphingomyelin, False otherwise.
+        str: Explanation of the classification decision.
     """
     
-    # Parse the SMILES string into a molecule
+    # Parse the molecule from the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    if not mol:
         return False, "Invalid SMILES string"
     
-    # Check for the phosphorylcholine headgroup.
-    # We allow two variants: one with explicit negative charge on an oxygen,
-    # and one without the charge specification.
+    # Check for the phosphorylcholine headgroup with two variants.
     phos_smarts_list = [
-        "P(=O)([O-])OCC[N+](C)(C)C",  # with explicit negative charge on one oxygen
-        "P(=O)(O)OCC[N+](C)(C)C"       # without explicit charge information
+        "P(=O)([O-])OCC[N+](C)(C)C",   # with explicit negative charge on oxygen
+        "P(=O)(O)OCC[N+](C)(C)C"        # without explicit charge info
     ]
-    phos_found = False
+    headgroup_found = False
     for pattern in phos_smarts_list:
         phos_pattern = Chem.MolFromSmarts(pattern)
         if phos_pattern and mol.HasSubstructMatch(phos_pattern):
-            phos_found = True
+            headgroup_found = True
             break
-    if not phos_found:
+    if not headgroup_found:
         return False, "Missing phosphorylcholine headgroup"
-
-    # Check for an amide bond linking a fatty acid to the sphingoid base.
-    # This pattern finds an N atom linked to a carbonyl.
-    amide_pattern = Chem.MolFromSmarts("NC(=O)")
+    
+    # Check for amide bond linking a fatty acid through a carbonyl attached to N.
+    # This will match for example the pattern "CCCC(=O)N" (the fatty acid part plus amide nitrogen).
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
     if not mol.HasSubstructMatch(amide_pattern):
         return False, "Missing amide linkage for fatty acid attachment"
-
-    # Check for a sphingoid base: the amino group must be attached to a chiral carbon bearing an OH.
-    # We search for either of the two possible chiral notations.
-    sph_base_pattern1 = Chem.MolFromSmarts("N[C@H](O)")
-    sph_base_pattern2 = Chem.MolFromSmarts("N[C@@H](O)")
-    if not (mol.HasSubstructMatch(sph_base_pattern1) or mol.HasSubstructMatch(sph_base_pattern2)):
-        return False, "Missing sphingoid base (no N attached to a chiral center with OH)"
-
-    # Check for a long aliphatic (fatty acyl) chain.
-    # We require at least 8 consecutive carbons to indicate a long fatty acid chain.
+    
+    # Check for the sphingoid base.
+    # Instead of simply searching for "N[C@H](O)", we now look for a two‐carbon fragment
+    # with defined chirality where the first carbon follows a carbonyl (the acyl part) and
+    # the second carries a hydroxyl.
+    #
+    # We use two patterns to allow either chiral assignment:
+    sph_base_smarts_patterns = [
+        "[CX3](=O)N[C@@H][C@H](O)",  # pattern 1: carbonyl, then N, then chiral carbon followed by chiral OH‐bearing carbon.
+        "[CX3](=O)N[C@H][C@@H](O)"   # pattern 2: swapped chirality labels.
+    ]
+    sphingoid_found = False
+    for pat in sph_base_smarts_patterns:
+        sph_pattern = Chem.MolFromSmarts(pat)
+        if sph_pattern and mol.HasSubstructMatch(sph_pattern):
+            sphingoid_found = True
+            break
+    if not sphingoid_found:
+        return False, "Missing sphingoid base fragment (expected carbonyl-N-two adjacent chiral carbons with OH)"
+    
+    # Check for a long aliphatic (fatty acid) chain.
+    # We look for a chain of 8 consecutive carbons (this is a heuristic).
     long_chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
     if not mol.HasSubstructMatch(long_chain_pattern):
         return False, "Missing long aliphatic (fatty acid) chain"
     
-    # (Optional) The molecular weight threshold is not enforced to allow natural variance within sphingomyelin.
-    # mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    # if mol_wt < 500:
-    #     return False, f"Molecular weight too low ({mol_wt:.1f} Da) for sphingomyelin"
+    # (Optional) A molecular weight check could be added if desired.
+    # wt = rdMolDescriptors.CalcExactMolWt(mol)
+    # if wt < 500:
+    #     return False, f"Molecular weight too low ({wt:.1f} Da) for sphingomyelin"
     
     # If all checks pass, classify as sphingomyelin.
-    return True, "Contains amide-linked fatty acid, a sphingoid base with hydroxyl, and phosphorylcholine headgroup"
+    return True, "Contains phosphorylcholine headgroup, amide-linked fatty acid, and a sphingoid base fragment"
 
 # Example usage:
 if __name__ == '__main__':
