@@ -4,9 +4,8 @@ Classifies: CHEBI:26125 phytosterols
 #!/usr/bin/env python
 """
 Classifies: Phytosterols – Sterols similar to cholesterol that occur in plants.
-Phytosterols exhibit a steroid nucleus (a fused system of three six–membered rings 
-and one five–membered ring, i.e. cyclopentanoperhydrophenanthrene) and typically feature
-a hydroxyl group.
+Phytosterols are characterized by a steroid nucleus (a fused system of three six–membered rings 
+and one five–membered ring) and typically a hydroxyl group.
 """
 
 from rdkit import Chem
@@ -16,11 +15,17 @@ import itertools
 def is_phytosterols(smiles: str):
     """
     Determines if a molecule belongs to the phytosterols class based on its SMILES string.
-    Phytosterols are plant sterols defined as sterols with a steroid nucleus and usually 
-    a hydroxyl group (commonly found at the 3β position). We check for the fused 4–ring system 
-    (three 6–membered rings and one 5–membered ring whose union contains about 17 carbon atoms),
-    at least one hydroxyl group and an appropriate molecular weight.
     
+    Phytosterols are plant sterols defined as sterols having a fused four–ring (steroid)
+    system (three six–membered rings and one five–membered ring) and usually a hydroxyl group,
+    typically at the 3β position. In this implementation we:
+      1. Parse the SMILES string.
+      2. Retrieve ring information and consider rings that are either 5 or 6 members.
+      3. Look for a combination of 4 rings that together yield a fused network with about 16–18 unique carbon atoms,
+         with exactly one five–membered ring.
+      4. Check for the presence of at least one hydroxyl group.
+      5. Verify the molecular weight is in the expected range for sterols (~300–600 Da).
+      
     Args:
         smiles (str): SMILES string of the molecule.
         
@@ -32,42 +37,39 @@ def is_phytosterols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Retrieve all rings in the molecule.
-    ring_info = mol.GetRingInfo()
-    if not ring_info.IsInitialized():
-        return False, "No ring information available"
-        
-    rings = ring_info.AtomRings()  # each ring is a tuple of atom indices
     
-    # Consider only rings of size 5 or 6 (typical of steroid nucleus)
-    candidate_rings = [r for r in rings if len(r) in (5,6)]
+    # Get ring information without checking for IsInitialized (since it is always available)
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()  # each ring is represented as a tuple of atom indices
+
+    # Filter rings that are 5 or 6 members (typical sizes for the steroid nucleus)
+    candidate_rings = [r for r in rings if len(r) in (5, 6)]
     if len(candidate_rings) < 4:
         return False, "Not enough candidate rings (size 5 or 6) to form a steroid nucleus"
-    
-    # Look for a combination of 4 rings that may form the steroid nucleus:
-    # Criterion:
-    # 1. The 4 rings (when united) should have about 16-18 unique carbon atoms
-    # 2. Exactly one of these rings is a five‐membered ring (rest are 6–membered)
-    # 3. The rings are fused (i.e. for at least one pair in the set, the intersection size >=2).
+
+    # Look for a combination of 4 rings that may form the steroid nucleus.
+    # We require:
+    #  - The united rings contain about 16-18 unique carbon atoms.
+    #  - Exactly one of the selected rings is a five-membered ring.
+    #  - The rings are fused (for at least one pair, the intersection has at least 2 atoms).
     nucleus_found = False
     for combo in itertools.combinations(candidate_rings, 4):
         unique_atoms = set().union(*combo)
-        # Count only carbon atoms from the candidate nucleus
-        atom_count = sum(1 for idx in unique_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-        if not (16 <= atom_count <= 18):
+        # Count only carbon atoms in the union of these rings
+        carbon_count = sum(1 for idx in unique_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+        if not (16 <= carbon_count <= 18):
             continue
-        five_membered = sum(1 for r in combo if len(r) == 5)
+        five_membered = sum(1 for ring in combo if len(ring) == 5)
         if five_membered != 1:
             continue
-        # Build a simple connectivity graph between the 4 rings.
-        # Two rings are considered "fused" if they share at least 2 atoms.
+        # Build a simple connectivity graph among the four rings.
+        # Two rings are considered fused if they share at least 2 atoms.
         graph = {i: set() for i in range(4)}
         for i, j in itertools.combinations(range(4), 2):
             if len(set(combo[i]).intersection(combo[j])) >= 2:
                 graph[i].add(j)
                 graph[j].add(i)
-        # Check if the graph is connected (all 4 rings are in one fused network)
+        # Check if the graph is connected (all rings belong to one fused network)
         visited = set()
         nodes = [0]
         while nodes:
@@ -79,23 +81,23 @@ def is_phytosterols(smiles: str):
         if len(visited) == 4:
             nucleus_found = True
             break
-            
+
     if not nucleus_found:
-        return False, "Molecule does not contain the characteristic fused steroid nucleus"
-    
-    # Check for the presence of at least one hydroxyl group (–OH).
+        return False, "Molecule does not contain a characteristic fused steroid nucleus (4 rings with 3 6-membered and 1 5-membered fused rings with ~17 carbons)"
+
+    # Check for presence of at least one hydroxyl group (–OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     if hydroxyl_pattern is None:
         return False, "Error creating hydroxyl SMARTS pattern"
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Molecule lacks a hydroxyl group (a hallmark of sterols)"
-    
-    # Verify the molecular weight is within a typical range for sterols (~300-600 Da)
+        return False, "Molecule lacks a hydroxyl group (–OH), a hallmark of sterols"
+
+    # Verify the molecular weight is within a typical range for sterols (approximately 300-600 Da)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300 or mol_wt > 600:
         return False, f"Molecular weight ({mol_wt:.1f} Da) is outside the typical range for phytosterols"
     
-    return True, "Molecule contains a fused steroid nucleus with ~17 carbons and a hydroxyl group typical of phytosterols"
+    return True, "Molecule contains a fused steroid nucleus with ~17 carbon atoms and a hydroxyl group typical of phytosterols"
 
 
 # Example usage (for testing purposes)
