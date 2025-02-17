@@ -3,7 +3,10 @@ Classifies: CHEBI:23066 cephalosporin
 """
 """
 Classifies: cephalosporin
-Definition: A beta–lactam antibiotic having a fused bicyclic ring system where a 4–membered beta–lactam ring (with an amide group) is fused with a 6–membered dihydrothiazine ring (containing at least one sulfur atom).
+Definition: A beta‐lactam antibiotic whose core comprises a fused bicyclic ring system in which a 4‐membered beta‐lactam 
+ring (with a ring-bound nitrogen and a carbonyl-bearing carbon) is fused (sharing exactly two adjacent atoms) to a 
+6‐membered (dihydro)thia/oxa‐zine ring. In most cases the 6‐membered ring will contain a sulfur atom; however, if a ring 
+contains an oxygen instead then it may be an oxacephalosporin.
 """
 
 from rdkit import Chem
@@ -11,12 +14,18 @@ from rdkit import Chem
 def is_cephalosporin(smiles: str):
     """
     Determines if a molecule is a cephalosporin based on its SMILES string.
-    Cephalosporins have a fused bicyclic system consisting of a 4-membered beta-lactam ring (with a nitrogen and a carbonyl) 
-    fused to a 6-membered dihydrothiazine ring (with at least one sulfur atom).
+    The algorithm:
+      (1) Parses the molecule.
+      (2) Finds candidate beta-lactam rings: exactly 4-membered rings that have exactly one nitrogen 
+          and three carbon atoms, one of which must have a double bond O (carbonyl) attached (exocyclic or in‐ring).
+      (3) Finds candidate dihydro(thia/oxa)zine rings: exactly 6-membered rings that contain at least one sulfur or 
+          oxygen and are not fully aromatic.
+      (4) For each candidate pair, requires that the rings are fused (they share exactly 2 atoms) and that the two 
+          common atoms are adjacent in the ring order (i.e. the shared bond is contiguous in both rings).
     
     Args:
         smiles (str): SMILES string of the molecule.
-        
+    
     Returns:
         bool: True if molecule is a cephalosporin, False otherwise.
         str: Reason for classification.
@@ -24,73 +33,101 @@ def is_cephalosporin(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Get ring information (list of tuples of atom indices for each ring)
-    ring_info = mol.GetRingInfo().AtomRings()
-    
-    beta_lactam_rings = []  # 4-membered rings with N and a carbonyl C
-    thiazine_rings = []     # 6-membered rings with at least one S
-    
-    # Helper: check if a given ring (list of atom indices) is a beta-lactam ring candidate.
-    def is_beta_lactam_ring(ring):
-        if len(ring) != 4:
-            return False
-        has_N = False
-        has_carbonyl = False
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetSymbol() == "N":
-                has_N = True
-            if atom.GetSymbol() == "C":
-                # Check if carbon has a double bond to an oxygen (exocyclic carbonyl)
-                for bond in atom.GetBonds():
-                    # Get the neighbor atom that is not in the ring (or even if in ring, we consider exocyclic carbonyl bonds)
-                    nbr = bond.GetOtherAtom(atom)
-                    # Check for a double bond to oxygen
-                    if nbr.GetSymbol() == "O" and bond.GetBondTypeAsDouble() == 2.0:
-                        has_carbonyl = True
-                        break
-                # If one carbon already qualifies, no need to check further for carbonyl
-                if has_carbonyl:
-                    continue
-        return has_N and has_carbonyl
-
-    # Helper: check if a given ring is a dihydrothiazine ring candidate.
-    def is_dihydrothiazine_ring(ring):
-        if len(ring) != 6:
-            return False
-        # Look for at least one sulfur in the ring.
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetSymbol() == "S":
+        
+    # helper: check if two indices are adjacent in a ring (cyclic order)
+    def are_adjacent_in_ring(ring, a, b):
+        # ring is a tuple of atom indices (in order)
+        n = len(ring)
+        for i in range(n):
+            if (ring[i] == a and ring[(i+1)%n] == b) or (ring[i] == b and ring[(i+1)%n] == a):
                 return True
         return False
 
-    # Collect beta-lactam and dihydrothiazine (6-membered with S) candidate rings.
+    # candidate beta-lactam ring: 4-membered ring with exactly one N and three C atoms,
+    # and at least one of the carbons should have a double-bonded oxygen.
+    def is_beta_lactam_ring(ring):
+        if len(ring) != 4:
+            return False
+        n_count = 0
+        c_atoms = []
+        carbonyl_found = False
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            sym = atom.GetSymbol()
+            if sym == "N":
+                n_count += 1
+            elif sym == "C":
+                c_atoms.append(atom)
+            else:
+                # any other atom in a 4-membered beta-lactam would be unexpected
+                return False
+        if n_count != 1 or len(c_atoms) != 3:
+            return False
+        # Check that at least one carbon in this ring has a double bond to oxygen
+        for c in c_atoms:
+            for bond in c.GetBonds():
+                if bond.GetBondType() == Chem.BondType.DOUBLE:
+                    nbr = bond.GetOtherAtom(c)
+                    if nbr.GetSymbol() == "O":
+                        # We allow the carbonyl oxygen to be exocyclic or even if the oxygen is in the ring.
+                        carbonyl_found = True
+                        break
+            if carbonyl_found:
+                break
+        return carbonyl_found
+
+    # candidate dihydro(thia/oxa)zine ring: exactly 6-membered ring with at least one heteroatom (S or O)
+    # and not fully aromatic (i.e. “dihydro”)
+    def is_dihydro_thia_oxa_zine_ring(ring):
+        if len(ring) != 6:
+            return False
+        hetero_found = False
+        all_aromatic = True
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            if atom.GetSymbol() in ["S", "O"]:
+                hetero_found = True
+            if not atom.GetIsAromatic():
+                all_aromatic = False
+        # We require at least one S or O; however if the entire ring is aromatic it is unlikely to be a dihydro ring.
+        return hetero_found and (not all_aromatic)
+
+    ring_info = mol.GetRingInfo().AtomRings()
+    beta_lactam_rings = []  # list of rings (as tuples)
+    thia_oxa_rings = []     # list of rings (as tuples)
+
     for ring in ring_info:
         if is_beta_lactam_ring(ring):
-            beta_lactam_rings.append(set(ring))
-        if is_dihydrothiazine_ring(ring):
-            thiazine_rings.append(set(ring))
+            beta_lactam_rings.append(ring)
+        if is_dihydro_thia_oxa_zine_ring(ring):
+            thia_oxa_rings.append(ring)
             
     if not beta_lactam_rings:
-        return False, "No beta-lactam ring (4-membered ring with an amide group) found"
-    if not thiazine_rings:
-        return False, "No 6-membered ring with a sulfur atom (dihydrothiazine ring) found"
+        return False, "No candidate beta-lactam ring (4-membered with 1N and carbonyl-bearing C) found"
+    if not thia_oxa_rings:
+        return False, "No candidate 6-membered dihydro(thia/oxa)zine ring (with heteroatom S/O) found"
         
-    # Check for fusion: a cephalosporin must have one beta-lactam ring fused with one dihydrothiazine ring
+    # Check for fusion: a fused system must have exactly two common atoms that are also adjacent in both rings.
     for beta_ring in beta_lactam_rings:
-        for thiazine_ring in thiazine_rings:
-            # Fused rings should share exactly two atoms
-            common_atoms = beta_ring.intersection(thiazine_ring)
+        beta_set = set(beta_ring)
+        for thia_ring in thia_oxa_rings:
+            thia_set = set(thia_ring)
+            common_atoms = beta_set.intersection(thia_set)
             if len(common_atoms) == 2:
-                return True, "Fused beta-lactam (4-membered) and dihydrothiazine (6-membered) ring system detected"
+                common_list = list(common_atoms)
+                # check that the two common atoms are connected by a bond in the molecule
+                bond = mol.GetBondBetweenAtoms(common_list[0], common_list[1])
+                if bond is None:
+                    continue
+                # also verify that in each ring the common atoms are adjacent (taking ring cyclic order into account)
+                if are_adjacent_in_ring(beta_ring, common_list[0], common_list[1]) and are_adjacent_in_ring(thia_ring, common_list[0], common_list[1]):
+                    return True, "Fused beta-lactam (4-membered) and dihydro(thia/oxa)zine (6-membered) ring system detected"
     
-    return False, "No appropriate fused ring system (shared 2 atoms between a beta-lactam and a dihydrothiazine ring) found"
+    return False, "No fused ring system with a proper beta-lactam and dihydro(thia/oxa)zine ring (sharing 2 adjacent atoms) found"
 
 # Example usage (for testing purposes):
-if __name__ == "__main__":
-    # 7beta-aminodeacetoxycephalosporanic acid example SMILES
+if __name__ == '__main__':
+    # example: 7beta-aminodeacetoxycephalosporanic acid
     test_smiles = "[H][C@]12SCC(C)=C(N1C(=O)[C@H]2N)C(O)=O"
     is_ceph, reason = is_cephalosporin(test_smiles)
     print("Is cephalosporin:", is_ceph)
