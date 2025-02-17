@@ -5,56 +5,57 @@ Classifies: CHEBI:68472 pyrimidine deoxyribonucleoside
 """
 Classifies: pyrimidine deoxyribonucleoside
 
-A pyrimidine deoxyribonucleoside is defined as a deoxyribonucleoside containing a pyrimidine base.
-In our approach the molecule must contain a candidate deoxyribose sugar – typically a 5‐membered (or sometimes 4‐membered)
-ring containing one oxygen and four (or three) carbons with a low count of exocyclic –OH/–CH2OH substituents –
-connected by a glycosidic C–N bond to a pyrimidine base (a 6‐membered ring with at least two nitrogens and a carbonyl group).
-Molecules containing phosphorus are rejected.
+A pyrimidine deoxyribonucleoside is defined as a nucleoside that contains a deoxyribose sugar 
+(i.e., lacking a 2'-OH) linked via a glycosidic bond to a pyrimidine base. In our heuristic, we:
+  1. Reject molecules that contain any phosphorus (P) atoms (to avoid nucleotides and larger P–containing compounds).
+  2. Look through rings to find a candidate deoxyribose sugar. We require that the sugar ring:
+       • is five–membered (a furanose) made up of exactly four carbon atoms and one oxygen.
+       • shows one –OH substituent attached to a ring carbon (since in deoxyribose the exocyclic CH2OH is not in the ring,
+         and the 2'-OH is missing).
+  3. Look for a candidate pyrimidine base that is a six–membered aromatic ring containing exactly two nitrogen atoms.
+       Additionally, we require that the base carries at least one carbonyl (C=O), a common feature in pyrimidine bases.
+  4. Finally, require that there is at least one bond connecting an atom in the sugar candidate to an atom in the base candidate.
+  
+If any check fails, a suitable explaining message is returned.
 """
 
 from rdkit import Chem
 
 def is_pyrimidine_deoxyribonucleoside(smiles: str):
     """
-    Determines whether a molecule is a pyrimidine deoxyribonucleoside 
-    based on its SMILES string.
-
-    The method searches for a candidate deoxyribose sugar – meaning a 5‐membered ring (or in some cases 4‐membered)
-    containing exactly one oxygen (and respectively 4 or 3 carbons) that has a low number of exocyclic oxygen substituents,
-    and a candidate pyrimidine base – a 6‐membered ring with at least 2 nitrogen atoms and a carbonyl (C=O)
-    group. It finally requires that the two substructures be connected by a single C–N (glycosidic) bond.
-
+    Determines if a molecule is a pyrimidine deoxyribonucleoside based on its SMILES string.
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+        
     Returns:
         bool: True if the molecule is classified as a pyrimidine deoxyribonucleoside, False otherwise.
-        str: Explanation for the decision.
+        str: Reason for the classification decision.
     """
-    # Parse SMILES and check for validity.
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     
-    # Reject molecules with phosphorus (e.g. nucleotides/phosphates)
+    # Exclude molecules containing phosphorus (likely nucleotides or larger derivatives).
     if any(atom.GetSymbol() == "P" for atom in mol.GetAtoms()):
-        return False, "Molecule contains phosphorus and is likely not a deoxyribonucleoside."
+        return False, "Molecule contains phosphorus atoms and is likely not a nucleoside."
     
-    # Add explicit hydrogens (helpful for identifying hydroxyl groups).
+    # To help detect –OH groups, add explicit hydrogens.
     mol = Chem.AddHs(mol)
     
+    # Get ring information.
     ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()  # Each ring is a tuple of atom indices.
+    atom_rings = ring_info.AtomRings()
     
-    # STEP 1: Find candidate deoxyribose sugar ring.
-    # We allow either a 5-membered ring (expect 4 carbons + 1 oxygen) or a 4-membered ring (3 carbons + 1 oxygen)
     sugar_candidate = None
-    sugar_reason = "No candidate deoxyribose (or deoxy‐like) sugar ring found."
+    sugar_reason = "No candidate deoxyribose sugar ring found."
+    # STEP 1: Search for a candidate sugar ring.
     for ring in atom_rings:
-        n = len(ring)
-        if n not in (5, 4):
+        # We expect a furanose ring: 5 members (4 carbons, 1 oxygen).
+        if len(ring) != 5:
             continue
-        # Count atoms in the ring.
+        # Count number of carbons and oxygens in the ring.
         c_count = 0
         o_count = 0
         valid_ring = True
@@ -68,59 +69,58 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
             else:
                 valid_ring = False
                 break
-        if not valid_ring:
+        if not valid_ring or c_count != 4 or o_count != 1:
             continue
-        # For a 5-membered ring we expect 4 Cs, 1 O; for a 4-membered ring we expect 3 Cs, 1 O.
-        if (n == 5 and (c_count, o_count) != (4, 1)) or (n == 4 and (c_count, o_count) != (3, 1)):
-            continue
-
-        # Count exocyclic oxygen substituents on ring carbons.
-        exo_o_count = 0
+        
+        # Count hydroxyl substituents on the ring carbons.
+        # (We only consider neighbors not in the ring that are oxygen atoms and have at least one hydrogen attached.)
+        hydroxyl_count = 0
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            # Only consider carbon atoms in the ring.
             if atom.GetSymbol() != "C":
                 continue
             for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
                     continue
                 if nbr.GetSymbol() == "O":
-                    # Only count if oxygen is not part of a carbonyl (i.e. it has a hydrogen attached)
-                    if any(nh.GetSymbol() == "H" for nh in nbr.GetNeighbors()):
-                        exo_o_count += 1
-        # For a deoxyribose sugar (5-membered) we expect typically 1 or 2 exocyclic O; 
-        # for a four-membered sugar analog, we allow a slightly lower count (0 to 2).
-        if (n == 5 and exo_o_count in (1, 2)) or (n == 4 and exo_o_count in (0, 1, 2)):
+                    # Check if this oxygen has any H neighbor.
+                    if any(n.GetSymbol() == "H" for n in nbr.GetNeighbors()):
+                        hydroxyl_count += 1
+        # For a deoxyribose, the only OH on the sugar ring should be that on the 3'-carbon.
+        if hydroxyl_count == 1:
             sugar_candidate = set(ring)
-            sugar_reason = (f"Found candidate sugar ring of size {n} with {c_count} C and {o_count} O, "
-                            f"and {exo_o_count} exocyclic oxygen substituent(s).")
+            sugar_reason = "Found candidate deoxyribose sugar ring (5-membered, 4 C + 1 O, 1 hydroxyl on ring)."
             break
     if sugar_candidate is None:
         return False, sugar_reason
-
-    # STEP 2: Find candidate pyrimidine base.
-    # Look for a 6-membered ring with at least 2 nitrogen atoms
-    # and with evidence of a carbonyl (C=O) group.
+    
+    # STEP 2: Find candidate pyrimidine base rings.
     base_candidate = None
-    base_reason = "No candidate pyrimidine base (6-membered ring with ≥2 N and at least one carbonyl) found."
+    base_reason = "No candidate pyrimidine base found."
     for ring in atom_rings:
         if len(ring) != 6:
             continue
-        atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
-        n_nitrogen = sum(1 for atom in atoms_in_ring if atom.GetSymbol() == "N")
-        if n_nitrogen < 2:
+        # Check that every atom in the ring is aromatic.
+        if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
             continue
+        # Count number of nitrogen atoms.
+        n_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetSymbol() == "N")
+        if n_count != 2:
+            continue
+        
+        # Additionally, verify that at least one ring atom (or its immediate neighbor outside the ring)
+        # carries a carbonyl (C=O). Look over all bonds around ring atoms.
         carbonyl_found = False
-        # For each carbon in the ring see if it is double-bonded to an oxygen.
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
+            # Only consider carbon atoms inside the ring.
             if atom.GetSymbol() != "C":
                 continue
             for bond in atom.GetBonds():
-                # Check if the bond is a double bond.
-                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                # If bond is double and to oxygen and the oxygen is not in the ring, consider it a carbonyl.
+                if bond.GetBondTypeAsDouble() == 2.0:
                     nbr = bond.GetOtherAtom(atom)
-                    if nbr.GetSymbol() == "O":
+                    if nbr.GetSymbol() == "O" and nbr.GetIdx() not in ring:
                         carbonyl_found = True
                         break
             if carbonyl_found:
@@ -129,49 +129,31 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
             continue
         
         base_candidate = set(ring)
-        base_reason = "Found candidate pyrimidine base: 6-membered ring with ≥2 N and a carbonyl group."
+        base_reason = "Found candidate pyrimidine base (6-membered aromatic ring with 2 nitrogens and at least one carbonyl)."
         break
     if base_candidate is None:
         return False, base_reason
-
-    # STEP 3: Check that the sugar and base are connected by a single glycosidic C–N bond.
-    glyco_connections = []
-    for bond in mol.GetBonds():
-        idx1 = bond.GetBeginAtomIdx()
-        idx2 = bond.GetEndAtomIdx()
-        # Connection must be between an atom from sugar and an atom from base.
-        if ((idx1 in sugar_candidate and idx2 in base_candidate) or 
-            (idx2 in sugar_candidate and idx1 in base_candidate)):
-            # And the bond should be between C and N.
-            a1 = mol.GetAtomWithIdx(idx1)
-            a2 = mol.GetAtomWithIdx(idx2)
-            if ((a1.GetSymbol() == "C" and a2.GetSymbol() == "N") or 
-                (a1.GetSymbol() == "N" and a2.GetSymbol() == "C")):
-                glyco_connections.append((idx1, idx2))
-    if len(glyco_connections) != 1:
-        return False, ("Sugar and base are not connected by a single glycosidic C–N bond "
-                       f"(found {len(glyco_connections)} connection(s)).")
     
-    return True, ("Molecule contains a deoxyribose (or deoxy‐like) sugar ring "
-                  f"({sugar_reason}) connected via a glycosidic C–N bond to a pyrimidine base "
-                  f"({base_reason}).")
+    # STEP 3: Check for a glycosidic bond between the sugar candidate and the base candidate.
+    glyco_bond_found = False
+    for bond in mol.GetBonds():
+        a1 = bond.GetBeginAtomIdx()
+        a2 = bond.GetEndAtomIdx()
+        if (a1 in sugar_candidate and a2 in base_candidate) or (a2 in sugar_candidate and a1 in base_candidate):
+            glyco_bond_found = True
+            break
+    if not glyco_bond_found:
+        return False, "Sugar and base are not connected via a glycosidic bond."
+    
+    return True, "Molecule contains a deoxyribose sugar (5-membered, 4 C + 1 O, 1 hydroxyl on ring) connected to a pyrimidine base (6-membered aromatic ring with 2 N and carbonyl)."
 
-# (Optional) Quick testing if run directly.
+# (Optional) Quick testing when run as a script.
 if __name__ == '__main__':
-    test_examples = [
-        # True positives:
-        ("S(N1C(=O)N(C=C(C1=O)C)[C@@H]2O[C@H](CO)[C@H](C2)O)N", "Thymidine-3-thioamine"),
-        ("O1[C@@H](N2C(O)C(O)(C(=O)NC2=O)C)C[C@H](O)[C@H]1CO", "Thymidine glycol"),
-        ("[C@@H]1(N2C(NC(=O)C(=C2)C(=O)O)=O)O[C@H](CO)[C@H](C1)O", "5-carboxy-2'-deoxyuridine"),
-        ("Cc1cn([C@H]2C[C@H](O)[C@@H](CO)O2)c(=O)nc1N", "5-methyl-2'-deoxycytidine"),
-        ("Cc1cn([C@H]2C[C@H](O)[C@@H](CO)O2)c(=O)[nH]c1=O", "thymidine"),
-        ("N1(C(NC(C(=C1)CCN)=O)=O)[C@H]2C[C@@H]([C@H](O2)CO)O", "5-(2-aminoethyl)-2'-deoxyuridine"),
-        ("OC[C@H]1O[C@H](C[C@@H]1O)n1cc(Br)c(=O)[nH]c1=O", "5-bromo-2'-deoxyuridine"),
-        ("[3H]Cc1cn([C@H]2C[C@H](O)[C@@H](CO)O2)c(=O)[nH]c1=O", "alpha-tritiated thymidine"),
-        # Previously missed examples:
-        ("FC1=CN(C2OC(CC2)CO)C(=O)N=C1N", "Endalin"),
-        ("Nc1ccn([C@H]2CC[C@@H](CO)O2)c(=O)n1", "zalcitabine"),
+    # Examples taken from the problem statement.
+    examples = [
+        "Cc1cn([C@H]2C[C@H](O)[C@@H](CO)O2)c(=O)[nH]c1=O",  # thymidine
+        "OC[C@H]1O[C@H](C[C@@H]1O)n1ccc(=O)[nH]c1=O"         # 2'-deoxyuridine
     ]
-    for smi, name in test_examples:
+    for smi in examples:
         res, reason = is_pyrimidine_deoxyribonucleoside(smi)
-        print(f"Name: {name}\nSMILES: {smi}\nResult: {res}\nReason: {reason}\n{'-'*60}")
+        print(f"SMILES: {smi}\nResult: {res}, Reason: {reason}\n")
