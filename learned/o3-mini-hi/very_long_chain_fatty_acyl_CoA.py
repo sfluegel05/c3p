@@ -4,54 +4,56 @@ Classifies: CHEBI:61910 very long-chain fatty acyl-CoA
 """
 Classifies: Very long‐chain fatty acyl‐CoA
 Definition: A fatty acyl‐CoA in which the fatty acyl group (the acyl chain attached via a thioester bond)
-has a chain length greater than C22.
+has a chain length greater than C22 (i.e. 23 or more carbon atoms in the acyl fragment).
+Our strategy:
+  1. Check for the thioester group using C(=O)[S] SMARTS.
+  2. Check for a CoA moiety by looking for an adenine fragment.
+  3. Mark the carbonyl carbon, break (fragment) the molecule at the bond to sulfur and
+     then count the number of carbon atoms in the fragment that contains that marked atom.
+  4. If the count is at least 23, then we classify the acyl-CoA as very long-chain.
 """
+
 from rdkit import Chem
 
 def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     """
     Determines if a molecule is a very long-chain fatty acyl-CoA based on its SMILES string.
-    
     Criteria:
-      1. Must have a thioester group (a carbonyl carbon attached to a sulfur).
-      2. Must contain a CoA-related moiety. We check for the adenine substructure using two patterns,
-         since the representation can vary.
-      3. The fatty acyl chain (the chain attached to the carbonyl carbon but not including the CoA part)
-         must have more than 22 carbon atoms.
+      1. The molecule must have a thioester group (a carbonyl bonded to a sulfur atom).
+      2. The molecule must contain a CoA moiety (detected via adenine substructure patterns).
+      3. After “cutting” the molecule at the thioester bond (between the carbonyl carbon and sulfur),
+         the fatty acyl chain (i.e. the fragment containing the carbonyl carbon) must contain at least 23 carbons.
     
     Args:
         smiles (str): SMILES string representing the molecule.
     
     Returns:
-        bool: True if the molecule meets the criteria, False otherwise.
-        str: Explanation for the classification result.
+        bool, str: (True, explanation) if the molecule meets the criteria,
+                   (False, explanation) otherwise.
     """
     # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # STEP 1: Search for a thioester group.
-    # Look for a pattern: a carbon (atomic number 6) double-bonded to oxygen and bonded to a sulfur.
-    thioester_smarts = "[#6](=O)[S]"
-    thioester = Chem.MolFromSmarts(thioester_smarts)
-    if thioester is None:
-        return False, "Error in thioester SMARTS definition"
-    thioester_matches = mol.GetSubstructMatches(thioester)
+    # STEP 1: Look for a thioester group.
+    # Pattern: a carbonyl carbon (C=O) directly bonded to a sulfur atom.
+    thioester_smarts = "C(=O)[S]"  
+    thioester_pat = Chem.MolFromSmarts(thioester_smarts)
+    if thioester_pat is None:
+        return False, "Error creating thioester SMARTS pattern"
+    thioester_matches = mol.GetSubstructMatches(thioester_pat)
     if not thioester_matches:
         return False, "No thioester group found; not an acyl-CoA"
     
-    # Use the first found thioester substructure. In the match, the first element is the carbonyl carbon,
-    # the second element is the attached sulfur.
-    thioester_match = thioester_matches[0]
-    carbonyl_idx = thioester_match[0]
-    sulfur_idx = thioester_match[1]
+    # For simplicity, use the first found match.
+    # According to our SMARTS, match[0] is the carbonyl carbon and match[1] is the sulfur.
+    carbonyl_idx, sulfur_idx = thioester_matches[0][0], thioester_matches[0][1]
     
-    # STEP 2: Verify presence of a CoA moiety.
-    # CoA contains an adenine group. Many SMILES of acyl-CoA include an adenine-like fragment.
-    # We now try two patterns, to catch variations in atom case or substituents.
-    adenine_smarts1 = "n1cnc2c(N)ncnc12"   # matches fragments like: n1cnc2c(N)ncnc12
-    adenine_smarts2 = "n1cnc2ncnc12"         # alternative pattern if the extra amine is not shown
+    # STEP 2: Check for CoA moiety.
+    # We look for adenine fragments which are common in CoA.
+    adenine_smarts1 = "n1cnc2c(N)ncnc12"
+    adenine_smarts2 = "n1cnc2ncnc12"
     adenine_pat1 = Chem.MolFromSmarts(adenine_smarts1)
     adenine_pat2 = Chem.MolFromSmarts(adenine_smarts2)
     if adenine_pat1 is None or adenine_pat2 is None:
@@ -59,45 +61,52 @@ def is_very_long_chain_fatty_acyl_CoA(smiles: str):
     if not (mol.HasSubstructMatch(adenine_pat1) or mol.HasSubstructMatch(adenine_pat2)):
         return False, "No CoA moiety detected (adenine fragment missing)"
     
-    # STEP 3: Isolate the fatty acyl chain.
-    # We start from the carbonyl carbon and perform a DFS. We count only carbon atoms and avoid
-    # traversing into the CoA part. Specifically, from the carbonyl carbon, we will not go to:
-    #   - The sulfur (which leads to the CoA moiety)
-    #   - The oxygen that is double-bonded (the carbonyl oxygen).
-    acyl_chain_atoms = set()  # indices of carbon atoms belonging to the acyl chain
-    visited = set()
+    # STEP 3: Mark the carbonyl atom and break the thioester bond.
+    carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
+    # Mark it with a property so we can trace it after fragmentation.
+    carbonyl_atom.SetProp("is_acyl", "1")
     
-    def dfs(atom_idx):
-        visited.add(atom_idx)
-        atom = mol.GetAtomWithIdx(atom_idx)
-        # If the atom is carbon, add it to the chain.
-        if atom.GetAtomicNum() == 6:
-            acyl_chain_atoms.add(atom_idx)
-        # Traverse neighbors.
-        for nbr in atom.GetNeighbors():
-            nbr_idx = nbr.GetIdx()
-            if nbr_idx in visited:
-                continue
-            # At the starting carbonyl carbon avoid moving toward the sulfur or the carbonyl oxygen.
-            if atom_idx == carbonyl_idx:
-                bond = mol.GetBondBetweenAtoms(atom_idx, nbr_idx)
-                if nbr_idx == sulfur_idx:
-                    continue  # avoid CoA branch via sulfur
-                # Check if the neighbor is the carbonyl oxygen (double-bonded).
-                if nbr.GetAtomicNum() == 8 and bond is not None and bond.GetBondTypeAsDouble() == 2.0:
-                    continue
-            # Only continue DFS if the neighbor is a carbon. This helps prevent entering heterocyclic rings.
-            if nbr.GetAtomicNum() == 6:
-                dfs(nbr_idx)
+    # Find the bond between the carbonyl carbon and the sulfur.
+    bond = mol.GetBondBetweenAtoms(carbonyl_idx, sulfur_idx)
+    if bond is None:
+        return False, "Thioester bond not found between carbonyl and sulfur"
+    bond_idx = bond.GetIdx()
+
+    # We'll fragment the molecule by breaking the thioester bond.
+    # The resulting molecule will have dummy atoms (atomic number 0) at the break points.
+    try:
+        frag_mol = Chem.FragmentOnBonds(mol, [bond_idx], addDummies=True)
+    except Exception as e:
+        return False, f"Error fragmenting molecule: {str(e)}"
     
-    dfs(carbonyl_idx)
-    chain_length = len(acyl_chain_atoms)
+    # Get the fragments (as separate molecules).
+    frags = Chem.GetMolFrags(frag_mol, asMols=True, sanitizeFrags=True)
+    if not frags:
+        return False, "No fragments obtained after bond breaking"
     
-    # STEP 4: Verify that the fatty acyl chain has more than 22 carbons.
-    if chain_length <= 22:
-        return False, f"Fatty acyl chain has {chain_length} carbons; must be greater than 22"
-    else:
-        return True, f"Fatty acyl chain has {chain_length} carbons, which is >22"
+    # Locate the fragment that contains the acyl chain.
+    # It must have the marked carbonyl atom (which we set the property "is_acyl").
+    acyl_frag = None
+    for frag in frags:
+        for atom in frag.GetAtoms():
+            if atom.HasProp("is_acyl") and atom.GetProp("is_acyl") == "1":
+                acyl_frag = frag
+                break
+        if acyl_frag is not None:
+            break
+    
+    if acyl_frag is None:
+        return False, "Could not isolate fatty acyl fragment from the thioester bond"
+
+    # STEP 4: Count the number of carbon atoms in the acyl fragment.
+    # Dummy atoms (atomic number 0) will be skipped.
+    carbon_count = sum(1 for atom in acyl_frag.GetAtoms() if atom.GetAtomicNum() == 6)
+    
+    # For a fatty acyl chain having a chain length > C22, we require at least 23 carbon atoms.
+    if carbon_count < 23:
+        return False, f"Fatty acyl chain has {carbon_count} carbons; must be at least 23"
+    
+    return True, f"Fatty acyl chain has {carbon_count} carbons, which is >=23"
 
 # (Optional) Example usage:
 # test_smiles = ("CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC\\C=C\\C(=O)SCCNC(=O)CCNC(=O)"
