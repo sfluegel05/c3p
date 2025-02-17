@@ -3,37 +3,41 @@ Classifies: CHEBI:36092 clavulone
 """
 """
 Classifies: Clavulone – a class of esterified prostanoids obtained from marine corals.
-Heuristic criteria:
-  1. The molecule must contain a 5–membered (cyclopentenone‐type) ring that has:
-       - exactly one exocyclic carbonyl group (an oxygen double‐bonded to a ring atom, but not within the ring)
-       - exactly one double bond connecting ring atoms.
-  2. At least one ester substituent – defined as an oxygen (bonded by a single bond to a ring atom) 
-     that is further attached to a carbon which itself is double‐bonded to an oxygen – must be attached 
-     to one of the ring atoms.
+Heuristic criteria (improved):
+  1. The molecule must contain at least one 5‑membered ring (candidate cyclopentenone) that has:
+       • exactly one exocyclic carbonyl group (an oxygen double‐bonded to a ring atom; outside the ring),
+       • exactly one double bond connecting two ring atoms,
+       • and the candidate ring should not be fused with a second ring.
+       • Also, the ring atom bearing the exocyclic carbonyl is required to participate in the ring’s double bond (suggesting conjugation).
+  2. The molecule must contain at least one ester substituent. Here, an ester is defined by the substructure
+       “[#6]-[OX2]-[CX3](=O)[#6]”. Furthermore, at least one such ester must be “close” (graph distance ≤2 bonds)
+       to the candidate ring.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdmolops
 
 def is_clavulone(smiles: str):
     """
     Determines if a molecule qualifies as a clavulone (esterified prostanoid) based on its SMILES string.
 
-    The criteria are:
-      1. The molecule contains at least one 5‐membered ring such that:
-           - exactly one exocyclic carbonyl is attached to a ring atom (an oxygen double‐bonded 
-             to a ring atom from outside the ring)
-           - exactly one double bond exists between ring atoms.
-      2. At least one ester substituent is found attached to one of the ring atoms. Here an ester substituent
-         is defined as an oxygen (attached by a single bond to the ring) that is connected to a carbon which,
-         in turn, is double‐bonded to an oxygen.
-
+    The criteria (heuristic) are:
+      1. The molecule contains at least one 5‐membered ring that:
+           - has exactly one exocyclic carbonyl (an oxygen double‐bonded to a ring atom, where the O is not in the ring),
+           - has exactly one double bond between atoms in the ring,
+           - and the atom that bears the exocyclic carbonyl also is part of that internal double bond.
+           - In addition, this candidate ring should not be fused with another ring.
+      2. The molecule contains at least one ester substituent – defined as a substructure matching
+         “[#6]-[OX2]-[CX3](=O)[#6]” – that is “close” (graph distance ≤2) to one of the candidate ring atoms.
+    
     Args:
-        smiles (str): SMILES string for the molecule
-
+        smiles (str): SMILES string for the molecule.
+    
     Returns:
-        bool: True if the molecule satisfies our clavulone criteria, False otherwise.
+        bool: True if the molecule satisfies our clavulone heuristic.
         str : Explanation for the decision.
     """
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
@@ -41,92 +45,96 @@ def is_clavulone(smiles: str):
     ring_info = mol.GetRingInfo()
     all_rings = ring_info.AtomRings()
     candidate_ring = None
-
-    # Loop over all rings to find a candidate which is 5-membered
+    candidate_ring_idx = None
+    # Loop over 5-membered rings and check for a cyclopentenone-type candidate.
     for ring in all_rings:
         if len(ring) != 5:
             continue
 
-        # 1a. Count exocyclic carbonyls for atoms in ring.
+        # 1a. Count exocyclic carbonyl groups for atoms in ring.
         exo_carbonyl_count = 0
+        # Record which ring atoms bear an exocyclic carbonyl.
+        carbonyl_bearing_atoms = []
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
-            # look at neighbors not in ring
             for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
                     continue
-                # if the neighbor is oxygen and attached by a double bond (C=O)
+                # Check for oxygen attached by a double bond.
                 if nbr.GetAtomicNum() == 8:
                     bond = mol.GetBondBetweenAtoms(atom_idx, nbr.GetIdx())
-                    if bond and bond.GetBondType() == Chem.BondType.DOUBLE:
+                    if bond is not None and bond.GetBondType() == Chem.BondType.DOUBLE:
                         exo_carbonyl_count += 1
-        
+                        carbonyl_bearing_atoms.append(atom_idx)
         if exo_carbonyl_count != 1:
             continue
 
         # 1b. Count internal (ring–ring) double bonds.
         ring_atom_set = set(ring)
         internal_double_count = 0
-        # Only consider bonds where both atoms are in the ring:
+        # Also record bonds (as pairs of indices) that are double.
+        double_bonds = []
         for bond in mol.GetBonds():
             a1 = bond.GetBeginAtomIdx()
             a2 = bond.GetEndAtomIdx()
             if a1 in ring_atom_set and a2 in ring_atom_set:
                 if bond.GetBondType() == Chem.BondType.DOUBLE:
                     internal_double_count += 1
+                    double_bonds.append((a1, a2))
         if internal_double_count != 1:
             continue
 
-        # Found a candidate ring that seems cyclopentenone‐like.
+        # 1c. Check for conjugation:
+        # The ring atom bearing the exocyclic carbonyl must be one end of the internal double bond.
+        conjugated = False
+        for db in double_bonds:
+            if carbonyl_bearing_atoms[0] in db:
+                conjugated = True
+                break
+        if not conjugated:
+            continue
+
+        # 1d. Check that the candidate ring is not fused with any other ring.
+        fused = False
+        for other_ring in all_rings:
+            if other_ring == ring:
+                continue
+            # If the intersection between rings has more than one atom, consider it fused.
+            if len(set(ring).intersection(set(other_ring))) > 1:
+                fused = True
+                break
+        if fused:
+            continue
+
+        # This ring meets our cyclopentenone-type criteria.
         candidate_ring = ring
+        candidate_ring_idx = set(ring)
         break
 
     if candidate_ring is None:
-        msg = ("No suitable cyclopentenone-type ring found: "
-               "need a 5-membered ring with exactly one exocyclic carbonyl "
-               "and one internal double bond.")
+        msg = ("No suitable cyclopentenone-type ring found: need a 5-membered ring with exactly one exocyclic carbonyl "
+               "and one internal double bond (with conjugation) and not fused with another ring.")
         return False, msg
 
-    # 2. Look for at least one ester substituent attached to any candidate ring atom.
+    # 2. Look for at least one ester substituent.
+    # Define an ester SMARTS pattern:
+    ester_smarts = "[#6]-[OX2]-[CX3](=O)[#6]"
+    ester_query = Chem.MolFromSmarts(ester_smarts)
+    if ester_query is None:
+        return False, "Error generating ester SMARTS pattern"
+    
+    ester_matches = mol.GetSubstructMatches(ester_query)
     ester_found = False
-    for atom_idx in candidate_ring:
-        ring_atom = mol.GetAtomWithIdx(atom_idx)
-        for nbr in ring_atom.GetNeighbors():
-            # Only consider neighbors not part of the candidate ring.
-            if nbr.GetIdx() in candidate_ring:
-                continue
-            # The ester oxygen is expected to be an oxygen atom, connected by a single bond.
-            if nbr.GetAtomicNum() != 8:
-                continue
-            bond = mol.GetBondBetweenAtoms(atom_idx, nbr.GetIdx())
-            if not bond or bond.GetBondType() != Chem.BondType.SINGLE:
-                continue
-            # Check the connectivity of this oxygen:
-            # For an ester substituent, the oxygen should have exactly 2 neighbors (one is the ring atom).
-            if nbr.GetDegree() < 2:
-                continue
-            # Find the neighbor (other than our ring atom) attached to this oxygen.
-            for oxy_nbr in nbr.GetNeighbors():
-                if oxy_nbr.GetIdx() == atom_idx:
-                    continue
-                # That neighbor should be a carbon (the carbonyl carbon of the ester).
-                if oxy_nbr.GetAtomicNum() != 6:
-                    continue
-                bond2 = mol.GetBondBetweenAtoms(nbr.GetIdx(), oxy_nbr.GetIdx())
-                if not bond2 or bond2.GetBondType() != Chem.BondType.SINGLE:
-                    continue
-                # Check that this carbon is double-bonded to an oxygen (i.e. forming a carbonyl).
-                has_carbonyl = False
-                for c_nbr in oxy_nbr.GetNeighbors():
-                    if c_nbr.GetIdx() == nbr.GetIdx():
-                        continue
-                    if c_nbr.GetAtomicNum() != 8:
-                        continue
-                    bond3 = mol.GetBondBetweenAtoms(oxy_nbr.GetIdx(), c_nbr.GetIdx())
-                    if bond3 and bond3.GetBondType() == Chem.BondType.DOUBLE:
-                        has_carbonyl = True
-                        break
-                if has_carbonyl:
+    # For each ester match, check if any atom in the match is within graph distance 2 of any candidate ring atom.
+    for match in ester_matches:
+        # match is a tuple of atom indices corresponding to the pattern.
+        # We want to check, for example, the oxygen in the ester (pattern position 1)
+        for atom_match in match:
+            for ring_atom in candidate_ring:
+                # Get the shortest path (list of atom indices) between ring_atom and the ester atom.
+                path = rdmolops.GetShortestPath(mol, ring_atom, atom_match)
+                # The number of bonds equals (len(path)-1)
+                if len(path) - 1 <= 2:
                     ester_found = True
                     break
             if ester_found:
@@ -135,17 +143,20 @@ def is_clavulone(smiles: str):
             break
 
     if not ester_found:
-        msg = "Candidate cyclopentenone-type ring found but no ester substituent attached to it."
+        msg = ("Candidate cyclopentenone-type ring found but no ester substituent found in close proximity "
+               "(graph distance ≤2) to the ring.")
         return False, msg
 
-    # If we reached here, we have met our heuristic.
-    return True, ("Contains a cyclopentenone-type 5-membered ring with one exocyclic carbonyl "
-                   "and one internal double bond plus an ester substituent attached to the ring – "
-                   "consistent with clavulone.")
+    # If we arrived here, the molecule meets our heuristic for clavulone.
+    msg = ("Contains a cyclopentenone-type 5-membered ring (isolated and conjugated to an exocyclic carbonyl) "
+           "plus an ester substituent in close proximity – consistent with clavulone.")
+    return True, msg
+
 
 # Example usage (for testing):
 if __name__ == "__main__":
-    # Here is one test with punaglandin 2 (a known clavulone example).
-    smiles_example = "ClC=1C(=O)[C@@]([C@@](O)(C/C=C\\CCCCC)C1)([C@@H](OC(=O)C)[C@H](OC(=O)C)[C@@H](OC(=O)C)CCCC(OC)=O)[H]"
+    # Testing with one of the clavulone examples: punaglandin 2
+    smiles_example = ("ClC=1C(=O)[C@@]([C@@](O)(C/C=C\\CCCCC)C1)"
+                      "([C@@H](OC(=O)C)[C@H](OC(=O)C)[C@@H](OC(=O)C)CCCC(OC)=O)[H]")
     result, reason = is_clavulone(smiles_example)
     print(result, reason)
