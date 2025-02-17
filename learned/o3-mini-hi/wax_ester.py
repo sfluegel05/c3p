@@ -2,13 +2,12 @@
 Classifies: CHEBI:10036 wax ester
 """
 """
-Classifies: Wax ester, defined as a fatty acid ester resulting from 
-the condensation of the carboxy group of a fatty acid with the alcoholic hydroxy group 
-of a fatty alcohol.
-Improved version: rejects molecules with additional ester groups and ensures that 
-both fragments are long unfunctionalized aliphatic chains.
+Classifies: Wax ester – defined as a fatty acid ester resulting from the condensation 
+of the carboxy group of a fatty acid with the alcoholic hydroxy group of a fatty alcohol.
+This improved version deduplicates ester matches and ensures that the overall molecule 
+contains only C and O (i.e. unfunctionalized aliphatic fragments), and that one candidate ester 
+bond fragments the molecule into two pieces with long, unfunctionalized aliphatic chains.
 """
-
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
@@ -16,15 +15,17 @@ from rdkit.Chem import rdMolDescriptors
 def is_wax_ester(smiles: str):
     """
     Determines if a molecule is a wax ester based on its SMILES string.
-    A wax ester is produced by the condensation of a fatty acid (which supplies the carbonyl group)
-    with a fatty alcohol, forming a single ester bond. Both resulting fragments should have long 
-    unfunctionalized (aliphatic) chains.
-    
+    A wax ester is produced by condensation of a fatty acid (providing the carbonyl)
+    with a fatty alcohol, yielding at least one ester bond that connects two long aliphatic fragments.
+    The algorithm requires that the entire molecule consists only of carbon and oxygen 
+    (apart from dummy atoms) and that at least one candidate ester bond (after deduplication)
+    produces a fatty acid fragment (>=12 aliphatic carbons) and a fatty alcohol fragment (>= 8 aliphatic carbons).
+
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is a wax ester, False otherwise.
+        bool: True if the molecule qualifies as a wax ester, False otherwise.
         str: Reason for classification.
     """
     # Parse the SMILES string.
@@ -32,93 +33,121 @@ def is_wax_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for a single ester bond using SMARTS.
+    # Ensure the molecule contains only C and O (and dummy atoms, atomic number 0).
+    for atom in mol.GetAtoms():
+        atnum = atom.GetAtomicNum()
+        if atnum not in (0, 6, 8):
+            return False, f"Molecule contains atom with atomic number {atnum} which is not allowed for a wax ester"
+            
+    # Define the ester SMARTS. (This pattern may match the carbonyl and two oxygen atoms.)
     ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2]")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    all_matches = mol.GetSubstructMatches(ester_pattern)
+    if not all_matches:
+        return False, "No ester group matching [CX3](=O)[OX2] found."
+
+    # Deduplicate ester matches by collecting the actual ester bond.
+    # For each match tuple (carbonyl carbon, double-bond O, linking alcohol O), retrieve the bond between the carbonyl carbon and linking oxygen.
+    candidate_bond_indices = set()
+    for match in all_matches:
+        carbonyl_idx, dbl_ox_idx, alcohol_ox_idx = match
+        bond = mol.GetBondBetweenAtoms(carbonyl_idx, alcohol_ox_idx)
+        if bond is not None:
+            candidate_bond_indices.add(bond.GetIdx())
+            
+    if not candidate_bond_indices:
+        return False, "No valid ester bond found from substructure matching."
     
-    # Reject if not exactly one ester group is found.
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester matches; expected exactly 1 for a wax ester."
-    
-    # Unpack the match: (carbonyl carbon, double-bonded oxygen, and linking oxygen)
-    carbonyl_idx, dbl_ox_idx, alcohol_ox_idx = ester_matches[0]
-    
-    # Verify the bond between the carbonyl carbon and the alcohol oxygen exists.
-    bond = mol.GetBondBetweenAtoms(carbonyl_idx, alcohol_ox_idx)
-    if bond is None:
-        return False, "No bond found between carbonyl carbon and ester oxygen."
-    bond_idx = bond.GetIdx()
-    
-    # Fragment the molecule by breaking the ester bond.
-    frag_mol = Chem.FragmentOnBonds(mol, [bond_idx], addDummies=True)
-    frags = Chem.GetMolFrags(frag_mol, asMols=True, sanitizeFrags=True)
-    if len(frags) != 2:
-        return False, f"Fragmentation yielded {len(frags)} fragments; expected 2 fragments."
-    
-    # Define a helper to count aliphatic (non-dummy, non-aromatic) carbons.
+    # Helper: count non-aromatic aliphatic carbons in a fragment.
     def count_aliphatic_carbons(fragment):
         count = 0
         for atom in fragment.GetAtoms():
-            # Exclude dummy atoms (atomic number 0).
-            if atom.GetAtomicNum() != 6:
-                continue
-            # Exclude aromatic carbons.
-            if atom.GetIsAromatic():
-                continue
-            count += 1
+            # Only count carbon atoms, ignore dummy atoms (atomic num 0)
+            if atom.GetAtomicNum() == 6 and not atom.GetIsAromatic():
+                count += 1
         return count
+
+    # Helper: check if fragment contains only allowed atoms (C and O).
+    def is_fragment_aliphatic(fragment):
+        for atom in fragment.GetAtoms():
+            if atom.GetAtomicNum() not in (0, 6, 8):
+                return False
+        return True
     
-    # Define a SMARTS to detect a carbonyl (for identifying the acid fragment).
+    # Define SMARTS to identify a carbonyl group (acid fragment indicator)
     acid_pattern = Chem.MolFromSmarts("[CX3](=O)")
     
-    frag_acyl = None
-    frag_alcohol = None
-    for frag in frags:
-        if frag.HasSubstructMatch(acid_pattern):
-            frag_acyl = frag
-        else:
-            frag_alcohol = frag
-    # If assignment failed, try assigning by dummy atoms:
-    if frag_acyl is None or frag_alcohol is None:
-        for frag in frags:
-            # The fatty alcohol fragment should be the one that has a dummy atom (due to fragmentation)
-            if any(atom.GetAtomicNum() == 0 for atom in frag.GetAtoms()):
-                frag_alcohol = frag
-            else:
-                frag_acyl = frag
-                
-    if frag_acyl is None or frag_alcohol is None:
-        return False, "Could not identify both fatty acid and fatty alcohol fragments."
-    
-    acid_carbons = count_aliphatic_carbons(frag_acyl)
-    alcohol_carbons = count_aliphatic_carbons(frag_alcohol)
-    
-    # Define minimum thresholds for the two fragments 
-    # (typical wax esters have a long fatty acid chain and a long fatty alcohol chain).
+    # Minimum required aliphatic carbons in the fragments.
     min_acid_carbons = 12
     min_alcohol_carbons = 8
-    
-    if acid_carbons < min_acid_carbons:
-        return False, f"Fatty acid fragment too short ({acid_carbons} aliphatic carbons; minimum {min_acid_carbons} required)."
-    if alcohol_carbons < min_alcohol_carbons:
-        return False, f"Fatty alcohol fragment too short ({alcohol_carbons} aliphatic carbons; minimum {min_alcohol_carbons} required)."
-    
-    # Optionally, check that the fragments do not contain aromatic atoms (which would indicate non-aliphatic groups).
-    def contains_aromatic(fragment):
-        return any(atom.GetAtomicNum() == 6 and atom.GetIsAromatic() for atom in fragment.GetAtoms())
-    
-    if contains_aromatic(frag_acyl):
-        return False, "Fatty acid fragment contains aromatic groups."
-    if contains_aromatic(frag_alcohol):
-        return False, "Fatty alcohol fragment contains aromatic groups."
-    
-    # Check overall molecular weight.
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:
-        return False, f"Molecular weight too low ({mol_wt:.1f} Da) to be a typical wax ester."
-    
-    return True, f"Single ester group found with fatty acid fragment ({acid_carbons} aliphatic C) and fatty alcohol fragment ({alcohol_carbons} aliphatic C)."
-    
+
+    # Now iterate candidate ester bond(s) to see if any candidate yields suitable fragments.
+    reasons = []
+    for bond_idx in candidate_bond_indices:
+        # Break the molecule at this bond
+        try:
+            frag_mol = Chem.FragmentOnBonds(mol, [bond_idx], addDummies=True)
+        except Exception as e:
+            reasons.append(f"Fragmentation failed at bond {bond_idx}: {str(e)}")
+            continue
+            
+        frags = Chem.GetMolFrags(frag_mol, asMols=True, sanitizeFrags=True)
+        if len(frags) != 2:
+            reasons.append(f"Fragmentation yielded {len(frags)} fragments (expected 2) for bond {bond_idx}.")
+            continue
+
+        frag_acid = None
+        frag_alcohol = None
+        # Identify fragments: one should contain the carbonyl.
+        for frag in frags:
+            if frag.HasSubstructMatch(acid_pattern):
+                frag_acid = frag
+            else:
+                frag_alcohol = frag
+        # If not assigned by carbonyl pattern, try to assign by checking dummy atoms.
+        if frag_acid is None or frag_alcohol is None:
+            for frag in frags:
+                has_dummy = any(atom.GetAtomicNum() == 0 for atom in frag.GetAtoms())
+                if has_dummy:
+                    frag_alcohol = frag
+                else:
+                    frag_acid = frag
+        
+        if frag_acid is None or frag_alcohol is None:
+            reasons.append(f"Could not clearly identify fatty acid and fatty alcohol fragments for bond {bond_idx}.")
+            continue
+
+        # Check that both fragments contain only allowed atoms.
+        if not is_fragment_aliphatic(frag_acid):
+            reasons.append("Fatty acid fragment contains atoms other than C and O.")
+            continue
+        if not is_fragment_aliphatic(frag_alcohol):
+            reasons.append("Fatty alcohol fragment contains atoms other than C and O.")
+            continue
+
+        acid_carbons = count_aliphatic_carbons(frag_acid)
+        alcohol_carbons = count_aliphatic_carbons(frag_alcohol)
+
+        # Check minimum count criteria.
+        if acid_carbons < min_acid_carbons:
+            reasons.append(f"Fatty acid fragment too short ({acid_carbons} aliphatic C; need >= {min_acid_carbons}).")
+            continue
+        if alcohol_carbons < min_alcohol_carbons:
+            reasons.append(f"Fatty alcohol fragment too short ({alcohol_carbons} aliphatic C; need >= {min_alcohol_carbons}).")
+            continue
+
+        # Optionally check that overall molecular weight is in the typical range for wax esters.
+        mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+        if mol_wt < 300:
+            reasons.append(f"Molecular weight too low ({mol_wt:.1f} Da).")
+            continue
+
+        # If we reach here, we accept this candidate ester bond.
+        return True, (f"Candidate ester bond (bond idx {bond_idx}) splits molecule into a fatty acid fragment "
+                      f"with {acid_carbons} aliphatic C and a fatty alcohol fragment with {alcohol_carbons} aliphatic C.")
+        
+    # If we iterated through all candidate ester bonds and none fit, report the reasons.
+    return False, "Wax ester not detected: " + " | ".join(reasons)
+
 # Example usage:
 # result, reason = is_wax_ester("CCCCCCCCCCCCCCCC(=O)OCCCCCCCCC")
 # print(result, reason)
