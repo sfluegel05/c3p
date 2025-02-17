@@ -3,143 +3,201 @@ Classifies: CHEBI:17135 long-chain fatty alcohol
 """
 """
 Classifies: Long-chain fatty alcohol
-Definition: A fatty alcohol with a contiguous carbon chain of length C13–C22 (relaxed to C12 if rings are present)
-that carries at least one hydroxyl (–OH) group (not part of a carboxylic acid) and does not contain extra acid functionality.
+Definition: A fatty alcohol with a carbon chain length ranging from C13 to C22.
+The structure should have a contiguous (acyclic, i.e. through non‐ring bonds) 
+carbon chain in that range that carries at least one hydroxyl group (–OH) 
+which is not part of a carboxylic acid.
 Additional heuristics:
-  – Overall molecular weight must be below ~500 Da.
-  – The candidate chain should account for most of the molecule’s carbon atoms (~80%).
+  – Overall molecular weight should be below ~500 Da.
+  – The candidate chain should account for most of the (acyclic) carbon atoms.
+  – Molecules containing carboxylic acid groups are rejected.
 Note: This heuristic method is approximate.
 """
+
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
     Determines if a molecule qualifies as a long-chain fatty alcohol.
-    It demands that (a) the molecular weight is below 500 Da,
-    (b) the molecule does not have carboxylic acid/carboxylate groups,
-    (c) there is a long contiguous carbon chain (as measured by the longest simple path in the carbon network)
-        of length between 13 and 22 (or lower bound of 12 if rings are present),
-    (d) that chain covers at least 80% of the total carbons,
-    and (e) at least one carbon on the candidate chain bears a valid hydroxyl group.
+    It requires that the molecule has a contiguous chain of carbons (via non-ring bonds)
+    with a length between 13 and 22, that chain includes at least one –OH group not part 
+    of a carboxylic acid, the overall molecular weight is <500 Da, and the chain dominates 
+    the acyclic carbon skeleton.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule qualifies as a long-chain fatty alcohol, False otherwise.
-        str: Explanation for the classification decision.
+        bool: True if molecule qualifies as a long-chain fatty alcohol, False otherwise.
+        str: Explanation or reason for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Reject molecules with a high molecular weight.
+    # Reject if molecular weight is too high
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt > 500:
         return False, f"Molecular weight ({mol_wt:.1f} Da) too high for a simple long-chain fatty alcohol"
     
-    # Work on a version with explicit hydrogens.
+    # Create an explicit-hydrogens copy to better judge –OH groups.
     molH = Chem.AddHs(mol)
     
-    # Reject if the molecule contains a carboxylic acid group.
-    # SMARTS for acid: either protonated [CX3](=O)[OX2H] or deprotonated [CX3](=O)[O-]
+    # Pre-filter: reject molecules containing carboxylic acid groups.
+    # SMARTS for carboxylic acid: a carbon double bonded to oxygen and bonded to an -OH.
     acid_smarts = Chem.MolFromSmarts("[CX3](=O)[OX2H]")
-    acid_smarts2 = Chem.MolFromSmarts("[CX3](=O)[O-]")
-    if (acid_smarts and molH.HasSubstructMatch(acid_smarts)) or (acid_smarts2 and molH.HasSubstructMatch(acid_smarts2)):
-        return False, "Contains a carboxylic acid group (or carboxylate) which is not allowed in a simple fatty alcohol"
+    if acid_smarts is not None and molH.HasSubstructMatch(acid_smarts):
+        return False, "Contains a carboxylic acid group which is not allowed in a simple fatty alcohol"
     
-    # Build the complete carbon graph (all C atoms, all C–C bonds regardless of ring membership)
-    carbon_nodes = {}
+    # Helper function: Check if an oxygen (in molH) is acidic.
+    def is_acidic_O(oxygen):
+        # Must be oxygen with at least one bound hydrogen.
+        if oxygen.GetAtomicNum() != 8:
+            return False
+        if not any(neigh.GetAtomicNum() == 1 for neigh in oxygen.GetNeighbors()):
+            return False
+        # Look at each neighbor carbon; if that carbon is double bonded to another O then mark it acidic.
+        for nbr in oxygen.GetNeighbors():
+            if nbr.GetAtomicNum() == 6:
+                for bond in nbr.GetBonds():
+                    if bond.GetBondTypeAsDouble() == 2.0:
+                        other = bond.GetOtherAtom(nbr)
+                        if other.GetAtomicNum() == 8:
+                            return True
+        return False
+
+    # Build a connectivity graph of carbon atoms (all carbons)
+    # but only use bonds that are not part of a ring.
+    carbon_nodes = {}  # map: atom index -> atom
     for atom in molH.GetAtoms():
         if atom.GetAtomicNum() == 6:
             carbon_nodes[atom.GetIdx()] = atom
-    if not carbon_nodes:
-        return False, "No carbon atoms for chain analysis."
-        
-    # Build graph: For every bond between two carbon atoms, add an undirected edge.
+    
+    # Build graph: edges only if bond is between two carbons and bond.IsInRing() is False.
     carbon_graph = {idx: [] for idx in carbon_nodes}
     for bond in molH.GetBonds():
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
         if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
-            i1 = a1.GetIdx()
-            i2 = a2.GetIdx()
-            if i1 in carbon_graph and i2 in carbon_graph:
-                carbon_graph[i1].append(i2)
-                carbon_graph[i2].append(i1)
+            # Only add edge if this bond is not in a ring.
+            if not bond.IsInRing():
+                i1 = a1.GetIdx()
+                i2 = a2.GetIdx()
+                if i1 in carbon_graph and i2 in carbon_graph:
+                    carbon_graph[i1].append(i2)
+                    carbon_graph[i2].append(i1)
     
-    total_carbons = len(carbon_nodes)
+    if not carbon_graph:
+        return False, "No carbon atoms available for chain analysis."
     
-    # Use DFS to get the longest simple (nonrepeating) path among carbon atoms.
-    # For our typically small molecules this brute force search is acceptable.
-    best_path = []
-    # Use recursion with backtracking.
-    def dfs(current, path, visited):
-        nonlocal best_path
-        # update best_path if current path is longer
-        if len(path) > len(best_path):
-            best_path = path[:]
-        for nbr in carbon_graph.get(current, []):
-            if nbr not in visited:
-                visited.add(nbr)
-                path.append(nbr)
-                dfs(nbr, path, visited)
-                path.pop()
-                visited.remove(nbr)
-    
-    for start in carbon_nodes:
-        dfs(start, [start], {start})
-    
-    candidate_length = len(best_path)
-    
-    # Determine the lower bound on chain length.
-    # When rings are present, the longest simple path using all carbons may be slightly shorter,
-    # so we allow a lower bound of 12 instead of 13.
-    if molH.GetRingInfo().NumRings() > 0:
-        lower_bound = 12
-    else:
-        lower_bound = 13
-        
-    if candidate_length < lower_bound:
-        return False, f"No contiguous carbon chain of at least {lower_bound} carbons found (longest was {candidate_length})."
-    if candidate_length > 22:
-        return False, f"Longest carbon chain (length {candidate_length}) exceeds the desired upper limit of 22."
-    
-    # Dominance criterion: the candidate chain should cover at least 80% of the molecule's carbon atoms.
-    if candidate_length < 0.8 * total_carbons:
-        return False, (f"Longest chain length ({candidate_length}) accounts for less than 80% of all {total_carbons} carbon atoms, "
-                       "indicating a complex framework.")
-    
-    # Check that at least one carbon in the candidate chain carries a valid hydroxyl (–OH) group.
-    # We look for an oxygen (atomic num 8) that has at least one hydrogen and is attached to a carbon in the candidate.
-    has_valid_OH = False
-    for idx in best_path:
-        carbon = carbon_nodes[idx]
-        for nbr in carbon.GetNeighbors():
-            if nbr.GetAtomicNum() == 8:
-                # require at least one hydrogen attached to the oxygen
-                if any(n.GetAtomicNum() == 1 for n in nbr.GetNeighbors()):
-                    has_valid_OH = True
-                    break
-        if has_valid_OH:
-            break
-    if not has_valid_OH:
-        return False, ("Candidate carbon chain (length {}) does not have any valid hydroxyl (-OH) group attached."
-                       .format(candidate_length))
-    
-    msg = (f"Found a contiguous carbon chain of length {candidate_length} "
-           f"(covering {total_carbons} total carbons) with a valid -OH substituent.")
-    return True, msg
+    total_carbons = len(carbon_graph)  # Number of carbon atoms in the acyclic connectivity graph
 
-# Example usage (for testing)
+    # Partition the graph into connected components.
+    visited_overall = set()
+    components = []
+    for node in carbon_graph:
+        if node not in visited_overall:
+            comp = set()
+            stack = [node]
+            while stack:
+                curr = stack.pop()
+                if curr in comp:
+                    continue
+                comp.add(curr)
+                for nbr in carbon_graph[curr]:
+                    if nbr not in comp:
+                        stack.append(nbr)
+            components.append(list(comp))
+            visited_overall |= comp
+
+    # Helper: Find the longest simple path in a component by DFS (exhaustive search).
+    def longest_path_in_component(comp, graph):
+        best_path = []
+        comp_set = set(comp)
+        # Recursive DFS for simple paths.
+        def dfs(current, path, visited):
+            nonlocal best_path
+            # update best_path if this path is longer
+            if len(path) > len(best_path):
+                best_path = path[:]
+            for nbr in graph.get(current, []):
+                if nbr in comp_set and nbr not in visited:
+                    visited.add(nbr)
+                    path.append(nbr)
+                    dfs(nbr, path, visited)
+                    path.pop()
+                    visited.remove(nbr)
+        for start in comp:
+            dfs(start, [start], {start})
+        return best_path
+
+    candidate_found = False
+    candidate_chain = []
+    candidate_msg = ""
+    
+    # Check each connected component for a candidate chain.
+    # We require that the candidate chain length must be between 13 and 22.
+    # Also, we require that it accounts for at least 80% of the carbons in the graph.
+    for comp in components:
+        lp = longest_path_in_component(comp, carbon_graph)
+        # if the longest found in this component is too long, we may consider subpaths,
+        # but here we simply check if the longest path length falls in our range.
+        if 13 <= len(lp) <= 22:
+            # Check that at least one carbon in the candidate has a –OH (nonacidic) attached.
+            has_valid_OH = False
+            for idx in lp:
+                carbon_atom = carbon_nodes[idx]
+                for nbr in carbon_atom.GetNeighbors():
+                    if nbr.GetAtomicNum() == 8:
+                        # Must have a hydrogen attached and not be acidic.
+                        if any(n.GetAtomicNum() == 1 for n in nbr.GetNeighbors()) and not is_acidic_O(nbr):
+                            has_valid_OH = True
+                            break
+                if has_valid_OH:
+                    break
+            if not has_valid_OH:
+                # If candidate chain lacks a suitable -OH then skip this component.
+                continue
+            # Check that the candidate chain is “dominant”
+            if len(lp) < 0.8 * total_carbons:
+                # Even if we have a chain of correct length, if it does not account for most carbons,
+                # the molecule is likely too complex.
+                continue
+            # Found candidate!
+            candidate_found = True
+            candidate_chain = lp
+            candidate_msg = (f"Found an acyclic carbon chain of length {len(lp)} "
+                             f"(out of {total_carbons} connected carbons) with a valid -OH substituent.")
+            break
+
+    if candidate_found:
+        return True, candidate_msg
+    else:
+        # If no candidate chain met criteria, report based on the longest chain overall.
+        overall_best = []
+        for comp in components:
+            lp = longest_path_in_component(comp, carbon_graph)
+            if len(lp) > len(overall_best):
+                overall_best = lp
+        if overall_best:
+            if len(overall_best) < 13:
+                return False, f"No acyclic carbon chain of at least 13 carbons found (longest was {len(overall_best)})."
+            else:
+                return False, (f"Found an acyclic carbon chain of length {len(overall_best)} "
+                               "but it did not meet all criteria (e.g. valid -OH placement or chain dominance).")
+        else:
+            return False, "No candidate acyclic carbon chain found."
+
+
+# Example usage (for testing):
 if __name__ == "__main__":
     test_smiles = [
-        "OCCCCCCCCCC/C=C/CCCCCCCC",  # 11E-Eicosen-1-ol; should qualify.
-        "CCCCCCCCCCCCCCCCCCCCCO",    # docosan-1-ol; 22-carbons chain with terminal -OH.
-        "CC(O)CCCCCCCCCC",            # Likely too short.
-        "O1[C@@H]2[C@H](O)C(/C=C/[C@H](O)CCCCCCCC)=C([C@H]([C@H]12)O)CO",  # Phomopoxide D; candidate chain might be 12 => allowed if rings present.
+        "OCCCCCCCCCC/C=C/CCCCCCCC",  # 11E-Eicosen-1-ol; should qualify
+        "CCCCCCCCCCCCCCCCCCCCCO",    # docosan-1-ol; 22-carbon chain with terminal -OH
+        "CC(O)CCCCCCCCCC",            # Likely too short (11 carbons)
+        "O1[C@@H]2[C@H](O)C(/C=C/[C@H](O)CCCCCCCC)=C([C@H]([C@H]12)O)CO",  # Phomopoxide D; should now be captured if the chain at the ring junction is taken into account
     ]
     for smi in test_smiles:
-        res, reason = is_long_chain_fatty_alcohol(smi)
-        print(f"SMILES: {smi}\nResult: {res}\nReason: {reason}\n")
+        res, msg = is_long_chain_fatty_alcohol(smi)
+        print(f"SMILES: {smi}\nResult: {res}\nReason: {msg}\n")
