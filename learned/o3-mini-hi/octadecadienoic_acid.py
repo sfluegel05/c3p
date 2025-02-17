@@ -2,7 +2,8 @@
 Classifies: CHEBI:25627 octadecadienoic acid
 """
 """
-Classifies: octadecadienoic acid – a straight-chain C18 polyunsaturated fatty acid having exactly 2 carbon-carbon double bonds.
+Classifies: octadecadienoic acid – a straight-chain C18 polyunsaturated fatty acid 
+having exactly 2 non-aromatic C=C double bonds and a terminal carboxylic acid group.
 """
 
 from rdkit import Chem
@@ -10,117 +11,128 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_octadecadienoic_acid(smiles: str):
     """
-    Determines if a molecule is an octadecadienoic acid based on its SMILES string.
-    An octadecadienoic acid is defined as any straight-chain C18 polyunsaturated fatty acid with exactly two 
-    non-aromatic carbon-carbon double bonds, and must have a terminal carboxylic acid group.
+    Determines whether a molecule (given by its SMILES string) is an octadecadienoic acid.
+    An octadecadienoic acid is defined as a straight-chain fatty acid that:
+      • Contains exactly 18 carbon atoms,
+      • Possesses a terminal carboxylic acid group ([CX3](=O)[OX2H1]),
+      • Has a linear (unbranched) chain connected from the acid carbon (the carbonyl in COOH) 
+        such that no chain atom bears an extra carbon substituent, and 
+      • Contains exactly 2 non-aromatic carbon-carbon double bonds along the consecutive carbon chain.
     
-    The algorithm works as follows:
-    1. Parse the SMILES. If invalid, return failure.
-    2. Ensure the molecule has a carboxylic acid functionality.
-    3. Verify that the molecule has a total of 18 carbon atoms.
-    4. Identify the carboxyl carbon from the acid group and then attempt to "walk" along a connected carbon chain.
-       • From the acid carbon, follow the unique carbon neighbor (if available) to get the main chain.
-       • At each step, ensure that there is no branching: each atom (except the chain endpoints) must have exactly 
-         two carbon neighbors that are in the chain.
-    5. Confirm that the total length of the chain is 18 atoms.
-    6. Count the double bonds along the chain (the connectivity between successive chain atoms); 
-       exactly 2 non-aromatic C=C bonds must be present.
-    
+    The algorithm is as follows:
+    1. Parse the SMILES. If invalid, fail.
+    2. Look for a carboxylic acid substructure using SMARTS "[CX3](=O)[OX2H1]". If not found, fail.
+    3. Verify that the total number of carbons in the molecule is exactly 18.
+    4. Starting with the carboxyl carbon (the first atom in the SMARTS match), determine its unique 
+       carbon neighbor (it should have exactly one – otherwise the chain is not linear).
+    5. “Walk” the chain by always taking the unique carbon neighbor (excluding the one we came from)
+       until no further carbon neighbor is found. (This “path” is assumed to be the main chain.)
+    6. Check that the length of the obtained chain is exactly 18. (This excludes any molecules with 
+       extra carbons (branched or cyclic) on the main chain.)
+    7. For each carbon atom in the chain, verify that *all* its carbon neighbors are in the chain.
+       (This step detects branch points.)
+    8. Examine the bonds along consecutive chain atoms and count the number of double bonds that are 
+       non-aromatic; exactly 2 are required.
+       
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if the molecule is classified as octadecadienoic acid, False otherwise.
-        str: Reason for the classification decision.
+        (bool, str): Tuple. The boolean is True if the molecule is an octadecadienoic acid 
+                     and False otherwise, while str explains the reason.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Step 1: Look for a carboxylic acid substructure.
+    # Step 1: Check for carboxylic acid functionality.
     acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
     acid_matches = mol.GetSubstructMatches(acid_pattern)
     if not acid_matches:
         return False, "Missing carboxylic acid functionality"
-    # Use the first acid match. In the SMARTS, the first atom is the carboxyl carbon.
+    
+    # Use first match: by convention, the acid carbon (the carbonyl carbon) is the first atom.
     acid_carbon_idx = acid_matches[0][0]
     acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
     
-    # Step 2: Count the total number of carbon atoms in the molecule.
+    # Step 2: Verify that the total number of carbons is exactly 18.
     all_carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     if len(all_carbons) != 18:
         return False, f"Expected 18 carbon atoms but found {len(all_carbons)}"
     
-    # Step 3: Identify the main chain starting from the acid carbon.
+    # Step 3: Build the main chain starting from the acid carbon.
     # The acid carbon should have exactly one carbon neighbor that continues the fatty acid chain.
-    chain = []
-    chain_set = set()  # To keep track of carbon atoms in the discovered chain
-    chain.append(acid_carbon)
-    chain_set.add(acid_carbon.GetIdx())
-    
-    # Find the unique carbon neighbor of the acid carbon (excluding oxygens)
-    acid_neighbors = [n for n in acid_carbon.GetNeighbors() if n.GetAtomicNum() == 6]
+    acid_neighbors = [nbr for nbr in acid_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
     if len(acid_neighbors) != 1:
         return False, "Carboxyl carbon does not have exactly one carbon neighbor; not a straight-chain acid"
-    current = acid_neighbors[0]
-    chain.append(current)
-    chain_set.add(current.GetIdx())
-    prev = acid_carbon
     
-    # Walk along the chain
+    chain = [acid_carbon]  # list of atoms in the main chain
+    chain_indices = {acid_carbon.GetIdx()}
+    
+    # Add the unique neighbor of acid carbon.
+    next_atom = acid_neighbors[0]
+    chain.append(next_atom)
+    chain_indices.add(next_atom.GetIdx())
+    
+    prev_atom = acid_carbon
+    current_atom = next_atom
+
+    # Walk along the chain:
     while True:
-        # Get carbon neighbors of current, excluding the atom we came from.
-        neighbors = [n for n in current.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != prev.GetIdx()]
-        if len(neighbors) == 0:
-            break  # reached the end of chain
-        if len(neighbors) > 1:
-            return False, f"Carbon atom with index {current.GetIdx()} shows branching in the carbon chain"
-        # Move to the next neighbor
-        next_atom = neighbors[0]
-        # If we already visited this atom, then cycle (should not happen in a straight chain)
-        if next_atom.GetIdx() in chain_set:
+        # Get all carbon neighbors (atomic number == 6) not equal to prev_atom.
+        nbr_carbons = [nbr for nbr in current_atom.GetNeighbors() if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != prev_atom.GetIdx()]
+        if len(nbr_carbons) == 0:
+            break  # reached the chain end
+        if len(nbr_carbons) > 1:
+            # This carbon has more than one carbon neighbor (not counting the one we came from)
+            # which indicates a branching in the backbone.
+            return False, f"Carbon atom with index {current_atom.GetIdx()} shows branching in the carbon chain"
+        # There is exactly one possible next atom.
+        next_atom = nbr_carbons[0]
+        if next_atom.GetIdx() in chain_indices:
+            # Already visited this carbon; would lead to a cycle (should not happen in a straight chain).
             break
         chain.append(next_atom)
-        chain_set.add(next_atom.GetIdx())
-        prev, current = current, next_atom
+        chain_indices.add(next_atom.GetIdx())
+        prev_atom, current_atom = current_atom, next_atom
 
+    # Step 4: Verify that the chain length is exactly 18.
     if len(chain) != 18:
-        return False, f"Main carbon chain length is {len(chain)} instead of 18; indicates branching or missing carbons"
-    
-    # Verify linear connectivity: endpoints should have one carbon neighbor within the chain; internal atoms exactly 2.
-    for i, atom in enumerate(chain):
-        # Count how many neighbors of this atom are also in the chain.
-        cnt = 0
-        for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() in chain_set:
-                cnt += 1
-        if i == 0 or i == len(chain)-1:
-            if cnt != 1:
-                return False, f"Chain endpoint atom index {atom.GetIdx()} has {cnt} neighbors within chain; should have 1"
-        else:
-            if cnt != 2:
-                return False, f"Internal chain atom index {atom.GetIdx()} has {cnt} neighbors within chain; should have 2"
-    
-    # Step 4: Count the C=C bonds along the chain. They are the bonds connecting consecutive atoms in the chain.
-    double_bonds = 0
+        return False, f"Main carbon chain length is {len(chain)} instead of 18; indicates branching, cycle, or extra/missing carbons"
+
+    # Step 5: Ensure that the chain is “pure” – no chain atom has any extra carbon neighbors that are not in the chain.
+    for atom in chain:
+        # List all carbon neighbors of the atom.
+        carbon_nbrs = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        for nbr in carbon_nbrs:
+            if nbr.GetIdx() not in chain_indices:
+                return False, f"Carbon atom with index {atom.GetIdx()} has an extra carbon substituent (branching detected)"
+
+    # Step 6: Count double bonds (non-aromatic) between consecutive atoms in the chain.
+    double_bond_count = 0
     for i in range(len(chain)-1):
         bond = mol.GetBondBetweenAtoms(chain[i].GetIdx(), chain[i+1].GetIdx())
         if bond is None:
             return False, f"Missing bond between chain atoms at indices {chain[i].GetIdx()} and {chain[i+1].GetIdx()}"
-        # Count bond as double if it is a double bond and non-aromatic.
         if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and (not bond.GetIsAromatic()):
-            double_bonds += 1
-    if double_bonds != 2:
-        return False, f"Found {double_bonds} carbon-carbon double bonds along the main chain; exactly 2 required"
-    
+            double_bond_count += 1
+    if double_bond_count != 2:
+        return False, f"Found {double_bond_count} non-aromatic C=C bonds along the main chain; exactly 2 are required"
+
     return True, "Molecule is a straight-chain C18 fatty acid with exactly 2 C=C double bonds and a carboxylic acid group"
 
-# Example testing (run only if this file is executed as a script):
+# For testing purposes (only executed if the module is run as a script)
 if __name__ == "__main__":
+    # Some test SMILES strings (these include examples from the successful and failing cases).
     test_smiles = [
-        "CCCCCC\\C=C/C=C\\CCCCCCCC(=O)O",  # 9Z,11Z-octadecadienoic acid (correct)
-        "C(=C\\C/C=C\\CCCCCO)\\CCCCCCCC(=O)O",  # 18-hydroxylinoleic acid (should fail due to branching)
-        "OC(=O)CCCCCCC\\C=C/C=C\\CCCCCC"  # 9Z,11Z-octadecadienoic acid alternative
+        # True positives:
+        "CCCCCC\\C=C/C=C/[C@H](O)CCCCCCCC(O)=O",  # 9(R)-HODE
+        "OC(=O)CCCCCCC\\C=C/C=C\\CCCCCC",           # 9Z,11Z-octadecadienoic acid
+        # False positives (should be rejected for branching):
+        "C(=C\\C/C=C\\CCCCCO)CCCCCCCC(=O)O",         # 18-hydroxylinoleic acid
+        "OC(=O)CCCCC/C=C/C=C\\CCCCCCCC",             # 7-trans,9-cis-octadecadienoic acid
+        # False negative example (should reject because total carbons != 18):
+        "O(C(CCCCCCC(O)=O)/C=C/C(=O)CCCCCCCCC(O)=O",  # (11E)-13-hydroxy-10-oxo-11-octadecenoic acid (has extra carbon)
     ]
     for sm in test_smiles:
         result, reason = is_octadecadienoic_acid(sm)
