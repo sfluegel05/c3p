@@ -2,10 +2,12 @@
 Classifies: CHEBI:35341 steroid
 """
 """
-Classifies: Steroid compounds based on a cyclopenta[a]phenanthrene‐derived nucleus.
-Definition: Any compound (natural or synthetic) based on the cyclopenta[a]phenanthrene skeleton,
-which traditionally contains three fused six-membered rings and one five-membered ring, but allowing
-for bond scissions, ring expansions, and contractions.
+Classifies: Steroid compounds based on a modified interpretation of the cyclopenta[a]phenanthrene nucleus.
+Definition: Any compound (natural or synthetic) that is based on the cyclopenta[a]phenanthrene backbone,
+or a derived analogue of it (including secosteroids), is expected to have a fused ring system of non‐aromatic rings of size 5–7.
+We require that at a minimum the molecule has at least 17 carbons and one fused‐ring cluster that either contains:
+  - Four rings (an intact nucleus) with one 5‐membered ring and at least two 6–7‐membered rings; or
+  - Three fused rings (a partially broken or “seco” nucleus) that include one 5‐membered ring and cover at least 16 unique atoms.
 """
 
 from rdkit import Chem
@@ -14,100 +16,121 @@ def is_steroid(smiles: str):
     """
     Determines if a molecule is a steroid based on its SMILES string.
     
-    First, it tries a relaxed SMARTS for an intact cyclopenta[a]phenanthrene nucleus.
-    If not found, it builds a fused ring graph: two rings are considered fused if they
-    share at least two atoms. Then, for each connected fused‐ring cluster, we count as “ideal”
-    those rings whose sizes are in {5,6,7} (allowing for slight modifications) and that are not
-    fully aromatic. A molecule is considered steroid‐like if it has either:
-      - A fused cluster of 3 rings with at least 2 ideal rings, or
-      - A fused cluster of 4 or more rings with at least 3 ideal rings.
+    The method first checks that the molecule has the minimum number of carbon atoms
+    expected for a steroid (>16). Then it extracts all rings from the molecule and
+    only considers rings that are not fully aromatic and that have 5, 6, or 7 atoms (allowing for slight modifications).
+    A ring–graph is constructed where two rings are considered fused if they share at least 2 atoms.
+    Connected components (fused-ring clusters) are examined and if one component meets either
+    of two criteria it is considered steroid-like:
+      - An intact steroid nucleus: a cluster with 4 fused rings that contains exactly one 5-membered ring 
+        (the typical D ring) and at least two rings of size 6 or 7.
+      - A partially opened (seco) steroid: a cluster with 3 fused rings containing one 5-membered ring and 
+        covering at least 16 unique atoms.
     
     Args:
         smiles (str): SMILES string of the molecule.
-
+    
     Returns:
-        bool: True if molecule is a steroid, False otherwise.
-        str: Reason for classification.
+        bool: True if molecule is classified as steroid, False otherwise.
+        str: Explanation of the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Try to match an intact but relaxed steroid nucleus SMARTS.
-    # This pattern is a heuristic: we look for a fused tetracyclic system with a 5-membered ring.
-    # (Note: The pattern is deliberately relaxed.)
-    steroid_smarts = "[C;R1]1[C;R][C;R][C;R]2[C;R][C;R][C;R][C;R]3[C;R][C;R][C;R][C;R]4[C;R]([C;R]3)[C;R]2[C;R]1[C;R]4"
-    steroid_pattern = Chem.MolFromSmarts(steroid_smarts)
-    if steroid_pattern is not None and mol.HasSubstructMatch(steroid_pattern):
-        return True, "Contains an intact cyclopenta[a]phenanthrene nucleus (relaxed SMARTS match)"
-    
-    # Next, analyze fused ring systems.
+    # Check overall carbon count: steroids generally have many carbons.
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 17:
+        return False, f"Too few carbons ({c_count}) for a steroid nucleus"
+
+    # Get ring information – each ring is a tuple of atom indices.
     ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()  # each ring is a tuple of atom indices
-    if not rings:
+    complete_rings = ring_info.AtomRings()
+    if not complete_rings:
         return False, "No ring system found"
     
-    # Build a graph where each node is a ring (by index in 'rings'),
-    # and an edge connects two rings if they share at least 2 atoms.
-    ring_graph = {i: set() for i in range(len(rings))}
-    for i in range(len(rings)):
-        for j in range(i+1, len(rings)):
-            if len(set(rings[i]).intersection(rings[j])) >= 2:
+    # Filter rings: only count those rings which do not consist solely of aromatic atoms
+    # and whose sizes are typical for a steroid nucleus (5,6,7).
+    allowed_sizes = {5, 6, 7}
+    valid_rings = []
+    for ring in complete_rings:
+        ring_size = len(ring)
+        if ring_size not in allowed_sizes:
+            continue
+        # Only accept the ring if not every atom is aromatic.
+        if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+            continue
+        valid_rings.append(ring)
+    if not valid_rings:
+        return False, "No non-aromatic rings of size 5-7 found"
+    
+    # Build a graph connecting rings that share at least 2 atoms (fused rings).
+    ring_graph = {i: set() for i in range(len(valid_rings))}
+    for i in range(len(valid_rings)):
+        for j in range(i+1, len(valid_rings)):
+            if len(set(valid_rings[i]).intersection(valid_rings[j])) >= 2:
                 ring_graph[i].add(j)
                 ring_graph[j].add(i)
     
-    # Find connected components in the ring graph.
-    def dfs(node, visited, component):
+    # Find connected components within the ring graph.
+    def dfs(node, visited, comp):
         visited.add(node)
-        component.add(node)
+        comp.add(node)
         for neighbor in ring_graph[node]:
             if neighbor not in visited:
-                dfs(neighbor, visited, component)
+                dfs(neighbor, visited, comp)
     
     visited = set()
     components = []
-    for node in ring_graph:
-        if node not in visited:
+    for i in ring_graph:
+        if i not in visited:
             comp = set()
-            dfs(node, visited, comp)
+            dfs(i, visited, comp)
             components.append(comp)
     
-    # Define allowed ring sizes (5-, 6-, and 7-membered rings) typical in steroid nuclei.
-    allowed_sizes = {5, 6, 7}
-    
-    # Analyze each fused-ring component.
+    # Examine each fused-ring component.
     for comp in components:
-        comp_rings = [rings[i] for i in comp]
-        ideal_count = 0  # count rings with size in allowed_sizes and not fully aromatic
-        for ring in comp_rings:
-            ring_size = len(ring)
-            if ring_size in allowed_sizes:
-                # Check if ring is fully aromatic.
-                # If all atoms in the ring are aromatic, we do not count it as ideal.
-                if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-                    ideal_count += 1
+        comp_rings = [valid_rings[i] for i in comp]
+        ring_sizes = [len(ring) for ring in comp_rings]
+        # Count how many rings are 5-membered.
+        count_5 = sum(1 for size in ring_sizes if size == 5)
+        count_6_7 = sum(1 for size in ring_sizes if size in {6, 7})
+        comp_size = len(comp_rings)
         
-        comp_size = len(comp)
-        # Heuristic rules:
-        # - For a three-ring system, require at least two ideal (non-aromatic, allowed size) rings.
-        # - For a four-or-more ring system, require at least three ideal rings.
-        if comp_size == 3 and ideal_count >= 2:
-            return True, ("Contains a fused ring system resembling a steroid nucleus "
-                          "(three fused rings with at least two rings of allowed size and non-aromatic)")
-        if comp_size >= 4 and ideal_count >= 3:
-            return True, ("Contains a fused ring system resembling a steroid nucleus "
-                          "(four or more fused rings with at least three rings of allowed size and non-aromatic)")
+        # Also count unique atoms in the component (for partially broken steroid nuclei)
+        unique_atoms = set()
+        for ring in comp_rings:
+            unique_atoms.update(ring)
+        
+        # Criterion 1: intact steroid nucleus (four fused rings: one 5-membered and at least two 6/7 rings).
+        if comp_size == 4:
+            if count_5 == 1 and count_6_7 >= 2:
+                return True, ("Contains an intact fused steroid nucleus: 4 non-aromatic rings "
+                              f"(ring sizes: {ring_sizes}), including a single 5-membered ring.")
+        # Criterion 2: a partially opened steroid nucleus (secosteroid) with 3 fused rings 
+        # that include a 5-membered ring and cover enough atoms.
+        if comp_size == 3:
+            if count_5 >= 1 and count_6_7 >= 1 and len(unique_atoms) >= 16:
+                return True, ("Contains a partially opened steroid nucleus: 3 fused non-aromatic rings "
+                              f"(ring sizes: {ring_sizes}) covering {len(unique_atoms)} atoms.")
     
     return False, "No steroid nucleus pattern detected"
-    
-# Example usage (for testing purposes):
+
+
+# For simple testing:
 if __name__ == "__main__":
-    # Test with some known SMILES examples:
-    steroid_smiles = "OC12C(C(CC1)C(OC3OC(C(O)C(O)C3O)CO)C)(CCC4C2CC=C5C4(CCC(OC6OC(C(OC7OC(C(O)C(O)C7O)CO)C(OC)C6O)C)C5)C)C"  # Russelioside B
-    nonsteroid_smiles = "COC(=O)\\C=C/NC(=O)c1cc2c3ccccc3[nH]c2c(n1)[C@H](C)OC(=O)C(\\C)=C/C"  # Dichotomide X (false positive previously)
+    # Example test cases (from provided outcomes):
+    examples = [
+        # A known steroid-like molecule (Caudatin)
+        ("O[C@]12[C@]([C@H](OC(=O)/C=C(/C(C)C)\\C)C[C@]3([C@@]1(O)CC=C4[C@@]3(CC[C@H](O)C4)C)[H])([C@](O)(CC2)C(=O)C)C", "Caudatin"),
+        # A known secosteroid: (6E)-(8S)-8,25-dihydroxy-9,10-seco-4,6,10(19)-cholestatrien-3-one (should be steroid even though ring opened)
+        ("O[C@]1([C@]2([C@@]([C@](CC2)([C@@H](CCCC(O)(C)C)C)[H])(CCC1)C)[H])/C=C/C=3C(CCC(=O)C3)=C", 
+         "Secosteroid example"),
+        # A false positive example from previous attempt.
+        ("C1[C@@H](O[C@@H]([C@H]2[C@@H]1C3=C(O2)C=CC(=C3)NS(=O)(=O)C4=CC=CC=C4)CO)CC(=O)NCC(F)(F)F", 
+         "Non-steroid false positive"),
+    ]
     
-    result, reason = is_steroid(steroid_smiles)
-    print("Steroid test:", result, reason)
-    
-    result, reason = is_steroid(nonsteroid_smiles)
-    print("Non-steroid test:", result, reason)
+    for smi, name in examples:
+        result, reason = is_steroid(smi)
+        print(f"Test {name}: {result} -- {reason}")
