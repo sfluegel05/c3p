@@ -4,9 +4,11 @@ Classifies: CHEBI:48953 cyclohexenones
 """
 Classifies: Any six-membered alicyclic ketone having one double bond in the ring (cyclohexenones).
 
-A cyclohexenone motif in our definition is a non-aromatic six-membered carbon ring that
-contains exactly one C=C double bond and one of the ring carbons bears an exocyclic 
-carbonyl group (C=O) that is directly conjugated to that double bond.
+A cyclohexenone motif in our definition is a non-aromatic six-membered carbon ring that:
+  - Contains exactly one carbon-carbon double bond (alkene) inside the ring.
+  - Contains a ketone group where a ring carbon is double-bonded to an oxygen (not part of the ring).
+  - The carbonyl-bearing ring carbon must be directly adjacent (in the ring) to one of the carbons 
+    involved in the alkene double bond (ensuring conjugation).
 """
 
 from rdkit import Chem
@@ -15,42 +17,37 @@ def is_cyclohexenones(smiles: str):
     """
     Determines if a molecule is a cyclohexenone based on its SMILES string.
 
-    A cyclohexenone is defined as any six-membered alicyclic ketone having one double
-    bond in the ring and a C=O group conjugated (directly attached) to the alkene.
+    A cyclohexenone is defined as any six-membered alicyclic ketone having one C=C double bond in 
+    the ring and a carbonyl group (C=O) placed on a ring carbon conjugated with the alkene.
 
-    The algorithm will:
-      - Parse the SMILES.
-      - Loop over all rings found.
-      - For rings of exactly six atoms:
-          * Ensure every atom in the ring is a non-aromatic carbon.
-          * Identify all bonds within the ring that are double bonds between carbons.
-            We require exactly one such ring double bond.
-          * Look for a carbonyl group at a ring carbon (a double bond from a ring carbon
-            to an oxygen that is not part of the ring).
-          * Require that the carbonyl-bearing carbon is one of the two atoms of the ring alkene.
-          * If such a ring is found, classify as cyclohexenone.
-
-    Args:
-        smiles (str): Input SMILES string.
-
+    The algorithm:
+      1. Parses the SMILES.
+      2. Iterates over all rings (using GetRingInfo()).
+      3. For each six-membered ring composed entirely of non-aromatic carbons:
+         a. Count the number of C=C double bonds inside the ring (ignore the C=O bond).
+         b. Identify ring atoms that have a double bond to oxygen with the O not being in the ring 
+            (the ketone functionality).
+         c. Verify that one of these ketone-bearing atoms is adjacent (within the ring) to one of the 
+            carbons forming the alkene double bond.
     Returns:
-        bool: True if the molecule is classified as cyclohexenone, False otherwise.
-        str: Explanation of the classification decision.
+      bool: True if classified as cyclohexenone, False otherwise.
+      str: Explanation of the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    ring_info = mol.GetRingInfo().AtomRings()
-    if not ring_info:
+    # Get ring information from molecule.
+    rings = mol.GetRingInfo().AtomRings()
+    if not rings:
         return False, "No rings found in molecule"
 
     # Loop over each ring
-    for ring in ring_info:
+    for ring in rings:
         if len(ring) != 6:
-            continue  # only consider six-membered rings
+            continue  # Only consider six-membered rings
 
-        # Ensure all ring atoms are carbon and non-aromatic
+        # Ensure that every atom in the ring is a carbon and the ring is non-aromatic.
         valid_ring = True
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
@@ -63,49 +60,57 @@ def is_cyclohexenones(smiles: str):
         if not valid_ring:
             continue
 
-        # Determine the bonds that lie completely inside the ring.
         ring_set = set(ring)
-        ring_double_bonds = []  # list of tuples: (bond, idx1, idx2)
+        # Identify ring C=C bonds (alkene bonds, within the ring).
+        alkene_bonds = []
         for bond in mol.GetBonds():
             a1 = bond.GetBeginAtomIdx()
             a2 = bond.GetEndAtomIdx()
             if a1 in ring_set and a2 in ring_set:
-                # Count only double bonds between carbons
                 if bond.GetBondType() == Chem.BondType.DOUBLE:
-                    atom1 = mol.GetAtomWithIdx(a1)
-                    atom2 = mol.GetAtomWithIdx(a2)
-                    if atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 6:
-                        ring_double_bonds.append((bond, a1, a2))
-        # We expect exactly one carbon-carbon double bond in the ring.
-        if len(ring_double_bonds) != 1:
+                    # Both atoms must be carbon for a C=C alkene.
+                    if (mol.GetAtomWithIdx(a1).GetAtomicNum() == 6 and
+                        mol.GetAtomWithIdx(a2).GetAtomicNum() == 6):
+                        alkene_bonds.append((a1, a2))
+        # We require exactly one C=C double bond within the ring.
+        if len(alkene_bonds) != 1:
             continue
 
-        # For each ring atom, check if it has a carbonyl group (C=O outside the ring).
-        # Record the indices of ring atoms that have a carbonyl double bond.
-        carbonyl_atoms = set()
+        alkene_atoms = set(alkene_bonds[0])  # the two atoms forming the alkene
+
+        # Identify a ketone functionality on the ring.
+        # For each ring atom, check neighbors not in the ring: if an oxygen is double-bonded.
+        ketone_atoms = set()
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
             for nbr in atom.GetNeighbors():
-                # Skip if the neighbor is in the ring.
                 if nbr.GetIdx() in ring_set:
-                    continue
+                    continue  # only consider substituents outside the ring
                 if nbr.GetAtomicNum() == 8:
-                    # Get the bond between the ring atom and the oxygen.
                     bond = mol.GetBondBetweenAtoms(idx, nbr.GetIdx())
                     if bond is not None and bond.GetBondType() == Chem.BondType.DOUBLE:
-                        carbonyl_atoms.add(idx)
-        if not carbonyl_atoms:
-            continue  # no carbonyl found on any ring atom
+                        ketone_atoms.add(idx)
+        if not ketone_atoms:
+            continue  # This ring does not have a ketone functional group
 
-        # Check conjugation: One of the carbonyl atoms must be part of the ring alkene.
-        _, alkene_idx1, alkene_idx2 = ring_double_bonds[0]
-        if alkene_idx1 in carbonyl_atoms or alkene_idx2 in carbonyl_atoms:
-            return True, ("Found a six-membered non-aromatic carbon ring with one C=C bond and a "
-                          "conjugated ketone (C=O) attached to an alkene carbon; cyclohexenone motif detected.")
-        # If no carbonyl-bearing atom is part of the alkene, try next ring.
+        # Check conjugation: the ketone-bearing ring carbon must be adjacent (inside the ring)
+        # to one of the alkene carbons.
+        conjugated = False
+        for ket_idx in ketone_atoms:
+            atom = mol.GetAtomWithIdx(ket_idx)
+            # Get the atoms in the ring that are connected to ket_idx:
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() in ring_set and nbr.GetIdx() in alkene_atoms:
+                    conjugated = True
+                    break
+            if conjugated:
+                break
+
+        if conjugated:
+            return True, "Found six-membered non-aromatic carbon ring with one ring alkene and a conjugated ketone group; cyclohexenone detected."
     return False, "No six-membered ring with a conjugated alkene and ketone (cyclohexenone) was found."
 
-# Example test calls (uncomment to run)
+# Example test (uncomment to try):
 # test_smiles = "O[C@H]1[C@H](O)C(=CC(=O)C1N)CO"  # 2-Aminovalienone example
 # result, reason = is_cyclohexenones(test_smiles)
 # print(result, reason)
