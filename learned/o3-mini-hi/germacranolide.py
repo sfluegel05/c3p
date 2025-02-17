@@ -3,97 +3,121 @@ Classifies: CHEBI:73011 germacranolide
 """
 """
 Classifies: Germacranolide – a sesquiterpene lactone based on the germacrane skeleton.
-A germacranolide is defined here by the following criteria:
-  (1) It contains a lactone ring (a cyclic ester where the carbonyl carbon and the ester oxygen are in a ring).
-  (2) It has at least one ring of size between 10 and 12 atoms that is predominately carbon (>=80% of its atoms are C)
-      and has at least one non‐aromatic double bond within that ring.
-      (This aims to capture the germacrane skeleton even when it appears as a fused ring system.)
-  (3) Its molecular weight is within the range typical for sesquiterpene lactones (150–600 Da).
-  (4) The overall molecule contains at least 15 carbon atoms.
-Note: This heuristic approach is not perfect; some true germacranolides may be missed and some non‐germacranolides
-may still pass. The goal is to improve the F1 score relative to the previous attempt.
-"""
 
+Improved criteria:
+  (1) The SMILES must be parsed properly.
+  (2) The molecule must contain a lactone ring (cyclic ester, detected with a SMARTS pattern).
+  (3) The molecule must contain at least one macrocycle that is either a single ring
+      or a fused “ring system” (a union of intersecting rings) with:
+         • a total size between 10 and 12 atoms,
+         • at least 80% of the atoms are carbons,
+         • and at least one non‐aromatic sp2 carbon (sign of unsaturation) in that macrocycle.
+  (4) The overall molecular weight should be in the typical range for sesquiterpene lactones (150-600 Da).
+  (5) The total number of carbons is expected to be near that of a sesquiterpene (e.g. 15–22).
+
+Note: This heuristic approach is still not perfect, but has been modified based on the
+    results from the previous attempt.
+"""
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 def is_germacranolide(smiles: str):
     """
-    Determines if a molecule is a germacranolide (a sesquiterpene lactone with a germacrane skeleton)
-    based on its SMILES string.
-    
-    The improved criteria are:
-      1. The molecule must be parsed correctly.
-      2. It must contain a lactone ring (cyclic ester).
-      3. It must contain at least one ring (from those reported in GetRingInfo().AtomRings())
-         whose size is between 10 and 12 atoms, where at least 80% of the atoms are carbons and
-         which has at least one non‐aromatic double bond within that ring.
-      4. The overall molecular weight should be within 150 – 600 Da.
-      5. The molecule must have at least 15 carbon atoms.
-      
+    Determines whether the molecule given by the SMILES string is a germacranolide (a sesquiterpene lactone
+    based on a germacrane skeleton).
+
     Args:
-        smiles (str): SMILES string of the molecule.
-        
+        smiles (str): SMILES representation of the molecule.
+
     Returns:
         bool: True if the molecule is classified as a germacranolide, False otherwise.
         str: Explanation for the classification decision.
     """
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Criterion 1: Check for a lactone ring.
-    # A lactone is defined here as a cyclic ester: a carbonyl carbon (sp2 C) connected to an oxygen all within a ring.
+
+    # Criterion (1): Check for lactone ring (cyclic ester).
+    # This SMARTS looks for a carbonyl carbon in a ring bound to an oxygen (also in a ring).
     lactone_smarts = "[#6;R](=O)[OX2;R]"
     lactone_pattern = Chem.MolFromSmarts(lactone_smarts)
     if not mol.HasSubstructMatch(lactone_pattern):
         return False, "No lactone ring (cyclic ester) found"
-    
-    # Criterion 2: Look for a candidate germacrane-type ring.
-    ring_info = mol.GetRingInfo().AtomRings()
-    candidate_ring_found = False
-    for ring in ring_info:
-        ring_size = len(ring)
-        # Accept rings that have size between 10 and 12 atoms:
+
+    # Get all SSSR rings as sets of atom indices.
+    ssr_rings = [set(ring) for ring in mol.GetRingInfo().AtomRings()]
+    if not ssr_rings:
+        return False, "No rings detected in molecule"
+
+    # Merge rings that overlap to capture fused ring systems.
+    # We build connected components where rings sharing at least one atom are merged.
+    merged_rings = []
+    while ssr_rings:
+        current = ssr_rings.pop()
+        merged = True
+        while merged:
+            merged = False
+            remove_list = []
+            for other in ssr_rings:
+                if current.intersection(other):
+                    current = current.union(other)
+                    remove_list.append(other)
+                    merged = True
+            for rem in remove_list:
+                ssr_rings.remove(rem)
+        merged_rings.append(current)
+
+    # Now check each candidate macrocycle.
+    candidate_found = False
+    candidate_reason = ""
+    for ring_set in merged_rings:
+        ring_size = len(ring_set)
+        # We want macrocycles of size 10 to 12.
         if not (10 <= ring_size <= 12):
             continue
-        # Count how many atoms in the ring are carbons.
-        carbon_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-        # Must have at least 80% carbons:
+
+        # Count carbons in the candidate ring.
+        carbon_count = sum(1 for idx in ring_set if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
         if carbon_count / ring_size < 0.8:
+            continue  # not predominantly carbon
+
+        # Check for unsaturation within the fused system.
+        # We require that within the atoms of this candidate ring, at least one carbon is sp2
+        # (and not aromatic) suggesting a double (or equivalent) bond.
+        unsaturation = False
+        for idx in ring_set:
+            atom = mol.GetAtomWithIdx(idx)
+            # Only consider carbon atoms.
+            if atom.GetAtomicNum() != 6:
+                continue
+            # Check if sp2 hybridized and non-aromatic.
+            if atom.GetHybridization() == Chem.rdchem.HybridizationType.SP2 and not atom.GetIsAromatic():
+                unsaturation = True
+                break
+
+        if not unsaturation:
             continue
-        
-        # Count non-aromatic double bonds within this ring.
-        # (Only count bonds where both endpoints are in the ring.)
-        ring_set = set(ring)
-        double_bond_count = 0
-        # Iterate over bonds in the molecule and count those within the ring having a double bond.
-        for bond in mol.GetBonds():
-            a1 = bond.GetBeginAtomIdx()
-            a2 = bond.GetEndAtomIdx()
-            if a1 in ring_set and a2 in ring_set:
-                # Check for double bond and ensure it is not aromatic.
-                if bond.GetBondType() == Chem.BondType.DOUBLE and not bond.GetIsAromatic():
-                    double_bond_count += 1
-        if double_bond_count >= 1:
-            candidate_ring_found = True
-            break  # Accept the first candidate ring that fulfills the condition.
-    
-    if not candidate_ring_found:
-        return False, "No 10–12-membered ring with sufficient carbon content and unsaturation found"
-    
-    # Criterion 3: Check overall molecular weight.
+
+        # If one candidate ring system fulfills conditions, accept.
+        candidate_found = True
+        candidate_reason = "Contains a lactone ring and a fused macrocyclic (10–12 atoms, >=80% C) system with unsaturation typical of a germacrane skeleton"
+        break
+
+    if not candidate_found:
+        return False, "No 10–12-membered ring (or fused ring system) with sufficient carbon content and unsaturation found"
+
+    # Criterion (4): Check overall molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 150 or mol_wt > 600:
         return False, "Molecular weight not in range for typical sesquiterpene lactones (150–600 Da)"
-    
-    # Criterion 4: Check that the molecule has at least 15 carbon atoms.
+
+    # Criterion (5): Check total number of carbons.
     total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if total_carbons < 15:
-        return False, "Too few carbons (<15) for a sesquiterpene lactone skeleton"
-    
-    return True, "Contains a lactone ring and a 10–12-membered, predominantly carbon, unsaturated ring typical for germacranolide"
+    if total_carbons < 15 or total_carbons > 22:
+        return False, f"Total number of carbons ({total_carbons}) is not in the expected range (15–22) for sesquiterpene lactones"
+
+    return True, candidate_reason
 
 # Example usage (for testing purposes):
 if __name__ == "__main__":
