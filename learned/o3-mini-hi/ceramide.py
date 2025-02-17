@@ -1,157 +1,117 @@
 """
 Classifies: CHEBI:17761 ceramide
 """
-#!/usr/bin/env python3
 """
 Classifies: Ceramide (N-acyl-sphingoid bases)
 
-Ceramides are sphingoid base derivatives characterized by an amide‐linked fatty acid.
-The fatty acid is typically saturated or monounsaturated and has a chain length of 14–26 carbons.
-A hydroxyl group on the sphingoid base (often near the amide nitrogen, e.g. on C2) is common.
-This implementation:
-  • Parses the molecule and adds explicit hydrogens (to improve –OH detection)
-  • Searches for amide groups (using SMARTS “C(=O)N”)
-  • For each amide, examines the carbonyl side for a contiguous, acyclic carbon chain of 14–26 atoms.
-  • From the amide nitrogen side, performs a breadth-first search (up to 3 bonds) for an oxygen
-    atom with an –OH moiety.
-If both features are found on any of the amide linkages, the molecule is classified as a ceramide.
+Ceramides are defined as sphingoid base derivatives that contain an amide-linked fatty acid.
+The fatty acid is typically saturated or monounsaturated with a chain length from 14 to 26 carbons.
+A sphingoid base generally has an amino group (whose acylation gives the amide) and at least one hydroxyl group (often at carbon 2).
+This implementation uses simple SMARTS patterns and a routine to measure the length of the fatty acyl chain.
+Note: This is a heuristic classifier and may not capture every nuance of ceramide structure.
 """
-
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_ceramide(smiles: str):
     """
-    Determines if a molecule is a ceramide based on its SMILES string.
+    Determines if a molecule is a ceramide, based on its SMILES string.
     
-    It performs the following checks for each amide linkage (C(=O)N):
-      1. On the carbonyl side (fatty acyl side), there must be a contiguous, acyclic carbon chain
-         of 14–26 carbons.
-      2. On the nitrogen side (sphingoid base), within up to 3 bonds (excluding the carbonyl),
-         an oxygen atom with at least one hydrogen (likely an –OH group) must be found.
+    Checks for:
+      1. The presence of an amide group (C(=O)N).
+      2. That one side of an amide bond carries a contiguous alkyl chain (only carbon atoms)
+         having between 14 and 26 atoms (the typical fatty acid chain).
+      3. A rough sphingoid base pattern, here defined as a nitrogen attached to a carbon
+         that is also bound to a hydroxymethyl group (i.e. pattern "N[C](CO)").
     
     Args:
-       smiles (str): SMILES string representing the molecule.
+        smiles (str): SMILES string of the molecule.
     
     Returns:
-       bool: True if classified as a ceramide, False otherwise.
-       str: Explanation for the classification.
+        bool: True if the molecule is classified as a ceramide, False otherwise.
+        str: A reason for the classification.
     """
-    # Parse the SMILES string
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    # Add explicit hydrogens to aid in detecting –OH groups
-    mol = Chem.AddHs(mol)
     
-    # 1. Look for an amide linkage (SMARTS: C(=O)N)
+    # --- 1. Check for an amide functional group ---
+    # Using a simple SMARTS for an amide: carbonyl carbon attached to a nitrogen.
     amide_smarts = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_smarts)
     if not amide_matches:
         return False, "No amide group (C(=O)N) found"
     
-    # Helper: recursively determine the maximum length of a contiguous, acyclic carbon chain
-    def linear_chain_length(atom_idx, coming_from, visited):
-        atom = mol.GetAtomWithIdx(atom_idx)
-        # Do not follow through rings
-        if atom.IsInRing():
-            return 0
+    # --- 2. Check for a sphingoid base pattern ---
+    # This is a heuristic: we look for a pattern where a nitrogen is attached to a carbon
+    # that in turn is attached to a –CH2OH group. (Many sphingoid bases have an N-C(CO) motif.)
+    sphingo_smarts = Chem.MolFromSmarts("N[C](CO)")
+    if not mol.HasSubstructMatch(sphingo_smarts):
+        return False, "No sphingoid base pattern (e.g. N[C](CO)) found"
+    
+    # --- Helper: Compute the longest contiguous carbon chain from a starting carbon.
+    def longest_chain(mol, current_idx, coming_from_idx, visited):
+        """
+        Recursively compute the length of the longest contiguous chain 
+        (only following carbon atoms) starting from current_idx.
+        
+        Args:
+            mol: RDKit Mol object.
+            current_idx: int, current atom index.
+            coming_from_idx: int, the atom index from which we came.
+            visited: set, indices already visited in the current chain.
+            
+        Returns:
+            int: longest chain length (counting the current carbon as 1).
+        """
         max_length = 1
-        for nb in atom.GetNeighbors():
+        current_atom = mol.GetAtomWithIdx(current_idx)
+        for nb in current_atom.GetNeighbors():
             nb_idx = nb.GetIdx()
-            if nb_idx == coming_from:
+            if nb_idx == coming_from_idx:
                 continue
-            if nb.GetAtomicNum() == 6 and nb_idx not in visited:
-                new_visited = visited.copy()
-                new_visited.add(nb_idx)
-                branch_length = 1 + linear_chain_length(nb_idx, atom_idx, new_visited)
-                if branch_length > max_length:
-                    max_length = branch_length
+            if nb.GetAtomicNum() != 6:  # Follow only carbon atoms
+                continue
+            if nb_idx in visited:
+                continue
+            # Copy visited for each branch to avoid cross‐branch contamination.
+            new_visited = visited.copy()
+            new_visited.add(nb_idx)
+            branch_length = 1 + longest_chain(mol, nb_idx, current_idx, new_visited)
+            if branch_length > max_length:
+                max_length = branch_length
         return max_length
-    
-    # Helper: from the amide nitrogen, perform a BFS (up to depth 3) excluding the carbonyl atom,
-    # to search for an oxygen atom that appears to be in an –OH group (i.e. has at least one hydrogen).
-    def has_sphingoid_feature(n_atom, carbonyl_idx):
-        from collections import deque
-        visited = set()
-        # Queue contains tuples: (atom, depth)
-        queue = deque()
-        # Start with neighbors of the amide nitrogen (except the carbonyl)
-        for neighbor in n_atom.GetNeighbors():
-            if neighbor.GetIdx() == carbonyl_idx:
-                continue
-            queue.append((neighbor, 1))
-            visited.add(neighbor.GetIdx())
-        max_depth = 3
-        while queue:
-            current, depth = queue.popleft()
-            # Check if current atom is oxygen with an –OH (i.e. at least one explicit hydrogen)
-            if current.GetAtomicNum() == 8 and current.GetTotalNumHs() > 0:
-                return True
-            # Otherwise, if we have not reached max depth, add neighbors (except we do not go back to n_atom)
-            if depth < max_depth:
-                for nb in current.GetNeighbors():
-                    nb_idx = nb.GetIdx()
-                    if nb_idx in visited:
-                        continue
-                    # Avoid going back to the original amide nitrogen or to the carbonyl atom
-                    if nb.GetIdx() == n_atom.GetIdx() or nb.GetIdx() == carbonyl_idx:
-                        continue
-                    visited.add(nb_idx)
-                    queue.append((nb, depth + 1))
-        return False
 
-    # Process each amide match
+    # --- 3. Check that one amide bond has a fatty acyl chain in the correct range ---
+    fatty_acyl_found = False
     for match in amide_matches:
-        # match is a tuple of atom indices corresponding to (carbonyl carbon, oxygen, amide N)
-        # We only need the carbonyl carbon (first atom) and the amide nitrogen (last atom)
+        # In the SMARTS "C(=O)N", match[0] is the carbonyl carbon and match[1] is the nitrogen.
         carbonyl_idx = match[0]
-        n_idx = match[-1]
+        nitrogen_idx = match[1]
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
-        n_atom = mol.GetAtomWithIdx(n_idx)
-        
-        # --- 2. Check the fatty acyl chain: examine neighbors of the carbonyl (excluding the amide N)
-        fatty_acyl_found = False
-        valid_chain_length = None
+        # Look at neighbors of the carbonyl carbon.
+        # One neighbor is the nitrogen (already in the amide) and one is the carbonyl oxygen.
+        # We look for a carbon neighbor that could be the start of a fatty acid chain.
+        fatty_neighbors = []
         for nb in carbonyl_atom.GetNeighbors():
-            if nb.GetIdx() == n_idx:  # skip the amide nitrogen
+            nb_idx = nb.GetIdx()
+            if nb_idx == nitrogen_idx:
                 continue
-            if nb.GetAtomicNum() != 6:  # must be carbon
+            if nb.GetAtomicNum() == 8:  # likely the carbonyl oxygen
                 continue
-            # Only consider chains that are not in rings.
-            if nb.IsInRing():
-                continue
-            # Use our DFS helper to count the number of contiguous acyclic carbons:
-            chain_len = linear_chain_length(nb.GetIdx(), carbonyl_idx, {nb.GetIdx()})
-            if 14 <= chain_len <= 26:
+            if nb.GetAtomicNum() == 6:
+                fatty_neighbors.append(nb_idx)
+        # For each candidate start, check its contiguous carbon chain length.
+        for start_idx in fatty_neighbors:
+            chain_length = longest_chain(mol, start_idx, carbonyl_idx, {start_idx})
+            # The fatty acid chain length in ceramides is typically 14–26 carbons.
+            if 14 <= chain_length <= 26:
                 fatty_acyl_found = True
-                valid_chain_length = chain_len
                 break
-        
-        if not fatty_acyl_found:
-            # Try next amide match if available
-            continue
-        
-        # --- 3. Check the sphingoid base side: from the nitrogen, search for an –OH within up to 3 bonds.
-        if has_sphingoid_feature(n_atom, carbonyl_idx):
-            message = ("Molecule is classified as a ceramide: Amide linkage found with a fatty acyl chain "
-                       "of ~{} contiguous carbons and a nearby sphingoid base feature (–OH within three bonds "
-                       "of the amide nitrogen).".format(valid_chain_length))
-            return True, message
-        # If an amide match had a valid fatty acyl chain but the sphingoid base feature is missing,
-        # continue to see if another amide group meets both criteria.
+        if fatty_acyl_found:
+            break
+    if not fatty_acyl_found:
+        return False, "No fatty acyl chain (14-26 contiguous carbons) found attached via amide linkage"
     
-    # If no amide linkage satisfies both criteria, return an explanation.
-    # Determine which feature was never found.
-    if not any(linear_chain_length(nb.GetIdx(), match[0], {nb.GetIdx()}) >= 14 and 
-               linear_chain_length(nb.GetIdx(), match[0], {nb.GetIdx()}) <= 26 
-               for match in amide_matches 
-               for nb in mol.GetAtomWithIdx(match[0]).GetNeighbors() if nb.GetIdx() != match[-1] and nb.GetAtomicNum() == 6):
-        return False, "No fatty acyl chain with 14–26 contiguous acyclic carbons (attached to an amide carbonyl) found"
-    else:
-        return False, "Fatty acyl chain found, but no suitable sphingoid base feature (–OH near the amide N) was detected"
-
-# Example usage:
-# Uncomment the following lines to test with one of the ceramide SMILES examples:
-# test_smiles = "CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)CCCCCCCCCCCCCCC"  # N-eicosanoylsphinganine
-# result, reason = is_ceramide(test_smiles)
-# print(result, reason)
+    return True, "Molecule contains an amide-linked fatty acid (14-26 carbons) and a sphingoid base backbone"
