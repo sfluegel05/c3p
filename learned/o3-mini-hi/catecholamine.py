@@ -3,11 +3,11 @@ Classifies: CHEBI:33567 catecholamine
 """
 #!/usr/bin/env python
 """
-Classifies: catecholamine 
-Definition: catecholamines include 4-(2-Aminoethyl)pyrocatechol and derivatives.
-A catecholamine must contain:
-  (i) a catechol moiety—a benzene ring (six-membered aromatic ring) with two adjacent oxygen substituents,
-  (ii) an aminoethyl side chain attached directly to the catechol ring (i.e. a two carbon aliphatic chain ending in an amine).
+Classifies: catecholamine
+Definition: Catecholamines include 4-(2-Aminoethyl)pyrocatechol and derivatives.
+A valid catecholamine must contain:
+  (i) a catechol moiety – that is an aromatic six-membered ring (benzene) with two adjacent oxygen substituents (e.g. hydroxyl groups),
+  (ii) an aminoethyl side chain – a 2-carbon aliphatic chain ending in a nitrogen – that is attached directly to one of the ring atoms.
 This program uses RDKit for molecule parsing and heuristic substructure detection.
 """
 
@@ -17,10 +17,9 @@ def is_catecholamine(smiles: str):
     """
     Determines if a molecule is a catecholamine based on its SMILES string.
     
-    The molecule must have:
-      - An aromatic benzene ring (6-membered) that bears at least 2 adjacent oxygen substituents 
-        (these are not part of the ring, e.g. –OH, -OCH3, etc.),
-      - An aminoethyl side chain (i.e. a 2-carbon chain ending with an amine) attached directly to one of the ring atoms.
+    It requires:
+      - An aromatic six-membered ring that has two adjacent oxygen substituents (hydroxyl-like group) attached,
+      - An aminoethyl side chain (CH2-CH2-N...) attached directly to an atom of that catechol ring.
     
     Args:
       smiles (str): SMILES string representing the molecule.
@@ -29,108 +28,126 @@ def is_catecholamine(smiles: str):
       bool: True if the molecule is classified as a catecholamine, False otherwise.
       str: Reason for the classification decision.
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     ring_info = mol.GetRingInfo().AtomRings()
-    catechol_found = False    # At least one catechol ring found
-    chain_attached = False    # At least one catechol ring has an aminoethyl side chain
-    msg_no_ring = "No catechol ring (aromatic 6-membered ring with adjacent oxygen substituents) found"
-    msg_no_chain = "Catechol ring detected but no attached aminoethyl side chain (2-carbon chain ending in N) found"
-    
-    # Helper: Given a ring atom index, check if it has an aminoethyl chain attached.
-    def has_aminoethyl_chain(ring_atom_idx):
-        # For every neighbor outside the ring, try to detect a chain: ring_atom --> carbon (first) --> carbon (second) --> nitrogen
-        ring_atom = mol.GetAtomWithIdx(ring_atom_idx)
+    found_catechol_ring = False
+    found_aminoethyl = False
+    catechol_ring_indices = None
+
+    # Helper function: Check if a given oxygen atom attached to a ring atom looks like a hydroxyl.
+    def is_hydroxyl(o_atom):
+        # Check oxygen: must be atomic number 8, attached via a single bond,
+        # and have at least one hydrogen (explicit or implicit).
+        if o_atom.GetAtomicNum() != 8:
+            return False
+        # Must be connected via a SINGLE bond.
+        for bond in o_atom.GetBonds():
+            if bond.GetBondType() != Chem.BondType.SINGLE:
+                return False
+        # Check hydrogen count: note that RDKit usually has implicit Hs.
+        if o_atom.GetTotalNumHs() < 1:
+            return False
+        return True
+
+    # Helper function: Check if a substituent on a ring atom is an aminoethyl chain.
+    def has_aminoethyl_chain(ring_atom, ring_set):
+        # Look at each neighbor of ring_atom that is not in the ring.
         for nbr1 in ring_atom.GetNeighbors():
-            # Ensure neighbor is not part of the ring.
-            if nbr1.GetIdx() == ring_atom_idx:
+            if nbr1.GetIdx() in ring_set:
                 continue
-            if nbr1.GetIdx() in current_ring: 
-                continue
-            # First atom should be an aliphatic carbon.
+            # The first atom should be a non‐aromatic carbon (ideally CH2, but may have extra substituents)
             if nbr1.GetAtomicNum() != 6 or nbr1.GetIsAromatic():
                 continue
-            # Explore second bond from nbr1
+            # Now, look for a second carbon attached to nbr1 (and not part of the ring and not going back to ring_atom)
             for nbr2 in nbr1.GetNeighbors():
-                if nbr2.GetIdx() == ring_atom_idx:
+                if nbr2.GetIdx() == ring_atom.GetIdx():
                     continue
-                # We allow the first carbon to be substituted (e.g. -OH attached)
-                # Look for a second carbon in the chain (should be aliphatic carbon)
+                if nbr2.GetIdx() in ring_set:
+                    continue
                 if nbr2.GetAtomicNum() != 6 or nbr2.GetIsAromatic():
                     continue
-                # Now, look for a nitrogen attached to nbr2.
+                # Finally, check if nbr2 has a nitrogen attached (other than nbr1)
                 for nbr3 in nbr2.GetNeighbors():
-                    if nbr3.GetIdx() in (nbr1.GetIdx(), ring_atom_idx):
+                    if nbr3.GetIdx() in (nbr1.GetIdx(), ring_atom.GetIdx()):
                         continue
                     if nbr3.GetAtomicNum() == 7:
                         return True
         return False
 
-    # Look for catechol ring: an aromatic 6-membered ring with at least two adjacent oxygen substituents.
+    # Loop over rings – we only care about aromatic six-membered rings.
     for ring in ring_info:
         if len(ring) != 6:
             continue
-        # Check that all atoms in the ring are aromatic.
+        # Check that every atom of the ring is aromatic.
         if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
             continue
-        
-        # For each ring atom, check if an oxygen substituent (not in the ring) is bonded via a single bond.
-        oxy_substituted = set()
+
+        # Now check for catechol: find two adjacent ring atoms that both have an oxygen substituent (likely –OH).
+        # Instead of using cyclic order from the ring definition (which may be in arbitrary order),
+        # we check each bond within the ring.
+        ring_set = set(ring)
+        # For each atom in the ring, note if it has a hydroxyl substituent attached.
+        hydroxyl_on_atom = {}
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
+            has_OH = False
             for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() in ring:
+                if nbr.GetIdx() in ring_set:
                     continue
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                if nbr.GetAtomicNum() == 8 and bond is not None and bond.GetBondType() == Chem.BondType.SINGLE:
-                    oxy_substituted.add(idx)
+                if is_hydroxyl(nbr):
+                    has_OH = True
                     break
-        # To be catechol, we need at least two adjacent ring atoms with oxygen substituents.
-        if len(oxy_substituted) < 2:
-            continue
-        # Check for adjacency in the ring (cyclic order).
-        ring_is_catechol = False
-        ring_len = len(ring)
-        for i in range(ring_len):
-            current_atom_idx = ring[i]
-            next_atom_idx = ring[(i+1) % ring_len]
-            if current_atom_idx in oxy_substituted and next_atom_idx in oxy_substituted:
-                ring_is_catechol = True
-                break
-        if not ring_is_catechol:
-            continue
-        
-        # If this ring qualifies as a catechol moiety, mark that one was found.
-        catechol_found = True
-        # Save the current ring indices for use in chain search.
-        current_ring = set(ring)
-        # Now, for each atom in the ring, try to detect the aminoethyl chain attached directly.
+            hydroxyl_on_atom[idx] = has_OH
+
+        # Now check bonds between atoms in the ring: if two bonded ring atoms both have OH.
+        catechol_in_ring = False
         for idx in ring:
-            if has_aminoethyl_chain(idx):
-                chain_attached = True
-                # We break out if we find at least one catechol ring with an attached aminoethyl chain.
+            atom = mol.GetAtomWithIdx(idx)
+            for bond in atom.GetBonds():
+                a1 = bond.GetBeginAtom()
+                a2 = bond.GetEndAtom()
+                if a1.GetIdx() in ring_set and a2.GetIdx() in ring_set:
+                    if hydroxyl_on_atom.get(a1.GetIdx(), False) and hydroxyl_on_atom.get(a2.GetIdx(), False):
+                        catechol_in_ring = True
+                        break
+            if catechol_in_ring:
                 break
-        if chain_attached:
-            break  # no need to search further
 
-    if not catechol_found:
-        return False, msg_no_ring
-    if not chain_attached:
-        return False, msg_no_chain
+        if not catechol_in_ring:
+            continue
 
-    return True, "Contains a catechol moiety with an aminoethyl side chain attached directly to the ring"
+        # We have a catechol ring. Now check if at least one ring atom has an attached aminoethyl chain.
+        for idx in ring:
+            ring_atom = mol.GetAtomWithIdx(idx)
+            if has_aminoethyl_chain(ring_atom, ring_set):
+                found_aminoethyl = True
+                break
 
-# For testing purposes
+        if catechol_in_ring:
+            found_catechol_ring = True
+            catechol_ring_indices = ring_set
+            # If we found an aminoethyl chain for this ring, we can stop.
+            if found_aminoethyl:
+                break
+
+    if not found_catechol_ring:
+        return False, "No catechol ring (aromatic six‐membered ring with two adjacent hydroxyl groups) found"
+
+    if not found_aminoethyl:
+        return False, "Catechol ring detected but no directly attached aminoethyl chain (–CH2–CH2–N...) found"
+
+    return True, "Contains a catechol ring with an aminoethyl side chain attached directly to the ring"
+
+# For testing purposes when run as a stand-alone script.
 if __name__ == "__main__":
-    # (The examples below are provided for testing and demonstrate that a molecule must have 
-    # both the catechol ring and an aminoethyl side chain directly connected)
     test_molecules = [
         # True positives (catecholamine examples)
         ("C(CNCCCCCCNCCC1=CC=CC=C1)C2=CC(O)=C(C=C2)O", "dopexamine"),
         ("OC(=O)C1CC(=C\\C=N/CCc2ccc(O)c(O)c2)/C=C(N1)C(O)=O", "Miraxanthin-V"),
+        ("C=1(C=C(C(=CC1)O)OC)C(O)CN", "Normetanephrine"),
         ("C[C@H](N)[C@H](O)c1ccc(O)c(O)c1", "(-)-alpha-Methylnoradrenaline"),
         ("C=1(C=C(C(O)=CC1)O)CCN.Cl", "Dopamine hydrochloride"),
         ("C=1(C(=CC=C(C1)CCN[C@@H](CCC=2C=CC(=CC2)O)C)O)O", "(R)-dobutamine"),
@@ -138,6 +155,7 @@ if __name__ == "__main__":
         ("OC(=O)[C@H](Cc1ccc(O)c(O)c1)\\N=C/C=C1C[C@H](NC(=C\\1)C(O)=O)C(O)=O", "Dopaxanthin"),
         ("CNC[C@H](O)c1ccc(O)c(O)c1", "(R)-adrenaline"),
         ("CC(N)C(O)c1ccc(O)c(O)c1", "Nordephrine"),
+        ("O(C)C1=C(O)C=CC(C(O)CNC)=C1", "Metanephrine"),
         ("NC[C@@H](O)c1ccc(O)c(O)c1", "(S)-noradrenaline"),
         ("[C@@H]([C@@H](N)C)(O)C1=CC(O)=C(C=C1)O", "alpha-methylnoradrenaline"),
         ("C1=C(C(=CC(=C1O)O)[N+](=O)[O-])CCN", "4-(2-aminoethyl)-5-nitrobenzene-1,2-diol"),
@@ -147,6 +165,7 @@ if __name__ == "__main__":
         ("CNCC(O)C1=CC(O)=C(O)C=C1", "4-[1-hydroxy-2-(methylamino)ethyl]benzene-1,2-diol"),
         ("NC[C@H](O)c1ccc(O)c(O)c1", "(R)-noradrenaline"),
         ("CC(C)NC[C@H](O)c1ccc(O)c(O)c1", "L-isoprenaline"),
+        ("S(OC1=C(O)C=C([C@@H](O)CNC)C=C1)(O)(=O)=O", "Epinephrine sulfate"),
         ("NCC(O)c1ccc(O)c(O)c1", "noradrenaline"),
         ("OC1=C(O)C=C(CCN)C=C1O", "5-Hydroxydopamine"),
         ("N[C@@H](CSc1cc(C[C@H](N)C(O)=O)cc(O)c1O)C(O)=O", "Cysteinyldopa"),
@@ -154,10 +173,9 @@ if __name__ == "__main__":
         ("NCCc1ccc(O)c(O)c1", "dopamine"),
         ("CCCN(CCC)CCC1=CC(=C(C=C1)O)O", "4-[2-(dipropylamino)ethyl]benzene-1,2-diol"),
         ("C[N+](C)(C)CCc1ccc(O)c(O)c1", "Coryneine"),
-        
-        # False positives (molecules that have similar fragments but not connected as a catecholamine)
+        # False positives (molecules that have similar fragments but should not be classified as catecholamines)
         ("CCOC1=C(C=C(C=C1)CCNC(=O)CC2=CC=CC=C2)OCC", "N-[2-(3,4-diethoxyphenyl)ethyl]-2-phenylacetamide"),
-        # More false positive examples from the provided data can be tested.
+        # Additional false positive examples provided can be tested similarly.
     ]
     
     for smi, name in test_molecules:
