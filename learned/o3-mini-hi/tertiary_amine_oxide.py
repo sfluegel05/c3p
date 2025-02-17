@@ -4,13 +4,10 @@ Classifies: CHEBI:134363 tertiary amine oxide
 #!/usr/bin/env python3
 """
 Classifies: Tertiary amine oxide
-Definition: An N-oxide where there are three organic groups (i.e., carbon‐based substituents)
-bonded to the nitrogen atom. In our interpretation the nitrogen should be tetrahedral (sp3) with
-a formal +1 charge; it must be bonded to exactly one oxygen atom (having a –1 charge and connected
-by a single bond) and three carbon atoms. In addition, each carbon substituent should be “simple”
-in that its immediate neighbors (apart from the amine-oxide nitrogen) are only carbons or hydrogens.
-This extra check helps eliminate candidates embedded in complex heterocyclic or heteroatom–rich 
-environments.
+Definition: An N-oxide in which a tetrahedral (sp3) nitrogen (with a +1 formal charge) is bonded to 
+exactly one oxygen atom (with a -1 formal charge via a single bond) and three carbon atoms. Furthermore, 
+each carbon substituent must be “simple” – that is, aside from its bond to the nitrogen, its immediate 
+neighbors are only carbons or hydrogens (or, if in a ring, the entire ring must be free of heteroatoms).
 """
 
 from rdkit import Chem
@@ -20,21 +17,19 @@ def is_tertiary_amine_oxide(smiles: str):
     Determines if a molecule is a tertiary amine oxide based on its SMILES string.
     
     The improved algorithm:
-      1. Parse the SMILES into an RDKit molecule.
-      2. Iterate over all atoms looking for nitrogen atoms that:
-          a. Have symbol "N" with a formal charge of +1.
-          b. Are tetrahedral (degree 4) and not aromatic.
-      3. For each such candidate nitrogen, count the neighbors.
-         - Exactly one neighbor must be an oxygen atom with a formal charge of –1,
-           and the N–O bond must be single; also require that the oxygen is only bonded
-           to this nitrogen.
-         - The other three neighbors must be carbon atoms.
-      4. Further, each carbon neighbor is examined: in its own 1-bond environment (excluding 
-         the candidate nitrogen), all attached heavy atoms must be carbons (atomic number 6). 
-         This is a simple heuristic to enforce that the substituent is a “pure” organic group.
-      5. If any candidate nitrogen satisfies these conditions, return True with a success message.
+      1. Parse the SMILES string.
+      2. Iterate over atoms looking for nitrogen atoms that:
+         - Have symbol "N" with a formal charge of +1.
+         - Are tetrahedral (degree 4) and not aromatic.
+      3. For each candidate nitrogen, require that exactly one neighbor is an oxygen with a -1 charge,
+         that is single-bonded to N and that oxygen is linked only to that candidate nitrogen.
+      4. The other three neighbors must be carbon atoms.
+      5. For each carbon neighbor, check that its immediate neighbours (apart from the candidate nitrogen)
+         consist only of carbons or hydrogens. If the carbon is in a ring, then if any other neighbor 
+         “shares” a ring with the carbon the entire ring must include only carbons and hydrogens.
+      6. If any candidate N passes these tests, return True with a success message.
          Otherwise, return False.
-    
+
     Args:
         smiles (str): SMILES string of the molecule.
     
@@ -45,57 +40,70 @@ def is_tertiary_amine_oxide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Get ring information from the molecule (list of tuples of atom indices for each ring)
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
+    
+    # Helper function: given a candidate carbon (by its index) and one of its neighbor indices,
+    # if that neighbor is not carbon or hydrogen then allow it only if the candidate carbon and that neighbor
+    # appear together in a ring that contains exclusively carbon and hydrogen.
+    def neighbor_allowed(candidate_idx, nbr):
+        # direct allowed if the neighbor is carbon (atomic number 6) or hydrogen (atomic number 1)
+        if nbr.GetAtomicNum() in (1, 6):
+            return True
 
-    # Iterate over all atoms looking for candidate nitrogen centers
+        # Otherwise, check if candidate and neighbor share a ring that is “simple”
+        for ring in rings:
+            if candidate_idx in ring and nbr.GetIdx() in ring:
+                # Check if all atoms in this ring are carbons or hydrogens.
+                if all(mol.GetAtomWithIdx(a).GetAtomicNum() in (1, 6) for a in ring):
+                    return True
+        return False
+
+    # Iterate over candidate atoms
     for atom in mol.GetAtoms():
-        # Check if the atom is nitrogen with formal charge +1
         if atom.GetSymbol() != "N" or atom.GetFormalCharge() != 1:
             continue
-        # Nitrogen should have exactly 4 neighbors (tetrahedral) and not be aromatic.
+        # Require tetrahedral: degree equals 4 and not aromatic.
         if atom.GetDegree() != 4 or atom.GetIsAromatic():
             continue
 
         neighbors = atom.GetNeighbors()
         oxide_count = 0
-        organic_count = 0
-
-        # To store the candidate oxygen and carbon neighbors
+        carbon_neighbors = []
         candidate_oxygen = None
-        candidate_carbons = []
-        
+
+        # Examine neighbors of the candidate nitrogen.
         for nbr in neighbors:
             bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-            # Check for oxygen neighbor with formal charge -1 and single bond
+            # Test if neighbor is an oxygen with proper formal charge and single-bonded.
             if nbr.GetSymbol() == "O" and nbr.GetFormalCharge() == -1:
                 if bond is not None and bond.GetBondType() == Chem.BondType.SINGLE:
                     oxide_count += 1
                     candidate_oxygen = nbr
-            elif nbr.GetAtomicNum() == 6:  # Carbon atom
-                organic_count += 1
-                candidate_carbons.append(nbr)
-            # Any other neighbor is not allowed for a tertiary amine oxide center.
+            elif nbr.GetAtomicNum() == 6:  # carbon atom
+                carbon_neighbors.append(nbr)
+            else:
+                # Any other substituent type is not allowed under the strict definition.
+                pass
 
-        # Basic check for counts: exactly one oxide and three carbons.
-        if oxide_count != 1 or organic_count != 3:
+        # We require exactly one oxygen and three carbon substituents.
+        if oxide_count != 1 or len(carbon_neighbors) != 3:
             continue
 
-        # Additional check: ensure the oxygen is connected only to the candidate nitrogen.
-        if candidate_oxygen is not None:
-            # Get neighbors of the oxygen (should only be the N).
-            o_neighbors = candidate_oxygen.GetNeighbors()
-            if len(o_neighbors) != 1:
-                continue
+        # Check the candidate oxygen: it should only be connected to this candidate nitrogen.
+        if candidate_oxygen.GetDegree() != 1:
+            continue
 
-        # Further check: for each carbon neighbor, verify that its other neighbors (except the candidate N)
-        # consist only of carbons or hydrogens.
+        # For each carbon neighbor, check that its immediate (1-bond) environment (ignoring the candidate N)
+        # is only made of carbons or hydrogens (or if not, the offending neighbor is in a ring that is purely C/H).
         valid_substituents = True
-        for c_atom in candidate_carbons:
+        for c_atom in carbon_neighbors:
             for nbr in c_atom.GetNeighbors():
-                # Skip the candidate nitrogen itself
                 if nbr.GetIdx() == atom.GetIdx():
                     continue
-                # Allow hydrogen (atomic number 1) and carbon (atomic number 6)
-                if nbr.GetAtomicNum() not in (1, 6):
+                if not neighbor_allowed(c_atom.GetIdx(), nbr):
                     valid_substituents = False
                     break
             if not valid_substituents:
@@ -104,23 +112,24 @@ def is_tertiary_amine_oxide(smiles: str):
         if not valid_substituents:
             continue
 
-        # If all tests pass for this candidate N, we classify the molecule as a tertiary amine oxide.
+        # If all tests pass for this candidate nitrogen then we classify the molecule as a tertiary amine oxide.
         return True, ("Found a tertiary amine oxide functional group "
-                      "(N+ bonded to O- via a single bond and three carbon substituents "
-                      "with each carbon substituent being a simple organic group)")
-    
+                      "(N+ bonded to O- via a single bond and three carbon substituents, each of which is a "
+                      "simple organic group)")
+
     return False, "No tertiary amine oxide functional group found"
 
-# Optional: quick testing when running the module directly.
+
+# Optional testing routine when module is run directly.
 if __name__ == "__main__":
     test_examples = [
         # True positives:
-        "C[N+](C)([O-])C",  # trimethylamine N-oxide
-        "C1=CC([C@]2([N@+](CCC2)([O-])C)[H])=CN=C1",  # trans-(S)-nicotine N(1')-oxide
+        ("C[N+](C)([O-])C", "trimethylamine N-oxide"),
+        ("C1=CC([C@]2([N@+](CCC2)([O-])C)[H])=CN=C1", "trans-(S)-nicotine N(1')-oxide"),
         # False positive example:
-        "C(CC[N+](C)(C)[O-])N1C=2C(CCC3=C1C=CC=C3)=CC=CC2"  # imipramine oxide (expected to be rejected)
+        ("C(CC[N+](C)(C)[O-])N1C=2C(CCC3=C1C=CC=C3)=CC=CC2", "imipramine oxide (expected to be rejected)"),
     ]
     
-    for s in test_examples:
+    for s, name in test_examples:
         result, reason = is_tertiary_amine_oxide(s)
-        print(f"SMILES: {s}\nResult: {result}\nReason: {reason}\n")
+        print(f"SMILES: {s}\nName: {name}\nResult: {result}\nReason: {reason}\n")
