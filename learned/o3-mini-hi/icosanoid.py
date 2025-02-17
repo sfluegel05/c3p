@@ -3,15 +3,21 @@ Classifies: CHEBI:23899 icosanoid
 """
 """
 Classifies: Icosanoid
-Definition: Any member of the group of signalling molecules arising from oxidation of the three C20 essential fatty acids (EFAs) – icosapentaenoic acid (EPA), arachidonic acid (AA) and dihomo-gamma-linolenic acid (DGLA).
+Definition: Any member of the group of signalling molecules arising from oxidation 
+of the three C20 essential fatty acids (EFAs) – icosapentaenoic acid (EPA), arachidonic acid (AA)
+and dihomo-gamma-linolenic acid (DGLA).
+
 Heuristic criteria applied:
   • The SMILES must be valid.
-  • The overall molecular weight should lie between 250 and 900 Da.
-  • The total carbon count must be at least 15 (but we do not enforce a strict upper limit, since conjugation may add extra carbons).
-  • The molecule must contain at least one oxygenated carbonyl fragment (as in an acid or ester group).
-  • It must contain at least one non-aromatic C=C double bond (to help avoid counting carbonyl C=O bonds or aromatic systems).
-  • Its longest continuous carbon chain (as a proxy for the oxidized fatty acid backbone) should be roughly between 12 and 25 carbons.
-Note: This is a heuristic that may miss nuances of icosanoid chemistry.
+  • Molecular weight between 250 and 900 Da.
+  • (Total carbon count is noted, and if the molecule is completely linear with no rings, 
+    it is assumed to be a simple fatty acid.)
+  • Contains at least one oxygenated carbonyl group. Here the SMARTS "[CX3]=O" is used,
+    unless the molecule contains phosphorus (which indicates possible conjugation).
+  • Contains at least one non‐aromatic C=C (alkene) double bond.
+  • The longest continuous carbon chain (computed via DFS) must be at least 15 carbons long.
+    
+Note: This heuristic – though improved relative to the previous version – is still an approximation.
 """
 
 from rdkit import Chem
@@ -19,20 +25,20 @@ from rdkit.Chem import rdMolDescriptors
 
 def longest_carbon_chain(mol):
     """
-    Computes the longest continuous chain containing only carbon atoms.
-    Uses a depth-first search (DFS) on the subgraph of carbon atoms.
+    Compute the longest simple path (chain) consisting solely of carbon atoms.
+    We first build a graph for carbon–atoms (atomic number 6) and then perform a DFS.
     """
-    # Build graph: for every carbon, list its carbon neighbors.
+    # Build a graph: for every carbon, list neighboring carbons.
     carbon_graph = {}
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon
+        if atom.GetAtomicNum() == 6:
             idx = atom.GetIdx()
             carbon_graph[idx] = []
             for nbr in atom.GetNeighbors():
                 if nbr.GetAtomicNum() == 6:
                     carbon_graph[idx].append(nbr.GetIdx())
-    
-    # DFS to find the longest simple path in the carbon graph.
+                    
+    # DFS function to find the longest simple path.
     max_length = 0
     def dfs(node, visited):
         current_max = 1
@@ -48,84 +54,94 @@ def longest_carbon_chain(mol):
         if chain_length > max_length:
             max_length = chain_length
     return max_length
-    
-    
+
 def is_icosanoid(smiles: str):
     """
-    Determines if a molecule could be an icosanoid based on its SMILES string.
+    Determines whether a molecule qualifies as an icosanoid based on its SMILES string.
     
     Heuristic filters:
-      - Valid molecule.
+      - The SMILES must be valid.
       - Molecular weight between 250 and 900 Da.
-      - Total carbon atom count of at least 15.
-      - Contains a carbonyl-oxygen fragment (as in carboxylic acid/ester, using SMARTS "C(=O)O").
-      - Contains at least one non-aromatic C=C (alkene) double bond.
-      - Has a longest continuous carbon chain (computed via DFS) between 12 and 25 atoms long.
+      - Count total carbon atoms (with note: if the molecule is fully linear – no rings
+        and the longest chain equals the total carbon count – it is likely a simple fatty acid).
+      - Must contain at least one oxygenated carbonyl fragment. We use a general SMARTS "[CX3]=O"
+        unless there is a phosphorus atom present (which may indicate conjugation).
+      - Must have at least one non-aromatic C=C double bond.
+      - The longest continuous carbon chain must be at least 15 carbons long.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if the molecule passes our heuristic for being an icosanoid, False otherwise.
-        str: Reason for the classification.
+        bool: True if the molecule meets the heuristic for icosanoids, False otherwise.
+        str: Reason for classification.
     """
-    # Parse the molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     
-    # Count total carbon atoms.
-    total_c = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if total_c < 15:
-        return False, f"Total carbon count {total_c} is too low for an icosanoid."
+    # Total number of carbon atoms.
+    total_carbon = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Compute molecular weight.
+    # Calculate molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 250 or mol_wt > 900:
-        return False, f"Molecular weight ({mol_wt:.1f} Da) is out of expected 250-900 Da range."
+        return False, f"Molecular weight ({mol_wt:.1f} Da) is outside expected 250-900 Da range."
     
-    # Check for oxygenated carbonyl fragment using SMARTS "C(=O)O".
-    carbonyl_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carbonyl_pattern):
-        return False, "No carbonyl-oxygen fragment (acid/ester group) found."
+    # Check for at least one oxygenated carbonyl fragment.
+    # Using a more general SMARTS that matches any carbonyl group.
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3]=O")
+    # If the molecule contains a phosphorus atom, we assume the carbonyl might be masked (e.g. conjugated ester/phosphate)
+    contains_phosphorus = any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms())
+    if not contains_phosphorus and not mol.HasSubstructMatch(carbonyl_pattern):
+        return False, "No oxygenated carbonyl fragment ([CX3]=O) found."
     
-    # Count non-aromatic C=C double bonds.
+    # Count non-aromatic C=C bonds.
     alkene_count = 0
     for bond in mol.GetBonds():
         if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-            # Check that both atoms are carbon and that the bond is not aromatic.
             a1 = bond.GetBeginAtom()
             a2 = bond.GetEndAtom()
-            if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6 and not bond.GetIsAromatic():
+            if (a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6 and 
+                not bond.GetIsAromatic()):
                 alkene_count += 1
     if alkene_count < 1:
-        return False, "Too few non-aromatic C=C double bonds; icosanoids are typically polyunsaturated."
+        return False, "Too few non-aromatic C=C double bonds; icosanoids are typically unsaturated."
     
-    # Compute the longest continuous carbon chain.
-    chain_length = longest_carbon_chain(mol)
-    if chain_length < 12 or chain_length > 25:
-        return False, f"Longest continuous carbon chain length ({chain_length}) is not in expected range (12-25) for an icosanoid."
+    # Compute longest continuous carbon chain.
+    longest_chain = longest_carbon_chain(mol)
+    if longest_chain < 15:
+        return False, f"Longest continuous carbon chain length ({longest_chain}) is too short to represent a fatty acid backbone."
     
-    # Check for free acid group (free carboxyl) which many icosanoids have.
+    # Check for "simple fatty acid" pattern:
+    # If there are no rings and the longest continuous chain equals the total carbon count,
+    # then the molecule is likely just a linear fatty acid.
+    ring_info = mol.GetRingInfo()
+    n_rings = ring_info.NumRings()
+    if n_rings == 0 and longest_chain == total_carbon:
+        return False, "Molecule appears to be a simple fatty acid (fully linear with no rings)."
+    
+    # Optionally, look for a free carboxylic acid pattern.
     acid_pattern = Chem.MolFromSmarts("C(=O)[O;H1,-]")
     if not mol.HasSubstructMatch(acid_pattern):
         acid_note = " (No free carboxylic acid detected; molecule may be fully esterified/conjugated.)"
     else:
         acid_note = ""
     
-    return True, (f"Meets heuristic criteria for an icosanoid: "
-                  f"(Total C={total_c}, MW={mol_wt:.1f} Da, non-aromatic C=C count={alkene_count}, "
-                  f"Longest C-chain={chain_length}){acid_note}")
-
+    reason = (f"Meets heuristic criteria for an icosanoid: "
+              f"(Total C={total_carbon}, MW={mol_wt:.1f} Da, non-aromatic C=C count={alkene_count}, "
+              f"Longest C-chain={longest_chain}, Rings={n_rings}){acid_note}")
+    return True, reason
 
 # Example usage:
 if __name__ == "__main__":
-    # Some examples from the provided list.
+    # A selection of example SMILES strings (from the provided list)
     smiles_examples = [
         "CCCC\\C=C/C\\C=C/C=C/C=C/[C@@H]1O[C@H]1CCCC(O)=O",  # leukotriene A4
         "CCCC[C@H](OO)\\C=C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O",      # 15(S)-HPETE
         "O[C@H]1[C@@H]([C@H]([C@@H](O)C1)C/C=C\\CCCC(OC(C)C)=O)CC[C@@H](O)CCOC2=CC=CC=C2",  # 17-phenoxy trinor PGF2alpha isopropyl ester
-        "[H]C(CC)=C([H])CCCCCCCCCCCCCCCC(O)=O"  # 17-icosenoic acid
+        "[H]C(CC)=C([H])CCCCCCCCCCCCCCCC(O)=O",               # 17-icosenoic acid (icosanoid, though esterified/conjugated note may appear)
+        "CCCCCC\\C=C\\CCCCCCCCC([O-])=O"                      # (10E)-octadecenoate, a simple linear fatty acid (should be rejected)
     ]
     
     for smi in smiles_examples:
