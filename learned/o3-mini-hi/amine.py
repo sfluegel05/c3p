@@ -4,82 +4,85 @@ Classifies: CHEBI:32952 amine
 """
 Classifies: Amine
 Definition: A compound formally derived from ammonia by replacing one, two or three hydrogen atoms 
-by hydrocarbyl groups. Primary (–NH2), secondary (–NH–) or tertiary (–N–) amines are valid.
-A nitrogen directly bonded to a carbonyl (e.g. in an amide) or that is a part of a heteroaromatic
-ring (e.g. pyridine) is excluded.
+by hydrocarbyl groups. Free amines (primary, secondary or tertiary) are those not directly bonded 
+to a carbonyl (as in an amide) nor part of a heteroaromatic ring.
+ 
+We improve upon the earlier approach by:
+ • More carefully checking if a nitrogen is directly attached to a carbonyl carbon.
+ • Skipping only nitrogens that are truly part of a heteroaromatic system (e.g. pyridine‐like, 
+   where the nitrogen is sp2 and aromatic) while still allowing, for example, aniline.
+ • Using the total hydrogen count from RDKit (GetTotalNumHs) to distinguish primary (–NH2),
+   secondary (–NH–) and tertiary amines (–N–).
+ 
+Note: This heuristic does not guarantee perfect classification over all edge cases.
 """
-
 from rdkit import Chem
 from rdkit.Chem import rdchem
 
 def is_amine(smiles: str):
     """
-    Determines if a molecule contains a qualifying amine functional group based on its SMILES string.
-    The algorithm iterates over nitrogen atoms and checks:
-      - The nitrogen atom is not quaternary.
-      - It is not part of a heteroaromatic ring (e.g. pyridine).
-      - It is not directly attached to a carbonyl moiety (i.e. part of an amide).
-      - It has a hydrogen count consistent with a primary (2 H), secondary (1 H) or tertiary (0 H) 
-        derivative of ammonia.
-        
+    Determines if a molecule contains at least one qualifying “free” amine group based on its SMILES.
+    A free amine is defined as a nitrogen (atomic number 7) that:
+      - Has no positive formal charge.
+      - Is not directly bound to a carbonyl carbon (i.e. part of an amide).
+      - Is not part of a heteroaromatic ring (e.g. a pyridine‐type N); note that amino groups attached
+        to an aromatic ring (e.g. aniline) are allowed if the lone pair remains localized.
+      - Has a hydrogen count (from GetTotalNumHs) of 2 (primary), 1 (secondary) or 0 (tertiary).
+    
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if at least one qualifying free-amine group is found, False otherwise.
+        bool: True if at least one qualifying free-amine is found, False otherwise.
         str: Explanation of what was found or why not.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Iterate over all atoms looking for nitrogen atoms (atomic number 7)
+    # Iterate over all nitrogen atoms in the molecule.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 7:
-            continue  # skip non-nitrogen atoms
+            continue  # not a nitrogen
 
-        # Skip atoms with a positive formal charge (e.g. quaternary ammonium)
+        # Reject if positively charged (e.g. quaternary ammonium).
         if atom.GetFormalCharge() > 0:
             continue
 
-        # Exclude nitrogen atoms in aromatic rings (e.g. pyridine); they are not considered free amines.
-        if atom.GetIsAromatic() and atom.IsInRing():
+        # If the nitrogen is sp2 hybridized and aromatic, it is likely part of a heteroaromatic ring 
+        # (e.g. pyridine). Note: aniline-type amines are typically sp3 so they are not excluded.
+        if atom.GetHybridization() == Chem.HybridizationType.SP2 and atom.GetIsAromatic():
             continue
         
-        # Also reject nitrogens that appear over-coordinated
-        if atom.GetDegree() > 3:
-            continue
-        
-        # Check for attachment to a carbonyl group.
-        attached_to_carbonyl = False
-        for neighbor in atom.GetNeighbors():
-            # Only consider carbon neighbors
-            if neighbor.GetAtomicNum() == 6:
-                # Check each bond of the neighboring carbon.
-                for bond in neighbor.GetBonds():
-                    # Look for a double bond from the carbon neighbor to an oxygen.
-                    if bond.GetBondType() == rdchem.BondType.DOUBLE:
-                        other = bond.GetOtherAtom(neighbor)
-                        if other.GetAtomicNum() == 8:
-                            attached_to_carbonyl = True
+        # Check if the N is directly bonded to a carbonyl group.
+        # That is, for every bond between the N and a carbon, see if that carbon has a double bond to oxygen.
+        is_bound_to_carbonyl = False
+        for bond in atom.GetBonds():
+            other = bond.GetOtherAtom(atom)
+            if other.GetAtomicNum() == 6:  # a carbon neighbor
+                # Look over bonds from the carbon to check for a C=O double bond.
+                for bond2 in other.GetBonds():
+                    # Only consider bonds that are double bonds.
+                    if bond2.GetBondType() == rdchem.BondType.DOUBLE:
+                        neighbor2 = bond2.GetOtherAtom(other)
+                        if neighbor2.GetAtomicNum() == 8:  # oxygen found in a double bond
+                            is_bound_to_carbonyl = True
                             break
-                if attached_to_carbonyl:
+                if is_bound_to_carbonyl:
                     break
-        if attached_to_carbonyl:
+        if is_bound_to_carbonyl:
+            # Reject this nitrogen as it is part of an amide (or similar carbonyl linkage).
             continue
 
-        # Get the total number of bonded hydrogens on this nitrogen.
+        # Determine the number of (implicit+explicit) hydrogen atoms attached.
         nH = atom.GetTotalNumHs()
-        
-        # Classify the amine type based on hydrogen count
         if nH == 2:
             return True, "Found a primary amine (-NH2) group not bound to a carbonyl."
         elif nH == 1:
             return True, "Found a secondary amine (-NH-) group not bound to a carbonyl."
         elif nH == 0:
             return True, "Found a tertiary amine (-N-) group not bound to a carbonyl."
-
-    # No qualifying free amine functional group was found.
+    
     return False, "No qualifying free amine functional group found."
 
 # Example usage:
