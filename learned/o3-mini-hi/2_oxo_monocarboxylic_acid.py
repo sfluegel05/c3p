@@ -6,9 +6,10 @@ Classifies: CHEBI:35910 2-oxo monocarboxylic acid
 Classifies: CHEBI: 2-oxo monocarboxylic acid
 Definition: Any monocarboxylic acid having a 2-oxo substituent.
 A valid molecule must have exactly one carboxylic acid group 
-(–C(=O)[OH] or –C(=O)[O-]) and a single carbon neighbor (the α‐carbon)
-that bears a carbonyl (C=O) substituent.
-This improved version relaxes overly strict requirements on hybridization and connectivity.
+(–C(=O)[OH] or –C(=O)[O-]) and exactly one α‐carbon (the carbon directly 
+bonded to the carboxyl carbon) that bears a 2‑oxo substituent.
+This implementation checks if the α‐carbon (or a substituent on the α‐carbon) 
+has a C=O bond.
 """
 
 from rdkit import Chem
@@ -16,25 +17,27 @@ from rdkit import Chem
 def is_2_oxo_monocarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-oxo monocarboxylic acid based on its SMILES string.
-    
-    The function first verifies that there is exactly one carboxylic acid group.
-    Then it finds the carbon (α‐carbon) directly bonded to the carboxyl carbon and checks 
-    if this α‐carbon has at least one double-bond to an oxygen (the 2‑oxo substituent).
-    
+    It first verifies that there is exactly one carboxylic acid group.
+    Then, for the unique acid group, it checks its directly bonded carbon neighbors
+    (α‐carbons) for evidence of a 2‑oxo substituent. The oxo substituent may be present in two forms:
+      Option A: the α‐carbon itself is a carbonyl (has C(=O) as part of its bonds);
+      Option B: the α‐carbon is sp3 but carries a substituent carbon that is carbonyl (has a double bond to oxygen).
+      
     Args:
         smiles (str): SMILES representation of the molecule.
-    
+        
     Returns:
-        (bool, str): Tuple with a boolean classification and a reasoning string.
-                     Returns (False, "Invalid SMILES string") if the molecule cannot be parsed.
+        (bool, str): Tuple with a boolean (True if classification criteria met) 
+                     and a string explaining the reason.
+                     In case of a parsing error, returns (False, "Invalid SMILES string").
     """
     
     # Parse the molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Define SMARTS for a carboxylic acid group (covers both -COOH and -COO- forms)
+
+    # Define SMARTS for a carboxylic acid group (covers –COOH and –COO– forms)
     acid_smarts = "[CX3](=O)[OX2H1,O-]"
     acid_query = Chem.MolFromSmarts(acid_smarts)
     acid_matches = mol.GetSubstructMatches(acid_query)
@@ -45,42 +48,63 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
     if len(acid_matches) > 1:
         return False, f"Found {len(acid_matches)} carboxylic acid groups; expected exactly one (monocarboxylic acid)"
     
-    # In the SMARTS match, the first atom (index 0) is the carboxyl carbon.
+    # For the unique hit, assume the first atom in the SMARTS (index 0) is the acid carbon.
     acid_carbon_idx = acid_matches[0][0]
     acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
     
-    # Get all carbon neighbors of the acid carbon (potential α-carbons)
+    # Get all neighboring atoms of the acid carbon that are carbons (potential α‐carbons).
     alpha_candidates = []
-    for neighbor in acid_carbon.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:  # Only carbons
-            alpha_candidates.append(neighbor)
+    for nbr in acid_carbon.GetNeighbors():
+        if nbr.GetAtomicNum() == 6:  # must be carbon
+            alpha_candidates.append(nbr)
     
     if not alpha_candidates:
-        return False, "No alpha carbon found (likely a formic acid derivative) so no possibility for a 2-oxo substituent"
-    
+        return False, ("No alpha carbon found. Likely a formic acid derivative so there is no "
+                       "possibility for a 2‑oxo substituent")
+                       
     valid_alpha = []
-    # Check each α‐candidate: it must directly have a double bond to oxygen.
-    for alpha in alpha_candidates:
-        has_double_oxygen = False
-        for bond in alpha.GetBonds():
-            # Check for a double bond
+    
+    # Function to check if a given atom has a double bond to oxygen.
+    def has_carbonyl(atom):
+        for bond in atom.GetBonds():
             if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                other = bond.GetOtherAtom(alpha)
-                if other.GetAtomicNum() == 8:  # Oxygen
-                    has_double_oxygen = True
+                other = bond.GetOtherAtom(atom)
+                if other.GetAtomicNum() == 8:  # oxygen
+                    return True
+        return False
+
+    # Evaluate each alpha candidate using two possible options:
+    # Option A: The candidate itself displays a carbonyl (C=O).
+    # Option B: The candidate (which might be sp3) has a substituent (other than the acid carbon)
+    #           that behaves as a carbonyl (i.e. has a C=O).
+    for alpha in alpha_candidates:
+        qualifies = False
+        # Option A
+        if has_carbonyl(alpha):
+            qualifies = True
+        else:
+            # Option B: check substituents of alpha (excluding the acid carbon)
+            for sub in alpha.GetNeighbors():
+                if sub.GetIdx() == acid_carbon_idx:
+                    continue
+                if sub.GetAtomicNum() == 6 and has_carbonyl(sub):
+                    qualifies = True
                     break
-        if has_double_oxygen:
+        if qualifies:
             valid_alpha.append(alpha)
     
     if len(valid_alpha) == 0:
-        return False, "No α‐carbon with a C=O substituent found; molecule lacks a clear 2‑oxo group"
+        return False, ("No α‐carbon with an attached 2‑oxo (C=O) substituent found; "
+                       "molecule lacks a clear 2‑oxo group")
     if len(valid_alpha) > 1:
-        return False, f"Found {len(valid_alpha)} potential α‐carbons with a C=O substituent — ambiguous for classification"
+        return False, (f"Found {len(valid_alpha)} potential α‐carbons with a 2‑oxo substituent — "
+                       "ambiguous for classification")
     
-    return True, "Contains a single carboxylic acid group with an α‐carbon bearing a 2‑oxo (C=O) substituent"
+    return True, ("Contains a single carboxylic acid group with an α‐carbon (or attached substituent) "
+                  "bearing a 2‑oxo (C=O) group")
 
 # Example usage:
-# Uncomment the lines below to test with one of the provided SMILES.
-# test_smiles = "CCCCCCCC(=O)C(O)=O"  # 2-oxononanoic acid
+# Uncomment for testing:
+# test_smiles = "CCCCCCCC(=O)C(O)=O"  # 2-oxononanoic acid (a true positive)
 # result, reason = is_2_oxo_monocarboxylic_acid(test_smiles)
 # print(result, reason)
