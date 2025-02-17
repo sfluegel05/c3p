@@ -5,106 +5,110 @@ Classifies: CHEBI:33856 aromatic amino acid
 Classifies: aromatic amino acid
 Definition: An amino acid whose structure includes an aromatic ring.
 A molecule qualifies if it contains an integrated (free) amino acid backbone,
-i.e. if there is a carbon (the candidate “alpha” carbon) that is directly attached
-to both a free (non‐amidated) amino group and a free carboxyl group, and if one of the
-remaining substituents (the side chain) contains at least one aromatic atom.
-This function uses a relaxed approach so as to capture both canonical aliphatic amino acids
-(e.g. phenylalanine, tryptophan) and so–called aromatic amino acids such as anthranilic acid derivatives.
+i.e. if there is a candidate “alpha” carbon (an sp3 carbon) that is directly attached
+to both a free (non‐amidated) amino group and a free carboxyl group, and 
+if at least one of the side chain substituents (i.e. non‐backbone attachment of that carbon)
+contains at least one aromatic atom.
+
+To avoid misclassifying peptides (which have multiple amide bonds and tend to be larger),
+we also require that the overall molecule have a relatively low number of heavy atoms.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_aromatic_amino_acid(smiles: str):
     """
-    Determines whether a molecule is an aromatic amino acid.
-    The molecule is considered a free amino acid if there is at least one carbon atom (alpha carbon)
-    that is connected to (a) a free (non-amidated) amine and (b) a free carboxyl group.
-    Additionally, at least one non-backbone substituent of that carbon (the side chain)
-    must contain an aromatic ring.
+    Determines whether a molecule qualifies as a free aromatic amino acid.
+    The algorithm is based on detecting one integrated free amino acid backbone.
+    The candidate alpha carbon must be:
+      - an sp3 carbon directly bonded to a free (non‐amidated) amine,
+      - directly bonded to a free carboxyl group (C(=O)O, with one double bond and one single bond oxygen),
+      - and it must have at least one remaining substituent (the “side chain”)
+        in which a DFS search finds at least one aromatic atom.
+    Additionally, the molecule must be reasonably small (in number of heavy atoms), 
+    to exclude peptides.
     
     Args:
-        smiles (str): The SMILES string of the molecule.
+        smiles (str): SMILES string.
         
     Returns:
-        bool: True if the molecule qualifies as an aromatic amino acid, False otherwise.
+        bool: True if the molecule qualifies as a free aromatic amino acid, otherwise False.
         str: Explanation for the classification.
     """
+    # Parse SMILES and add explicit hydrogens.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    # Add explicit hydrogens to help in counting
     mol = Chem.AddHs(mol)
 
-    # Helper: check if a nitrogen attached to candidate alpha is a free amine.
+    # Use a heavy atom cutoff to help filter out peptides and larger molecules.
+    heavy_atom_count = mol.GetNumAtoms() - sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    if heavy_atom_count > 30:
+        return False, f"Molecule has {heavy_atom_count} heavy atoms; too large to be a free amino acid (likely a peptide or derivative)"
+
+    # Define a helper to check for a free (non-amidated) amino group.
     def is_free_amino(nitrogen, alpha_idx):
-        # Must be nitrogen.
+        # Ensure the atom is nitrogen.
         if nitrogen.GetAtomicNum() != 7:
             return False
-        # Count heavy‐atom neighbors (exclude hydrogens).
-        heavy_neighbors = [nbr for nbr in nitrogen.GetNeighbors() if nbr.GetAtomicNum() > 1]
-        # One of these should be the alpha carbon.
-        if alpha_idx not in [nbr.GetIdx() for nbr in heavy_neighbors]:
+        # Get heavy neighbors (i.e. not hydrogens)
+        heavy_nbrs = [nbr for nbr in nitrogen.GetNeighbors() if nbr.GetAtomicNum() > 1]
+        # One heavy neighbor should be the candidate alpha carbon.
+        if alpha_idx not in [nbr.GetIdx() for nbr in heavy_nbrs]:
             return False
-        # Allow for a free amine to be unsubstituted or mono‐substituted (e.g. N-methyl).
-        # If there is a substituent other than the alpha carbon, check that it is not part of a carbonyl.
-        extra = [nbr for nbr in heavy_neighbors if nbr.GetIdx() != alpha_idx]
-        # Free amine: allow either no extra heavy atom or one extra that is not “amidating”
-        # (i.e. not a carbonyl carbon). We check if an extra neighbor (if present) is bonded by a double bond
-        # to an oxygen.
+        # Count the other heavy substituents.
+        extra = [nbr for nbr in heavy_nbrs if nbr.GetIdx() != alpha_idx]
+        # Allow no or one extra heavy neighbor.
         if len(extra) > 1:
             return False
         if len(extra) == 1:
             extra_atom = extra[0]
-            # If the extra heavy neighbor is carbon and is double-bonded to oxygen, it is likely an amide.
-            for bond in nitrogen.GetBonds():
-                if bond.GetOtherAtom(nitrogen).GetIdx() == extra_atom.GetIdx():
-                    # Check bond type; if single, allow it
-                    if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
-                        return False
-        # Otherwise, if there are only hydrogens aside from the alpha connection, treat as free.
+            # Check that the bond from nitrogen to the extra neighbor is a single bond.
+            bond = nitrogen.GetBondBetweenAtoms(nitrogen.GetIdx(), extra_atom.GetIdx())
+            if bond is None or bond.GetBondType() != rdchem.BondType.SINGLE:
+                return False
         return True
 
-    # Helper: check if a carbon is a free carboxyl carbon (part of a free –COOH or –COO–),
-    # when connected to candidate alpha (passed as alpha_idx).
+    # Define a helper to check for a free carboxyl group.
     def is_free_carboxyl(carbon, alpha_idx):
-        if carbon.GetAtomicNum() != 6:
+        # Must be carbon. We expect the carboxyl carbon to be sp2.
+        if carbon.GetAtomicNum() != 6 or carbon.GetHybridization() != rdchem.HybridizationType.SP2:
             return False
-        # Get heavy neighbors of this carbon.
-        heavy_neighbors = [nbr for nbr in carbon.GetNeighbors() if nbr.GetAtomicNum() > 1]
-        # Expect three heavy neighbors: one is the candidate alpha and two oxygens.
-        if len(heavy_neighbors) != 3:
+        # Get heavy neighbors (should be two oxygens and the alpha carbon).
+        heavy_nbrs = [nbr for nbr in carbon.GetNeighbors() if nbr.GetAtomicNum() > 1]
+        if len(heavy_nbrs) != 3:
             return False
-        if alpha_idx not in [nbr.GetIdx() for nbr in heavy_neighbors]:
+        # Check that one neighbor is the candidate alpha carbon.
+        if alpha_idx not in [nbr.GetIdx() for nbr in heavy_nbrs]:
             return False
-        oxygens = [nbr for nbr in heavy_neighbors if nbr.GetAtomicNum() == 8]
+        # The remaining two should be oxygens.
+        oxygens = [nbr for nbr in heavy_nbrs if nbr.GetAtomicNum() == 8 and nbr.GetIdx() != alpha_idx]
         if len(oxygens) != 2:
             return False
-        # One of the oxygens must be double-bonded to the carboxyl carbon (the carbonyl oxygen)
-        # and the other is single-bonded (the hydroxyl or deprotonated oxygen).
+        # One oxygen must be bonded by a double bond (carbonyl) and the other by single bond (–OH or –O–).
         db_found = False
         sb_found = False
         for oxy in oxygens:
             bond = mol.GetBondBetweenAtoms(carbon.GetIdx(), oxy.GetIdx())
-            if bond is None:
+            if not bond:
                 continue
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            if bond.GetBondType() == rdchem.BondType.DOUBLE:
                 db_found = True
-            elif bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+            elif bond.GetBondType() == rdchem.BondType.SINGLE:
                 sb_found = True
-        if db_found and sb_found:
-            return True
-        return False
+        return db_found and sb_found
 
-    # DFS to find if a substructure (starting at start_idx) contains an aromatic atom.
+    # DFS search to check if a side chain fragment (excluding backbone atoms) contains any aromatic atom.
     def dfs_contains_aromatic(start_idx, backbone_set):
         visited = set()
         stack = [start_idx]
         while stack:
-            current_idx = stack.pop()
-            if current_idx in visited:
+            idx = stack.pop()
+            if idx in visited:
                 continue
-            visited.add(current_idx)
-            atom = mol.GetAtomWithIdx(current_idx)
+            visited.add(idx)
+            atom = mol.GetAtomWithIdx(idx)
             if atom.GetIsAromatic():
                 return True
             for nbr in atom.GetNeighbors():
@@ -112,74 +116,65 @@ def is_aromatic_amino_acid(smiles: str):
                     stack.append(nbr.GetIdx())
         return False
 
-    found_candidate_backbone = False
-
-    # Iterate over carbon atoms as potential "alpha" carbons.
+    candidate_found = False
+    # Loop over candidate alpha carbons: sp3 carbons.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 6:
             continue
+        if atom.GetHybridization() != rdchem.HybridizationType.SP3:
+            continue
         alpha_idx = atom.GetIdx()
-        # For an integrated amino acid backbone, the alpha carbon must be attached to a free amino group
-        # and to a free carboxyl group.
-        free_amino_found = None
-        free_carboxyl_found = None
-        # Iterate over heavy neighbors of candidate alpha.
-        for nbr in atom.GetNeighbors():
-            # Skip hydrogens.
-            if nbr.GetAtomicNum() == 1:
-                continue
-            # Look for a free amine.
-            if nbr.GetAtomicNum() == 7:
-                if is_free_amino(nbr, alpha_idx):
-                    free_amino_found = nbr
-            # Look for a free carboxyl group.
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != alpha_idx:
-                if is_free_carboxyl(nbr, alpha_idx):
-                    free_carboxyl_found = nbr
-        # We require both free amino and carboxyl groups.
-        if free_amino_found is None or free_carboxyl_found is None:
-            continue
-
-        # Mark that we have at least one alpha–amino acid backbone.
-        found_candidate_backbone = True
-
-        # Identify the side chain candidates: heavy neighbors of alpha that are not the free amine or carboxyl.
-        backbone_set = {alpha_idx, free_amino_found.GetIdx(), free_carboxyl_found.GetIdx()}
-        # Also add the oxygens from the carboxyl group.
-        for oxy in free_carboxyl_found.GetNeighbors():
-            if oxy.GetAtomicNum() == 8:
-                backbone_set.add(oxy.GetIdx())
-        side_chain_candidates = []
+        
+        free_amino_atom = None
+        free_carboxyl_atom = None
+        
+        # Check neighbors of alpha for free amine and carboxyl.
         for nbr in atom.GetNeighbors():
             if nbr.GetAtomicNum() == 1:
                 continue
-            if nbr.GetIdx() not in backbone_set:
-                side_chain_candidates.append(nbr.GetIdx())
-        # If no distinct side chain exists (i.e. glycine), then skip.
-        if not side_chain_candidates:
+            # Look for free amine.
+            if nbr.GetAtomicNum() == 7 and is_free_amino(nbr, alpha_idx):
+                free_amino_atom = nbr
+            # Look for free carboxyl group.
+            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != alpha_idx and is_free_carboxyl(nbr, alpha_idx):
+                free_carboxyl_atom = nbr
+        if free_amino_atom is None or free_carboxyl_atom is None:
+            continue  # this alpha candidate does not have a complete free backbone
+        
+        # We found a candidate integrated amino acid backbone.
+        candidate_found = True
+        # Build the set of backbone atom indices: the alpha, the free amine and carboxyl (and carboxyl oxygens).
+        backbone_set = {alpha_idx, free_amino_atom.GetIdx(), free_carboxyl_atom.GetIdx()}
+        for nbr in free_carboxyl_atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 8:
+                backbone_set.add(nbr.GetIdx())
+        # Identify side chain candidates as heavy neighbors of the alpha that are not in the backbone.
+        side_chain_idxs = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() > 1 and nbr.GetIdx() not in backbone_set]
+        # If there is no side chain (e.g. glycine), then do not classify as aromatic.
+        if not side_chain_idxs:
             continue
+        
+        # Check whether any side chain fragment (via DFS) contains an aromatic atom.
+        for sc_idx in side_chain_idxs:
+            if dfs_contains_aromatic(sc_idx, backbone_set):
+                return True, "Contains integrated free amino acid backbone with an aromatic side chain"
+        # If backbone found but side chain does not appear aromatic.
+        return False, "Integrated free amino acid backbone found but side chain lacks an aromatic ring"
+        
+    if candidate_found:
+        return False, "Integrated free amino acid backbone found but no aromatic ring in side chain"
+    return False, "No integrated free alpha–amino acid backbone found"
 
-        # For each side chain candidate, check if any connected atom (excluding backbone) is aromatic.
-        for sc in side_chain_candidates:
-            if dfs_contains_aromatic(sc, backbone_set):
-                return True, "Contains integrated amino acid backbone with an aromatic side chain"
-        # If no side chain candidate gave an aromatic fragment, we report that backbone exists but side chain is not aromatic.
-        # (We do not return immediately because we may find an alternative alpha carbon later.)
-    if found_candidate_backbone:
-        return False, "Alpha–amino acid backbone found but no aromatic ring in side chain"
-    else:
-        return False, "No integrated free alpha–amino acid backbone found"
-
-# Example usage:
+# Example usage (you can run tests here):
 if __name__ == "__main__":
-    # Test a couple of cases.
-    test_smiles_list = [
+    test_cases = [
         ("NC1=C(C=C(Cl)C=C1)C(O)=O", "2-amino-5-chlorobenzoic acid"),
         ("N[C@H](Cc1c[nH]cn1)C(O)=O", "D-histidine"),
         ("Nc1ccccc1C(O)=O", "anthranilic acid"),
         ("NC(Cc1ccc(O)cc1)C(O)=O", "tyrosine"),
-        ("N[C@H](Cc1ccccc1)C(O)=O", "D-phenylalanine")
+        ("N[C@H](Cc1ccccc1)C(O)=O", "D-phenylalanine"),
+        ("O=C(N[C@@H](CC1=CC=CC=C1)C(O)=O)[C@@H](NC(=O)[C@@H](N)C)CC2=CC=C(O)C=C2", "Ala-Tyr-Phe (dipeptide)")
     ]
-    for smiles, name in test_smiles_list:
-        result, reason = is_aromatic_amino_acid(smiles)
-        print(f"{name}: {result} ({reason})")
+    for smi, name in test_cases:
+        res, reason = is_aromatic_amino_acid(smi)
+        print(f"{name}: {res} -> {reason}")
