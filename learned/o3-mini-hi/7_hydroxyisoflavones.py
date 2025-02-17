@@ -4,11 +4,10 @@ Classifies: CHEBI:55465 7-hydroxyisoflavones
 #!/usr/bin/env python
 """
 Classifies: CHEBI:7-hydroxyisoflavones
-Definition: A hydroxyisoflavone compound having a hydroxy group at the 7-position.
-This implementation first attempts to detect an isoflavone core (benzopyran-4-one skeleton)
-using one of two SMARTS patterns (to be more permissive for additional substituents).
-Then it searches for a free hydroxy (-OH) group attached directly to an aromatic carbon 
-within the benzene (A-) ring portion of the core.
+Definition: A hydroxyisoflavone compound having a hydroxy group at the 7‑position.
+This implementation attempts to detect the isoflavone core (benzopyran-4-one or chromen-4-one)
+using several SMARTS patterns. Then it searches for a free –OH group attached to an aromatic carbon
+in the A‑ring of the core (which, by convention, is the benzene ring fused to the heterocycle).
 """
 
 from rdkit import Chem
@@ -17,9 +16,11 @@ from rdkit.Chem import rdMolDescriptors
 def is_7_hydroxyisoflavones(smiles: str):
     """
     Determines if a molecule is a 7‑hydroxyisoflavone based on its SMILES string.
-    It does so by checking for:
-      1. An isoflavone core (benzopyran-4-one skeleton) using alternative SMARTS patterns.
-      2. A free hydroxy (–OH) substituent on an aromatic carbon that is part of the benzene ring (A-ring).
+    The process is:
+    1. Detect an isoflavone core (the benzopyran-4-one/chromen-4-one skeleton)
+       using several alternative SMARTS patterns.
+    2. For the first core found, assign the A‑ring atoms (the aromatic benzene ring fused to the pyranone)
+       and check for a free hydroxyl (-OH) group directly attached to one of these atoms.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -28,61 +29,69 @@ def is_7_hydroxyisoflavones(smiles: str):
         bool: True if the molecule is classified as a 7‑hydroxyisoflavone, False otherwise.
         str: Explanation of the classification decision.
     """
-    # Parse the SMILES string
+    # Parse the input SMILES into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Adding explicit hydrogens so that free OH groups are clearly represented.
+    # Add explicit hydrogens to make –OH groups explicit.
     mol = Chem.AddHs(mol)
     
-    # Step 1: Search for the isoflavone core (benzopyran-4-one).
-    # Use two alternative SMARTS patterns to account for additional substituents.
+    # Define several SMARTS patterns for the isoflavone (benzopyran-4-one) core.
+    # Pattern 1 and 2 represent a clean fused system; Pattern 3 is a relaxed variant
+    # that allows extra substituents on the A‑ring.
     core_smarts_patterns = [
-        "c1ccc2c(c1)occ2=O",   # original pattern
-        "c1ccc2c(c1)oc(=O)c2"  # slightly modified pattern
+        "c1ccc2c(c1)oc(=O)c2",   # pattern 1: typical chromen-4-one skeleton
+        "c1ccc2c(c1)occ2=O",      # pattern 2: alternate bonding order for the oxygen
+        "c1cc(c(c)c1)-c2oc(=O)cc2"  # pattern 3: expects an explicit connection between an aromatic A‑ring and heterocycle,
+                                   # allowing extra substituents on the A‑ring.
     ]
     
-    core_matches = []
-    core_query = None
-    for smarts in core_smarts_patterns:
-        core_query = Chem.MolFromSmarts(smarts)
+    core_found = False
+    core_atoms = None
+    A_ring_indices = None
+    # Loop over the patterns until one matches
+    for i, smart in enumerate(core_smarts_patterns):
+        core_query = Chem.MolFromSmarts(smart)
         if core_query is None:
-            continue  # move on if one of the SMARTS is mis‐defined
+            continue  # skip if SMARTS is mis‐defined
         matches = mol.GetSubstructMatches(core_query)
         if matches:
-            core_matches = matches[0]  # use the first match for simplicity
-            break
-    if not core_matches:
+            # Take the first matching substructure for simplicity
+            core_atoms = set(matches[0])
+            core_found = True
+            # Determine which atom indices correspond to the A‑ring.
+            # For pattern1 and pattern2 ("c1ccc2c(c1)oc(=O)c2" and "c1ccc2c(c1)occ2=O"),
+            # we assume that the first five atoms in the match (indices 0-4) are from the benzene (A‑) ring.
+            # For pattern3 ("c1cc(c(c)c1)-c2oc(=O)cc2"), we assume the first six atoms (0-5) form the A‑ring.
+            if i < 2:
+                A_ring_indices = set(matches[0][:5])
+            else:
+                A_ring_indices = set(matches[0][:6])
+            break  # exit after first successful match
+    
+    if not core_found:
         return False, "Isoflavone core (benzopyran-4-one skeleton) not detected"
     
-    # For diagnostic purposes, note how many atoms were matched in the core.
-    core_atoms = set(core_matches)
-    
-    # Step 2: Look for a free hydroxy group attached directly to an aromatic carbon.
-    # We use the SMARTS "[c;R]-[OX2H]" to look for an aromatic atom bonded to an -OH.
+    # Look for free hydroxyl groups attached to aromatic carbons.
+    # This SMARTS finds an aromatic carbon (in a ring) bonded to an oxygen that has a hydrogen.
     freeOH_query = Chem.MolFromSmarts("[c;R]-[OX2H]")
     if freeOH_query is None:
         return False, "Error in SMARTS definition for free OH group"
     
     freeOH_matches = mol.GetSubstructMatches(freeOH_query)
     if not freeOH_matches:
-        return False, "No free hydroxyl (–OH) group attached to an aromatic carbon found"
+        return False, "No free hydroxyl (-OH) group attached to an aromatic carbon found"
     
-    # Check if any free hydroxyl is attached to an aromatic carbon that is part of the core.
-    # In our approach the core match covers both fused rings.
-    # We assume that the A-ring (bearing the 7-OH) is within the atoms of the core.
+    # Check if any free hydroxyl group is attached to one of the A‑ring atoms of the core
     for match in freeOH_matches:
-        aromatic_atom_idx = match[0]  # aromatic carbon attached to -OH
-        # If this aromatic carbon is in the detected core then we consider it as evidence
-        # of a free OH on the isoflavone core (likely at the 7-position).
-        if aromatic_atom_idx in core_atoms:
-            return True, "Isoflavone core detected with a free hydroxy group on the aromatic core (likely 7-OH)"
+        aromatic_atom_idx = match[0]  # the aromatic carbon bonded to –OH
+        if aromatic_atom_idx in A_ring_indices:
+            return True, "Isoflavone core detected with a free hydroxy group on the A-ring (likely 7‑OH)"
     
-    return False, "Isoflavone core present but free hydroxyl group on the aromatic core (7-OH) not found"
+    return False, "Isoflavone core detected but no free hydroxy group found on the A‑ring (7‑OH missing)"
 
-
-# Example usage:
+# Example usage (for testing purposes):
 if __name__ == "__main__":
     test_smiles = [
         "CC(C)=CCc1c(O)cc2occ(-c3ccc(O)cc3O)c(=O)c2c1O",   # luteone
