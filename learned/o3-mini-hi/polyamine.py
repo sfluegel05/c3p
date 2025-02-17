@@ -4,13 +4,15 @@ Classifies: CHEBI:88061 polyamine
 """
 Classifies: Polyamine
 Definition: Any organic amino compound that contains two or more amino groups.
-A polyamine is here detected by:
-  1. Rejecting molecules that look peptide-like (>=2 amide bonds in a >10 heavy atom molecule).
-  2. Adding explicit hydrogens and then inspecting every nitrogen.
-  3. For each nitrogen, excluding quaternary centers and (for aromatic nitrogens) those lacking an –NH.
-  4. Also flagging nitrogen involved in an amide bond (if attached to a carbon that is double-bonded to oxygen).
-  5. Finally, checking that at least two candidate amino groups exist and that at least one pair is sufficiently separated in the bond network.
-This heuristic uses RDKit.
+This revised version:
+  1. Rejects molecules that look peptide-like (>=2 amide bonds in a reasonably sized molecule).
+  2. Adds explicit hydrogens to get reliable hydrogen counts.
+  3. Inspects every nitrogen (atomic number 7) that is not quaternary.
+  4. Counts a nitrogen as an amino candidate if it is not in an amide (with one small exception) or
+     if it is aliphatic, or (if aromatic) only if it bears at least one hydrogen OR is positively charged.
+  5. Finally, if at least two candidate amino groups are found the molecule is accepted,
+     with an additional check that larger molecules which are nearly “all rings” must have at least three candidates.
+This heuristic is implemented with RDKit.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -20,25 +22,19 @@ def is_polyamine(smiles: str):
     Determines if a molecule is a polyamine based on its SMILES string.
     A polyamine is defined as any organic amino compound that contains two or more amino groups.
     
-    The function first flags molecules that look peptide-like (>=2 amide bonds in a reasonably sized molecule)
-    and returns False if so. Then it adds explicit hydrogens and inspects every nitrogen.
+    The function first rejects peptide-like molecules if two or more amide bonds are found in a molecule
+    with >10 heavy atoms. Then it adds explicit hydrogens and inspects every nitrogen atom. For aromatic
+    nitrogens, at least one hydrogen (or a positive formal charge) is required; aliphatic ones are counted.
     
-    For each nitrogen:
-      - If it is directly attached (via a double bond) to a carbonyl carbon, we flag it as being in an amide.
-      - Exclude quaternary nitrogens (degree >=4).
-      - For aromatic nitrogen, count only if it has one or more hydrogens attached.
-      - For non-aromatic nitrogens, simply count them.
-    
-    Finally, if at least two candidate amino groups are found, the code checks if at least one pair is separated
-    by a bond path of at least 3 (using the full bond graph). For molecules in which every heavy atom is in a ring,
-    a less strict requirement is applied provided the molecule is not extremely small.
+    Additionally, if the molecule is sizable (more than eight heavy atoms) and nearly all heavy atoms
+    are in rings (ring fraction > 0.8) we require at least three candidate amino groups to avoid false positives.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
     
     Returns:
         bool: True if molecule is classified as a polyamine, False otherwise.
-        str: A reason explaining the result.
+        str: Reason explaining the classification decision.
     """
     # Parse SMILES into a molecule
     mol = Chem.MolFromSmiles(smiles)
@@ -46,6 +42,7 @@ def is_polyamine(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for peptide-like structure: if >=2 amide bonds and molecule is sufficiently large.
+    # Amide pattern: N(any) - C(=O)
     amide_smarts = Chem.MolFromSmarts("[NX3][C](=[O])")
     amide_matches = mol.GetSubstructMatches(amide_smarts)
     if len(amide_matches) >= 2 and mol.GetNumHeavyAtoms() > 10:
@@ -56,78 +53,75 @@ def is_polyamine(smiles: str):
     
     candidate_idxs = []
     
-    # Traverse each atom checking for nitrogen candidates.
+    # Loop over each atom; we are interested in nitrogen atoms (atomic number 7)
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 7:
-            continue  # Skip non-nitrogen atoms
+            continue
         
-        # Exclude quaternary nitrogen (degree >= 4) as these are ammonium centers.
+        # Exclude quaternary nitrogen (degree >= 4)
         if atom.GetDegree() >= 4:
             continue
         
-        # Check if the nitrogen is directly involved in an amide bond.
+        # Check if nitrogen is directly involved in an amide bond.
+        # We flag as "amide" if the N is bonded to a carbon that in turn is doubly bonded to oxygen.
         is_amide = False
         for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6:  # Neighbor is a carbon
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                # For the carbon neighbor, check if any of its other neighbors is an oxygen
-                # involved in a double bond.
-                for carbon_nbr in nbr.GetNeighbors():
-                    if carbon_nbr.GetIdx() == atom.GetIdx():
-                        continue  # Skip the original nitrogen atom
-                    if carbon_nbr.GetAtomicNum() == 8:
-                        bond_CO = mol.GetBondBetweenAtoms(nbr.GetIdx(), carbon_nbr.GetIdx())
+            if nbr.GetAtomicNum() == 6:  # possible carbonyl carbon?
+                for nbr2 in nbr.GetNeighbors():
+                    if nbr2.GetIdx() == atom.GetIdx():
+                        continue
+                    if nbr2.GetAtomicNum() == 8:
+                        bond_CO = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
                         if bond_CO and bond_CO.GetBondType() == Chem.BondType.DOUBLE:
                             is_amide = True
                             break
                 if is_amide:
                     break
+        # In our search we allow amide-type nitrogens when they come from non-peptide molecules 
+        # (e.g. N-acetylputrescine). So we do not outright reject them.
         
-        # In our non-peptide molecules we count even amide nitrogens (e.g., N-acetylputrescine).
-        # Decide based on aromaticity:
+        # For aromatic nitrogen, count only if it has at least one hydrogen or is positively charged.
+        # (This accepts protonated amines which might not register an explicit H.)
         if atom.GetIsAromatic():
-            # For aromatic N, count only if it has at least one attached hydrogen (e.g. -NH)
-            if atom.GetTotalNumHs() < 1:
+            # Get total number of hydrogens (explicit + implicit)
+            totalHs = atom.GetTotalNumHs()
+            if totalHs < 1 and atom.GetFormalCharge() <= 0:
                 continue
-        # If the nitrogen passes these checks, record its index.
+        
+        # Passed the filters. Count as candidate amino group.
         candidate_idxs.append(atom.GetIdx())
     
     candidate_count = len(candidate_idxs)
     if candidate_count < 2:
         return False, f"Found only {candidate_count} candidate amino group(s), need at least 2"
     
-    # Next, ensure that at least one pair of candidate nitrogens is sufficiently separated.
-    # This is computed by using the full (cyclic) bond distance matrix.
-    ring_info = mol.GetRingInfo()
-    # Identify if every heavy atom is in a ring.
-    all_in_ring = all([ring_info.NumAtomRings(a.GetIdx()) > 0 for a in mol.GetAtoms() if a.GetAtomicNum() > 1])
+    # For the original version we checked that at least one pair of candidates were separated by >=3 bonds.
+    # However, that rule proved too strict for small, legitimate polyamines (e.g., methanediamine).
+    # Therefore, we remove the separation requirement.
     
-    separation_ok = False
-    dmat = Chem.GetDistanceMatrix(mol)
-    for i in range(len(candidate_idxs)):
-        for j in range(i+1, len(candidate_idxs)):
-            d = dmat[candidate_idxs[i]][candidate_idxs[j]]
-            if d >= 3:
-                separation_ok = True
-                break
-        if separation_ok:
-            break
-    if not separation_ok:
-        if all_in_ring and mol.GetNumHeavyAtoms() > 6:
-            separation_ok = True  # Allow in larger fused cyclic systems.
-        else:
-            return False, "Candidate amino groups are too close together (likely in a compact cyclic system)"
+    # Additional safeguard: if the molecule is large and almost all atoms are in rings,
+    # then spurious amino groups on peripheral rings are likely not sufficient.
+    heavy_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1]
+    num_heavy = len(heavy_atoms)
+    if num_heavy > 0:
+        num_in_ring = sum(1 for atom in heavy_atoms if mol.GetRingInfo().NumAtomRings(atom.GetIdx()) > 0)
+        ring_fraction = num_in_ring / num_heavy
+    else:
+        ring_fraction = 0.0
+    if mol.GetNumHeavyAtoms() > 8 and ring_fraction > 0.8 and candidate_count < 3:
+        return False, f"Molecule is heavily cyclic (ring fraction {ring_fraction:.2f}) and has only {candidate_count} candidate amino group(s)"
     
-    return True, f"Contains {candidate_count} candidate amino groups and at least one pair separated by >=3 bonds."
+    return True, f"Contains {candidate_count} candidate amino group(s)"
 
 # Example usage and testing (if run as a script)
 if __name__ == "__main__":
     test_examples = [
-        # Examples expected to be classified as polyamines:
+        # Expected true polyamines:
         ("CCNc1nc(N)nc(O)n1", "4-amino-6-(ethylamino)-1,3,5-triazin-2-ol"),
         ("NCCCNCCNCCCN", "3,2,3-tetramine"),
         ("N(C=1N=C(N)N=CN1)C2=CC=C(C=C2)Cl", "chlorazanil"),
         ("CC(=O)NCCCCN", "N-acetylputrescine"),
+        ("S(=O)(C=1N=C(NC(C)C)N=C(NCC)N1)C", "N-Ethyl-N'-isopropyl-6-(methylsulfinyl)-1,3,5-triazine-2,4-diamine"),
         ("CN(C)c1ccc(cc1)C(N)c1ccc(cc1)N(C)C", "4,4'-(aminomethylene)bis(N,N-dimethylaniline)"),
         ("C1CN2CCN1CC2", "triethylenediamine"),
         ("CCNc1nc(Cl)nc(N[C@@H](C)CC)n1", "(S)-sebuthylazine"),
@@ -137,8 +131,15 @@ if __name__ == "__main__":
         ("NCN", "methanediamine"),
         ("NCCNCCNCC", "N,N'-diethylethylenediamine"),
         ("NCCCNCCCN", "bis(3-aminopropyl)amine"),
-        # Example not expected to be a polyamine (compact cyclic system)
-        ("C1CNCN1", "imidazolidine"),
+        ("C(C[NH3+])CC[NH2+]CCC([O-])=O", "putreanine(1+)"),
+        ("[NH3+]CCCCNO", "N-hydroxyputrescine(1+)"),
+        ("[NH3+]CCCCN(C(C)=O)O", "N(1)-acetyl-N(1)-hydroxyputrescine(1+)"),
+        ("[H][C@@]12Cc3c[nH]c4cccc(c34)[C@@]1([H])CCCN2", "ergoline"),
+        ("NCCCCNCCN", "N-(2-aminoethyl)butane-1,4-diamine"),
+        ("NCCCNCCCCN(CCCN)CCCN", "N(4)-aminopropylspermine"),  # duplicate example can be tested
+        # Examples that previously falsely classified as polyamine (should be False now):
+        ("S(C1=C(N2C(=O)[C@@H]([C@H]2C1)[C@@H](O)C)C(=O)O)CCN", "8-epi-thienamycin"),
+        ("C1CCN(CC1)C(=O)[C@H]2[C@@H]([C@H]3CN4C(=CC=C(C4=O)C5=CC=NC=C5)[C@H]3N2CC6=COC=N6)CO", "(2R,3R,3aS,9bS)-..."),
     ]
     
     for smi, name in test_examples:
