@@ -12,13 +12,14 @@ from rdkit import Chem
 def is_acrovestone(smiles: str):
     """
     Determines if a molecule is an acrovestone-class polyphenol based on its SMILES string.
-    Criteria (as a proxy for the acrovestone class):
-      1. The molecule must form properly from the given SMILES.
-      2. It should contain a flavonoid/isoflavone core typical to acrovestone-class polyphenols.
-    
+    Criteria (as a proxy for acrovestone):
+      1. The SMILES must be valid.
+      2. The molecule should contain either a characteristic flavone or isoflavone core.
+         (Note: Isoflavones are 3-phenylchromen-4-ones while flavones are 2-phenylchromen-4-ones.)
+
     Args:
         smiles (str): SMILES string of the molecule.
-    
+
     Returns:
         bool: True if the molecule is classified as acrovestone, False otherwise.
         str: Explanation for the classification decision.
@@ -28,28 +29,32 @@ def is_acrovestone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for characteristic cores.
-    # Flavone core: represents a benzopyran-4-one system.
+    # Define SMARTS patterns for the cores.
+    # Flavone core: 2-phenylchromen-4-one.
     flavone_smarts = "c1ccc2oc(=O)cc(c2)c1"
-    # Isoflavone core: represents an isoflavone arrangement.
-    isoflavone_smarts = "c1ccc(-c2oc(=O)c3ccccc3)cc1"
+    # Isoflavone core: 3-phenylchromen-4-one.
+    # Use a SMARTS pattern based on the SMILES for isoflavone core:
+    isoflavone_smarts = "O=C1C=C(c2ccccc2)Oc3ccccc13"
 
+    # Compile the SMARTS patterns.
     flavone_pattern = Chem.MolFromSmarts(flavone_smarts)
     isoflavone_pattern = Chem.MolFromSmarts(isoflavone_smarts)
-    
+
     # Verify that our SMARTS patterns compiled correctly.
     if flavone_pattern is None:
         return False, "Failed to compile flavone SMARTS pattern"
     if isoflavone_pattern is None:
         return False, "Failed to compile isoflavone SMARTS pattern"
-    
-    # Check for the presence of either the flavone or isoflavone core.
+
+    # Check if the molecule contains a flavone core.
     if mol.HasSubstructMatch(flavone_pattern):
         return True, "Molecule contains a flavone core typical of acrovestone-class polyphenols"
+
+    # Check if the molecule contains an isoflavone core.
     if mol.HasSubstructMatch(isoflavone_pattern):
         return True, "Molecule contains an isoflavone core typical of acrovestone-class polyphenols"
-    
-    return False, "Molecule does not contain a flavonoid/isoflavone core structure typical of acrovestone"
+
+    return False, "Molecule does not contain a flavone or isoflavone core typical of acrovestone"
 
 # Example usage:
 if __name__ == "__main__":
