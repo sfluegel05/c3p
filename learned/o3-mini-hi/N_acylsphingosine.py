@@ -3,17 +3,20 @@ Classifies: CHEBI:52639 N-acylsphingosine
 """
 """
 Classifies: N‐acylsphingosine (parent compounds of the ceramide family)
-Definition: composed of a sphingosine backbone (i.e. an acyclic chain featuring a secondary amine 
-with two hydroxyl‐bearing carbons) with an unspecified fatty acyl group attached to the nitrogen.
+Definition: Molecules that contain a sphingosine backbone – that is, an acyclic chain 
+featuring a secondary amine bonded to two hydroxyl‐bearing carbons – where the nitrogen 
+is acylated (i.e. forms an amide bond to a fatty acyl group). In addition, a bona fide 
+N‐acylsphingosine should have a long aliphatic (lipid) chain.
 """
 from rdkit import Chem
 
 def is_N_acylsphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylsphingosine based on its SMILES string.
-    An N-acylsphingosine is defined as a sphingosine backbone (an open-chain structure containing
-    a nitrogen attached to at least two hydroxylated carbons) in which the nitrogen is acylated 
-    (attached to a fatty acyl group via an amide bond).
+    An N-acylsphingosine is defined as a sphingosine backbone (an acyclic chain featuring
+    a secondary amine attached to two hydroxylated carbons) in which the nitrogen is 
+    acylated via an amide bond to a fatty acyl group. In addition, a long aliphatic 
+    chain (a proxy for lipid character) is expected.
 
     Args:
         smiles (str): SMILES string of the molecule.
@@ -22,56 +25,76 @@ def is_N_acylsphingosine(smiles: str):
         bool: True if the molecule matches the N-acylsphingosine criteria, False otherwise.
         str: A message indicating the reason for the decision.
     """
-    # Parse the SMILES string
+    # Parse the SMILES string into a molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define a SMARTS pattern for the sphingosine backbone.
-    # We expect a nitrogen attached to two carbons that bear hydroxyl groups.
-    # The chiral indicators ([C@@H] and [C@H]) are common in sphingosine examples.
-    sphingosine_pattern = Chem.MolFromSmarts("N[C@@H](CO)[C@H](O)")
-    if sphingosine_pattern is None:
-        return False, "Error in sphingosine SMARTS definition"
-
-    # Find matches for the sphingosine backbone in the molecule.
-    backbone_matches = mol.GetSubstructMatches(sphingosine_pattern)
+        
+    # Use a relaxed backbone SMARTS pattern for sphingosine.
+    # We want to capture a nitrogen attached to two carbons bearing hydroxyl groups.
+    # We ignore chirality details by not encoding stereochemistry.
+    # This pattern is: N-C(CO)(O)
+    backbone_pattern = Chem.MolFromSmarts("N-C(CO)(O)")
+    if backbone_pattern is None:
+        return False, "Error in backbone SMARTS definition"
+        
+    # Search for matches of the sphingosine backbone.
+    backbone_matches = mol.GetSubstructMatches(backbone_pattern)
     if not backbone_matches:
         return False, "Sphingosine backbone not found"
-
-    # For each match, check two additional criteria:
-    # 1. The matched atoms (nitrogen and the two carbons in the backbone pattern) should all be acyclic.
-    #    This distinguishes sphingosine from similar patterns embedded in sugars or ring systems.
-    # 2. The nitrogen (first atom in the match) should be acylated.
-    #    That is, aside from the backbone connection, it should be bonded to a carbon
-    #    that is part of a carbonyl group (i.e. has a double bond to an oxygen).
+        
+    # For each matching backbone, check extra criteria.
     for match in backbone_matches:
-        # Check that none of the backbone atoms are in a ring
+        # 1. Ensure that the three backbone atoms (N and the two carbons) are acyclic.
         if any(mol.GetAtomWithIdx(idx).IsInRing() for idx in match):
-            continue  # Skip this match if any backbone atom is part of a ring
+            continue  # Skip matches that occur in rings (likely sugars or cyclic fragments)
 
+        # 2. Check that the nitrogen (first atom in the pattern) is acylated.
+        #    In other words, aside from the backbone connection, the nitrogen should be 
+        #    bonded to a carbon that is part of an amide group (i.e. that carbon is double-bonded to oxygen).
         n_idx = match[0]
         n_atom = mol.GetAtomWithIdx(n_idx)
-        # Get the indices of atoms connected to the nitrogen.
-        neighbor_indices = [nbr.GetIdx() for nbr in n_atom.GetNeighbors()]
         acyl_found = False
-        for nbr_idx in neighbor_indices:
-            # Skip the backbone neighbor (match[1] is the carbon from the backbone)
-            if nbr_idx == match[1]:
+        for nbr in n_atom.GetNeighbors():
+            # Skip the backbone neighbor (it should be one of the atoms in the backbone match)
+            if nbr.GetIdx() in match:
                 continue
-            nbr_atom = mol.GetAtomWithIdx(nbr_idx)
-            # We expect the acyl group to be attached via an amide bond.
-            # So the neighboring atom should be a carbon bonded to an oxygen by a double bond.
-            if nbr_atom.GetAtomicNum() == 6:  # carbon
-                for bond in nbr_atom.GetBonds():
-                    # Look for a bond from this carbon to an oxygen that is double-bonded.
-                    other_atom = bond.GetOtherAtom(nbr_atom)
-                    if other_atom.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
-                        acyl_found = True
-                        break
-            if acyl_found:
-                break
-        if acyl_found:
-            return True, "Molecule contains a sphingosine backbone (acyclic) with an N-linked acyl (fatty acid) group"
+            # Look for a carbon neighbor
+            if nbr.GetAtomicNum() == 6:
+                # Check if any bond from that carbon is a double bond to oxygen (carbonyl).
+                for bond in nbr.GetBonds():
+                    if bond.GetBondType() == Chem.BondType.DOUBLE:
+                        other = bond.GetOtherAtom(nbr)
+                        if other.GetAtomicNum() == 8:
+                            # To avoid matching groups that are embedded in rings,
+                            # require the carbonyl carbon is not in a ring.
+                            if not nbr.IsInRing():
+                                acyl_found = True
+                                break
+                if acyl_found:
+                    break
+
+        if not acyl_found:
+            continue  # Try the next backbone match
+        
+        # 3. Check that the molecule contains a long aliphatic chain.
+        # This is a proxy for a fatty acid or long hydrocarbon tail.
+        # Here we look for a substructure of 6 consecutive carbon atoms.
+        long_chain_pattern = Chem.MolFromSmarts("CCCCCC")
+        if long_chain_pattern is None:
+            return False, "Error defining long chain SMARTS"
+        if not mol.HasSubstructMatch(long_chain_pattern):
+            continue  # If there is no sufficiently long chain, skip this match
+        
+        # If all criteria (acyclic backbone, acylation, long aliphatic chain) are met,
+        # then classify as an N-acylsphingosine.
+        return True, "Molecule contains an acyclic sphingosine backbone with an N-linked acyl (fatty acid) group and a long aliphatic chain"
     
-    return False, "No acylated sphingosine backbone meeting all criteria found"
+    # If no match fulfills all criteria, the molecule is not classified as N-acylsphingosine.
+    return False, "No valid N-acylsphingosine backbone with proper acylation and long aliphatic chain found"
+
+# Example usage (these can be replaced or removed in production):
+if __name__ == "__main__":
+    test_smiles = "CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC"  # one example from the list
+    result, reason = is_N_acylsphingosine(test_smiles)
+    print(result, reason)
