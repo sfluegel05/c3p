@@ -3,13 +3,13 @@ Classifies: CHEBI:46640 diketone
 """
 """
 Classifies: A diketone – a compound that contains exactly two independent ketone functionalities.
-A “ketone functionality” (as used here) is defined as a carbonyl group R–CO–R,
-where the carbonyl carbon:
-  • Is sp2‐hybridized,
-  • Has exactly three neighbors (one double-bonded oxygen and two single-bonded carbons),
-  • Has no attached hydrogens,
-and if the two candidate ketone carbons lie in a common ring that is mostly aromatic
-(quinone‐like), then they are not counted.
+A “ketone functionality” here is defined as a carbonyl group R–CO–R where:
+ • The carbonyl carbon is not aromatic (or part of an entirely aromatic ring);
+ • It is sp2‐hybridized with exactly three neighbor atoms (one double‐bonded oxygen, two single-bonded carbons);
+ • It has no attached hydrogens (to avoid picking up aldehydes).
+
+In addition, if the two candidate ketone carbons lie together in a common ring
+with mostly aromatic atoms (a quinone‐like conjugated system), we assume they are not the desired diketone functionalities.
 """
 from rdkit import Chem
 from rdkit.Chem import rdchem
@@ -20,10 +20,10 @@ def is_diketone(smiles: str):
     based on its SMILES string.
     
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES string of the molecule
         
     Returns:
-        bool: True if exactly two independent ketone functionalities are found (and they are not both in a quinone-like aromatic ring),
+        bool: True if the molecule has exactly two (non-quinone) ketone functionalities,
               False otherwise.
         str: Explanation of the classification decision.
     """
@@ -31,94 +31,92 @@ def is_diketone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Sanitize molecule (this computes ring info, hybridizations, etc.)
-    try:
-        Chem.SanitizeMol(mol)
-    except Exception as e:
-        return False, "Could not sanitize molecule: " + str(e)
+    # Get ring information (each ring given as a tuple of atom indices).
+    rings = mol.GetRingInfo().AtomRings()
     
-    rings = mol.GetRingInfo().AtomRings()  # each ring is a tuple of atom indices
-
-    # Helper function to check if an atom lies in any ring that is fully aromatic.
-    # (Used later when deciding if two candidate ketone carbons share a quinone-like system.)
-    def in_fully_aromatic_ring(atom_idx):
+    # Helper: returns True if an atom lies in a ring that is fully aromatic.
+    def in_fully_aromatic_ring(atom):
+        idx = atom.GetIdx()
         for ring in rings:
-            if atom_idx in ring:
-                # Determine aromatic fraction of the ring:
-                aromatic_atoms = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetIsAromatic())
-                if len(ring) >= 5 and (aromatic_atoms / len(ring)) > 0.5:
+            if idx in ring:
+                if all(mol.GetAtomWithIdx(i).GetIsAromatic() for i in ring):
                     return True
         return False
 
-    # Identify candidate ketone carbon atoms using our revised criteria.
-    candidate_atoms = []
-    for atom in mol.GetAtoms():
-        # We are interested only in carbon atoms.
+    # Define candidate ketone functionality:
+    # Must be a carbon atom that is:
+    #   - sp2-hybridized;
+    #   - has exactly 3 neighbors (degree 3);
+    #   - has no attached hydrogens;
+    #   - is not aromatic and not part of a fully aromatic ring;
+    #   - has exactly one double bond to an oxygen atom and two single bonds to carbon atoms.
+    def is_candidate_ketone(atom):
         if atom.GetSymbol() != "C":
-            continue
-        # For ketone carbon, we expect exactly 3 neighbors.
+            return False
+        # Check hybridization and degree.
+        if atom.GetHybridization() != rdchem.HybridizationType.SP2:
+            return False
         if atom.GetDegree() != 3:
-            continue
-        # Must have no attached hydrogens.
+            return False
         if atom.GetTotalNumHs() != 0:
-            continue
+            return False
+        # Exclude if the atom itself is marked aromatic or is in a fully aromatic ring.
+        if atom.GetIsAromatic() or in_fully_aromatic_ring(atom):
+            return False
 
-        # We count bonds: exactly one double bond (to an oxygen) and two single bonds (to carbons)
         doubleO_count = 0
         singleC_count = 0
-        valid = True  # flag to track if any bond fails our criteria
         for bond in atom.GetBonds():
             btype = bond.GetBondType()
             nbr = bond.GetOtherAtom(atom)
             if btype == rdchem.BondType.DOUBLE:
+                # Count only if neighbor is oxygen.
                 if nbr.GetAtomicNum() == 8:
                     doubleO_count += 1
-                else:
-                    valid = False
-                    break
             elif btype == rdchem.BondType.SINGLE:
-                # Only count if neighbor is carbon.
                 if nbr.GetAtomicNum() == 6:
                     singleC_count += 1
-                else:
-                    valid = False
-                    break
-            else:
-                valid = False
-                break
-        if not valid:
-            continue
-
         if doubleO_count == 1 and singleC_count == 2:
+            return True
+        return False
+
+    # Gather candidate ketone atoms (store indices and atoms)
+    candidate_atoms = []
+    for atom in mol.GetAtoms():
+        if is_candidate_ketone(atom):
             candidate_atoms.append(atom)
     
     ketone_count = len(candidate_atoms)
+    
+    # If not exactly 2 candidates, classification fails.
     if ketone_count != 2:
         return False, f"Found {ketone_count} ketone functionalities; exactly 2 are required for a diketone"
     
-    # Apply the quinone-like filter.
-    # If both candidate ketone carbons lie in a common ring that is mostly aromatic, we assume a quinone-like system.
+    # Extra check to avoid quinone-like systems:
+    # If both candidate ketone atoms share at least one common ring where most atoms are aromatic,
+    # then we assume they are part of a quinone-like conjugated system.
     candidate_idxs = {atom.GetIdx() for atom in candidate_atoms}
     for ring in rings:
+        # Check if both candidate atoms are in this ring.
         if candidate_idxs.issubset(ring):
+            # Count how many atoms in the ring are aromatic.
             aromatic_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetIsAromatic())
-            if len(ring) >= 5 and (aromatic_count / len(ring)) > 0.5:
+            # If the ring is large enough and most atoms (say >50%) are aromatic, treat it as quinone-like.
+            if len(ring) >= 5 and aromatic_count/len(ring) > 0.5:
                 return False, "Ketone functionalities appear as part of a quinone-like aromatic system"
     
     return True, "Contains exactly two ketone functionalities"
 
-# Example usage (optional test cases):
+# Example usage: run some tests if executed as a main program.
 if __name__ == "__main__":
     test_cases = [
         ("O=C(CCCCCCCC)C(=O)C", "2,3-Undecanedione"),
         ("O=C(C(CCCCCCCC)CC)CC(=O)CCC", "7-Ethylpentadecane-4,6-dione"),
-        ("O=C(CCCCCCC)C(=O)C", "2,3-Decanedione"),
         ("CCCC(C(C)=O)=O", "2,3-Heptanedione"),
-        ("[H][C@@]1(CC[C@@]2(C)C3=C(CC[C@]12C)[C@@]1(C)CCC(=O)C(C)(C)[C@]1([H])CC3=O)[C@H](C)CC/C=C(/C)CO", "ganoderone A"),
-        ("OC1ccc(cc1)C(=O)CC(=O)c1ccc(O)cc1O", "licodione"),
-        # Additional examples can be added here.
+        ("O=C1C2CC(=O)C1(C)C2", "bornane-2,6-dione"),
+        ("OC(=O)C(=O)CC(=O)C(O)=O", "2,4-dioxopentanedioic acid"),
     ]
     
-    for smi, name in test_cases:
-        res, reason = is_diketone(smi)
-        print(f"SMILES: {smi}\nNAME: {name}\nResult: {res}\nReason: {reason}\n{'-'*60}")
+    for s, name in test_cases:
+        res, reason = is_diketone(s)
+        print(f"SMILES: {s}\nNAME: {name}\nResult: {res}\nReason: {reason}\n{'-'*60}")
