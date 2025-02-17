@@ -2,103 +2,134 @@
 Classifies: CHEBI:60027 polymer
 """
 """
-Classifies: A polymer is defined as a mixture composed of macromolecules of different kinds,
-which may be differentiated by composition, length, degree of branching etc.
-This heuristic attempts further improvements by (a) requiring fragments to be big enough
-(in terms of molecular weight, heavy-atom count, and a minimum fraction of the total mass)
-and (b) comparing the chemical fingerprints of the candidate fragments to ensure they are sufficiently different.
-If the improvements are insufficient, the function may return (None, None).
+Classifies: A polymer is defined as a mixture, which is composed of macromolecules (usually organic)
+of different kinds. In many cases a polymer mixture is represented by a dot-separated SMILES string.
+This implementation uses two heuristics:
+  (1) If more than one chemically distinct (organic) fragment is present, the mixture is classified as a polymer.
+  (2) If only one unique organic fragment is found but the overall mass is not dominated by that fragment (i.e. counter‐ions
+      make up >5% of the total mass) and the organic fragment occurs only once, then the substance is considered a polymer.
+If no clear decision can be made the function may return (None, None).
+Note: This heuristic will not perfectly classify every example.
 """
 
-from rdkit import Chem, DataStructs
-from rdkit.Chem import rdMolDescriptors, AllChem
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polymer(smiles: str):
     """
-    Determines if a given SMILES string represents a polymer – that is, a mixture of distinct
-    macromolecular components.
+    Determines if a given SMILES string represents a polymer mixture.
     
-    Heuristic improvements:
-      1. Parse the SMILES and split it into disconnected fragments.
-      2. For each fragment compute its molecular weight (MW) and heavy atom count (HAC).
-      3. Consider only fragments that meet the macromolecular criteria:
-             - MW >= 300 Da
-             - Heavy atom count >= 15
-         and that contribute at least 15% of the total molecular weight.
-      4. If there are at least two remaining fragments, compute Morgan fingerprints (radius=2, nBits=2048)
-         and calculate pairwise Tanimoto similarity.
-      5. If at least one pair of fragments has Tanimoto similarity below 0.85 (i.e. they are chemically distinct)
-         then the SMILES is classified as polymer.
-      6. Otherwise, if the fragments are all very similar (or if too few large fragments exist),
-         the compound is not classified as a polymer.
-    
+    The approach is:
+      1. Parse the SMILES into a molecule and split into disconnected fragments.
+      2. Mark fragments as organic if they contain at least one carbon.
+      3. For organic fragments, compute a canonical SMILES (to check chemical uniqueness)
+         and also compute the molecular weight.
+      4. Let total_mass be the summed molecular weight of all fragments.
+      5. If two or more unique organic fragments are present then (heuristically) the substance
+         is classified as a polymer.
+      6. Otherwise, if exactly one unique organic fragment is present but there are other (non‐organic)
+         fragments present (i.e. a salt form) then we compute the mass fraction of the organic component.
+         If the organic component accounts for less than 95% of the overall mass and it occurs only
+         once (rather than a mere multiplicity of the same unit) then classify as polymer.
+      7. In all other cases, report that the SMILES does not satisfy our polymer criteria.
+      
     Args:
-        smiles (str): SMILES string representing the substance.
-    
+        smiles (str): SMILES string representing the compound.
+        
     Returns:
         bool: True if classified as a polymer, False otherwise.
-        str: Explanation for the classification decision.
+        str: A reason for the decision.
     """
-    # Try to parse the input SMILES
+    # Try to parse input SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Split into disconnected fragments
+    # Get fragments as separate molecules.
     fragments = Chem.GetMolFrags(mol, asMols=True)
     if not fragments:
         return False, "No fragments found in the molecule"
     
-    # Compute the total molecular weight across ALL fragments.
-    total_mw = sum(rdMolDescriptors.CalcExactMolWt(frag) for frag in fragments)
+    total_mass = sum(rdMolDescriptors.CalcExactMolWt(frag) for frag in fragments)
     
-    # List to collect candidate fragments which are “macromolecular”
-    candidate_frags = []
-    candidate_data = []
+    # We will separate fragments into organic vs inorganic.
+    # (Here we call a fragment organic if it contains at least one carbon atom.)
+    organic_frags = []
+    inorganic_frags = []
     for frag in fragments:
+        has_c = any(atom.GetAtomicNum() == 6 for atom in frag.GetAtoms())
+        if has_c:
+            organic_frags.append(frag)
+        else:
+            inorganic_frags.append(frag)
+    
+    # Build a dictionary of unique organic fragments.
+    # Key: canonical SMILES; Value: list of (fragment, mass)
+    unique_org = {}
+    total_org_mass = 0.0
+    for frag in organic_frags:
+        can_smiles = Chem.MolToSmiles(frag, canonical=True)
         mw = rdMolDescriptors.CalcExactMolWt(frag)
-        # Count heavy atoms (non-hydrogen)
-        heavy_atoms = sum(1 for atom in frag.GetAtoms() if atom.GetAtomicNum() > 1)
-        # Consider fragment only if it meets our thresholds
-        if mw >= 300 and heavy_atoms >= 15:
-            # Also require that the fragment contributes at least 15% of the total MW
-            if mw / total_mw >= 0.15:
-                candidate_frags.append(frag)
-                candidate_data.append({'mol': frag, 'mw': mw, 'heavy_atoms': heavy_atoms})
+        total_org_mass += mw
+        if can_smiles in unique_org:
+            unique_org[can_smiles]['count'] += 1
+            unique_org[can_smiles]['mass'] += mw
+        else:
+            unique_org[can_smiles] = {'count': 1, 'mass': mw}
     
-    if len(candidate_frags) < 2:
-        return False, ("Does not meet the criteria for a polymer "
-                       "(fewer than two sufficiently large macromolecular fragments)")
+    n_unique_org = len(unique_org)
     
-    # Now get canonical SMILES for distinctness (as a fallback)
-    unique_smiles = set(Chem.MolToSmiles(frag, canonical=True) for frag in candidate_frags)
-    if len(unique_smiles) < 2:
-        return False, ("Multiple large fragments were found but they appear chemically identical; "
-                       "this is more likely a salt rather than a polymer mixture")
-    
-    # Compute fingerprints for each candidate fragment
-    fps = [AllChem.GetMorganFingerprintAsBitVect(frag, 2, nBits=2048) for frag in candidate_frags]
-    
-    # Check pairwise Tanimoto similarity; if at least one pair is sufficiently dissimilar, accept as polymer.
-    n = len(fps)
-    found_different = False
-    for i in range(n):
-        for j in range(i+1, n):
-            sim = DataStructs.TanimotoSimilarity(fps[i], fps[j])
-            # If similarity is less than threshold (i.e., they share less than ~85% bits), then they are distinct.
-            if sim < 0.85:
-                found_different = True
-                break
-        if found_different:
-            break
-
-    if found_different:
-        return True, ("Detected a mixture of at least two distinct macromolecular components "
-                      "(each satisfying MW >=300 Da, heavy atoms >=15, and representing >=15% of total mass)")
+    # Heuristic decision branch
+    if n_unique_org >= 2:
+        # At least two chemically distinct organic fragments.
+        return True, ("Polymer detected: found at least two distinct organic fragments "
+                      "in the mixture (each representing a macromolecular component).")
+    elif n_unique_org == 1:
+        # Only one unique organic fragment.
+        # Many salts have one large organic component and small counterions.
+        # If the overall mixture has more than one fragment then check the mass fraction.
+        if len(fragments) > 1:
+            # Get the mass and occurrence of the unique organic fragment.
+            key = list(unique_org.keys())[0]
+            org_record = unique_org[key]
+            # If the same organic unit occurs by simple replication (multiplicity > 1),
+            # we consider it as likely a salt (e.g. quinacetol sulfate).
+            if org_record['count'] > 1:
+                return False, ("Not classified as polymer: only one unique organic fragment (with duplicates), "
+                               "suggesting a salt rather than a polymer mixture.")
+            # Otherwise (organic unit occurs once) compare its mass to the total.
+            fraction = org_record['mass'] / total_mass
+            if fraction < 0.95:
+                return True, ("Polymer detected: one large organic fragment accompanied by other species "
+                            "reducing its overall mass fraction (<95%), suggesting a polymeric salt formulation.")
+            else:
+                return False, ("Not classified as polymer: one organic component dominates the mass, "
+                               "suggesting a pure compound (or salt) rather than a polymer mixture.")
+        else:
+            return False, "Not classified as polymer: only one fragment present."
     else:
-        return False, ("All sufficiently large fragments appear very similar; likely a salt rather than a polymer mixture")
+        # No organic fragments present.
+        return False, "Not classified as polymer: no organic (carbon‐containing) fragments found."
     
-# Example usage (uncomment to test):
-# test_smiles = "C=1C=C2C(N(C(N=C(N1)N)(C)C)C=2C=CC(=CC2)Cl)N.C3=CC=CC4=C3C=C(C(=C4CC=5C6=C(C=C(C5O)C(=O)O)C=CC=C6)O)C(=O)O.C=7(N(C(N=C(N7)N)(C)C)C=8C=CC(=CC8)Cl)N"
-# result, reason = is_polymer(test_smiles)
-# print(result, reason)
+    # If unable to decide, return (None, None)
+    return None, None
+
+# Example usage:
+if __name__ == "__main__":
+    # You can test a few examples.
+    test_smiles_list = [
+        # Expected to be polymer by our heuristic
+        "C1(=C(C=C2C(=C1OCCN(C)C)C3=C(N2)[C@]4(CC)C)Cl).Cl",  # a simplified mimic of a polymer salt
+        "C1CNCCN1.OC(CC(CC(=O)O)(O)C(=O)O).C2CNCCN2.OC(CC(CC(=O)O)(O)C(=O)O",  # mimic of piperazine citrate
+        "N[C@@H](CCC(=O)N[C@@H](CS)C(=O)NCC(O)=O).CCCCCC",  # mimic of dimethylaminoethyl reserpilinate dihydrochloride
+        # Not a polymer:
+        "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",  # one long chain (a macromolecule but not a mixture)
+        "C1CCCC1",  # a cyclic compound (only one fragment)
+    ]
+    
+    for smi in test_smiles_list:
+        result, reason = is_polymer(smi)
+        print("SMILES:", smi)
+        print("Result:", result)
+        print("Reason:", reason)
+        print("------")
