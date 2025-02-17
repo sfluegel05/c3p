@@ -3,10 +3,25 @@ Classifies: CHEBI:26888 tetrachlorobenzene
 """
 """
 Classifies: Tetrachlorobenzene
-Definition: Any member of the class of chlorobenzenes carrying exactly four chlorine atoms attached directly 
-to a benzene ring. Valid molecules may have an extra substituent if it is either a simple group (e.g. –OH, –CN) or 
-a benzene ring linkage as in biphenyls. Any extra substituent that is “exotic” (for example, one carrying a nonzero 
-formal charge) disfavors the classification.
+Definition:
+  Any member of the class of chlorobenzenes carrying four chlorine atoms attached directly 
+  to a benzene ring. Valid molecules may have an extra substituent if it is either a simple group 
+  (e.g. –OH or –CN) or a benzene ring linkage as in biphenyls. Extra substituents that carry exotic 
+  features (e.g. nonzero formal charge, or larger multi–atom groups that are not directly a benzene ring)
+  disfavor the classification.
+  
+Improved heuristic:
+  1. Parse the molecule and (if needed) select its largest fragment.
+  2. For every 6–membered ring composed of aromatic carbons (a benzene candidate) do:
+      – For each ring atom, consider every neighbor that is not part of the ring.
+      – If the neighbor is Cl, count it.
+      – Otherwise, if the substituent is allowed (see allowed_substituent) then ignore it.
+         Otherwise, flag the ring as having disallowed extra groups.
+      – If the candidate benzene ring has exactly four Cl substituents and no disallowed extras, 
+        then return True (with a proper explanation).
+  3. If no candidate ring qualifies, return False.
+  
+Note: This heuristic is not perfect – if the analysis is too ambiguous the function returns (None, None).
 """
 
 from rdkit import Chem
@@ -14,57 +29,76 @@ from rdkit import Chem
 def is_tetrachlorobenzene(smiles: str):
     """
     Determines if a molecule is a tetrachlorobenzene based on its SMILES string.
-    
-    Strategy:
-      1. Parse the SMILES. If multiple fragments are present (salts, counterions), select the largest.
-      2. Loop through each ring that is exactly 6 atoms:
-         a. Require that every atom in the ring is an aromatic carbon (benzene candidate).
-         b. For every ring atom, examine each neighbor (i.e. substituent not in the ring).
-            - If the neighbor is chlorine (atomic number 17), count it.
-            - Otherwise, assess whether the substituent is “allowed”. In our heuristic, an allowed substituent is:
-                • An atom with zero formal charge and that is very simple. This “simplicity” is evaluated as:
-                     - If it is oxygen and its degree is 1 (eg –OH) 
-                     - If it is a carbon that is part of an aromatic ring (as in biphenyl linkages)
-                     - Or if it is a carbon whose degree is 1 (as in a cyano group, where that C is triple-bonded to N)
-                • Any substituent failing these tests is counted as an extra group.
-         c. We finally require that the candidate benzene ring has exactly 4 chlorine substituents
-            and no “non‐allowed” extra substituents.
-    
+  
+    The function first looks for candidate benzene rings (6 aromatic carbons). For each candidate, it
+    counts how many chlorine atoms are directly bonded to ring carbons. Non–chlorine substituents
+    are allowed only if they are simple groups – either a single atom such as –OH, a –CN group,
+    or a direct benzene–benzene (biphenyl) linkage.
+  
     Args:
        smiles (str): SMILES string of the molecule.
-    
+  
     Returns:
-       bool: True if a qualifying benzene ring is found, False otherwise.
-       str: Reason for the decision.
+       (bool, str): A tuple where the first element is True if a qualifying benzene ring is found,
+                    and False otherwise; the second element gives a reason.
+       If the analysis cannot be confidently done, returns (None, None).
     """
-    # Parse SMILES and try sanitizing.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
+    
     try:
         Chem.SanitizeMol(mol)
     except Exception as e:
         return False, f"Sanitization error: {e}"
-    
-    # If multiple fragments exist (counterions etc.), select the largest fragment
+
+    # If multiple fragments are present, use the largest fragment.
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
     if len(frags) > 1:
         mol = max(frags, key=lambda m: m.GetNumHeavyAtoms())
-        
+    
     ring_info = mol.GetRingInfo()
     if not ring_info or ring_info.NumRings() == 0:
         return False, "No rings found in the molecule"
     
-    # Loop over each ring in the molecule
-    for ring in ring_info.AtomRings():
-        # Only consider rings with 6 atoms.
-        if len(ring) != 6:
+    # Helper: decide whether a substituent (atom) is allowed.
+    # Allowed if:
+    #   - It is chlorine (handled separately in the main loop).
+    #   - It is a small simple group such as –OH (oxygen with degree 1).
+    #   - It is a carbon that is part of a cyanide (triple bond to nitrogen).
+    #   - It is an aromatic carbon that belongs to a six-membered aromatic ring
+    #     (which we interpret as a biphenyl linkage).
+    def allowed_substituent(neigh, candidate_ring):
+        # Exclude substituents carrying a formal charge.
+        if neigh.GetFormalCharge() != 0:
+            return False
+        symbol = neigh.GetSymbol()
+        # Allow single–atom substituents (–OH, –F, –I, etc.) except we already count Cl separately.
+        if neigh.GetDegree() == 1:
+            return True
+        # Allow a carbon that is connected via a triple bond to a nitrogen (–CN)
+        if symbol == "C":
+            for bond in neigh.GetBonds():
+                if bond.GetBondType() == Chem.BondType.TRIPLE:
+                    other = bond.GetOtherAtom(neigh)
+                    if other.GetAtomicNum() == 7:
+                        return True
+        # Allow biphenyl linkages: if the neighbor is an aromatic carbon that belongs to a six-membered ring
+        # (other than the candidate ring), then permit.
+        if symbol == "C" and neigh.GetIsAromatic():
+            for r in ring_info.AtomRings():
+                if len(r) == 6 and neigh.GetIdx() in r:
+                    # check that this ring is not the candidate ring
+                    if set(r) != set(candidate_ring):
+                        return True
+        return False
+
+    # Loop over rings: only consider 6-membered rings that are all aromatic carbons (benzene candidates).
+    for candidate_ring in ring_info.AtomRings():
+        if len(candidate_ring) != 6:
             continue
-        
-        # Check that every atom in the ring is a carbon and aromatic.
         is_benzene = True
-        for idx in ring:
+        for idx in candidate_ring:
             atom = mol.GetAtomWithIdx(idx)
             if atom.GetAtomicNum() != 6 or not atom.GetIsAromatic():
                 is_benzene = False
@@ -72,47 +106,30 @@ def is_tetrachlorobenzene(smiles: str):
         if not is_benzene:
             continue
         
-        # For this benzene candidate, count Cl and examine non-Cl substituents.
+        # Examine substituents attached directly to the benzene candidate.
         cl_count = 0
-        non_allowed_extras = 0
-        
-        # Loop over each atom of the ring.
-        for idx in ring:
+        disallowed_extras = 0
+        for idx in candidate_ring:
             atom = mol.GetAtomWithIdx(idx)
-            # Consider each neighbor not in the ring.
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() in ring:
+            for neigh in atom.GetNeighbors():
+                # Only consider atoms that are not in the candidate ring.
+                if neigh.GetIdx() in candidate_ring:
                     continue
-                # If neighbor is chlorine, count it.
-                if neighbor.GetAtomicNum() == 17:
+                if neigh.GetAtomicNum() == 17:
                     cl_count += 1
                 else:
-                    # If the substituent carries a nonzero formal charge, disallow.
-                    if neighbor.GetFormalCharge() != 0:
-                        non_allowed_extras += 1
-                        continue
-                    # Allow a simple oxygen atom (e.g. –OH)
-                    if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
-                        continue
-                    # Allow aromatic carbons (e.g. in biphenyl links)
-                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIsAromatic():
-                        continue
-                    # Allow a carbon substituent if it is very simple (degree==1, e.g. in a cyano group)
-                    if neighbor.GetAtomicNum() == 6 and neighbor.GetDegree() == 1:
-                        continue
-                    # Otherwise, count as extra.
-                    non_allowed_extras += 1
-        
-        # Check whether this ring qualifies as a tetrachlorobenzene.
-        # It must have exactly 4 Cl substituents and no non-allowed extra substituents.
-        if cl_count == 4 and non_allowed_extras == 0:
+                    if not allowed_substituent(neigh, candidate_ring):
+                        disallowed_extras += 1
+        # To qualify, require exactly 4 Cl atoms and no disallowed extra substituents.
+        if cl_count == 4 and disallowed_extras == 0:
             return True, "Found benzene ring with exactly 4 chlorine substituents and acceptable additional groups"
-            
+    
+    # If none of the candidate benzene rings qualifies, report failure.
     return False, "No benzene ring with exactly 4 chlorine substituents (and acceptable extra groups) found"
 
 # Example usage:
 if __name__ == "__main__":
-    # One known true positive: 1,2,3,5-tetrachlorobenzene SMILES.
+    # Test with one known tetrachlorobenzene:
     test_smiles = "Clc1cc(Cl)c(Cl)c(Cl)c1"
-    result, reason = is_tetrachlorobenzene(test_smiles)
-    print(result, reason)
+    is_tc, reason = is_tetrachlorobenzene(test_smiles)
+    print(is_tc, reason)
