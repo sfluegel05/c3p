@@ -5,15 +5,12 @@ Classifies: CHEBI:55465 7-hydroxyisoflavones
 """
 Classifies: 7-hydroxyisoflavones
 Definition: A hydroxyisoflavone compound having a hydroxy group at the 7-position.
-The function is_7_hydroxyisoflavones takes a SMILES string and:
-  1. Attempts to find an isoflavone-like bicyclic core.
-  2. Checks that one of the aromatic carbons on the fused A-ring (defined here as the set of 
-     carbons from the first ring of the SMARTS) carries a free hydroxy (-OH) substituent.
-Notes:
-  - A free –OH here means that the oxygen is not double-bonded (as in carbonyl) and appears
-    to be directly attached to the aromatic carbon with no additional heavy atoms (i.e. not part
-    of a glycoside or sulfate).
-  - The scheme is heuristic and may not work perfectly on every decorated isoflavone.
+This function checks for:
+  1. A benzopyran-4-one (isoflavone) core.
+  2. A free hydroxyl group appended to one of the aromatic carbons of the A-ring.
+The SMARTS used here is "c1cc(O)cc2oc(=O)c(c2)c1" which allows for extra substituents
+elsewhere in the molecule while requiring that one aromatic carbon in the fused benzene ring
+carries a free –OH group (candidate for the 7-OH).
 """
 
 from rdkit import Chem
@@ -22,112 +19,72 @@ from rdkit.Chem import rdMolDescriptors
 def is_7_hydroxyisoflavones(smiles: str):
     """
     Determines if a molecule is a 7-hydroxyisoflavone based on its SMILES string.
-    It does so in two main steps:
-      1. Checks for an isoflavone-like core. Here we use a SMARTS pattern for a 2-phenylchromen-4-one core:
-             c1ccc2c(c1)occ2=O
-      2. Among the atoms participating in the first (A-ring) part of the core, we look for a free -OH
-         substituent that is directly attached to an aromatic carbon.
-         
+    It does so by checking for a benzopyran-4-one (isoflavone) core with an attached free
+    hydroxyl group on the A ring (as required for the 7-position).
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if the molecule is classified as a 7-hydroxyisoflavone, False otherwise.
-        str: A reason message for the classification.
+        str: Reason message for the classification.
     """
-    # Parse SMILES to an RDKit molecule
+    # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # To allow for explicit hydrogen checking on –OH, add hydrogens
+        
+    # (Optional) add hydrogens to help the matching if needed.
     mol_with_H = Chem.AddHs(mol)
     
-    # Define a SMARTS pattern for an isoflavone (2-phenylchromen-4-one) core.
-    # The pattern below looks for a fused bicyclic system:
-    #   "c1ccc2c(c1)occ2=O"
-    # The first (fused) aromatic ring (the A-ring) is given by atoms corresponding to the part "c1ccc2c(c1)"
-    core_smarts = "c1ccc2c(c1)occ2=O"
+    # Define a SMARTS for the isoflavone core with an appended free OH on the A ring.
+    # The pattern "c1cc(O)cc2oc(=O)c(c2)c1" represents a benzopyran-4-one scaffold
+    # in which one of the aromatic carbons of the A ring (the fused benzene) carries a –OH.
+    core_smarts = "c1cc(O)cc2oc(=O)c(c2)c1"
     core_query = Chem.MolFromSmarts(core_smarts)
     if core_query is None:
-        return False, "Error in SMARTS definition for isoflavone core"
+        return False, "Error in SMARTS definition for isoflavone core with OH"
     
-    core_matches = mol_with_H.GetSubstructMatches(core_query)
-    if not core_matches:
-        return False, "Isoflavone core not found"
-    
-    # Define a helper function: determines whether the candidate oxygen (attached to aromatic carbon)
-    # is a free hydroxy group.
-    def is_free_OH(o_atom):
-        # The oxygen should be sp3 (typical for –OH) and not part of a double bond (e.g. carbonyl).
-        # In the Mol with H, check that it has at least one hydrogen.
-        # Also, if it is bonded to any heavy atoms besides the one aromatic carbon,
-        # then it is likely substituted.
-        # (We assume that during substructure matching no extra substituents show up on the OH.)
-        if o_atom.GetAtomicNum() != 8:
-            return False
-        # Check bonds from oxygen: count only bonds to non-hydrogen atoms (besides the aromatic carbon)
-        heavy_neighbor_count = 0
-        has_H = False
-        for nbr in o_atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 1:
-                has_H = True
-            else:
-                heavy_neighbor_count += 1
-        # For a free hydroxyl, we expect exactly one heavy neighbor (the aromatic carbon)
-        # and at least one hydrogen.
-        return (heavy_neighbor_count == 1) and has_H
-
-    # We now loop over each core match.
-    # Note: the SMARTS was defined as "c1ccc2c(c1)occ2=O" and so the match tuple (if it matches)
-    # returns 7 atoms in order. We assume that the first ring (the A-ring) is represented
-    # by the atoms from positions 0,1,2 and 4 (these come from "c1", "c", "c", and "c(c1)" parts).
-    #
-    # We then inspect each of these candidate aromatic carbons for an externally attached free -OH.
-    candidate_indices = [0, 1, 2, 4]
-    found_7OH = False
-    for match in core_matches:
-        for pos in candidate_indices:
-            core_c_idx = match[pos]
-            aromatic_c = mol_with_H.GetAtomWithIdx(core_c_idx)
-            # Verify the atom is aromatic and is a carbon
-            if aromatic_c.GetAtomicNum() != 6 or not aromatic_c.GetIsAromatic():
-                continue
-            # Check neighbors of this aromatic carbon that are not in the core match.
-            for nbr in aromatic_c.GetNeighbors():
-                # If the neighbor is not part of the matched core,
-                # it may be substituent that gives the –OH.
-                if nbr.GetIdx() in match:
-                    continue
-                # We want a substituent that is O and qualifies as a free hydroxyl.
-                if nbr.GetAtomicNum() == 8:
-                    # Exclude if the bond between aromatic carbon and oxygen is a double bond.
-                    bond = mol_with_H.GetBondBetweenAtoms(aromatic_c.GetIdx(), nbr.GetIdx())
-                    if bond is None or bond.GetBondTypeAsDouble() == 2.0:
-                        continue
-                    if is_free_OH(nbr):
-                        found_7OH = True
-                        break
-            if found_7OH:
-                break
-        if found_7OH:
-            break
-
-    if found_7OH:
-        return True, "Isoflavone core detected with free hydroxy group on the A-ring (candidate 7-OH)"
+    # If the substructure is found, we count it as a match.
+    if mol_with_H.HasSubstructMatch(core_query):
+        return True, "Isoflavone core with free hydroxy group on the A-ring (7-OH) detected"
     else:
-        return False, "Isoflavone core found, but no free hydroxy group was detected on the A-ring at the presumed 7-position"
+        return False, "Isoflavone core with the required free hydroxy group (7-OH) not found"
 
-# Example usage (you may remove or comment these out for production):
+# Example usage: (these lines can be commented out for production)
 if __name__ == "__main__":
     test_smiles = [
-        # True positives:
-        "CC(C)=CCc1c(O)cc2occ(-c3ccc(O)cc3O)c(=O)c2c1O",  # luteone
-        "CC(C)=CCc1c(O)cc2occ(-c3ccc(O)cc3)c(=O)c2c1O",   # wighteone
-        "Oc1ccc2c(c1)occ(-c1ccccc1)c2=O",                 # 7-hydroxyisoflavone
-        "CC(C)=CCc1cc(ccc1O)-c1coc2cc(O)cc(O)c2c1=O",      # isowighteone
-        # False positive test example (e.g. glycosylated - these may show extra oxygen connectivity):
-        "C[C@@H]1Cc2c3O[C@@]4(O)[C@@H](C)O[C@H](C)c5c4c4c6c(cc(=O)c(c(O)c2[C@@H](C)O1)c36)oc1c(O)cc(O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)c(c41)c5=O"
+        # 7-hydroxyisoflavones examples:
+        "CC(C)=CCc1c(O)cc2occ(-c3ccc(O)cc3O)c(=O)c2c1O",             # luteone
+        "CC(C)=CCc1c(O)cc2occ(-c3ccc(O)cc3)c(=O)c2c1O",              # wighteone
+        "Oc1ccc2c(c1)occ(-c1ccccc1)c2=O",                            # 7-hydroxyisoflavone
+        "CC(C)=CCc1cc(ccc1O)-c1coc2cc(O)cc(O)c2c1=O",                # isowighteone
+        "COc1c(O)cc(cc1CC=C(C)C)-c1coc2cc(O)ccc2c1=O",                # erylatissin A
+        "CC(C)=CCc1c(O)c(O)ccc1-c1coc2cc(O)cc(O)c2c1=O",              # 5,7,3',4'-tetrahydroxy-2'-(3,3-dimethylallyl)isoflavone
+        "COc1ccc(cc1O)-c1coc2cc(O)ccc2c1=O",                         # calycosin
+        "COc1ccc(cc1)-c1coc2cc(O)ccc2c1=O",                          # formononetin (should be False: no free A-ring OH)
+        "COc1cc2c(cc1O)occ(-c1ccc(O)cc1)c2=O",                       # glycitein
+        "OC[C@H]1O[C@H]([C@H](O)[C@@H](O)[C@@H]1O)c1c(O)cc(O)c2c1occ(-c1ccc(O)cc1)c2=O", # genistein 8-C-glucoside (likely False due to glycosylation)
+        "CC(C)(O)CCc1cc(ccc1O)-c1coc2cc(O)cc(O)c2c1=O",             # isowigtheone hydrate
+        "CC1(C)Oc2c(O)cc(cc2C=C1)-c1coc2cc(O)cc(O)c2c1=O",            # semilicoisoflavone B
+        "Oc1cc(O)c2c(c1)occ(-c1ccc(O)c(O)c1)c2=O",                   # orobol
+        "COc1ccc(c(O)c1)-c1coc2cc(O)ccc2c1=O",                        # 2'-hydroxyformononetin (should be False if OH is not on the A ring)
+        "CC(C)=CCc1c(O)c(CC=C(C)C)c2occ(-c3ccc(O)cc3)c(=O)c2c1O",     # 5,7,4'-trihydroxy-6,8-diprenylisoflavone
+        "CC(C)=CCc1c(O)c(CC(O)C(C)=C)c(O)c2c1occ(-c1ccc(O)c(O)c1)c2=O",# millewanin G
+        "COC1=C(CC=C(C)C)C(=C(O)C=C1O)C1=COC2=CC(O)=CC=C2C1=O",       # kwakhurin
+        "Oc1ccc(cc1)-c1coc2cc(O)c(O)cc2c1=O",                        # 4',6,7-trihydroxyisoflavone
+        "CC(C)=CCc1c(O)ccc(c1O)-c1coc2cc(O)cc(O)c2c1=O",             # licoisoflavone A
+        "COc1cc(ccc1O)-c1coc2cc(O)ccc2c1=O",                         # 7,4'-dihydroxy-3'-methoxyisoflavone
+        "CC(C)=CCc1c(O)ccc(C2COc3cc(O)cc(O)c3C2=O)c1O",              # dihydrolicoisoflavone A
+        "COc1cc(OC)c(cc1OC)-c1coc2cc(O)c(OC)cc2c1=O",                # dalnigrein
+        "Oc1cc(O)c2c(c1)occ(-c1ccc3OCOc3c1)c2=O",                    # 5-hydroxypseudobaptigenin
+        "CC1(C)CCc2c(O)ccc(C3COc4cc(O)cc(O)c4C3=O)c2O1",             # glyasperin F
+        "OC1=CC=C(C=C1)C1=COC2=C(C(O)=CC(O)=C2)C1=O",                 # genistein
+        "COc1ccc(cc1)-c1coc2cc(O)cc(O)c2c1=O",                        # biochanin A
+        "CC(C)=CCc1cc(ccc1O)-c1coc2cc(O)ccc2c1=O",                   # neobavaisoflavone
+        "C1=C(C(=O)C=2C=CC(O)=C(C2O1)CC=C(C)C)C=3C=CC(O)=CC3",         # 8-prenyldaidzein
+        "COc1c(O)cc2occ(-c3ccc(O)cc3)c(=O)c2c1O",                    # tectorigenin
+        "Oc1ccc(cc1)-c1coc2cc(O)ccc2c1=O",                            # daidzein (should be False: missing 7-OH in the A-ring)
     ]
     for s in test_smiles:
         result, reason = is_7_hydroxyisoflavones(s)
