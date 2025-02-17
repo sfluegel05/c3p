@@ -6,22 +6,20 @@ Classifies: CHEBI:140331 4'-hydroxyflavanones
 Classifies: 4'-hydroxyflavanones
 Definition: “Any hydroxyflavanone having a hydroxy substituent located at position 4'.”
 Revised approach:
-  (1) Identify a flavanone core by searching for a cyclic ketone (C=O) that belongs to a six‐membered ring
-      which also contains an oxygen and sufficient aromatic character (at least 3 aromatic atoms) as expected for 
-      a fused benzopyranone.
-  (2) Identify six‐membered aromatic rings (candidate B rings) that are not fused into the core but attached via a single 
-      single bond from an sp³ (non‐aromatic) core atom.
-  (3) Within such a B ring, check that the atom (in the B ring) directly attached to the core has an –OH substituent 
-      in its para position (i.e. three bonds away around the ring).
+  (1) Identify the flavanone core as a chroman-4-one. The SMARTS pattern captures the fused ring system 
+      (the benzopyranone core) of a typical flavanone.
+  (2) Identify a candidate B ring: a six-membered fully aromatic ring that is not fused to the core but attached 
+      via a single bond from an sp³ (non‐aromatic) core atom.
+  (3) In the candidate B ring, verify that the atom directly attached to the core has an –OH substituent at the para position.
 Any molecule passing all tests is classified as a 4'-hydroxyflavanone.
 """
-
 from rdkit import Chem
 from collections import deque
 
 def is_4__hydroxyflavanones(smiles: str):
     """
     Determines if the molecule represented by `smiles` is a 4'-hydroxyflavanone.
+    The approach is to detect a flavanone (chroman-4-one) core and then inspect the appended B ring.
     
     Args:
        smiles (str): SMILES string of the molecule.
@@ -34,71 +32,58 @@ def is_4__hydroxyflavanones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get info on rings. Each ring is represented as a tuple of atom indices.
+    # STEP 1: Identify the flavanone (chroman-4-one) core.
+    # The following SMARTS is intended to capture the classical 2-phenylchroman-4-one scaffold.
+    # It looks for a 6-membered ring incorporating a ketone (C=O) and an ether O.
+    core_smarts = Chem.MolFromSmarts("O=C1CCOc2ccccc21")
+    core_matches = mol.GetSubstructMatches(core_smarts)
+    if not core_matches:
+        return False, ("No appropriate flavanone core was detected – the molecule lacks the fused benzopyranone (chroman-4-one) scaffold typical of flavanones.")
+    
+    # For further analysis, use the first matched core.
+    core_atoms = set(core_matches[0])
+    
+    # STEP 2: Identify candidate B rings.
+    # In flavanones, the B ring is typically the phenyl substituent attached at C2 of the chromanone.
     ring_info = mol.GetRingInfo()
     atom_rings = ring_info.AtomRings()
     if not atom_rings:
-        return False, "No rings detected"
-
-    # STEP 1: Identify the flavanone core.
-    # Heuristic: The flavanone core should contain a cyclic ketone (C=O) in a 6-membered ring 
-    # that also includes at least one oxygen in the ring and has enough aromatic atoms (>=3).
-    core_atoms = None
-    ketone_smarts = Chem.MolFromSmarts("[#6;R]=O")  # a carbonyl where the carbon is in a ring
-    matches = mol.GetSubstructMatches(ketone_smarts)
-    for match in matches:
-        keto_c = match[0]
-        # Look within rings that contain the ketone carbon; require ring to have exactly 6 atoms.
-        for ring in atom_rings:
-            if keto_c in ring and len(ring)==6:
-                # Check that the ring has at least one oxygen and enough aromatic atoms.
-                has_oxygen = any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring)
-                aromatic_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetIsAromatic())
-                if not has_oxygen:
-                    continue
-                if aromatic_count < 3:
-                    continue
-                core_atoms = set(ring)
-                break
-        if core_atoms is not None:
-            break
-    if core_atoms is None:
-        return False, ("No appropriate flavanone core was detected – the molecule lacks a 6-membered ring containing "
-                       "a ketone, an internal oxygen and sufficient aromatic character (fused benzene ring) typical of flavanones.")
-
-    # STEP 2: Identify candidate B rings.
-    # Look for six-membered aromatic rings that do not share atoms with the core.
+        return False, "No rings detected in the molecule."
+    
     candidate_B_rings = []
     for ring in atom_rings:
+        # We are interested in six-membered rings.
         if len(ring) != 6:
             continue
+        # Exclude rings that are fused with (i.e. share atoms with) the core.
         if any(idx in core_atoms for idx in ring):
-            continue  # skip rings fused with the core
-        # Must be fully aromatic.
+            continue
+        # The ring must be fully aromatic.
         if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
             continue
         
-        # Count bonds connecting the ring to the core.
+        # Count bonds connecting this ring to the core.
         connecting_bonds = 0
-        core_attachment_atom = None
+        core_attachment_atom = None   # atom in core that connects to B ring
+        b_ring_attachment_idx = None  # atom in B ring that connects to core
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
             for nbr in atom.GetNeighbors():
-                # if a neighbor is in the core then we count an inter-ring connection
                 if nbr.GetIdx() in core_atoms:
                     connecting_bonds += 1
-                    core_attachment_atom = nbr  # keep the last encountered core neighbor
-        # require exactly one connection
+                    core_attachment_atom = nbr
+                    b_ring_attachment_idx = idx
+        # Expect exactly one connection.
         if connecting_bonds != 1:
             continue
-        # In typical flavanones the core atom connected to the B ring should be sp3 (i.e. not aromatic)
-        if core_attachment_atom is None or core_attachment_atom.GetIsAromatic():
+        # In a typical flavanone the core atom contacting the B ring is sp3 (non‐aromatic).
+        if core_attachment_atom is None or core_attachment_atom.GetHybridization().name != "SP3":
             continue
-        candidate_B_rings.append(tuple(ring))
+        candidate_B_rings.append( (tuple(ring), b_ring_attachment_idx) )
     if not candidate_B_rings:
         return False, ("No appropriate six-membered aromatic B ring was detected that is attached via a single bond "
-                       "from a non‐aromatic (sp³) atom in the core.")
-
+                       "from an sp³ atom in the flavanone core.")
+    
     # Helper: Build an undirected graph (adjacency list) for atoms in a given ring.
     def build_ring_graph(ring):
         g = {i: set() for i in ring}
@@ -123,61 +108,46 @@ def is_4__hydroxyflavanones(smiles: str):
                 if nbr not in visited:
                     visited.add(nbr)
                     queue.append((nbr, d+1))
-        return None  # should not happen in a connected ring
+        return None
 
-    # STEP 3: In each candidate B ring, verify that the connection point on the B ring
-    # carries an –OH substituent at the para position (3 bonds away along the ring).
-    for ring in candidate_B_rings:
+    # STEP 3: For each candidate B ring, check for an –OH group at the para position relative to the attachment.
+    # In a benzene ring, the para position is 3 bonds away.
+    for (ring, attach_idx) in candidate_B_rings:
         g = build_ring_graph(ring)
-        # Identify the attachment atom in the B ring: it is the one that has a neighbor in the core.
-        attachment_atoms = []
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() in core_atoms:
-                    attachment_atoms.append(idx)
-                    break
-        # There should be exactly one point of attachment.
-        if len(attachment_atoms) != 1:
-            continue
-        attach_idx = attachment_atoms[0]
-        
-        # In the B ring, search for an atom that carries a hydroxyl (-OH) group 
-        # (i.e. has an external oxygen with at least one hydrogen), 
-        # and check that it is exactly 3 bonds away from the attachment atom (para position).
+        # Within the B ring, the attachment atom is already defined (attach_idx).
+        # Search for an atom in the ring with an external hydroxyl (-OH) that sits exactly 3 bonds away (para).
         found_para_OH = False
         for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            # search through neighbors that are not part of the ring
-            for nbr in atom.GetNeighbors():
+            # Check ring distance from the attachment atom.
+            d = ring_distance(g, attach_idx, idx)
+            if d != 3:
+                continue
+            # Look at substituents off the ring atom.
+            for nbr in mol.GetAtomWithIdx(idx).GetNeighbors():
                 if nbr.GetIdx() in ring:
                     continue
-                # require the substituent to be O and (by typical RDKit count) to have at least one hydrogen
+                # Check if the neighbor is oxygen and if it carries at least one hydrogen.
                 if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() > 0:
-                    # Check ring distance from attachment atom to the current atom (within the ring)
-                    d = ring_distance(g, attach_idx, idx)
-                    if d == 3:
-                        found_para_OH = True
-                        break
+                    found_para_OH = True
+                    break
             if found_para_OH:
                 break
         if found_para_OH:
-            return True, ("Molecule has a flavanone core (a 6‐membered ring containing a ketone, an oxygen and sufficient aromatic character) "
-                          "and a non‐fused six‐membered aromatic B ring attached via a single bond from an sp³ core atom "
-                          "with a hydroxyl substituent at the para (4') position.")
+            return True, ("Molecule has a flavanone core (chroman-4-one scaffold) and a non-fused aromatic B ring, "
+                          "where the B ring carries an –OH at the para (4') position relative to its attachment.")
     
-    return False, "No candidate B ring with a para –OH substituent (at 4' position) was detected on the flavanone core."
-
+    return False, ("The molecule contains a flavanone core and a candidate B ring, "
+                   "but no –OH substituent was found at the para (4') position on the B ring.")
 
 # (Optional) Testing examples.
 if __name__ == '__main__':
-    test_smiles = [
-        "O[C@@H]1[C@H](Oc2cc(O)cc(O)c2C1=O)c1ccc(O)c(O)c1",  # (+)-taxifolin - expected True
-        "COc1cc(O)c2C(=O)C[C@H](Oc2c1)c1ccc(O)cc1",            # (2S)-2'-methoxykurarinone - True
-        "Oc1ccc2C(=O)C[C@H](Oc2c1)c1ccc(O)c(O)c1",            # butin - True
-        "O1[C@@H](CC(=O)C=2C1=C(CC=C(C)C)C(O)=CC2O)C3=CC(=C(O)C=C3)CC=C(C)C",  # Euchrestaflavanone A - false positive in previous attempt
-        "COC(=O)C1=CC=CC=C1"                                  # not a flavanone - False
+    test_examples = [
+        ("(+)-taxifolin", "O[C@@H]1[C@H](Oc2cc(O)cc(O)c2C1=O)c1ccc(O)c(O)c1"),
+        ("(2S)-2'-methoxykurarinone", "COc1cc(O)c2C(=O)C[C@H](Oc2c1)c1ccc(O)c(O)c1"),
+        ("butin", "Oc1ccc2C(=O)C[C@H](Oc2c1)c1ccc(O)c(O)c1"),
+        ("naringenin", "Oc1ccc(cc1)[C@@H]1CC(=O)c2c(O)cc(O)cc2O1"),
+        ("non-flavanone (acetophenone)", "CC(=O)c1ccccc1")
     ]
-    for sm in test_smiles:
-        result, reason = is_4__hydroxyflavanones(sm)
-        print(f"SMILES: {sm}\nResult: {result}, Reason: {reason}\n")
+    for name, smi in test_examples:
+        result, reason = is_4__hydroxyflavanones(smi)
+        print(f"Name: {name}\nSMILES: {smi}\nResult: {result}\nReason: {reason}\n")
