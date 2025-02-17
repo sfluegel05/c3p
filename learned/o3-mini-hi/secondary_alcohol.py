@@ -5,39 +5,22 @@ Classifies: CHEBI:35681 secondary alcohol
 Classifies: Secondary Alcohol
 Definition:
     A secondary alcohol is a compound in which a hydroxy group (-OH) is attached to a 
-    saturated (sp³) carbon atom that is bonded to exactly two other carbon atoms and one hydrogen.
+    saturated (sp³) carbon that is bonded to exactly two other carbon atoms and one hydrogen.
     
-In many molecules (especially natural products or nucleosides) an –OH group that matches this 
-pattern may be present but other –OH groups (e.g. primary alcohols) may also be present.
-Here we require that if any –OH group is present then ALL alcohol groups in the molecule 
-must be “secondary” for the molecule to be classified as a secondary alcohol.
+    In many molecules an –OH group that matches this pattern may be present along with other –OH groups 
+    (for instance primary alcohols, tertiary alcohols or even –OH bound to non-sp³ carbons). Here we 
+    require that if any –OH group is present then ALL such –OH groups must be secondary for the molecule to be classified as a secondary alcohol.
     
-This implementation uses RDKit to add explicit hydrogens and then iterates over every oxygen atom.
-For each oxygen, if it is only bonded to one atom (as expected for an –OH), and that one neighbor 
-is a carbon, then we count this as an alcohol group. Then we examine the carbon:
-    - It must be sp³.
-    - Among its bonds (besides the –OH oxygen) there must be exactly two carbons and one hydrogen.
-If at least one –OH is found and every –OH group in the molecule meets the secondary alcohol 
-criteria, we call the molecule a secondary alcohol; otherwise, it isn’t.
-    
-Note that with this “whole‐molecule” criterion many complex molecules (even if they contain a 
-secondary –OH) will not be classified as secondary alcohols.
+Our updated approach uses RDKit to add explicit hydrogens. Then for every oxygen atom we identify if it is in an –OH group by checking that it has exactly two neighbors – one hydrogen and one carbon. For the attached carbon we then verify that it is sp³ and that (besides the –OH oxygen) it is connected to exactly two carbon atoms and one hydrogen. Only if at least one –OH is found and every –OH meets this secondary pattern do we return success.
 """
 
 from rdkit import Chem
 
 def is_secondary_alcohol(smiles: str):
     """
-    Determines if a molecule is a secondary alcohol overall based on its SMILES string.
-    Here “secondary alcohol” means that the only alcohol groups present are secondary.
-    
-    Steps:
-      1. Parse the SMILES and add explicit hydrogens.
-      2. Identify all –OH groups (oxygen atoms with exactly one neighbor, that neighbor being carbon).
-      3. For each –OH, check that the carbon is sp³ and has exactly 3 neighbors
-         (besides the –OH oxygen these must be exactly 2 carbons and 1 hydrogen).
-      4. If at least one alcohol group is found and every –OH group qualifies as secondary,
-         classify the molecule as a secondary alcohol.
+    Determines if a molecule is a secondary alcohol based on its SMILES string.
+    Here “secondary alcohol” means that every hydroxyl group (–OH) in the molecule is attached to a 
+    saturated (sp³) carbon that is bonded to exactly two other carbons and one hydrogen.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -46,66 +29,77 @@ def is_secondary_alcohol(smiles: str):
         bool: True if the molecule is a secondary alcohol, False otherwise.
         str: Reason for classification.
     """
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
-    if not mol:
+    if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens so that hydrogen counts are available.
+    # Add explicit hydrogens so that we can count hydrogen atoms.
     mol = Chem.AddHs(mol)
     
-    total_alcohol = 0
-    secondary_alcohol = 0
+    total_OH = 0
+    secondary_OH = 0
     
-    # Loop over all oxygen atoms in the molecule.
+    # Iterate over all atoms looking for oxygen atoms that are part of an OH group.
     for atom in mol.GetAtoms():
+        # We only care about oxygen.
         if atom.GetAtomicNum() != 8:
             continue
-        # Expect an alcohol oxygen to have exactly one neighbor.
-        if atom.GetDegree() != 1:
+        
+        # For an -OH group (after adding hydrogens), the oxygen should have exactly 2 neighbors:
+        # one hydrogen and one other atom.
+        if atom.GetDegree() != 2:
             continue
         
-        # In an –OH, the sole neighbor should be a carbon.
-        neighbor = atom.GetNeighbors()[0]
-        if neighbor.GetAtomicNum() != 6:
+        neighbors = atom.GetNeighbors()
+        # Identify hydrogen and carbon neighbor.
+        h_neighbor = None
+        c_neighbor = None
+        for nb in neighbors:
+            if nb.GetAtomicNum() == 1:
+                h_neighbor = nb
+            elif nb.GetAtomicNum() == 6:
+                c_neighbor = nb
+        # If we did not find one hydrogen and one carbon, then skip this oxygen.
+        if h_neighbor is None or c_neighbor is None:
             continue
         
-        # Count this as an alcohol group.
-        total_alcohol += 1
+        # We have identified an -OH group
+        total_OH += 1
         
-        # Check that the carbon is saturated (sp³).
-        if neighbor.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
-            continue  # not secondary if the carbon is not sp³
+        # Check the attached carbon: it must be sp³.
+        if c_neighbor.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+            continue  # not a secondary alcohol
         
-        # Examine the other neighbors of the carbon.
-        carbon_neighbor_count = 0
-        hydrogen_neighbor_count = 0
-        other_neighbor_count = 0
-        
-        for nb in neighbor.GetNeighbors():
-            # Skip the –OH oxygen atom.
+        # For a secondary alcohol, the carbon attached to the -OH should be bound to exactly:
+        # 2 other carbons and 1 hydrogen (the -OH makes the 4th substituent).
+        carbon_neighbors = c_neighbor.GetNeighbors()
+        count_carbon = 0
+        count_hydrogen = 0
+        # We exclude the oxygen atom (the -OH group) from the counts.
+        for nb in carbon_neighbors:
             if nb.GetIdx() == atom.GetIdx():
                 continue
             if nb.GetAtomicNum() == 6:
-                carbon_neighbor_count += 1
+                count_carbon += 1
             elif nb.GetAtomicNum() == 1:
-                hydrogen_neighbor_count += 1
+                count_hydrogen += 1
             else:
-                other_neighbor_count += 1
-        
-        # For a secondary alcohol the carbon should have exactly 3 other neighbors:
-        # two carbons and one hydrogen.
-        if carbon_neighbor_count == 2 and hydrogen_neighbor_count == 1 and other_neighbor_count == 0:
-            secondary_alcohol += 1
-
-    # Decide the classification:
-    if total_alcohol == 0:
-        return False, "No identifiable -OH groups attached to sp³ carbons found"
-    if total_alcohol == secondary_alcohol:
-        return True, f"All {total_alcohol} alcohol group(s) are secondary (each -OH is on a carbon with 2 C and 1 H)"
+                # If there are any other heteroatoms attached (other than the OH) then it is not our pattern.
+                count_hydrogen += 0  # just ignore; we will not count this as matching.
+        # Check if exactly two carbons and one hydrogen are attached.
+        if count_carbon == 2 and count_hydrogen == 1:
+            secondary_OH += 1
+    
+    if total_OH == 0:
+        return False, "No identifiable -OH groups (in proper -OH form) found"
+    
+    if total_OH == secondary_OH:
+        return True, f"All {total_OH} alcohol group(s) are secondary (each -OH is on a sp³ carbon bound to 2 carbons and 1 hydrogen)"
     else:
         return False, (f"Not all identified alcohol groups are secondary "
-                       f"(found {secondary_alcohol} secondary out of {total_alcohol} total alcohol groups)")
+                       f"(found {secondary_OH} secondary out of {total_OH} total -OH groups)")
 
-# Example test (uncomment to try out)
-# test_smiles = "CCCC(O)CC"  # butan-2-ol (secondary alcohol)
+# Example usage:
+# test_smiles = "CC(O)CC"  # Butan-2-ol (secondary alcohol)
 # print(is_secondary_alcohol(test_smiles))
