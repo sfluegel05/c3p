@@ -2,18 +2,25 @@
 Classifies: CHEBI:26666 short-chain fatty acid
 """
 """
-Classifies: Short-chain fatty acid.
-A short-chain fatty acid is defined as an acyclic, aliphatic monocarboxylic acid that:
-  – Contains exactly one carboxylic acid group (SMARTS: "[CX3](=O)[OX2H]"),
-  – The acid (carboxyl) carbon is terminal (attached to exactly one other carbon),
-  – All oxygen atoms present are only those in the acid group (exactly 2 oxygens),
-  – And the “alkyl” chain attached to the carboxyl group (i.e. the chain starting at the unique neighbor
-    of the acid carbon) must have fewer than 5 carbons connected by single bonds (so that an unbranched acid
-    with 5 carbons on the alkyl chain – totaling 6) is rejected.
-  – No extra non‐hydrocarbon substituents (atoms other than C or H) appear outside the carboxyl group.
-  
-Note: In unsaturated acids the DFS only follows single bonds so that double bonds do not “lengthen” the alkyl chain.
-Some hydroxy acids or ketoacids have extra oxygens and are disqualified.
+Classifies: Short‐chain fatty acid.
+
+Definition:
+  "An aliphatic monocarboxylic acid with a chain length of less than C6.
+   If any non‐hydrocarbon substituent is present, the compound is not normally regarded as a short‐chain fatty acid."
+
+Our implementation requires that:
+  – the molecule is acyclic,
+  – exactly one carboxylic acid group is present (identified by the SMARTS "[CX3](=O)[OX2H]"),
+  – the carboxyl (acid) carbon is terminal in the carbon–only connectivity,
+  – all oxygens in the molecule appear in that group (i.e. total oxygen count is exactly 2),
+  – the total number of carbons is at least 3 and at most 6, and
+  – if the acid is unbranched (i.e. the longest continuous carbon chain that includes the carboxyl carbon matches the total carbon count)
+    then acids with 6 carbons (n–hexanoic acid) are rejected.
+    
+Note:
+  In many common cases, short–chain fatty acids are branched or contain an alkene function. To discriminate them from
+  unbranched acids we compute the longest path from the carboxyl carbon (in the carbon–only graph) and require that if the
+  acid is completely linear then its total carbon count must be less than 6.
 """
 
 from rdkit import Chem
@@ -22,125 +29,119 @@ def is_short_chain_fatty_acid(smiles: str):
     """
     Determines if a molecule qualifies as a short-chain fatty acid.
     
-    A qualifying short-chain fatty acid must:
-      (a) be acyclic,
-      (b) contain exactly one carboxyl group (SMARTS: "[CX3](=O)[OX2H]"),
-      (c) have a terminal acid carbon (attached to exactly one other carbon),
-      (d) have exactly 2 oxygens in the whole molecule,
-      (e) have an alkyl chain (the saturated chain from the acid carbon’s unique carbon neighbor,
-          following only single bonds) that is shorter than 5 carbons,
-      (f) have no atoms outside the carboxyl functional group other than carbon or hydrogen.
-      
+    A qualifying short-chain fatty acid is defined as:
+      (a) an acyclic, aliphatic molecule,
+      (b) containing exactly one carboxylic acid group (SMARTS: "[CX3](=O)[OX2H]"),
+      (c) where the acid carbon is terminal (i.e. attached to exactly one carbon in the C–only graph),
+      (d) all heteroatoms (here oxygens) are only those in the COOH group,
+      (e) the total number of carbons in the molecule is between 3 and 6 (inclusive),
+      (f) but if the molecule is unbranched – that is, the longest continuous carbon chain (starting from the carboxyl carbon)
+          covers every carbon in the molecule – then a 6–carbon acid (i.e. n–hexanoic acid) is not allowed.
+    
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
         bool: True if the molecule qualifies as a short-chain fatty acid, False otherwise.
-        str: A message explaining the classification decision.
+        str: A message describing the reason for the classification.
     """
-    # Parse the SMILES string.
+    # Parse SMILES to molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     
-    # (a) Check that the molecule is acyclic
+    # (a) Must be acyclic.
     if mol.GetRingInfo().NumRings() != 0:
         return False, "Molecule contains rings; expected an acyclic (aliphatic) acid."
     
-    # (b) Find exactly one carboxylic acid group using SMARTS "[CX3](=O)[OX2H]".
+    # (b) Identify the carboxylic acid group using SMARTS.
     ca_smarts = "[CX3](=O)[OX2H]"
-    ca_query = Chem.MolFromSmarts(ca_smarts)
-    ca_matches = mol.GetSubstructMatches(ca_query)
+    ca_group = Chem.MolFromSmarts(ca_smarts)
+    ca_matches = mol.GetSubstructMatches(ca_group)
     if not ca_matches:
-        return False, "No carboxylic acid group found."
+        return False, "No carboxylic acid functional group found."
     if len(ca_matches) != 1:
         return False, f"Expected exactly one carboxyl group, found {len(ca_matches)}."
     
-    # Retrieve the matching atom indices; assume the carboxyl carbon is the first atom.
-    ca_indices = ca_matches[0]
-    acid_carbon_idx = ca_indices[0]
-    acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
+    # For the match, by SMARTS the first atom is the carboxyl carbon.
+    ca_idx = ca_matches[0][0]
+    ca_atom = mol.GetAtomWithIdx(ca_idx)
     
-    # (c) Check that the acid carbon is terminal (attached to exactly one other carbon).
-    carbon_neighbors = [nbr for nbr in acid_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
+    # (c) Check that the carboxyl carbon is terminal in the carbon-only connectivity.
+    carbon_neighbors = [nbr for nbr in ca_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
     if len(carbon_neighbors) != 1:
         return False, (f"The carboxyl carbon is not terminal; "
                        f"expected exactly one carbon neighbor, found {len(carbon_neighbors)}.")
     
-    # (d) Count all oxygens: We require exactly 2 oxygens (from the carboxyl group).
+    # (d) Count total oxygen atoms in the molecule.
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if oxygen_count != 2:
         return False, f"Expected exactly 2 oxygens (from the carboxyl group), found {oxygen_count}."
     
-    # (e) Measure the alkyl chain length.
-    # Only follow single bonds between carbons.
-    # Start at the unique carbon neighbor attached to the acid carbon.
-    start_atom_idx = carbon_neighbors[0].GetIdx()
+    # (e) Count total carbon atoms.
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if total_carbons < 3:
+        return False, f"Total carbon count is {total_carbons}, which is too low for a fatty acid."
+    if total_carbons > 6:
+        return False, f"Total carbon count is {total_carbons}, which exceeds allowed short-chain length (max 6)."
     
-    # Build a dictionary mapping atom indices (only carbons) to a list of connected carbon indices
-    # but we will filter only those bonds that are SINGLE.
-    carbon_only_neighbors = {}
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 6:
-            continue
-        idx = atom.GetIdx()
-        nbs = []
-        for bond in atom.GetBonds():
-            # Only consider the neighbor if the bond is a single bond.
-            if bond.GetBondType() != Chem.BondType.SINGLE:
-                continue
-            # Get the neighbor index.
-            nbr = bond.GetOtherAtom(atom)
-            if nbr.GetAtomicNum() == 6:
-                nbs.append(nbr.GetIdx())
-        carbon_only_neighbors[idx] = nbs
+    # Build a list of indices for carbon atoms.
+    carbon_idxs = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    
+    # Create a dictionary mapping a carbon atom index to its carbon-neighbor indices.
+    carbon_neighbors_dict = {}
+    for idx in carbon_idxs:
+        atom = mol.GetAtomWithIdx(idx)
+        # Only consider neighbors that are carbon atoms.
+        nbrs = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        carbon_neighbors_dict[idx] = nbrs
 
-    # Define DFS that only traverses carbon-only, single-bond connections.
-    def dfs_max_length(current_idx, visited):
-        max_len = 1  # count current atom
-        for nbr in carbon_only_neighbors.get(current_idx, []):
+    # Helper: recursively compute the longest simple path in the carbon-only graph that starts at 'start_idx'
+    # and does not revisit atoms.
+    def dfs_longest(start_idx, visited):
+        max_length = 1  # count the starting atom itself
+        for nbr in carbon_neighbors_dict[start_idx]:
             if nbr not in visited:
-                length = 1 + dfs_max_length(nbr, visited | {nbr})
-                if length > max_len:
-                    max_len = length
-        return max_len
+                length = 1 + dfs_longest(nbr, visited | {nbr})
+                if length > max_length:
+                    max_length = length
+        return max_length
 
-    alkyl_chain_length = dfs_max_length(start_atom_idx, {start_atom_idx})
-    # The chain length here excludes the acid carbon.
-    if alkyl_chain_length >= 5:
-        return False, (f"Molecule has an alkyl chain length of {alkyl_chain_length} (excluding the acid carbon) "
-                       "which is too long for a short-chain fatty acid (unbranched analog with 6 or more carbons).")
+    # Compute the longest path (number of carbons) that includes the carboxyl carbon.
+    longest_from_ca = dfs_longest(ca_idx, {ca_idx})
     
-    # (f) Ensure that outside the carboxyl group, no atoms other than C or H appear.
-    acid_group_idxs = set(ca_indices)
+    # (f) If the acid is completely unbranched then (by definition) total carbons equals longest chain.
+    # In that case, we disallow a 6–carbon acid (i.e. n–hexanoic acid is not normally considered short chain).
+    if longest_from_ca == total_carbons and total_carbons == 6:
+        return False, ("Molecule is an unbranched (linear) acid with 6 carbons (n‐hexanoic acid), "
+                       "which is not normally regarded as a short-chain fatty acid.")
+    
+    # (g) Optionally, check that outside the carboxyl group only carbons appear.
+    ca_atom_idxs = set(ca_matches[0])
     for atom in mol.GetAtoms():
-        if atom.GetIdx() in acid_group_idxs:
+        if atom.GetIdx() in ca_atom_idxs:
             continue
-        if atom.GetAtomicNum() not in (1, 6):
+        if atom.GetAtomicNum() not in (1, 6):  # allow hydrogen (usually implicit) and carbon
             return False, (f"Found a non-hydrocarbon substituent: atom {atom.GetSymbol()} "
                            "outside the carboxyl group is not allowed.")
     
-    return True, ("Molecule contains exactly one carboxyl group with a terminal acid carbon, is acyclic, "
-                  "has only the 2 oxygen atoms of the acid group, an alkyl chain (traversing only single bonds) "
-                  "shorter than 5, and no extraneous heteroatoms.")
+    return True, ("Molecule contains one carboxyl group with a terminal acid carbon, is acyclic, "
+                  "has 3–6 carbons total (with branched acids allowed, but unbranched 6-carbon acids rejected), "
+                  "and no extraneous substituents.")
 
-# Example usage and tests (these are taken from the provided outcome lists).
+# Example usage (you can run basic tests if executing the module as main)
 if __name__ == '__main__':
+    # a few examples taken from the outcomes
     test_cases = [
-        ("CC(C)(C)C(O)=O", "pivalic acid (should be accepted)"),
-        ("CCC(O)=O", "propionic acid (should be accepted)"),
-        ("C=CCC(C)C(=O)O", "2-Methyl-4-pentenoic acid (should be rejected)"),
-        ("OC(=O)C(CC)=CC", "2-ethyl-2-butenoic acid (should be rejected)"),
-        ("OC(=O)/C=C(C)C", "3-methyl-2-enoic acid candidate (should be rejected)"),
-        ("CCCC(C)C(O)=O", "2-methylvaleric acid (should be accepted)"),
-        ("CCCCCC(O)=O", "n-hexanoic acid (should be rejected as unbranched)"),
-        ("C(/C=C/CCC)(O)=O", "(2E)-hexenoic acid (should be accepted if unsaturation limits chain length)"),
-        ("OC(C[C@H](CC)O)=O", "(R)-3-hydroxypentanoic acid (should be rejected – extra oxygen)"),
-        ("OCCC(O)=O", "3-hydroxypropionic acid (should be rejected – extra oxygen)"),
-        ("CCC(=O)C(O)=O", "2-oxobutanoic acid (should be rejected – extra oxygen)"),
-        ("CC(C)[C@@H](C)C(O)=O", "(R)-2,3-dimethylbutyric acid (should be accepted)"),
+        ("CC(C)(C)C(O)=O", "pivalic acid"),
+        ("CCC(O)=O", "propionic acid"),
+        ("C=CCC(C)C(=O)O", "2-Methyl-4-pentenoic acid (FP candidate)"),
+        ("OC(=O)C(CC)=CC", "2-ethyl-2-butenoic acid (FP candidate)"),
+        ("C/C=C/C(O)=O", "cis-pent-2-enoic acid"),
+        ("CCCC(C)C(O)=O", "2-methylvaleric acid"),
+        ("CCCCCC(O)=O", "n-hexanoic acid (should be rejected if unbranched)"),
     ]
     
-    for smi, description in test_cases:
+    for smi, name in test_cases:
         valid, reason = is_short_chain_fatty_acid(smi)
-        print(f"SMILES: {smi}\n  {description}\n  -> {valid}; Reason: {reason}\n")
+        print(f"SMILES: {smi}  NAME: {name}\n   -> {valid}; Reason: {reason}\n")
