@@ -11,45 +11,44 @@ from rdkit import Chem
 
 def is_2_enoyl_CoA(smiles: str):
     """
-    Determines if a molecule is a 2-enoyl-CoA based on its SMILES string.
-    A 2‑enoyl‑CoA is defined as an unsaturated fatty acyl-CoA molecule, 
-    where the acyl (fatty acid) moiety contains a double bond between positions 2 and 3
-    (i.e., between the α- and β-carbons counting from the carbonyl carbon) 
-    and is attached to a CoA scaffold.
-
+    Determines if a molecule is a 2‑enoyl‑CoA based on its SMILES string.
+    A 2‑enoyl‑CoA is defined as an unsaturated fatty acyl-CoA in which the 
+    acyl (fatty acid) moiety is attached via a thioester group and contains a double bond 
+    between the alpha (position 2) and beta (position 3) carbons (i.e. between the carbonyl and its adjacent carbon)
+    and that the molecule contains features of CoA (e.g. an adenine nucleotide).
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+    
     Returns:
-        bool: True if the molecule is a 2‑enoyl‑CoA, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a 2‑enoyl‑CoA, False otherwise.
+        str: Reason for classification.
     """
-    # Attempt to parse the SMILES string into an RDKit molecule
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # SMARTS to check for the unsaturated acyl group.
-    # This pattern seeks a fragment where an sp2 carbon (=CH) is directly connected 
-    # to another sp2 carbon which in turn is immediately bonded to a carbonyl carbon (C(=O)S).
-    # This effectively tests for a C(=O) group with the α-carbon (C2) double-bonded to the β-carbon (C3).
-    unsat_acyl_smarts = "[CH]=[CH]C(=O)S"
-    unsat_acyl_pattern = Chem.MolFromSmarts(unsat_acyl_smarts)
-    if unsat_acyl_pattern is None:
+    
+    # SMARTS pattern for the unsaturated acyl unit:
+    # We're looking for a thioester group (C(=O)S) directly followed by a carbon which is double-bonded to another carbon.
+    # This allows for substitution on the alpha carbon as is common in some acyl chains.
+    unsat_acyl_smarts = "C(=O)S[C]=[C]"
+    unsat_acyl_pat = Chem.MolFromSmarts(unsat_acyl_smarts)
+    if unsat_acyl_pat is None:
         return False, "Error building unsaturated acyl SMARTS pattern"
     
-    if not mol.HasSubstructMatch(unsat_acyl_pattern):
+    if not mol.HasSubstructMatch(unsat_acyl_pat):
         return False, "The unsaturated acyl moiety (double bond between positions 2 and 3) was not found"
-
-    # SMARTS to detect a fragment of the CoA (pantetheine) moiety.
-    # Most acyl-CoA structures contain a characteristic fragment like "SCCNC(=O)CCNC(=O)"
-    # that links the acyl group to the nucleotide portion.
-    coa_smarts = "SCCNC(=O)CCNC(=O)"
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    if coa_pattern is None:
+    
+    # SMARTS pattern for a CoA-like moiety:
+    # Rather than matching an extended pantetheine chain (which might vary due to charge/protonation states),
+    # we look for the adenine ring that is part of the CoA scaffold.
+    coa_smarts = "n1cnc2ncnc12"
+    coa_pat = Chem.MolFromSmarts(coa_smarts)
+    if coa_pat is None:
         return False, "Error building CoA SMARTS pattern"
     
-    if not mol.HasSubstructMatch(coa_pattern):
-        return False, "CoA structural features not found in the molecule"
-
-    return True, "Molecule contains an unsaturated acyl group with a double bond between positions 2 and 3 and a CoA moiety"
+    if not mol.HasSubstructMatch(coa_pat):
+        return False, "CoA structural features (adenine ring) not found in the molecule"
+    
+    return True, "Molecule contains a thioester-linked acyl group with a double bond between positions 2 and 3 and a CoA moiety"
