@@ -5,11 +5,11 @@ Classifies: CHEBI:75659 O-acyl-L-carnitine
 """
 Classifies: O-acyl-L-carnitine
 Definition: An O-acylcarnitine in which the carnitine component has L-configuration.
-A genuine O–acyl–L–carnitine contains a carnitine fragment where a chiral carbon (with CIP “R”)
-is connected (ignoring hydrogens) to exactly three heavy atoms:
+A genuine O–acyl–L–carnitine is characterized by the presence of a carnitine fragment
+where a chiral carbon (with CIP “R”) is connected (ignoring hydrogens) to three groups:
   1. an oxygen that is acylated (i.e. the oxygen is in an ester bond to a carbonyl carbon),
-  2. a trimethylammonium fragment (a nitrogen with formal charge +1 and three carbon neighbours),
-  3. and a chain leading to a carboxylate group (e.g. –CH2–C(=O)[O-]).
+  2. a trimethylammonium fragment (either directly or via a short alkyl linker),
+  3. and a chain that leads to a carboxylate group (i.e. ultimately to a carbonyl with a negatively charged oxygen).
 If these conditions are met the molecule is classified as an O–acyl–L–carnitine.
 """
 
@@ -21,129 +21,152 @@ def is_O_acyl_L_carnitine(smiles: str):
     
     The procedure is:
       1. Parse the SMILES and assign stereochemistry.
-      2. Loop through heavy atoms that are carbon and are marked as stereo centers.
-      3. For each candidate:
-           - verify it has a CIP label "R" (which in our depiction corresponds to L–carnitine),
-           - check that (ignoring hydrogens) it is connected to exactly three heavy–atom neighbours,
-           - confirm one neighbour is an oxygen that is acylated (i.e. the oxygen is bound only to
-             this chiral carbon and to an acyl carbon which bears at least one double-bonded oxygen),
-           - check that one neighbour is a trimethylammonium group (a positively–charged nitrogen with three carbon neighbours),
-           - and that one neighbour (a carbon) is connected to an oxygen anion (as part of a carboxylate).
+      2. Loop over heavy atoms (carbon) marked as chiral with an assigned CIP label.
+      3. For each candidate that has CIP 'R' and exactly 3 heavy atom neighbours,
+         check that one neighbour (directly) is an oxygen that is acylated (attached to a carbonyl carbon),
+         another neighbour (directly or via a one-atom linker) contains a trimethylammonium (N+ with three C neighbours),
+         and the third neighbour (directly or via a one-atom linker) leads to a carboxylate group (a carbonyl carbon with an adjacent negatively charged oxygen).
       4. If one candidate meets all these criteria, return True plus a descriptive reason.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if molecule is identified as an O-acyl-L-carnitine, False otherwise.
+        bool: True if the molecule is identified as an O-acyl-L-carnitine, False otherwise.
         str: Explanation for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # assign stereochemistry and compute CIP labels (important for chiral centers)
+    # assign stereochemistry and compute CIP labels
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
     
-    # helper: return list of heavy (atomic num >1) neighbours of an atom.
+    # helper: get heavy (atomic num >1) neighbours
     def heavy_neighbors(atom):
         return [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
     
-    # loop over all atoms that are carbons (atomic number 6) and have an assigned chiral tag
+    # helper: check for trimethylammonium pattern in an atom or in its immediate neighbour if needed
+    def has_trimethylammonium(atom):
+        # if atom is nitrogen, check immediately
+        if atom.GetAtomicNum() == 7:
+            if atom.GetFormalCharge() == 1:
+                # count heavy neighbors that are carbons
+                if sum(1 for x in heavy_neighbors(atom) if x.GetAtomicNum() == 6) >= 3:
+                    return True
+        # if atom is carbon, maybe check one bond away
+        if atom.GetAtomicNum() == 6:
+            for sub in heavy_neighbors(atom):
+                if sub.GetAtomicNum() == 7 and sub.GetFormalCharge() == 1:
+                    if sum(1 for x in heavy_neighbors(sub) if x.GetAtomicNum() == 6) >= 3:
+                        return True
+        return False
+    
+    # helper: check for chain leading to carboxylate in an atom or via a one-atom extension
+    def has_carboxylate(atom):
+        # if the atom is carbon, check its neighbours for a carbonyl and a negatively charged oxygen
+        if atom.GetAtomicNum() == 6:
+            for sub in heavy_neighbors(atom):
+                if sub.GetAtomicNum() == 6:  # candidate carbonyl carbon
+                    # check if sub has a double-bonded oxygen and also an oxygen with -1 charge
+                    has_double_oxygen = False
+                    has_neg_oxygen = False
+                    for sub2 in heavy_neighbors(sub):
+                        # ignore bond back to atom if present
+                        if sub2.GetIdx() == atom.GetIdx():
+                            continue
+                        bond = mol.GetBondBetweenAtoms(sub.GetIdx(), sub2.GetIdx())
+                        if sub2.GetAtomicNum() == 8 and bond is not None:
+                            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                has_double_oxygen = True
+                            if sub2.GetAtomicNum() == 8 and sub2.GetFormalCharge() == -1:
+                                has_neg_oxygen = True
+                    if has_double_oxygen and has_neg_oxygen:
+                        return True
+        # also, if atom is not directly the carboxylate, try one bond extension (if atom is carbon)
+        if atom.GetAtomicNum() == 6:
+            for sub in heavy_neighbors(atom):
+                if sub.GetAtomicNum() == 6 and sub.GetIdx() != atom.GetIdx():
+                    if has_carboxylate(sub):
+                        return True
+        return False
+
+    # loop over atoms that are carbons and have an explicit chiral tag 
+    # (our candidate chiral center for the carnitine fragment)
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 6:
             continue
-        # require an explicit chiral tag
         if atom.GetChiralTag() == Chem.rdchem.ChiralType.CHI_UNSPECIFIED:
             continue
-        # retrieve CIP label if available
         try:
             cip = atom.GetProp('_CIPCode')
         except KeyError:
             continue
+        # We require the CIP code to be "R" as in (R)-configuration corresponding to L-carnitine
         if cip != "R":
-            # We only want the candidate to have "R" CIP (i.e. L–carnitine)
             continue
         
-        # Get heavy-atom neighbours (ignore hydrogens)
         nbrs = heavy_neighbors(atom)
         if len(nbrs) != 3:
-            # The carnitine chiral center should be connected to exactly 3 heavy atoms
+            # The carnitine chiral center should be connected to exactly 3 heavy atoms.
             continue
-
-        # Initialize flags for the three groups we expect
-        acyl_oxygen_ok = False
-        trimethyl_ok = False
-        carboxylate_ok = False
-
-        # iterate over neighbours to check for the distinct groups
+        
+        found_acyl = False
+        found_ammonium = False
+        found_carboxylate = False
+        
+        # Check each of the 3 groups:
         for nbr in nbrs:
-            atomic_num = nbr.GetAtomicNum()
-            if atomic_num == 8:
-                # Candidate for acyl oxygen.
-                # Check that this oxygen is connected to exactly 2 heavy atoms:
-                nbr_heavy = heavy_neighbors(nbr)
-                if len(nbr_heavy) != 2:
-                    continue
-                # One of the neighbours must be the candidate chiral center; the other is the acyl carbon.
-                other = [x for x in nbr_heavy if x.GetIdx() != atom.GetIdx()]
-                if not other:
-                    continue
-                acyl_carb = other[0]
-                if acyl_carb.GetAtomicNum() != 6:
-                    continue
-                # Check that the acyl carbon is part of a carbonyl: i.e.
-                # at least one neighbour (other than the oxygen we came from) is an oxygen bound by a double bond.
-                carbonyl_found = False
-                for nn in acyl_carb.GetNeighbors():
-                    if nn.GetIdx() == nbr.GetIdx():
-                        continue
-                    bond = mol.GetBondBetweenAtoms(acyl_carb.GetIdx(), nn.GetIdx())
-                    if nn.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        carbonyl_found = True
-                        break
-                if carbonyl_found:
-                    acyl_oxygen_ok = True
+            # 1. Acylated oxygen group should be an oxygen directly attached to the chiral center.
+            if nbr.GetAtomicNum() == 8 and not found_acyl:
+                nbrs2 = heavy_neighbors(nbr)
+                # Expect the oxygen to be connected to the chiral center and one acyl carbon
+                if len(nbrs2) == 2:
+                    other_atoms = [x for x in nbrs2 if x.GetIdx() != atom.GetIdx()]
+                    if other_atoms:
+                        acyl_carb = other_atoms[0]
+                        if acyl_carb.GetAtomicNum() == 6:
+                            # check that acyl_carb is in a carbonyl (has a double-bonded oxygen)
+                            has_carbonyl = False
+                            for nn in heavy_neighbors(acyl_carb):
+                                if nn.GetIdx() == nbr.GetIdx():
+                                    continue
+                                bond = mol.GetBondBetweenAtoms(acyl_carb.GetIdx(), nn.GetIdx())
+                                if nn.GetAtomicNum() == 8 and bond is not None and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                    has_carbonyl = True
+                                    break
+                            if has_carbonyl:
+                                found_acyl = True
+                                continue  # move to next neighbor
 
-            elif atomic_num == 7:
-                # candidate for trimethylammonium group. Check that it carries a positive charge.
-                if nbr.GetFormalCharge() != 1:
+            # 2. Trimethylammonium group: either the neighbor itself or one bond extension must have this pattern.
+            if not found_ammonium:
+                if has_trimethylammonium(nbr):
+                    found_ammonium = True
                     continue
-                # also, expect exactly three heavy–atom (carbon) neighbours attached to this N.
-                nbrs_of_N = heavy_neighbors(nbr)
-                # count only carbons among them
-                methyl_count = sum(1 for x in nbrs_of_N if x.GetAtomicNum() == 6)
-                if methyl_count == 3:
-                    trimethyl_ok = True
 
-            elif atomic_num == 6:
-                # candidate for the chain leading to the carboxylate.
-                # For our purposes we check if this carbon (likely CH2) is attached (other than to the candidate)
-                # to an oxygen bearing a negative formal charge.
-                for sub_nbr in nbr.GetNeighbors():
-                    if sub_nbr.GetIdx() == atom.GetIdx():
-                        continue
-                    if sub_nbr.GetAtomicNum() == 8 and sub_nbr.GetFormalCharge() == -1:
-                        carboxylate_ok = True
-                        break
-        if acyl_oxygen_ok and trimethyl_ok and carboxylate_ok:
-            return True, ("Molecule contains a carnitine chiral center with CIP 'R', a correctly acylated "
-                          "oxygen, a trimethylammonium group, and a chain leading to a carboxylate. "
+            # 3. Carboxylate chain: either the neighbor or one bond extension should lead to a carboxylate.
+            if not found_carboxylate:
+                if has_carboxylate(nbr):
+                    found_carboxylate = True
+                    continue
+
+        if found_acyl and found_ammonium and found_carboxylate:
+            return True, ("Molecule contains a carnitine chiral center with CIP 'R' that connects to an acylated oxygen, "
+                          "a (possibly remote) trimethylammonium group, and a chain leading to a carboxylate. "
                           "Thus it is classified as an O–acyl–L–carnitine.")
     
-    # If we came here, then either we found a carnitine-like fragment with wrong configuration
-    # or the acylation/other attachments are missing.
-    return False, ("No valid O-acyl-L-carnitine motif found, or the carnitine stereocenter is not 'R' "
-                   "or is missing proper acylation/trimethylammonium or carboxylate fragments.")
+    return False, ("No valid O-acyl-L-carnitine motif found, or the carnitine chiral center in CIP 'R' "
+                   "lacks the proper acylation, trimethylammonium, or carboxylate chain attachments.")
 
-# Example usage (can be run as a script):
+# Example usage (when run as a script, one can test with sample SMILES strings):
 if __name__ == "__main__":
     test_smiles = [
-        "CCCC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C",  # O-butanoyl-L-carnitine - expected True
-        "C[N+](C)(C)C[C@@H](CC([O-])=O)OC(=O)CC(O)=O",  # O-malonyl-L-carnitine - expected True
-        "O([C@@H](C[N+](C)(C)C)CC([O-])=O)C(=O)CCCCCCCCCCCC",  # CAR(13:0) false positive in previous code.
-        "C[N+](C)(C)C[C@H](CC([O-])=O)OC(=O)C=C",  # O-propenoyl-D-carnitine - expected to be rejected
-        "O[C@@](C([N+](CC(=O)CCC)(C)C)([2H])[2H])(CC([O-])=O)[2H]"  # Example with isotopes (butyryl-L-carnitine-d3) - expected True
+        "CCCC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C",  # O-butanoyl-L-carnitine
+        "C[N+](C)(C)C[C@@H](CC([O-])=O)OC(=O)CC(O)=O",  # O-malonyl-L-carnitine
+        "CCCCCCCCCCCCCCCCCC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C",  # O-octadecanoyl-L-carnitine
+        "CCCCCCCCCCCCCCCC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C",  # O-palmitoyl-L-carnitine
+        "CCC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C",  # O-propanoyl-L-carnitine
+        "CCCCCC\\C=C/C\\C=C/CCCCCCCC(=O)O[C@H](CC([O-])=O)C[N+](C)(C)C",  # O-linoleyl-L-carnitine
     ]
     for s in test_smiles:
         result, reason = is_O_acyl_L_carnitine(s)
