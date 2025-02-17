@@ -5,130 +5,122 @@ Classifies: CHEBI:87691 tetradecanoate ester
 """
 Classifies: Tetradecanoate ester
 
-A tetradecanoate ester is defined as a fatty acid ester obtained by condensation of the
-carboxyl group of tetradecanoic (myristic) acid (CH3(CH2)12CO–) with a hydroxy group of
-an alcohol or phenol. To be accepted an ester group must have:
-  • A carbonyl carbon (C) bonded to exactly three heavy atoms:
-      - one oxygen via a double bond (the carbonyl oxygen)
-      - one oxygen via a single bond (the ester oxygen linking to the rest of the molecule)
-      - one carbon (the beginning of the fatty acyl chain)
-  • The acyl chain (starting with the carbonyl carbon counted as carbon #1) must be linear 
-    (i.e. unbranched), fully saturated (only C–C single bonds), and have exactly 14 carbons.
-Any deviation in chain length, branching, or unsaturation (aside from the carbonyl C=O) disqualifies the molecule.
-This function uses RDKit to search for at least one ester group that meets these tight criteria.
+A tetradecanoate ester is a fatty acid ester obtained by condensation of the carboxyl group
+of tetradecanoic (myristic) acid (CH3(CH2)12CO–) with a hydroxy group of an alcohol or phenol.
+To qualify, the ester group must have:
+  • A carbonyl carbon (C) that is double‐bonded to an oxygen (carbonyl oxygen) and single‐bonded to:
+      - an oxygen (the ester oxygen bridging to the rest of the molecule)
+      - a carbon (the start of the tetradecanoate acyl chain)
+  • The acyl chain (starting with the carbonyl carbon counted as carbon #1) must be linear
+    (i.e. unbranched), fully saturated (all C–C bonds are single bonds) and consist exactly of 14 carbons.
+Any deviation (branching, unsaturation, or chain length) disqualifies the moiety.
+This function uses RDKit to search for at least one ester group meeting these criteria.
 """
-
 from rdkit import Chem
 
 def is_tetradecanoate_ester(smiles: str):
     """
     Determines whether the molecule contains an ester functional group in which the acyl chain 
-    is an unbranched, saturated chain of exactly 14 carbons (tetradecanoate).
-    It ensures that the candidate chain is truly linear by adding hydrogens and by ensuring that the terminal 
-    carbon is a methyl group (which should have exactly three hydrogens).
-
+    is an unbranched, fully saturated chain of exactly 14 carbons (tetradecanoate).
+    The method identifies candidate ester carbonyl carbons and then traverses the acyl chain,
+    ensuring that every successive carbon is connected by a single bond with no branching.
+    For the terminal (methyl) carbon, it checks that exactly three hydrogens are attached.
+    
     Args:
         smiles (str): SMILES representation of the molecule.
         
     Returns:
-        (bool, str): Tuple with True and an explanation if such an ester group is found;
+        (bool, str): Tuple with True and an explanation if a matching ester group is found;
                      otherwise, False and a message indicating why no matching ester was detected.
     """
     mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    if not mol:
         return False, "Invalid SMILES string"
     
     # Add explicit hydrogens so that hydrogen counts are available.
     mol = Chem.AddHs(mol)
     
-    # Loop through all atoms to identify candidate ester carbonyl carbons.
-    # We look only at heavy atom neighbors (non-hydrogen) for degree counts.
+    # Iterate over all carbon atoms looking for candidate ester carbonyl carbons.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 6:
             continue
-        # Only consider heavy atoms (non-H) when checking the bonding environment.
-        heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
-        if len(heavy_neighbors) != 3:
-            continue
         
-        # For a correct ester carbonyl carbon we need:
-        #   - exactly one double bond to an oxygen (carbonyl oxygen)
-        #   - exactly one single bond to an oxygen (ester oxygen)
-        #   - exactly one single bond to a carbon (start of the acyl chain)
         carbonyl_o = None
         ester_o = None
         acyl_c = None
         
+        # Examine the bonds from the candidate carbonyl carbon.
         for bond in atom.GetBonds():
             nbr = bond.GetOtherAtom(atom)
-            if nbr.GetAtomicNum() == 8:
-                if bond.GetBondType() == Chem.BondType.DOUBLE and carbonyl_o is None:
-                    carbonyl_o = nbr
-                elif bond.GetBondType() == Chem.BondType.SINGLE and ester_o is None:
-                    ester_o = nbr
-            elif nbr.GetAtomicNum() == 6:
-                # Only accept a single carbon neighbor (for the acyl chain) via a single bond.
-                if bond.GetBondType() == Chem.BondType.SINGLE and acyl_c is None:
-                    acyl_c = nbr
-                else:
-                    # If there is more than one carbon neighbor or non-single bond, skip candidate.
-                    acyl_c = None
-                    break
+            # Identify double bond to oxygen (carbonyl oxygen)
+            if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
+                carbonyl_o = nbr
+            # Identify single bond to oxygen (ester oxygen)
+            elif nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.SINGLE:
+                ester_o = nbr
+            # Identify single bond to carbon (begin acyl chain)
+            elif nbr.GetAtomicNum() == 6 and bond.GetBondType() == Chem.BondType.SINGLE:
+                acyl_c = nbr
         
+        # If we did not find the three features then skip candidate.
         if not (carbonyl_o and ester_o and acyl_c):
-            continue  # candidate does not match strict ester environment
+            continue
         
-        # Now, traverse the acyl chain.
-        # Count the carbonyl carbon as position #1.
+        # Now verify the acyl chain.
+        # We count the carbonyl carbon as position #1.
         chain_count = 1
-        prev = atom   # start at the carbonyl carbon (position 1)
+        prev = atom  # starting at carbonyl carbon.
         current = acyl_c
         
         valid_chain = True
         while True:
-            # Ensure bond between prev and current is a single bond.
+            # Verify that the bond from previous to current is a single bond (should be by selection)
             bond = mol.GetBondBetweenAtoms(prev.GetIdx(), current.GetIdx())
             if bond is None or bond.GetBondType() != Chem.BondType.SINGLE:
                 valid_chain = False
                 break
-            
-            # The current atom must be a carbon.
+
+            # Ensure current atom is carbon.
             if current.GetAtomicNum() != 6:
                 valid_chain = False
                 break
             
             chain_count += 1
             
-            # Look for next carbon in the chain.
+            # Identify next carbon(s) in the chain.
             next_carbons = []
             for nbr in current.GetNeighbors():
-                # Limit to heavy atoms only.
-                if nbr.GetAtomicNum() == 1:
+                # Skip hydrogens
+                if nbr.GetAtomicNum() != 6:
                     continue
-                # Avoid going back to the previous atom.
+                # Do not go back to the previous atom.
                 if nbr.GetIdx() == prev.GetIdx():
                     continue
-                # Must be connected by a single bond.
+                # Check that the connecting bond is single.
                 nxt_bond = mol.GetBondBetweenAtoms(current.GetIdx(), nbr.GetIdx())
-                if nxt_bond and nxt_bond.GetBondType() == Chem.BondType.SINGLE and nbr.GetAtomicNum() == 6:
+                if nxt_bond and nxt_bond.GetBondType() == Chem.BondType.SINGLE:
                     next_carbons.append(nbr)
-            # For an unbranched chain, there should be at most one new carbon.
+                    
+            # For a linear acyl chain, at an intermediate position we expect exactly one next carbon.
             if len(next_carbons) > 1:
                 valid_chain = False  # branching detected
                 break
             elif len(next_carbons) == 0:
-                # End of chain; now check that the terminal carbon is a methyl i.e. has 3 hydrogens.
+                # We've reached the terminal carbon.
+                # Confirm it is a methyl group (should have exactly three attached hydrogens).
                 if current.GetTotalNumHs() != 3:
                     valid_chain = False
                 break
             else:
+                # Proceed to next carbon.
                 prev = current
                 current = next_carbons[0]
-                
-        # The acyl chain must be exactly 14 carbons long including the carbonyl carbon.
+        
+        # The acyl chain must have exactly 14 carbons (including the carbonyl carbon).
         if valid_chain and chain_count == 14:
             return True, ("Found an ester group with a saturated, unbranched 14‑carbon acyl chain "
-                           "(tetradecanoate) derived from tetradecanoic acid.")
+                           "(tetradecanoate).")
+    
     return False, "No ester group with an unbranched, saturated 14‑carbon acyl chain (tetradecanoate) was detected."
 
 
