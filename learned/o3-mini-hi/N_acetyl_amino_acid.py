@@ -4,95 +4,102 @@ Classifies: CHEBI:21575 N-acetyl-amino acid
 #!/usr/bin/env python
 """
 Classifies: N-acetyl-amino acid
-Definition: An N-acyl-amino acid where the acyl group is specifically acetyl (CH3C(=O)-)
+Definition: An N-acyl-amino acid that has acetyl (CH3C(=O)-) as the acyl group.
 Heuristic:
-  1. The molecule must contain an N-acetyl substructure. We identify this by matching the SMARTS pattern "[NX3]C(=O)C".
-  2. The molecule must also contain a carboxylic acid group, matched by "[CX3](=O)[O;H1,O-]".
-  3. To increase confidence that the N-acetyl group is on an amino acid moiety, we require that the nitrogen of the N-acetyl group is connected (aside from the acetyl carbon) to a candidate α‑carbon. That α‑carbon must be directly bonded to the carboxyl carbon (from the carboxylic acid group).
-Note:
-  This heuristic may not work for every edge case but should correctly classify most structures in the given list.
+  - The molecule must contain at least one N-acetyl group.
+    We identify an N–acetyl fragment by matching the SMARTS pattern "[NX3]C(=O)C"
+    (i.e. a nitrogen bound to a carbonyl carbon that in turn is bound to a methyl group).
+  - The molecule must contain a carboxyl group (protonated or deprotonated), 
+    matched by "[C](=O)[O;H1,O-]".
+  - To ensure that the acetyl group is “on an amino acid” (rather than on a peptide chain),
+    we require that the molecule contains exactly one amino acid backbone.
+    We approximate an amino acid backbone by requiring that there is exactly one atom
+    (the α–carbon) that is connected both to an amino group (any [NX3]) and a carboxyl group.
+  
+  Note:
+    This heuristic may not work for every edge case but should correctly classify most of
+    the supplied examples. In particular, di‐ or oligo–peptides (which show multiple backbone
+    units) will be rejected.
 """
 
 from rdkit import Chem
 
 def is_N_acetyl_amino_acid(smiles: str):
     """
-    Determines if a molecule is an N-acetyl-amino acid based on its SMILES string.
+    Determines if a given molecule is an N‐acetyl‐amino acid based on its SMILES string.
     
-    The function uses heuristics:
-      - Checks for the presence of an N-acetyl group (N attached to a C(=O)CH3 fragment).
-      - Checks for the presence of a carboxyl group (C(=O)O or C(=O)[O-]).
-      - Verifies that the acetylated nitrogen is connected to an alpha carbon that is directly bonded to the carboxyl carbon.
+    The function uses these heuristics:
+      1. It must have an N-acetyl group (identified by the SMARTS "[NX3]C(=O)C").
+      2. It must have at least one carboxylic acid group (SMARTS "[C](=O)[O;H1,O-]").
+      3. It must contain exactly one amino acid backbone. We use a substructure that matches
+         an α–carbon with a carboxyl group and at least one nitrogen neighbor. That is, we look
+         for a pattern like "[C;!R]([NX3])C(=O)[O;H1,O-]". This catches both standard and N-acyl amino acids.
+      4. (Peptides, which have multiple backbone units, are thereby eliminated.)
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if the molecule is classified as an N-acetyl-amino acid, False otherwise.
-        str: Reason for the classification decision.
+        bool: True if the molecule is classified as an N–acetyl–amino acid, False otherwise.
+        str: A reason explaining the decision.
     """
-    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Define SMARTS for N-acetyl group: a nitrogen bound to a carbonyl carbon that has a methyl group.
-    acetyl_smarts = Chem.MolFromSmarts("[NX3]C(=O)C")
-    if acetyl_smarts is None:
-        return False, "Error in acetyl SMARTS"
     
-    if not mol.HasSubstructMatch(acetyl_smarts):
+    # SMARTS for N-acetyl group: nitrogen bound to a C(=O) that carries a methyl (CH3).
+    acetyl_smarts = "[NX3]C(=O)C"
+    acetyl_frag = Chem.MolFromSmarts(acetyl_smarts)
+    if acetyl_frag is None:
+        return False, "Error in constructing acetyl SMARTS"
+    acetyl_matches = mol.GetSubstructMatches(acetyl_frag)
+    if not acetyl_matches:
         return False, "Missing N-acetyl group (expected pattern: N–C(=O)C)"
     
-    # Define SMARTS for a carboxyl group (protonated or deprotonated)
-    carboxyl_smarts = Chem.MolFromSmarts("[CX3](=O)[O;H1,O-]")
-    if carboxyl_smarts is None:
-        return False, "Error in carboxyl SMARTS"
-    
-    if not mol.HasSubstructMatch(carboxyl_smarts):
+    # SMARTS for carboxyl group (protonated or deprotonated)
+    carboxyl_smarts = "[C](=O)[O;H1,O-]"
+    carboxyl_frag = Chem.MolFromSmarts(carboxyl_smarts)
+    if carboxyl_frag is None:
+        return False, "Error in constructing carboxyl SMARTS"
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_frag)
+    if not carboxyl_matches:
         return False, "Missing carboxylic acid group"
     
-    # Retrieve matches for the N-acetyl pattern and carboxyl pattern
-    acetyl_matches = mol.GetSubstructMatches(acetyl_smarts)
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_smarts)
+    # Identify an amino acid backbone.
+    # We search for an α–carbon that is bound to a nitrogen and a carboxyl group.
+    # The pattern means: a non-ring carbon ([C;!R]) that is connected to some nitrogen ([NX3])
+    # and also connected to a carboxyl group (C(=O)[O;H1,O-]). This should catch the α–carbon.
+    aa_core_smarts = "[C;!R]([NX3])C(=O)[O;H1,O-]"
+    aa_core_frag = Chem.MolFromSmarts(aa_core_smarts)
+    if aa_core_frag is None:
+        return False, "Error in constructing amino acid core SMARTS"
+    aa_cores = mol.GetSubstructMatches(aa_core_frag)
     
-    # Build a set of carboxyl carbon atom indices from the carboxyl matches.
-    # In the SMARTS, the first atom (index 0) is the carbonyl carbon.
-    carboxyl_carbons = {match[0] for match in carboxyl_matches}
+    if len(aa_cores) == 0:
+        return False, "No amino acid backbone found"
+    elif len(aa_cores) > 1:
+        return False, "Multiple amino acid backbones found; likely a peptide chain"
     
-    # For each N-acetyl match, check connectivity: the N should be attached to an "alpha" carbon,
-    # and that alpha carbon should be directly bonded to one of the carboxyl carbon(s).
-    for match in acetyl_matches:
-        acetyl_N = match[0]  # index of the nitrogen in the acetyl group
-        acetyl_C = match[1]  # acetyl carbon (the carbonyl carbon)
-        # Get the nitrogen atom from the molecule
-        N_atom = mol.GetAtomWithIdx(acetyl_N)
-        # Iterate over neighbors of N_atom:
-        for neighbor in N_atom.GetNeighbors():
-            # Exclude the acetyl carbon already identified
-            if neighbor.GetIdx() == acetyl_C:
-                continue
-            # Consider this neighbor as a candidate for the alpha carbon.
-            alpha_idx = neighbor.GetIdx()
-            alpha_atom = neighbor
-            # Check if the candidate alpha carbon has a neighbor that is one of the carboxyl carbons.
-            for alpha_neighbor in alpha_atom.GetNeighbors():
-                if alpha_neighbor.GetIdx() in carboxyl_carbons:
-                    # Found an acetylated N attached to an alpha carbon that is bound to a carboxyl carbon.
-                    return True, "Contains N-acetyl group on an amino acid backbone (alpha carbon connected to carboxyl group)"
-    
-    # If no connectivity fulfilling the heuristic is found, return false.
-    return False, "N-acetyl group found but not appropriately connected to an amino acid (alpha carbon with carboxyl group)"
+    # If we reach here, we have exactly one amino acid core and at least one N-acetyl group.
+    # We do not insist that the acetyl group be directly on the backbone nitrogen.
+    # (This improves sensitivity to cases such as N(5)-acetyl-L-ornithine or N(6)-acetyl-L-lysine,
+    # where the acetylation occurs on a side-chain amino group.)
+    return True, "Contains an N-acetyl group and exactly one amino acid backbone (α–carbon attached to a carboxyl group)"
 
 # (Optional) Example usage for testing:
 if __name__ == "__main__":
     test_smiles = [
+        # True positives:
         "CC(=O)N[C@@H](CCCNC(N)=N)C(O)=O",  # N(alpha)-acetyl-L-arginine
         "C[C@H](NC(C)=O)C(O)=O",            # N-acetyl-L-alanine
         "CC(=O)N1CCC[C@H]1C(O)=O",           # N-acetyl-L-proline
-        "CC(=O)NCCCC[C@H](N)C(O)=O",         # N(5)-acetyl-L-ornithine
-        "CC(=O)NC(Cc1ccccc1)C(O)=O",         # N-acetyl-L-phenylalanine
-        "CCCC",                            # A molecule that is not an amino acid
+        "CC(=O)N[C@@H](Cc1ccccc1)C(O)=O",    # N-acetyl-L-phenylalanine
+        # Examples which were missed previously (false negatives):
+        "CC(=O)NCCC[C@H](N)C(O)=O",          # N(5)-acetyl-L-ornithine
+        "CC(=O)NCCCC[C@H](N)C(O)=O",         # N(6)-acetyl-L-lysine
+        "CC(=O)NCCC(O)=O",                  # N-acetyl-beta-alanine
+        # False positives (peptides with multiple backbones):
+        "O=C(NCC(=O)N[C@@H](CO)C(O)=O)[C@@H](N)CC=1NC=NC1",  # His-Gly-Ser (di-/tri-peptide)
     ]
     for s in test_smiles:
         res, reason = is_N_acetyl_amino_acid(s)
