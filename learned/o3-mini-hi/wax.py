@@ -5,13 +5,21 @@ Classifies: CHEBI:73702 wax
 """
 Classifies: Wax
 Definition: A chemical substance that is an organic compound or mixture of compounds 
-           composed of long-chain molecules and malleable at ambient temperatures.
+           that is composed of long-chain molecules and is malleable at ambient temperatures.
 Approach:
-  - Pre-filter: must be organic, have only C, H, O, be acyclic, with weight ≥300 Da and ≥5 rotatable bonds.
-  - Identify ester linkage(s): look for a bond connecting a carbon (with a double bond to an oxygen) to an oxygen.
-  - Reject molecules with multiple ester linkages.
-  - "Cut" the molecule at the ester bond and perform a DFS on both sides to determine the longest linear carbon chain.
-  - If both sides yield a chain length of at least 8 carbons, we classify the molecule as a wax.
+  - Preliminary checks: must be organic (contain carbon),
+    have a molecular weight ≥300 Da and at least 5 rotatable bonds.
+  - Instead of using a SMARTS to simply locate an ester group,
+    we iterate over all bonds to detect an ester linkage. An ester linkage is identified as:
+      R–C(=O)–O–R'
+    In our implementation, we look for a bond between an oxygen and a carbon where:
+      • The carbon (ester carbon) is double-bonded to some other oxygen (the carbonyl oxygen).
+      • Then we “cut” the molecule at the ester bond to consider separately the acyl (fatty acid) side
+        and the alcoholic (fatty alcohol) side.
+  - For each side, we perform a DFS over contiguous carbons (atomic num 6) to determine the maximum length
+    of a linear carbon chain.
+  - If we find at least one ester linkage where both sides yield a chain length of at least 8 carbons,
+    we classify the molecule as a wax.
 Note: This heuristic is approximate.
 """
 from rdkit import Chem
@@ -24,23 +32,25 @@ def longest_chain_from(mol, current_idx, exclude, visited):
     Args:
       mol (Chem.Mol): The RDKit molecule.
       current_idx (int): Starting atom index (should be carbon).
-      exclude (set): Atom indices to exclude from the search.
-      visited (set): Already visited atom indices in current path.
+      exclude (set): Atom indices that we are not allowed to visit.
+      visited (set): Atom indices already visited in the current path.
       
     Returns:
-      int: Maximum number of carbons in a contiguous chain (including starting carbon).
+      int: The maximum number of carbons found in a contiguous chain (including the starting carbon).
     """
     visited.add(current_idx)
-    max_length = 1  # Count the starting carbon
+    max_length = 1  # count current carbon
     atom = mol.GetAtomWithIdx(current_idx)
     for nbr in atom.GetNeighbors():
         nbr_idx = nbr.GetIdx()
+        # Do not cross into excluded atoms; avoid cycles.
         if nbr_idx in visited or nbr_idx in exclude:
             continue
-        if nbr.GetAtomicNum() == 6:  # proceed only if neighbor is carbon
-            chain_length = 1 + longest_chain_from(mol, nbr_idx, exclude, visited)
-            if chain_length > max_length:
-                max_length = chain_length
+        # Only consider carbons
+        if nbr.GetAtomicNum() == 6:
+            length = 1 + longest_chain_from(mol, nbr_idx, exclude, visited)
+            if length > max_length:
+                max_length = length
     visited.remove(current_idx)
     return max_length
 
@@ -48,22 +58,20 @@ def is_wax(smiles: str):
     """
     Determines if a molecule qualifies as a wax.
     
-    New Heuristic criteria:
-      - The molecule must be organic and composed solely of carbon, hydrogen, and oxygen.
-      - It should be acyclic.
-      - The molecular weight must be ≥300 Da and have at least 5 rotatable bonds.
-      - The molecule should contain exactly one ester linkage (R–C(=O)–O–R')
-        such that when "cut" at the ester bond, both the fatty acyl (acid) portion and the fatty alcohol portion
-        have a longest continuous chain of at least 8 carbons.
+    Heuristic criteria:
+      - Must be organic (contain carbon atoms).
+      - Must have molecular weight ≥300 Da and at least 5 rotatable bonds.
+      - Must contain at least one ester linkage (R–C(=O)–O–R') where, after "cutting" the molecule at the ester bond,
+        both the acyl (fatty acid) part and the alcohol (fatty alcohol) part yield a longest contiguous carbon 
+        chain of at least 8 atoms.
     
     Args:
       smiles (str): SMILES string of the molecule.
       
     Returns:
       bool: True if molecule qualifies as a wax, False otherwise.
-      str: Detailed reason for classification decision.
+      str: Detailed reason for the classification decision.
     """
-    # Parse SMILES and sanitize
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
@@ -72,18 +80,11 @@ def is_wax(smiles: str):
     except Exception as e:
         return False, f"Sanitization failed: {e}"
     
-    # Ensure molecule is organic and only contains C, H, and O.
-    allowed_atomic_nums = {1, 6, 8}
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in allowed_atomic_nums:
-            return False, f"Contains atom {atom.GetSymbol()} not allowed for wax (only C, H, O permitted)."
+    # Check for organic molecule (must have at least one carbon)
+    if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
+        return False, "Not organic (no carbon atoms found)."
     
-    # Check for acyclicity: waxes in our test set are acyclic.
-    ri = mol.GetRingInfo()
-    if ri.NumRings() > 0:
-        return False, "Molecule contains ring(s), inconsistent with typical wax structures."
-    
-    # Check molecular weight and number of rotatable bonds.
+    # Check molecular weight and rotatable bonds
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 300:
         return False, f"Molecular weight ({mol_wt:.1f} Da) too low for a typical wax."
@@ -91,17 +92,14 @@ def is_wax(smiles: str):
     if n_rotatable < 5:
         return False, f"Too few rotatable bonds ({n_rotatable}) for long-chain wax characteristics."
     
-    # List to hold candidate ester linkages
-    valid_ester_candidates = []
-    
-    # Iterate over bonds to identify ester linkage: a bond between an oxygen and a carbon where
-    # the carbon (candidate carbonyl) is double-bonded to another oxygen.
+    # Now search for ester linkages: R-C(=O)-O-R'
+    # Iterate over all bonds and look for a bond between an oxygen and a carbon.
     for bond in mol.GetBonds():
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
-        if ((a1.GetAtomicNum() == 8 and a2.GetAtomicNum() == 6) or 
-            (a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 8)):
-            # Decide roles: the carbon must be the one double-bonded to oxygen (carbonyl).
+        # Identify potential ester bond: one atom is oxygen, the other is carbon.
+        if (a1.GetAtomicNum() == 8 and a2.GetAtomicNum() == 6) or (a2.GetAtomicNum() == 8 and a1.GetAtomicNum() == 6):
+            # Assign roles: carbon should be the carbonyl carbon if it is double-bonded to another oxygen.
             if a1.GetAtomicNum() == 6:
                 carbon_atom = a1
                 oxy_atom = a2
@@ -109,68 +107,59 @@ def is_wax(smiles: str):
                 carbon_atom = a2
                 oxy_atom = a1
             
-            # Check if carbon_atom is indeed a carbonyl carbon (has a double bond with an oxygen besides oxy_atom)
+            # Check that carbon_atom is a carbonyl carbon: it must be double-bonded to some oxygen 
+            # (other than the current oxy_atom) to qualify as an ester carbon.
             carbonyl_found = False
             for nbr in carbon_atom.GetNeighbors():
                 if nbr.GetIdx() == oxy_atom.GetIdx():
                     continue
-                bond_tmp = mol.GetBondBetweenAtoms(carbon_atom.GetIdx(), nbr.GetIdx())
-                # Check that the neighbor is oxygen and bond order is double
-                if nbr.GetAtomicNum() == 8 and bond_tmp.GetBondTypeAsDouble() >= 2.0:
+                # Look for an oxygen with a double bond.
+                bond_order = mol.GetBondBetweenAtoms(carbon_atom.GetIdx(), nbr.GetIdx()).GetBondTypeAsDouble()
+                if nbr.GetAtomicNum() == 8 and bond_order >= 2.0:
                     carbonyl_found = True
                     break
             if not carbonyl_found:
-                continue  # Not an ester linkage
+                continue  # not an ester linkage
             
-            # At this point, we have a candidate ester bond linking carbonyl carbon and an oxygen.
-            # Compute chain lengths on both sides.
+            # Now we have recognized an ester linkage.
+            # For the acyl side (fatty acid), we follow the carbonyl carbon’s neighbors 
+            # EXCEPT the ester oxygen (and the carbonyl oxygen that is double-bonded).
             acyl_valid = False
             acyl_chain_length = 0
-            # For the acyl side, follow neighbors of the carbon_atom except the ester oxygen and its carbonyl oxygen.
             for nbr in carbon_atom.GetNeighbors():
                 if nbr.GetIdx() == oxy_atom.GetIdx():
                     continue
+                # Exclude the carbonyl oxygen (which is double-bonded, if any)
                 bond_tmp = mol.GetBondBetweenAtoms(carbon_atom.GetIdx(), nbr.GetIdx())
-                # Skip the double-bonded oxygen used in the carbonyl group.
                 if nbr.GetAtomicNum() == 8 and bond_tmp.GetBondTypeAsDouble() >= 2.0:
                     continue
                 if nbr.GetAtomicNum() == 6:
-                    chain_len = longest_chain_from(mol, nbr.GetIdx(), 
-                                                   exclude={oxygen_atom.GetIdx(), carbon_atom.GetIdx()}, visited=set())
+                    chain_len = longest_chain_from(mol, nbr.GetIdx(), exclude={oxy_atom.GetIdx(), carbon_atom.GetIdx()}, visited=set())
                     if chain_len >= 8:
                         acyl_valid = True
                         if chain_len > acyl_chain_length:
                             acyl_chain_length = chain_len
-            
+            # For the alcoholic side (fatty alcohol), we follow the ester oxygen's neighbors excluding the carbon.
             alcohol_valid = False
             alcohol_chain_length = 0
-            # For the alcohol side, follow neighbors of the ester oxygen excluding the carbonyl carbon.
             for nbr in oxy_atom.GetNeighbors():
                 if nbr.GetIdx() == carbon_atom.GetIdx():
                     continue
                 if nbr.GetAtomicNum() == 6:
-                    chain_len = longest_chain_from(mol, nbr.GetIdx(), 
-                                                   exclude={carbon_atom.GetIdx(), oxy_atom.GetIdx()}, visited=set())
+                    chain_len = longest_chain_from(mol, nbr.GetIdx(), exclude={carbon_atom.GetIdx(), oxy_atom.GetIdx()}, visited=set())
                     if chain_len >= 8:
                         alcohol_valid = True
                         if chain_len > alcohol_chain_length:
                             alcohol_chain_length = chain_len
-            
             if acyl_valid and alcohol_valid:
-                valid_ester_candidates.append((acyl_chain_length, alcohol_chain_length))
+                return True, (f"Found ester linkage with acyl chain length {acyl_chain_length} "
+                              f"and alcohol chain length {alcohol_chain_length}, consistent with wax compounds.")
     
-    if len(valid_ester_candidates) == 0:
-        return False, "No ester linkage found with both sides having sufficiently long (≥8 carbons) chains."
-    if len(valid_ester_candidates) > 1:
-        return False, f"Multiple ester linkages found ({len(valid_ester_candidates)}). Wax compounds typically have a single ester bond."
-    
-    acyl_chain_length, alcohol_chain_length = valid_ester_candidates[0]
-    return True, (f"Found ester linkage with acyl chain length {acyl_chain_length} and alcohol chain length {alcohol_chain_length}, "
-                  f"consistent with wax compounds.")
+    return False, "No ester linkage found with both sides having sufficiently long (≥8 carbons) chains."
 
 # Example usage:
 if __name__ == "__main__":
-    # Test example using one of the provided SMILES: 2-palmitoyloxypalmityl palmitate
+    # Test with one of the provided SMILES: 2-palmitoyloxypalmityl palmitate
     test_smiles = "CCCCCCCCCCCCCCCC(=O)OCC(CCCCCCCCCCCCCC)OC(=O)CCCCCCCCCCCCCCC"
     classification, reason = is_wax(test_smiles)
     print(f"Classification: {classification}\nReason: {reason}")
