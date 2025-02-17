@@ -3,59 +3,86 @@ Classifies: CHEBI:32952 amine
 """
 """
 Classifies: Amine
-Definition: A compound formally derived from ammonia by replacing one, two or three hydrogen atoms
-by hydrocarbyl groups. Valid amines include primary, secondary and tertiary amines. (A nitrogen directly
-bonded to a carbonyl - as in an amide - is excluded.)
+Definition: A compound formally derived from ammonia by replacing one, two or three hydrogen atoms 
+by hydrocarbyl groups. Primary (–NH2), secondary (–NH–) or tertiary (–N–) amines are valid. 
+A nitrogen directly bonded to a carbonyl (e.g. in an amide) or that is part of a heteroaromatic ring 
+(e.g. pyridine) is excluded.
 """
 
 from rdkit import Chem
 
 def is_amine(smiles: str):
     """
-    Determines if a molecule contains an amine functional group based on a set of SMARTS patterns.
-    
-    A valid amine is (i) primary [–NH2], (ii) secondary [–NH–] or (iii) tertiary [–N–] provided that 
-    the nitrogen is not directly attached to a carbonyl carbon (i.e. not part of an amide) and is not quaternary.
-    
-    The approach uses SMARTS patterns for:
-      - primary amine: "[NX3;H2;!$(N-C=O)]"
-      - secondary amine: "[NX3;H1;!$(N-C=O)]"
-      - tertiary amine: "[NX3;H0;!$(N-C=O);!$([N+])]"
-    
-    Args:
-        smiles (str): SMILES string of the molecule.
+    Determines if a molecule contains a qualifying amine functional group
+    based on its SMILES string. The algorithm iterates over nitrogen atoms and checks:
+      - The nitrogen atom is not quaternary.
+      - It is not part of a heteroaromatic ring (e.g. pyridine) but it is acceptable if it is exocyclic.
+      - It is not directly attached to a carbonyl carbon (i.e. a typical amide bond).
+      - It has a hydrogen count consistent with a primary (2 H), secondary (1 H) 
+        or tertiary (0 H) derivative of ammonia.
         
+    Args:
+        smiles (str): SMILES string of the molecule
+
     Returns:
-        bool: True if at least one qualifying amine group is found, False otherwise.
-              (Note: For very complex molecules the result might be ambiguous.)
-        str: An explanation or reason for the classification.
+        bool: True if at least one qualifying free-amine group is found, False otherwise.
+        str: An explanation (which type of amine was detected or why not).
     """
-    
-    # Parse the input SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS patterns for primary, secondary and tertiary amines.
-    # The substructure [NX3] selects trivalent N; Hx selects the number of attached hydrogens.
-    # The negative SMARTS !$(N-C=O) prevents matching when the nitrogen is directly
-    # bonded to a carbonyl carbon (as in an amide). For tertiary amines we also exclude positive charges.
-    amine_smarts = {
-        "primary": "[NX3;H2;!$(N-C=O)]",
-        "secondary": "[NX3;H1;!$(N-C=O)]",
-        "tertiary": "[NX3;H0;!$(N-C=O);!$([N+])]"
-    }
+    # Iterate over all atoms looking for nitrogen atoms
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() != 7:
+            continue  # not a nitrogen
+        # Skip if formal charge is positive (e.g. quaternary)
+        if atom.GetFormalCharge() > 0:
+            continue
+        # In many heterocyclic systems (eg pyridine) N is aromatic and in-ring.
+        # We assume that a nitrogen atom that is in an aromatic ring is not a free amine.
+        if atom.GetIsAromatic() and atom.IsInRing():
+            continue
+
+        # Get the total number of hydrogens attached to this nitrogen.
+        nH = atom.GetTotalNumHs()
+        # We also want to ignore cases where the nitrogen appears “over‐coordinated”
+        if atom.GetDegree() > 3:
+            continue
+
+        # Check if the nitrogen is directly attached to a carbonyl carbon.
+        attached_to_carbonyl = False
+        for neighbor in atom.GetNeighbors():
+            # Only consider carbon neighbors
+            if neighbor.GetAtomicNum() == 6:
+                for bond in neighbor.GetBonds():
+                    # Look for a double bond from the carbon neighbor to an oxygen.
+                    if bond.IsDouble():
+                        other = bond.GetOtherAtom(neighbor)
+                        if other.GetAtomicNum() == 8:
+                            attached_to_carbonyl = True
+                            break
+                if attached_to_carbonyl:
+                    break
+
+        # If the N is directly bound to a carbonyl, then we do not count it.
+        if attached_to_carbonyl:
+            continue
+
+        # At this point, we have a nitrogen not in an amide or heteroaromatic ring.
+        # Now classify the type based on the number of hydrogen atoms.
+        if nH == 2:
+            return True, "Found a primary amine (–NH2) group not bound to a carbonyl."
+        elif nH == 1:
+            return True, "Found a secondary amine (–NH–) group not bound to a carbonyl."
+        elif nH == 0:
+            # Tertiary amine: note that sometimes the nitrogen in aromatic amines might have 0 H.
+            # We already skipped in-ring aromatic N so here we assume it is a tertiary alkyl amine.
+            return True, "Found a tertiary amine (–N–) group not bound to a carbonyl."
+        # If unexpected hydrogen count, continue checking other nitrogens.
     
-    # Check each pattern in turn
-    for typ, smarts in amine_smarts.items():
-        patt = Chem.MolFromSmarts(smarts)
-        if patt is None:
-            continue  # skip pattern if invalid (should not happen)
-        if mol.HasSubstructMatch(patt):
-            return True, f"Found a {typ} amine substructure that is not bound to a carbonyl."
-    
-    # If no pattern matched, no qualifying amine was detected.
-    return False, "No qualifying amine functional group found."
+    # If we see no qualifying nitrogen, return false.
+    return False, "No qualifying free amine functional group found."
 
 # Example usage:
 # result, reason = is_amine("CNc1ccccc1")
