@@ -4,8 +4,8 @@ Classifies: CHEBI:37141 organobromine compound
 """
 Classifies: Organobromine compound
 Definition: A compound containing at least one carbon–bromine bond.
-This version inspects each bond in the molecule directly to see whether one atom is a carbon (atomic number 6)
-and the other is a bromine (atomic number 35). This avoids potential pitfalls using SMARTS patterns.
+This version uses a SMARTS matcher to inspect whether any substructure in the molecule 
+matches a carbon atom (atomic number 6) directly bonded to a bromine atom.
 """
 
 from rdkit import Chem
@@ -15,31 +15,31 @@ def is_organobromine_compound(smiles: str):
     Determines if a molecule is an organobromine compound based on its SMILES string.
     An organobromine compound is defined as a compound containing at least one carbon–bromine bond.
     
-    This function parses the molecule and then iterates over all bonds.
-    If any bond is found connecting a carbon atom (atomic number 6) to a bromine atom (atomic number 35),
-    the molecule is classified as an organobromine compound.
+    This implementation uses a SMARTS pattern to directly match any bond where a carbon (atomic number 6)
+    is connected to a bromine (atomic number 35). This approach is less prone to ambiguity than iterating over
+    all bonds for aromatic molecules.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
         bool: True if molecule is an organobromine compound, False otherwise.
-        str: Reason for classification.
+        str: Reason for the classification.
     """
-    # Parse the SMILES string.
+    # Parse the SMILES string into an RDKit molecule object.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Iterate over every bond in the molecule
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        a1_atomic = atom1.GetAtomicNum()
-        a2_atomic = atom2.GetAtomicNum()
-        # Check if one atom is carbon (6) and the other is bromine (35).
-        if (a1_atomic == 6 and a2_atomic == 35) or (a1_atomic == 35 and a2_atomic == 6):
-            return True, "Contains at least one carbon–bromine bond"
+    # Define the SMARTS pattern to match a C–Br bond.
+    # This pattern will match any bond between a carbon (atomic number 6) and bromine (atomic number 35)
+    # regardless of whether the carbon is aromatic or aliphatic.
+    pattern = Chem.MolFromSmarts("[#6]-[Br]")
+    if pattern is None:
+        return False, "Error in SMARTS pattern"
     
-    # No carbon–bromine bond found.
-    return False, "No carbon–bromine bond found"
+    # Test if the molecule has any substructure that matches the C–Br bond pattern.
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains at least one carbon–bromine bond"
+    else:
+        return False, "No carbon–bromine bond found"
