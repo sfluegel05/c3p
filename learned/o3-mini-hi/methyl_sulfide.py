@@ -3,15 +3,11 @@ Classifies: CHEBI:86315 methyl sulfide
 """
 """
 Classifies: Methyl sulfide
-Definition: Any aliphatic sulfide (thioether) in which at least one of the 
-organyl groups attached to the sulfur is a methyl group.
-In this implementation we require that the S atom:
-  1. Has exactly two neighbors and all bonds are single.
-  2. Has at least one CH3 substituent (i.e. a carbon atom with only three hydrogens).
-Additionally, to avoid flagging large biomolecules where a –SCH3 is only part 
-of a side chain, we check for the presence of multiple amide bonds (a rough proxy
-for peptides or similar molecules). If two or more amide bonds are found, the candidate
-will be rejected.
+Definition: Any aliphatic sulfide (thioether) in which at least one of the organyl groups attached to the sulfur is a methyl group.
+In this improved implementation:
+  1. We search for a sulfur atom (atomic number 16) that is not aromatic, has exactly two neighbors with both bonds single.
+  2. At least one of the neighbors must be a methyl group (a carbon atom having degree 1 and exactly 3 hydrogens).
+  3. To avoid flagging cases where the –SCH3 is just a substituent on a peptide or a very complex structure, we count amide bonds using the SMARTS [NX3][CX3](=O) as a rough proxy. Only if there are four or more amide bonds do we assume the molecule is likely a peptide or biopolymer.
 """
 
 from rdkit import Chem
@@ -19,64 +15,70 @@ from rdkit import Chem
 def is_methyl_sulfide(smiles: str):
     """
     Determines if a molecule is a methyl sulfide according to the following rules:
-      - The molecule must contain at least one sulfur atom (atomic number 16)
-        that is involved only in single bonds and has exactly two heavy-atom neighbors.
+      - The molecule must contain at least one sulfur atom (S, atomic number 16)
+        that is not aromatic, is involved only in single bonds, and has exactly two neighbors.
       - Among its two neighbors, at least one must be a methyl group 
-        (a carbon atom with Degree==1 and exactly three explicitly attached hydrogens).
-      - To avoid flagging peptides or nucleosides (where a methylthio group is
-        only a side-chain) we count amide bonds ([NX3][CX3](=O)). If 2 or more are found,
-        we assume the molecule is not primarily a methyl sulfide.
-    
+        (i.e. a carbon atom with degree==1 and exactly three attached hydrogens).
+      - To reduce classifying complex molecules (e.g. peptides), we count amide bonds using the pattern [NX3][CX3](=O).
+        If 4 or more amide bonds are detected, we assume the –SCH3 is only a side‐chain.
+        
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES string of the molecule
         
     Returns:
-        bool: True if molecule is classified as a methyl sulfide, False otherwise.
-        str: Reason for the classification decision.
+        bool: True if the molecule is classified as a methyl sulfide, False otherwise.
+        str: Explanation of the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for the presence of multiple (>=2) amide bonds.
+    # Count amide bonds to avoid flagging large peptide/polymers.
     amide_smarts = Chem.MolFromSmarts("[NX3][CX3](=O)")
     amide_matches = mol.GetSubstructMatches(amide_smarts)
-    if len(amide_matches) >= 2:
-        # Likely a peptide or a multi-residue biomolecule.
+    if len(amide_matches) >= 4:
         return False, f"Found {len(amide_matches)} amide bonds; likely a peptide or biopolymer"
     
-    # Loop over all atoms, searching for candidate sulfur atoms.
+    # Loop over sulfur atoms in the molecule.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 16:
             continue
+        # Ensure the sulfur is not aromatic and has exactly 2 bonds.
+        if atom.GetIsAromatic():
+            continue
         bonds = atom.GetBonds()
-        # Must be a simple thioether: exactly 2 substituents, all bonds must be single.
         if len(bonds) != 2 or not all(bond.GetBondType() == Chem.rdchem.BondType.SINGLE for bond in bonds):
             continue
         
-        neighbor_has_methyl = False
+        # Look among its neighbors to see if one qualifies as a methyl group.
         for neighbor in atom.GetNeighbors():
-            # Look for a carbon with only one heavy-atom neighbor (the S) 
-            # and (if hydrogens are explicit) three hydrogens.
+            # Check that the neighbor is a carbon atom.
             if neighbor.GetAtomicNum() == 6:
-                # Use explicit hydrogen count if present.
-                # Note: GetTotalNumHs() returns the total number of H (implicit+explicit).
+                # We require this carbon to be aliphatic (not aromatic)
+                if neighbor.GetIsAromatic():
+                    continue
+                # Check that the carbon has no heavy-atom neighbors other than our sulfur (i.e. degree==1)
+                # and exactly 3 attached hydrogens (total number from implicit+explicit count).
                 if neighbor.GetDegree() == 1 and neighbor.GetTotalNumHs() == 3:
-                    neighbor_has_methyl = True
-                    break
-        if neighbor_has_methyl:
-            return True, "Found a sulfur atom in a thioether with a methyl substituent"
+                    return True, "Found a sulfur atom in a thioether with a methyl substituent"
     
-    return False, "No appropriate methyl thioether substructure found"
+    return False, "No appropriate aliphatic methyl thioether substructure found"
 
 # Example usage:
 if __name__ == "__main__":
-    # Some test examples, including one that should be classified as a methyl sulfide:
     tests = [
-        ("C(S)(=NO)CCCCCCCCSC", "9-[(methylthio)nonyl]thiohydroximic acid"),  # True positive
-        ("CSCC(=O)[C@H](O)[C@H](O)COP(O)(O)=O", "1-(methylthio)ribulose 5-phosphate"),  # True positive
-        ("S(CC[C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)N[C@@H]([C@H](O)C)C(O)=O)C", "Glu-Met-Thr"),  # False positive example (peptide)
+        # True positives (should be classified as methyl sulfide)
+        ("C(S)(=NO)CCCCCCCCSC", "9-[(methylthio)nonyl]thiohydroximic acid"),
+        ("CSCC(=O)[C@H](O)[C@H](O)COP(O)(O)=O", "1-(methylthio)ribulose 5-phosphate"),
+        ("S(CCCCCCCCN=C=S)C", "8-(methylthio)octylisothiocyanate"),
+        ("CSc1ncncn1", "2-(methylthio)-1,3,5-triazine"),
+        ("O=C(O)[C@@H](NO)CCCCCSC", "N-hydroxy-L-trihomomethionine"),
+        # A few false positives (expected to be rejected)
+        ("CSc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O", "6-methylthioinosine"),
+        ("CC1=CC(=C(S1)SC)C2C(=C(N(C3=C2C(=O)CCC3)C4=CN=CC=C4)N)C#N", 
+         "2-amino-4-[5-methyl-2-(methylthio)-3-thiophenyl]-5-oxo-1-(3-pyridinyl)-4,6,7,8-tetrahydroquinoline-3-carbonitrile")
     ]
+    
     for s, name in tests:
         result, reason = is_methyl_sulfide(s)
         print(f"SMILES: {s}\nNAME: {name}\nResult: {result}\nReason: {reason}\n")
