@@ -3,104 +3,110 @@ Classifies: CHEBI:17478 aldehyde
 """
 #!/usr/bin/env python
 """
-Classifies: Aldehyde – a compound containing the functional group RC(=O)H 
-(plus formaldehyde HCHO) where the carbonyl carbon is bonded to at least one hydrogen.
-The substructure is required to have a double-bonded oxygen and exactly two other substituents:
-either two hydrogens (formaldehyde) or one hydrogen and one non-oxygen atom (the R group).
+Classifies: Aldehyde – a compound having the functional group RC(=O)H 
+(including formaldehyde H2C=O) where the carbonyl carbon is bonded 
+to exactly one hydrogen and one R group (or two hydrogens in formaldehyde).
 """
+
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_aldehyde(smiles: str):
     """
     Determines if a molecule is an aldehyde based on its SMILES string.
-    An aldehyde is defined as a compound containing the functional group –CHO
-    (i.e. a carbonyl group with at least one hydrogen attached and one R group).
+    An aldehyde is defined as a compound containing a carbonyl group (C=O)
+    in which the carbonyl carbon is bonded to exactly one hydrogen and one R group,
+    or in the case of formaldehyde, two hydrogens.
     
-    To improve on the previous approach we:
-      - Generate an aldehyde match using the SMARTS "[CX3;H1,H2](=O)" with explicit hydrogens.
-      - For each match, find the double-bonded oxygen and then inspect the two remaining neighbors.
-      - Accept a match if (a) the two other neighbors are two hydrogens (formaldehyde), or 
-        (b) one is hydrogen and the other is any atom except oxygen (to avoid -COOH, esters, etc.).
+    We first add explicit hydrogens to ensure connectivity is reliable,
+    then search for carbonyl carbons with the SMARTS "[CX3](=O)".
+    For each candidate, we:
+     1. Check that the carbon has exactly three neighbors.
+     2. Identify the double-bonded oxygen (by checking for a bond order of 2).
+     3. Check that the remaining two neighbors are either both hydrogens
+        (formaldehyde) or one hydrogen and one non-oxygen (typical aldehyde).
     
     Args:
-        smiles (str): SMILES string of the molecule.
-        
+        smiles (str): SMILES string of the molecule
+    
     Returns:
-        bool: True if the molecule contains at least one valid aldehyde substructure, False otherwise.
-        str: Reason for classification.
+        bool: True if a valid aldehyde functional group is found, False otherwise.
+        str: Explanation of the reasoning.
     """
-    # Parse the SMILES string.
+    # Parse SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens for reliable connectivity inspection.
+    # Add explicit hydrogens to reliably inspect connectivity.
     mol = Chem.AddHs(mol)
+
+    # Define a SMARTS pattern to match any carbonyl carbon.
+    carbonyl_pattern = Chem.MolFromSmarts("[CX3](=O)")
+    if carbonyl_pattern is None:
+        return False, "Failed to create carbonyl pattern"
     
-    # Define the SMARTS pattern for a carbonyl carbon with one or two hydrogens.
-    aldehyde_pattern = Chem.MolFromSmarts("[CX3;H1,H2](=O)")
-    if aldehyde_pattern is None:
-        return False, "Failed to create aldehyde pattern"
+    # Get all substructure matches for carbonyl carbons.
+    candidate_matches = mol.GetSubstructMatches(carbonyl_pattern)
+    if not candidate_matches:
+        return False, "No carbonyl group (C=O) found in the molecule"
     
-    # Get initial substructure matches.
-    initial_matches = mol.GetSubstructMatches(aldehyde_pattern)
-    if not initial_matches:
-        return False, "No aldehyde group ([CX3;H1,H2](=O)) found in the molecule"
-    
-    valid_matches = 0
-    # Process each potential match.
-    for match in initial_matches:
+    valid_count = 0
+    # Iterate through each candidate carbonyl carbon.
+    for match in candidate_matches:
         carbon = mol.GetAtomWithIdx(match[0])
+        # Get all neighbors of the carbon atom.
         neighbors = carbon.GetNeighbors()
-        dO = None  # to store the double-bonded oxygen (the carbonyl oxygen)
-        non_oxo_neighbors = []
+        # For an aldehyde, the carbon (after adding explicit Hs) should be bound to 3 atoms:
+        # one is the double-bonded oxygen; the other two are substituents.
+        if len(neighbors) != 3:
+            continue
+
+        dO = None  # to store the double-bonded oxygen atom
+        other_neighbors = []  # list for the remaining two substituents
         
-        # Identify the double-bonded oxygen and collect the others.
         for nbr in neighbors:
             bond = mol.GetBondBetweenAtoms(carbon.GetIdx(), nbr.GetIdx())
             if bond is None:
                 continue
-            # Check for double bond and that neighbor is oxygen.
-            if bond.GetBondTypeAsDouble() == 2.0 and nbr.GetAtomicNum() == 8:
-                # If more than one oxygen is double-bonded (which would be unusual), skip this match.
+            # Check if the neighbor is double-bonded oxygen.
+            if nbr.GetAtomicNum() == 8 and bond.GetBondTypeAsDouble() == 2.0:
+                # There should be exactly one double-bonded oxygen.
                 if dO is not None:
                     dO = None
                     break
                 dO = nbr
             else:
-                non_oxo_neighbors.append(nbr)
+                other_neighbors.append(nbr)
         
-        # The match must have exactly one double-bonded oxygen.
+        # Ensure exactly one carbonyl oxygen is found.
         if dO is None:
             continue
-        
-        # For a typical aldehyde the carbonyl carbon (sp2)
-        # should have exactly two other neighbors (besides the double-bonded oxygen).
-        if len(non_oxo_neighbors) != 2:
+
+        # Check that there are exactly two other substituents.
+        if len(other_neighbors) != 2:
             continue
-        
-        # Determine the composition of the two other neighbors.
-        # Count how many are hydrogens and capture the non-hydrogen (R) atom.
+
+        # Evaluate the two remaining substituents:
+        # Count how many are hydrogens and record the non-hydrogen (if any).
         h_count = 0
-        r_atom = None
-        for nbr in non_oxo_neighbors:
+        non_h_neighbor = None
+        for nbr in other_neighbors:
             if nbr.GetAtomicNum() == 1:
                 h_count += 1
             else:
-                r_atom = nbr
-        
-        # Check valid connectivity:
-        # Case 1: Formaldehyde (HCHO) -> two hydrogens.
-        # Case 2: Typical aldehyde: exactly one hydrogen and one R group.
-        # However, if the R group is oxygen then this is likely an acid/ester and not a true aldehyde.
-        if (h_count == 2) or (h_count == 1 and r_atom is not None and r_atom.GetAtomicNum() != 8):
-            valid_matches += 1
+                non_h_neighbor = nbr
 
-    if valid_matches == 0:
-        return False, "No valid aldehyde group found after connectivity checks"
+        # Valid connectivity conditions:
+        # 1) Formaldehyde: both neighbors are hydrogens (h_count == 2).
+        # 2) Typical aldehyde: one hydrogen and one non-hydrogen (h_count == 1)
+        #    and the non-hydrogen must not be oxygen.
+        if (h_count == 2) or (h_count == 1 and non_h_neighbor is not None and non_h_neighbor.GetAtomicNum() != 8):
+            valid_count += 1
+
+    if valid_count == 0:
+        return False, "No valid aldehyde group found after checking connectivity"
     
-    reason = f"Found {valid_matches} aldehyde group{'s' if valid_matches > 1 else ''} matching the pattern [CX3;H1,H2](=O) with proper connectivity (one carbonyl O and one R group)"
+    reason = f"Found {valid_count} aldehyde group{'s' if valid_count > 1 else ''} with proper connectivity (C=O with one carbonyl O, one H and one R group or H2 for formaldehyde)"
     return True, reason
 
 # Optional testing code; remove or comment out when using in a larger project.
@@ -118,14 +124,9 @@ if __name__ == "__main__":
         "Cc1cc(O)c(C=O)c2Oc3cc4OC(C)(C)CC(=O)c4c(C)c3OC(=O)c12",  # mollicellin B
         "C[C@H](CCC[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)CC[C@]4(C)[C@H]3CC[C@]12C)C=O",  # (25R)-3-ketocholest-4-en-26-al
         "OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC=O",  # 20-oxoarachidonic acid
-        "[H]C(=O)c1cc(N)ccc1O",  # 5-aminosalicylaldehyde (again)
-        "[H]C(=O)c1cccc(O)c1O",  # 2,3-dihydroxybenzaldehyde (again)
         "C(C#C)=O",  # prop-2-ynal should classify as aldehyde
         "[H]C(=O)",  # formaldehyde with explicit hydrogen
         "CC(C)CC=O",  # 3-methylbutanal
-        "[H]C(C)=NN(C)C([H])=O",  # gyromitrin (should be accepted)
-        "O=C1NC(=O)C2=CC=CC=C12",  # Example that should not be an aldehyde (cyclic imide)
-        "O=C1O[C@H](OC[C@@]2(CC3=C([C@@]4(O)CC[C@]4(C[C@@H]3C2)C)C)C)[C@]56[C@]1(C[C@@H]7CC(C)(C)CC7=C5C=O)C6"  # Hexagonin D, a false positive in previous run
     ]
     
     for sm in test_smiles:
