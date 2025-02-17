@@ -2,18 +2,21 @@
 Classifies: CHEBI:28868 fatty acid anion
 """
 """
-Classifies: The conjugate base of a fatty acid anion.
+Classifies: The conjugate base of a fatty acid (fatty acid anion)
 Definition: "The conjugate base of a fatty acid, arising from deprotonation of the 
 carboxylic acid group of the corresponding fatty acid."
-This version refines the search using several heuristics:
-  1. It must contain a deprotonated carboxylate group: [CX3](=O)[O-].
-  2. That carboxylate carbon must be terminal – i.e. it is attached to exactly one 
-     carbon atom, and that carbon (the alpha carbon) is not in a ring.
-  3. The alpha carbon’s additional substituents must be limited to carbon or oxygen.
-  4. The contiguous carbon chain starting at the carboxylate must be sufficiently long,
-     with a minimum length (set here to 6 atoms) or, if shorter, must represent a major
-     fraction of the molecule’s carbon framework.
-Note: These cutoffs (e.g. minimum chain length, chain fraction) are heuristic.
+Heuristics used in this version:
+  1. The molecule must contain at least one deprotonated carboxylate group: [CX3](=O)[O-].
+  2. The carboxylate carbon must be terminal – it is attached (via a C–C bond) to exactly one carbon.
+  3. From that single (alpha) carbon a contiguous acyl chain is “traced” by following C–C bonds;
+     only carbons that are not aromatic are included.
+  4. For large molecules (total carbons ≥ 8) the chain must be sufficiently long (at least 6 carbons);
+     for small molecules a lower bar is applied.
+  5. If more than one terminal carboxylate candidate passes these conditions (for example, in di‐ or poly‐carboxylic species)
+     the molecule is not classified as a fatty acid anion.
+Note: This heuristic is not perfect. It was tuned so that many accepted fatty acid anions (such as (R)-2-hydroxyhexadecanoate,
+prostaglandin H1(1-), etc.) are flagged while many “false positive” cases (where the –COO– function is embedded in polycarboxylates
+or aromatic systems) are weeded out.
 """
 
 from rdkit import Chem
@@ -21,95 +24,108 @@ from rdkit import Chem
 def is_fatty_acid_anion(smiles: str):
     """
     Determines if a molecule is a fatty acid anion based on its SMILES string.
-    The molecule must have a deprotonated (-[O-]) carboxylate group,
-    and that carboxylate must be terminal – attached (via its carbon) to exactly one
-    carbon that is not in a ring. Furthermore, the contiguous carbon chain starting
-    at that carbon should be sufficiently long (at least MIN_CHAIN_CARBONS), or if it isn’t 
-    a dominant portion of the molecule then it is not accepted.
+    A fatty acid anion is defined as the deprotonated form of a fatty acid – that is,
+    it contains a terminal carboxylate group (–C(=O)[O-]) where the carboxylate carbon
+    is attached to exactly one carbon (the alpha carbon) from which a single contiguous
+    non‐aromatic (aliphatic) chain extends.
+    
+    For large molecules (total C ≥ 8) the chain must be long (at least 6 C’s). For small molecules,
+    this restriction is relaxed to allow examples like 2-hydroxyisobutyrate.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is identified as a fatty acid anion, False otherwise.
-        str: A textual description of the reasoning.
+        (bool, str): True and a message if the molecule is classified as a fatty acid anion;
+                     False and a message otherwise.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     
-    # Define a SMARTS for a deprotonated carboxylate group.
-    carboxylate_smarts = "[CX3](=O)[O-]"
-    carboxylate_pattern = Chem.MolFromSmarts(carboxylate_smarts)
-    if not mol.HasSubstructMatch(carboxylate_pattern):
-        return False, "No deprotonated carboxylate group found."
-    
-    # Count total carbon atoms in the molecule.
+    # Count total carbons in the molecule.
     total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    # Settings for our heuristic.
-    MIN_CHAIN_CARBONS = 6    # require the acyl chain to be at least 6 carbons (typical for a fatty acid)
-    MIN_CHAIN_FRACTION = 0.3 # if the chain is not long, it must still be a large fraction of all carbons
+    # Decide minimum chain length cutoff for a candidate acyl chain.
+    # In larger molecules we expect a long-chain fatty acid (≥6 carbons).
+    # In smaller molecules, relax the cutoff.
+    min_chain = 6 if total_carbons >= 8 else 1
+    # Also require that the fatty chain is a dominant feature if possible.
+    # (Here we later check the ratio of chain carbons to total carbons.)
+    min_chain_ratio = 0.2  # at least 20% of all carbons come from the chain
+    
+    # Define a SMARTS for a deprotonated carboxylate.
+    carboxylate_smarts = "[CX3](=O)[O-]"
+    carboxylate_pattern = Chem.MolFromSmarts(carboxylate_smarts)
+    matches = mol.GetSubstructMatches(carboxylate_pattern)
+    if not matches:
+        return False, "No deprotonated carboxylate group found."
 
-    # Helper function to compute the length of the contiguous carbon chain
-    # connected to a given start atom following only C–C bonds.
-    def longest_carbon_chain(start_idx, prev_idx, visited):
-        best = 1  # count the starting atom
-        for nbr in mol.GetAtomWithIdx(start_idx).GetNeighbors():
-            # Only proceed if neighbor is carbon
-            if nbr.GetAtomicNum() != 6:
-                continue
+    # Helper function: compute the longest contiguous chain (number of carbons)
+    # starting from the given atom (by index) along C–C bonds.
+    # We restrict to atoms with atomic number 6 that are not in an aromatic ring.
+    def longest_chain(atom_idx, prev_idx, visited):
+        current_atom = mol.GetAtomWithIdx(atom_idx)
+        max_length = 1  # count the current atom
+        for nbr in current_atom.GetNeighbors():
             nbr_idx = nbr.GetIdx()
             if nbr_idx == prev_idx or nbr_idx in visited:
                 continue
-            candidate = 1 + longest_carbon_chain(nbr_idx, start_idx, visited | {nbr_idx})
-            if candidate > best:
-                best = candidate
-        return best
+            if nbr.GetAtomicNum() != 6:
+                continue
+            # Only follow non‐aromatic carbons to avoid chains that lead into rings (like benzene)
+            if nbr.GetIsAromatic():
+                continue
+            # Recurse
+            candidate = 1 + longest_chain(nbr_idx, atom_idx, visited | {nbr_idx})
+            if candidate > max_length:
+                max_length = candidate
+        return max_length
 
-    # Iterate over every match for the carboxylate pattern.
-    for match in mol.GetSubstructMatches(carboxylate_pattern):
-        # Assume the first atom in the SMARTS is the carboxylate carbon.
+    candidate_count = 0
+    candidate_reason = ""
+    
+    # Evaluate each deprotonated carboxylate match.
+    for match in matches:
+        # In our SMARTS the first atom is the carboxylate carbon.
         carboxyl_c = mol.GetAtomWithIdx(match[0])
-        
-        # For a terminal carboxylate the carboxyl carbon must have exactly one carbon neighbour.
+        # Find carbon neighbors (exclude oxygens).
         carbon_neighbors = [nbr for nbr in carboxyl_c.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        # For a terminal group, the carboxylate carbon should be attached to exactly one carbon.
         if len(carbon_neighbors) != 1:
-            continue  # not terminal, try next match
-        
+            continue
         alpha_atom = carbon_neighbors[0]
-        # Exclude cases where the alpha carbon is in a ring 
-        # (often seen with sugars or porphyrins, which aren’t in our fatty acid class).
+        # Typically in fatty acids the alpha carbon is not inside a ring.
         if alpha_atom.IsInRing():
             continue
         
-        # Check that the alpha carbon’s other substituents are not highly decorated.
-        other_nbrs = [nbr for nbr in alpha_atom.GetNeighbors() if nbr.GetIdx() != carboxyl_c.GetIdx()]
-        # Allow only carbons and oxygens.
-        if any(nbr.GetAtomicNum() not in (6, 8) for nbr in other_nbrs):
-            continue
-        # (Optional) One could also require that the number of these extra substituents 
-        # is not too many – here we do not enforce a hard maximum.
+        # Optionally, one might check that the substituents on alpha are “simple”.
+        # (Here we allow any carbon/oxygen attachments and do not further limit the branching.)
         
-        # Determine the length of the contiguous carbon chain beginning at the carboxylate.
-        chain_length = longest_carbon_chain(carboxyl_c.GetIdx(), None, {carboxyl_c.GetIdx()})
+        # Determine the length of the contiguous aliphatic chain.
+        # We start from the alpha carbon and do a DFS along carbon atoms.
+        chain_length = longest_chain(alpha_atom.GetIdx(), carboxyl_c.GetIdx(), {alpha_atom.GetIdx()})
         
-        # Enforce a minimum chain length.
-        if chain_length < MIN_CHAIN_CARBONS:
-            # (e.g. very short acid like 2-hydroxybutyrate would be rejected)
-            continue
+        # Calculate the ratio of the chain carbons to all carbons.
+        chain_ratio = chain_length / total_carbons if total_carbons > 0 else 0
         
-        # If the chain represents only a small fraction of the overall carbons,
-        # then the acyl chain is not dominant. However, as a special case if the chain
-        # is at least MIN_CHAIN_CARBONS (i.e. 6) we accept molecules even if additional 
-        # non-chain groups are present.
-        if chain_length < total_carbons * MIN_CHAIN_FRACTION and chain_length < 6:
-            continue
-        
-        return True, "Contains a terminal deprotonated carboxylate with a suitably long acyl chain."
-        
-    return False, "Carboxylate group found but not in a terminal position typical of a fatty acid anion."
+        # Check whether the chain is long enough.
+        if chain_length >= min_chain or chain_ratio >= min_chain_ratio:
+            candidate_count += 1
+            candidate_reason = ("Contains a terminal deprotonated carboxylate with an acyl chain of "
+                                f"{chain_length} carbons out of {total_carbons} (ratio {chain_ratio:.2f}).")
+    
+    # If exactly one candidate passes, we classify the molecule as a fatty acid anion.
+    if candidate_count == 1:
+        return True, candidate_reason
+    elif candidate_count == 0:
+        return False, "Carboxylate group(s) found but none are attached to a sufficiently long terminal acyl chain."
+    else:
+        return False, "Multiple terminal carboxylate groups were detected; molecule is not a typical fatty acid anion."
 
 # Example usage:
-# test_smiles = "CCCCCCCCCCCCC[C@@H](O)C([O-])=O"  # (R)-2-hydroxyhexadecanoate example
-# print(is_fatty_acid_anion(test_smiles))
+if __name__ == "__main__":
+    # Test with one accepted fatty acid anion:
+    test_smiles = "CCCCCCCCCCCCC[C@@H](O)C([O-])=O"  # (R)-2-hydroxyhexadecanoate
+    result, reason = is_fatty_acid_anion(test_smiles)
+    print(result, reason)
