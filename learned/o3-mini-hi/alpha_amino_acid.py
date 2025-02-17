@@ -5,7 +5,24 @@ Classifies: CHEBI:33704 alpha-amino acid
 """
 Classifies: Alpha–amino acid
 Definition: An amino acid in which the amino group is located on the carbon atom 
-at the position alpha to the carboxy group.
+at the position alpha to the carboxylic acid.
+    
+Our improved approach:
+  • First, we parse the molecule (adding explicit H’s so that the N’s hydrogen count is reliable).
+  • We reject molecules that contain any peptide (amide) bond (which would signal a di-/oligo–peptide).
+  • Then we use a SMARTS pattern that attempts to capture a “naked” alpha–amino acid motif. 
+    In a canonical amino acid the alpha carbon (Cα) is bound to:
+      – exactly one hydrogen (so we require [C;H1]),
+      – an amino group (we use [NX3] and then later check that at least one hydrogen is present on that N),
+      – and a carboxyl group. For the carboxyl group we search for a carbon (C) doubly bonded to 
+        one oxygen and singly bonded to an oxygen that carries a hydrogen (or is deprotonated).
+    The SMARTS "[C;H1]([NX3])[C](=O)[O;H1,O-]" encodes that notion.
+  • Finally, we inspect the match to ensure that (a) the carboxyl carbon is truly terminal – that is, 
+    it must have only two oxygen neighbors (besides the connection to Cα) – and (b) the amino nitrogen 
+    carries at least one hydrogen (to avoid quaternary N’s).
+  • We also require that exactly one such motif is found in the molecule.
+    
+This approach is not bulletproof but should better separate the true alpha–amino acids from the false positives.
 """
 
 from rdkit import Chem
@@ -16,108 +33,90 @@ def is_alpha_amino_acid(smiles: str):
     Determines whether a molecule (given by its SMILES) is a stand-alone alpha–amino acid.
     
     The algorithm:
-      1. Parses the SMILES and adds explicit hydrogens.
-      2. Rejects molecules that contain a peptide (amide) bond using a SMARTS.
-         (This prevents di-/oligo–peptides from matching.)
-      3. Rejects molecules that are unusually large (heuristic heavy atom count threshold).
-      4. Identifies a free carboxyl group using a SMARTS pattern:
-         The pattern requires a carboxyl carbon (sp2, with a double bond to one oxygen and a single bond 
-         to a hydroxyl (or deprotonated –O–) oxygen). We then require that this carboxyl carbon has exactly 
-         one neighbor that is not oxygen (the candidate alpha–carbon).
-      5. For the candidate alpha–carbon, verify that it is sp3 (or nearly tetrahedral) and that it is directly 
-         bonded to at least one nitrogen. For non–ring nitrogen we require at least two attached hydrogens.
-      6. Require that exactly one motif is found.
+      1. Parses and adds explicit hydrogens.
+      2. Rejects molecules that contain peptide (amide) bonds.
+      3. Uses a SMARTS query to search for the core motif:
+             [C;H1]([NX3])[C](=O)[O;H1,O-]
+         This means: an sp3 (or nearly tetrahedral) alpha-carbon carrying exactly one non–H, that is bound 
+         to a nitrogen (whose hydrogen count will be verified) and to a carboxyl carbon that is bound to two oxygens.
+      4. For the matched motif, do additional local checks:
+            - The carboxyl carbon should have exactly two oxygen neighbors (the carbonyl and the hydroxy oxygen)
+              (i.e. be “terminal”).
+            - The amino nitrogen should have at least one implicit/explicit hydrogen.
+      5. Accept only if exactly one such valid motif is found.
     
     Args:
       smiles (str): SMILES string of the molecule.
     
     Returns:
-      (bool, str): A tuple containing the classification (True if an alpha–amino acid) and an explanation.
+      (bool, str): Tuple of (classification, explanation).
     """
-    # Parse the molecule.
+    # Parse the molecule and add explicit hydrogens for reliable hydrogen counting.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for peptide (amide) bonds. (A peptide bond connects two amino acids)
-    # Here we look for "C(=O)N[C]" i.e. an amide carbonyl with a nitrogen that is bound further.
-    peptide_smarts = Chem.MolFromSmarts("C(=O)N[C]")
-    if mol.HasSubstructMatch(peptide_smarts):
-        return False, "Contains peptide bond(s) indicating a peptide rather than a single amino acid"
-    
-    # Reject molecules that are too large to be standard standalone amino acids.
-    if mol.GetNumHeavyAtoms() > 50:
-        return False, "Molecule size too large to be a simple amino acid"
-    
-    # Add explicit hydrogens to reliably check for hydrogen counts on nitrogen.
     molH = Chem.AddHs(mol)
     
-    # SMARTS for a free carboxyl group.
-    # This matches a carboxyl carbon: it is sp2, double-bonded to an oxygen and single-bonded to an OH (or O-)
-    # Note: We do not force the charge on the oxygen so that both protonated and deprotonated forms are caught.
-    carboxyl_smarts = Chem.MolFromSmarts("[CX3](=O)[O;H1,-]")
-    carboxyl_matches = molH.GetSubstructMatches(carboxyl_smarts)
+    # Reject molecules that have peptide (amide) bonds.
+    # The SMARTS "C(=O)N[C]" is a simple probe for a peptide bond.
+    peptide_smarts = Chem.MolFromSmarts("C(=O)N[C]")
+    if molH.HasSubstructMatch(peptide_smarts):
+        return False, "Contains peptide bond(s) indicating a peptide rather than a single amino acid"
     
-    motif_count = 0
-    reasons = []
-    # For every carboxyl match:
-    # The SMARTS returns a tuple of indices (c-o-hydroxy, carbonyl oxygen, hydroxyl oxygen).
-    # We want to get the carboxyl carbon and then examine its non-oxygen neighbor.
-    for match in carboxyl_matches:
-        carboxyl_c = molH.GetAtomWithIdx(match[0])
-        # Get neighbors of carboxyl carbon that are not oxygen.
-        alpha_candidates = [nbr for nbr in carboxyl_c.GetNeighbors() if nbr.GetAtomicNum() != 8]
-        if len(alpha_candidates) != 1:
-            # To be a free terminal carboxyl group in an amino acid, the carboxyl carbon should have 
-            # exactly one non-oxygen neighbor (the alpha carbon).
-            continue
-        alpha_c = alpha_candidates[0]
-        # (Optional) Check that the carboxyl carbon is degree 3 (two oxygens and one alpha candidate).
-        if len(carboxyl_c.GetNeighbors()) != 3:
-            continue
-        
-        # Now, for the candidate alpha carbon, verify it is a carbon and likely tetrahedral (sp3).
-        if alpha_c.GetAtomicNum() != 6:
-            continue
-        # In a typical amino acid, the alpha carbon is sp3 (or at least not double-bonded).
-        # We allow ring atoms (e.g. in proline derivatives) but otherwise expect no double bonds.
-        if alpha_c.GetHybridization().name not in ["SP3", "UNSPECIFIED"]:
-            continue
-        
-        # Look for an amino group attached to the alpha carbon.
-        nitrogen_found = False
-        for neighbor in alpha_c.GetNeighbors():
-            if neighbor.GetAtomicNum() == 7:
-                # If the nitrogen is not in a ring (non–proline-like), check that it carries at least two hydrogens.
-                # In many zwitterionic forms the H count may be adjusted, but we at least try to filter out quaternary nitrogens.
-                if not neighbor.IsInRing():
-                    if neighbor.GetTotalNumHs() < 2:
-                        continue
-                nitrogen_found = True
-                break
-        if not nitrogen_found:
-            continue
-        
-        # If we get here, we found one valid motif.
-        motif_count += 1
+    # Define the SMARTS for the alpha–amino acid core motif.
+    # It requires an alpha carbon with one hydrogen ([C;H1]),
+    # which is bound to a nitrogen ([NX3]) and to a carboxyl carbon [C](=O)[O;H1,O-].
+    aa_smarts = Chem.MolFromSmarts("[C;H1]([NX3])[C](=O)[O;H1,O-]")
+    if aa_smarts is None:
+        return None, None  # if SMARTS fails to compile
 
-    if motif_count == 1:
-        return True, ("Matches alpha–amino acid motif: a free carboxyl group attached to an alpha carbon that "
-                      "bears an amino group (with appropriate hydrogen count) and no peptide bonds are present")
-    elif motif_count > 1:
-        return False, f"Multiple potential alpha–amino acid motifs found ({motif_count}); not a simple amino acid"
-    else:
+    matches = molH.GetSubstructMatches(aa_smarts)
+    if len(matches) == 0:
         return False, "No alpha–amino acid motif found"
+    if len(matches) > 1:
+        return False, f"Multiple potential alpha–amino acid motifs found ({len(matches)}); not a simple amino acid"
+    
+    # Exactly one match was found.
+    # The match is a tuple of atom indices. We assume:
+    #  index 0: the alpha carbon,
+    #  index 1: the attached nitrogen,
+    #  index 2: the carboxyl carbon.
+    match = matches[0]
+    alpha_idx, n_idx, carboxyl_idx, *rest = match  # note: the SMARTS has 3 explicit atoms but RDKit may return more indices if the pattern is extended
+    # Retrieve the atoms.
+    alpha_atom = molH.GetAtomWithIdx(alpha_idx)
+    n_atom = molH.GetAtomWithIdx(n_idx)
+    carboxyl_atom = molH.GetAtomWithIdx(carboxyl_idx)
+    
+    # Verify that the carboxyl carbon is a terminal carboxyl.
+    # Count oxygen neighbors (ignoring hydrogens).
+    oxygens = [nbr for nbr in carboxyl_atom.GetNeighbors() if nbr.GetAtomicNum() == 8]
+    if len(oxygens) != 2:
+        return False, "Carboxyl carbon does not appear to be terminal (should have exactly 2 oxygen neighbors)"
+    
+    # Verify that the amino nitrogen has at least one hydrogen (if not in a ring, we require at least one H)
+    if n_atom.GetTotalNumHs() < 1:
+        return False, "The amino nitrogen does not carry any hydrogen (not a free amino group)"
+    
+    # (Optional) We could require that the alpha carbon (ignoring its hydrogens) has exactly 3 non–H heavy neighbors:
+    heavy_neighbors = [nbr for nbr in alpha_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+    # In a canonical amino acid the alpha carbon will be bound to: the amino nitrogen, the carboxyl carbon, and one side–chain atom.
+    if len(heavy_neighbors) != 3:
+        return False, f"Alpha carbon has {len(heavy_neighbors)} heavy atom neighbors rather than the expected 3"
+    
+    # Our “core” motif has been located and validated.
+    return True, ("Matches alpha–amino acid motif: a free carboxyl group attached to an alpha carbon that "
+                   "bears an amino group (with at least one hydrogen) and no peptide bonds are present")
 
-
+    
 # Example usage:
-# You can test on one or more SMILES from the provided list:
 if __name__ == "__main__":
+    # List a few examples from the provided list.
     test_smiles = [
-       "[H][C@@](\\N=C1CC(O)(CO)CC(NCC(O)=O)=C\\1OC)([C@H](C)O)C(O)=O",  # porphyra-334, known true
-       "N[C@@H](Cc1cc(I)c(Oc2cc(I)c(O)c(I)c2)c(I)c1)C(O)=O",            # L-thyroxine, known true
-       "NC1(CC1)C(O)=O",                                                # 1-aminocyclopropanecarboxylic acid, expected true
-       "[O-]C(=O)[C@H]1CNCC[NH2+]1",                                     # (R)-piperazine-2-carboxylic acid zwitterion, known false positive
+        "[H][C@@](\\N=C1CC(O)(CO)CC(NCC(O)=O)=C\\1OC)([C@H](C)O)C(O)=O",  # porphyra-334 (should be true)
+        "N[C@@H](Cc1cc(I)c(Oc2cc(I)c(O)c(I)c2)c(I)c1)C(O)=O",            # L-thyroxine (should be true)
+        "NC1(CC1)C(O)=O",                                                # 1-aminocyclopropanecarboxylic acid (true)
+        "[O-]C(=O)[C@H]1CNCC[NH2+]1",                                     # (R)-piperazine-2-carboxylic acid zwitterion (false positive in previous attempt)
     ]
     for smi in test_smiles:
         result, reason = is_alpha_amino_acid(smi)
