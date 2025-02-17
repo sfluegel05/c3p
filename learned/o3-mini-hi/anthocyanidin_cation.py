@@ -8,17 +8,15 @@ Definition:
   Any organic cation that is an aglycon of anthocyanin cation; they are oxygenated derivatives
   of flavylium (2-phenylchromenylium).
 
-Improved criteria:
-  - The SMILES string must parse to a valid molecule.
-  - The molecule (or major fragment) must have an overall positive formal charge and must not contain
-    any negatively charged atoms.
-  - The molecule must have at least three rings.
-  - The molecule must contain a flavylium-like core, which we detect by a SMARTS match for a fused
-    tricyclic 2-phenylchromenylium motif.
+This version relaxes the rigid SMARTS matching in favor of a more flexible detection of
+a flavylium core via:
+  - verifying that the molecule is an organic cation,
+  - ensuring the molecule has at least three rings (tricyclic core),
+  - and checking that at least one oxygen atom with a +1 formal charge is aromatic, belongs to
+    a ring, and is connected to at least one aromatic carbon.
   
-Note: Because many anthocyanidin derivatives are substituted (glycosylated, acylated, etc.), an exact
-SMARTS might fail sometimes. Nevertheless, this version tries to be stricter by excluding molecules that
-contain any negative charges and by requiring a match to a flavylium-like SMARTS pattern.
+Many anthocyanidin derivatives are substituted (glycosylated, acylated, etc.) so an exact
+substructure match may fail.
 """
 
 from rdkit import Chem
@@ -28,14 +26,16 @@ def is_anthocyanidin_cation(smiles: str):
     """
     Determines if a molecule is an anthocyanidin cation based on its SMILES string.
     
-    Improved Criteria:
-      - The SMILES must produce a valid molecule.
-      - The molecule must have an overall positive net formal charge AND have no atoms with a negative charge.
-      - The molecule must contain at least three rings.
-      - The molecule must contain a fused tricyclic flavylium core.
-        We use a SMARTS pattern for a simplified flavylium core:
-          "c1ccc2c(c1)[c]([O+])c3ccccc23"
-        which looks for a benzopyrylium fused with another benzene ring (representing 2-phenylchromenylium).
+    Criteria:
+      - The SMILES string must parse to a valid molecule.
+      - The molecule must be an organic cation (contain at least one atom with a positive formal charge).
+      - The molecule must have at least three rings.
+      - The molecule is expected to contain a flavylium-like core. In anthocyanidins, an oxygen in the
+        central pyran ring typically carries a positive charge and is aromatic and fused into the ring system.
+        We check if there is at least one oxygen atom having:
+          • a positive formal charge,
+          • aromaticity,
+          • and residing in a ring and bonded to at least one aromatic carbon.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -49,45 +49,48 @@ def is_anthocyanidin_cation(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Compute overall net formal charge and check for any negatives.
-    total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
-    if total_charge <= 0:
-        return False, f"Overall formal charge is {total_charge}; expected a positive charge for an anthocyanidin cation"
-    if any(atom.GetFormalCharge() < 0 for atom in mol.GetAtoms()):
-        return False, "Molecule contains one or more atoms with negative formal charge; not a pure organic cation"
-
-    # Check that the molecule has at least three rings (typical anthocyanidin core has 3 fused rings)
+    # Check that the molecule is an organic cation:
+    # We require that at least one atom has a positive formal charge.
+    if not any(atom.GetFormalCharge() > 0 for atom in mol.GetAtoms()):
+        return False, "Molecule does not have a positive formal charge; it is not a cation"
+    
+    # Check that the molecule has at least three rings (typical for anthocyanidin core).
     num_rings = rdMolDescriptors.CalcNumRings(mol)
     if num_rings < 3:
         return False, f"Molecule has {num_rings} ring(s); at least 3 rings are required for an anthocyanidin core"
     
-    # To capture a flavylium-like core reliably, use a SMARTS that looks for a fused three-ring motif.
-    # This SMARTS tries to detect a benzopyrylium structure: a benzene ring fused to a pyran ring
-    # (with an oxygen carrying a + charge) and connected to another aromatic ring.
-    flavylium_smarts = "c1ccc2c(c1)[c]([O+])c3ccccc23"
-    flavylium_core = Chem.MolFromSmarts(flavylium_smarts)
-    if flavylium_core is None:
-        return False, "Error creating flavylium SMARTS pattern"
+    # Look for a flavylium-like center:
+    # Scan for an oxygen atom that is (a) formally positive, (b) aromatic, (c) in a ring, and
+    # (d) bonded to at least one aromatic carbon.
+    flavylium_found = False
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == 1:
+            # Check if the oxygen atom is aromatic and is in a ring.
+            if not (atom.GetIsAromatic() and atom.IsInRing()):
+                continue
+            # Check its neighbors: we expect at least one aromatic carbon.
+            aromatic_c_neighbor = False
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 6 and nbr.GetIsAromatic():
+                    aromatic_c_neighbor = True
+                    break
+            if aromatic_c_neighbor:
+                flavylium_found = True
+                break
     
-    if not mol.HasSubstructMatch(flavylium_core):
-        return False, "Flavylium-like core not detected (no match to expected tricyclic motif with an oxygen+)"
+    if not flavylium_found:
+        return False, "Flavylium-like center not detected: no aromatic oxygen with +1 charge in ring found"
     
-    return True, "Molecule matches anthocyanidin cation criteria (organic cation with flavylium-like fused core and sufficient rings)"
+    return True, "Molecule matches anthocyanidin cation criteria (organic cation with a flavylium-like core and sufficient rings)"
 
 # Example usage:
 if __name__ == "__main__":
-    # A few test examples
-    test_smiles = [
-        # True positive examples (simplified or aglycon-like cores)
-        "COc1cc(cc(OC)c1O)-c1[o+]c2cc(O)cc(O)c2cc1O",  # simplified malvidin like structure
-        "OC[C@H]1O[C@@H](Oc2cc3c(O)cc(O)cc3[o+]c2-c2ccc(O)c(O)c2)[C@H](O)[C@@H](O)[C@@H]1O",  # glycosylated delphinidin derivative
-        
-        # False positive candidates from previous attempt would have negative charges;
-        # for example, an anthocyanidin "olate" would be rejected.
-        "[Cl-].OC[C@H]1O[C@@H](Oc2cc3c(O)cc(O)c3[o+]c2-c2ccc(O)c(O)c2)[C@H](O)[C@@H](O)[C@@H]1O",
+    # A few representative examples (the list provided in the task is extensive)
+    example_smiles = [
+        "COc1cc(cc(OC)c1O)-c1[o+]c2cc(O)cc(O)c2cc1O",  # simplified malvidin
+        "OC[C@H]1O[C@@H](Oc2cc3c(O)cc(O)cc3[o+]c2-c2ccc(O)c(O)c2)[C@H](O)[C@@H](O)[C@@H]1O"  # glycosylated delphinidin derivative
     ]
-    
-    for s in test_smiles:
+    for s in example_smiles:
         result, reason = is_anthocyanidin_cation(s)
         print("SMILES:", s)
         print("Result:", result)
