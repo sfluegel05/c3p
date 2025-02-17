@@ -1,194 +1,152 @@
 """
 Classifies: CHEBI:16389 ubiquinones
 """
+#!/usr/bin/env python
 """
-Classifies: Ubiquinones – natural benzoquinones derived from 2,3-dimethoxy-5-methylbenzoquinone.
-A valid ubiquinone must contain a redox‐active quinone core (cyclic diene-1,4-dione, as identified by
-the SMARTS "O=C1C=CC(=O)C=C1"). Then, substituents on the core are inspected:
-  • At least one acceptable oxygen substituent must be present (typically methoxy –OCH3 or hydroxy –OH).
-  • In addition, there must be at least one alkyl substituent normally attached by carbon.
-      - For a very short branch (fewer than 5 carbons), we allow even if a heteroatom is present.
-      - For a long branch (5 or more carbons) the branch (intended to be a polyprenyl chain) must be acyclic,
-        contain only carbon atoms and at least one non‐aromatic C=C bond.
-  • No substituents other than these types should be attached directly to the quinone core.
-Note: This algorithm is “best‐effort” and may fail on edge cases.
+Classifies: Ubiquinones – natural benzoquinones derived from 2,3-dimethoxy-5-methylbenzoquinone,
+often with a polyprenyl side chain attached. Examples: ubiquinone-0, ubiquinone-2, 3-demethyl-ubiquinone-7, etc.
 """
-
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 def is_ubiquinones(smiles: str):
     """
-    Determines if a molecule is classified as a ubiquinone.
+    Determines if a molecule is a ubiquinone based on its SMILES string.
+    Ubiquinones are defined as benzoquinones derived from 2,3-dimethoxy-5-methylbenzoquinone.
+    They have a quinone ring (a cyclohexadiene-1,4-dione), with at least two methoxy substituents
+    attached to the ring and usually a methyl group. Often, one substituent is a long polyprenyl chain.
     
     Args:
-        smiles (str): SMILES string of the molecule.
-        
+        smiles (str): SMILES string of the molecule
+
     Returns:
-        (bool, str): (True, explanation) if classified as a ubiquinone; or (False, reason) otherwise.
+        bool: True if molecule is classified as a ubiquinone, False otherwise.
+        str: Explanation/reason for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # 1. Check for quinone core: cyclic diene-1,4-dione pattern.
-    core_smarts = "O=C1C=CC(=O)C=C1"
-    core_query = Chem.MolFromSmarts(core_smarts)
-    core_matches = mol.GetSubstructMatches(core_query)
+    # Look for a 1,4-benzoquinone core.
+    # The SMARTS below is a simplified representation of a cyclohexadiene-1,4-dione.
+    quinone_core = Chem.MolFromSmarts("O=C1C=CC(=O)C=C1")
+    core_matches = mol.GetSubstructMatches(quinone_core)
     if not core_matches:
-        return False, "Quinone core (cyclic diene-1,4-dione) not found"
-    # For simplicity, use the first match as the core.
-    core_atom_idxs = set(core_matches[0])
+        return False, "Quinone core (cyclohexadiene-1,4-dione) not found"
     
-    # Counters for substituents.
-    oxy_sub_count = 0   # acceptable oxygen substituents (methoxy/hydroxy)
-    alkyl_count = 0     # acceptable alkyl substituents (methyl or polyprenyl chain)
-    polyprenyl_detail = None  # if a long branch is found
+    # For simplicity, take the first matching core
+    core_indices = set(core_matches[0])
     
-    # We'll mark substituent atoms as visited so that we don’t re‐traverse them
+    # Initialize counts for substituents on the core.
+    methoxy_count = 0  # count of -OCH3 substituents attached directly to the ring
+    methyl_count = 0   # count of direct CH3 groups (not part of a methoxy)
+    
+    # To remember which neighbor atoms have been identified as substituents
+    identified_substituents = set()
+    
+    # Loop over each atom in the quinone core to find substituents.
+    for idx in core_indices:
+        atom = mol.GetAtomWithIdx(idx)
+        for nbr in atom.GetNeighbors():
+            nbr_idx = nbr.GetIdx()
+            if nbr_idx in core_indices:
+                continue  # skip atoms in the core
+            # Check if the neighbor is an oxygen and could be part of a methoxy group.
+            if nbr.GetSymbol() == "O":
+                # We expect a methoxy to have the O attached to a CH3 (and only that non-core neighbor).
+                nbr_neighbors = [a for a in nbr.GetNeighbors() if a.GetIdx() != idx]
+                if len(nbr_neighbors) == 1:
+                    attached = nbr_neighbors[0]
+                    if attached.GetSymbol() == "C":
+                        # use a simple check: if the attached carbon has three hydrogens (either implicit or explicit)
+                        # then consider it a methyl group of a methoxy.
+                        if attached.GetTotalNumHs() >= 3:
+                            methoxy_count += 1
+                            identified_substituents.add(nbr_idx)
+                            identified_substituents.add(attached.GetIdx())
+            # Otherwise check if the neighbor is a carbon that might be a direct methyl (CH3) substituent.
+            elif nbr.GetSymbol() == "C":
+                # Check if this carbon has three hydrogens and is only connected to the ring.
+                # (Note: In longer chains the carbon will be connected to >1 heavy atom.)
+                if nbr.GetTotalNumHs() >= 3 and nbr.GetDegree() == 1:
+                    methyl_count += 1
+                    identified_substituents.add(nbr_idx)
+                    
+    # We require at least two methoxy groups and at least one methyl substituent.
+    if methoxy_count < 2:
+        return False, f"Found only {methoxy_count} methoxy substituent(s); need at least 2"
+    if methyl_count < 1:
+        return False, "No methyl substituent directly attached to the core found"
+    
+    # Look for the presence of a side chain that might be a polyprenyl chain.
+    # We search for substituents (neighbors of core atoms not already classified as methoxy or methyl)
+    polyprenyl_found = False
+    polyprenyl_reason = ""
     visited_substituents = set()
     
-    def is_methyl(atom):
-        # A carbon having at least 3 implicit hydrogens is considered methyl.
-        return (atom.GetSymbol() == "C" and atom.GetTotalNumHs() >= 3)
-    
-    # Revised DFS that will traverse a branch (starting from a neighbor atom not in the core)
-    # Returns:
-    #   frag: set of atom indices in the branch (excluding the core)
-    #   n_carb: number of carbon atoms in the branch
-    #   has_double: True if any nonaromatic double bond (C=C) is encountered.
-    #   has_ring: True if any atom in the branch is in a ring.
-    #   has_hetero: True if any non-carbon (e.g. O, N, etc.) is encountered.
-    def dfs_branch(start_atom, visited):
+    def dfs_chain(start_atom, visited):
+        """
+        Depth-first search from a given atom (outside the core) to collect the connected substituent fragment.
+        Returns a set of atom indices in that fragment and a boolean flag indicating whether a C=C (double bond)
+        is present.
+        """
         stack = [start_atom]
-        frag = set()
-        n_carb = 0
-        has_double = False
-        has_ring = False
-        has_hetero = False
+        frag_atoms = set()
+        double_bond = False
         while stack:
             a = stack.pop()
             if a.GetIdx() in visited:
                 continue
             visited.add(a.GetIdx())
-            frag.add(a.GetIdx())
-            if a.GetSymbol() == "C":
-                n_carb += 1
-            else:
-                has_hetero = True  # encountered a heteroatom
-            if a.IsInRing():
-                has_ring = True
+            frag_atoms.add(a.GetIdx())
             for bond in a.GetBonds():
                 nb = bond.GetOtherAtom(a)
-                # Do not go back into the core.
-                if nb.GetIdx() in core_atom_idxs:
+                # Only follow if not part of the core.
+                if nb.GetIdx() in core_indices:
                     continue
-                # Continue along the branch if not visited.
                 if nb.GetIdx() not in visited:
                     stack.append(nb)
-                # If bond is a nonaromatic double, record it.
-                if bond.GetBondTypeAsDouble() == 1 and not bond.GetIsAromatic():
-                    has_double = True
-        return frag, n_carb, has_double, has_ring, has_hetero
+                if bond.GetBondTypeAsDouble() == 1:  # if bond type is DOUBLE
+                    double_bond = True
+        return frag_atoms, double_bond
 
-    # Now inspect each neighbor of the core (each direct substituent).
-    for idx in core_atom_idxs:
-        core_atom = mol.GetAtomWithIdx(idx)
-        for nbr in core_atom.GetNeighbors():
+    # Check each neighbor of a core atom that wasn't already classified as methoxy or methyl.
+    for idx in core_indices:
+        atom = mol.GetAtomWithIdx(idx)
+        for nbr in atom.GetNeighbors():
             nbr_idx = nbr.GetIdx()
-            if nbr_idx in core_atom_idxs or nbr_idx in visited_substituents:
+            if nbr_idx in core_indices or nbr_idx in identified_substituents or nbr_idx in visited_substituents:
                 continue
-            
-            # Case A: If neighbor is oxygen, count as an acceptable oxygen substituent.
-            if nbr.GetSymbol() == "O":
-                # Get non-core neighbors from this oxygen.
-                non_core_nbrs = [a for a in nbr.GetNeighbors() if a.GetIdx() not in core_atom_idxs]
-                # No neighbor implies -OH (or deprotonated -O–).
-                if len(non_core_nbrs) == 0:
-                    oxy_sub_count += 1
-                    visited_substituents.add(nbr_idx)
-                    continue
-                # If exactly one neighbor, check if it is a methoxy.
-                if len(non_core_nbrs) == 1:
-                    sub_atom = non_core_nbrs[0]
-                    if sub_atom.GetSymbol() == "C" and is_methyl(sub_atom):
-                        oxy_sub_count += 1
-                        visited_substituents.add(nbr_idx)
-                        visited_substituents.add(sub_atom.GetIdx())
-                        continue
-                    else:
-                        # Otherwise, if the oxygen has H(s) attached, count as hydroxy.
-                        if nbr.GetTotalNumHs() >= 1:
-                            oxy_sub_count += 1
-                            visited_substituents.add(nbr_idx)
-                            continue
-                        else:
-                            # Otherwise, be generous and accept it.
-                            oxy_sub_count += 1
-                            visited_substituents.add(nbr_idx)
-                            continue
-                else:
-                    # If oxygen is attached to >1 non-core neighbor, that is unexpected.
-                    return False, f"Found oxygen substituent with {len(non_core_nbrs)} non-core neighbors which is not allowed."
-            # Case B: If neighbor is carbon, then it is part of an alkyl substituent.
-            elif nbr.GetSymbol() == "C":
-                frag, n_carb, has_double, has_ring, has_hetero = dfs_branch(nbr, visited_substituents)
-                # For very short branches (fewer than 5 carbons), we allow even if there are heteroatoms or rings.
-                if n_carb < 5:
-                    alkyl_count += 1
-                    # If the branch is very short and qualifies as methyl, we note it.
-                    # (We do not impose further restrictions here.)
-                else:
-                    # For longer branches, we require that:
-                    #    – the branch is acyclic (no ring),
-                    #    – contains only carbon atoms (no heteroatoms),
-                    #    – and has at least one nonaromatic double bond.
-                    if has_ring:
-                        return False, f"Long substituent branch attached at atom {nbr_idx} contains a ring, which is not allowed."
-                    if has_hetero:
-                        return False, f"Long substituent branch attached at atom {nbr_idx} contains non-carbon atoms, which is not allowed."
-                    if not has_double:
-                        return False, f"Found a long substituent chain with {n_carb} carbons but no C=C double bond."
-                    polyprenyl_detail = f"Found a polyprenyl chain with {n_carb} carbons containing C=C double bonds."
-                    alkyl_count += 1
-            else:
-                # Any substituent attached to the core that is not O or C is not allowed.
-                return False, f"Found substituent {nbr.GetSymbol()} attached to the core, which is not allowed."
-    
-    # Enforce minimal substituent requirements:
-    if oxy_sub_count < 1:
-        return False, f"Found {oxy_sub_count} acceptable oxygen substituent(s) on the quinone core; need at least 1 (typically matching a 2,3-dimethoxy pattern)."
-    if alkyl_count < 1:
-        return False, "No acceptable alkyl substituent found on the quinone core."
-    
-    # As an optional further check, rule out molecules that are too small.
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150:
-        return False, f"Molecular weight ({mol_wt:.1f} Da) too low for a typical ubiquinone."
-    
-    explanation = (f"Quinone core detected (matching {core_smarts}). Found {oxy_sub_count} acceptable oxygen substituent(s) "
-                   f"and {alkyl_count} alkyl substituent(s). ")
-    if polyprenyl_detail:
-        explanation += polyprenyl_detail
-    else:
-        explanation += "No long polyprenyl side chain detected (this is acceptable for some ubiquinone homologues)."
-    
-    return True, explanation
+            # We require that the substituent is a carbon chain (at least one carbon)
+            if nbr.GetSymbol() != "C":
+                continue
+            frag, has_dbl = dfs_chain(nbr, visited_substituents)
+            # Count number of carbons in the fragment.
+            n_carbons = sum(1 for i in frag if mol.GetAtomWithIdx(i).GetSymbol() == "C")
+            # For a chain to be considered polyprenyl, require at least 5 carbon atoms and that a C=C double bond exists.
+            if n_carbons >= 5 and has_dbl:
+                polyprenyl_found = True
+                polyprenyl_reason = f"Found substituent chain with {n_carbons} carbons and double bonds (indicative of a polyprenyl side chain)"
+                break
+        if polyprenyl_found:
+            break
 
-# Example usage for testing:
+    # Build the explanation string.
+    reason = f"Quinone core found with {methoxy_count} methoxy substituents and {methyl_count} methyl substituent(s). "
+    if polyprenyl_found:
+        reason += polyprenyl_reason
+    else:
+        reason += "No clear polyprenyl chain detected (side chain may be short or absent in some homologues)."
+    
+    return True, reason
+
+# Example usage:
 if __name__ == "__main__":
+    # Test with a few example SMILES strings for ubiquinones.
     test_smiles = [
         "COC1=C(OC)C(=O)C(C\\C=C(/C)CCC=C(C)C)=C(C)C1=O",  # ubiquinone-2
-        "C1(=C(C(C(=C(C1=O)OC)[O-])=O)C)C/C=C(/CC/C=C(/CC/C=C(/CC/C=C(/CC/C=C(/CCC=C(C)C)\\C)\\C)\\C)\\C)\\C",  # 3-demethyl-ubiquinone-7(1-)
-        "C(C\\C(=C\\CC\\C(=C\\CC\\C(=C\\CC\\C(=C\\CC=1C(C(=C([O-])C(C1C)=O)OC)=O)\\C)\\C)\\C)/C=C(/CCC=C(C)C)\\C",  # 3-demethylubiquinone-6(1-)
-        "COC1=C(OC)C(=O)C(C)=CC1=O",  # ubiquinone-0
-        "COC1=C(OC)C(=O)C(CC=C(C)C)=C(C)C1=O",  # ubiquinone-1
-        "COC1=C(OC)C(=O)C(C\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)=C(C)C1=O",  # ubiquinone-8
-        "O=C1C(OC)=C(OC)C(=O)C=C1[C@H](C(=O)C)C",  # 2,3-dimethoxy-5-(3-oxobutan-2-yl)cyclohexa-2,5-diene-1,4-dione (valid ubiquinone)
-        "O(C=1C(=O)C([C@@H](C2=CC=C(O)C=C2)C=C)=CC(=O)C1OC)C",  # (R)-4'-Hydroxy-3,4-dimethoxydalbergione (valid ubiquinone)
-        "O(C=1C(=O)C([C@@H](C2=CC=CC=C2)C=C)=CC(=O)C1OC)C",  # (R)-3,4-Dimethoxydalbergione (valid ubiquinone)
+        "COC1=C(OC)C(=O)C(C)=O",  # ubiquinone-0 (simplified)
     ]
-    
     for s in test_smiles:
-        valid, reason = is_ubiquinones(s)
-        print(f"SMILES: {s}\nResult: {valid}\nExplanation: {reason}\n")
+        valid, explanation = is_ubiquinones(s)
+        print(f"SMILES: {s}\nResult: {valid}\nExplanation: {explanation}\n")
