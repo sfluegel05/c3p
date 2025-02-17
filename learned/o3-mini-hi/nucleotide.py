@@ -5,12 +5,15 @@ Classifies: CHEBI:36976 nucleotide
 Classifies: Nucleotide
 A nucleotide is defined as a nucleoside phosphate resulting from the condensation 
 of the 3 or 5 hydroxy group of a nucleoside with phosphoric acid.
-This function verifies:
-   - Presence of a furanose sugar ring (5-membered ring with 1 oxygen and 4 carbons)
-     and considers exocyclic atoms attached to the sugar ring (e.g. the 5'-CH2 group).
-   - A phosphate (P) is connected via an oxygen (O) to an atom in the sugar region.
-   - A nucleobase-like aromatic heterocycle (aromatic ring with ≥ 2 nitrogen atoms)
-     that is directly connected to the sugar region.
+
+This function checks that:
+  - A furanose sugar ring (5-membered ring with exactly 1 oxygen and 4 carbons) is present.
+  - The sugar region is expanded with its immediate carbon neighbors (e.g. the exocyclic 5'-CH2 group).
+  - A glycosidic bond exists between a carbon atom of the sugar (typically the anomeric carbon) 
+    and a nucleobase-like fragment (an aromatic heterocycle carrying at least one nitrogen).
+  - A phosphate group is attached to the sugar through an oxygen (i.e. a P atom with an O that connects to the sugar region).
+  
+If these criteria are met, the molecule is classified as a nucleotide.
 """
 from rdkit import Chem
 
@@ -18,102 +21,102 @@ def is_nucleotide(smiles: str):
     """
     Determines if a molecule is a nucleotide based on its SMILES string.
     
-    A nucleotide should contain a nucleoside portion (a sugar moiety attached to a 
-    nucleobase) with a phosphate group esterified at a sugar hydroxy position.
+    A nucleotide is expected to have:
+      • A nucleoside portion: a furanose sugar (and its immediate exocyclic carbons) 
+        connected via a glycosidic bond to a nucleobase (an aromatic heterocycle with at least one nitrogen).
+      • A phosphate group attached to the sugar via an oxygen bridge.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
         bool: True if the molecule is classified as a nucleotide, False otherwise.
-        str: Reason for the classification.
+        str: Reason for the classification result.
     """
+    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     ring_info = mol.GetRingInfo()
-    sugar_ring_indices = None
-    # Step 1: Identify a furanose sugar ring: a 5-membered ring with exactly 1 oxygen and 4 carbons.
+    sugar_ring = None
+    # Step 1: Identify a furanose ring – a 5-membered ring with exactly 1 oxygen and 4 carbons.
     for ring in ring_info.AtomRings():
-        if len(ring) == 5:  # candidate for furanose ring
+        if len(ring) == 5:
+            # Count atoms in the ring by element.
             symbols = [mol.GetAtomWithIdx(idx).GetSymbol() for idx in ring]
-            if symbols.count('O') == 1 and symbols.count('C') == 4:
-                sugar_ring_indices = set(ring)
+            if symbols.count("O") == 1 and symbols.count("C") == 4:
+                sugar_ring = set(ring)
                 break
-    if sugar_ring_indices is None:
+    if sugar_ring is None:
         return False, "No furanose sugar ring (5-membered ring with 1 oxygen and 4 carbons) found"
     
-    # Expand sugar region: include atoms not in the ring that are directly connected to ring atoms.
-    sugar_region = set(sugar_ring_indices)
-    for idx in sugar_ring_indices:
+    # Step 2: Expand sugar region: include immediate carbon neighbors of the sugar ring.
+    sugar_region = set(sugar_ring)
+    for idx in list(sugar_ring):
         atom = mol.GetAtomWithIdx(idx)
         for nbr in atom.GetNeighbors():
-            # typically the 5'-CH2 group is a carbon; add if not already in the sugar ring.
-            if nbr.GetIdx() not in sugar_region and nbr.GetSymbol() == 'C':
+            # Consider adding carbons that lie immediately outside the ring.
+            if nbr.GetSymbol() == "C":
                 sugar_region.add(nbr.GetIdx())
     
-    # Step 2: Verify that a phosphate group is attached to the sugar region.
-    # Look for any phosphorus which, via one oxygen neighbor, is connected to any atom in the sugar region.
-    phosphate_attached = False
+    # Step 3: Identify the glycosidic bond.
+    # Look for a bond from a carbon atom in the sugar ring to a nitrogen that belongs to an aromatic ring (nucleobase).
+    glycosidic_found = False
+    for idx in sugar_ring:
+        sugar_atom = mol.GetAtomWithIdx(idx)
+        # we expect the connecting atom (anomeric carbon) to be carbon
+        if sugar_atom.GetSymbol() != "C":
+            continue
+        for nbr in sugar_atom.GetNeighbors():
+            if nbr.GetIdx() in sugar_region:
+                # Skip atoms that are also part of (or immediately attached to) the sugar
+                continue
+            # We favor a connection to a nitrogen.
+            if nbr.GetAtomicNum() == 7 and nbr.GetIsAromatic():
+                # Ensure that the neighbor is part of an aromatic ring that is not completely in the sugar region.
+                for ring in ring_info.AtomRings():
+                    if nbr.GetIdx() in ring and not set(ring).issubset(sugar_region):
+                        glycosidic_found = True
+                        break
+            if glycosidic_found:
+                break
+        if glycosidic_found:
+            break
+    if not glycosidic_found:
+        return False, ("No glycosidic bond found connecting a sugar carbon to an aromatic heterocycle "
+                       "with nitrogen (nucleobase-like component)")
+    
+    # Step 4: Check for a phosphate group attached to the sugar.
+    # We consider a phosphate as a phosphorus atom (atomic number 15) that is connected 
+    # via an oxygen to any atom in the sugar region.
+    phosphate_found = False
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 15:  # Phosphorus
-            # iterate over neighbors of phosphorus
+        if atom.GetAtomicNum() == 15:  # phosphorus
             for nbr in atom.GetNeighbors():
-                # Looking for an oxygen connecting P to sugar:
-                if nbr.GetSymbol() == 'O':
-                    # Check if this oxygen is attached to any atom in the sugar region.
+                if nbr.GetSymbol() == "O":
+                    # Check if this oxygen is connected to any atom in the sugar region.
                     for nbr2 in nbr.GetNeighbors():
                         if nbr2.GetIdx() in sugar_region:
-                            phosphate_attached = True
+                            phosphate_found = True
                             break
-                if phosphate_attached:
+                if phosphate_found:
                     break
-            if phosphate_attached:
-                break
-    if not phosphate_attached:
+        if phosphate_found:
+            break
+    if not phosphate_found:
         return False, "No phosphate group attached to the sugar region via an oxygen bridge"
     
-    # Step 3: Identify a nucleobase-like aromatic heterocycle.
-    # Look for an aromatic ring (outside of our sugar region) that contains at least 2 nitrogen atoms.
-    nucleobase_found = False
-    for ring in ring_info.AtomRings():
-        ring_set = set(ring)
-        # Skip rings that are fully part of the sugar region.
-        if ring_set.issubset(sugar_region):
-            continue
-        # Check aromaticity of all atoms in this ring.
-        if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-            continue
-        # Count nitrogen atoms in the ring.
-        nitrogen_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
-        if nitrogen_count < 2:
-            continue
-        # Now check if at least one atom in the ring is directly attached to any atom in the sugar region.
-        attached = False
-        for idx in ring:
-            atom = mol.GetAtomWithIdx(idx)
-            for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() in sugar_region:
-                    attached = True
-                    break
-            if attached:
-                break
-        if attached:
-            nucleobase_found = True
-            break
-    if not nucleobase_found:
-        return False, "No nucleobase-like aromatic heterocycle (ring with ≥2 nitrogens attached to sugar) found"
+    return True, ("Molecule contains a furanose sugar (with expanded sugar region), a glycosidic bond to a nucleobase-like "
+                  "aromatic heterocycle, and a phosphate group attached via oxygen – consistent with a nucleotide")
     
-    return True, "Molecule contains a nucleoside (sugar + nucleobase) with a phosphate group attached at a sugar hydroxy group"
-
-# Example usage (for testing purposes; remove or modify if integrating elsewhere)
+# Example usage (for testing purposes)
 if __name__ == "__main__":
-    # Testing with a few SMILES strings (from provided examples)
-    test_smiles = [
+    # List a few test examples; note that in practice the full test list is extensive.
+    test_examples = [
         "Cc1cn([C@H]2C[C@H](O)[C@@H](COP(O)(O)=O)O2)c(=O)nc1N",  # 2'-deoxy-5-methyl-5'-cytidylic acid (should be True)
         "[C@@H]1(N2C=C(C(=N)C=C2)C(O)=O)O[C@H](COP(O)(O)=O)[C@H]([C@H]1O)O",  # clitidine 5'-phosphate (should be True)
     ]
-    for smi in test_smiles:
-        result, reason = is_nucleotide(smi)
-        print(f"SMILES: {smi}\nResult: {result}\nReason: {reason}\n")
+    for smi in test_examples:
+        res, reason = is_nucleotide(smi)
+        print(f"SMILES: {smi}\nResult: {res}\nReason: {reason}\n")
