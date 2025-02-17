@@ -4,18 +4,8 @@ Classifies: CHEBI:82744 aliphatic aldoxime
 """
 Classifies: Aliphatic Aldoxime – any aldoxime derived from an aliphatic aldehyde.
 A molecule is considered to have an aliphatic aldoxime group if it contains a functional group of 
-the form R–CH=N–OH, i.e. the carbon attached to =N must have exactly one hydrogen (CH) and one heavy
-(aliphatic, non-aromatic carbon) substituent (R, besides the N).
-The algorithm:
-  1. Convert the SMILES to an RDKit molecule and add explicit hydrogens.
-  2. Find candidate oxime groups by searching for a pattern where:
-     - a carbon (sp2) forms a double bond to a nitrogen, and 
-     - that nitrogen is single bonded to an oxygen which in turn bears a hydrogen (–OH).
-  3. For each candidate the “aldehyde-derived” carbon is checked:
-     - It must have exactly one hydrogen.
-     - Among its heavy (non-hydrogen) neighbors, aside from the imine nitrogen, it must have exactly one substituent.
-     - That substituent must be a carbon atom that is not aromatic.
-  4. If any candidate passes these tests the function will return True; otherwise False.
+the form R–CH=N–OH, where the carbon (CH) has exactly one hydrogen (consistent with an aldehyde),
+and its other neighbor (besides the imine N) is an aliphatic (non-aromatic carbon).
 """
 
 from rdkit import Chem
@@ -23,122 +13,107 @@ from rdkit import Chem
 def is_aliphatic_aldoxime(smiles: str):
     """
     Determines if a molecule is an aliphatic aldoxime based on its SMILES string.
-    The definition is: an aldoxime group of the form R–CH=N–OH, where:
-         - the carbon (CH) has exactly one hydrogen (i.e. derived from an aldehyde)
-         - and its R substituent (other neighbor of that carbon besides the imine-N) 
-           is a heavy aliphatic (non-aromatic carbon).
+    The specific functionality searched is an aldoxime group of the form R–CH=N–OH, in which:
+         - The carbon attached to the imine N must have exactly one hydrogen.
+         - Excluding the imine N and any hydrogens, the only other substituent should be
+           an aliphatic carbon (i.e. atomic number 6 and not aromatic).
     
     Args:
         smiles (str): SMILES string of the molecule
         
     Returns:
         bool: True if the molecule is classified as an aliphatic aldoxime, False otherwise.
-        str: Reason for the classification decision.
+        str: Detailed explanation of the decision.
     """
-    # Parse SMILES and add explicit hydrogens
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Add explicit hydrogens to make hydrogen counting straightforward
     mol = Chem.AddHs(mol)
     
-    # Define a SMARTS that finds candidate oxime groups.
-    # This pattern matches a sp2 carbon (C) double-bonded to a nitrogen (N),
-    # which is single-bonded to an oxygen (O) that in turn is attached to at least one hydrogen.
-    # Our pattern: [CX3]=[NX2][OX2H]
-    # Note: This pattern does not force a specific hydrogen count on the carbon.
+    # Define a SMARTS pattern to find candidate oxime groups.
+    # We look for a carbon (sp2) double-bonded to a nitrogen, which in turn is
+    # single-bonded to an oxygen that has at least one hydrogen: [CX3]=[NX2][OX2H]
     oxime_pattern = Chem.MolFromSmarts("[CX3]=[NX2][OX2H]")
     if oxime_pattern is None:
-        return False, "Failed to compile SMARTS pattern for oxime group"
+        return False, "Failed to compile SMARTS for oxime group"
     
-    # Find all matches to the candidate oxime pattern.
-    # Each match is a tuple (c_idx, n_idx, o_idx) corresponding to the carbon, nitrogen, and oxygen.
     matches = mol.GetSubstructMatches(oxime_pattern)
     if not matches:
         return False, "No oxime group found"
     
-    # Evaluate each candidate match.
+    # Process each candidate match
     for match in matches:
+        # Match ordering: (carbon, nitrogen, oxygen)
         c_idx, n_idx, o_idx = match
-        # Get the involved atoms.
         carbon = mol.GetAtomWithIdx(c_idx)
         nitrogen = mol.GetAtomWithIdx(n_idx)
         oxygen = mol.GetAtomWithIdx(o_idx)
         
-        # Check if the oxygen is indeed -OH (i.e. bonded to at least one hydrogen).
-        # (With AddHs the hydrogen(s) should be explicit.)
+        # Confirm that oxygen is part of a hydroxyl group (-OH)
         o_neighbors = oxygen.GetNeighbors()
-        has_hydrogen = any(neigh.GetAtomicNum() == 1 for neigh in o_neighbors)
-        if not has_hydrogen:
-            continue  # not a proper -OH group
+        if not any(neigh.GetAtomicNum() == 1 for neigh in o_neighbors):
+            continue  # If oxygen isn't attached to any hydrogen, skip
         
-        # For the aldehyde-derived carbon, count its hydrogens.
-        # GetTotalNumHs returns the sum of implicit and explicit hydrogens (after AddHs all are explicit).
-        num_h = carbon.GetTotalNumHs()
-        if num_h != 1:
-            # Some SMILES may include an extra explicitly written hydrogen (e.g. [H]C(...)=N/O)
-            # in which case the optima structure after AddHs might show >1 hydrogen.
-            # We require exactly one hydrogen for it to be derived from an aldehyde.
+        # Instead of relying on GetTotalNumHs (which can be skewed by explicit H in SMILES),
+        # we count the explicit hydrogen atoms bonded to our candidate carbon.
+        hydrogen_count = sum(1 for neigh in carbon.GetNeighbors() if neigh.GetAtomicNum() == 1)
+        if hydrogen_count != 1:
+            # There must be exactly one hydrogen attached to the candidate carbon
             continue
         
-        # Now check the connectivity of the carbon.
-        # It is double bonded to the nitrogen; aside from that, it should have one heavy substituent.
-        heavy_neighbors = []
-        for neigh in carbon.GetNeighbors():
-            # Exclude the nitrogen that is part of the oxime group.
-            if neigh.GetIdx() == n_idx:
-                continue
-            # Exclude hydrogens.
-            if neigh.GetAtomicNum() == 1:
-                continue
-            heavy_neighbors.append(neigh)
-        
+        # Now examine the neighbors of the candidate carbon.
+        # It is already bonded to the imine nitrogen and one hydrogen.
+        # If we exclude the nitrogen (n_idx) and hydrogens, we should have exactly one heavy neighbor,
+        # and that neighbor should be a carbon (atomic num 6) and not aromatic.
+        heavy_neighbors = [neigh for neigh in carbon.GetNeighbors() 
+                           if neigh.GetAtomicNum() != 1 and neigh.GetIdx() != n_idx]
         if len(heavy_neighbors) != 1:
-            # If there are not exactly 1 heavy neighbor, then the underlying group is not a mono-substituted aldehyde.
             continue
         
-        # Check that the substituent is an aliphatic carbon (atomic number 6) and not aromatic.
-        r_group_atom = heavy_neighbors[0]
-        if r_group_atom.GetAtomicNum() != 6:
+        r_atom = heavy_neighbors[0]
+        if r_atom.GetAtomicNum() != 6:
             continue
-        if r_group_atom.GetIsAromatic():
+        if r_atom.GetIsAromatic():
             continue
-        
-        # If this candidate passes all tests then it is an aliphatic aldoxime.
-        return True, "Contains an aldoxime group derived from an aliphatic aldehyde (CH=N–OH with proper R-group)"
+            
+        # If the candidate passes all tests, we have found an aliphatic aldoxime.
+        return True, "Contains an aldoxime group (R–CH=N–OH) derived from an aliphatic aldehyde."
     
-    # If we exhaust all candidate oxime groups without finding one that meets our criteria,
-    # return a failure, providing a detailed reason.
+    # If no candidate oxime group qualifies, provide an explanation.
     return False, ("Oxime group(s) found but none appear to be derived from an aliphatic aldehyde "
-                   "(e.g., the carbon does not have exactly one hydrogen or its substituent is not an aliphatic carbon)")
-    
-    
-# Example test cases (can be commented out if not needed)
+                   "(the carbon does not have exactly one hydrogen or its substituent is not a non-aromatic carbon).")
+                   
+# Example test cases (these can be commented out or modified as needed)
 if __name__ == "__main__":
     test_smiles = [
         "C([C@@H](/C(=N\\O)/[H])C)C",          # (1Z,2S)-2-methylbutanal oxime
-        "[H]\\C(C(C)C)=N/O",                  # (E)-2-methylpropanal oxime
-        "C(\\CCCCCCCCSC)=N/O",                # (E)-9-(methylsulfanyl)nonanal oxime
-        "[H]C(=NO)C(C)CC",                    # 2-methylbutanal oxime
-        "[H]\\C(=N/O)C(C)CC",                 # (1E,2S)-2-methylbutanal oxime
-        "OC(C(O)C(O)\\C=N\\O)C(O)CO",          # (1E)-2,3,4,5,6-pentahydroxyhexanal oxime
-        "[H]C(CCCCCCSC)=NO",                  # 7-(methylsulfanyl)heptanal oxime
-        "C(CCCCCCCCSC)=NO",                   # 9-(methylsulfanyl)nonanal oxime
-        "C(\\CCCCCCCSC)=N/O",                 # (E)-8-(methylsulfanyl)octanal oxime
-        "[H]C(=NO)C(C)(C)SC",                 # 2-methyl-2-(methylsulfanyl)propanal oxime
-        "C(CCCCSC)=NO",                       # 5-(methylsulfanyl)pentanal oxime
-        "C(\\CCCCCSC)=N/O",                   # (E)-6-(methylsulfanyl)hexanal oxime
-        "[H]C(CSC)=NO",                       # (methylsulfanyl)acetaldehyde oxime
-        "[H]\\C(=N\\O)C(C)CC",                # (Z)-2-methylbutanal oxime
-        "[H]\\C(=N/O)C(C)CC",                 # (E)-2-methylbutanal oxime
-        "C(CCCSC)=NO",                        # 4-(methylsulfanyl)butanal oxime
-        "[H]\\C(C)=N\\O",                     # (Z)-acetaldehyde oxime
-        "[H]\\C(C(C)C)=N\\O",                  # (Z)-2-methylpropanal oxime
+        "[H]\\C(C(C)C)=N/O",                   # (E)-2-methylpropanal oxime
+        "C(\\CCCCCCCCSC)=N/O",                 # (E)-9-(methylsulfanyl)nonanal oxime
+        "[H]C(=NO)C(C)CC",                     # 2-methylbutanal oxime
+        "[H]\\C(=N/O)C(C)CC",                  # (1E,2S)-2-methylbutanal oxime
+        "OC(C(O)C(O)\\C=N\\O)C(O)CO",           # (1E)-2,3,4,5,6-pentahydroxyhexanal oxime
+        "[H]C(CCCCCCSC)=NO",                   # 7-(methylsulfanyl)heptanal oxime
+        "C(CCCCCCCCSC)=NO",                    # 9-(methylsulfanyl)nonanal oxime
+        "C(\\CCCCCCCSC)=N/O",                  # (E)-8-(methylsulfanyl)octanal oxime
+        "[H]C(=NO)C(C)(C)SC",                  # 2-methyl-2-(methylsulfanyl)propanal oxime
+        "C(CCCCSC)=NO",                        # 5-(methylsulfanyl)pentanal oxime
+        "C(\\CCCCCSC)=N/O",                    # (E)-6-(methylsulfanyl)hexanal oxime
+        "[H]C(CSC)=NO",                        # (methylsulfanyl)acetaldehyde oxime
+        "[H]\\C(=N\\O)C(C)CC",                 # (Z)-2-methylbutanal oxime
+        "[H]\\C(=N/O)C(C)CC",                  # (E)-2-methylbutanal oxime
+        "C(CCCSC)=NO",                         # 4-(methylsulfanyl)butanal oxime
+        "[H]\\C(C)=N\\O",                      # (Z)-acetaldehyde oxime
+        "[H]\\C(C(C)C)=N\\O",                   # (Z)-2-methylpropanal oxime
         "[H]C(CCCCNC(=O)CCC(=O)N(O)CCCCCNC(=O)CCC(=O)N(O)CCCCCN)=NO",  # IC202C
-        "C(\\CCCCSC)=N/O",                    # (E)-5-(methylsulfanyl)pentanal oxime
-        "C(CCCCCSC)=NO",                      # 6-(methylsulfanyl)hexanal oxime
-        "C(CCCCCCCSC)=NO",                     # 8-(methylsulfanyl)octanal oxime
-        "[H]C(C)=NO"                          # acetaldehyde oxime
+        "C(\\CCCCSC)=N/O",                     # (E)-5-(methylsulfanyl)pentanal oxime
+        "C(CCCCCSC)=NO",                       # 6-(methylsulfanyl)hexanal oxime
+        "C(CCCCCCCSC)=NO",                      # 8-(methylsulfanyl)octanal oxime
+        "[H]C(C)=NO"                           # acetaldehyde oxime
     ]
+    
     for smi in test_smiles:
         result, reason = is_aliphatic_aldoxime(smi)
         print(f"SMILES: {smi}\nResult: {result}, Reason: {reason}\n")
