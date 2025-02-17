@@ -3,156 +3,142 @@ Classifies: CHEBI:26244 prenols
 """
 """
 Classifies: Prenols – any alcohol possessing the general formula 
-    H-[CH2C(Me)=CHCH2]nOH 
+    H-[CH2C(Me)=CHCH2]nOH
 where the carbon skeleton is exclusively composed of one or more isoprene units.
-This version tries to “cover” the entire molecule (apart from hydrogens) with isoprene units.
-Heuristic steps:
-  1. Parse the SMILES string; the molecule must be acyclic.
-  2. Only carbon and oxygen atoms are allowed.
-  3. At least one free hydroxyl group (–OH not in –C(=O)OH) must be present.
-     Moreover, at least one free –OH must be terminal (attached to a primary C).
-  4. Count all carbon atoms; the total should be a multiple of five.
-  5. Using two SMARTS patterns representing an isoprene unit:
-         Pattern1: "[CH3]-[C]([CH3])=[CH]-[CH2]"
-         Pattern2: "[CH2]-[C]([CH3])=[CH]-[CH2]"
-     we gather all matches and then try to select the maximum number of non–overlapping matches.
-  6. We “expect” that number to exactly equal (total_C / 5).
-If everything checks, we classify the molecule as a prenol.
+This version uses global heuristics:
+  - The molecule must be valid, acyclic, and contain only C and O.
+  - The total number of carbons must be a multiple of 5.
+  - It must have at least one free hydroxyl group (–OH not part of a carboxyl)
+    that is attached to a terminal carbon (in the main carbon scaffold). For a diol,
+    the two –OH groups must be at opposite termini.
+  - The number of C=C bonds (between carbons) should equal the number of isoprene units,
+    which is total carbons//5.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_prenols(smiles: str):
     """
-    Determines if a molecule is a prenol based on its SMILES string.
+    Determines if a molecule is a prenol (or prenol derivative) based on its SMILES.
     
     A prenol is defined as an alcohol whose carbon skeleton is exclusively
-    composed of one or more isoprene units. (Isoprene unit is defined as 
-    CH2–C(CH3)=CH–CH2.)
-    
-    Heuristic steps:
-      - The molecule must be valid and acyclic.
-      - It must contain only C and O as heavy atoms.
-      - It must contain at least one free hydroxyl group (–OH) that is not part
-        of a carboxyl.
-      - It must have 1 or 2 free (i.e. terminal) hydroxyls.
-      - Its total number of carbons should be divisible by 5.
-      - It must “contain” n non–overlapping isoprene units (as determined by 
-        two SMARTS patterns) where n = (number of carbons)//5.
+    composed of one or more isoprene units. In our heuristic, the molecule:
+      - must be acyclic,
+      - can contain only carbon and oxygen as heavy atoms,
+      - must have a total number of carbons divisible by 5,
+      - must have one (or two) free hydroxyl group(s) that are terminal (attached
+        to a primary carbon of the longest carbon scaffold),
+      - and must have a number of C=C bonds (between carbons) equal to (total_C/5).
     
     Args:
-      smiles (str): SMILES string of the molecule.
+      smiles (str): SMILES string for the molecule.
       
     Returns:
-      bool: True if molecule is classified as a prenol, False otherwise.
+      bool: True if classified as prenol, False otherwise.
       str: Explanation of the decision.
     """
-    
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Reject cyclic molecules.
+
+    # 1. Molecule must be acyclic.
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule is cyclic, not a prenol"
-    
-    # Reject if any heavy atom is not C (atomic num 6) or O (atomic num 8).
+
+    # 2. Only allow carbon and oxygen as heavy atoms.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() not in (6, 8):
-            return False, f"Molecule contains atom {atom.GetSymbol()} not in (C,O)"
+            return False, f"Molecule contains atom {atom.GetSymbol()} not in (C, O)"
     
-    # Identify all free hydroxyl groups.
-    # We first match any hydroxyl: [OX2H]
-    alcohol_pattern = Chem.MolFromSmarts("[OX2H]")
-    alcohol_matches = mol.GetSubstructMatches(alcohol_pattern)
-    if not alcohol_matches:
-        return False, "No hydroxyl (alcohol) group found"
-    
-    # Exclude those that are part of a carboxyl group: C(=O)[OX2H]
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OX2H]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    
-    # Convert matches to a set of oxygen atom indices that belong to carboxyl.
-    carboxyl_oxygens = set()
-    for match in carboxyl_matches:
-        # match[1] is the oxygen in "O" of the pattern
-        carboxyl_oxygens.add(match[1])
-    
-    # Filter free alcohols (oxygens not in a carboxyl)
-    free_alcohols = [match for match in alcohol_matches if match[0] not in carboxyl_oxygens]
-    if not free_alcohols:
-        return False, "Only carboxylic acid hydroxyl(s) found; no free hydroxyl present"
-    
-    # Now ensure at least one of the free hydroxyls is “terminal”
-    # i.e. the oxygen is attached to a primary carbon (the attached carbon has only one heavy neighbor aside from O).
-    terminal_OH_count = 0
-    for match in free_alcohols:
-        # Each alcohol match gives the oxygen atom index.
-        o_atom = mol.GetAtomWithIdx(match[0])
-        # Get neighbors – there should be exactly one heavy neighbor.
-        neighbors = [nbr for nbr in o_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]  # ignore hydrogens
-        if len(neighbors) == 1:
-            c_atom = neighbors[0]
-            # Check how many heavy neighbors does the carbon have (excluding the oxygen we came from).
-            c_neighbors = [nbr for nbr in c_atom.GetNeighbors() if nbr.GetAtomicNum() > 1 and nbr.GetIdx() != o_atom.GetIdx()]
-            # In a primary carbon (CH2 or CH3) attached to a chain, typically only one heavy neighbor.
-            if len(c_neighbors) == 1:
-                terminal_OH_count += 1
-    if terminal_OH_count < 1:
-        return False, "No terminal (primary) free hydroxyl group found"
-    if terminal_OH_count > 2:
-        return False, f"Too many terminal free hydroxyl groups found ({terminal_OH_count}); expected 1 or 2"
-    
-    # Count total number of carbon atoms.
+    # 3. Count total number of carbon atoms.
     carbon_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
     carbon_count = len(carbon_atoms)
     if carbon_count < 5:
         return False, f"Too few carbons ({carbon_count}) to be a prenol"
     if carbon_count % 5 != 0:
         return False, f"Total carbon count ({carbon_count}) is not a multiple of 5; does not match isoprene repeats"
+    expected_units = carbon_count // 5
+
+    # 4. Identify free hydroxyl groups.
+    # First, find all hydroxyl groups: pattern [OX2H]
+    hydroxyl_pat = Chem.MolFromSmarts("[OX2H]")
+    all_oh = mol.GetSubstructMatches(hydroxyl_pat)
+    if not all_oh:
+        return False, "No hydroxyl (–OH) group found"
     
-    expected_units = carbon_count // 5  # number of isoprene units expected
+    # Exclude hydroxyls that are part of carboxy groups: C(=O)[OX2H]
+    carboxyl_pat = Chem.MolFromSmarts("C(=O)[OX2H]")
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pat)
+    carboxyl_oxygens = set()
+    for match in carboxyl_matches:
+        # In the pattern, the oxygen in the hydroxyl is at position 1.
+        carboxyl_oxygens.add(match[1])
     
-    # Define two SMARTS for an isoprene unit.
-    # Pattern1: CH3-C(CH3)=CH-CH2 (chain starts with CH3)
-    isoprene_pat1 = Chem.MolFromSmarts("[CH3]-[C]([CH3])=[CH]-[CH2]")
-    # Pattern2: CH2-C(CH3)=CH-CH2 (chain starts with CH2)
-    isoprene_pat2 = Chem.MolFromSmarts("[CH2]-[C]([CH3])=[CH]-[CH2]")
+    # Filter free hydroxyl groups (their oxygen atom index not in carboxyl_oxygens)
+    free_oh = [match for match in all_oh if match[0] not in carboxyl_oxygens]
+    if not free_oh:
+        return False, "Only carboxylic acid hydroxyl(s) found; no free –OH present"
     
-    matches1 = mol.GetSubstructMatches(isoprene_pat1)
-    matches2 = mol.GetSubstructMatches(isoprene_pat2)
+    # 5. Check that free –OH groups are terminal:
+    # A hydroxyl is deemed “terminal” if its oxygen is attached to a primary carbon.
+    # (i.e. the attached carbon should have exactly one heavy neighbor besides the –OH)
+    terminal_oh_idxs = []
+    for match in free_oh:
+        o_atom = mol.GetAtomWithIdx(match[0])
+        # Find heavy neighbors (ignore hydrogens)
+        heavy_neighbors = [nbr for nbr in o_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
+        if not heavy_neighbors:
+            continue  # should not happen for –OH though
+        attached_c = heavy_neighbors[0]
+        # Count heavy neighbors of the carbon (excluding the O we came from)
+        c_heavy_neighbors = [nbr for nbr in attached_c.GetNeighbors() if nbr.GetAtomicNum() > 1 and nbr.GetIdx() != o_atom.GetIdx()]
+        # For a primary carbon in a linear chain, expect 1 heavy neighbor.
+        if len(c_heavy_neighbors) == 1:
+            terminal_oh_idxs.append(o_atom.GetIdx())
+    if len(terminal_oh_idxs) < 1:
+        return False, "No terminal (primary) free –OH group found"
+    if len(terminal_oh_idxs) > 2:
+        return False, f"Too many terminal free –OH groups found ({len(terminal_oh_idxs)}); expected 1 or 2"
     
-    # Combine the matches (each match is a tuple of atom indices corresponding to the pattern)
-    all_matches = list(matches1) + list(matches2)
-    if not all_matches:
-        return False, "No isoprene unit substructure match found"
+    # If two –OH groups are present, ensure they are at opposite ends.
+    if len(terminal_oh_idxs) == 2:
+        # Compute the attached carbon indices for each OH.
+        attached_cs = []
+        for o_idx in terminal_oh_idxs:
+            o_atom = mol.GetAtomWithIdx(o_idx)
+            for nbr in o_atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 6:
+                    attached_cs.append(nbr.GetIdx())
+                    break
+        # Compute the shortest path between the two attached carbons.
+        if len(attached_cs) == 2:
+            path = Chem.GetShortestPath(mol, attached_cs[0], attached_cs[1])
+            # In a linear prenol, the number of carbons in the longest chain should equal carbon_count.
+            if len(path) != carbon_count:
+                return False, "Terminal –OH groups are not at opposite ends of the carbon skeleton"
     
-    # To avoid counting overlapping isoprene units, we determine the maximum set of non-overlapping matches.
-    # We use a simple recursive selection algorithm.
-    def max_nonoverlapping(matches, used=set(), start=0):
-        best = 0
-        for i in range(start, len(matches)):
-            # if this match overlaps with already used atoms, skip it.
-            if set(matches[i]) & used:
-                continue
-            new_used = used | set(matches[i])
-            count = 1 + max_nonoverlapping(matches, new_used, i+1)
-            if count > best:
-                best = count
-        return best
-    total_isoprene = max_nonoverlapping(all_matches)
-    
-    if total_isoprene != expected_units:
-        return False, (f"Unexpected number of isoprene units: found {total_isoprene} non-overlapping match(es) "
+    # 6. Count carbon–carbon double bonds.
+    double_bonds = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            a1 = bond.GetBeginAtom()
+            a2 = bond.GetEndAtom()
+            if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
+                double_bonds += 1
+    if double_bonds != expected_units:
+        return False, (f"Mismatch in double bond count: found {double_bonds} C=C bond(s) "
                        f"but expected {expected_units} (from {carbon_count} carbons)")
     
-    return True, (f"Classified as prenol: contains {expected_units} isoprene unit(s), "
-                  f"{len(free_alcohols)} free hydroxyl group(s) (with {terminal_OH_count} terminal), "
-                  f"and {carbon_count} carbons.")
+    # If all tests pass, classify as prenol.
+    # Count free hydroxyl groups (could be more than terminal in some borderline cases)
+    return True, (f"Classified as prenol: contains {expected_units} isoprene unit(s) "
+                  f"(by {carbon_count} carbons and {double_bonds} C=C bonds), "
+                  f"{len(free_oh)} free –OH group(s) (with {len(terminal_oh_idxs)} terminal).")
 
 # Example usage (for testing):
 if __name__ == "__main__":
-    # Use one of the examples (prenol itself: CC(C)=CCO)
+    # Example: prenol SMILES "CC(C)=CCO"
     test_smiles = "CC(C)=CCO"
     result, reason = is_prenols(test_smiles)
     print("Result:", result)
