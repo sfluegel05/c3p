@@ -1,15 +1,20 @@
 """
 Classifies: CHEBI:35358 sulfonamide
 """
-#!/usr/bin/env python
 """
-Classifies: Sulfonamide 
-Definition: An amide of a sulfonic acid, RS(=O)2NR'2.
-Criteria enforced here:
-  – The sulfur atom (S) must be tetravalent (with exactly 4 bonds).
-  – It must have exactly two oxygen neighbors connected via double bonds.
-  – It must have exactly two other neighbors: one must be a carbon and the other an acyclic nitrogen.
-This procedure tries to avoid false matching where the S(=O)(=O)–N motif appears in extended or inappropriate connectivity.
+Classifies: Sulfonamide
+Definition: A sulfonamide is an amide of a sulfonic acid, i.e. it has the form
+            RS(=O)₂NR'₂.
+In our implementation we require that a candidate sulfonamide group satisfy:
+  • The sulfur (atomic number 16) is tetravalent (degree==4).
+  • Exactly two of its bonds are double bonds to oxygen atoms.
+  • Its remaining two bonds (both single bonds) go to one carbon and one nitrogen.
+Note: Although many texts require the sulfonamide nitrogen to be acyclic, our
+      analysis of the outcomes shows that excluding cyclic nitrogens causes
+      false negatives. (Some valid sulfonamides contain a cyclic substructure.)
+      
+An accepted match will return True with a corresponding explanation; if no
+such S atom is found the function returns False.
 """
 
 from rdkit import Chem
@@ -17,69 +22,67 @@ from rdkit import Chem
 def is_sulfonamide(smiles: str):
     """
     Determines if a molecule is a sulfonamide based on its SMILES string.
-    A sulfonamide is defined as RS(=O)(=O)NR'2. In our approach, we look for a sulfur atom that:
-      - Has exactly 4 connections.
-      - Has exactly 2 bonds to oxygen with bond order 2.
-      - Is also connected by single bonds to one carbon (R group) and one nitrogen.
-      - The nitrogen must not be in a ring.
+    A sulfonamide is defined as RS(=O)(=O)NR'₂. In this approach we iterate over
+    all sulfur (S) atoms in the molecule and check the following:
+      - The sulfur atom has exactly 4 bonds.
+      - Exactly two of these bonds are double bonds to oxygen (O) atoms.
+      - Exactly one remaining bond is a single bond to a carbon (C) atom.
+      - Exactly one remaining bond is a single bond to a nitrogen (N) atom.
+    (Any additional substituents result in rejecting that particular S atom.)
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule contains a valid sulfonamide group, False otherwise.
+        bool: True if a sulfonamide group is present, False otherwise.
         str: Explanation for the classification.
     """
-    # Parse SMILES
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Iterate over atoms looking for a valid S (sulfur) candidate.
+    # Iterate over atoms and search for a valid sulfonamide S candidate.
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 16:  # We want sulfur only.
+        # Look only at sulfur atoms.
+        if atom.GetAtomicNum() != 16:
             continue
-        # For a typical sulfonamide sulfur, the degree (number of bonds) should be 4.
+        # Check that the sulfur is tetravalent (degree==4).
         if atom.GetDegree() != 4:
             continue
         
-        # Counters and flags:
-        double_oxy_count = 0  # Count oxygen atoms double-bonded to S.
-        carbon_found = False
-        nitrogen_found = False
-        n_neighbor = None
+        # Set counters for the substituents.
+        double_bonded_oxygen = 0
+        single_bonded_carbon = 0
+        single_bonded_nitrogen = 0
         
-        # Check each bond/neighbour.
+        # Iterate over bonds from this sulfur atom.
         for bond in atom.GetBonds():
-            nb = bond.GetOtherAtom(atom)
-            # Check bond order (we compare bond.GetBondTypeAsDouble() against 2.0 for a double bond)
+            nbr = bond.GetOtherAtom(atom)
             bond_order = bond.GetBondTypeAsDouble()
-            if nb.GetAtomicNum() == 8 and abs(bond_order - 2.0) < 1e-3:
-                double_oxy_count += 1
-            # For the remaining substituents we require one nitrogen and one carbon:
-            elif nb.GetAtomicNum() == 7 and bond_order == 1:
-                # Check that this nitrogen is not part of a ring.
-                if not nb.IsInRing():
-                    nitrogen_found = True
-                    n_neighbor = nb
-            elif nb.GetAtomicNum() == 6 and bond_order == 1:
-                carbon_found = True
-            # If there are additional neighbors (e.g. another heteroatom) we do not want to count this S.
+            if nbr.GetAtomicNum() == 8 and abs(bond_order - 2.0) < 1e-3:
+                double_bonded_oxygen += 1
+            elif nbr.GetAtomicNum() == 6 and abs(bond_order - 1.0) < 1e-3:
+                single_bonded_carbon += 1
+            elif nbr.GetAtomicNum() == 7 and abs(bond_order - 1.0) < 1e-3:
+                single_bonded_nitrogen += 1
+            else:
+                # If the neighbor is not O (double bond), C (single bond) or N (single bond),
+                # then this sulfur is not the expected sulfonamide center.
+                pass
         
-        # Now check that the sulfur atom meets our overall criteria.
-        if double_oxy_count == 2 and nitrogen_found and carbon_found:
-            # We also want to be sure that the S does not have any extra substituents.
-            # In a perfect sulfonamide, S should have exactly 4 bonds: 2 double-bonded O, 1 C and 1 N.
-            # (We already ensured degree==4.)
-            return True, ("Molecule contains a sulfonamide group: RS(=O)(=O)-N (sulfur with two double-bonded oxygens, "
-                          "bonded to a carbon and an acyclic nitrogen)")
+        # Now check if the connectivity exactly matches:
+        # Two double-bonded oxygens, one single-bonded carbon and one single-bonded nitrogen.
+        if double_bonded_oxygen == 2 and single_bonded_carbon == 1 and single_bonded_nitrogen == 1:
+            return True, ("Molecule contains a sulfonamide group: RS(=O)(=O)-N(R) "
+                          "(sulfur with two double-bonded oxygens bonded to one carbon and one nitrogen)")
     
-    # If no such sulfur atom is found then the molecule is not a sulfonamide.
-    return False, ("Molecule does not contain any sulfonamide substructure with the proper RS(=O)(=O)-N connectivity.")
+    # If no matching sulfonamide group is found return False.
+    return False, ("Molecule does not contain a sulfonamide substructure with the proper RS(=O)(=O)-N connectivity.")
 
-# Simple testing if running as a script.
+# The following can be used for simple testing when running as a script.
 if __name__ == "__main__":
-    # Test with one of the true positive examples from the outcomes (dofetilide)
+    # For example, test with dofetilide SMILES.
     test_smiles = "CN(CCOc1ccc(NS(C)(=O)=O)cc1)CCc1ccc(NS(C)(=O)=O)cc1"  
     result, reason = is_sulfonamide(test_smiles)
     print("Result:", result)
