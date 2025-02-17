@@ -7,9 +7,11 @@ Classifies: CDP-diacylglycerol
 Definition: A CDP-glycerol having unspecified acyl groups (most commonly fatty acyl groups) at the 1- and 2-positions.
 Improved heuristics:
   - Check for a cytidine moiety using a SMARTS pattern.
-  - Require a strict diacylglycerol fragment—with two acyl ester groups on a three-carbon glycerol backbone 
-    (i.e. CH2(OC(=O)[#6])-[CH](OC(=O)[#6])-[CH2]OP).
-  - Verify diphosphate connectivity, meaning two phosphorus atoms connected via a bridging oxygen.
+  - Require a diacylglycerol fragment defined as a three-carbon glycerol backbone with 
+    esterified acyl groups on the first two carbons and a phosphate (OP) on the third carbon.
+    In order to avoid matching cyclic or otherwise misassembled fragments, we require the three 
+    backbone carbons to be acyclic (R0).
+  - Verify diphosphate connectivity by looking for a single bridging oxygen that connects exactly two phosphorus atoms.
 """
 
 from rdkit import Chem
@@ -18,23 +20,21 @@ def is_CDP_diacylglycerol(smiles: str):
     """
     Determines if a molecule is a CDP-diacylglycerol based on its SMILES string.
     
-    The heuristic criteria are as follows:
-      1. The molecule must contain a cytidine moiety, captured by the SMARTS "n1ccc(N)nc1=O".
-      2. The molecule must have a diacylglycerol fragment that looks like:
-         CH2(OC(=O)[#6])-[CH](OC(=O)[#6])-[CH2]OP
-         which represents a glycerol backbone where positions 1 and 2 are acylated (esterified) 
-         and the third carbon is linked (via an O) to a phosphate.
-      3. The molecule must exhibit diphosphate connectivity; that is, two phosphorus atoms (atomic number 15)
-         that are bridged by an oxygen.
+    Criteria:
+      1. Must contain a cytidine moiety (SMARTS: "n1ccc(N)nc1=O").
+      2. Must contain a diacylglycerol fragment defined as:
+           [CH2;R0](OC(=O)[*])-[CH;R0](OC(=O)[*])-[CH2;R0]OP
+         which is a glycerol backbone with the correct acylations and phosphate attachment.
+      3. Must have diphosphate connectivity, that is, one oxygen atom bridging exactly two phosphorus atoms.
     
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES string of the molecule
         
     Returns:
-        bool: True if the molecule is classified as a CDP-diacylglycerol, False otherwise.
-        str: A message explaining the reasoning behind the classification.
+        bool: True if the molecule fits the criteria for CDP-diacylglycerol, False otherwise.
+        str: Explanation of the classification decision.
     """
-    # Parse the SMILES string into an RDKit molecule.
+    # Convert SMILES to molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
@@ -45,34 +45,26 @@ def is_CDP_diacylglycerol(smiles: str):
     if not mol.HasSubstructMatch(cytidine_pattern):
         return False, "Cytidine moiety not found"
     
-    # 2. Check for a strict diacylglycerol fragment.
-    # This pattern demands a 3-carbon (glycerol) backbone with esterified acyl groups
-    # at the first two carbons and a phosphate connected at the third carbon.
-    diacylglycerol_smarts = "[CH2](OC(=O)[#6])-[CH](OC(=O)[#6])-[CH2]OP"
+    # 2. Check for a diacylglycerol fragment.
+    # The SMARTS pattern insists on an acyclic glycerol backbone with two esterified acyl groups and phosphate.
+    diacylglycerol_smarts = "[CH2;R0](OC(=O)[*])-[CH;R0](OC(=O)[*])-[CH2;R0]OP"
     diacylglycerol_pattern = Chem.MolFromSmarts(diacylglycerol_smarts)
     if not mol.HasSubstructMatch(diacylglycerol_pattern):
-        return False, "Diacylglycerol fragment (glycerol backbone with two acyl esters and phosphate linkage) not found"
+        return False, "Diacylglycerol fragment (acyclic glycerol with two acyl esters and phosphate linkage) not found"
     
-    # 3. Check for diphosphate connectivity:
-    # Two phosphorus atoms connected via a bridging oxygen.
-    p_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
-    diphosphate_found = False
-    for atom in p_atoms:
-        for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 8:  # oxygen neighbor
-                # Check whether this oxygen also connects to a different phosphorus atom.
-                for nbr2 in nbr.GetNeighbors():
-                    if nbr2.GetIdx() != atom.GetIdx() and nbr2.GetAtomicNum() == 15:
-                        diphosphate_found = True
-                        break
-            if diphosphate_found:
-                break
-        if diphosphate_found:
-            break
-    if not diphosphate_found:
-        return False, "Diphosphate bridging (two phosphorus atoms connected via an oxygen) not found"
+    # 3. Check for diphosphate connectivity.
+    # We search for an oxygen atom with exactly two phosphorus neighbors.
+    bridging_oxygen_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:  # oxygen atom
+            # count phosphorus neighbors for this oxygen
+            p_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 15]
+            if len(p_neighbors) == 2:
+                bridging_oxygen_count += 1
+    if bridging_oxygen_count != 1:
+        return False, "Diphosphate bridging oxygen (one oxygen bonded to exactly two phosphorus atoms) not found"
     
-    return True, "Molecule contains a cytidine moiety, diphosphate linkage, and a diacylglycerol fragment with two acyl ester bonds consistent with CDP-diacylglycerol"
+    return True, "Molecule contains a cytidine moiety, proper diacylglycerol fragment, and diphosphate connectivity consistent with CDP-diacylglycerol"
 
 # Example usage:
 if __name__ == "__main__":
