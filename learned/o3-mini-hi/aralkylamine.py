@@ -5,9 +5,10 @@ Classifies: CHEBI:18000 aralkylamine
 Classifies: aralkylamine
 Definition: An alkylamine in which one or more alkyl substituents bears an aromatic group.
 Operationally, we require that at least one non‐aromatic amine nitrogen (i.e. not in any aromatic ring)
-has at least one carbon-only substituent that (via a chain of single C–C bonds) leads to an aromatic carbon.
-This chain “branch” is assumed to be an alkyl chain. To avoid spurious results we only traverse C atoms,
-ignoring any branch that goes off into carbonyls or heteroatoms.
+has at least one carbon-only substituent that (via a chain of single C–C bonds, all using sp3 carbons)
+leads to an aromatic carbon. To avoid spurious results we ignore any direct (distance 1) attachment
+of an aromatic carbon (which would be an arylamine) and only accept a branching if an aromatic carbon
+appears at a bond distance of at least 2 (and at most 3 bonds away from the nitrogen).
 """
 
 from rdkit import Chem
@@ -17,111 +18,120 @@ def is_aralkylamine(smiles: str):
     """
     Determines if a molecule is an aralkylamine based on its SMILES string.
     
-    The approach is:
-      1. Parse the SMILES.
-      2. Identify non‐aromatic amine nitrogen atoms (atomic number 7 not flagged as aromatic).
-      3. For each such nitrogen, check for any substituent branch that is attached via a SINGLE bond 
-         to a carbon atom. If that immediate neighbor is aromatic then report immediately.
-      4. Otherwise, follow that branch via a breadth‐first search (BFS) restricted to carbon atoms and only
-         following single bonds. If an aromatic carbon is encountered within a maximum total bond distance of 3
-         (i.e. including the bond from the N) then report success.
-      5. Otherwise, if no branch of any non‐aromatic amine nitrogen meets these criteria, return False.
+    Approach:
+      1. Parse the SMILES string.
+      2. For each nitrogen (atomic number 7) that is not aromatic, examine each substituent.
+      3. Only consider substituents that are attached by a single bond and begin with a carbon.
+         If the immediate carbon is aromatic, skip it (direct attachment would be an arylamine).
+         Also require that that starting carbon is sp3 (as required for an alkyl chain).
+      4. Use breadth‐first search (BFS) along the branch – but only traverse through carbon atoms that are:
+            (a) non‐aromatic, and
+            (b) sp3 hybridized.
+         (Aromatic carbons are only “accepted” if they are encountered as a terminal hit and are at least 2 bonds 
+         away from the nitrogen.)
+      5. The search is capped at a maximum depth (here 3 bonds including the first C–N bond).
+      6. If any branch meets the criteria we return True along with a reason; otherwise we return False.
     
     Args:
-      smiles (str): SMILES string for the molecule.
-    
+      smiles (str): SMILES string of the molecule.
+      
     Returns:
-      (bool, str): A tuple of a boolean indicating whether the molecule qualifies as an aralkylamine,
-                   plus a string explanation.
-    
-    If the SMILES cannot be parsed, returns (False, "Invalid SMILES string").
+      (bool, str): Tuple with boolean classification and a message explaining the decision.
+      If the SMILES cannot be parsed, returns (False, "Invalid SMILES string").
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    max_depth = 3  # Maximum bond distance (including the immediate bond from nitrogen)
-
-    # Iterate over all atoms. Consider only nitrogen atoms (atomic number 7)
-    # that are not flagged as aromatic.
+    max_depth = 3  # maximum total bond distance allowed from the N atom
+    
+    # Iterate over all atoms looking for non‐aromatic amine nitrogen atoms.
     for n_atom in mol.GetAtoms():
-        if n_atom.GetAtomicNum() != 7 or n_atom.GetIsAromatic():
-            continue  # Skip if not a non-aromatic nitrogen.
-        
+        if n_atom.GetAtomicNum() != 7:
+            continue
+        if n_atom.GetIsAromatic():
+            continue  # skip if the N is aromatic
         n_idx = n_atom.GetIdx()
-        # Examine each bond from the nitrogen.
+        
+        # Examine each bond of the nitrogen:
         for bond in n_atom.GetBonds():
-            # Only consider single bonds (alkyl-type bond)
+            # Only consider single bonds (alkyl bonds)
             if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
                 continue
             neighbor = bond.GetOtherAtom(n_atom)
-            # We only follow branches that start with a carbon.
+            # We only consider branches that “start” with a carbon atom.
             if neighbor.GetAtomicNum() != 6:
                 continue
-
-            # For the branch attached at nitrogen, get the immediate neighbor index.
-            start_idx = neighbor.GetIdx()
-            # If the immediate neighbor is aromatic then it is already directly an aromatic substituent.
+            # If the atom immediately attached is aromatic, that is a direct N–aryl bond;
+            # skip this branch because we require the aromatic substituent to be on an alkyl branch.
             if neighbor.GetIsAromatic():
-                reason = (f"Found a non‐aromatic amine nitrogen (atom {n_idx}) directly attached to an "
-                          f"aromatic carbon (atom {start_idx}) via a single bond (distance 1). "
-                          "Molecule classified as aralkylamine.")
-                return True, reason
-
-            # Otherwise, perform a BFS along the branch; we restrict allowed atoms to carbon atoms 
-            # connected by single bonds.
-            # The BFS queue stores tuples (current_atom_idx, distance) where distance includes the bond from N.
-            visited = set([n_idx, start_idx])
-            queue = deque([(start_idx, 1)])  # starts at distance 1 from the nitrogen
-
+                continue
+            # Also require that the branch carbon is sp3 (to ensure an alkyl chain)
+            if neighbor.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+                continue
+            
+            # Start a BFS from this neighbor along the alkyl substituent.
+            # The distance here counts bonds from the nitrogen.
+            start_idx = neighbor.GetIdx()
+            visited = {n_idx, start_idx}
+            # Start at depth 1. (Benzylamine, N-CH2-Ph, would show the aromatic ring at depth 2.)
+            queue = deque([(start_idx, 1)])
+            
             while queue:
                 current_idx, depth = queue.popleft()
-                # If we reached maximum allowed distance, do not continue beyond.
-                if depth >= max_depth:
-                    # But still check the current node in case it is aromatic.
-                    current_atom = mol.GetAtomWithIdx(current_idx)
-                    if current_atom.GetAtomicNum() == 6 and current_atom.GetIsAromatic():
-                        reason = (f"Found a non‐aromatic amine nitrogen (atom {n_idx}) with an aromatic substituent "
-                                  f"(atom {current_idx}) at a bond distance of {depth}. Molecule classified as aralkylamine.")
-                        return True, reason
-                    continue
-
-                # Expand the search: only allowed atoms are carbons connected by single bonds.
                 current_atom = mol.GetAtomWithIdx(current_idx)
+                # If we are at a distance of at least 2 and current atom is aromatic, then we have found
+                # an aralkyl substituent.
+                if depth >= 2 and current_atom.GetIsAromatic():
+                    reason = (f"Found a non‐aromatic amine nitrogen (atom {n_idx}) with an aromatic substituent "
+                              f"(atom {current_idx}) at a bond distance of {depth}. Molecule classified as aralkylamine.")
+                    return True, reason
+                # Do not extend beyond max_depth
+                if depth >= max_depth:
+                    continue
+                # Expand allowed branches: only traverse single bonds to carbon atoms that are non‐aromatic and sp3.
                 for nbr in current_atom.GetNeighbors():
                     nbr_idx = nbr.GetIdx()
                     if nbr_idx in visited:
                         continue
-                    bond_ = mol.GetBondBetweenAtoms(current_idx, nbr_idx)
-                    if bond_.GetBondType() != Chem.rdchem.BondType.SINGLE:
+                    bond2 = mol.GetBondBetweenAtoms(current_idx, nbr_idx)
+                    if bond2.GetBondType() != Chem.rdchem.BondType.SINGLE:
                         continue
-                    # Only traverse if the atom is carbon.
+                    # Only allow the branch to continue if the neighbor is carbon.
                     if nbr.GetAtomicNum() != 6:
                         continue
                     new_depth = depth + 1
-                    # If nbr is aromatic and new_depth is within allowed limit then we have an eligible branch.
+                    # If neighbor is aromatic and is reached at a valid distance, we accept it.
                     if nbr.GetIsAromatic():
-                        reason = (f"Found a non‐aromatic amine nitrogen (atom {n_idx}) with an aromatic substituent "
-                                  f"(atom {nbr_idx}) at a bond distance of {new_depth}. Molecule classified as aralkylamine.")
-                        return True, reason
-                    # Otherwise add the neighbor to the search if we are not past the limit.
+                        if new_depth >= 2 and new_depth <= max_depth:
+                            reason = (f"Found a non‐aromatic amine nitrogen (atom {n_idx}) with an aromatic substituent "
+                                      f"(atom {nbr_idx}) at a bond distance of {new_depth}. Molecule classified as aralkylamine.")
+                            return True, reason
+                        continue
+                    # For non‐aromatic carbons, we require the carbon to be sp3 to consider it part of an alkyl chain.
+                    if nbr.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+                        continue
+                    # Only traverse further if we are within the allowed depth.
                     if new_depth < max_depth:
                         visited.add(nbr_idx)
                         queue.append((nbr_idx, new_depth))
+                    # If new_depth equals max_depth we do not extend further (but we already checked for aromatic).
             # End BFS for this branch.
-    # If no branch resulted in an aromatic carbon found through a pure alkyl (C-only) chain, then fail.
-    return False, ("No aralkylamine substructure found: "
-                   "no non‐aromatic amine nitrogen is connected via an alkyl chain (single-bonded carbon branch) "
-                   "to an aromatic carbon within 3 bonds.")
+    # If no branch meets the criteria, classify as not an aralkylamine.
+    return (False, 
+            "No aralkylamine substructure found: "
+            "no non‐aromatic amine nitrogen is connected via a suitable alkyl chain "
+            "to an aromatic carbon within allowed bond distance.")
 
-# Optional test block; remove or comment out when deploying as a module.
+# Optional test block; remove or comment this block out when deploying as a module.
 if __name__ == "__main__":
-    # Some example test cases.
+    # Here are some example test cases, including several true and false positives/negatives.
     test_cases = [
-        ("NCc1ccccc1", "benzylamine"),  # True, branch: N-CH2 (aliphatic) then aromatic ring
-        ("NCCc1ccccc1", "phenethylamine"),  # True, branch length 2
-        ("c1ccc(N)cc1", "aniline (should not classify, N aromatic)"),  # False: nitrogen is aromatic
-        ("OCCNC1=CC=CC=C1", "2-Anilinoethanol"),  # True; branch from N to CH2 to aromatic ring
+        ("NCc1ccccc1", "benzylamine"),  # expected True: N-CH2 (alkyl) then phenyl at distance 2.
+        ("NCCc1ccccc1", "phenethylamine"),  # expected True: chain length 2 reaching an aromatic ring.
+        ("c1ccc(N)cc1", "aniline (should not classify, N aromatic)"),  # expected False.
+        ("OCCNC1=CC=CC=C1", "2-Anilinoethanol"),  # expected True: branch from N to CH2 then aromatic.
+        ("Cl.C1=CC=CC(=C1)C(C2CCCCC2)(CCN3CCCCC3)O", "Trihexyphenidyl hydrochloride"),  # expected True.
     ]
     
     for smi, name in test_cases:
