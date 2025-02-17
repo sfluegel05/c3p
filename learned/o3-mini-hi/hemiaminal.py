@@ -18,86 +18,82 @@ def is_hemiaminal(smiles: str):
     
     A hemiaminal here is defined as a tetrahedral (sp3, non-aromatic) carbon carrying exactly one hydrogen,
     with exactly three heavy atom (non-hydrogen) neighbors. Two of these neighbors must be:
-      - An oxygen that is itself bonded to at least one hydrogen (i.e. an -OH group),
-      - A nitrogen (i.e. an amino group, which can be -NH, -NHR, or -NR2).
-    
+      - an oxygen that is bound as -OH (i.e. oxygen that carries at least one hydrogen), and 
+      - a nitrogen (i.e. an amino group, which can be primary, secondary, or tertiary).
+
     Args:
         smiles (str): SMILES representation of the molecule.
-    
+        
     Returns:
         bool: True if the molecule contains a hemiaminal motif, False otherwise.
-        str: Explanation of the classification.
+        str: Explanation for the classification.
     """
-    # Parse the SMILES string.
+    # Parse the SMILES and add explicit hydrogens for proper counting.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Add explicit hydrogens to catch implicit ones.
     mol = Chem.AddHs(mol)
     
-    # Iterate over all atoms and look for candidate carbons.
+    # Iterate over atoms looking for candidate carbon atoms.
     for atom in mol.GetAtoms():
-        # We are interested only in carbons.
         if atom.GetAtomicNum() != 6:
-            continue
+            continue  # only consider carbon atoms
         
-        # Must be sp3 hybridized and non-aromatic.
+        # Candidate carbon must be sp3 hybridized and non-aromatic.
         if atom.GetHybridization() != Chem.rdchem.HybridizationType.SP3 or atom.GetIsAromatic():
             continue
         
-        # Get the neighbors of the candidate carbon.
-        neighbors = atom.GetNeighbors()
-        # Count how many heavy atoms (non-H) are attached.
-        heavy_neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() != 1]
-        # In a tetrahedral carbon with exactly one H, there must be exactly 3 heavy atom bonds.
+        # Using explicit hydrogens, the total degree of the carbon should be 4.
+        if atom.GetDegree() != 4:
+            continue
+        
+        # Count hydrogens attached to carbon using GetTotalNumHs.
+        h_count = atom.GetTotalNumHs()
+        if h_count != 1:
+            continue  # must have exactly one hydrogen
+        
+        # Count heavy (non-hydrogen) neighbors.
+        heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
         if len(heavy_neighbors) != 3:
             continue
-        
-        # Count hydrogen atoms attached to the carbon.
-        # Since we added explicit hydrogens, we can simply count by atomic number.
-        h_count = sum(1 for nbr in neighbors if nbr.GetAtomicNum() == 1)
-        if h_count != 1:
+
+        # Ensure all bonds from candidate carbon are single bonds.
+        bonds_all_single = all(mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx()).GetBondType() 
+                               == Chem.rdchem.BondType.SINGLE for nbr in heavy_neighbors)
+        if not bonds_all_single:
             continue
-        
-        # Flags for the two required substituents.
+            
+        # Look for the required substituents: one oxygen that is -OH and one nitrogen.
         found_OH = False
-        found_NH = False
-        
-        # Check each neighbor (only consider heavy atoms for the substituents).
+        found_N = False
         for nbr in heavy_neighbors:
-            # Get the bond between atom and neighbor.
             bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-            # We require that the connecting bond is a single bond.
             if bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
-                continue
+                continue  # only consider single bonds
             
-            # If neighbor is oxygen, check that it is part of an -OH (has at least one hydrogen bound)
+            # If neighbor is oxygen, check that it is part of an -OH (at least one hydrogen attached).
             if nbr.GetAtomicNum() == 8:
-                # Count hydrogens on the oxygen (explicit only now)
-                h_on_o = sum(1 for sub in nbr.GetNeighbors() if sub.GetAtomicNum() == 1)
-                if h_on_o >= 1:
+                # Use GetTotalNumHs on oxygen to determine attached hydrogen count.
+                if nbr.GetTotalNumHs() >= 1:
                     found_OH = True
-            
-            # If neighbor is nitrogen, we consider it as the needed amino group.
+            # If neighbor is nitrogen, flag this substituent.
             elif nbr.GetAtomicNum() == 7:
-                found_NH = True
-        
-        if found_OH and found_NH:
+                found_N = True
+                
+        if found_OH and found_N:
             reason = ("Molecule contains a hemiaminal motif: a tetrahedral, non-aromatic sp3 carbon carrying exactly one hydrogen "
-                      "and exactly three heavy-atom neighbors, with at least one substituent being a hydroxyl (-OH) group (oxygen with "
-                      "≥1 hydrogen) and one being an amino (-NH, -NHR, or -NR2) group."
-                      )
+                      "and exactly three heavy-atom neighbors, with one substituent being a hydroxyl (-OH) group (oxygen bearing at least one hydrogen) "
+                      "and one being an amino (-NH, -NHR, or -NR2) group.")
             return True, reason
 
-    return False, "No hemiaminal motif (an sp3 carbon with exactly one hydrogen and exactly 3 heavy-atom neighbors, including one -OH and one -NH) was found."
+    return False, ("No hemiaminal motif (an sp3 carbon with exactly one hydrogen and exactly 3 heavy-atom neighbors, "
+                   "including one -OH substituent and one -NH substituent) was found.")
 
-# Example usage (for testing purposes):
-# Uncomment the lines below to run a few examples.
+# Example usage (uncomment to test):
 # test_smiles = [
-#     "NC(O)C(O)=O",          # alpha-hydroxyglycine (should be True)
-#     "OC(N)CC",              # 2-Aminopropanol (should be True)
-#     "C1CCCCC1"              # Cyclohexane (should be False)
+#     "NC(O)C(O)=O",           # alpha-hydroxyglycine (should be True)
+#     "OC(N)CC",               # 2-Aminopropanol (should be True)
+#     "C1CCCCC1"               # Cyclohexane (should be False)
 # ]
 # for smi in test_smiles:
 #     result, explanation = is_hemiaminal(smi)
