@@ -2,9 +2,12 @@
 Classifies: CHEBI:23003 carbamate ester
 """
 """
-Classifies: Carbamate ester 
+Classifies: Carbamate ester
 Defined as: Any ester of carbamic acid or its N-substituted derivatives.
 Functional group: R–O–C(=O)–N
+
+This revised implementation uses a SMARTS pattern without enforcing an exact match length.
+If the substructure is found anywhere in the molecule, we consider the molecule to be a carbamate ester.
 """
 
 from rdkit import Chem
@@ -14,20 +17,13 @@ def is_carbamate_ester(smiles: str):
     Determines if a molecule is a carbamate ester based on its SMILES string.
     A carbamate ester is defined as an ester of carbamic acid (or an N-substituted derivative)
     having the functional group R–O–C(=O)–N.
-    
-    This function uses a SMARTS pattern that explicitly represents the core
-    functional group as four atoms:
-        - an arbitrary atom (R)
-        - an oxygen atom (O)
-        - a carbonyl carbon (C) with an explicit double bond to oxygen (=[O])
-        - a nitrogen atom (N)
-    
+
     Args:
         smiles (str): SMILES string of the molecule
         
     Returns:
-        (bool, str): Tuple where the boolean is True if the molecule is classified as a carbamate ester,
-                     and the string provides a reason. Otherwise, returns False and an error message.
+        (bool, str): A tuple where the boolean is True if the molecule contains a carbamate ester
+                     functional group and the string explains the reason. Otherwise, returns False.
     """
     
     # Convert SMILES to an RDKit molecule object
@@ -36,32 +32,23 @@ def is_carbamate_ester(smiles: str):
         return False, "Invalid SMILES string"
     
     # Define SMARTS pattern for the carbamate ester functional group: R-O-C(=O)-N.
-    # The pattern uses explicit atom mapping:
-    # [*:1] matches any atom (the R group),
-    # [O:2] matches the oxygen connecting the R to the carbonyl,
-    # [C:3](=[O]) matches the carbonyl carbon (with a double bond to an oxygen),
-    # [N:4] matches the nitrogen.
-    smarts = "[*:1]-[O:2]-[C:3](=[O])-[N:4]"
+    # Here the pattern is set as a simple anchor: any atom (R) connected to an oxygen,
+    # which is connected to a carbonyl carbon (C with a double bond to O) and then to a nitrogen.
+    # We do not explicitly enforce that the substructure match has length 4 in order to allow
+    # for extensions due to substituents.
+    smarts = "[*:1]-O-C(=O)-N"
     pattern = Chem.MolFromSmarts(smarts)
     if pattern is None:
         return False, "Error creating SMARTS pattern"
     
     # Find all substructure matches of the pattern in the molecule
     matches = mol.GetSubstructMatches(pattern)
-    if not matches:
-        return False, "Carbamate ester pattern not found in the molecule"
+    if matches:
+        return True, "Contains carbamate ester functional group (R-O-C(=O)-N)"
     
-    # If at least one match is found, we assume the motif is present.
-    # (The SMARTS explicitly requires the double bond to oxygen, which ensures that
-    # the connectivity is as expected.)
-    for match in matches:
-        if len(match) == 4:
-            return True, "Contains carbamate ester functional group (R-O-C(=O)-NR')"
-    
-    # If no match passed the check, report a connectivity issue.
-    return False, "Carbamate ester pattern found but did not meet connectivity requirements"
+    return False, "Carbamate ester pattern not found in the molecule"
 
-# Example usage (for testing; these lines can be commented out or removed in deployment)
+# The following example usage lines are for testing purposes 
 if __name__ == "__main__":
     test_smiles = [
         "COc1ccccc1OCC(O)COC(N)=O",  # 2-hydroxy-3-(2-methoxyphenoxy)propyl carbamate (should be True)
