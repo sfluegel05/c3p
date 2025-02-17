@@ -1,6 +1,7 @@
 """
 Classifies: CHEBI:133004 bisbenzylisoquinoline alkaloid
 """
+#!/usr/bin/env python
 """
 Classifies: bisbenzylisoquinoline alkaloid
 
@@ -10,15 +11,18 @@ built up of two benzylisoquinoline units linked by ether bridges. Various additi
 
 Our revised criteria are:
   - The molecule must be a valid SMILES and have molecular weight >= 500 Da.
-  - It must contain at least two distinct isoquinoline-like substructures. We now define two looser 
-    SMARTS patterns to capture:
-      • an aromatic isoquinoline: "c1ccc2c(c1)cccn2"
-      • a tetrahydroisoquinoline-like unit: "c1ccc2CCNC2c1"
-    Unique matches from either pattern are combined.
-  - At least one bridging motif connecting aromatic portions must be present, either:
-      • an aromatic ether bridge ([a]O[a]) or
-      • a methylenedioxy bridge ([a]OCO[a]).
-  - Finally, as benzylisoquinoline units normally carry a nitrogen, the molecule should contain at least 2 nitrogen atoms.
+  - It must contain at least two distinct isoquinoline-like substructures. To capture these,
+    we use two SMARTS patterns (ignoring stereochemistry):
+      (a) An aromatic isoquinoline: "c1ccc2c(c1)cccn2"
+      (b) A tetrahydroisoquinoline-like unit: "c1ccc2CCNC2c1"
+    Unique matches from either pattern are collected.
+  - There must be a “bridging” motif connecting aromatic portions of two different isoquinoline units.
+    We check two possibilities:
+      • An ether bridge: an oxygen atom with at least two aromatic neighbors that belong to 
+        different isoquinoline units.
+      • A methylenedioxy bridge: a CH2 group (sp3 carbon with two neighbors that are oxygen) 
+        where each oxygen is connected to an aromatic atom from different isoquinoline units.
+  - Finally, the molecule should contain at least 2 nitrogen atoms.
   
 If all criteria are met, the function returns (True, <reason>), otherwise (False, <reason>).
 """
@@ -31,84 +35,117 @@ def is_bisbenzylisoquinoline_alkaloid(smiles: str):
     Determines if a molecule is a bisbenzylisoquinoline alkaloid based on its SMILES string.
     
     The function checks:
-      - Valid SMILES string and molecular weight >= 500 Da.
-      - Presence of at least two unique isoquinoline-like substructures. Two patterns are used:
-          (a) Aromatic isoquinoline, SMARTS: "c1ccc2c(c1)cccn2"
-          (b) Tetrahydroisoquinoline-like fragment, SMARTS: "c1ccc2CCNC2c1"
-      - Presence of a bridging motif between aromatic portions: either an aromatic ether bridge ([a]O[a]) 
-        or a methylenedioxy bridge ([a]OCO[a]).
-      - At least 2 nitrogen atoms in the molecule.
-    
+      - Valid SMILES and molecular weight >= 500 Da.
+      - Presence of at least two unique isoquinoline-like substructures using two SMARTS patterns.
+      - Presence of a bridging motif connecting aromatic substructures belonging to two distinct
+        isoquinoline units. Two bridging modes are examined: an ether (oxygen) bridge and a 
+        methylenedioxy (-OCH2O-) bridge.
+      - At least 2 nitrogen atoms are present.
+      
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        (bool, str): Tuple where the first element is True if the molecule qualifies as a bisbenzylisoquinoline alkaloid, 
-                     and False otherwise; the second element is an explanation.
+        (bool, str): Tuple with a Boolean decision and an explanation.
     """
     # Convert SMILES to molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
+    # Remove stereochemistry to help substructure matching.
+    Chem.RemoveStereochemistry(mol)
+    
     # Check molecular weight (must be >= 500 Da).
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 500:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) for a bisbenzylisoquinoline alkaloid"
     
-    # Ensure there are at least 2 nitrogen atoms in the molecule.
+    # Ensure there are at least 2 nitrogen atoms.
     n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
     if n_count < 2:
-        return False, f"Not enough nitrogen atoms ({n_count}); at least 2 are expected in bisbenzylisoquinoline alkaloids"
+        return False, f"Not enough nitrogen atoms ({n_count}); at least 2 are needed"
     
-    # Define updated SMARTS patterns for isoquinoline-like substructures.
-    # Pattern (a): Aromatic isoquinoline (benzene fused with a pyridine-like ring).
-    arom_iso_smarts = "c1ccc2c(c1)cccn2"
+    # Define SMARTS patterns (ignoring chirality) for isoquinoline-like substructures.
+    arom_iso_smarts = "c1ccc2c(c1)cccn2"  # aromatic isoquinoline
+    tetra_iso_smarts = "c1ccc2CCNC2c1"     # tetrahydroisoquinoline-like unit
     arom_iso = Chem.MolFromSmarts(arom_iso_smarts)
-    if arom_iso is None:
-        return False, "Error creating aromatic isoquinoline SMARTS pattern"
-    
-    # Pattern (b): Tetrahydroisoquinoline-like unit (benzene fused with a saturated N–containing ring).
-    tetra_iso_smarts = "c1ccc2CCNC2c1"
     tetra_iso = Chem.MolFromSmarts(tetra_iso_smarts)
-    if tetra_iso is None:
-        return False, "Error creating tetrahydroisoquinoline SMARTS pattern"
+    if arom_iso is None or tetra_iso is None:
+        return False, "Error creating isoquinoline SMARTS patterns"
     
-    # Find all substructure matches for both patterns.
-    arom_matches = mol.GetSubstructMatches(arom_iso, uniquify=True)
-    tetra_matches = mol.GetSubstructMatches(tetra_iso, uniquify=True)
+    # Get substructure matches ignoring chirality.
+    arom_matches = mol.GetSubstructMatches(arom_iso, useChirality=False)
+    tetra_matches = mol.GetSubstructMatches(tetra_iso, useChirality=False)
     
-    # Combine matches uniquely based on the set of atom indices.
-    unique_matches = set()
+    # Combine unique substructure matches; each match is a tuple of atom indices.
+    unique_iso_units = []
     for match in arom_matches:
-        unique_matches.add(frozenset(match))
+        unit = set(match)
+        # Avoid duplicates (if the set is already contained in one of the found units)
+        if not any(unit <= other for other in unique_iso_units):
+            unique_iso_units.append(unit)
     for match in tetra_matches:
-        unique_matches.add(frozenset(match))
-        
-    if len(unique_matches) < 2:
-        return False, f"Found only {len(unique_matches)} isoquinoline-like substructure(s); at least 2 are required"
+        unit = set(match)
+        if not any(unit <= other for other in unique_iso_units):
+            unique_iso_units.append(unit)
+    
+    if len(unique_iso_units) < 2:
+        return False, f"Found only {len(unique_iso_units)} isoquinoline-like substructure(s); at least 2 are required"
+    
+    # Define a helper function that, given an atom index, returns the indices of isoquinoline units (by index in unique_iso_units)
+    # that contain that atom.
+    def iso_units_containing(atom_idx):
+        found = set()
+        for i, unit in enumerate(unique_iso_units):
+            if atom_idx in unit:
+                found.add(i)
+        return found
+    
+    # Now search for a valid bridging motif.
+    bridge_found = False
+    
+    # 1. Look for an ether bridge:
+    #    Look at every oxygen atom; if it has at least two aromatic neighbors belonging to two different isoquinoline units.
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:
+            nei_ids = [n.GetIdx() for n in atom.GetNeighbors() if n.GetIsAromatic()]
+            if len(nei_ids) >= 2:
+                unit_ids = set()
+                for nbr in nei_ids:
+                    unit_ids.update(iso_units_containing(nbr))
+                if len(unit_ids) >= 2:
+                    bridge_found = True
+                    break  # one valid bridging motif is enough
+    # 2. If not found, look for a methylenedioxy (-OCH2O-) bridge:
+    if not bridge_found:
+        for atom in mol.GetAtoms():
+            # candidate carbon for CH2 bridging: sp3 carbon with atomic number 6,
+            # and ideally with 2 neighbors that are oxygen.
+            if atom.GetAtomicNum() == 6 and atom.GetHybridization().name == "SP3":
+                o_neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 8]
+                if len(o_neighbors) == 2:
+                    # For each oxygen, find aromatic neighbors (other than the bridging carbon)
+                    unit_ids = set()
+                    for o in o_neighbors:
+                        for n in o.GetNeighbors():
+                            if n.GetIdx() == atom.GetIdx():
+                                continue
+                            if n.GetIsAromatic():
+                                unit_ids.update(iso_units_containing(n.GetIdx()))
+                    if len(unit_ids) >= 2:
+                        bridge_found = True
+                        break
 
-    # Look for a bridging motif connecting aromatic fragments.
-    # Pattern for aromatic ether bridge: oxygen connected to two aromatic atoms.
-    ether_bridge_smarts = "[a]O[a]"
-    ether_bridge = Chem.MolFromSmarts(ether_bridge_smarts)
-    if ether_bridge is None:
-        return False, "Error creating aromatic ether bridge SMARTS pattern"
+    if not bridge_found:
+        return False, "No valid bridging motif found connecting two distinct isoquinoline units"
     
-    # Pattern for methylenedioxy bridge: -OCO- bridge between two aromatic atoms.
-    md_bridge_smarts = "[a]OCO[a]"
-    md_bridge = Chem.MolFromSmarts(md_bridge_smarts)
-    if md_bridge is None:
-        return False, "Error creating methylenedioxy bridge SMARTS pattern"
-    
-    has_bridge = mol.HasSubstructMatch(ether_bridge) or mol.HasSubstructMatch(md_bridge)
-    if not has_bridge:
-        return False, "No bridging pattern (aromatic ether or methylenedioxy) found linking aromatic portions"
-    
-    return True, ("Molecule has molecular weight {:.1f} Da, contains at least 2 benzylisoquinoline-like substructures, "
-                  "has at least 2 nitrogen atoms, and exhibits a bridging pattern consistent with two benzylisoquinoline units"
-                  .format(mol_wt))
-    
-# Example usage (for testing/debugging):
-# test_smiles = "COc1ccc2C[C@@H]3N(C)[C@H](Cc3ccc(Oc4cc(C[C@H]5N(C)CCc6cc(OC)c(O)c(Oc1c2)cc7)c67)cc3)c2cc1OC"  # Example: Thalidasine
+    # If all criteria pass, return True with a comprehensive explanation.
+    reason = ("Molecule has molecular weight {:.1f} Da, contains at least 2 benzylisoquinoline-like substructures "
+              "with indices {}, has at least 2 nitrogen atoms, and a valid bridging motif was detected"
+              .format(mol_wt, [list(u) for u in unique_iso_units]))
+    return True, reason
+
+# For example testing, one can call:
+# test_smiles = "[H][C@@]12Cc3ccc(O)c(c3)-c3cc(C[C@]4([H])N(C)CCc5cc(OC)c(OC)c(Oc6cc1c(CCN2C)cc6OC)c45)ccc3OC"  # rodiasine
 # print(is_bisbenzylisoquinoline_alkaloid(test_smiles))
