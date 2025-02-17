@@ -11,9 +11,10 @@ from rdkit import Chem
 def is_organofluorine_compound(smiles: str):
     """
     Determines if a molecule is an organofluorine compound based on its SMILES string.
-    
+
     An organofluorine compound is defined as any compound containing at least one carbon-fluorine (C–F) bond.
-    
+    (Improvement: Using a SMARTS query to detect C-F bonds via any connectivity type, including aromatic bonds.)
+
     Args:
         smiles (str): SMILES string of the molecule.
         
@@ -26,23 +27,22 @@ def is_organofluorine_compound(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Iterate over each bond in the molecule.
-    # Check if at least one bond connects a carbon (atomic number 6) to a fluorine (atomic number 9) atom.
-    for bond in mol.GetBonds():
-        atom1 = bond.GetBeginAtom()
-        atom2 = bond.GetEndAtom()
-        if ((atom1.GetAtomicNum() == 6 and atom2.GetAtomicNum() == 9) or 
-            (atom1.GetAtomicNum() == 9 and atom2.GetAtomicNum() == 6)):
-            return True, "Contains at least one carbon-fluorine bond"
+    # Define a SMARTS pattern that looks for any carbon (atomic number 6)
+    # connected (by any bond type ~) to a fluorine (atomic number 9).
+    cf_smarts = "[#6]~[#9]"
+    cf_pattern = Chem.MolFromSmarts(cf_smarts)
     
-    # If no C–F bond was found, return False with a reason.
-    return False, "No carbon-fluorine bond found"
+    if mol.HasSubstructMatch(cf_pattern):
+        return True, "Contains at least one carbon-fluorine bond"
+    else:
+        return False, "No carbon-fluorine bond found"
 
-# For example usage (this part can be removed or commented out in production):
+# Example usage (for testing; remove or comment out for production):
 if __name__ == "__main__":
     test_smiles = [
-        "NC(=O)CF",  # 2-fluoroacetamide (should be True)
-        "ClC1=CC=C(C=2N=C(ON2)C3=C(NN=C3)C4=CC=CC=C4)C=C1",  # A compound without a C–F bond (should be False)
+        "NC(=O)CF",  # 2-fluoroacetamide, should be True
+        "ClC1=CC=C(C=2N=C(ON2)C3=C(NN=C3)C4=CC=CC=C4)C=C1",  # A compound with no C–F bond, should be False
+        "CCc1ccc(Nc2c(F)c(F)cc(F)c2F)c(CC(O)=O)c1",  # robenacoxib, should be True
     ]
     for s in test_smiles:
         result, reason = is_organofluorine_compound(s)
