@@ -6,38 +6,40 @@ Classifies: CHEBI:10283 2-hydroxy fatty acid
 Classifies: 2-hydroxy fatty acid
 
 Definition:
-A 2-hydroxy fatty acid is an acyclic (non‐ring) aliphatic molecule that bears
+A 2–hydroxy fatty acid is an acyclic (non–ring) aliphatic molecule that bears
 exactly one terminal carboxylic acid group. In addition, the unique carbon attached
-to that acid group (the “α–carbon”) must carry exactly one hydroxyl (-OH) substituent.
-No other oxygens (whether –OH or carbonyl) are allowed in the molecule. (Any extra
-stereochemistry in the alkyl chain, if present, is ignored for classification.)
+to that acid group (the “alpha–carbon”) must carry exactly one hydroxyl (-OH)
+substituent. No extra oxygen functionalities (beyond the two oxygens in the acid group
+and the single alpha–OH) are allowed. Finally, a saturated fatty acid must have a sufficiently
+long carbon chain (non–acid part ≥8 carbons) whereas unsaturated variants (showing C=C)
+are allowed to be shorter.
 """
 
 from rdkit import Chem
 
 def is_2_hydroxy_fatty_acid(smiles: str):
     """
-    Determines if a molecule is a 2-hydroxy fatty acid based on its SMILES string.
-    Criteria:
-      1) The molecule must be acyclic (no rings).
-      2) It must have exactly one terminal carboxylic acid group.
-         (Identified by the pattern: "C(=O)[O;H1]". The acid carbon is expected to be
-          bonded to two oxygens (one as a carbonyl and one as hydroxyl) and exactly one carbon.)
-      3) The unique (α–) carbon attached to the acid carbon must have exactly one hydroxyl (-OH)
-         substituent (its only oxygen neighbor other than the acid carbon).
-      4) Aside from the acid group (acid carbon with its two oxygens) and the alpha –OH, no additional
-         oxygen atoms (or oxygen functionality) may be present.
-      5) The non–acid part (the fatty chain) must be composed almost entirely of carbon atoms.
-      6) Extra explicit chiral centers (other than possibly the alpha–carbon) will be ignored so as not
-         to reject branched but valid fatty acids.
-      7) The fatty chain length (all carbons except the acid carbon) should be at least 3.
+    Determines if a molecule qualifies as a 2–hydroxy fatty acid given its SMILES.
+    
+    The criteria are:
+      1) The molecule must be acyclic (i.e. contain no rings).
+      2) It must contain exactly one terminal carboxylic acid group (using the SMARTS
+         "C(=O)[O;H1]").
+      3) The unique (alpha–) carbon attached to the acid carbon must have exactly one
+         hydroxyl (-OH) substituent (i.e. one oxygen attached that is hydrogenated).
+      4) No other oxygen atoms should be present in the molecule.
+      5) The molecule must contain only C, H, and O atoms.
+      6) The fatty (non–acid) chain should be predominantly aliphatic.
+      7) If the molecule is fully saturated (i.e. no C=C bonds) then the carbon chain
+         (all carbons excluding the acid carbon) must be at least 8 atoms long.
+         Unsaturated acids (with one or more C=C) are allowed to have shorter chains.
          
     Args:
-         smiles (str): SMILES string of the molecule.
+         smiles (str): SMILES representation of the molecule.
          
     Returns:
-         bool: True if the molecule qualifies as a 2-hydroxy fatty acid, else False.
-         str: A reason explaining the classification decision.
+         (bool, str): Tuple where the boolean indicates classification as a 2–hydroxy fatty acid,
+                      and the reason details the decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -45,96 +47,97 @@ def is_2_hydroxy_fatty_acid(smiles: str):
 
     # 1. Reject molecules with rings.
     if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains ring(s), not a typical fatty acid"
+        return False, "Molecule contains ring(s), not an acyclic fatty acid"
 
-    # 2. Identify the terminal carboxylic acid group.
-    # Use SMARTS to find a carboxyl group.
-    # Note: The SMARTS "C(=O)[O;H1]" looks for a carbon doubly bonded to O and singly bonded to an -OH.
+    # 2. Ensure that only allowed elements (C, H, O) are present.
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() not in {"C", "H", "O"}:
+            return False, f"Atom {atom.GetSymbol()} is not allowed in a typical fatty acid"
+
+    # 3. Identify the terminal carboxylic acid group.
+    # Use SMARTS: acid group pattern "C(=O)[O;H1]".
     carboxyl_smarts = "C(=O)[O;H1]"
     carboxyl_query = Chem.MolFromSmarts(carboxyl_smarts)
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_query)
     if not carboxyl_matches:
         return False, "No carboxylic acid group found"
 
-    # We expect exactly one acid carbon. In each match, atom 0 of the SMARTS is the acid carbon.
+    # Expect exactly one unique acid carbon (atom 0 in each match).
     acid_carbon_idxs = set(match[0] for match in carboxyl_matches)
     if len(acid_carbon_idxs) != 1:
         return False, "Molecule must have exactly one terminal carboxylic acid group"
     acid_carbon_idx = list(acid_carbon_idxs)[0]
     acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
 
-    # Verify that the acid carbon is terminal:
-    # It should be bonded to exactly: one carbon neighbor, one oxygen involved in the carbonyl,
-    # and one oxygen in the -OH part.
+    # Verify the acid carbon is terminal: one carbon neighbor and two oxygen neighbors.
     acid_neighbors = acid_carbon.GetNeighbors()
     oxy_neighbors = [nbr for nbr in acid_neighbors if nbr.GetAtomicNum() == 8]
     carbon_neighbors = [nbr for nbr in acid_neighbors if nbr.GetAtomicNum() == 6]
     if len(carbon_neighbors) != 1 or len(oxy_neighbors) != 2:
-        return False, "Acid carbon is not terminal (unexpected number of neighbors)"
+        return False, "Acid carbon is not terminal (unexpected bonding pattern)"
 
-    # Record the indices of oxygens of the carboxyl group.
+    # Allowed oxygens: those in the carboxyl group.
     allowed_oxygens = {nbr.GetIdx() for nbr in oxy_neighbors}
 
-    # 3. Identify the α–carbon: the unique carbon neighbor of the acid carbon.
+    # 4. Identify the alpha carbon (the sole carbon neighbor of the acid carbon).
     alpha_carbon = carbon_neighbors[0]
 
-    # 4. Check that the α–carbon has exactly one hydroxyl (-OH) substituent.
-    # Look among the neighbors of the α–carbon (ignoring the acid carbon)
+    # 5. Check alpha carbon has exactly one hydroxyl (-OH) substituent.
     alpha_oh_atoms = []
     for nbr in alpha_carbon.GetNeighbors():
+        # Skip the acid carbon
         if nbr.GetIdx() == acid_carbon_idx:
             continue
+        # Check if neighbor is oxygen and has at least one hydrogen
         if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() > 0:
             alpha_oh_atoms.append(nbr)
     if len(alpha_oh_atoms) != 1:
-        return False, f"Alpha carbon must have exactly one hydroxyl substituent, found {len(alpha_oh_atoms)}"
+        return False, f"Alpha carbon must have exactly one hydroxyl substituent; found {len(alpha_oh_atoms)}"
     alpha_oh = alpha_oh_atoms[0]
-    allowed_oxygens.add(alpha_oh.GetIdx())  # add the alpha –OH oxygen to allowed set
+    allowed_oxygens.add(alpha_oh.GetIdx())
 
-    # 5. Now ensure that no other oxygen is present in the molecule.
-    # (Any oxygen not in the allowed set would represent an extra functional group.)
+    # 6. Ensure no unexpected oxygen is present.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 8:
             if atom.GetIdx() not in allowed_oxygens:
                 return False, f"Extra oxygen functionality found at atom index {atom.GetIdx()}"
 
-    # 6. Check that the fatty (non–acid) chain is aliphatic.
-    # Exclude the acid carbon and its two oxygen neighbors.
-    excluded_idxs = set([acid_carbon_idx])
-    for idx in allowed_oxygens:
-        excluded_idxs.add(idx)
+    # 7. Check that the remainder of the molecule (non–acid part) is predominantly aliphatic.
+    # Exclude the acid carbon and its two oxygens.
+    excluded_idxs = {acid_carbon_idx} | allowed_oxygens
     non_acid_atoms = [atom for atom in mol.GetAtoms() if atom.GetIdx() not in excluded_idxs]
     if not non_acid_atoms:
         return False, "No carbon chain found outside the acid group"
     n_nonacid = len(non_acid_atoms)
     n_carbons = sum(1 for atom in non_acid_atoms if atom.GetAtomicNum() == 6)
-    # We require that nearly all of the rest are carbons.
     if n_carbons / n_nonacid < 0.75:
-        return False, f"Non-carboxyl part is not aliphatic enough (carbon fraction = {n_carbons / n_nonacid:.2f})"
-
-    # 7. Check the chain length.
-    # Count total carbons and subtract the acid carbon.
+        return False, f"Non–acid part is not aliphatic enough (carbon fraction = {n_carbons/n_nonacid:.2f})"
+    
+    # 8. Count total number of carbon atoms in the molecule.
     total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    chain_length = total_carbons - 1  # subtract the acid carbon
-    if chain_length < 3:
-        return False, f"Carbon chain too short ({chain_length} carbons) for a fatty acid"
+    # Define the fatty chain length as all carbons except the acid carbon.
+    chain_length = total_carbons - 1
 
-    # 8. (Chirality considerations)
-    # Although the definition mentions that if chiral centers are defined the only allowed should be the alpha-carbon,
-    # many natural fatty acids have extra chiral atoms with undefined stereochemistry.
-    # Thus, we choose to ignore chiral centers beyond the alpha carbon.
-    # (If needed one could refine this check by allowing only undefined chiral centers outside the alpha carbon.)
-
+    # 9. If molecule is saturated (no C=C), require a minimum chain length.
+    # Note: unsaturated acids may be naturally shorter.
+    unsaturation = mol.HasSubstructMatch(Chem.MolFromSmarts("C=C"))
+    if not unsaturation:
+        # For saturated fatty acids, require that the chain (non–acid part) has at least 8 carbons.
+        if chain_length < 8:
+            return False, f"Saturated fatty acid chain too short ({chain_length} carbons; require at least 8)"
+    
+    # 10. Compose a reasoning message.
     reason = (f"Found a terminal carboxylic acid group (acid carbon idx {acid_carbon_idx}) with "
               f"an alpha carbon (idx {alpha_carbon.GetIdx()}) bearing a unique hydroxyl substituent, "
-              f"and a predominantly aliphatic chain (chain length = {chain_length} carbons, "
-              f"carbon fraction = {n_carbons/n_nonacid:.2f}), classifying the molecule as a 2-hydroxy fatty acid.")
+              f"and a predominantly aliphatic chain (chain length = {chain_length} carbons"
+              f"{', unsaturated' if unsaturation else ', saturated'}), "
+              f"classifying the molecule as a 2–hydroxy fatty acid.")
     return True, reason
 
 
 # Example usage:
 if __name__ == "__main__":
-    # Test one of the true positive examples:
-    test_smiles = "CCCCCCCCCCCC[C@@H](O)C(O)=O"  # (2R)-2-hydroxytetradecanoic acid
-    result, reason = is_2_hydroxy_fatty_acid(test_smiles)
-    print(result, reason)
+    # Example: (2R)-2-hydroxytetradecanoic acid
+    test_smiles = "CCCCCCCCCCCC[C@@H](O)C(O)=O"
+    result, classification_reason = is_2_hydroxy_fatty_acid(test_smiles)
+    print(result, classification_reason)
