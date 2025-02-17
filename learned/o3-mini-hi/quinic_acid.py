@@ -1,18 +1,22 @@
 """
 Classifies: CHEBI:26493 quinic acid
 """
+#!/usr/bin/env python
 """
 Classifies: A cyclitol carboxylic acid (quinic acid and derivatives)
 
-A quinic acid core is defined as:
-  - A six-membered ring made entirely of nonaromatic, sp3-hybridized carbons in which all bonds are single.
-  - The ring must have exactly five substituents attached (neighbors that are not part of the ring). 
-    Each substituent must be one of:
-      (a) An oxygen atom (which should represent a hydroxyl or acyloxy link), or 
-      (b) A carboxyl group attached via a carbon that shows a double bond to an oxygen (the “free” carboxyl group).
-  - In addition, at least one of these substituents must unambiguously be a free carboxyl.
+A quinic acid core is defined here as:
+  - A six-membered (cyclohexane) ring composed solely of sp³-hybridized, nonaromatic carbons 
+    with all bonds between ring atoms being single.
+  - At least one of the ring carbons must be substituted with a free carboxyl group.
   
-This approach attempts to be more selective to avoid false positives.
+A free carboxyl group is determined by:
+  - Being a carbon atom (atomic number 6) with exactly three neighbors.
+  - Exactly two of these neighbors are oxygen atoms, with one attached via a double bond 
+    (C=O) and the other attached via a single bond, where that oxygen bears at least one hydrogen 
+    or a negative formal charge (indicating a free –COOH group rather than an ester).
+  
+This more relaxed approach avoids the pitfalls of our earlier strict substituent count.
 """
 
 from rdkit import Chem
@@ -22,21 +26,14 @@ def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is a quinic acid derivative based on its SMILES string.
     
-    The criteria are:
-      1. It must contain at least one six-membered ring in which every atom is a nonaromatic sp3 carbon,
-         with all bonds between ring atoms being single.
-      2. One of these rings must be substituted with exactly five substituents (neighbors that are not in the ring).
-         Each substituent must be either:
-            - a single oxygen (which we assume comes from an –OH or an acyloxy group),
-            - or a carbon that qualifies as a free carboxyl group.
-      3. At least one of the substituents must be a free carboxyl group.
-    
-    For a carbon substituent to be considered a free carboxyl group, we require that:
-         - It has exactly three neighbors (one is the ring carbon) and exactly two oxygens.
-         - One of the bonds from the substituent carbon to oxygen is a double bond,
-           and the oxygen in the single bond must have at least one hydrogen (indicating a free –COOH,
-           rather than an ester carbonyl which often has the oxygen linked further).
-    
+    The criteria for a quinic acid core are:
+      1. The molecule must contain at least one six-membered ring (cyclohexane) in which every atom 
+         is a nonaromatic sp3-hybridized carbon and every bond between adjacent ring atoms is single.
+      2. At least one of the ring atoms must have a free carboxyl group attached directly.
+         A free carboxyl group is identified as a carbon binder with exactly three neighbors 
+         (the ring atom plus two oxygen atoms), where one oxygen forms a double bond and the other 
+         a single bond with a hydrogen (or negative charge).
+         
     Args:
         smiles (str): SMILES string of the molecule.
     
@@ -44,78 +41,61 @@ def is_quinic_acid(smiles: str):
         bool: True if the molecule is classified as a quinic acid derivative, False otherwise.
         str: Reason for the classification.
     """
-    # Parse molecule and add explicit hydrogens (to better catch O-H groups)
+    # Parse the SMILES string and add explicit hydrogens to catch O-H groups.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     mol = Chem.AddHs(mol)
     
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
-    
-    # Define helper function to test if a given atom (a neighbor of the ring) qualifies as a free carboxyl group.
+    # Helper function to check if a given carbon atom qualifies as a free carboxyl group.
     def is_free_carboxyl(atom):
         # Must be carbon
         if atom.GetAtomicNum() != 6:
             return False
-        # Get neighbors of the carbon (one should be the ring; the rest should be oxygens)
-        nbrs = atom.GetNeighbors()
-        # Expect exactly 3 neighbors: one from the ring and two oxygens.
-        if len(nbrs) != 3:
+        # Expect exactly three neighbors: one from the ring and two oxygens.
+        if atom.GetDegree() != 3:
             return False
         oxy_count = 0
-        dbl_to_o = False
-        single_to_o_with_H = False
-        for nbr in nbrs:
+        double_oxygen = False
+        single_oxygen_with_H = False
+        for nbr in atom.GetNeighbors():
             if nbr.GetAtomicNum() == 8:
                 oxy_count += 1
                 bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
                 if bond is None:
                     continue
                 if bond.GetBondType() == rdchem.BondType.DOUBLE:
-                    dbl_to_o = True
+                    double_oxygen = True
                 elif bond.GetBondType() == rdchem.BondType.SINGLE:
-                    # Check if this oxygen has at least one explicit hydrogen (or is deprotonated,
-                    # i.e. has a negative formal charge) – likely indicating a free carboxyl.
-                    for o_nbr in nbr.GetNeighbors():
-                        if o_nbr.GetAtomicNum() == 1:
-                            single_to_o_with_H = True
+                    # Check if this oxygen has an explicit hydrogen or is deprotonated
+                    for onbr in nbr.GetNeighbors():
+                        if onbr.GetAtomicNum() == 1:
+                            single_oxygen_with_H = True
                             break
-                    # Alternatively, if the oxygen carries a negative charge it may be deprotonated.
                     if nbr.GetFormalCharge() < 0:
-                        single_to_o_with_H = True
-            else:
-                # If a neighbor is not oxygen and is not the ring atom, disqualify.
-                # (We expect exactly one non-oxygen neighbor, which is the ring atom.)
-                pass
-        # Should have exactly 2 oxygens, one double-bond and one single-bond with hydrogen.
-        if oxy_count == 2 and dbl_to_o and single_to_o_with_H:
-            return True
-        return False
-
-    # Loop through all rings and check if any qualifies as a quinic acid core.
+                        single_oxygen_with_H = True
+        return (oxy_count == 2 and double_oxygen and single_oxygen_with_H)
+    
+    # Get the ring information from the molecule.
+    rings = mol.GetRingInfo().AtomRings()
+    
+    # Loop through candidate rings.
     for ring in rings:
-        # Only consider six-membered rings.
+        # Consider only six-membered rings.
         if len(ring) != 6:
             continue
-        
-        # Check that each atom in the ring is a nonaromatic sp3 hybridized carbon.
+            
         valid_ring = True
+        # Check that every atom in the ring is a nonaromatic sp3 carbon.
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() != 6:
-                valid_ring = False
-                break
-            if atom.GetIsAromatic():
-                valid_ring = False
-                break
-            if atom.GetHybridization() != rdchem.HybridizationType.SP3:
+            if atom.GetAtomicNum() != 6 or atom.GetIsAromatic() or atom.GetHybridization() != rdchem.HybridizationType.SP3:
                 valid_ring = False
                 break
         if not valid_ring:
             continue
-
-        # Ensure all bonds between adjacent ring atoms are single bonds.
+        
+        # Ensure that every bond between adjacent ring atoms is a single bond.
         bonds_ok = True
         for i in range(len(ring)):
             a1 = ring[i]
@@ -126,51 +106,31 @@ def is_quinic_acid(smiles: str):
                 break
         if not bonds_ok:
             continue
-
-        # Now collect unique substituents attached to the ring.
-        substituent_atoms = {}
-        # For each atom in the ring, check its neighbors that are not in the ring.
+        
+        # Check if any ring atom is substituted with a free carboxyl group.
+        free_carboxyl_found = False
         for idx in ring:
             ring_atom = mol.GetAtomWithIdx(idx)
             for nbr in ring_atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
                     continue
-                # Use neighbor index as key to avoid double‐counting substituents that connect to two ring atoms.
-                substituent_atoms[nbr.GetIdx()] = nbr
-                
-        if len(substituent_atoms) != 5:
-            # The candidate ring must be decorated with exactly 5 substituents.
-            continue
-
-        valid_substituent_count = 0
-        free_carboxyl_found = False
-
-        # Evaluate each substituent.
-        for sub in substituent_atoms.values():
-            # Case 1: If the substituent is oxygen then assume it is from an –OH or acyloxy linkage.
-            if sub.GetAtomicNum() == 8:
-                valid_substituent_count += 1
-            # Case 2: If the substituent is carbon, check if it qualifies as a carboxyl group.
-            elif sub.GetAtomicNum() == 6:
-                if is_free_carboxyl(sub):
-                    valid_substituent_count += 1
+                if nbr.GetAtomicNum() == 6 and is_free_carboxyl(nbr):
                     free_carboxyl_found = True
-            else:
-                # Any other substituent disqualifies this ring.
-                pass
-
-        if valid_substituent_count == 5 and free_carboxyl_found:
-            msg = ("Found six-membered saturated cyclohexane ring with exactly 5 substituents "
-                   "(hydroxy or acyloxy/carboxyl) and at least one free carboxyl group, consistent with a quinic acid core")
+                    break
+            if free_carboxyl_found:
+                break
+        
+        if free_carboxyl_found:
+            msg = "Found a cyclohexane ring with at least one attached free carboxyl substituent, consistent with a quinic acid core"
             return True, msg
-
-    return False, "No cyclohexane ring with the required five substituents and free carboxyl group detected"
-
-# Example test cases (uncomment these lines to try them):
-# test_smiles_list = [
-#     "O[C@H]1C[C@@](O)(C[C@H](O)[C@H]1O)C(O)=O",  # (+)-quinic acid (should be True)
-#     "C1=CC(=C(C=C1)O)O"  # Hydroquinone (should be False)
+    
+    return False, "No cyclohexane ring with an attached free carboxyl substituent detected"
+    
+# Example test cases (uncomment to try):
+# test_smiles = [
+#     "O[C@H]1C[C@@](O)(C[C@H](O)[C@H]1O)C(O)=O",   # (+)-quinic acid (should be True)
+#     "C1=CC(=C(C=C1)O)O"                             # Hydroquinone (should be False)
 # ]
-# for smi in test_smiles_list:
+# for smi in test_smiles:
 #     result, reason = is_quinic_acid(smi)
-#     print(smi, result, reason)
+#     print(f"{smi}: {result} ({reason})")
