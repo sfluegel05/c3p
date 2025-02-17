@@ -3,167 +3,176 @@ Classifies: CHEBI:26607 saturated fatty acid
 """
 """
 Classifies: Saturated Fatty Acid
-Definition: A fatty acid is “saturated” if it (i) contains a terminal carboxyl group,
-(ii) has no carbon–carbon double or triple bonds outside of C=O groups,
-and (iii) its alkyl (acyl) chain is “simple” – that is, aside from a possible terminal (ω)–OH and 
-occasional carbonyl (C=O), any branching is limited to single methyl groups; notably, an α–carbon 
-substituted by –OH or branches longer than methyl are not allowed.
-Note: This heuristic‐based classifier was tuned to minimize false positives (e.g. complex diacids,
-ether‐linked acids, or fatty acyl lipids) while still capturing “classical” (aliphatic) saturated fatty acids.
+Definition: A saturated fatty acid (for this heuristic) must:
+  1. Have a valid SMILES made only of C, H, O and D.
+  2. Be acyclic.
+  3. Contain exactly one terminal carboxylic acid group 
+     (matched by C(=O)[O;H,-]) where the acid carbon is attached to exactly one other carbon.
+  4. Have no carbon–carbon multiple bonds (C=C or C≡C).
+  5. Have an “alkyl” (acyl) backbone that is “simple”, meaning that 
+     aside from the acid group at one end, any branch off the main chain must be only a methyl group.
+  6. Allow a single-bonded oxygen (–OH) only on the terminal (ω)–carbon.
+Note: Some molecules that are “modified” (e.g. additional –OH on an internal carbon, or branches longer than methyl)
+      are rejected.
+      
+The approach:
+  • Verify allowed elements and acyclicity.
+  • Locate the unique carboxylic acid group via SMARTS that accepts either protonated or deprotonated oxygen.
+  • Confirm that the acid carbon is terminal (exactly one C neighbor).
+  • Starting from the α–carbon, perform a DFS (depth-first search) to extract the longest carbon chain.
+  • For every backbone carbon, check that any attached carbon branch (i.e. not in the main chain) is a methyl only
+    and that any single-bonded oxygen substituent is found only on the last (ω)–carbon.
+  • Look for any non–allowed C=C or C≡C bonds.
+  
+If any check fails, a message is returned stating the reason.
 """
 
 from rdkit import Chem
 
 def is_saturated_fatty_acid(smiles: str):
     """
-    Determines if a molecule is a saturated fatty acid based on its SMILES string.
+    Determines whether a molecule qualifies as a simple saturated fatty acid.
     
-    Requirements (heuristic):
-      1. The SMILES must be valid and contain only allowed elements (C, H, O, D).
-      2. The molecule must be acyclic.
-      3. There is exactly one carboxylic acid group (SMARTS "C(=O)[O;H,-]") 
-         and its acid carbon is terminal (attached to exactly one carbon).
-      4. The α–carbon (the single carbon attached to the carboxyl carbon) must not be substituted by oxygen.
-      5. The molecule has no C=C or C≡C bonds between carbon atoms.
-      6. The acyl “backbone” is extracted (via a DFS from the α–carbon through C–C bonds)
-         and any branch (i.e. substituent off the main chain) must be just a methyl group.
-      7. Any oxygen attached (by a single bond) to a backbone carbon is allowed only at the terminal ω–position.
-         (Double–bonded carbonyl oxygens are permitted.)
-         
     Args:
-        smiles (str): SMILES string of the molecule.
-        
+      smiles (str): SMILES string of the molecule
+      
     Returns:
-        bool: True if the molecule is classified as a saturated fatty acid, False otherwise.
-        str: Explanation for the classification.
+      bool: True if classified as a saturated fatty acid, else False.
+      str: Explanation of the classification decision.
     """
-    # Parse molecule
+    # Step 1: Parse SMILES, check allowed elements (only C, H, O, D)
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Step 1: Check allowed elements: only C, H, O, and D (for deuterium)
     allowed = {"C", "H", "O", "D"}
     for atom in mol.GetAtoms():
         if atom.GetSymbol() not in allowed:
             return False, f"Disallowed element found ({atom.GetSymbol()}); not a simple fatty acid"
     
-    # Step 2: Reject molecules with rings (to reduce complexity and avoid sugars or cyclic lipids)
+    # Step 2: Reject if molecule is cyclic.
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Contains cyclic system; not a simple saturated fatty acid"
     
-    # Step 3: Identify carboxylic acid group using SMARTS.
-    acid_pattern = Chem.MolFromSmarts("C(=O)[O;H,-]")
+    # Step 3: Identify the carboxylic acid group.
+    # Using SMARTS that matches either the protonated or deprotonated form.
+    acid_smarts = "[CX3](=O)[O;H,-]"
+    acid_pattern = Chem.MolFromSmarts(acid_smarts)
     acid_matches = mol.GetSubstructMatches(acid_pattern)
     if len(acid_matches) != 1:
         return False, f"Expected exactly one carboxylic acid group, found {len(acid_matches)}"
-    
-    # Use the single match.
-    match = acid_matches[0]
-    acid_carbon_idx = match[0]  # acid carbon (the one double-bonded to O)
+    # acid_matches[0]: first atom is the acid carbon.
+    acid_match = acid_matches[0]
+    acid_carbon_idx = acid_match[0]
     acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
-    
     # Step 4: Check that the acid carbon is terminal (has exactly one carbon neighbor)
     carbon_neighbors = [nbr for nbr in acid_carbon.GetNeighbors() if nbr.GetAtomicNum() == 6]
     if len(carbon_neighbors) != 1:
-        return False, "Carboxylic acid group is not terminal (acid carbon is linked to >1 carbon)"
-    alpha = carbon_neighbors[0]  # α–carbon attached to acid moiety
+        return False, "Carboxylic acid group is not terminal (acid carbon is linked to more than one carbon)"
+    alpha = carbon_neighbors[0]  # α–carbon (first carbon of the acyl chain)
     alpha_idx = alpha.GetIdx()
     
-    # Rule: α–carbon must not be substituted by an -OH (or any oxygen by a single bond)
+    # Rule: α–carbon should not be substituted by a singly bonded oxygen (i.e. an –OH) 
+    # because that would violate the “simple backbone” rule.
     for nbr in alpha.GetNeighbors():
-        if nbr.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(alpha_idx, nbr.GetIdx()).GetBondType() == Chem.BondType.SINGLE:
-            return False, "α–carbon is substituted by an –OH; not a typical saturated fatty acid"
+        if nbr.GetAtomicNum() == 8:
+            bond = mol.GetBondBetweenAtoms(alpha_idx, nbr.GetIdx())
+            if bond and bond.GetBondType() == Chem.BondType.SINGLE:
+                return False, "α–carbon carries a single-bonded oxygen substituent; not a typical saturated fatty acid"
     
-    # Step 5: Check for any C=C or C≡C bonds (only allow C=O bonds)
+    # Step 5: Reject if any C=C or C≡C bonds (except C=O in the acid group)
     for bond in mol.GetBonds():
         bt = bond.GetBondType()
-        a1 = bond.GetBeginAtom()
-        a2 = bond.GetEndAtom()
         if bt in [Chem.BondType.DOUBLE, Chem.BondType.TRIPLE]:
-            # If both atoms are carbon then this is an unsaturation we do not allow.
+            a1 = bond.GetBeginAtom()
+            a2 = bond.GetEndAtom()
             if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
+                # Allow if one is in the acid carbon and its partner is oxygen via a double bond? (Not possible here)
                 return False, "Contains carbon–carbon unsaturation"
     
-    # Create a set of indices for carbon atoms.
-    carbon_ids = {atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6}
-    
-    # --- Helper: DFS to find the longest continuous carbon chain starting at 'start_idx'.
+    # Step 6: Extract the main acyl chain.
+    # We perform a DFS from the α–carbon over C–C bonds.
     def dfs_longest_chain(current_idx, visited):
+        # Returns the longest chain (list of carbon indices) starting at current_idx.
         visited = visited | {current_idx}
         longest = [current_idx]
-        for nbr in mol.GetAtomWithIdx(current_idx).GetNeighbors():
+        current_atom = mol.GetAtomWithIdx(current_idx)
+        for nbr in current_atom.GetNeighbors():
             if nbr.GetAtomicNum() != 6:
                 continue
             nbr_idx = nbr.GetIdx()
             if nbr_idx in visited:
                 continue
-            # Only traverse along carbon–carbon bonds.
             candidate = [current_idx] + dfs_longest_chain(nbr_idx, visited)
             if len(candidate) > len(longest):
                 longest = candidate
         return longest
-    
-    # Start the chain from the α–carbon.
+
     main_chain = dfs_longest_chain(alpha_idx, set())
     if len(main_chain) < 1:
-        return False, "Could not extract a carbon chain from the α–carbon"
+        return False, "Could not extract an acyl carbon chain from the α–carbon"
     
-    # For clarity, sort the main chain so that the acid side is excluded.
-    # (In our DFS the order is not necessarily linear; we assume the DFS found one of the longest linear paths.)
-    # We will treat main_chain as the “acyl chain” (not including the acid carbon).
-    
-    # --- Step 6: Check branching along the main chain.
-    # The idea: for each carbon in the main chain, check for carbon neighbors that are not part of the linear chain.
-    # They must be a terminal methyl (i.e. in the carbon graph, after removing the connection back, degree == 1).
-    # Also, check oxygen substituents: allow them only if the bond is double (a carbonyl) or if the carbon is the terminal (ω–position).
+    # For debugging, sort the main chain in order (our DFS gives one candidate longest path).
+    # Our main chain is assumed to run from the acid-attached carbon (α) to the ω–end.
+    # (We assume that the chosen longest path is the acyl backbone.)
+    # Now, create a set for easy membership checks.
     main_chain_set = set(main_chain)
-    chain_len = len(main_chain)
+    
+    # Step 7: Check substitution on the main chain.
+    # For each carbon in the backbone, look for substituents that are not in the chain (and also not the acid carbon).
+    # Allowed: if a neighbor is a carbon then it must be a terminal methyl (i.e. it has no other carbon neighbor besides the backbone).
+    # Also, a single-bonded oxygen substituent is allowed only at the terminal (ω)–carbon.
+    chain_length = len(main_chain)
     for i, atom_idx in enumerate(main_chain):
         atom = mol.GetAtomWithIdx(atom_idx)
-        # Determine adjacent main chain indices (previous and next if they exist)
-        adjacent_chain = set()
+        # Get set of neighbors that are in the main chain (previous and next will normally be there)
+        backbone_neighbors = set()
         if i > 0:
-            adjacent_chain.add(main_chain[i-1])
-        if i < chain_len - 1:
-            adjacent_chain.add(main_chain[i+1])
-        # Check each neighbor of this backbone carbon.
+            backbone_neighbors.add(main_chain[i-1])
+        if i < chain_length - 1:
+            backbone_neighbors.add(main_chain[i+1])
+        
         for nbr in atom.GetNeighbors():
             nbr_idx = nbr.GetIdx()
-            # Skip if neighbor is the acid carbon (only relevant at the chain terminus) or in the main chain.
-            if nbr_idx == acid_carbon_idx or nbr_idx in adjacent_chain:
+            # Skip if neighbor is acid carbon (only valid as the terminal acid attachment)
+            if nbr_idx == acid_carbon_idx:
                 continue
-            # If neighbor is carbon (a branch)
+            # Skip if neighbor is in the validated backbone
+            if nbr_idx in backbone_neighbors or nbr_idx in main_chain_set:
+                continue
+            # If neighbor is carbon, check that it is just a single methyl group (i.e. it is terminal in the C–C subgraph)
             if nbr.GetAtomicNum() == 6:
-                # In the subgraph of carbons, count how many connections nbr has excluding its bond back to 'atom'
-                nbr_neighbors = [n.GetIdx() for n in nbr.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != atom_idx]
-                if len(nbr_neighbors) != 0:
-                    # A branch longer than a methyl group.
-                    return False, "Found branch substituent (longer than a methyl) on the acyl chain"
-            # If neighbor is oxygen, check the bond type.
+                # Count how many carbon neighbors nbr has (excluding the one connecting to the backbone)
+                carbon_neighbors = [n.GetIdx() for n in nbr.GetNeighbors() if n.GetAtomicNum() == 6 and n.GetIdx() != atom_idx]
+                if len(carbon_neighbors) != 0:
+                    return False, "Found a branch substituent longer than a methyl group on the acyl chain"
+            # If neighbor is oxygen, then the bond must be a double bond (as in the acid carbonyl),
+            # or—if single-bonded—the oxygen is allowed only on the terminal (ω)–carbon.
             elif nbr.GetAtomicNum() == 8:
                 bond = mol.GetBondBetweenAtoms(atom_idx, nbr_idx)
-                # Allow if the oxygen is double-bonded (i.e., a carbonyl) OR if the carbon is the terminal ω–position.
                 if bond.GetBondType() != Chem.BondType.DOUBLE:
-                    # Allow only if this atom is the ω–end (last carbon in the main chain).
-                    if i != chain_len - 1:
-                        return False, "Backbone carbon (non–terminal) has an –OH substituent"
-    # If all checks passed:
+                    if i != chain_length - 1:
+                        return False, "Backbone carbon (non–terminal) has a single-bonded oxygen substituent"
+    # All checks passed.
     return True, "Saturated fatty acid: contains a terminal carboxylic acid group, no C–C unsaturation, and a simple alkyl backbone"
 
-# (Optional: main testing block)
+# (Optional main block for testing a few examples)
 if __name__ == "__main__":
     test_smiles = [
-        "CC(=O)CCC(O)=O",   # 4-oxopentanoic acid (True)
-        "CCCC(C)C(O)=O",    # 2-methylvaleric acid (True)
-        "OC(C)CCCCCCCCCCCCCCCCCCC(=O)O",  # 20-hydroxyhenicosanoic acid (True)
-        "CC(C)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O",  # 26-methylheptacosanoic acid (True)
-        "CCCCCCCCCCCCCCCCCC(O)C([O-])=O",  # 2-hydroxyarachidate (should be rejected due to α–OH)
-        "OC(=O)CCC(CCCC)CC",  # 4-Ethyloctanoic acid (should be rejected because branch is longer than methyl)
-        "[O-]C(=O)CCCCCCCCC(CCCCCCCC)O",  # 10-hydroxyoctadecanoate (rejected due to extra branching)
-        "OCCCCCC([O-])=O",  # 6-hydroxyhexanoate (likely rejected as not a simple fatty acid)
+        # True positives (examples)
+        "CC(=O)CCC(O)=O",   # 4-oxopentanoic acid
+        "CCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O",   # nonacosanoic acid
+        "CCCC(C)C(O)=O",    # 2-methylvaleric acid
+        "CC(C)CCCCCCCCCCCCCCCCCCC(O)=O",  # 20-methylhenicosanoic acid
+        "C(CCCCCCCCCCCCCCCC)CCCCCCCCCCC(O)=O",  # octacosanoic acid
+        "CCCCCCCCCCCCCCCCC(O)=O",  # heptadecanoic acid
+        "CCCCCCCCC(C)CC(O)=O",  # 3-methylundecanoic acid
+        "CC(C)C(O)=O",  # isobutyric acid
+        "CCCC(O)=O",   # butyric acid
+        # A couple of examples that were false positives in the earlier attempt (should fail now):
+        "OC(=O)CCCCC(CCCCCCCCCC(CC)C)C",  # 6,16-dimethyl-octadecanoic acid
+        "OCCCCCC([O-])=O",  # 6-hydroxyhexanoate
     ]
     for s in test_smiles:
         res, reason = is_saturated_fatty_acid(s)
-        print("="*40)
+        print("="*50)
         print(f"SMILES: {s}\nResult: {res}\nReason: {reason}")
