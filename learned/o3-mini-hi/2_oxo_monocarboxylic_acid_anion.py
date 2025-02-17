@@ -5,21 +5,20 @@ Classifies: CHEBI:35179 2-oxo monocarboxylic acid anion
 Classifies: 2-oxo monocarboxylic acid anion
 Definition: An oxo monocarboxylic acid anion in which the oxo (carbonyl) group is located at the 2‑position.
 That is, when numbering the chain from a terminal carboxylate group (–C(=O)[O–], where the carboxylate carbon is 
-bonded to exactly two oxygens and exactly one carbon), the unique α‑carbon must bear a carbonyl functionality.
-This functionality may be either on the α‑carbon itself (a direct C=O) or on a substituent (an acyl group bound 
-to an sp³ α‑carbon). Only molecules with a single terminal carboxylate group are accepted.
+bonded to exactly two oxygens and exactly one carbon), the unique α‑carbon must:
+  (A) either directly bear a double bond to oxygen (a carbonyl), or 
+  (B) have exactly one non-carboxylate carbon substituent that itself is carbonyl.
+Only molecules with exactly one terminal carboxylate group are accepted.
 """
 
 from rdkit import Chem
 
 def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     """
-    Determines whether a molecule is a 2-oxo monocarboxylic acid anion.
-    The molecule must have one (and only one) terminal carboxylate group 
-    ([CX3](=O)[O-]) where the carboxylate carbon is attached to exactly two oxygens 
-    (one via a double bond, one with a negative charge) and exactly one carbon neighbor 
-    (the α‑carbon). The α‑carbon must either directly have a carbonyl (a double bond to oxygen, formal charge 0)
-    or have a substituent (an acyl group) in which the attached carbon carries a carbonyl.
+    Determines whether a molecule is a 2‑oxo monocarboxylic acid anion.
+    It requires a unique terminal carboxylate group ([CX3](=O)[O-]) in which the carboxylate
+    carbon is attached to exactly two oxygens and one carbon. That unique carbon neighbor (the α‑carbon)
+    must bear a carbonyl at the 2‑position (either directly or via an acyl substituent).
     
     Args:
         smiles (str): SMILES string representing the molecule.
@@ -33,98 +32,86 @@ def is_2_oxo_monocarboxylic_acid_anion(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Exclude molecules that contain common metals (often salts/complexes).
+    # (Optional) Exclude compounds with common metals.
     metals = {"Li", "Na", "K", "Mg", "Al", "Ca", "Fe", "Cu", "Zn"}
     for atom in mol.GetAtoms():
         if atom.GetSymbol() in metals:
-            return False, "Molecule contains metal atoms; likely not a valid organic monocarboxylate"
+            return False, "Molecule contains metal atoms; likely not a relevant organic monocarboxylate"
     
-    # Find candidate terminal carboxylate groups using SMARTS.
-    # This SMARTS matches a carboxylate carbon (bonded to one double-bonded oxygen and one negatively charged oxygen).
+    # Find candidate terminal carboxylate groups using a SMARTS pattern.
+    # This pattern matches a carboxylate carbon that is double-bonded to an oxygen and single-bonded to an [O-].
     carboxylate_smarts = "[CX3](=O)[O-]"
     carbox_mol = Chem.MolFromSmarts(carboxylate_smarts)
     carbox_matches = mol.GetSubstructMatches(carbox_mol)
     
-    # Keep only those candidates that are terminal: carboxyl carbon must have exactly 3 heavy neighbors 
-    # (2 oxygens and 1 carbon).
+    # Only consider candidates in which the carboxylate C has exactly two oxygen neighbors and exactly one carbon neighbor.
     terminal_candidates = []
     for match in carbox_matches:
-        # match[0] corresponds to the carboxylate carbon.
-        c_idx = match[0]
+        c_idx = match[0]  # index of the carboxylate carbon
         carbox_c = mol.GetAtomWithIdx(c_idx)
         heavy_neighbors = [nbr for nbr in carbox_c.GetNeighbors() if nbr.GetAtomicNum() > 1]
-        # Count oxygen atoms.
         oxy_neighbors = [nbr for nbr in heavy_neighbors if nbr.GetAtomicNum() == 8]
         carbon_neighbors = [nbr for nbr in heavy_neighbors if nbr.GetAtomicNum() == 6]
-        # Terminal means: exactly 2 oxygen neighbors and exactly 1 carbon neighbor.
         if len(oxy_neighbors) == 2 and len(carbon_neighbors) == 1:
             terminal_candidates.append((c_idx, carbon_neighbors[0].GetIdx()))
     
-    # We require exactly ONE terminal carboxylate group.
     if len(terminal_candidates) == 0:
         return False, "No terminal carboxylate group found"
     if len(terminal_candidates) > 1:
         return False, "Multiple terminal carboxylate groups found; not a monocarboxylic acid anion"
     
-    # For the unique candidate, get the α‑carbon index.
+    # We now have a unique terminal carboxylate candidate.
     carbox_c_idx, alpha_idx = terminal_candidates[0]
     alpha_atom = mol.GetAtomWithIdx(alpha_idx)
-    carbox_atom = mol.GetAtomWithIdx(carbox_c_idx)
     
-    # Now check the α‑carbon for a carbonyl functionality.
-    # Option (A): Direct check on α‑carbon for any double bond to oxygen (with formal charge 0)
-    direct_carbonyl = False
+    # Option (A): Check if the α‑carbon itself bears a carbonyl.
+    # That is, one of the bonds from the α‑carbon (except the one leading back to the carboxylate)
+    # is a double bond to an oxygen (with formal charge 0). This means the α‑carbon itself is oxo.
     for bond in alpha_atom.GetBonds():
-        # Skip the bond going back to the carboxylate carbon.
-        if bond.GetOtherAtom(alpha_atom).GetIdx() == carbox_c_idx:
+        other = bond.GetOtherAtom(alpha_atom)
+        # Skip the bond back to the terminal carboxylate.
+        if other.GetIdx() == carbox_c_idx:
             continue
-        if bond.GetBondTypeAsDouble() == 2:
-            other = bond.GetOtherAtom(alpha_atom)
-            if other.GetAtomicNum() == 8 and other.GetFormalCharge() == 0:
-                direct_carbonyl = True
-                break
-    if direct_carbonyl:
-        reason = ("Contains a unique terminal carboxylate group (C(=O)[O–]) attached to an α‑carbon that "
-                  "bears a direct carbonyl (C=O), consistent with the 2‑oxo monocarboxylic acid anion definition.")
-        return True, reason
+        if bond.GetBondTypeAsDouble() == 2 and other.GetAtomicNum() == 8 and other.GetFormalCharge() == 0:
+            reason = ("Contains a unique terminal carboxylate group (C(=O)[O–]) attached to an α‑carbon which "
+                      "directly bears a carbonyl (C=O), consistent with the 2‑oxo monocarboxylic acid anion definition.")
+            return True, reason
     
-    # Option (B): The α‑carbon might have an acyl substituent.
-    # For each neighbor (other than the carboxylate group), check if it is a carbon that itself is carbonyl.
-    acyl_carbonyl = False
+    # Option (B): Check if the α‑carbon bears an acyl substituent.
+    # Here we require that among the α‑carbon’s neighbors (other than the terminal carboxylate),
+    # there is exactly one carbon (acyl carbon) that is itself carbonyl (i.e. double‐bonded to oxygen with FC 0).
+    acyl_candidates = []
     for nbr in alpha_atom.GetNeighbors():
         if nbr.GetIdx() == carbox_c_idx:
             continue
-        # We require the neighbor is carbon.
+        # Only consider carbon neighbors.
         if nbr.GetAtomicNum() != 6:
             continue
-        # Look for a double bond from this neighbor to an oxygen (with formal charge 0).
+        # Check if this neighbor has a double bond to oxygen (avoiding the bond going to α‑carbon).
         for bond in nbr.GetBonds():
-            # Allow the acyl carbon to be double-bonded to oxygen.
-            if bond.GetBondTypeAsDouble() == 2:
-                other = bond.GetOtherAtom(nbr)
-                if other.GetAtomicNum() == 8 and other.GetFormalCharge() == 0:
-                    acyl_carbonyl = True
-                    break
-        if acyl_carbonyl:
-            break
-
-    if acyl_carbonyl:
+            other = bond.GetOtherAtom(nbr)
+            if other.GetIdx() == alpha_atom.GetIdx():
+                continue
+            if bond.GetBondTypeAsDouble() == 2 and other.GetAtomicNum() == 8 and other.GetFormalCharge() == 0:
+                acyl_candidates.append(nbr.GetIdx())
+                # Break out once we have found that this neighbor is acyl–like.
+                break
+    if len(acyl_candidates) == 1:
         reason = ("Contains a unique terminal carboxylate group (C(=O)[O–]) attached to an α‑carbon that bears an acyl substituent "
                   "with a carbonyl (C=O), consistent with the 2‑oxo monocarboxylic acid anion definition.")
         return True, reason
 
-    # Neither a direct carbonyl on the α‑carbon nor an acyl substituent was found.
-    return False, ("Does not contain a terminal carboxylate group with an α‑carbon that bears a carbonyl functionality "
+    return False, ("Does not contain a unique terminal carboxylate group with an α‑carbon that bears a carbonyl functionality "
                    "at the 2‑position.")
-    
+
 # Example tests (uncomment to run)
 # test_smiles = [
 #     "C\\C=C/CC(=O)C([O-])=O",  # cis-2-oxohex-4-enoate (expected True)
 #     "[O-]C(C(CS(=O)[O-])=O)=O",  # 3-sulfinatopyruvate(2-) (expected True)
 #     "OC1CCC(CC(=O)C([O-])=O)C=C1",  # tetrahydro-4-hydroxyphenylpyruvate (expected True)
-#     "CC(=O)C(C)(O)C([O-])=O",  # 2-acetyllactate (expected True)
-#     "CC(=O)NCCCCC([O-])=O",  # 5-acetamidopentanoate (expected False)
-#     "[H]C(=O)[C@H](O)[C@@H](O)CC(=O)C([O-])=O",  # 5-dehydro-4-deoxy-D-glucuronate (expected False)
+#     "C(C([C@H](O)C)=O)(=O)[O-]",  # (R)-3-hydroxy-2-oxobutanoate (expected True)
+#     "[O-]C(=O)C(=O)c1ccccc1",  # phenylglyoxylate (expected True)
+#     "CC(=O)NCCCCC([O-])=O",  # 5-acetamidopentanoate (expected False per definition)
 # ]
 #
 # for smi in test_smiles:
