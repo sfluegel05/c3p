@@ -1,21 +1,10 @@
 """
 Classifies: CHEBI:17478 aldehyde
 """
-#!/usr/bin/env python
 """
 Classifies: Aldehyde – a compound having the functional group RC(=O)H 
-(including formaldehyde H2C=O) where the carbonyl carbon is bonded 
-to exactly one hydrogen and one R group (or two hydrogens for formaldehyde).
-
-This version improves on a previous attempt by explicitly using SMARTS patterns
-that capture typical aldehyde connectivity. For a typical (non‐formaldehyde)
-aldehyde we require that the carbonyl carbon (which carries one hydrogen)
-is attached to two carbon atoms (one coming from the R group and the other
-as part of the aldehyde group binding) and that it is exocyclic. For formaldehyde,
-the pattern is adapted to require two hydrogens.
-
-False positives (often from lactones or esters) are reduced by checking that
-the candidate carbonyl carbon (from the SMARTS match) is not part of any ring.
+(where the carbonyl carbon is bonded to one hydrogen and one R group or, in the case of formaldehyde, two hydrogens).
+The carbonyl group (C=O) must be exocyclic (i.e. not part of a ring) to avoid misclassifying lactones/esters.
 """
 
 from rdkit import Chem
@@ -25,72 +14,75 @@ def is_aldehyde(smiles: str):
     Determines if a molecule is an aldehyde based on its SMILES string.
     
     An aldehyde is defined as a compound containing a carbonyl group (C=O)
-    in which the carbonyl carbon is bonded to exactly one hydrogen and one R group
-    (or two hydrogens in the case of formaldehyde). In addition we require that
-    the carbonyl carbon be exocyclic (i.e. not in a ring) to avoid matching cyclic 
-    acyl groups (e.g. in lactones) that have similar connectivity.
+    in which the carbonyl carbon is bonded to exactly one hydrogen and one R group 
+    (or two hydrogens for formaldehyde). To avoid false positives from cyclic or lactone-type carbonyls,
+    we require that the carbonyl double bond is exocyclic.
     
     Args:
         smiles (str): SMILES string of the molecule
     
     Returns:
         bool: True if at least one valid aldehyde group is found, False otherwise.
-        str: Explanation for classification.
+        str: Explanation for the classification.
     """
-    # Parse SMILES and add explicit hydrogens so connectivity is unambiguous.
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Add explicit hydrogens so that hydrogen counts are clear.
     mol = Chem.AddHs(mol)
     
-    # Define two SMARTS patterns:
-    # 1. For a typical aldehyde: the pattern "[#6][C;H1](=O)[#6]" means:
-    #    - a carbon (atomic number 6) attached to a carbonyl carbon that has exactly one hydrogen (H1)
-    #      and double bonded to an oxygen, followed by a carbon substituent.
-    #
-    # 2. For formaldehyde: the pattern "[C;H2](=O)" means:
-    #    - a carbon (without an R group) carrying two hydrogens, double-bonded to an oxygen.
-    patt_aldehyde = Chem.MolFromSmarts("[#6][C;H1](=O)[#6]")
-    patt_formaldehyde = Chem.MolFromSmarts("[C;H2](=O)")
+    valid_aldehyde_count = 0
     
-    if patt_aldehyde is None or patt_formaldehyde is None:
-        return False, "Failed to compile SMARTS patterns"
-    
-    valid_matches = 0
-    
-    # Check typical aldehyde pattern matches.
-    matches = mol.GetSubstructMatches(patt_aldehyde)
-    for match in matches:
-        # In the pattern "[#6][C;H1](=O)[#6]" the second atom is the carbonyl carbon.
-        carbonyl_idx = match[1]
-        carbonyl = mol.GetAtomWithIdx(carbonyl_idx)
-        # Only accept if the carbonyl carbon is exocyclic (not in a ring).
-        if carbonyl.IsInRing():
+    # Iterate over all atoms.
+    for atom in mol.GetAtoms():
+        # We are only interested in carbon atoms (atomic number 6).
+        if atom.GetAtomicNum() != 6:
             continue
-        valid_matches += 1
 
-    # Check formaldehyde pattern matches.
-    matches = mol.GetSubstructMatches(patt_formaldehyde)
-    for match in matches:
-        # In the pattern "[C;H2](=O)" the first atom is the carbonyl carbon.
-        carbonyl_idx = match[0]
-        carbonyl = mol.GetAtomWithIdx(carbonyl_idx)
-        # Accept only if this carbon is not in a ring.
-        if carbonyl.IsInRing():
+        # Identify if this carbon has a double bond to an oxygen,
+        # and that C=O bond is exocyclic (i.e. the bond is not in a ring).
+        o_dblbond = None  # will store the oxygen atom that is double bonded to this carbon.
+        for bond in atom.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE and not bond.IsInRing():
+                nbr = bond.GetOtherAtom(atom)
+                if nbr.GetAtomicNum() == 8:  # oxygen
+                    o_dblbond = nbr
+                    break
+        # If we did not find a qualifying double bonded oxygen, skip this atom.
+        if o_dblbond is None:
             continue
-        valid_matches += 1
-
-    if valid_matches == 0:
-        return False, "No valid aldehyde group found (check connectivity and ensure exocyclic C=O with required H count)"
+        
+        # Determine connectivity around this candidate carbon.
+        # We use the explicit neighbors (which now include added hydrogens).
+        neighbors = atom.GetNeighbors()
+        
+        # Count hydrogens attached (explicit only).
+        h_count = sum(1 for nbr in neighbors if nbr.GetAtomicNum() == 1)
+        # Count heavy atoms (atomic number >1) other than the oxygen (already used as the carbonyl partner).
+        heavy_neighbors = [nbr for nbr in neighbors if nbr.GetAtomicNum() > 1 and nbr.GetIdx() != o_dblbond.GetIdx()]
+        
+        # Case 1: Typical aldehyde (RC(=O)H): the carbon should have exactly one hydrogen and exactly one heavy R-group.
+        if h_count == 1 and len(heavy_neighbors) == 1:
+            valid_aldehyde_count += 1
+            continue
+        # Case 2: Formaldehyde (H2C=O): the carbon should have two hydrogens and no heavy neighbors.
+        if h_count == 2 and len(heavy_neighbors) == 0:
+            valid_aldehyde_count += 1
+            continue
+        # Else: not matching the expected connectivity
+    if valid_aldehyde_count == 0:
+        return False, "No valid aldehyde group found (check connectivity: exocyclic C=O must have one H and one R group, or two H's for formaldehyde)"
     
-    # Form the explanation
-    group_word = "group" if valid_matches == 1 else "groups"
-    reason = f"Found {valid_matches} aldehyde {group_word} with proper connectivity (exocyclic C=O with one H and one R group, or two H's for formaldehyde)"
+    # Form an explanatory message.
+    group_word = "group" if valid_aldehyde_count == 1 else "groups"
+    reason = f"Found {valid_aldehyde_count} aldehyde {group_word} with proper connectivity (exocyclic C=O with one H and one R group, or two H's for formaldehyde)"
     return True, reason
 
-# Optional testing code
+# Optional testing code (can be removed or commented out if not needed)
 if __name__ == "__main__":
-    # List of some example SMILES strings provided in the prompt.
+    # Example SMILES strings (including some from the prompt)
     test_smiles = [
         "O=CC(CCC=C(C)C)C",  # 5-Heptenal, 2,6-dimethyl-
         "Oc1c(C=O)ccc2ccccc12",  # 1-hydroxy-2-naphthaldehyde
@@ -107,9 +99,6 @@ if __name__ == "__main__":
         "C(C#C)=O",  # prop-2-ynal
         "[H]C(=O)",  # formaldehyde
         "CC(C)CC=O",  # 3-methylbutanal
-        # Some examples that previously led to false positives:
-        "O=C1OC2(O[C@H]3[C@@H]([C@]4(CCC5=C([C@@]4(C3)C)CCC6[C@@]5(CC[C@H]([C@]6(C=O)C)O)C)C)[C@@H](C2)C)C(=C1C)C",  # Hexagonin D (should not classify)
-        "[H]C(=O)CCCC([O-])=O",  # 5-oxopentanoate (should not classify)
     ]
     
     for sm in test_smiles:
