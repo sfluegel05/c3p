@@ -4,136 +4,77 @@ Classifies: CHEBI:32863 secondary amine
 """
 Classifies: secondary amine 
 Definition: A compound formally derived from ammonia by replacing two hydrogen atoms by hydrocarbyl groups.
-This improved function looks for a nitrogen (atomic number 7) that is bonded to exactly two carbon (hydrocarbyl) groups and one effective hydrogen.
-A nitroso substituent (-N=O) is treated as replacing a hydrogen. Additionally, we exclude candidate nitrogens that are directly bonded to a
-carbonyl group (i.e. are part of an amide), because peptide and similar acylated nitrogens, although they might match the simple count,
-should be excluded.
+
+This function uses two SMARTS patterns:
+  1. A standard secondary amine (R2NH): the nitrogen is trigonal (three substituents) with one hydrogen
+     and is attached to exactly two carbon (hydrocarbyl) groups. We exclude those nitrogens that are bound
+     to a carbonyl (i.e. are part of an amide).
+  2. A nitrosated derivative in which one of the hydrogen positions is taken by a nitroso (–N=O) group.
+     Here the nitrogen has no hydrogen (H0) but three substituents (two carbons and one nitroso substituent).
+For either case the effective hydrogen count (H + (nitroso_count)) is 1.
 """
+
 from rdkit import Chem
 
 def is_secondary_amine(smiles: str):
     """
-    Determines if a molecule contains a secondary amine functional group based on its SMILES string.
-    A secondary amine should be derived from ammonia by replacing two hydrogens with hydrocarbyl groups.
+    Determines if the molecule (given by its SMILES string)
+    contains at least one secondary amine group as defined below:
+      • It is derived from ammonia by replacing precisely two hydrogens with hydrocarbyl groups.
+      • Optionally one hydrogen may be “replaced” by a nitroso (–N=O) group – in which case that group is counted as a hydrogen.
+      • The candidate nitrogen must not be attached to a carbonyl group (to avoid amide N).
     
-    The algorithm:
-      1. For each nitrogen atom (atomic number 7) in the molecule, first reject it if it is part of an amide linkage.
-         We do this by checking if any carbon neighbor is a carbonyl carbon (bonded by a double bond to an oxygen).
-      2. For each remaining candidate N, count:
-           - the total number of hydrogens (implicit+explicit)
-           - the number of carbon (atomic number 6) substituents that are NOT carbonyl carbons
-           - the number of nitroso substituents, defined as a neighboring nitrogen that is doubly bonded to an oxygen.
-      3. Define the effective hydrogen count as the sum of the hydrogen count and the nitroso count.
-         If a candidate N has exactly 2 carbon substituents (non-carbonyl) and an effective hydrogen count of 1, we flag it as a secondary amine.
-         
+    The function attempts two SMARTS substructure searches:
+       pat_standard: matches typical secondary amines ([NX3;H1;!$(N[C]=O)]([#6])([#6]))
+       pat_nitroso: matches a nitrosated secondary amine ([NX3;H0;!$(N[C]=O)]([#6])([#6])([NX2]=O))
+    
     Args:
        smiles (str): SMILES string of the molecule.
        
     Returns:
-       bool: True if a secondary amine is found, False otherwise.
-       str: Explanation for the classification.
+       bool: True if at least one secondary amine is found, False otherwise.
+       str: An explanation for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    def is_amide_nitrogen(atom, mol):
-        """
-        Checks if the nitrogen atom is part of an amide linkage.
-        That is, if any carbon neighbor is directly bonded to an oxygen by a double bond.
-        """
-        for nbr in atom.GetNeighbors():
-            if nbr.GetAtomicNum() == 6:
-                # Obtain the bond between the nitrogen and its carbon neighbor.
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                # Check all bonds of the carbon neighbor (skipping the bond to the nitrogen)
-                for bond2 in nbr.GetBonds():
-                    other = bond2.GetOtherAtom(nbr)
-                    if other.GetIdx() == atom.GetIdx():
-                        continue
-                    # If there is a double bond to oxygen, the carbon is carbonyl.
-                    if other.GetAtomicNum() == 8 and bond2.GetBondType() == Chem.BondType.DOUBLE:
-                        return True
-        return False
+    # SMARTS for a standard secondary amine: 
+    # nitrogen (N) that is trivalent (NX3) with one attached hydrogen (H1),
+    # NOT attached to a carbonyl carbon (the negative pattern !$(N[C]=O))
+    # and having two substituents that are carbon ([#6]).
+    pat_standard = Chem.MolFromSmarts("[NX3;H1;!$(N[C]=O)]([#6])([#6])")
 
-    # Loop over every nitrogen atom in the molecule.
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 7:
-            continue
+    # SMARTS for a nitrosated secondary amine:
+    # This pattern accepts a nitrogen with no attached hydrogen (H0) but with three substituents,
+    # two of which are carbon and one is a nitroso group. In nitroso,
+    # the substituent is defined as a nitrogen (NX2) that is double-bonded to an oxygen.
+    pat_nitroso = Chem.MolFromSmarts("[NX3;H0;!$(N[C]=O)]([#6])([#6])([NX2]=O)")
 
-        # Exclude if nitrogen is in an amide
-        if is_amide_nitrogen(atom, mol):
-            continue
+    if mol.HasSubstructMatch(pat_standard):
+        return True, ("Found a secondary amine substructure: a nitrogen with one hydrogen and two "
+                      "hydrocarbyl (carbon) substituents that is not directly bonded to a carbonyl group.")
+    elif mol.HasSubstructMatch(pat_nitroso):
+        return True, ("Found a nitrosated secondary amine substructure: a nitrogen with two hydrocarbyl "
+                      "substituents and a nitroso group (counted as replacing a hydrogen) and no direct "
+                      "bond to a carbonyl group.")
+    else:
+        return False, ("No secondary amine detected: did not find a nitrogen atom with exactly two hydrocarbyl "
+                       "substituents and one effective hydrogen (or nitroso) that is not acylated.")
 
-        # Count total hydrogens (implicit + explicit)
-        h_count = atom.GetTotalNumHs()
-        carbon_count = 0   # Count of carbon substituents that are simple hydrocarbyl (not part of a carbonyl)
-        nitroso_count = 0  # Count of substituents that are nitroso groups.
-        other_count = 0    # Any other substituents.
-
-        # Iterate over neighbors of the candidate nitrogen.
-        for nbr in atom.GetNeighbors():
-            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-            # For carbon atoms, check if the bond is to a carbonyl.
-            if nbr.GetAtomicNum() == 6:
-                # Check if this carbon acts as a carbonyl partner.
-                is_carbonyl = False
-                for bond2 in nbr.GetBonds():
-                    other = bond2.GetOtherAtom(nbr)
-                    # Skip the bond back to the nitrogen.
-                    if other.GetIdx() == atom.GetIdx():
-                        continue
-                    if other.GetAtomicNum() == 8 and bond2.GetBondType() == Chem.BondType.DOUBLE:
-                        is_carbonyl = True
-                        break
-                if is_carbonyl:
-                    # Flag as an undesired substituent since it implies an acyl group.
-                    other_count += 1
-                else:
-                    carbon_count += 1
-
-            # For nitrogen neighbors, check if they are part of a nitroso group.
-            elif nbr.GetAtomicNum() == 7:
-                has_double_o = False
-                for subnbr in nbr.GetNeighbors():
-                    if subnbr.GetIdx() == atom.GetIdx():
-                        continue
-                    if subnbr.GetAtomicNum() == 8:
-                        bond2 = mol.GetBondBetweenAtoms(nbr.GetIdx(), subnbr.GetIdx())
-                        if bond2 and bond2.GetBondType() == Chem.BondType.DOUBLE:
-                            has_double_o = True
-                            break
-                if has_double_o:
-                    nitroso_count += 1
-                else:
-                    other_count += 1
-            else:
-                other_count += 1
-
-        # Effective hydrogen count: count the hydrogens plus any nitroso substituent (which is treated as replacing a hydrogen).
-        effective_h = h_count + nitroso_count
-
-        # Check for secondary amine: exactly two non-carbonyl carbon substituents, no extra groups,
-        # and an effective hydrogen count of one.
-        if carbon_count == 2 and other_count == 0 and effective_h == 1:
-            return True, ("Found a nitrogen with exactly two carbon substituents and one effective hydrogen "
-                          "(including nitroso correction) and no amide character")
-    
-    return False, "No secondary amine found: no nitrogen atom with exactly two appropriate hydrocarbyl substituents and one hydrogen"
-
-# Example usage (for debugging):
+# For debugging and testing the function with several examples
 if __name__ == "__main__":
+    # List of test SMILES as provided (only a few examples; the full list is long)
     test_smiles = [
-        "C=1(C(=CC=C(C1)CCN[C@@H](CCC=2C=CC(=CC2)O)C)O)O",  # (R)-dobutamine: expects True
-        "CNC1CCCCC1",  # N-methylcyclohexylamine: True
-        "CC(C)NCC(C)(C)N",  # N(1)-isopropyl-2-methylpropan-1,2-diamine: True
-        "C[C@@H](CCc1ccc(O)cc1)NCCc1ccc(O)c(O)c1",  # (S)-dobutamine: True
-        "[H]C(=O)CCCNCCCN",  # N-(3-aminopropyl)-4-aminobutanal: True
-        "CNc1ccccc1",  # N-methylaniline: True
-        "O=NN1CCCCC1",  # N-nitrosopiperidine: True
-        "[H]N(C)C",  # dimethylamine: True
-        "O=C(NCC(=O)N[C@@H](CO)C(O)=O)[C@@H](N)CC=1NC=NC1",  # A peptide fragment: should be False (amide nitrogen)
+        "C=1(C(=CC=C(C1)CCN[C@@H](CCC=2C=CC(=CC2)O)C)O)O",  # (R)-dobutamine
+        "CNC1CCCCC1",  # N-methylcyclohexylamine
+        "CC(C)NCC(C)(C)N",  # N(1)-isopropyl-2-methylpropan-1,2-diamine
+        "CNc1ccccc1",  # N-methylaniline
+        "O=NN1CCCCC1",  # N-nitrosopiperidine
+        "[H]N(C)C",  # dimethylamine
+        # A peptide fragment (should not be classified as a secondary amine)
+        "O=C(NCC(=O)N[C@@H](CO)C(O)=O)[C@@H](N)CC=1NC=NC1"
     ]
     for smi in test_smiles:
         result, reason = is_secondary_amine(smi)
-        print(f"SMILES: {smi}\n   -> {result}, Reason: {reason}\n")
+        print(f"SMILES: {smi}\n  -> {result}, Reason: {reason}\n")
