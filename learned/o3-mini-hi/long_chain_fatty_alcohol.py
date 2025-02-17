@@ -4,19 +4,22 @@ Classifies: CHEBI:17135 long-chain fatty alcohol
 """
 Classifies: Long-chain fatty alcohol
 Definition: A fatty alcohol with a carbon chain length ranging from C13 to C22.
-A valid long-chain fatty alcohol should have an acyclic alkyl chain containing 13–22 carbon atoms,
-with at least one carbon in that chain bearing an –OH substituent.
+A valid long-chain fatty alcohol should have a contiguous non-cyclic (acyclic) alkyl chain
+of carbon atoms numbering between 13 and 22, and at least one of the carbons in that chain
+must bear an –OH substituent.
 Note: This is a heuristic method.
 """
+
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_alcohol(smiles: str):
     """
     Determines if a molecule is a long-chain fatty alcohol based on its SMILES string.
-    We require that the molecule has a contiguous (acyclic) chain of carbon atoms of length 13 to 22,
-    with at least one carbon attached to an -OH group.
-    
+    The heuristic looks for a contiguous acyclic carbon chain (i.e. outside of rings) of length
+    between 13 and 22 that has at least one carbon with an attached –OH group.
+    Also, the overall molecular weight should be in the typical range for fatty alcohols.
+
     Args:
         smiles (str): SMILES string of the molecule
         
@@ -24,111 +27,141 @@ def is_long_chain_fatty_alcohol(smiles: str):
         bool: True if the molecule qualifies as a long-chain fatty alcohol, False otherwise.
         str: Reason for the classification.
     """
-    
-    # Parse the SMILES string.
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add hydrogens so we can detect -OH groups.
+    # Check molecular weight (most fatty alcohols have MW < ~500 Da)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 500:
+        return False, f"Molecular weight ({mol_wt:.1f} Da) too high for a simple long-chain fatty alcohol"
+    
+    # Add explicit hydrogens to help locate –OH groups.
     molH = Chem.AddHs(mol)
     
-    # Build a dictionary for carbon atoms:
-    # Only consider acyclic carbons (not in any ring) because we want an alkyl chain.
-    carbon_atoms = {}
+    # Build a dictionary for candidate alkyl chain carbons:
+    # Only include carbons that are not part of any ring.
+    # Also note for each such carbon whether it has a directly attached –OH group.
+    alkyl_carbons = {}
     for atom in molH.GetAtoms():
         if atom.GetAtomicNum() == 6 and not atom.IsInRing():
-            # Initially mark as not having an -OH attached.
-            carbon_atoms[atom.GetIdx()] = False
-    
-    # Determine which carbon atoms (in the acyclic set) carry an -OH substituent.
-    # We look for an oxygen attached to the carbon that is bonded to exactly one hydrogen.
-    for atom in molH.GetAtoms():
-        if atom.GetAtomicNum() == 6 and (atom.GetIdx() in carbon_atoms):
+            # Check if any neighbor is an oxygen that is part of a hydroxyl (-OH)
+            # (i.e. oxygen bonded to at least one hydrogen)
+            attached_OH = False
             for nbr in atom.GetNeighbors():
+                # Look for oxygen atoms
                 if nbr.GetAtomicNum() == 8:
-                    # Check that this oxygen is part of an alcohol (-OH).
-                    # Expect oxygen to have exactly 2 neighbors: one hydrogen and one carbon.
-                    if len(nbr.GetNeighbors()) == 2:
-                        hasH = any(n.GetAtomicNum() == 1 for n in nbr.GetNeighbors())
-                        if hasH:
-                            carbon_atoms[atom.GetIdx()] = True
-                            break
+                    # If oxygen has at least one hydrogen attached, count as alcohol O.
+                    if any(n.GetAtomicNum() == 1 for n in nbr.GetNeighbors()):
+                        attached_OH = True
+                        break
+            alkyl_carbons[atom.GetIdx()] = attached_OH
+
+    if not alkyl_carbons:
+        return False, "No non-ring carbon atoms found to form an alkyl chain."
     
-    # Construct a graph (as a dictionary) with only the acyclic carbon atoms.
-    carbon_graph = {idx: [] for idx in carbon_atoms.keys()}
+    # Build the connectivity graph among these acyclic (alkyl) carbons.
+    # The graph is a dictionary mapping atom index -> list of neighboring atom indices.
+    carbon_graph = {idx: [] for idx in alkyl_carbons}
     for bond in molH.GetBonds():
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
-        # Consider only bonds between carbon atoms that are acyclic.
         if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6:
-            if (not a1.IsInRing()) and (not a2.IsInRing()):
-                i1 = a1.GetIdx()
-                i2 = a2.GetIdx()
-                if i1 in carbon_graph and i2 in carbon_graph:
-                    carbon_graph[i1].append(i2)
-                    carbon_graph[i2].append(i1)
+            idx1 = a1.GetIdx()
+            idx2 = a2.GetIdx()
+            if idx1 in alkyl_carbons and idx2 in alkyl_carbons:
+                carbon_graph[idx1].append(idx2)
+                carbon_graph[idx2].append(idx1)
     
-    # We now search for any simple (acyclic) path in the carbon_graph that has length in [13,22]
-    # and for which at least one carbon in the path has an attached -OH group.
-    found = False
-    found_path_length = 0
-    reason = ""
-    max_path_length_found = 0  # track longest acyclic chain encountered
-    
-    # DFS to search for suitable acyclic carbon chain.
-    def dfs(current, visited, path):
-        nonlocal found, found_path_length, max_path_length_found
-        path.append(current)
-        visited.add(current)
-        if len(path) > max_path_length_found:
-            max_path_length_found = len(path)
-        # Check if the current simple path is within desired range.
-        if 13 <= len(path) <= 22:
-            # Check if any carbon in this path has an -OH substituent.
-            if any(carbon_atoms[atom_idx] for atom_idx in path):
-                found = True
-                found_path_length = len(path)
-                visited.remove(current)
-                path.pop()
-                return
-        # If path is already the maximum allowed, do not extend further.
-        if len(path) >= 22:
-            visited.remove(current)
-            path.pop()
-            return
-        # Continue DFS for unvisited neighbors.
-        for neighbor in carbon_graph.get(current, []):
-            if neighbor not in visited:
-                dfs(neighbor, visited, path)
-                if found:
-                    return
-        visited.remove(current)
-        path.pop()
-    
-    # Start DFS from each acyclic carbon atom.
-    for node in list(carbon_graph.keys()):
-        if found:
+    # Partition the graph into connected components.
+    components = []
+    visited_global = set()
+    for node in carbon_graph.keys():
+        if node not in visited_global:
+            # simple DFS to get all nodes of this component.
+            comp = set()
+            stack = [node]
+            while stack:
+                current = stack.pop()
+                if current in comp:
+                    continue
+                comp.add(current)
+                for nbr in carbon_graph.get(current, []):
+                    if nbr not in comp:
+                        stack.append(nbr)
+            components.append(list(comp))
+            visited_global |= comp
+
+    # Helper: In a tree component the (unique) simple path between two vertices can be found via DFS.
+    def find_path(comp_nodes, graph, start, goal):
+        # returns list of nodes representing the path (including both ends), or None if not found.
+        stack = [(start, [start])]
+        visited_local = set()
+        while stack:
+            (current, path) = stack.pop()
+            if current == goal:
+                return path
+            visited_local.add(current)
+            for nbr in graph.get(current, []):
+                if nbr in comp_nodes and nbr not in path:
+                    new_path = path + [nbr]
+                    stack.append((nbr, new_path))
+        return None
+
+    # Now, search for any simple path within any connected component of alkyl carbons that:
+    #   - Has a length (number of carbons) between 13 and 22 (inclusive)
+    #   - Contains at least one carbon that directly bears a –OH group.
+    candidate_found = False
+    candidate_path_length = 0
+    candidate_comp_info = ""
+    max_path_length_overall = 0
+
+    for comp in components:
+        # Only consider components that have at least one potential candidate carbon.
+        if len(comp) < 13:
+            if len(comp) > max_path_length_overall:
+                max_path_length_overall = len(comp)
+            continue
+        # For all pairs in the component (since our graph is a tree or forest, the path is unique)
+        for i, start in enumerate(comp):
+            for goal in comp[i+1:]:
+                path = find_path(set(comp), carbon_graph, start, goal)
+                if path is None:
+                    continue
+                path_len = len(path)
+                if path_len > max_path_length_overall:
+                    max_path_length_overall = path_len
+                if 13 <= path_len <= 22:
+                    # Check that at least one carbon in the path has an -OH substituent.
+                    if any(alkyl_carbons.get(atom_idx, False) for atom_idx in path):
+                        candidate_found = True
+                        candidate_path_length = path_len
+                        candidate_comp_info = (
+                            f"Found an acyclic carbon chain of length {path_len} containing an -OH substituent."
+                        )
+                        break
+            if candidate_found:
+                break
+        if candidate_found:
             break
-        dfs(node, set(), [])
-    
-    if found:
-        return True, f"Found an acyclic carbon chain of length {found_path_length} with an attached -OH group (qualifies as a long-chain fatty alcohol)."
-    
-    # No valid chain was found.
-    if max_path_length_found < 13:
-        return False, f"No acyclic carbon chain of at least 13 carbons found (longest was {max_path_length_found})."
+
+    if candidate_found:
+        return True, candidate_comp_info
     else:
-        return False, f"Found acyclic carbon chains up to {max_path_length_found} atoms, but none with an -OH group on a chain between 13 and 22 carbons."
-    
+        # No valid chain found. Report the maximum chain length seen.
+        if max_path_length_overall < 13:
+            return False, f"No acyclic carbon chain of at least 13 carbons found (longest was {max_path_length_overall})."
+        else:
+            return False, f"Found acyclic carbon chains up to {max_path_length_overall} atoms, but none with an -OH group on a chain between 13 and 22 carbons."
+
 # Example usage (for testing):
 if __name__ == "__main__":
     test_smiles = [
-        "OCCCCCCCCCC/C=C/CCCCCCCC",  # 11E-Eicosen-1-ol: should qualify (~20 carbons, with -OH)
-        "CCCCCCCCCCCCCCCCCCCCCO",    # docosan-1-ol: 22 carbons, qualifies if acyclic and -OH at terminus
-        "CC(O)CCCCCCCCCC",            # Too short (likely 11 carbons)
-        # A complex aromatic molecule (should now be disregarded as it is not acyclic),
-        "c1cc2cc3cc4ccc5cc6cc7ccc8cc9ccc%10cc%11cc%12ccc%13cc%14cc%15ccc%16cc1c1c2c2c3c3c4c5c4c6c5c7c8c6c9c%10c7c%11c8c%12c%13c9c%14c%10c%15c%16c1c1c2c2c3c4c3c5c6c7c4c8c9c(c%101)c2c34"
+        "OCCCCCCCCCC/C=C/CCCCCCCC",  # 11E-Eicosen-1-ol: should qualify
+        "CCCCCCCCCCCCCCCCCCCCCO",    # docosan-1-ol: 22 carbons, qualifies if terminal -OH
+        "CC(O)CCCCCCCCCC",            # Likely too short (~11 carbons)
+        "O1[C@@H]2[C@H](O)C(/C=C/[C@H](O)CCCCCCCC)=C([C@H]([C@H]12)O)CO",  # Phomopoxide D (should qualify)
     ]
     for smi in test_smiles:
         result, msg = is_long_chain_fatty_alcohol(smi)
