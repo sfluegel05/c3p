@@ -5,12 +5,10 @@ Classifies: CHEBI:35346 11beta-hydroxy steroid
 """
 Classifies: 11β-hydroxy steroid
 Defined as: Any 11-hydroxy steroid in which the hydroxy group at position 11 has beta- configuration.
-Algorithm:
-  1. Parse the SMILES string.
-  2. Verify that the molecule has a steroid-like fused ring system (at least 4 rings, with at least 3 rings of size 6).
-  3. Look for an -OH group (oxygen with one heavy neighbor) where the attached carbon is chiral and
-     is a member of a 6-membered ring. Instead of checking if the fragment SMILES starts with "[C@@",
-     we now check if it contains the sequence "@@" which is a heuristic for beta orientation.
+
+This implementation uses a SMARTS pattern to look directly for a beta-oriented hydroxyl group,
+i.e. a chiral carbon with beta descriptor (‘@@’) that is directly bonded to an –OH group.
+In addition, the molecule must display a fused steroid nucleus (at least 4 rings with at least 3 rings of size 6).
 """
 
 from rdkit import Chem
@@ -19,17 +17,17 @@ from rdkit.Chem import rdMolDescriptors
 def is_11beta_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is an 11β-hydroxy steroid based on its SMILES string.
-    The heuristic is:
-      - The molecule must display a fused steroid nucleus (≥4 rings and at least 3 rings of size 6).
-      - There must be at least one hydroxyl (-OH) group attached to a chiral carbon that belongs
-        to at least one 6-membered ring. The local stereochemical SMILES for that carbon must include
-        the marker "@@" indicating beta orientation.
+    
+    Heuristics:
+      1. The molecule must have a fused steroid nucleus (≥4 rings and at least 3 6-membered rings).
+      2. It must contain at least one beta-oriented hydroxyl group (i.e. a chiral carbon, marked by @@,
+         that is directly bonded to an –OH group) and that carbon is part of one of the 6-membered rings.
     
     Args:
         smiles (str): SMILES string of the molecule.
-
+    
     Returns:
-        bool: True if the molecule passes the heuristic for an 11β-hydroxy steroid.
+        bool: True if the molecule meets the criteria of an 11β-hydroxy steroid, False otherwise.
         str: A message explaining the classification decision.
     """
     try:
@@ -47,72 +45,43 @@ def is_11beta_hydroxy_steroid(smiles: str):
     if len(rings) < 4:
         return False, f"Found only {len(rings)} rings; a typical steroid has at least 4 fused rings."
     
-    # Count rings of size 6 (as most steroid core rings are 6-membered)
+    # Count rings of size 6 (steroid nucleus typically has 3 or 4 six-membered rings)
     rings_6 = [ring for ring in rings if len(ring) == 6]
     if len(rings_6) < 3:
-        return False, "Fewer than 3 rings of size 6; does not appear to have a typical steroid nucleus."
+        return False, "Fewer than 3 rings of size 6; does not have a typical steroid nucleus."
     
-    # Look for a candidate beta-oriented hydroxyl.
-    beta_hydroxy_found = False
-    # Iterate over oxygen atoms.
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 8:
-            continue
-        neighbors = atom.GetNeighbors()
-        # Check for an -OH group: oxygen bonded to exactly one heavy (non-hydrogen) atom.
-        # (We assume implicit H's; if a hydrogen were explicit it would be added to the molecule.)
-        if len(neighbors) != 1:
-            continue
-        heavy = neighbors[0]
-        # Verify the bond is a single bond.
-        bond = mol.GetBondBetweenAtoms(heavy.GetIdx(), atom.GetIdx())
-        if bond is None or bond.GetBondTypeAsDouble() != 1:
-            continue
-        
-        # Check that the attached heavy atom is a carbon.
-        if heavy.GetAtomicNum() != 6:
-            continue
-        
-        # Check that this carbon is a chiral center.
-        if heavy.GetChiralTag() not in (Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CW,
-                                        Chem.rdchem.ChiralType.CHI_TETRAHEDRAL_CCW):
-            continue
-
-        # Verify the carbon is part of at least one 6-membered ring
-        in_6_ring = False
-        for ring in rings:
-            if len(ring) == 6 and heavy.GetIdx() in ring:
-                in_6_ring = True
-                break
-        if not in_6_ring:
-            continue
-        
-        # Generate a SMILES fragment for the carbon (with chirality)
-        try:
-            frag = Chem.MolFragmentToSmiles(mol, atomsToUse=[heavy.GetIdx()], canonical=True, isomericSmiles=True)
-        except Exception:
-            continue
-        
-        # Instead of checking that the fragment starts with "[C@@", we now check if it contains "@@"
-        # (a heuristic for beta orientation in many steroid SMILES conventions).
-        if "@@" in frag:
-            beta_hydroxy_found = True
-            break
-
-    if not beta_hydroxy_found:
-        return False, "No beta-oriented hydroxyl group on a chiral carbon in a 6-membered steroid ring was found."
+    # SMARTS to find a beta-oriented hydroxy group:
+    # [C@@] specifies a chiral carbon with beta configuration.
+    # [OX2H] specifies an oxygen with two connections (typically -OH).
+    beta_oh_smarts = "[C@@]([OX2H])"
+    beta_oh_query = Chem.MolFromSmarts(beta_oh_smarts)
     
-    return True, "Steroid nucleus detected with at least 4 fused rings (≥3 of size 6) and a beta-oriented hydroxyl group likely at C-11."
+    if beta_oh_query is None:
+        return False, "Error constructing SMARTS query."
+    
+    matches = mol.GetSubstructMatches(beta_oh_query)
+    if not matches:
+        return False, "No beta-oriented hydroxyl group (as defined by SMARTS '[C@@]([OX2H])') found in the molecule."
+    
+    # Check that at least one of the matching chiral carbons is part of a 6-membered ring.
+    for match in matches:
+        carbon_idx = match[0]  # first atom in the match is the chiral carbon
+        # Check if this carbon is in any 6-membered ring
+        for ring in rings_6:
+            if carbon_idx in ring:
+                return True, "Steroid nucleus detected and at least one beta-oriented hydroxyl group on a 6-membered ring found."
+    
+    return False, "Matched beta-oriented hydroxyl group not found on any 6-membered ring."
 
-# Example usage and tests:
+# Example usage and tests.
 if __name__ == "__main__":
     test_smiles_list = [
-        # prednisolone phosphate:
+        # prednisolone phosphate
         "C[C@@]12C[C@@H]([C@]3([C@]([C@]2([H])CC[C@@]1(C(COP(=O)(O)O)=O)O)(CCC=4[C@]3(C)C=CC(C4)=O)[H])[H])O",
-        # 5beta-dihydroaldosterone:
+        # 5beta-dihydroaldosterone
         "C[C@]12CCC(=O)C[C@H]1CC[C@H]1[C@@H]3CC[C@H](C(=O)CO)[C@]3(C[C@H](O)[C@H]21)C=O",
-        # withalongolide C:
-        "C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3[C@@H](O)C[C@]12C)[C@H]1CC(C)=C(CO)C(=O)O1",
+        # withalongolide C
+        "C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3[C@@H](O)C[C@]12C)[C@H]1CC(C)=C(CO)C(=O)O1"
     ]
     
     for sm in test_smiles_list:
