@@ -4,96 +4,95 @@ Classifies: CHEBI:37581 gamma-lactone
 #!/usr/bin/env python3
 """
 Classifies: gamma-lactone
-Definition: A gamma-lactone (for our purpose) is a cyclic ester that
-  contains a five-membered ring made up of exactly four carbons and one oxygen,
-  with one of the ring carbons (the lactone carbonyl carbon) bearing an exocyclic 
-  carbonyl group (i.e. a double bond to an oxygen that is not part of the ring).
+Definition: For our purposes a gamma-lactone is a cyclic ester that contains a five-membered ring 
+  made up of exactly four carbons and one oxygen, where one of the ring carbons 
+  (the lactone carbonyl carbon) bears an exocyclic terminal carbonyl group (a C=O where the O is not in the ring).
   
-This code uses RDKit to parse the SMILES and then manually inspects each five-membered ring.
+This implementation uses RDKit’s symmetric SSSR finder to get all rings (even those in fused systems)
+and then inspects each five-membered ring for the proper composition and connectivity.
 """
 
 from rdkit import Chem
 
 def is_gamma_lactone(smiles: str):
     """
-    Determines if a molecule is a gamma‐lactone based on its SMILES string.
-    A gamma‐lactone (by our strict definition) must contain at least one five‐membered
-    cyclic ester ring meeting these criteria:
-      • The ring is composed of 5 atoms: exactly one oxygen and exactly four carbons.
-      • One of the ring carbons (the lactone carbonyl carbon) has an exocyclic oxygen
-        attached by a double bond. In addition, the exocyclic oxygen should be terminal 
-        (only attached to that carbon), helping to ensure that it is a carbonyl.
+    Determines if a molecule is a gamma‐lactone based on its SMILES string by looking for a five‐membered cyclic ester 
+    ring composed of 4 carbons and 1 oxygen in which one of the carbons has a terminal exocyclic carbonyl group.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        (bool, str): A tuple where the first element is True if a gamma‐lactone motif is 
-                     found, and the second element gives an explanation; otherwise, False 
-                     with a reason. If the SMILES is invalid, returns (False, "Invalid SMILES string").
+       (bool, str): Tuple where the first element is True if a gamma-lactone motif is found, and the second element 
+                    provides an explanation. Returns (False, reason) if not found, or if the SMILES string is invalid.
     """
-    # Parse the SMILES string into an RDKit molecule.
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Get ring information (each ring is a tuple of atom indices)
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()
 
+    # Use the symmetric SSSR finder to obtain all rings (even those in fused systems)
+    rings = list(Chem.GetSymmSSSR(mol))
+    
     # Iterate over each ring
     for ring in rings:
-        # We only consider five-membered rings.
-        if len(ring) != 5:
-            continue
-        
-        # Count atoms in the ring by element and ensure that only carbon and oxygen appear.
-        num_oxygens = 0
+        ring_indices = set(ring)  # ring is a tuple of atom indices
+        if len(ring_indices) != 5:
+            continue  # only consider five-membered rings
+
+        # Count number of carbon and oxygen atoms in the ring
         num_carbons = 0
-        valid_ring = True
-        for idx in ring:
+        num_oxygens = 0
+        for idx in ring_indices:
             atom = mol.GetAtomWithIdx(idx)
-            Z = atom.GetAtomicNum()
-            if Z == 8:
-                num_oxygens += 1
-            elif Z == 6:
+            if atom.GetAtomicNum() == 6:
                 num_carbons += 1
+            elif atom.GetAtomicNum() == 8:
+                num_oxygens += 1
             else:
-                valid_ring = False  # any atom other than C or O disqualifies the ring under our strict definition
+                # Ring has an atom other than carbon or oxygen–not our target ring.
+                num_carbons = -1
                 break
-        if not valid_ring:
-            continue
+        if num_carbons == -1 or num_oxygens != 1 or num_carbons != 4:
+            continue  # does not match gamma-lactone ring composition
 
-        # We require exactly 1 oxygen and 4 carbons in the ring.
-        if num_oxygens != 1 or num_carbons != 4:
-            continue
-
-        # Now check for the exocyclic carbonyl group.
-        # For each carbon in the ring, check its neighbors that are not in the ring.
-        for idx in ring:
+        # Now check for the exocyclic carbonyl feature.
+        # For each carbon atom in the ring, we check two things:
+        # 1. It must be connected (within the ring) to the ring oxygen.
+        # 2. It must have a neighbor (not in the ring) that is an oxygen connected by a double bond,
+        #    and that oxygen must be terminal (degree 1).
+        for idx in ring_indices:
             atom = mol.GetAtomWithIdx(idx)
             if atom.GetAtomicNum() != 6:
-                continue  # only a carbon can be the carbonyl carbon
-            ring_neighbors = {nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetIdx() in ring}
+                continue  # only carbon atoms can function as the lactone carbonyl carbon.
+            # Check if one of its in-ring neighbors is the ring oxygen.
+            in_ring_oxygens = [nbr for nbr in atom.GetNeighbors() if nbr.GetIdx() in ring_indices and nbr.GetAtomicNum() == 8]
+            if not in_ring_oxygens:
+                continue  # if no oxygen neighbor in the ring, skip
+            # Now check for an exocyclic double-bonded terminal oxygen.
             exo_carbonyl_found = False
             for nbr in atom.GetNeighbors():
-                # Only consider neighbors not in the ring.
-                if nbr.GetIdx() in ring:
-                    continue
-                # Check that neighbor is oxygen and that the bond is a double bond.
-                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
-                    # Additionally, check that this exocyclic oxygen is "terminal" (only attached to the carbon).
-                    if nbr.GetDegree() == 1:
-                        exo_carbonyl_found = True
-                        break
+                if nbr.GetIdx() in ring_indices:
+                    continue  # skip atoms that are part of the ring
+                if nbr.GetAtomicNum() == 8:
+                    # Get bond between atom and neighbor
+                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                    if bond is None:
+                        continue
+                    # Check if bond order is double; note: sometimes aromatic bonds need special handling,
+                    # but for carbonyl we expect an explicit double bond.
+                    if bond.GetBondType() == Chem.BondType.DOUBLE:
+                        # Check that the exocyclic oxygen is terminal
+                        if nbr.GetDegree() == 1:
+                            exo_carbonyl_found = True
+                            break
             if exo_carbonyl_found:
-                return True, ("Found a five‐membered lactone ring (4 carbons, 1 oxygen) with an exocyclic "
-                              "carbonyl group attached to one of the ring carbons.")
+                return True, ("Found a five‐membered lactone ring (4 carbons, 1 oxygen) where a ring carbon is bonded to a terminal "
+                              "exocyclic carbonyl oxygen.")
     
     return False, "No gamma‐lactone ring (five‐membered cyclic ester with proper connectivity) found."
 
-# Example usage (for testing purposes):
+# Example usage:
 if __name__ == "__main__":
     # Test with a known gamma-lactone (gamma-nonanolactone)
     test_smiles = "CCCCCC[C@H]1CCC(=O)O1"
