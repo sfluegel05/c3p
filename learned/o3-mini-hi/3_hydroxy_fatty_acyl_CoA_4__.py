@@ -6,88 +6,96 @@ Classifies: 3-hydroxy fatty acyl-CoA(4-)
 Definition: An acyl-CoA(4-) oxoanion arising from deprotonation of the phosphate and diphosphate OH groups
 of any 3-hydroxy fatty acyl-CoA; major species at pH 7.3.
 
-This program uses substructure matching to detect three key features:
-1. A 3-hydroxy acyl thioester fragment (in either stereochemical form).
-2. A CoA moiety: we require (a) a CoA “thiotemplate” fragment and (b) a purine (adenosine) fragment.
-   Here, we now check for either an unsubstituted purine ring pattern or one with a substitution.
-3. Charge: either the overall molecular formal charge equals –4 OR at least 4 negatively charged oxygens
-   bound to phosphorus are detected.
+This revised program uses substructure matching and a relaxed charge test (to allow for neutral SMILES)
+plus extra filtering on the 3-hydroxy fragment to avoid cases where the hydroxyl is embedded in a ring.
 """
-
 from rdkit import Chem
 
 def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
     """
     Determines if a molecule is a 3-hydroxy fatty acyl-CoA(4-) based on its SMILES string.
     
+    Our classification procedure relies on:
+      1. Detecting the 3-hydroxy acyl thioester fragment. We look for one (or both) of the patterns:
+         "[C@H](O)CC(=O)S" or "[C@@H](O)CC(=O)S". In addition, we filter out any match where the chiral,
+         hydroxy-bearing carbon is in a ring (to avoid ring-bound hydroxyls seen in pyran fragments).
+      2. Confirming the presence of a CoA fragment by:
+         (a) Finding a “thiotemplate” substructure: "SCCNC(=O)CCNC(=O)".
+         (b) Detecting a purine (adenosine) fragment via one of two patterns: 
+             "n1cnc2ncnc12" or "n1cnc2c(N)ncnc12".
+      3. Applying a charge check. Many of these molecules commonly appear drawn as neutral (formal charge 0)
+         even though they are the 4- species; therefore we accept molecules when the computed formal charge is
+         either exactly –4 or 0. For any other value the molecule is rejected.
+         
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule belongs to the 3-hydroxy fatty acyl-CoA(4-) class.
+        bool: True if the molecule meets the classification.
         str: Explanation for the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # ----------------------------
+    # -------------------------------------
     # Charge criteria:
-    # Either the overall computed formal charge is –4 OR
-    # at least 4 oxygens with -1 charge directly bound to a phosphorus are found.
+    # In many cases the SMILES are drawn in their neutral form.
+    # We accept if the computed formal charge is either -4 or 0.
     computed_charge = Chem.GetFormalCharge(mol)
-    charge_ok = False
-    if computed_charge == -4:
-        charge_ok = True
-    else:
-        count_neg_o_on_p = 0
-        for atom in mol.GetAtoms():
-            # Look for oxygen with -1 formal charge
-            if atom.GetAtomicNum() == 8 and atom.GetFormalCharge() == -1:
-                for nbr in atom.GetNeighbors():
-                    if nbr.GetAtomicNum() == 15:  # phosphorus
-                        count_neg_o_on_p += 1
-                        break
-        if count_neg_o_on_p >= 4:
-            charge_ok = True
-    if not charge_ok:
-        return False, f"Charge check failed: computed formal charge is {computed_charge} and found only {(count_neg_o_on_p if computed_charge != -4 else 'N/A')} negatively charged oxygen(s) on phosphorus; expected -4 overall or at least 4 such oxygens."
-
-    # ----------------------------
-    # Check for the 3-hydroxy acyl thioester fragment.
-    # Two SMARTS patterns for the two stereochemical variants.
-    smarts_3hydroxy_pos = "[C@H](O)CC(=O)S"
-    smarts_3hydroxy_neg = "[C@@H](O)CC(=O)S"
-    pattern_pos = Chem.MolFromSmarts(smarts_3hydroxy_pos)
-    pattern_neg = Chem.MolFromSmarts(smarts_3hydroxy_neg)
-    if not (mol.HasSubstructMatch(pattern_pos) or mol.HasSubstructMatch(pattern_neg)):
-        return False, "No 3-hydroxy acyl thioester fragment ([C@H](O)CC(=O)S or [C@@H](O)CC(=O)S) found."
+    if computed_charge not in (-4, 0):
+        return False, f"Charge check failed: computed formal charge is {computed_charge} (expected -4 or 0 for protonated form)."
     
-    # ----------------------------
+    # -------------------------------------
+    # Check for the 3-hydroxy acyl thioester fragment.
+    # Use two SMARTS patterns that differ by stereochemistry.
+    smarts_patterns = ["[C@H](O)CC(=O)S", "[C@@H](O)CC(=O)S"]
+    found_valid_acyl = False
+    for smarts in smarts_patterns:
+        pattern = Chem.MolFromSmarts(smarts)
+        if pattern is None:
+            continue
+        matches = mol.GetSubstructMatches(pattern)
+        for match in matches:
+            # The first atom in our pattern is the chiral (hydroxy-bearing) carbon.
+            # We require that this atom is not part of any ring.
+            chiral_atom = mol.GetAtomWithIdx(match[0])
+            if not chiral_atom.IsInRing():
+                found_valid_acyl = True
+                break
+        if found_valid_acyl:
+            break
+    if not found_valid_acyl:
+        return False, "No valid 3-hydroxy acyl thioester fragment found (or the hydroxy-bearing carbon is in a ring)."
+    
+    # -------------------------------------
     # Check for the CoA fragment.
-    # (a) Look for the CoA thiotemplate fragment.
-    coa_smarts = "SCCNC(=O)CCNC(=O)"
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    if not mol.HasSubstructMatch(coa_pattern):
+    # (a) CoA thiotemplate fragment (allows some variability).
+    coa_thiotemplate_smarts = "SCCNC(=O)CCNC(=O)"
+    coa_template = Chem.MolFromSmarts(coa_thiotemplate_smarts)
+    if not mol.HasSubstructMatch(coa_template):
         return False, "No CoA-specific thiotemplate fragment (SCCNC(=O)CCNC(=O)) found."
     
-    # (b) Look for an adenosine/purine fragment.
-    # Use two SMARTS patterns:
-    # Pattern 1: unsubstituted purine ring as originally specified.
-    purine_smarts1 = "n1cnc2ncnc12"
-    # Pattern 2: purine ring with a substitution on the carbon (e.g., n1cnc2c(N)ncnc12)
-    purine_smarts2 = "n1cnc2c(N)ncnc12"
-    purine_pattern1 = Chem.MolFromSmarts(purine_smarts1)
-    purine_pattern2 = Chem.MolFromSmarts(purine_smarts2)
-    if not (mol.HasSubstructMatch(purine_pattern1) or mol.HasSubstructMatch(purine_pattern2)):
+    # (b) Purine (adenosine) fragment. Two variants are allowed.
+    purine_smarts = ["n1cnc2ncnc12", "n1cnc2c(N)ncnc12"]
+    found_purine = False
+    for ps in purine_smarts:
+        purine_pattern = Chem.MolFromSmarts(ps)
+        if purine_pattern and mol.HasSubstructMatch(purine_pattern):
+            found_purine = True
+            break
+    if not found_purine:
         return False, "No adenosine/purine fragment found to support CoA identity (tried patterns: n1cnc2ncnc12 and n1cnc2c(N)ncnc12)."
     
-    # All tests passed.
-    return True, "Molecule contains a 3-hydroxy acyl thioester moiety, a CoA moiety (both thiotemplate and purine fragments), and meets the charge criteria."
+    # -------------------------------------
+    # Final conclusion.
+    # If the formal charge was 0 (i.e. drawn in a protonated form) there is a note.
+    charge_note = " (NB: drawn neutral; assuming protonated form consistent with CoA(4-))" if computed_charge == 0 else ""
+    return True, f"Molecule contains a valid 3-hydroxy acyl thioester moiety, a CoA fragment (thiotemplate and purine regions), and satisfies the charge criteria{charge_note}."
 
 # Example usage:
 if __name__ == "__main__":
-    # Test with one sample SMILES, e.g., for (R)-3-hydroxybutanoyl-CoA(4-)
+    # Test with one known sample SMILES, e.g., for (R)-3-hydroxybutanoyl-CoA(4-)
     sample_smiles = "C[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12"
     valid, reason = is_3_hydroxy_fatty_acyl_CoA_4__(sample_smiles)
     print(valid, reason)
