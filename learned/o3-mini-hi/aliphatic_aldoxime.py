@@ -4,10 +4,11 @@ Classifies: CHEBI:82744 aliphatic aldoxime
 """
 Classifies: Aliphatic Aldoxime – any aldoxime derived from an aliphatic aldehyde.
 A molecule is considered to have an aliphatic aldoxime group if it contains a functional group of 
-the form R–CH=N–OH, where:
-    - The carbon attached to the imine N has exactly one hydrogen (consistent with an aldehyde CH group).
-    - That same carbon is not aromatic.
-    - Its only heavy (non-hydrogen) neighbor (besides the imine nitrogen) is a carbon that is aliphatic (non‐aromatic).
+the form R–CH=N–OH where:
+    - The carbon attached to the imine nitrogen has exactly one hydrogen (as in an aldehyde CH group).
+    - That carbon is not aromatic.
+    - Besides the imine nitrogen (and hydrogens), it has exactly one heavy neighbor.
+    - The heavy substituent (the “R” group) is a carbon that is aliphatic (i.e. it and all connected heavy atoms are non‐aromatic).
 """
 
 from rdkit import Chem
@@ -15,29 +16,33 @@ from rdkit import Chem
 def is_aliphatic_aldoxime(smiles: str):
     """
     Determines if a molecule is an aliphatic aldoxime based on its SMILES string.
-    Specifically, it checks for an oxime group of the form R–CH=N–OH where:
-         - The carbon bonded to the imine nitrogen (CH) has exactly one hydrogen.
-         - The candidate carbon is not aromatic.
-         - Excluding the imine nitrogen and hydrogens, it has exactly one heavy neighbor,
-           and that neighbor is an aliphatic (non-aromatic, atomic num 6) carbon.
+    It checks for an oxime group of the form R–CH=N–OH that comes from an aliphatic aldehyde.
+    
+    Requirements on the candidate aldehyde carbon (the one bonded to the imine N):
+      - It is non-aromatic.
+      - It has exactly one hydrogen.
+      - Excluding the imine nitrogen and hydrogens, it has exactly one heavy (non-hydrogen) neighbor.
+      - The attached heavy atom (which becomes the R group) must be a carbon and must be fully aliphatic;
+        that is, by traversing all heavy atoms in its substituent, none of them should be aromatic.
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
         bool: True if the molecule is classified as an aliphatic aldoxime, False otherwise.
         str: Detailed explanation of the decision.
     """
-    # Parse the SMILES string
+    
+    # Parse the SMILES string to create an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens to make hydrogen counting straightforward
+    # Adding explicit hydrogens to simplify hydrogen count checks.
     mol = Chem.AddHs(mol)
     
     # Define a SMARTS pattern to identify candidate oxime groups.
-    # The pattern looks for a carbon double-bonded to a nitrogen that is connected to an -OH group: [CX3]=[NX2][OX2H]
+    # This pattern looks for a carbon double-bonded to a nitrogen which is bonded to an OH group.
     oxime_pattern = Chem.MolFromSmarts("[CX3]=[NX2][OX2H]")
     if oxime_pattern is None:
         return False, "Failed to compile SMARTS for oxime group"
@@ -46,51 +51,78 @@ def is_aliphatic_aldoxime(smiles: str):
     if not matches:
         return False, "No oxime group found"
     
-    # Process each candidate match (order: carbon, nitrogen, oxygen)
+    # Helper function: traverse the substituent (R-group) starting from the given heavy atom.
+    # We exclude the candidate aldehyde carbon and all hydrogens.
+    # If any heavy atom in this substituent is aromatic, we return False.
+    def is_substituent_aliphatic(start_atom, exclude_idx):
+        visited = set()
+        stack = [start_atom]
+        while stack:
+            atom = stack.pop()
+            if atom.GetIdx() in visited:
+                continue
+            visited.add(atom.GetIdx())
+            if atom.GetIsAromatic():
+                return False
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 1:
+                    continue  # skip hydrogens
+                if neighbor.GetIdx() == exclude_idx:
+                    continue  # do not go back to the candidate aldehyde carbon
+                if neighbor.GetIdx() not in visited:
+                    stack.append(neighbor)
+        return True
+
+    # Process each candidate oxime match.
+    # The pattern order is: candidate aldehyde carbon, imine nitrogen, and oxygen of OH.
     for match in matches:
         c_idx, n_idx, o_idx = match
         carbon = mol.GetAtomWithIdx(c_idx)
         nitrogen = mol.GetAtomWithIdx(n_idx)
         oxygen = mol.GetAtomWithIdx(o_idx)
         
-        # Confirm that the oxygen is really part of a hydroxyl (-OH) (i.e. has at least one hydrogen)
-        o_neighbors = oxygen.GetNeighbors()
-        if not any(neigh.GetAtomicNum() == 1 for neigh in o_neighbors):
-            continue  # Not a hydroxyl - skip
-
-        # New check: ensure that the candidate carbon is not aromatic.
+        # Verify the oxygen is truly part of a hydroxyl (-OH) group (i.e., it has at least one hydrogen).
+        if not any(neigh.GetAtomicNum() == 1 for neigh in oxygen.GetNeighbors()):
+            continue  # skip candidate
+        
+        # The candidate aldehyde carbon must be non-aromatic.
         if carbon.GetIsAromatic():
             continue
         
-        # Count the hydrogen atoms attached to the candidate carbon.
+        # Count attached hydrogens for the candidate carbon.
         hydrogen_count = sum(1 for neigh in carbon.GetNeighbors() if neigh.GetAtomicNum() == 1)
         if hydrogen_count != 1:
             # For an aldehyde-derived oxime, the carbon should have exactly one hydrogen.
             continue
         
-        # Examine the heavy (non-hydrogen) neighbors of the candidate carbon, excluding the imine nitrogen.
+        # Examine heavy (non-hydrogen) neighbors excluding the imine nitrogen.
         heavy_neighbors = [neigh for neigh in carbon.GetNeighbors() 
                            if neigh.GetAtomicNum() != 1 and neigh.GetIdx() != n_idx]
         if len(heavy_neighbors) != 1:
-            # There should be exactly one heavy substituent (the "R" group) other than the imine nitrogen.
+            # There should be exactly one heavy substituent (the R group).
             continue
         
         r_atom = heavy_neighbors[0]
-        # The heavy neighbor should be a carbon atom.
+        # The heavy neighbor should be a carbon.
         if r_atom.GetAtomicNum() != 6:
             continue
-        # The heavy neighbor must be aliphatic (i.e. not aromatic)
+        
+        # Check that the immediate substituent carbon is non-aromatic.
         if r_atom.GetIsAromatic():
             continue
         
-        # If the candidate passes all tests, then we have found an aliphatic aldoxime.
+        # Traverse the substituent: if any heavy atom is aromatic, reject this candidate.
+        if not is_substituent_aliphatic(r_atom, exclude_idx=carbon.GetIdx()):
+            continue
+        
+        # If all conditions are met then we have found an aliphatic aldoxime.
         return True, "Contains an aldoxime group (R–CH=N–OH) derived from an aliphatic aldehyde."
-    
-    # If no candidate oxime group qualifies, provide an explanation.
+        
+    # No candidate oxime group qualifies after the additional aliphatic check.
     return False, ("Oxime group(s) found but none appear to be derived from an aliphatic aldehyde "
-                   "(the carbon does not have exactly one hydrogen, is aromatic, or its substituent is not an aliphatic carbon).")
+                   "(the candidate carbon or its substituent does not meet aliphatic criteria).")
 
-# Example test cases (these can be commented out or modified as needed)
+# Example test cases
 if __name__ == "__main__":
     test_smiles = [
         "C([C@@H](/C(=N\\O)/[H])C)C",          # (1Z,2S)-2-methylbutanal oxime
