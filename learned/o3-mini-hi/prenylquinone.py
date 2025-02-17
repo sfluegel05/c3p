@@ -5,26 +5,29 @@ Classifies: CHEBI:26255 prenylquinone
 Classifies: prenylquinone
 
 A prenylquinone is defined as a quinone substituted by a polyprenyl‐derived side chain.
-That is, the molecule must contain a quinone core (for example, a 1,4‐benzoquinone or a naphthoquinone motif)
-and a prenyl-derived side chain that contains at least two isoprene units (e.g. two or more “[CH2]C=C([CH3])” fragments)
-directly attached to the quinone core.
+That is, the molecule must contain a quinone core (i.e. a conjugated ring
+that carries at least two carbonyl (C=O) groups) and
+at least one substituent branch directly attached to the core that contains at least two isoprene units.
+For the prenyl-derived side chain we use a SMARTS pattern for an isoprene unit "[CH2]C=C([CH3])"
+and require that at least two such units are directly attached to the quinone core.
 """
 
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_prenylquinone(smiles: str):
     """
     Determines if a molecule is a prenylquinone based on its SMILES string.
     
-    The molecule must contain:
-      1. A quinone core represented by one of several common SMARTS patterns.
-      2. At least one substituent branch on that core that is prenyl-derived,
-         and that branch must have at least two isoprene units (heuristic: two or more matches
-         of the motif [CH2]C=C([CH3]) that are directly attached to the core).
-      
+    Heuristic steps:
+      1. Look for a quinone core by scanning each ring in the molecule.
+         A candidate quinone core is an (usually conjugated) ring (of 5 or more atoms)
+         that has at least 2 carbonyl groups (C=O) attached directly to ring atoms.
+      2. Look for prenyl (isoprene) units using the SMARTS pattern "[CH2]C=C([CH3])".
+         Count how many of them are directly attached to one of the atoms in the prenylquinone core.
+         For our purposes, we require at least two such units.
+         
     Args:
-        smiles (str): SMILES string for the molecule.
+        smiles (str): SMILES string of the molecule.
     
     Returns:
         bool: True if the molecule is classified as a prenylquinone, False otherwise.
@@ -34,64 +37,70 @@ def is_prenylquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # --- Step 1: Find the quinone core --- 
-    # We use a list of SMARTS patterns that cover several quinone types (benzoquinone, naphthoquinone, etc.)
-    quinone_patterns = [
-        "c1cc(=O)cc(=O)c1",                # 1,4-benzoquinone
-        "c1ccc2C(=O)c(c1)C(=O)cc2",         # naphthoquinone variant 1
-        "c1cc2c(c(c1)C(=O))C(=O)cc2"         # naphthoquinone variant 2
-    ]
-    quinone_core_indices = set()
-    for qs in quinone_patterns:
-        pattern = Chem.MolFromSmarts(qs)
-        if pattern is None:
-            continue
-        matches = mol.GetSubstructMatches(pattern)
-        if matches:
-            # For our purposes, we take the atoms in the first matching pattern as the quinone core.
-            quinone_core_indices = set(matches[0])
-            break
-            
-    if not quinone_core_indices:
-        return False, "No quinone core detected; none of the expected quinone SMARTS matched"
+    # --- Step 1: Identify a quinone core by looking at rings ---
+    # We loop over all rings and check if a ring (of size >= 5) has at least 2 carbonyl substituents.
+    quinone_core = None
+    ring_info = mol.GetRingInfo()
+    for ring in ring_info.AtomRings():
+        if len(ring) < 5:
+            continue  # ignore very small rings
+        carbonyl_count = 0
+        # For each atom in the ring, check if it has a C=O bond (i.e. double bond to an oxygen)
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            # Only consider carbon atoms
+            if atom.GetAtomicNum() != 6:
+                continue
+            # Look at each neighbor: if it is oxygen and the bond is a double bond, count it.
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 8:
+                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                    if bond is not None and bond.GetBondTypeAsDouble() == 2.0:
+                        carbonyl_count += 1
+                        break  # count once per ring atom
+        if carbonyl_count >= 2:
+            quinone_core = set(ring)
+            break  # use the first ring that qualifies
     
-    # --- Step 2: Identify prenyl fragment(s) ---
-    # Use a SMARTS pattern to capture an isoprene unit.
-    prenyl_pattern = Chem.MolFromSmarts("[CH2]C=C([CH3])")
+    if quinone_core is None:
+        return False, "No quinone core detected; no ring with at least two carbonyl groups attached was found"
+    
+    # --- Step 2: Identify prenyl (isoprene) fragments ---
+    prenyl_smarts = "[CH2]C=C([CH3])"
+    prenyl_pattern = Chem.MolFromSmarts(prenyl_smarts)
     if prenyl_pattern is None:
-        return False, "Error in prenyl SMARTS pattern"
+        return False, "Error creating the prenyl SMARTS pattern"
+    
     prenyl_matches = mol.GetSubstructMatches(prenyl_pattern)
     if not prenyl_matches:
-        return False, "No prenyl fragment detected"
+        return False, "No prenyl fragment detected in the molecule"
     
-    # --- Step 3: Check if at least one prenyl-derived substituent (with at least 2 isoprene units)
-    # is directly attached to the quinone core. We do this by:
-    #   (a) Identifying prenyl matches that are directly bonded (at least one atom) to an atom in the quinone core.
-    #   (b) Counting, per substituent branch, how many distinct prenyl matches occur.
-    attached_prenyl_counts = 0
+    # Count the number of prenyl (isoprene) units that are directly attached to the quinone core.
+    attached_prenyl_count = 0
     for match in prenyl_matches:
-        # For each prenyl match, check if any atom is adjacent to a quinone core atom.
+        # For each prenyl match, check if any atom in this match is directly bonded to an atom in the quinone core.
         is_attached = False
         for atom_idx in match:
             atom = mol.GetAtomWithIdx(atom_idx)
             for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() in quinone_core_indices:
+                if nbr.GetIdx() in quinone_core:
                     is_attached = True
                     break
             if is_attached:
                 break
         if is_attached:
-            attached_prenyl_counts += 1
+            attached_prenyl_count += 1
+
+    # We require at least two attached isoprene units (i.e. a polyprenyl chain).
+    if attached_prenyl_count < 2:
+        return False, (f"Prenyl fragment detected but only {attached_prenyl_count} isoprene unit(s) are attached " +
+                       "to the quinone core (at least 2 are required for a polyprenyl side chain)")
     
-    # For a true prenylquinone the polyprenyl side chain should have at least two i.e. 2 or more isoprene units.
-    if attached_prenyl_counts < 2:
-        return False, f"Prenyl fragment detected but only {attached_prenyl_counts} isoprene unit(s) are attached to the quinone core (need at least 2 for a polyprenyl side chain)"
-    
-    return True, f"Molecule contains a quinone core with {attached_prenyl_counts} prenyl (isoprene) units attached"
+    return True, (f"Molecule contains a quinone core with {attached_prenyl_count} prenyl (isoprene) unit(s) attached")
 
 # Example test run
 if __name__ == "__main__":
-    # Use ubiquinone-2 as one of the examples.
+    # Test with ubiquinone-2 as one example.
     test_smiles = "COC1=C(OC)C(=O)C(C\\C=C(/C)CCC=C(C)C)=C(C)C1=O"
     result, reason = is_prenylquinone(test_smiles)
     print(f"Result: {result}, Reason: {reason}")
