@@ -3,130 +3,90 @@ Classifies: CHEBI:64611 ether lipid
 """
 """
 Classifies: Ether Lipid
-Definition: A lipid similar in structure to a glycerolipid but in which one or more 
-of the carbon atoms on glycerol is bonded to an alkyl chain via an ether linkage (C–O–C)
-rather than the usual ester linkage.
-Heuristic criteria for this version:
-  (1) The molecule must have a molecular weight typical for lipids (>= 300 Da).
-  (2) Loop over oxygen atoms with exactly two carbon neighbors.
-  (3) Exclude ethers where either attached carbon is involved in a carbonyl (i.e. part of an ester).
-  (4) For each candidate oxygen, try both orders:
-      - One attached carbon is considered the "polar candidate" (glycerol‐like headgroup).
-         We now require this carbon to have at least one neighboring oxygen or phosphorus
-         (other than the ether oxygen).
-      - The other attached carbon is the "chain candidate" and must be acyclic and lead
-         to a linear alkyl chain of at least 8 carbons in length.
-If any candidate pair satisfies these conditions, the molecule is classified as an ether lipid.
-Note that these heuristics are approximate.
+Definition: A lipid similar in structure to a glycerolipid but in which one or more of the carbon atoms on glycerol 
+is bonded to an alkyl chain via an ether linkage (C-O-C) rather than the usual ester linkage (O-C(=O)-).
 """
+
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_ether_lipid(smiles: str):
     """
     Determines if a molecule is an ether lipid based on its SMILES string.
-    
+    The molecule must contain a glycerol backbone and at least one ether linkage (C-O-C)
+    that is not part of an ester group.
+
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+        smiles (str): SMILES string of the molecule
+
     Returns:
-        bool: True if the molecule is classified as an ether lipid, else False.
+        bool: True if the molecule is classified as an ether lipid, False otherwise.
         str: Explanation for the classification decision.
     """
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # 1. Ensure that the molecular weight is above a typical lower bound for lipids.
-    mw = rdMolDescriptors.CalcExactMolWt(mol)
-    if mw < 300:
-        return False, f"Molecular weight too low for a lipid ({mw:.1f} < 300 Da)"
-    
-    # Helper: Check if a carbon atom is part of a carbonyl group (C=O)
+    # We first search for a glycerol backbone.
+    # This simple SMARTS pattern is intended to capture the HO-CH2-CHOH-CH2-OH motif.
+    # Note that many lipids contain more decorations (phosphate groups etc.), but this serves as a hint.
+    glycerol_smarts = "OCC(O)CO"  # simple representation of glycerol motif
+    glycerol_query = Chem.MolFromSmarts(glycerol_smarts)
+    glycerol_matches = mol.GetSubstructMatches(glycerol_query)
+    if not glycerol_matches:
+        return False, "Glycerol backbone not found"
+
+    # For later use, collect all atom indices that are part of any glycerol backbone hit.
+    glycerol_atoms = set()
+    for match in glycerol_matches:
+        for idx in match:
+            glycerol_atoms.add(idx)
+
+    # Define a SMARTS pattern for an ether linkage: a carbon-oxygen-carbon unit.
+    # This will match any C-O-C bond.
+    ether_smarts = "[#6]-O-[#6]"
+    ether_query = Chem.MolFromSmarts(ether_smarts)
+    ether_matches = mol.GetSubstructMatches(ether_query)
+    if not ether_matches:
+        return False, "No C-O-C ether linkage found"
+
+    # Function to check if a given carbon atom is part of a carbonyl group.
     def is_carbonyl(carbon):
+        # A carbon is considered part of a carbonyl if it has a double bond to an oxygen.
         for bond in carbon.GetBonds():
             if bond.GetBondType() == Chem.BondType.DOUBLE:
                 other = bond.GetOtherAtom(carbon)
-                if other.GetAtomicNum() == 8:
+                if other.GetAtomicNum() == 8:  # oxygen
                     return True
         return False
 
-    # Helper: For a given starting carbon atom, recursively find the longest contiguous acyclic carbon chain.
-    def longest_chain(atom, visited):
-        if atom.IsInRing():
-            return 0
-        max_length = 1  # count self
-        visited.add(atom.GetIdx())
-        for bond in atom.GetBonds():
-            if bond.GetBondType() != Chem.BondType.SINGLE:
-                continue
-            nbr = bond.GetOtherAtom(atom)
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited and not nbr.IsInRing():
-                branch_length = 1 + longest_chain(nbr, visited.copy())
-                if branch_length > max_length:
-                    max_length = branch_length
-        return max_length
-
-    # New helper: Check if the polar candidate (attached carbon) is in a glycerol-like environment.
-    # Instead of requiring two hydroxyl groups, we now check if it is substituted with at least one
-    # oxygen (or phosphorus) that is not the ether oxygen.
-    def in_glycerol_like(polar_candidate, ether_oxygen):
-        for nbr in polar_candidate.GetNeighbors():
-            if nbr.GetIdx() == ether_oxygen.GetIdx():
-                continue
-            # Accept if neighbor is oxygen (atomic num 8) or phosphorus (atomic num 15)
-            if nbr.GetAtomicNum() in (8, 15):
-                return True
-        return False
-
-    # Loop over all oxygen atoms in the molecule to pick candidate ether linkages.
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 8:
-            continue
-        # For an ether oxygen, we expect exactly two neighbors.
-        if atom.GetDegree() != 2:
-            continue
-        nbrs = atom.GetNeighbors()
-        # Both neighbors must be carbons.
-        if not all(nbr.GetAtomicNum() == 6 for nbr in nbrs):
-            continue
-
-        c1, c2 = nbrs[0], nbrs[1]
-        # Exclude this oxygen if either attached carbon is in a carbonyl (to avoid misidentifying ester bonds)
+    # Now loop over found ether linkages and check:
+    # (1) They are truly ethers (i.e. not part of an ester)
+    # (2) At least one of the carbons in the linkage is part of the glycerol backbone.
+    for match in ether_matches:
+        # match returns a tuple (c1, o, c2)
+        c1 = mol.GetAtomWithIdx(match[0])
+        o_atom = mol.GetAtomWithIdx(match[1])
+        c2 = mol.GetAtomWithIdx(match[2])
+        # Exclude ether linkages that are actually ester bonds.
+        # In an ester, one of the two carbons in the C-O-C motif will be a carbonyl carbon.
         if is_carbonyl(c1) or is_carbonyl(c2):
             continue
 
-        # Try both orderings: assign one as polar candidate and the other as chain candidate.
-        for polar_candidate, chain_candidate in [(c1, c2), (c2, c1)]:
-            # Requirement for the polar candidate: should have at least one oxygen/phosphorus neighbor (aside from the ether oxygen)
-            if not in_glycerol_like(polar_candidate, atom):
-                continue
-
-            # Requirement for the chain candidate: must not be in a ring
-            if chain_candidate.IsInRing():
-                continue
-
-            # Measure the longest chain starting from the chain candidate.
-            chain_length = longest_chain(chain_candidate, set())
-            if chain_length >= 8:
-                return (True, 
-                        "Molecule contains at least one ether linkage: a polar (glycerol-like) side with an oxygen/phosphorus "
-                        "substituent and a long alkyl chain (chain length {} >= 8)".format(chain_length))
+        # Check if either carbon is in the glycerol backbone.
+        if match[0] in glycerol_atoms or match[2] in glycerol_atoms:
+            return True, "Molecule contains a glycerol backbone and at least one ether linkage not part of an ester"
     
-    return False, "No suitable ether linkage with a proper glycerol-like headgroup and a long alkyl chain found"
+    # If no ether linkage directly attached to the glycerol backbone is found:
+    return False, "No ether linkage found that is attached to the glycerol backbone"
 
-
-# Example usage (testing a few SMILES strings):
+# Example usage:
 if __name__ == "__main__":
-    test_smiles = [
-        "P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\CCCCCCCCCC)COCCCCCCCCCCCCCCCCCC)(O)(O)=O",  # PA(O-18:0/22:1(11Z))
-        "C[C@H]1CCC[C@@H](C)CCC[C@@H](C)CC[C@H](C)CCC[C@H](C)CCC[C@H](C)CCOC(CO)COCC[C@@H](C)CCC[C@H](C)CCC[C@@H](C)CCC[C@@H](C)CC[C@H](C)CCC[C@H](C)CCC[C@H](C)CCC[C@H](C)CCOC(CO)COCC[C@@H](C)CCC1",  # caldarchaeol candidate
-        "CCCCCCCC\\C=C/CCCCCCCCOC[C@@H](O)COP([O-])(=O)OCC[N+](C)(C)C",  # 1-oleyl-sn-glycero-3-phosphocholine candidate
-        "C([C@@](CO/C=C\\CCCCCCCCCCCCCCCC)(O)[H])OP([O-])(=O)OCC[N+](C)(C)C"  # Non-ether lipid example
+    # Example SMILES for an ether lipid (one of the examples provided):
+    smiles_examples = [
+        "P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\CCCCCCCCCC)COCCCCCCCCCCCCCCCCCC)(O)(O)=O", # PA(O-18:0/22:1(11Z)) has an ether linkage (look for COC... from glycerol)
+        "CCCCCCCC\\C=C/CCCCCCCCOC[C@@H](O)COP([O-])(=O)OCC[N+](C)(C)C",  # 1-oleyl-sn-glycero-3-phosphocholine
     ]
-    for s in test_smiles:
-        res, reason = is_ether_lipid(s)
-        print("SMILES:", s)
-        print("Result:", res)
-        print("Reason:", reason)
-        print()
+    for s in smiles_examples:
+        result, reason = is_ether_lipid(s)
+        print(f"SMILES: {s}\nResult: {result}, Reason: {reason}\n")
