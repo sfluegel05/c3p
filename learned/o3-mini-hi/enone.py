@@ -3,83 +3,105 @@ Classifies: CHEBI:51689 enone
 """
 """
 Classifies: enone – alpha,beta-unsaturated ketones
-Definition: A molecule with an alpha,beta-unsaturated ketone of general formula
-R(1)R(2)C=CR(3)-C(=O)R(4) (with R(4) not being H), that is, the carbonyl is conjugated
-to a C=C double bond.
-This program uses local neighborhood analysis rather than a single rigid SMARTS.
+Definition: A molecule is an enone if it contains an alpha,beta-unsaturated ketone fragment,
+            which we define as a conjugated C=C–C(=O)–C unit (with the carbonyl carbon not being an aldehyde).
+In this program we use local neighborhood analysis enhanced with hybridization and explicit hydrogen checks.
 """
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_enone(smiles: str):
     """
-    Determines if a molecule is an enone based on its SMILES string.
-    An enone must have a conjugated C=C–C(=O)–C fragment:
-      • A ketone carbonyl carbon (C double bonded to O) that is not an aldehyde.
-      • One of the carbonyl carbon's carbon neighbors (alpha carbon) must be sp2,
-        with a double bond to another carbon (the beta carbon).
+    Determines if a molecule is an enone (alpha,beta-unsaturated ketone) based on its SMILES string.
+    
+    The search is performed by identifying a candidate ketone carbonyl carbon that:
+      - Is sp2 hybridized and forms a double bond to oxygen (a carbonyl)
+      - Has no attached hydrogen (thus not an aldehyde)
+    and then finding a neighbor (alpha carbon) that is:
+      - Bound to the carbonyl via a single bond and sp2 hybridized
+      - Possessing at least one neighbor (other than the carbonyl) that forms a double bond (beta carbon) 
+        which is also sp2 hybridized.
     
     Args:
-        smiles (str): SMILES string for the molecule.
+        smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if the molecule is classified as an enone, otherwise False.
-        str: Reason explaining the classification.
+        bool: True if an enone motif is found, otherwise False.
+        str: A reason explaining the classification.
     """
-    # Parse the SMILES into a molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Loop through atoms to find candidate ketone carbonyl carbons.
+    # Iterate through atoms looking for candidate ketone carbonyl carbons.
     for atom in mol.GetAtoms():
-        # Look for carbon atoms.
+        # Focus only on carbon atoms.
         if atom.GetAtomicNum() != 6:
             continue
 
-        # Identify double-bonded oxygen(s)
-        oxygens = []
+        # Check if atom is sp2 (as expected for a carbonyl group)
+        if atom.GetHybridization() != rdchem.HybridizationType.SP2:
+            continue
+
+        # Look for a double-bonded oxygen to mark a carbonyl.
+        oxygen_neighbors = []
         for nbr in atom.GetNeighbors():
             bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-            if nbr.GetAtomicNum() == 8 and bond.GetBondTypeAsDouble() == 2:
-                oxygens.append(nbr)
-        if not oxygens:
-            continue  # Not a carbonyl carbon if no C=O bond.
+            # Check if bond is a double bond and neighbor is oxygen.
+            if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
+                oxygen_neighbors.append(nbr)
+        if not oxygen_neighbors:
+            continue  # no carbonyl group here
 
-        # To be a ketone, the carbonyl carbon must be bonded to at least two carbons.
-        # (An aldehyde would have one hydrogen.)
+        # To be a ketone, the carbonyl carbon should not have any explicit hydrogen (i.e. not an aldehyde).
+        if atom.GetTotalNumHs() > 0:
+            continue
+
+        # Now, get the non-oxygen (heavy) neighbors.
         non_oxygen_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 8]
         if len(non_oxygen_neighbors) < 2:
-            continue  # Likely an aldehyde, not an enone.
+            continue  # Likely an aldehyde or other non-ketone
 
-        # Now check if one of these carbon neighbors is an alpha carbon
-        # that is attached via a single bond and itself forms a double bond with another carbon.
+        # Loop over neighbors to identify an alpha carbon.
         for alpha in non_oxygen_neighbors:
-            bond_alpha = mol.GetBondBetweenAtoms(atom.GetIdx(), alpha.GetIdx())
-            if bond_alpha.GetBondType() != Chem.BondType.SINGLE:
+            # The bond from the carbonyl carbon to the alpha carbon must be a SINGLE bond.
+            bond_ca = mol.GetBondBetweenAtoms(atom.GetIdx(), alpha.GetIdx())
+            if bond_ca.GetBondType() != Chem.BondType.SINGLE:
                 continue
-            if alpha.GetAtomicNum() != 6:
-                continue  # Must be carbon
 
-            # Look at neighbors of alpha (except the carbonyl carbon) for a double bond.
+            # We require the alpha carbon to also be sp2 (olefinic).
+            if alpha.GetHybridization() != rdchem.HybridizationType.SP2:
+                continue
+
+            # Now search for a partner beta: a neighbor of alpha (excluding the candidate carbonyl)
+            # that is attached via a DOUBLE bond and is sp2 hybridized.
             for beta in alpha.GetNeighbors():
                 if beta.GetIdx() == atom.GetIdx():
                     continue
-                bond_alpha_beta = mol.GetBondBetweenAtoms(alpha.GetIdx(), beta.GetIdx())
-                if bond_alpha_beta.GetBondType() == Chem.BondType.DOUBLE and beta.GetAtomicNum() == 6:
-                    # We have: beta = carbon (double bonded to alpha),
-                    # alpha = carbon (singly bonded to carbonyl),
-                    # atom = carbonyl carbon (double bonded to oxygen) with at least one extra carbon neighbor.
-                    return True, ("Contains a conjugated enone motif: an alpha,beta-unsaturated "
-                                  "ketone via carbonyl carbon (idx {}) and alpha carbon (idx {}).".format(atom.GetIdx(), alpha.GetIdx()))
-    # If no candidate was found, return False.
+                bond_ab = mol.GetBondBetweenAtoms(alpha.GetIdx(), beta.GetIdx())
+                if bond_ab.GetBondType() != Chem.BondType.DOUBLE:
+                    continue
+                # Beta should be a carbon and also sp2.
+                if beta.GetAtomicNum() != 6:
+                    continue
+                if beta.GetHybridization() != rdchem.HybridizationType.SP2:
+                    continue
+
+                # Found a candidate motif: beta = alpha,beta double bond, alpha connected by single bond to carbonyl.
+                reason = ("Contains a conjugated enone motif: an alpha,beta-unsaturated ketone via carbonyl carbon (idx {}) "
+                          "and alpha carbon (idx {}).".format(atom.GetIdx(), alpha.GetIdx()))
+                return True, reason
+
     return False, "Does not contain a conjugated enone motif (no C=C–C(=O)–C arrangement was found)"
 
-# Example usage (for testing - uncomment if needed):
+# For basic testing, you can uncomment the following lines:
 # test_smiles = [
-#     "C=CC(=O)C",  # minimal enone (methyl vinyl ketone derivative)
-#     "CC1=CC(=O)CC(C)(C)C1",  # e.g., isophorone, should match enone motif
-#     "O=C(C)C=C",  # an enal (but aldehyde, should not be classified as enone)
+#     "C=CC(=O)C",                # minimal enone (methyl vinyl ketone derivative)
+#     "CC1=CC(=O)CC(C)(C)C1",      # isophorone, should match enone motif
+#     "O=C(C)C=C",                # an enal (aldehyde) – should not be classified as enone
 # ]
 # for sm in test_smiles:
-#     result, reason = is_enone(sm)
-#     print(f"SMILES: {sm}\nResult: {result}\nReason: {reason}\n")
+#     result, msg = is_enone(sm)
+#     print("SMILES:", sm)
+#     print("Result:", result)
+#     print("Reason:", msg, "\n")
