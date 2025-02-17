@@ -7,20 +7,16 @@ Classifies: 2-hydroxydicarboxylic acid
 Definition:
   Any dicarboxylic acid carrying a hydroxy group on the carbon atom
   at position alpha to a carboxyl group.
-  
-This improved algorithm does the following:
-  1. Parses the SMILES (adding explicit hydrogens).
-  2. Rejects molecules with nitrogen atoms.
-  3. Finds carboxyl (–COOH) groups using the SMARTS "[CX3](=O)[OX2H]" and requires exactly 2.
-  4. For each carboxyl group, examines the carbon bonded to the carboxyl carbon (the “alpha-carbon”)
-     provided that this candidate is not in a ring or aromatic.
-  5. Checks whether that candidate carbon carries an –OH (with at least one hydrogen attached)
-     that is not part of the carboxyl group.
-     
-Note:
-  This is a heuristic approach. Some borderline cases (e.g. unsaturated alpha-carbons)
-  may be handled differently. The extra requirement for the candidate alpha-carbon 
-  not to be in a ring was introduced to help weed out many false positives.
+
+Algorithm improvements over the previous approach:
+  1. Adds explicit hydrogens (to help distinguish –OH from carbonyl oxygens).
+  2. Requires exactly 2 carboxyl groups (using the SMARTS "[CX3](=O)[OX2H]").
+  3. For each acid, inspects directly bonded carbons (alpha candidates) that are
+     not in rings and not aromatic.
+  4. Requires the candidate alpha carbon to have at least one genuine hydroxyl 
+     substituent (an oxygen atom with at least one hydrogen via a single bond)
+     and to not also have a double-bonded (carbonyl) oxygen aside from the carboxyl attachment.
+  5. Rejects molecules with nitrogen atoms.
 """
 
 from rdkit import Chem
@@ -28,101 +24,129 @@ from rdkit import Chem
 def is_2_hydroxydicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-hydroxydicarboxylic acid based on its SMILES string.
-    Improved over the previous algorithm by relaxing the sp3 requirement on the alpha carbon
-    yet filtering out many cyclic or decorated molecules.
     
+    A 2-hydroxydicarboxylic acid is defined as any dicarboxylic acid 
+    carrying a hydroxy group on the carbon atom at position alpha to a carboxyl group.
+    
+    The algorithm:
+      1. Parses and adds explicit hydrogens.
+      2. Rejects molecules with nitrogen atoms.
+      3. Searches for exactly two carboxyl groups (using SMARTS).
+      4. For each carboxyl group, finds a candidate alpha-carbon (a carbon bonded to the acid carbon,
+         not aromatic and not in a ring).
+      5. Checks that this candidate bears a hydroxyl substituent (an O with at least one H attached)
+         and that the candidate does not carry any additional carbonyl (C=O) oxygen.
+         
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if molecule is a 2-hydroxydicarboxylic acid, False otherwise.
-        str : Reason for classification.
+        bool: True if the molecule qualifies, False otherwise.
+        str : Explanation for the decision.
     """
-    # Parse the SMILES and add hydrogens to help with substructure matching.
+    # Parse SMILES and add explicit hydrogens.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     mol = Chem.AddHs(mol)
     
-    # Reject any molecule with nitrogen atoms (avoid peptides or N-decorated structures).
+    # Reject molecules containing nitrogen.
     if any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms()):
-        return False, "Molecule contains nitrogen atoms which are not expected"
+        return False, "Molecule contains unexpected nitrogen atoms"
     
-    # Define a SMARTS pattern for carboxyl groups: –COOH.
+    # SMARTS pattern for carboxyl group (–COOH)
     carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H]")
     if carboxyl_pattern is None:
-        return False, "Error creating carboxyl SMARTS pattern"
+        return False, "Error generating carboxyl SMARTS pattern"
     
     carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
     if not carboxyl_matches:
         return False, "No carboxyl groups found"
-        
-    # Deduplicate based on the carboxyl carbon (the first atom in the match).
-    carboxyl_carbons = set(match[0] for match in carboxyl_matches)
-    if len(carboxyl_carbons) != 2:
-        return False, f"Molecule has {len(carboxyl_carbons)} carboxyl groups (exactly 2 required)"
+    # We take the acid carbon as the first atom in each match.
+    acid_carbon_indices = set(match[0] for match in carboxyl_matches)
+    if len(acid_carbon_indices) != 2:
+        return False, f"Molecule has {len(acid_carbon_indices)} carboxyl groups (exactly 2 required)"
     
-    # Helper: check if an oxygen atom is a genuine hydroxyl (has at least one hydrogen).
+    # Helper function: determine if an oxygen atom is a genuine hydroxyl (has at least one hydrogen attached)
     def is_hydroxyl(oxygen_atom):
         if oxygen_atom.GetAtomicNum() != 8:
             return False
-        return any(n.GetAtomicNum() == 1 for n in oxygen_atom.GetNeighbors())
+        # Check for at least one hydrogen neighbor:
+        return any(neigh.GetAtomicNum() == 1 for neigh in oxygen_atom.GetNeighbors())
     
-    # For each carboxyl group (acid carbon), look at its neighbors.
-    # The idea: the alpha carbon is the one bonded directly to the carboxyl carbon.
-    # To reduce wrong assignments we require that candidate alpha carbons are not in rings and are non‐aromatic.
-    for acid_idx in carboxyl_carbons:
+    # For each acid carbon, check its neighbors to find an alpha candidate.
+    for acid_idx in acid_carbon_indices:
         acid_atom = mol.GetAtomWithIdx(acid_idx)
+        # Inspect neighbors of the acid carbon.
         for neighbor in acid_atom.GetNeighbors():
-            # We only consider carbon atoms that are not themselves part of a carboxyl group.
-            if neighbor.GetAtomicNum() != 6:
+            # Consider only carbon atoms that are not themselves acid carbons.
+            if neighbor.GetAtomicNum() != 6 or neighbor.GetIdx() in acid_carbon_indices:
                 continue
-            if neighbor.GetIdx() in carboxyl_carbons:
+            # Require candidate alpha carbon is not in a ring and not aromatic.
+            if neighbor.IsInRing() or neighbor.GetIsAromatic():
                 continue
-            # Require the candidate alpha carbon to be non–aromatic and not in a ring.
-            if neighbor.GetIsAromatic() or neighbor.IsInRing():
-                continue
-            # Now look for an –OH substituent on the candidate carbon.
+            
+            # Check that the candidate alpha carbon has at least one hydroxyl substituent.
+            hydroxyl_found = False
             for subnbr in neighbor.GetNeighbors():
-                # Skip the bond going back to the acid carbon.
+                # Skip the acid carbon connection.
                 if subnbr.GetIdx() == acid_idx:
                     continue
-                # Check if this neighbor is oxygen and is a hydroxyl (has at least one hydrogen)
+                # Check if this neighbor is oxygen and is a hydroxyl.
                 if subnbr.GetAtomicNum() == 8 and is_hydroxyl(subnbr):
-                    return True, "Molecule is a 2-hydroxydicarboxylic acid with an alpha hydroxy substituent"
+                    hydroxyl_found = True
+                    break
+            if not hydroxyl_found:
+                continue
+            
+            # Also verify that the candidate alpha carbon does not have any extra carbonyl (C=O) oxygen.
+            # (We look at bonds from the candidate and if any oxygen is double-bonded, we discount it.)
+            extra_carbonyl = False
+            for bond in neighbor.GetBonds():
+                # Skip bond back to acid carbon (our intended connectivity).
+                other = bond.GetOtherAtom(neighbor)
+                if other.GetIdx() == acid_idx:
+                    continue
+                if other.GetAtomicNum() == 8 and bond.GetBondType() == Chem.BondType.DOUBLE:
+                    extra_carbonyl = True
+                    break
+            if extra_carbonyl:
+                continue
+            
+            # If we reach here, we found a candidate alpha-carbon that is attached to a hydroxyl and
+            # does not bear an extra carbonyl group.
+            return True, "Molecule is a 2-hydroxydicarboxylic acid with an alpha hydroxy substituent"
     
-    return False, "No suitable alpha-carbon bearing a hydroxyl group adjacent to a carboxyl group was found"
+    return False, "No suitable alpha-carbon with a free hydroxyl substituent adjacent to a carboxyl group was found"
 
 
-# Uncomment the code below to run tests
+# Uncomment below to run tests
 if __name__ == "__main__":
     test_examples = [
         # True positives:
-        ("C[C@H](C(O)=O)[C@@](C)(O)C(O)=O", "(2R,3S)-2,3-dimethylmalic acid"),  # expected True
-        ("O[C@@H](CCC(O)=O)C(O)=O", "(S)-2-hydroxyglutaric acid"),  # expected True
-        ("O[C@H](CC(O)=O)C(O)=O", "(R)-malic acid"),  # expected True
-        ("CCC(C(O)C(O)=O)C(O)=O", "3-ethylmalic acid"),  # expected True
-        ("CC(C)[C@@H]([C@@H](O)C(O)=O)C(O)=O", "(2R,3S)-3-isopropylmalic acid"),  # expected True
-        ("CC(C)([C@@H](O)C(O)=O)C(O)=O", "(R)-3,3-dimethylmalic acid"),  # expected True
-        ("C[C@@](O)(CC(O)=O)C(O)=O", "D-citramalic acid"),  # expected True
-        ("OC(CCC(O)=O)C(O)=O", "2-hydroxyglutaric acid"),  # expected True
-        ("OC(C(C1CC1=C)C(O)=O)C(O)=O", "2-hydroxy-3-(2-methylidenecyclopropyl)butanedioic acid"),  # expected True
-        ("CC[C@@](O)(CC(O)=O)C(O)=O", "(R)-2-ethylmalic acid"),  # expected True
-        ("OC(CCCCCC(O)=O)C(O)=O", "2-hydroxyoctanedioic acid"),  # expected True
-        ("C(C(CP(=O)(O)[H])(C(O)=O)O)C(O)=O", "2-phosphinomethylmalic acid"),  # expected True
-        ("CC(C(O)=O)C(C)(O)C(O)=O", "2,3-dimethylmalic acid"),  # expected True
-        ("CC(C)C(C(O)C(O)=O)C(O)=O", "3-isopropylmalic acid"),  # expected True
-        ("C[C@](O)(CC(O)=O)C(O)=O", "L-citramalic acid"),  # expected True
-        ("O[C@@H](CC(=O)C(O)=O)[C@@H](O)C(O)=O", "5-dehydro-4-deoxy-D-glucaric acid"),  # expected True
-        ("C(C(CP(O)=O)C(O)=O)(C(O)=O)O", "phosphinomethylisomalic acid"),  # expected True
-        ("OC(=O)\\C=C/C=C(/O)C(O)=O", "(2E,4Z)-2-hydroxymuconic acid"),  # expected True even if unsaturated
-        ("OC(=O)\\C=C\\C=C(/O)C(O)=O", "(2Z,4E)-2-hydroxymuconic acid"),  # expected True 
-        ("CC(O)(CC(O)=O)C(O)=O", "citramalic acid"),  # expected True
-        ("C(C(C(O)=O)O)(CCSC)C(=O)O", "3-(2-methylthioethyl)malic acid"),  # expected True
-        ("OC(CCCC(O)=O)C(O)=O", "2-hydroxyadipic acid"),  # expected True
-        
-        # Some false positives (examples that should NOT be classified)
-        ("O[C@H]1C=C(C=C[C@]1(O)C(O)=O)C(O)=O", "(3S,4R)-3,4-dihydroxycyclohexa-1,5-diene-1,4-dicarboxylic acid"),
+        ("C[C@H](C(O)=O)[C@@](C)(O)C(O)=O", "(2R,3S)-2,3-dimethylmalic acid"),
+        ("O[C@@H](CCC(O)=O)C(O)=O", "(S)-2-hydroxyglutaric acid"),
+        ("O[C@H](CC(O)=O)C(O)=O", "(R)-malic acid"),
+        ("CCC(C(O)C(O)=O)C(O)=O", "3-ethylmalic acid"),
+        ("CC(C)[C@@H]([C@@H](O)C(O)=O)C(O)=O", "(2R,3S)-3-isopropylmalic acid"),
+        ("CC(C)([C@@H](O)C(O)=O)C(O)=O", "(R)-3,3-dimethylmalic acid"),
+        ("C[C@@](O)(CC(O)=O)C(O)=O", "D-citramalic acid"),
+        ("OC(CCC(O)=O)C(O)=O", "2-hydroxyglutaric acid"),
+        ("OC(C(C1CC1=C)C(O)=O)C(O)=O", "2-hydroxy-3-(2-methylidenecyclopropyl)butanedioic acid"),
+        ("CC[C@@](O)(CC(O)=O)C(O)=O", "(R)-2-ethylmalic acid"),
+        ("OC(CCCCCC(O)=O)C(O)=O", "2-hydroxyoctanedioic acid"),
+        ("C(C(CP(=O)(O)[H])(C(O)=O)O)C(O)=O", "2-phosphinomethylmalic acid"),
+        ("CC(C(O)=O)C(C)(O)C(O)=O", "2,3-dimethylmalic acid"),
+        ("CC(C)C(C(O)C(O)=O)C(O)=O", "3-isopropylmalic acid"),
+        ("C[C@](O)(CC(O)=O)C(O)=O", "L-citramalic acid"),
+        ("O[C@@H](CC(=O)C(O)=O)[C@@H](O)C(O)=O", "5-dehydro-4-deoxy-D-glucaric acid"),
+        ("C(C(CP(O)=O)C(O)=O)(C(O)=O)O", "phosphinomethylisomalic acid"),
+        ("OC(=O)\\C=C/C=C(/O)C(O)=O", "(2E,4Z)-2-hydroxymuconic acid"),
+        ("OC(=O)\\C=C\\C=C(/O)C(O)=O", "(2Z,4E)-2-hydroxymuconic acid"),
+        ("CC(O)(CC(O)=O)C(O)=O", "citramalic acid"),
+        ("C(C(C(O)=O)O)(CCSC)C(=O)O", "3-(2-methylthioethyl)malic acid"),
+        ("OC(CCCC(O)=O)C(O)=O", "2-hydroxyadipic acid"),
+        # False positives:
         ("OC(CC1=CC=C(O)C=C1)(C(O)C(O)=O)C(O)=O", "piscidic acid"),
         ("CSCCCCCC(C(O)C(O)=O)C(O)=O", "3-(5'-Methylthio)pentylmalic acid"),
         ("O[C@H](CC(=O)C(O)=O)C(O)=O", "D-4-hydroxy-2-oxoglutaric acid"),
