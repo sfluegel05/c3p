@@ -4,12 +4,17 @@ Classifies: CHEBI:26493 quinic acid
 """
 Classifies: A cyclitol carboxylic acid (quinic acid and derivatives)
 
-We require that a molecule have a quinic acid–like core. For our purposes this is defined as:
-  – A saturated, non‐aromatic cyclohexane ring: six sp³ carbon atoms with only single bonds between them.
-  – At least one carboxyl (or esterified carboxyl) group attached directly to the ring.
-  – A total of between 3 and 5 oxygen–containing substituents attached to the ring.
+A quinic acid core is defined as:
+  - A six-membered ring in which every atom is a nonaromatic, sp3-hybridized carbon,
+    and all bonds between ring atoms are single bonds.
+  - The ring must have exactly five substituents attached (neighbors not in the ring)
+    that are bound directly via a heteroatom. These substituents should be either:
+      (a) An oxygen atom (as in a hydroxyl or an acyloxy group) OR
+      (b) A carboxyl group attached directly as a carbon (i.e. a –C(=O)O– unit).
+  - At least one of the substituents must be a carboxyl group.
   
-Note: We add hydrogens so that hydroxyl groups are explicitly visible.
+This refined approach is designed to avoid false positives where other compounds have a cyclohexane
+ring decorated with a few oxygen-containing groups.
 """
 
 from rdkit import Chem
@@ -19,60 +24,60 @@ def is_quinic_acid(smiles: str):
     """
     Determines if a molecule is a quinic acid derivative based on its SMILES string.
     
-    For our purposes quinic acid (and derivatives) must have a six‐membered ring that is:
-      - Fully saturated (all sp3, no aromatic atoms or double bonds within the ring).
-      - Carbons only.
-      - Attacked by oxygen–substituents: at least one of these substituents must be a carboxyl group 
-        (free acid or esterified) and the total count of oxygen substituents (typically hydroxy or acylated –OH)
-        attached to the ring (non‐ring neighbors only) should be between 3 and 5.
+    For our purposes, quinic acid (and many derivatives) must have a six-membered cyclohexane
+    ring that is:
+      - Fully saturated: all atoms in the ring are sp3-hybridized carbons (nonaromatic) and
+        every bond between ring atoms is a single bond.
+      - Substituted by exactly five groups attached (only counting neighbors that are not in the ring)
+        where each group is either an oxygen atom (from a hydroxyl or acyloxy linkage) OR a carboxyl group.
+        In the latter case the ring carbon is directly attached to a carbon that shows a double bond to an oxygen.
+      - Containing at least one carboxyl (or esterified carboxyl) substituent.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if molecule is classified as a quinic acid derivative, False otherwise.
+        bool: True if the molecule is classified as a quinic acid derivative, False otherwise.
         str: Reason for the classification.
     """
-    # Parse the SMILES and add explicit hydrogens for easier detection of -OH groups.
+    # Parse the molecule and add explicit hydrogens (to make hydroxyl groups explicit)
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     mol = Chem.AddHs(mol)
-    
-    # Get ring information (each ring is returned as a tuple of atom indices)
+
+    # Retrieve ring information from the molecule.
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
     
-    # Loop over candidate rings
+    # Loop over rings to select a six-membered candidate ring that fits our criteria.
     for ring in rings:
-        # Only consider six-membered rings
         if len(ring) != 6:
-            continue
-        
-        # Check that every atom in the candidate ring is a carbon atom, is not aromatic,
-        # and that its hybridization is sp3.
+            continue  # Only consider six-membered rings.
+
+        # Check that every atom in the ring is a nonaromatic, sp3 carbon.
         candidate_ring = True
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
+            # Must be carbon.
             if atom.GetAtomicNum() != 6:
                 candidate_ring = False
                 break
+            # Must not be aromatic.
             if atom.GetIsAromatic():
                 candidate_ring = False
                 break
-            # Make sure its hybridization is sp3 (if not, it might participate in a double bond)
+            # Must be sp3.
             if atom.GetHybridization() != rdchem.HybridizationType.SP3:
                 candidate_ring = False
                 break
         if not candidate_ring:
             continue
 
-        # Additionally ensure that all bonds between ring atoms are single bonds.
+        # Ensure that all bonds between adjacent ring atoms are single bonds.
         bonds_ok = True
-        # The ring is a set; check every pair of atoms that are connected in the ring graph.
         for i in range(len(ring)):
             a1 = ring[i]
-            # v is the next index (wrap-around)
             a2 = ring[(i+1) % len(ring)]
             bond = mol.GetBondBetweenAtoms(a1, a2)
             if bond is None or bond.GetBondType() != rdchem.BondType.SINGLE:
@@ -81,45 +86,46 @@ def is_quinic_acid(smiles: str):
         if not bonds_ok:
             continue
 
-        # For this candidate ring, count oxygen substituents only on atoms not in the ring.
-        oxy_count = 0
+        # For atoms in the ring, count substituents that are attached outside the ring.
+        substituent_count = 0
         carboxyl_found = False
+        # Loop over each ring atom and its neighbors not in the ring.
         for idx in ring:
             ring_atom = mol.GetAtomWithIdx(idx)
-            # Look at each neighbor not in the ring:
             for nbr in ring_atom.GetNeighbors():
+                # Only consider substituents not in the ring.
                 if nbr.GetIdx() in ring:
-                    continue  # skip atoms inside the ring
+                    continue
 
-                # If neighbor is oxygen, count it as an oxygen substituent.
+                # Case 1: Direct oxygen attachment (e.g. hydroxyl or acyloxy link).
                 if nbr.GetAtomicNum() == 8:
-                    # If O is part of a hydroxyl group (has at least one H attached) then count it.
-                    # In many ester derivatives the O may not have an explicit H; nevertheless we count it,
-                    # but we check later that at least one carboxyl group is present.
-                    oxy_count += 1
-                # In some cases the carboxyl group is attached via a carbon.
+                    substituent_count += 1
+                    # We do not mark it as a carboxyl here because a carboxyl group is attached via carbon.
+                
+                # Case 2: Possible carboxyl group attached directly as a carbon.
                 elif nbr.GetAtomicNum() == 6:
-                    # Check if this carbon is likely a carboxyl carbon: it should be connected to at least one oxygen
-                    # via a double bond.
-                    has_double_bonded_O = False
+                    # Check if this carbon is a carboxyl carbon.
+                    # We require that it has at least one double bond to an oxygen.
+                    has_double_bonded_oxygen = False
                     for bond in nbr.GetBonds():
-                        # Look for a bond where the other atom is oxygen and the bond is a double bond.
                         other = bond.GetOtherAtom(nbr)
+                        # Look for double bond to oxygen.
                         if other.GetAtomicNum() == 8 and bond.GetBondType() == rdchem.BondType.DOUBLE:
-                            has_double_bonded_O = True
+                            has_double_bonded_oxygen = True
                             break
-                    if has_double_bonded_O:
+                    if has_double_bonded_oxygen:
+                        substituent_count += 1
                         carboxyl_found = True
-                        oxy_count += 1  # count the carboxyl group as one oxygen substituent.
-        
-        # We want a minimum total oxygen substituent count in (roughly) the range typical for quinic acid:
-        if carboxyl_found and (3 <= oxy_count <= 5):
-            return True, ("Found six-membered saturated cyclohexane ring with %d oxygen substituents " 
-                          "including a carboxyl/ester group (quinic acid core)" % oxy_count)
 
-    return False, "No cyclohexane ring with required oxygen substituents and carboxyl group detected"
+        # For a proper quinic acid core, we require exactly five substituents and at least one carboxyl.
+        if substituent_count == 5 and carboxyl_found:
+            msg = ("Found six-membered saturated cyclohexane ring with 5 substituents (hydroxy or acyloxy/carboxyl) " +
+                   "including at least one carboxyl group (quinic acid core)")
+            return True, msg
 
-# For debugging or testing, you can un-comment the lines below:
+    return False, "No cyclohexane ring with the required five substituents and carboxyl group detected"
+
+# For testing, you may uncomment the following lines:
 # test_smiles = "O[C@H]1C[C@@](O)(C[C@H](O)[C@H]1O)C(O)=O"  # (+)-quinic acid
 # result, reason = is_quinic_acid(test_smiles)
 # print(result, reason)
