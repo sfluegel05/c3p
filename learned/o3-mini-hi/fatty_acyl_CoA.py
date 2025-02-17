@@ -3,14 +3,15 @@ Classifies: CHEBI:37554 fatty acyl-CoA
 """
 """
 Classifies: fatty acyl-CoA
-Definition: An acyl-CoA that results from the formal condensation of the thiol group of coenzyme A with the carboxy group of any fatty acid.
-The molecule must contain a thioester group (i.e. R–C(=O)–S–) joined to a CoA fragment.
-We use a minimal CoA fingerprint by looking for a substructure common to many acyl-CoA SMILES strings.
-In addition, the acyl (fatty acid) part (the R-group attached to the carbonyl carbon) should be a moderately long (aliphatic) chain.
+Definition: An acyl-CoA results from the condensation of the thiol group of coenzyme A with the carboxy group of a fatty acid.
+The molecule must contain a thioester group (i.e. C(=O)S) linking an acyl chain (fatty acid) on the carbonyl side to a CoA fragment.
+We approximate a CoA fragment by requiring that the thioester sulfur is not isolated but is connected within a short bond distance
+to a phosphorus atom (P) which is common in the phosphate groups of coenzyme A.
 """
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from collections import deque
 
 def is_fatty_acyl_CoA(smiles: str):
     """
@@ -18,94 +19,99 @@ def is_fatty_acyl_CoA(smiles: str):
     
     The criteria used are:
       1. Molecule must be valid.
-      2. Must contain a thioester functional group (C(=O)S).
-      3. The sulfur of the thioester must be linked to a coenzyme A (CoA) fragment.
-         Here we approximate the CoA fragment by a minimal SMARTS ("SCCNC(=O)CCNC(=O)")
-         found in many acyl-CoA molecules.
-      4. The acyl part—the carbon chain attached to the carbonyl carbon (not the S side)—
-         must be aliphatic and of a minimal length (we require at least 3 contiguous carbon atoms).
+      2. Must contain a thioester group (C(=O)S) present in the molecule.
+      3. The sulfur (S) from the thioester is expected to be linked (within a reasonable number of bonds)
+         to at least one phosphorus (P) atom (common in the CoA moiety).
+      4. An acyl chain must be present on the carbonyl side of the thioester. We require at least 3 contiguous 
+         aliphatic carbon atoms starting from the carbon attached to the acyl chain.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        (bool, str): Tuple where the Boolean indicates if SMILES is classified as a fatty acyl-CoA,
-                     and the string gives a reason for the decision.
+        (bool, str): Tuple where the Boolean indicates if the molecule is classified as a fatty acyl-CoA,
+                     and the string gives the reason for the decision.
     """
-    # Parse the SMILES string.
+    # Parse the SMILES.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS for the thioester group: a carbonyl (C=O) directly bonded to a sulfur.
+    # Define a SMARTS pattern for the thioester group (C(=O)S).
     thioester_smarts = "C(=O)S"
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester (acyl-S) functional group found"
-    
-    # Define an approximate minimal SMARTS for the CoA moiety.
-    # We look for the fragment: -SCCNC(=O)CCNC(=O)-
-    # (Note: There is much variation in CoA SMILES but many acyl-CoA molecules contain this motif.)
-    coa_smarts = "SCCNC(=O)CCNC(=O)"
-    coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    coa_hits = mol.GetSubstructMatches(coa_pattern)
-    if not coa_hits:
-        return False, "No CoA-like fragment found in molecule"
-    # Flatten indices for easier look-up (all atoms that are part of a CoA hit)
-    coa_atoms = set()
-    for hit in coa_hits:
-        for idx in hit:
-            coa_atoms.add(idx)
-    
-    # Look for a thioester group match.
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
-        return False, "No thioester group detected in molecule"
+        return False, "No thioester (C(=O)S) functional group found"
     
-    # Define a helper function to perform a DFS over contiguous carbon atoms.
-    def count_aliphatic_chain(start_idx, visited):
+    # Get indices for all phosphorus atoms in the molecule.
+    phosphorus_indices = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
+    if not phosphorus_indices:
+        return False, "No phosphorus (P) atoms found; CoA moiety likely missing"
+    
+    # Helper function: breadth-first search to find if from a given atom index we can reach any phosphorus atom
+    # within a maximum number of bonds (threshold).
+    def is_connected_to_P(start_idx, threshold=15):
+        visited = set([start_idx])
+        queue = deque([(start_idx, 0)])
+        while queue:
+            curr, dist = queue.popleft()
+            if dist > threshold:
+                continue
+            if curr in phosphorus_indices:
+                return True, dist
+            for nbr in mol.GetAtomWithIdx(curr).GetNeighbors():
+                nidx = nbr.GetIdx()
+                if nidx not in visited:
+                    visited.add(nidx)
+                    queue.append((nidx, dist + 1))
+        return False, None
+
+    # Helper function: count contiguous aliphatic carbon atoms starting from a given atom index.
+    def count_aliphatic_chain(start_idx, excluded_idxs):
         count = 0
+        visited = set()
         stack = [start_idx]
         while stack:
             curr = stack.pop()
-            if curr in visited:
+            if curr in visited or curr in excluded_idxs:
                 continue
             visited.add(curr)
             atom = mol.GetAtomWithIdx(curr)
-            # We require that the atom is carbon and not part of the CoA fragment.
-            if atom.GetAtomicNum() != 6 or curr in coa_atoms:
+            if atom.GetAtomicNum() != 6:  # must be carbon
                 continue
             count += 1
-            for neighbor in atom.GetNeighbors():
-                # Only follow bonds between carbons (either single or double)
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                    stack.append(neighbor.GetIdx())
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited:
+                    stack.append(nbr.GetIdx())
         return count
 
-    # Flag to record if an acceptable thioester link has been found.
-    fatty_acyl_found = False
     reason_details = []
-    
-    # Loop over each thioester match and test if it bridges a fatty acyl and the CoA moiety.
+    fatty_acyl_found = False
+
+    # Loop over each thioester match.
     for match in thioester_matches:
-        # In the pattern "C(=O)S", match[0] is the carbonyl carbon and match[1] is the sulfur.
+        # In our pattern "C(=O)S", match[0] is the carbonyl carbon (C) and match[1] is the sulfur (S).
         carbonyl_idx = match[0]
         sulfur_idx = match[1]
-        # The sulfur should be part of the CoA fragment.
-        if sulfur_idx not in coa_atoms:
-            reason_details.append("Thioester sulfur not attached to a CoA fragment")
+        
+        # Check that the thioester sulfur is connected (within threshold bonds) to at least one phosphorus.
+        connected, dist = is_connected_to_P(sulfur_idx, threshold=15)
+        if not connected:
+            reason_details.append("Thioester sulfur not connected to a phosphorus (CoA fragment) within 15 bonds")
             continue
-        # Get the carbonyl atom.
+
+        # Determine the acyl chain: from the carbonyl carbon, get the neighbor that is not the sulfur
+        # and not the carbonyl oxygen.
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
-        # Identify the neighbor of the carbonyl that is NOT the sulfur and NOT the carbonyl oxygen.
         acyl_start = None
         for nbr in carbonyl_atom.GetNeighbors():
-            # Skip the sulfur (our thioester connection) and highly electronegative atoms (O)
+            # Skip the sulfur atom of the thioester.
             if nbr.GetIdx() == sulfur_idx:
                 continue
-            if nbr.GetAtomicNum() == 8:  # likely the oxygen of the C=O group
+            # Skip oxygens, which are likely the carbonyl oxygen.
+            if nbr.GetAtomicNum() == 8:
                 continue
-            # We expect the fatty acyl chain to be carbon based.
             if nbr.GetAtomicNum() == 6:
                 acyl_start = nbr.GetIdx()
                 break
@@ -113,26 +119,25 @@ def is_fatty_acyl_CoA(smiles: str):
             reason_details.append("No acyl chain found on the carbonyl side")
             continue
         
-        # Count contiguous aliphatic (carbon) chain atoms starting at the acyl_start.
-        visited = set()
-        chain_length = count_aliphatic_chain(acyl_start, visited)
+        # Count contiguous carbons in the acyl chain (excluding atoms already involved in the thioester fragment).
+        chain_length = count_aliphatic_chain(acyl_start, excluded_idxs={sulfur_idx, carbonyl_idx})
         if chain_length < 3:
-            reason_details.append(f"Acyl chain too short (found chain length {chain_length})")
+            reason_details.append(f"Acyl chain too short (chain length {chain_length}); need at least 3 carbon atoms")
             continue
-        # If we get here then we have found a thioester whose S is attached to CoA and the acyl chain is sufficiently long.
+
+        # If we have a thioester with its sulfur properly linked to a phosphorus (CoA) and a sufficiently long acyl chain:
         fatty_acyl_found = True
         break
 
     if not fatty_acyl_found:
-        # Return a reason that summarizes one or more failures
         if reason_details:
             return False, "; ".join(reason_details)
         else:
-            return False, "No valid fatty acyl thioester fragment linked to a CoA fragment found"
+            return False, "No valid fatty acyl-CoA structure found"
     
-    return True, "Molecule contains a thioester linking an acyl chain (fatty acid) with a CoA fragment"
+    return True, "Molecule contains a thioester linking a fatty acyl chain with a CoA fragment (P-containing)"
 
-# For testing purposes (you can uncomment the lines below to try some examples):
-# example_smiles = "S(C(=O)CCC(CCCC(C)C)C)CCNC(=O)CCNC(=O)[C@H](O)C(COP(OP(OC[C@H]1O[C@@H](N2C3=NC=NC(N)=C3N=C2)C(O)[C@H]1OP(O)(O)=O)(O)=O)(O)=O)(C)C"
+# For testing purposes, you can uncomment the lines below:
+# example_smiles = "S(C(=O)CCC(CCCC(C)C)C)CCNC(=O)CCNC(=O)[C@H](O)C(COP(OP(OC[C@H]1O[C@@H](N2C3=NC=NC(N)=C3N=C2)C(O)[C@H]1OP(O)(O)=O)(O)=O)(O)=O)(C)C"  # Dimethylnonanoyl-CoA
 # result, reason = is_fatty_acyl_CoA(example_smiles)
 # print(result, reason)
