@@ -2,12 +2,20 @@
 Classifies: CHEBI:35759 1-monoglyceride
 """
 """
-Classifies: CHEBI: 1-monoglyceride 
-Definition: A monoglyceride in which the acyl substituent is located at a primary position (i.e. at position 1 or 3) on glycerol.
-Expected features:
-    - Exactly one ester group (O–C(=O)–R)
-    - A glycerol backbone where one of the terminal CH2 groups is esterified while the other two hydroxyl groups remain free.
-Note: This approach uses substructure SMARTS searches and some heuristic checks.
+Classifies: CHEBI: 1-monoglyceride
+Definition: A monoglyceride in which the acyl substituent is located at a primary position (i.e. at position 1 or, equivalently, position 3) on glycerol.
+Criteria used:
+  1. The SMILES must be parsed successfully.
+  2. The molecule must NOT contain phosphorus (to avoid phospholipids).
+  3. The molecule must have exactly one ester group, as identified by the SMARTS pattern “[CX3](=O)O”.
+  4. A glycerol backbone must be detected with one of two patterns:
+         Pattern 1: acyl group at the first (sn-1) position:
+             [CH2](OC(=O)[*])[CH](O)[CH2](O)
+         Pattern 2: acyl group at the third (sn-3) position:
+             [CH2](O)[CH](O)[CH2](OC(=O)[*])
+  5. A minimal molecular weight is required (set to 100 Da) so that valid, short-chain derivatives are not rejected.
+  
+Note: This approach is heuristic and relies on substructure SMARTS searches.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -15,73 +23,61 @@ from rdkit.Chem import rdMolDescriptors
 def is_1_monoglyceride(smiles: str):
     """
     Determines if the given SMILES string represents a 1-monoglyceride,
-    i.e. a monoglyceride with the acyl substituent attached at a primary position (sn-1 or sn-3)
-    of the glycerol backbone.
-    
-    We use the following criteria:
-    1. The molecule must be parsed successfully.
-    2. The molecule must contain exactly one ester group (pattern: [CX3](=O)O).
-    3. The molecule must contain a glycerol backbone pattern in which one terminal CH2 is esterified 
-       and the other two hydroxyl groups are available.
-    
-    We search for two possible patterns (the acyl group may be on either end):
-      Pattern 1:  [CH2](OC(=O)*)[CH](O)[CH2](O)
-      Pattern 2:  [CH2](O)[CH](O)[CH2](OC(=O)*)
+    i.e. a monoglyceride where the acyl substituent is at a primary (sn-1 or sn-3) position.
     
     Args:
-        smiles (str): SMILES string of the molecule.
+        smiles (str): SMILES representation of the molecule.
     
     Returns:
-        bool: True if the molecule is classified as a 1-monoglyceride, False otherwise.
-        str: A message providing the reason for the classification.
+        bool: True if it is likely a 1-monoglyceride, False otherwise.
+        str: Explanation of the decision.
     """
     # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define an ester SMARTS pattern (acyl carbon and the ester oxygen)
+    # Exclude molecules containing phosphorus (P) to reduce false positives (phospholipids, etc.)
+    if any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms()):
+        return False, "Molecule contains phosphorus; likely not a monoglyceride"
+
+    # Count ester groups using the SMARTS "[CX3](=O)O"
     ester_smarts = "[CX3](=O)O"
     ester_pattern = Chem.MolFromSmarts(ester_smarts)
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 1:
         return False, f"Expected exactly one ester group, found {len(ester_matches)}"
     
-    # Define two possible glycerol backbone patterns where one terminal CH2 is esterified.
-    # Pattern 1: acyl group at the first position
-    pattern1_smarts = "[CH2](OC(=O)*)[CH](O)[CH2](O)"
+    # Define two glycerol backbone patterns where one terminal CH2 is esterified.
+    # The '*' in the pattern means any R group attached to the carbonyl oxygen.
+    pattern1_smarts = "[CH2](OC(=O)[*])[CH](O)[CH2](O)"
+    pattern2_smarts = "[CH2](O)[CH](O)[CH2](OC(=O)[*])"
     pattern1 = Chem.MolFromSmarts(pattern1_smarts)
-    # Pattern 2: acyl group at the third (other terminal) position
-    pattern2_smarts = "[CH2](O)[CH](O)[CH2](OC(=O)*)"
     pattern2 = Chem.MolFromSmarts(pattern2_smarts)
     
     match1 = mol.HasSubstructMatch(pattern1)
     match2 = mol.HasSubstructMatch(pattern2)
-    
     if not (match1 or match2):
         return False, "Glycerol backbone with ester at a primary position not found"
     
-    # Optionally, we can perform additional sanity checks.
-    # For example, we expect a certain size in molecular weight in typical monoglycerides.
+    # Check minimal molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 150:
+    if mol_wt < 100:
         return False, "Molecular weight too low for a typical monoglyceride"
     
-    return True, "Found a glycerol backbone with one ester group at a primary position"
+    return True, "Found glycerol backbone with one ester group at a primary position"
 
-# For testing purposes, you can run a few examples:
+# Testing examples (optional)
 if __name__ == "__main__":
+    # A list of example SMILES strings for molecules that should be classified as 1-monoglycerides.
     test_smiles = [
-        # 1-(11Z-icosenoyl)glycerol
-        "OCC(COC(CCCCCCCCC/C=C\\CCCCCCCC)=O)O",
-        # 3-octanoyl-sn-glycerol
-        "CCCCCCCC(=O)OC[C@H](O)CO",
-        # rac-1-monolauroylglycerol
-        "CCCCCCCCCCCC(=O)OCC(O)CO",
-        # 1-stearoyl-sn-glycerol
-        "CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)CO",
-        # Example of non-monoglyceride
-        "CC(=O)OC1=CC=CC=C1"
+        "O=C(OCC(O)CO)CCCCCCCCCCCCCCC(CC)C",  # AKD-2B2
+        "OCC(COC(CCCCCCCCC/C=C\\CCCCCCCC)=O)O",  # 1-(11Z-icosenoyl)glycerol
+        "CCCCCCCC(=O)OC[C@H](O)CO",             # 3-octanoyl-sn-glycerol
+        "CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](O)CO",# 3-arachidonoyl-sn-glycerol
+        "CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)CO",   # 1-stearoyl-sn-glycerol
+        "O(C[C@@H](O)CO)C(=O)C",                 # (R)-glycerol 1-acetate (should pass despite low weight)
+        "O(CC(O)CO)C(=O)CC"                     # Glycerol 1-propanoate (will fail if molecular weight is below threshold)
     ]
     for s in test_smiles:
         valid, reason = is_1_monoglyceride(s)
