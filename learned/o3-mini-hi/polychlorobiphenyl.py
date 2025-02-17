@@ -4,10 +4,7 @@ Classifies: CHEBI:53156 polychlorobiphenyl
 """
 Classifies: Polychlorobiphenyl
 Definition: A biphenyl compound containing between 2 and 10 chlorine atoms attached to the two benzene rings.
-This improved approach first identifies a biphenyl scaffold (two benzene rings connected by a single bond),
-and then counts the chlorine atoms attached directly to the ring atoms (i.e. not in the core).
-Any additional substituents do not lead to rejection. The accepted candidate must have the chlorine count (on the rings)
-between 2 and 10 (inclusive).
+Additional Requirement: The only substituents on the benzene rings must be chlorine atoms (aside from hydrogens).
 """
 
 from rdkit import Chem
@@ -16,63 +13,68 @@ def is_polychlorobiphenyl(smiles: str):
     """
     Determines if a molecule is a polychlorobiphenyl based on its SMILES string.
     
-    The function looks for a biphenyl scaffold in the molecule. It then counts the number of chlorine atoms (atomic number 17)
-    that are directly bonded to the atoms of the biphenyl core. The molecule is accepted if at least one candidate biphenyl core
-    has between 2 and 10 chlorine substituents.
+    Requirements for a polychlorobiphenyl:
+      - It must contain a biphenyl scaffold: two connected benzene rings.
+      - On the benzene rings of the scaffold, the only substituents (apart from hydrogens) allowed are chlorine atoms.
+      - The total number of chlorine atoms attached to the biphenyl core is between 2 and 10.
     
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+       smiles (str): SMILES string of the molecule.
+       
     Returns:
-        bool: True if the molecule meets the criteria, False otherwise.
-        str: Explanation for the classification decision.
+       bool: True if the molecule meets the criteria, False otherwise.
+       str: Explanation for the classification decision.
     """
-    # Parse the SMILES string to create an RDKit molecule
+    # Parse SMILES and add explicit hydrogens so our substituents are clearly visible.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    mol = Chem.AddHs(mol)
     
-    # Define SMARTS for a biphenyl scaffold:
-    # This pattern finds two benzene rings (aromatic hexagons) connected by a single bond.
-    biphenyl_smarts = "c1ccccc1-c2ccccc2"
-    biphenyl_query = Chem.MolFromSmarts(biphenyl_smarts)
-    
-    # Search for biphenyl matches in the molecule.
-    matches = mol.GetSubstructMatches(biphenyl_query)
+    # Define a SMARTS pattern for a biphenyl scaffold (two benzene rings connected by a single bond).
+    biphenyl_pattern = Chem.MolFromSmarts("c1ccc(cc1)-c2ccccc2")
+    matches = mol.GetSubstructMatches(biphenyl_pattern)
     if not matches:
-        return False, "No biphenyl scaffold (two connected benzene rings) found"
+        return False, "Biphenyl scaffold not detected"
     
-    # For each biphenyl match candidate, count the chlorine atoms attached to the core.
-    for match in matches:
-        core_indices = set(match)  # indices of the atoms in the biphenyl core (expected 12 atoms)
-        chlorine_count = 0
-        
-        # For each atom in the biphenyl core, look at neighbors that are not in the core.
-        for idx in core_indices:
-            atom = mol.GetAtomWithIdx(idx)
-            for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() not in core_indices:
-                    # Count this substituent if it is chlorine
-                    if nbr.GetAtomicNum() == 17:
-                        chlorine_count += 1
-        # Check if the number of chlorine substituents is between 2 and 10.
-        if 2 <= chlorine_count <= 10:
-            return True, f"Contains a biphenyl scaffold with {chlorine_count} chlorine substituents on the rings"
+    # Use the first substructure match to define the biphenyl core.
+    # (The match returns a tuple of atom indices belonging to the two benzene rings.)
+    biphenyl_atoms = set(matches[0])
     
-    # If none of the biphenyl matches had the appropriate number of chlorine substituents.
-    return False, "No biphenyl core found with 2 to 10 chlorine substituents attached to the rings"
+    # Now inspect each aromatic carbon in the biphenyl core:
+    #   a) Count chlorine atoms attached directly to the benzene carbons.
+    #   b) Ensure that no substituent (other than hydrogen or chlorine) is attached.
+    chlorine_count = 0
+    for idx in biphenyl_atoms:
+        atom = mol.GetAtomWithIdx(idx)
+        # Check that the atom is aromatic and a carbon.
+        if not (atom.GetAtomicNum() == 6 and atom.GetIsAromatic()):
+            continue
+        # Now examine each neighbor that is not part of the biphenyl core.
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() in biphenyl_atoms:
+                continue
+            # Allowed substituents: hydrogen or chlorine.
+            atomic_num = neighbor.GetAtomicNum()
+            if atomic_num == 17:
+                chlorine_count += 1
+            elif atomic_num != 1:
+                # Found a substituent other than Cl or H on the biphenyl core.
+                return False, f"Disallowed substituent ({neighbor.GetSymbol()}) found on the biphenyl core"
+    
+    if chlorine_count < 2:
+        return False, f"Found {chlorine_count} chlorine atoms attached to the biphenyl scaffold; at least 2 are required"
+    if chlorine_count > 10:
+        return False, f"Found {chlorine_count} chlorine atoms attached to the biphenyl scaffold; no more than 10 are allowed"
+    
+    return True, f"Contains a biphenyl scaffold with {chlorine_count} chlorine substituents and no extra groups on the rings"
 
-# Example calls for testing purposes:
+# Example calls (for testing purpose):
 if __name__ == "__main__":
     examples = [
-        ("Clc1cc(Cl)c(Cl)c(c1)-c1cc(Cl)c(Cl)c1Cl", "2,2',3,3',5,5'-hexachlorobiphenyl (expected: True)"),
-        ("Clc1cc(-c2ccccc2)c(Cl)c(Cl)c1Cl", "2,3,4,5-tetrachlorobiphenyl (expected: True)"),
-        ("Clc1cccc(c1)-c1cc(Cl)c(Cl)c(Cl)c1Cl", "2,3,3',4,5-pentachlorobiphenyl (expected: True)"),
-        ("ClC1=C(OC2=C(Cl)C=C(Cl)C=C2)C(C3=C(O)C(Cl)=CC(=C3)Cl)=CC(=C1O)Cl", 
-         "Ambigol E (expected: True even with extra substituents)"),
-        ("OC1=C(C=C(C=C1[N+]([O-])=O)Cl)C2=C(O)C([N+](=O)[O-])=CC(=C2)Cl",
-         "niclofolan (expected: True if biphenyl core is identified with 2-10 chlorines)")
+        ("Clc1cc(Cl)c(Cl)c(c1)-c1cc(Cl)cc(Cl)c1Cl", "2,2',3,3',5,5'-hexachlorobiphenyl"),
+        ("Oc1c(Cl)cc(Cl)cc1-c1ccccc1", "2-Hydroxy-3,5-dichlorobiphenyl (should be rejected)"),
     ]
-    for smi, desc in examples:
+    for smi, name in examples:
         result, reason = is_polychlorobiphenyl(smi)
-        print(f"{desc}\n  SMILES: {smi}\n  Result: {result}\n  Reason: {reason}\n")
+        print(f"{name} -> {result}: {reason}")
