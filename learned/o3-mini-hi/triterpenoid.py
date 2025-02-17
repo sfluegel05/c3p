@@ -5,16 +5,19 @@ Classifies: CHEBI:36615 triterpenoid
 Classifies: Triterpenoid
 Definition: Any terpenoid derived from a triterpene (typically built from a C30 skeleton that may be rearranged or modified).
 Heuristic improvements include:
-  - Molecular weight > 400 Da
+  - Removal of sugar (glycoside) moieties prior to analysis.
+  - Molecular weight > 400 Da (after sugar removal) 
   - Overall high fraction of sp3 carbons (> 0.5)
-  - Limited heteroatom (especially oxygen) content relative to carbons (to avoid highly decorated sugar‐moieties)
-  - Extraction of rings: if at least 4 predominantly non‐aromatic (aromatic atom fraction < 0.3) rings exist, use these to identify a fused core.
+  - Limited heteroatom content (especially oxygen) relative to carbons, to avoid sugar‐rich compounds.
+  - Extraction of rings: if at least 4 predominantly non‐aromatic (aromatic fraction < 0.3) rings exist, use these to identify a fused core.
     Else, use all rings.
   - Build connected (fused) clusters and choose the largest union as the candidate core.
   - Expand the core by iteratively adding neighboring carbon atoms that attach to at least two atoms of the core.
-  - Finally require that the expanded core have a carbon count between 15 and 35, and that few of these carbons are aromatic.
+  - Finally require that the expanded core have a carbon count between 15 and 35 and that few of these carbons are aromatic.
   
-The additional oxygen-to-carbon ratio check helps reject glycosylated or sugar‐rich compounds.
+Sugar removal: we “peel off” rings that are 5 or 6 members and that have a high oxygen content (>=50% O atoms). 
+This helps avoid classifying a true triterpenoid as “non‐triterpenoid” because it is decorated with sugars, and 
+also helps avoid false positives on compounds that are dominated by sugar features.
 """
 
 from rdkit import Chem
@@ -22,8 +25,9 @@ from rdkit.Chem import Descriptors, rdMolDescriptors
 
 def is_triterpenoid(smiles: str):
     """
-    Determines if a molecule is a triterpenoid based on its SMILES string
-    using improved heuristics.
+    Determines if a molecule is a triterpenoid based on its SMILES string using improved heuristics.
+    First attempts to remove sugar moieties (based on detecting oxygen-rich 5–6 membered rings)
+    and then applies several tests on the remaining core structure.
 
     Args:
         smiles (str): SMILES representation of the molecule.
@@ -36,42 +40,63 @@ def is_triterpenoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Overall molecular weight must be sufficiently high for a triterpenoid.
+    # ----- STEP 1: Remove likely sugar rings to avoid high O/C artifacts -----
+    # We inspect all rings (using the ring info) and mark 5- or 6-membered rings with >=50% oxygen atoms.
+    ring_info = mol.GetRingInfo()
+    sugar_atoms = set()
+    for ring in ring_info.AtomRings():
+        if len(ring) in (5, 6):
+            nO = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8)
+            if nO / len(ring) >= 0.5:
+                sugar_atoms.update(ring)
+    # If any sugar candidates were found, remove them.
+    if sugar_atoms:
+        # Create an editable copy and remove atoms in descending order (to preserve atom indices)
+        rw_mol = Chem.RWMol(mol)
+        for idx in sorted(sugar_atoms, reverse=True):
+            # Removal of an atom will remove attached bonds.
+            rw_mol.RemoveAtom(idx)
+        mol_no_sugar = rw_mol.GetMol()
+        # Sometimes removal leads to disconnected fragments; choose the largest fragment.
+        frags = Chem.GetMolFrags(mol_no_sugar, asMols=True)
+        if not frags:
+            return False, "No fragments remain after sugar removal"
+        mol = max(frags, key=lambda m: m.GetNumAtoms())
+        sugar_info = " (sugar moieties removed)"
+    else:
+        sugar_info = ""
+    
+    # ----- STEP 2: Basic molecular properties -----
     mol_wt = Descriptors.ExactMolWt(mol)
     if mol_wt < 400:
-        return False, f"Molecular weight too low ({mol_wt:.1f} Da) for a triterpenoid"
+        return False, f"Molecular weight too low ({mol_wt:.1f} Da) for a triterpenoid{sugar_info}"
     
-    # Overall fraction of sp3 carbons should be high (triterpenoids are usually saturated).
     frac_sp3 = rdMolDescriptors.CalcFractionCSP3(mol)
     if frac_sp3 < 0.5:
-        return False, f"Low fraction of sp3 carbons ({frac_sp3:.2f}); triterpenoids are usually highly saturated"
+        return False, f"Low fraction of sp3 carbons ({frac_sp3:.2f}); triterpenoids are usually highly saturated{sugar_info}"
     
-    # Check heteroatom content vs. carbon: too many non-carbon heavy atoms disfavors a triterpenoid core.
     atoms = mol.GetAtoms()
     n_carbons = sum(1 for a in atoms if a.GetAtomicNum() == 6)
-    # count oxygen atoms separately (they often come from sugars)
     n_oxygens = sum(1 for a in atoms if a.GetAtomicNum() == 8)
     n_heavy = sum(1 for a in atoms if a.GetAtomicNum() > 1)
     if n_heavy > 0 and ((n_heavy - n_carbons) / n_heavy) > 0.4:
-        return False, f"High fraction of heteroatoms ({(n_heavy - n_carbons) / n_heavy:.2f}); not typical for triterpenoids"
-    # Extra check: if oxygen/carbon ratio is too high, suspect sugar moieties.
+        return False, (f"High fraction of heteroatoms ({(n_heavy - n_carbons) / n_heavy:.2f}); " 
+                       f"not typical for triterpenoids{sugar_info}")
     if n_carbons > 0 and (n_oxygens / n_carbons) > 0.35:
-        return False, f"High oxygen-to-carbon ratio ({n_oxygens}/{n_carbons}); likely contains sugar moieties"
-
-    # Get ring information.
+        return False, f"High oxygen-to-carbon ratio ({n_oxygens}/{n_carbons}); likely contains extra decorations{sugar_info}"
+    
+    # ----- STEP 3: Identifying candidate rings in the molecule -----
     ring_info = mol.GetRingInfo()
     all_rings = list(ring_info.AtomRings())
     if not all_rings:
-        return False, "No rings detected in the molecule."
+        return False, "No rings detected in the molecule" + sugar_info
     
-    # Identify rings that are predominantly non‐aromatic.
     non_aromatic_rings = []
     for ring in all_rings:
         aromatic_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetIsAromatic())
         if (aromatic_count / len(ring)) < 0.3:
             non_aromatic_rings.append(ring)
     
-    # Try to use non‐aromatic rings if there are at least four; otherwise fall back on all rings.
     if len(non_aromatic_rings) >= 4:
         candidate_rings = non_aromatic_rings
         used_rings_info = f"{len(candidate_rings)} non‐aromatic rings"
@@ -79,7 +104,7 @@ def is_triterpenoid(smiles: str):
         candidate_rings = all_rings
         used_rings_info = f"all rings (total {len(candidate_rings)})"
     
-    # Build connectivity among candidate rings: two rings are connected if they share an atom.
+    # Build connectivity among candidate rings: two rings are connected if they share at least one atom.
     n_rings = len(candidate_rings)
     adjacency = {i: set() for i in range(n_rings)}
     for i in range(n_rings):
@@ -88,7 +113,7 @@ def is_triterpenoid(smiles: str):
                 adjacency[i].add(j)
                 adjacency[j].add(i)
     
-    # Find connected components (clusters) among the candidate rings.
+    # Identify connected components (clusters) among candidate rings.
     visited = set()
     components = []
     for i in range(n_rings):
@@ -104,7 +129,7 @@ def is_triterpenoid(smiles: str):
                 stack.extend(adjacency[node] - visited)
             components.append(comp)
     
-    # Choose the fused cluster that gives the maximum union of atoms.
+    # Choose the component (fused cluster) that gives the maximum union of ring atoms.
     best_union = set()
     best_component = None
     for comp in components:
@@ -115,18 +140,16 @@ def is_triterpenoid(smiles: str):
             best_union = union_atoms
             best_component = comp
 
-    # If our chosen cluster has at least four rings, use it.
     if best_component is not None and len(best_component) >= 4:
         core_atoms = set(best_union)
         cluster_info = f"Fused cluster with {len(best_component)} rings"
     else:
-        # Otherwise, fall back on the union of candidate rings.
         core_atoms = set()
         for ring in candidate_rings:
             core_atoms.update(ring)
         cluster_info = f"Union of candidate rings ({len(candidate_rings)} rings)"
     
-    # Expand the core by adding any carbon atom not in the core that has at least 2 neighbors already in the core.
+    # Expand the core by adding any carbon atom (not already in the core) that has at least 2 neighbors in the core.
     expanded_core = set(core_atoms)
     changed = True
     while changed:
@@ -142,27 +165,21 @@ def is_triterpenoid(smiles: str):
             if count_in_core >= 2:
                 expanded_core.add(idx)
                 changed = True
-    
-    # Count carbon atoms in the expanded core.
+
+    # Analyze the expanded core.
     core_carbon_idxs = [idx for idx in expanded_core if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
     n_core_carbons = len(core_carbon_idxs)
-    
-    # Compute the fraction of aromatic carbons in the expanded core.
     aromatic_core = sum(1 for idx in core_carbon_idxs if mol.GetAtomWithIdx(idx).GetIsAromatic())
     frac_aromatic_core = aromatic_core / n_core_carbons if core_carbon_idxs else 0.0
-    
-    # For many true triterpenes, the core (expanded fused ring system) has between 15 and 35 carbons.
+
     if not (15 <= n_core_carbons <= 35):
         return False, (f"Expanded core has {n_core_carbons} carbons (expected between 15 and 35) "
-                       f"using {cluster_info} from {used_rings_info}")
-    
-    # A high aromatic fraction in the core is not expected.
+                       f"using {cluster_info} from {used_rings_info}{sugar_info}")
     if frac_aromatic_core >= 0.3:
-        return False, f"Aromatic fraction in core is {frac_aromatic_core:.2f} (expected below 0.3)"
+        return False, f"Aromatic fraction in core is {frac_aromatic_core:.2f} (expected below 0.3){sugar_info}"
     
-    return True, (f"{cluster_info} expanded to a core with {n_core_carbons} carbons, "
-                  f"aromatic fraction: {frac_aromatic_core:.2f}, overall sp3 fraction: {frac_sp3:.2f}, "
-                  "is consistent with a triterpenoid.")
+    return True, (f"{cluster_info} expanded to a core with {n_core_carbons} carbons, aromatic fraction: {frac_aromatic_core:.2f}, "
+                  f"overall sp3 fraction: {frac_sp3:.2f}, is consistent with a triterpenoid{sugar_info}")
 
 # For demonstration or testing:
 if __name__ == "__main__":
