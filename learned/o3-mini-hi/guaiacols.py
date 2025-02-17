@@ -4,19 +4,19 @@ Classifies: CHEBI:134251 guaiacols
 #!/usr/bin/env python
 """
 Classifies: guaiacols
-Definition: Any phenol carrying an additional methoxy substituent 
-            at the ortho-position.
-This module defines a function is_guaiacols that returns True with a reason 
-if an aromatic ring is found where one carbon bears a hydroxyl (-OH) group and 
-an ortho (adjacent in the ring) carbon carries a methoxy (-OCH3) substituent.
+Definition: Any phenol carrying an additional methoxy substituent at the ortho-position.
+We require that a benzene ring (six-membered aromatic ring) has:
+  - a phenolic –OH group (oxygen attached to the ring with exactly one hydrogen) on one carbon, and
+  - at least one adjacent (ortho) carbon on the same ring that carries a methoxy (-OCH3) substituent,
+    as defined by an oxygen connected to the ring and a methyl group (an sp³ carbon with exactly three hydrogens).
 """
 
 from rdkit import Chem
 
 def is_guaiacols(smiles: str):
     """
-    Determines if a molecule is a guaiacol (a phenol with an additional methoxy 
-    substituent at an ortho-position) based on its SMILES string.
+    Determines if a molecule is a guaiacol (a phenol with an additional methoxy substituent 
+    at an ortho-position) based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -25,77 +25,84 @@ def is_guaiacols(smiles: str):
         bool: True if the molecule is classified as a guaiacol, False otherwise.
         str: Explanation for the classification.
     """
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     try:
-        # Add explicit hydrogens so that we can properly check for OH and CH3 groups.
+        # Add explicit hydrogens so that O–H and –OCH3 details are clear.
         mol = Chem.AddHs(mol)
-        # Sanitize to ensure aromaticity is perceived.
         Chem.SanitizeMol(mol)
     except Exception as e:
         return False, f"Error during sanitization: {e}"
-        
-    # Get aromatic ring information.
+    
+    # Get ring information.
     ring_info = mol.GetRingInfo()
+    
+    # Iterate over all rings.
     for ring in ring_info.AtomRings():
-        ring_set = set(ring)
-        # Iterate over atoms in the ring.
+        # Restrict search to benzene-like rings (6 members, all aromatic carbons).
+        if len(ring) != 6:
+            continue  # skip non-benzene rings
+        # Verify that each atom in this ring is a carbon.
+        if any(mol.GetAtomWithIdx(idx).GetSymbol() != "C" for idx in ring):
+            continue
+        
+        # Create dictionaries to store which ring atoms have an OH or a methoxy group.
+        has_OH = {}    # key: atom index in ring -> bool
+        has_OMe = {}   # key: atom index in ring -> bool
+        
+        # Inspect each ring atom for substituents.
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            # We are only interested in aromatic carbons.
-            if atom.GetSymbol() != "C" or not atom.GetIsAromatic():
-                continue
-            
-            # Check for a phenolic -OH group attached to the ring carbon.
-            has_OH = False
+            # We expect aromatic carbon already by construction.
+            # Check all neighbors that are NOT part of the ring.
+            oh_found = False
+            ome_found = False
             for nbr in atom.GetNeighbors():
-                # We want substituents outside the ring.
-                if nbr.GetIdx() in ring_set:
-                    continue
+                if nbr.GetIdx() in ring:
+                    continue  # skip atoms in the ring
+                # Case 1. Check if neighbor is –OH:
                 if nbr.GetAtomicNum() == 8:
-                    # Check that this O has at least one hydrogen to be an OH.
-                    for onbr in nbr.GetNeighbors():
-                        if onbr.GetAtomicNum() == 1:
-                            has_OH = True
-                            break
-                if has_OH:
-                    break
-            if not has_OH:
-                continue  # This carbon is not a phenolic carbon.
-            
-            # For a confirmed phenolic carbon, look at its ortho (ring) neighbors.
-            ortho_atoms = [nbr for nbr in atom.GetNeighbors() 
-                           if nbr.GetIdx() in ring_set and nbr.GetSymbol() == "C" and nbr.GetIsAromatic()]
-            # Now require that at least one ortho atom has a methoxy (-OCH3) substituent.
-            for ortho in ortho_atoms:
-                for nbr in ortho.GetNeighbors():
-                    if nbr.GetIdx() in ring_set:
-                        continue  # Skip atoms that are part of the same ring.
-                    # We want an oxygen substituent.
-                    if nbr.GetAtomicNum() != 8:
-                        continue
-                    # To be a methoxy group the oxygen (O) should have exactly two neighbors:
-                    # one is the ring carbon (ortho) and the other should be a methyl carbon.
-                    if len(nbr.GetNeighbors()) != 2:
-                        continue
-                    # Identify the non-ring neighbor (candidate for methyl carbon).
-                    methyl_candidate = None
-                    for sub in nbr.GetNeighbors():
-                        if sub.GetIdx() not in ring_set and sub.GetAtomicNum() == 6:
-                            methyl_candidate = sub
-                    if methyl_candidate is None:
-                        continue
-                    # Check that the methyl candidate is sp3 hybridized.
-                    if methyl_candidate.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
-                        continue
-                    # Check that the methyl candidate has exactly three hydrogen atoms attached.
-                    # (Since we added explicit hydrogens, we can count them.)
-                    num_hs = sum(1 for n in methyl_candidate.GetNeighbors() if n.GetAtomicNum() == 1)
-                    if num_hs == 3:
-                        return True, "Found aromatic ring with a phenolic OH and an ortho methoxy group"
-    return False, "No aromatic phenol with ortho methoxy substituent found"
+                    # Get the hydrogens attached to O.
+                    h_count = sum(1 for n in nbr.GetNeighbors() if n.GetAtomicNum() == 1)
+                    # For a phenolic OH we expect exactly one hydrogen.
+                    if h_count == 1:
+                        oh_found = True
+                # Case 2. Check if neighbor is part of a methoxy group (-OCH3):
+                # Criteria: oxygen atom connected directly to the ring with exactly two neighbors,
+                # one in the ring (already the case) and one which is a methyl carbon.
+                if nbr.GetAtomicNum() == 8:
+                    if nbr.GetDegree() == 2:
+                        # Identify the neighbor in addition to the ring atom.
+                        other = None
+                        for sub in nbr.GetNeighbors():
+                            if sub.GetIdx() not in ring:
+                                other = sub
+                        if other is not None and other.GetAtomicNum() == 6:
+                            # Check that the carbon is sp3 (methyl) and has exactly 3 hydrogens.
+                            if other.GetHybridization() == Chem.rdchem.HybridizationType.SP3:
+                                h_on_c = sum(1 for n in other.GetNeighbors() if n.GetAtomicNum() == 1)
+                                # Additionally, ensure that the carbon is connected only to the oxygen (and hydrogens).
+                                if h_on_c == 3:
+                                    ome_found = True
+            has_OH[idx] = oh_found
+            has_OMe[idx] = ome_found
+
+        # Now, loop over ring atoms: if an atom has an OH, check its ortho (adjacent in ring) atoms for a methoxy.
+        # For benzene, the ortho atoms are those directly bonded to this atom.
+        # We check using the molecule's bond structure.
+        for idx in ring:
+            if not has_OH.get(idx, False):
+                continue
+            # Get neighbors within the ring (these are the ortho positions).
+            atom = mol.GetAtomWithIdx(idx)
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() in ring:
+                    if has_OMe.get(nbr.GetIdx(), False):
+                        return True, "Found benzene ring with a phenolic OH and an ortho methoxy group"
+    return False, "No benzene ring with ortho -OH and -OCH3 substituents found"
 
 # Example usage (uncomment to test):
 # test_smiles = [
