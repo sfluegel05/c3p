@@ -5,9 +5,10 @@ Classifies: CHEBI:35910 2-oxo monocarboxylic acid
 """
 Classifies: 2-oxo monocarboxylic acid
 Definition: Any monocarboxylic acid having a 2-oxo substituent.
-The molecule must contain exactly one carboxylic acid group (-C(=O)O or its deprotonated form)
-and the carbon atom adjacent (α‐carbon) to the carboxyl carbon must be attached to a carbonyl (C=O) bond.
+A valid molecule must have exactly one carboxylic acid group (either as -C(=O)[OH] or -C(=O)[O-])
+and the carbon atom directly attached to that carboxyl carbon (the α‐carbon) must itself have a double‐bonded oxygen (ketone functionality).
 """
+
 from rdkit import Chem
 
 def is_2_oxo_monocarboxylic_acid(smiles: str):
@@ -18,68 +19,56 @@ def is_2_oxo_monocarboxylic_acid(smiles: str):
         smiles (str): SMILES representation of the molecule.
 
     Returns:
-        (bool, str): Tuple with a boolean indicating if it is a 2-oxo monocarboxylic acid
-                     and a string with the reasoning.
-                     If the input SMILES is invalid, returns (False, "Invalid SMILES string").
+        (bool, str): A tuple where the boolean indicates if it is classified as a 2-oxo monocarboxylic acid 
+                     and the string provides a detailed reasoning. If the SMILES is invalid returns (False, "Invalid SMILES string").
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define SMARTS patterns for carboxylic acid.
-    # One pattern for the protonated acid and one for the deprotonated form.
-    acid_smarts1 = Chem.MolFromSmarts("C(=O)[OX2H]")
-    acid_smarts2 = Chem.MolFromSmarts("C(=O)[O-]")
     
-    # Find matches for each pattern.
-    acid_matches1 = mol.GetSubstructMatches(acid_smarts1)
-    acid_matches2 = mol.GetSubstructMatches(acid_smarts2)
+    # First, we want exactly one carboxylic acid group.
+    # We use a SMARTS that covers both protonated and deprotonated forms.
+    acid_smarts = Chem.MolFromSmarts("[CX3](=O)[OX2H1,O-]")
+    acid_matches = mol.GetSubstructMatches(acid_smarts)
     
-    # Combine matches (each match is a tuple of atom indices where index 0 is the carboxyl carbon).
-    acid_matches = acid_matches1 + acid_matches2
-
     if len(acid_matches) == 0:
         return False, "No carboxylic acid group found"
     if len(acid_matches) > 1:
         return False, f"Found {len(acid_matches)} carboxylic acid groups, expected exactly one (monocarboxylic acid)"
     
-    # Use the unique match.
-    # In our SMARTS, the first atom (index 0) corresponds to the acid carbon (C=O part)
+    # In our SMARTS match the first atom (index 0) is the carboxyl carbon.
     acid_carbon_idx = acid_matches[0][0]
     acid_carbon = mol.GetAtomWithIdx(acid_carbon_idx)
     
-    # Find the alpha carbon: it is a carbon neighbor of the acid carbon that is not the carbonyl oxygen.
-    alpha_carbons = []
+    # In a typical monocarboxylic acid the carboxyl carbon is terminal and hence should have exactly one carbon neighbor.
+    alpha_candidates = []
     for neighbor in acid_carbon.GetNeighbors():
-        # Only consider carbon neighbors.
+        # Exclude the oxygen(s) from the acid group; only count carbons.
         if neighbor.GetAtomicNum() == 6:
-            alpha_carbons.append(neighbor)
-    if len(alpha_carbons) == 0:
-        return False, "No alpha carbon found (likely formic acid), so no possibility for a 2-oxo substituent"
+            alpha_candidates.append(neighbor)
+    if len(alpha_candidates) == 0:
+        return False, "No alpha carbon found (likely a formic acid derivative) so no possibility for a 2-oxo substituent"
+    if len(alpha_candidates) > 1:
+        return False, f"Found {len(alpha_candidates)} alpha carbon candidates – ambiguous for a 2-oxo substituent"
     
-    # For each candidate alpha carbon, check if it is attached via a double bond to an oxygen (ketone functionality)
+    alpha = alpha_candidates[0]
+    # Now, require that the α‐carbon (directly attached to the carboxyl carbon) is also bonded (via a double bond) to an oxygen.
     found_2oxo = False
-    for alpha in alpha_carbons:
-        # Loop over bonds from the alpha carbon.
-        for bond in alpha.GetBonds():
-            # Check if the bond is a double bond.
-            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                # Get the atom on the other end.
-                other = bond.GetOtherAtom(alpha)
-                # Check if the other atom is oxygen.
-                if other.GetAtomicNum() == 8:
-                    # Found a carbonyl group attached to the alpha carbon.
-                    found_2oxo = True
-                    break
-        if found_2oxo:
-            break
-
+    for bond in alpha.GetBonds():
+        # Look for a double bond.
+        if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+            other = bond.GetOtherAtom(alpha)
+            # We expect the carbonyl oxygen to be attached (and ignore the case in which the candidate might be the acid carbon)
+            if other.GetAtomicNum() == 8:
+                found_2oxo = True
+                break
     if not found_2oxo:
         return False, "Alpha carbon does not have a 2-oxo (carbonyl) substituent"
+    
+    return True, "Contains a single carboxylic acid group with an α‐carbon bearing a 2‑oxo (carbonyl) substituent"
 
-    return True, "Contains a single carboxylic acid group with an alpha carbon having a carbonyl (2-oxo) substituent"
-
-# Example usage: Uncomment the below lines to test the function with one of the provided SMILES.
-# test_smiles = "CCCCCCCC(=O)C(O)=O"  # 2-oxononanoic acid
+# Example usage:
+# Uncomment the following lines to test with an example SMILES.
+# test_smiles = "CCCCCCC(=O)C(O)=O"  # 2-oxononanoic acid
 # result, reason = is_2_oxo_monocarboxylic_acid(test_smiles)
 # print(result, reason)
