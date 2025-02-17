@@ -2,107 +2,102 @@
 Classifies: CHEBI:46640 diketone
 """
 """
-Classifies: A compound that contains two ketone functionalities (diketone).
-A diketone here is defined as having exactly two ketone groups where each ketone group 
-is a carbonyl group (C=O) whose carbon is bound (via single bonds) to two carbon atoms 
-and has no attached hydrogen (so as to rule out aldehyde groups). Furthermore, we prefer to 
-ignore carbonyl groups embedded in aromatic systems (e.g. quinones) as these often represent 
-a different chemical class.
+Classifies: A compound that contains exactly two ketone functionalities (diketone).
+A ketone functionality (R-CO-R) is defined here as a carbon atom that:
+  - Is not aromatic (and—if in a ring—it is not part of a fully aromatic ring),
+  - Has a double bond to exactly one oxygen,
+  - Has no attached hydrogen (so as not to be an aldehyde),
+  - And is connected via two single bonds (sigma bonds) to carbon atoms.
+This protocol is designed to count only true “ketone” groups and ignore carbonyl groups in 
+aromatic (quinone‐like) systems.
 """
 
 from rdkit import Chem
 
 def is_diketone(smiles: str):
     """
-    Determines if a molecule is a diketone (exactly two independent ketone functionalities)
-    based on its SMILES string. A ketone is defined here as a non-aromatic carbonyl carbon (C=O)
-    that is connected via single bonds to two carbon atoms (i.e. it appears in an R-CO-R unit).
+    Determines if a molecule is a diketone (contains exactly two independent ketone functionalities)
+    based on its SMILES string.
+    
+    A ketone functionality is detected by looking for a carbon (non-aromatic) that has exactly one 
+    double bond to an oxygen, no attached hydrogen, and two single bonds to carbon atoms. For atoms 
+    that are in rings, we further check: if the carbonyl carbon is in any fully aromatic ring then 
+    it is ignored.
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is classified as a diketone; False otherwise.
-        str: Reason for the classification decision.
+        bool: True if the molecule has exactly two ketone functionalities; False otherwise.
+        str: Explanation of the classification decision.
     """
-    # Parse the SMILES string into a molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # We'll search for ketone carbonyl carbons based on the following criteria:
-    # 1. The atom must be a carbon ("C").
-    # 2. It must have exactly one double-bond to oxygen.
-    # 3. It must have exactly two other heavy-atom neighbors (which must be carbon)
-    #    (so that the overall connectivity is: C(=O) with two C substituents).
-    # 4. Its own atom environment should not be aromatic.
-    #
-    # Note: This heuristic may fail in special cases but should work for many acyclic and non‐quinone
-    #       diketones.
     
     ketone_count = 0
-    # To avoid double counting, we will count each qualifying carbonyl atom only once.
+
+    # For ring aromaticity check, get ring information once.
+    ring_info = mol.GetRingInfo().AtomRings()
+    
     for atom in mol.GetAtoms():
-        # Only consider carbon atoms; skip if not "C"
+        # We are looking for a carbon atom
         if atom.GetSymbol() != "C":
             continue
-        # Exclude if the carbonyl carbon is aromatic.
+        # Exclude if the carbon itself is flagged as aromatic.
         if atom.GetIsAromatic():
             continue
-            
-        # For a ketone carbon, there should be no attached hydrogen
-        # (otherwise it would be an aldehyde, e.g. H-C=O).
+        
+        # If the atom is in any ring that is fully aromatic, then skip it.
+        atom_idx = atom.GetIdx()
+        skip_due_to_aromatic_ring = False
+        for ring in ring_info:
+            if atom_idx in ring:
+                # If all atoms in the ring are aromatic, consider the carbonyl as embedded in an aromatic ring.
+                if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+                    skip_due_to_aromatic_ring = True
+                    break
+        if skip_due_to_aromatic_ring:
+            continue
+        
+        # Exclude carbon atoms that have any hydrogen (would be aldehyde if attached to a carbonyl)
         if atom.GetTotalNumHs() != 0:
             continue
 
-        # Get all bonds around this carbon.
         bonds = atom.GetBonds()
-        # We expect the carbonyl carbon (in a ketone: R-CO-R) to be connected to exactly three heavy atoms,
-        # one from the C=O double bond and the other two being carbon atoms.
-        heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-        # If the number of heavy neighbors is not 3 then skip this atom.
-        if len(heavy_neighbors) != 3:
-            continue
-
-        # Now check for exactly one double bond from this carbon to an oxygen.
-        dbl_oxygen_found = False
-        valid_ketone = True  # we assume valid unless one test fails
-        # Count the number of bonds that are C=O double bonds.
-        count_doubleO = 0
+        # Identify if this carbon has exactly one double bond to oxygen.
+        doubleO_bonds = []
+        single_bonds = []
         for bond in bonds:
-            # Only consider double bonds.
             if bond.GetBondType() == Chem.BondType.DOUBLE:
-                nbr = bond.GetOtherAtom(atom)
-                if nbr.GetAtomicNum() == 8:
-                    count_doubleO += 1
-        if count_doubleO != 1:
-            valid_ketone = False
+                neighbor = bond.GetOtherAtom(atom)
+                if neighbor.GetAtomicNum() == 8:
+                    doubleO_bonds.append(bond)
+            elif bond.GetBondType() == Chem.BondType.SINGLE:
+                single_bonds.append(bond)
+        # Must be exactly one double bond to oxygen.
+        if len(doubleO_bonds) != 1:
+            continue
+        
+        # For a (true) ketone the carbonyl carbon should have exactly two single bonds.
+        if len(single_bonds) != 2:
+            continue
+        
+        # Both single-bond neighbors must be carbon atoms.
+        if any(bond.GetOtherAtom(atom).GetAtomicNum() != 6 for bond in single_bonds):
+            continue
+        
+        # Passed all tests, count this as one ketone functionality.
+        ketone_count += 1
 
-        # Next, for all bonds that are not the C=O bond, they should connect only to carbon atoms.
-        # (This ensures that we are not counting esters or acid derivatives.)
-        if valid_ketone:
-            for bond in bonds:
-                if bond.GetBondType() == Chem.BondType.DOUBLE:
-                    # Already accounted for C=O double bond.
-                    continue
-                nbr = bond.GetOtherAtom(atom)
-                # We already ensured heavy_neighbors count above; now require that non-oxygen neighbors are carbon.
-                if nbr.GetAtomicNum() != 6:
-                    valid_ketone = False
-                    break
-
-        if valid_ketone:
-            ketone_count += 1
-
-    # Check whether the molecule has exactly two ketone functionalities.
     if ketone_count == 2:
         return True, "Contains exactly two ketone functionalities"
     else:
         return False, f"Found {ketone_count} ketone functionalities; exactly 2 are required for a diketone"
 
-# Example usage; you can test with one of the provided SMILES.
+# Example usage; you can test using one of the provided diketone SMILES.
 if __name__ == "__main__":
-    # Test with 2,3-Undecanedione: SMILES "O=C(CCCCCCCC)C(=O)C"
+    # Example: 2,3-Undecanedione SMILES "O=C(CCCCCCCC)C(=O)C"
     test_smiles = "O=C(CCCCCCCC)C(=O)C"
     result, reason = is_diketone(test_smiles)
     print(f"Result: {result}\nReason: {reason}")
