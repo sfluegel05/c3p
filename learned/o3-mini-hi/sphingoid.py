@@ -4,18 +4,8 @@ Classifies: CHEBI:35785 sphingoid
 """
 Classifies: Sphingoid compounds
 Definition: Sphinganine, its homologs and stereoisomers, and the hydroxy and unsaturated derivatives of these compounds.
-Improved strategy:
-  - Instead of checking whole disconnected fragments, we search the entire molecule for an acyclic sphingoid core
-    (using several SMARTS patterns).
-  - For every match we extract a neighborhood (all atoms within a given bond distance from the core) to ensure
-    that the long aliphatic chain and the amino group (i.e. nitrogen) are part of the same connected region.
-  - We then require that this “sphingoid fragment” has:
-       * A long aliphatic chain (at least 8 contiguous non‐ring carbons),
-       * At least one nitrogen atom,
-       * And that the core match atoms are all acyclic.
-  - If any neighborhood meets these criteria, the molecule is classified as sphingoid.
-  
-This approach helps to avoid false positives where the two features are separated in different parts of the molecule.
+Revised classifier that relaxes the molecular weight threshold and improves core detection by requiring
+that the key amino-diol (or carbonyl variant) motif is found on an acyclic fragment.
 """
 
 from rdkit import Chem
@@ -24,119 +14,77 @@ from rdkit.Chem import rdMolDescriptors
 def is_sphingoid(smiles: str):
     """
     Determines if a molecule is a sphingoid compound based on its SMILES string.
-    Sphingoid compounds include sphinganine (and its homologs/stereoisomers) and the hydroxy/unsaturated variants.
-    
-    For classification we:
-      - Search for an acyclic sphingoid core using several SMARTS patterns.
-      - For each core match, build a connected “neighborhood” (within a specified bond radius) and 
-        require that it contains:
-           * A long aliphatic chain (at least 8 contiguous, non‐ring carbons, with single or double bonds),
-           * At least one nitrogen atom.
-      - Basic fragment properties (e.g. approximate molecular weight, carbon and nitrogen counts) are used
-        to aid in explanation.
-    
+    Sphingoid compounds are defined as sphinganine (and its homologs/stereoisomers) and their
+    hydroxy/unsaturated derivatives. These compounds typically have:
+      - A long aliphatic (acyclic) chain (>=8 connected sp3 carbon atoms).
+      - A characteristic sphingoid core featuring a 2-amino-1,3-diol or its carbonyl variant.
+      - At least one nitrogen atom (from the amino group).
+      - A molecular weight that usually is not extremely low (we set a lower bound near 200 Da).
+
     Args:
-        smiles (str): SMILES representation of the molecule.
-    
+        smiles (str): SMILES string of the molecule.
+        
     Returns:
-        (bool, str): A tuple containing the classification (True if sphingoid is detected, False otherwise)
-                     and an explanation message.
+        bool: True if the molecule is classified as sphingoid, False otherwise.
+        str: Explanation for the classification decision.
     """
-    # Parse the input molecule.
+    # Parse the SMILES into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define a relaxed SMARTS pattern for a long aliphatic chain:
-    # Matches 8 contiguous non‐ring carbon atoms (allowing either sp3 or sp2 atoms).
-    chain_smarts = "[#6;!R]~[#6;!R]~[#6;!R]~[#6;!R]~[#6;!R]~[#6;!R]~[#6;!R]~[#6;!R]"
-    chain_pattern = Chem.MolFromSmarts(chain_smarts)
-    if chain_pattern is None:
-        return False, "Error in chain SMARTS pattern"
+        
+    # Check for sufficient long alkyl chain.
+    # We require a contiguous chain of at least 8 carbon atoms.
+    # (This SMARTS looks for a chain "CCCCCCCC".)
+    chain_pattern = Chem.MolFromSmarts("CCCCCCCC")
+    if not mol.HasSubstructMatch(chain_pattern):
+        return False, "No sufficiently long aliphatic chain (>=8 carbons) found."
     
-    # Define several sphingoid core SMARTS patterns.
-    # These patterns capture variants like a fully hydroxylated amino-diol core, a carbonyl variant etc.
-    core_smarts_list = [
-        "C(O)C(N)CO",    # fully hydroxylated amino-diol core
-        "C(=O)C(N)CO",   # carbonyl variant (dehydro form)
-        "C(=O)CN",       # deoxy-carbonyl variant
-        "C(O)CN"         # deoxy-hydroxy variant
-    ]
-    core_patterns = []
-    for s in core_smarts_list:
-        pat = Chem.MolFromSmarts(s)
-        if pat is not None:
-            core_patterns.append(pat)
-
-    # Helper function: return True if all atoms in a given match (by indices) are acyclic.
-    def acyclic_match(mol_obj, match_indices):
-        return all(not mol_obj.GetAtomWithIdx(idx).IsInRing() for idx in match_indices)
+    # Check total carbon count. (Sphingoid compounds normally are long-chain molecules.)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 10:
+        return False, f"Too few carbon atoms ({c_count}); sphingoid molecules typically have a long chain."
     
-    # Helper function: given a set of seed atom indices, return all atoms within 'radius' bonds.
-    def get_neighborhood_atoms(mol_obj, seed_indices, radius):
-        visited = set(seed_indices)
-        frontier = set(seed_indices)
-        for _ in range(radius):
-            next_frontier = set()
-            for idx in frontier:
-                atom = mol_obj.GetAtomWithIdx(idx)
-                for neighbor in atom.GetNeighbors():
-                    n_idx = neighbor.GetIdx()
-                    if n_idx not in visited:
-                        visited.add(n_idx)
-                        next_frontier.add(n_idx)
-            frontier = next_frontier
-        return visited
-
-    # Loop over each sphingoid core pattern.
-    for pat in core_patterns:
-        matches = mol.GetSubstructMatches(pat)
+    # Require at least one nitrogen (for the amino group)
+    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    if n_count < 1:
+        return False, "No nitrogen found; sphingoid compounds require an amino group."
+    
+    # Define SMARTS patterns for the typical sphingoid core motifs.
+    # Pattern 1: A typical amino-diol motif: (ignoring stereochemistry) C(O)C(N)CO
+    core_pattern1 = Chem.MolFromSmarts("C(O)C(N)CO")
+    # Pattern 2: A carbonyl variant (found in dehydro/unsaturated forms): C(=O)C(N)CO
+    core_pattern2 = Chem.MolFromSmarts("C(=O)C(N)CO")
+    
+    # Now, to reduce the chance that the match is in a ring system (leading to false positives),
+    # we require that at least one match (for either pattern) is entirely acyclic.
+    def acyclic_match(pattern):
+        matches = mol.GetSubstructMatches(pattern)
         for match in matches:
-            # Only consider the match if all atoms in it are acyclic (not in any ring)
-            if not acyclic_match(mol, match):
-                continue
-            # Build a neighborhood around the core match.
-            # We use a radius of 4 bonds (this parameter can be tuned).
-            neighborhood = get_neighborhood_atoms(mol, list(match), radius=4)
-            # Create a submolecule from the neighborhood atoms.
-            submol = Chem.PathToSubmol(mol, list(neighborhood))
-            # Check: The submol must contain a long aliphatic chain.
-            if not submol.HasSubstructMatch(chain_pattern):
-                continue
-            # Also require that the submol has at least one nitrogen atom (amino group)
-            n_count = sum(1 for atom in submol.GetAtoms() if atom.GetAtomicNum() == 7)
-            if n_count < 1:
-                continue
+            # If none of the atoms in the match are in a ring, we consider this a valid hit.
+            if all(not mol.GetAtomWithIdx(idx).IsInRing() for idx in match):
+                return True
+        return False
 
-            # (Optional) Check additional properties. Here we compute weight and carbon count.
-            frag_wt = rdMolDescriptors.CalcExactMolWt(submol)
-            c_count = sum(1 for atom in submol.GetAtoms() if atom.GetAtomicNum() == 6)
-            # Accept a broad range here; sphingoid fragments usually lie between 200 and 1000 Da 
-            # and contain a moderate-to-high carbon count.
-            if frag_wt < 200 or frag_wt > 1000 or c_count < 16:
-                continue
+    if not (acyclic_match(core_pattern1) or acyclic_match(core_pattern2)):
+        return False, "No acyclic sphingoid core (amino-diol or carbonyl variant) found."
+    
+    # Check molecular weight: Many sphingoid molecules lie roughly between 200 to 800 Da.
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200:
+        return False, f"Molecular weight too low ({mol_wt:.1f} Da) for a typical sphingoid compound."
+    
+    # If all basic conditions are met, classify as sphingoid.
+    return True, "Molecule exhibits an acyclic sphingoid core with a long aliphatic chain and appropriate functionality."
 
-            # If all tests are passed, we consider the molecule a sphingoid compound.
-            reason = ("Fragment with weight {:.1f} Da, {} carbons, and {} nitrogen(s) contains an acyclic sphingoid core"
-                      " and a long aliphatic chain within a {}-bond neighborhood.".format(frag_wt, c_count, n_count, 4))
-            return True, reason
-
-    return False, "No connected substructure combining an acyclic sphingoid core, long aliphatic chain, and amino group was found."
-
-# For testing purposes, run a few examples.
+# Example test cases (for manual testing)
 if __name__ == "__main__":
     test_smiles = [
-        # True positives.
-        "CCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@H](O)[C@H](O)CCCCCCCCCCC(C)C",  # Example glycosylated sphingoid
-        "CCCCCCCCCCCC\\C=C\\C(=O)[C@@H](N)CO",  # 3-dehydrosphingosine
-        "CCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@H](O)[C@H](O)CCCCCCCCCCC(C)C",  # N-heptadecanoyl-... sphingoid
-        "CCCCCCCCCCCC\\C=C\\[C@@H](O)[C@H](CO)N(C)C",  # N,N-dimethylsphingosine
-        # A false positive candidate that should not classify as sphingoid.
-        "CCCC\\C=C/C\\C=C/CCCCCCCCCC(=O)NCCO"
+        "CCCCCCCCCCCC\\C=C\\C(=O)[C@@H](N)CO",  # 3-dehydrosphingosine (should return True)
+        "OC[C@@]([C@@](CCCCCCCCCCCCCC)(O)H)(N)H",  # Heptadecasphinganine (True)
+        "CCO",  # too short (False)
+        "CCCCCCCCCCC(=O)[C@@H](N)CO",  # 3-dehydrotetradecasphinganine (False under previous def., now may pass if other features match)
     ]
     for smi in test_smiles:
-        result, reason = is_sphingoid(smi)
-        print("SMILES:", smi)
-        print("Is sphingoid?:", result)
-        print("Reason:", reason)
-        print()
+        classified, explanation = is_sphingoid(smi)
+        print(f"SMILES: {smi}\n Classified: {classified}\n Reason: {explanation}\n")
