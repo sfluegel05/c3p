@@ -2,18 +2,12 @@
 Classifies: CHEBI:87659 dodecanoate ester
 """
 """
-Classifies: any fatty acid ester in which the carboxylic acid component is lauric acid (dodecanoate ester)
-
-Definition: The acyl portion should be exactly laurate:
-    Lauric acid (dodecanoic acid) is CH3(CH2)10COOH, so the acyl group in the ester is CH3(CH2)10C(=O)O.
-    Notice that the alkyl chain (before the C(=O)) is 11 carbons long.
-    
-The strategy:
-1. Use a SMARTS pattern for the laurate ester group: "CCCCCCCCCCC(=O)O"
-   (i.e. 11 consecutive carbons followed by the carbonyl ester group).
-2. For each match, check that the first atom (the terminal CH3) is not connected to any extra carbon 
-   not included in the match. This ensures that the chain is terminal and not embbedded in a larger 
-   chain fragment.
+Classifies: any fatty acid ester in which the carboxylic acid component is lauric acid,
+i.e. a dodecanoate ester. The acyl group must be exactly CH3(CH2)10C(=O)O.
+This program builds a SMARTS that encodes:
+    [CH3;H3]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-C(=O)O
+so that if a match is found the laurate (dodecanoate) ester substructure exists,
+and extra bonds on the “terminal” atoms would lower the hydrogen counts so that the SMARTS does not match.
 """
 
 from rdkit import Chem
@@ -21,23 +15,21 @@ from rdkit import Chem
 def is_dodecanoate_ester(smiles: str):
     """
     Determines if a molecule contains a dodecanoate (laurate) ester group.
-    A dodecanoate ester here is defined as an ester in which the acyl (carboxylic acid) part is lauric acid,
-    having the structure CH3(CH2)10C(=O)O.
+    A dodecanoate ester here is defined as having the acyl moiety CH3(CH2)10C(=O)O.
     
     The procedure is as follows:
-      - We first parse the molecule from its SMILES representation.
-      - We then search for the substructure defined by the SMARTS "CCCCCCCCCCC(=O)O".
-        (This pattern represents 11 aliphatic carbons (CH3(CH2)9CH2) directly attached to the
-         carbonyl group, so that total the acid has 12 carbons.)
-      - For each match we verify that the terminal carbon (i.e. the methyl group at the beginning)
-        is not connected to any carbon atom outside the match. This step prevents a case where the
-        dodecanoate fragment is only a part of a longer carbon chain.
-        
+      1. Convert the input SMILES into an RDKit molecule.
+      2. Use a SMARTS pattern that demands a terminal CH3 (with three implicit/explcit H’s)
+         followed by exactly ten CH2 groups (with exactly two hydrogens each), finishing in a carbonyl group bound to an -O.
+         This pattern does not match if the chain is extended or branched.
+      3. If at least one substructure match is found then we classify the molecule as containing
+         a laurate ester group.
+         
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if molecule contains a dodecanoate ester (laurate ester) group, False otherwise.
+        bool: True if the molecule contains a laurate ester group, False otherwise.
         str: Explanation for the classification.
     """
     # Parse the SMILES string into an RDKit molecule.
@@ -45,38 +37,43 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string."
     
-    # Define a SMARTS pattern for the laurate ester subgroup.
-    # NOTE: Lauric acid (dodecanoic acid) is CH3(CH2)10COOH; hence the acyl part CH3(CH2)10C(=O)O
-    # should be represented by 11 carbon atoms followed by the carbonyl-ester fragment.
-    smarts = "CCCCCCCCCCC(=O)O"  # 11 C's (terminal chain) + C(=O)O
+    # Build a SMARTS for the exact laurate ester acyl fragment:
+    # CH3(CH2)10C(=O)O
+    # Note: each atom is annotated with a hydrogen count constraint:
+    #  - The terminal CH3 must have exactly 3 hydrogen atoms.
+    #  - Each CH2 must have exactly 2 hydrogens.
+    #  - Then the carbonyl carbon (without H count constraint) is bound to =O and O.
+    # The SMARTS string written out is:
+    #   [CH3;H3]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-[CH2;H2]-C(=O)O
+    smarts = ("[CH3;H3]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-[CH2;H2]"
+              "-C(=O)O")
+              
     query = Chem.MolFromSmarts(smarts)
     if query is None:
-        return False, "Failed to create SMARTS pattern for dodecanoate ester."
-
-    # Retrieve all substructure matches.
-    matches = mol.GetSubstructMatches(query)
-    if not matches:
-        return False, "Dodecanoate ester substructure not found."
-
-    # For each match, ensure that the match is terminal.
-    # We interpret the first atom in our SMARTS (the first "C") as the terminal CH3.
-    for match in matches:
-        # match is a tuple of atom indices; for our SMARTS, match[0] corresponds to the terminal CH3.
-        atom0 = mol.GetAtomWithIdx(match[0])
-        is_terminal = True
-        for neighbor in atom0.GetNeighbors():
-            # If neighbor is a carbon and is not inside the matched indices then the chain continues.
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in match:
-                is_terminal = False
-                break
-        if is_terminal:
-            return True, "Molecule contains a dodecanoate ester (laurate ester) group."
+        return False, "Could not build SMARTS pattern for laurate ester."
     
-    return False, "Dodecanoate ester substructure found but acyl chain is extended beyond laurate."
+    # Find matches of the laurate ester pattern in the molecule.
+    matches = mol.GetSubstructMatches(query)
+    if matches:
+        return True, "Molecule contains a dodecanoate (laurate) ester group."
+    else:
+        # No match found – either the ester group is absent or 
+        # the acyl chain is not exactly laurate (e.g. if it is extended or branched).
+        return False, "No laurate ester group with an exact CH3(CH2)10C(=O)O acyl chain found."
 
 # Example usage:
 if __name__ == "__main__":
-    # One test: 1-lauroyl-sn-glycerol (a known laurate ester)
+    # Test with a known laurate ester: 1-lauroyl-sn-glycerol.
     test_smiles = "CCCCCCCCCCCC(=O)OC[C@@H](O)CO"
     result, reasoning = is_dodecanoate_ester(test_smiles)
     print(result, reasoning)
