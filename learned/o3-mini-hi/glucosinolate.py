@@ -2,12 +2,12 @@
 Classifies: CHEBI:24279 glucosinolate
 """
 """
-Classifies: Glucosinolate 
+Classifies: Glucosinolate
 Definition: Water-soluble anionic substituted thioglucosides. 
-Glucosinolates have a central C atom which is bonded via an S atom to a glycone group 
+Glucosinolates have a central C atom which is bonded via an S atom to a glycone group
 and via an N atom to a sulfonated oxime group, and which also carries a side-group.
 The side-chain and sulfate group have an anti stereochemical configuration across the C=N double bond.
-Note: The stereochemical “anti” configuration is not explicitly verified.
+Note: The anti configuration is not explicitly verified.
 """
 from rdkit import Chem
 
@@ -15,23 +15,22 @@ def is_glucosinolate(smiles: str):
     """
     Determines if a molecule is a glucosinolate based on its SMILES string.
     
-    We require that the molecule contains:
-    1. A sulfonated oxime group attached to a central carbon. This is approximated with the SMARTS:
-         C(=N[O][S](=O)(=O)[O-]?)
-       which looks for a C double-bonded to an N which is bound to an O then to a sulfonyl group.
-    2. The same central carbon must also be attached to a sulfur atom that is part of a glycone (sugar) ring.
-       We use a simplified sugar SMARTS for a pyranose ring (typical for glucose):
-         C1OC(C(O)C(O)C(O)C1O)
-    
-    It is also verified that the central carbon has at least three substituents (indicating that it 
-    also carries a side-chain).
-    
+    The molecule is required to have:
+      1. A sulfonated oxime group. Our SMARTS pattern (ignoring minor charge variations) is:
+             C(=N[O]S(=O)(=O)[O-]?)
+         This identifies a C with a double bond to an N, which is connected to an O then to a sulfonyl group.
+      2. The central carbon (from above) must have at least three substituents (i.e. including a side chain).
+      3. One of the substituents must be a sulfur atom attached to a glycone (sugar) moiety.
+         We detect the glycone using a simplified SMARTS for a pyranose ring:
+             C1OC(C(O)C(O)C(O)C1O)
+         but we perform the matching ignoring stereochemistry.
+         
     Args:
         smiles (str): SMILES string of the molecule.
-    
+        
     Returns:
-        bool: True if molecule is classified as glucosinolate, False otherwise.
-        str: Explanation/reason for the classification decision.
+        bool: True if the molecule is classified as glucosinolate, False otherwise.
+        str: Explanation/reason for the decision.
     """
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
@@ -39,75 +38,85 @@ def is_glucosinolate(smiles: str):
         return False, "Invalid SMILES string."
     
     # Define the SMARTS for the sulfonated oxime group.
-    # This pattern looks for a carbon atom double-bonded to an N,
-    # with that N attached to an oxygen then to a sulfonyl group (OS(=O)(=O)[O-] or neutral OS(O)(=O)=O)
-    oxime_smarts = "C(=N[O][S](=O)(=O)[O-]?)"
+    # This pattern allows for optional charge on the terminal oxygen.
+    oxime_smarts = "C(=N[O]S(=O)(=O)[O-]?)"
     oxime_query = Chem.MolFromSmarts(oxime_smarts)
     if oxime_query is None:
-        return None, None  # Should not happen if SMARTS is valid.
+        return None, None  # Unexpected error, should not happen.
     
-    # Search for the sulfonated oxime substructure.
+    # Search for the oxime substructure in the molecule.
     oxime_matches = mol.GetSubstructMatches(oxime_query)
     if not oxime_matches:
         return False, "No sulfonated oxime substructure found."
     
-    # Define the SMARTS for a glycone (sugar) ring.
-    # This simplified pyranose pattern covers many typical glucosides.
+    # Define the SMARTS for a glycone (pyranose sugar) ring.
+    # We use a common pyranose representation.
     glycone_smarts = "C1OC(C(O)C(O)C(O)C1O)"
     glycone_query = Chem.MolFromSmarts(glycone_smarts)
     if glycone_query is None:
         return None, None
     
-    # For each sulfonated oxime match, check that:
-    # 1. The central carbon (atom 0 in our oxime SMARTS) has at least three substituents.
-    # 2. One of the neighbors of this carbon is a sulfur atom that is part of a glycone substructure.
+    # Find glycone matches in the molecule.
+    # Here we ignore chirality in matching to allow for different stereo representations.
+    glycone_matches = mol.GetSubstructMatches(glycone_query, useChirality=False)
+    if not glycone_matches:
+        return False, "No glycone (sugar) ring found in the molecule."
+    
+    # For each detected sulfonated oxime, check that the central carbon:
+    #   1. Has at least three substituents (indicating attachment of a side chain).
+    #   2. Has a neighbor sulfur atom that connects to the glycone structure.
     found_candidate = False
-    reason_details = []
+    reasons = []
     for match in oxime_matches:
+        # In our SMARTS the first atom (index 0) is the central carbon.
         central_c_idx = match[0]
         central_c = mol.GetAtomWithIdx(central_c_idx)
-        # Check that central C has at least 3 neighbors (S, N and a side-group)
+        
         if central_c.GetDegree() < 3:
-            reason_details.append("Central C in oxime does not have at least 3 substituents.")
-            continue  # Try next match
-        
-        # Look through neighbors of the central carbon for an S atom.
-        neighbor_s_found = False
-        for nbr in central_c.GetNeighbors():
-            if nbr.GetAtomicNum() == 16:  # 16 is sulfur
-                # Check if the candidate S is part of a glycone ring.
-                # We get all matches of the glycone pattern in the molecule
-                glycone_matches = mol.GetSubstructMatches(glycone_query)
-                for gly_match in glycone_matches:
-                    if nbr.GetIdx() in gly_match:
-                        neighbor_s_found = True
-                        break
-            if neighbor_s_found:
-                break
-        
-        if not neighbor_s_found:
-            reason_details.append("Central C not attached to a sulfur that is part of a glycone ring in this match.")
+            reasons.append("Central carbon in sulfonated oxime has fewer than 3 substituents.")
             continue
         
-        # If we reach here, we have found an oxime match with the correct central carbon that has:
-        # -- at least 3 substituents,
-        # -- an S neighbor that appears in a sugar ring.
+        # Look among neighbors of the central carbon for a sulfur atom.
+        sulfur_neighbor = None
+        for nbr in central_c.GetNeighbors():
+            if nbr.GetAtomicNum() == 16:  # sulfur
+                sulfur_neighbor = nbr
+                break
+        if sulfur_neighbor is None:
+            reasons.append("Central carbon not attached to any sulfur atom.")
+            continue
+        
+        # Check if this sulfur is attached (by any bond) to an atom that is part of a glycone match.
+        # We iterate through each neighbor of S (excluding the central C already inspected).
+        glycone_connected = False
+        for s_nbr in sulfur_neighbor.GetNeighbors():
+            if s_nbr.GetIdx() == central_c_idx:
+                continue
+            # Check if s_nbr lies in any of the glycone substructure matches.
+            for gly_match in glycone_matches:
+                if s_nbr.GetIdx() in gly_match:
+                    glycone_connected = True
+                    break
+            if glycone_connected:
+                break
+        
+        if not glycone_connected:
+            reasons.append("Sulfur neighbor is not connected to a glycone ring.")
+            continue
+        
+        # Found a candidate matching the criteria.
         found_candidate = True
         break
     
     if not found_candidate:
-        # If we did not find any candidate that satisfies both requirements, compile a reason.
-        full_reason = " ; ".join(reason_details) if reason_details else "No valid glucosinolate substructure found."
+        full_reason = " ; ".join(reasons) if reasons else "No valid glucosinolate substructure found."
         return False, full_reason
     
-    # (Optional further checks could include molecular weight or count of OH groups for water solubility.)
-    # Note: We are not verifying the anti stereochemical configuration across the C=N double bond.
-    
-    return True, "Molecule contains a sulfonated oxime group attached to a central C that is also linked to a thioglucoside (glycone) group with a side-chain."
+    return True, "Molecule contains a sulfonated oxime group on a central carbon (with a side chain) and a sulfur attached to a glycone (sugar) moiety."
 
 # Example usage:
 if __name__ == "__main__":
-    # Test one known glucosinolate SMILES: 4-(Methylsulfinyl)but-3-enylglucosinolate
+    # Test a known glucosinolate: 4-(Methylsulfinyl)but-3-enylglucosinolate.
     test_smiles = "S(C1OC(C(O)C(O)C1O)CO)\\C(=N\\OS(O)(=O)=O)\\CC/C=C/S(=O)C"
     result, reason = is_glucosinolate(test_smiles)
     print("Result:", result)
