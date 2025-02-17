@@ -5,19 +5,14 @@ Classifies: CHEBI:32957 lysophosphatidic acids
 Classifies: lysophosphatidic acids
 
 Definition:
-    Lysophosphatidic acids (LPA) are monoacylglycerol phosphates derived from phosphatidic
-    acid by removal of one of the acyl groups. They should contain a phosphate group directly
-    linked to a glycerol backbone and exactly one acyl ester bond (that attaches a fatty acid).
-    
-Improved heuristic criteria:
-    1. The molecule must contain a phosphate group with the pattern P(=O)(O)(O).
-    2. At least one of the oxygen atoms of the phosphate must be directly bonded to a carbon
-       that belongs to a glycerol backbone.
-    3. The molecule must contain a glycerol fragment. We use two alternative SMARTS patterns to be flexible.
-    4. The molecule must contain exactly ONE ester bond (substructure “OC(=O)”) for attachment of one acyl chain.
-       We require that the “ester oxygen” is part of the glycerol backbone.
-    5. Its molecular weight must be above ~250 Da (to filter out small molecules).
-Note: This is only a heuristic and will not be 100% specific.
+    Lysophosphatidic acids (LPA) are monoacylglycerol phosphates obtained by removal of one
+    acyl group from phosphatidic acid. In our heuristic, an LPA should:
+      1. Contain a phosphate group with the pattern P(=O)(O)(O).
+      2. Have the phosphate directly attached to a glycerol backbone.
+      3. Contain exactly one fatty acid ester bond (the “O–C(=O)” bond) attached to the glycerol.
+      4. Have a molecular weight above ~250 Da.
+      5. Not contain additional nitrogen atoms (which often indicate phosphocholines or similar lipids).
+Note: This is a heuristic method and may not be 100% specific.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -33,73 +28,76 @@ def is_lysophosphatidic_acids(smiles: str):
         bool: True if the molecule is identified as an LPA, False otherwise.
         str: Reason for the classification.
     """
-    # Parse the SMILES string.
+    # Parse SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     
-    # 1. Check for the phosphate group string.
-    # Use a SMARTS pattern that matches a phosphate: P(=O)(O)(O)
+    # Reject molecules that contain nitrogen atoms,
+    # since LPAs should not have nitrogen (they lack choline/ethanolamine groups).
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:
+            return False, "Molecule contains nitrogen atoms, likely a phosphocholine/phosphoethanolamine."
+    
+    # 1. Check for the phosphate group.
     phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
     phos_matches = mol.GetSubstructMatches(phosphate_pattern)
     if not phos_matches:
         return False, "Phosphate group not found."
     
-    # 2. Check that at least one oxygen bound to the phosphate connects to a glycerol backbone.
-    # We look for the glycerol fragment. Because stereochemistry may be present or not,
-    # we use two patterns.
-    # First pattern: a simplified glycerol backbone: O C C(O) C O  (ignoring stereochemistry)
+    # 2. Find glycerol backbone fragments.
+    # We use two patterns to allow for different representations (with/without explicit stereochemistry).
     glycerol_pattern1 = Chem.MolFromSmarts("OCC(O)CO")
-    # Alternative pattern (common when chiral tags are given)
     glycerol_pattern2 = Chem.MolFromSmarts("OC[C@H](O)CO")
-    
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern1)
     if not glycerol_matches:
         glycerol_matches = mol.GetSubstructMatches(glycerol_pattern2)
     if not glycerol_matches:
         return False, "Glycerol backbone not found."
-    # For later use, collect all atom indices in any glycerol match (union over each match)
+    
+    # Combine all atom indices that are part of any glycerol match.
     glycerol_atoms = set()
     for match in glycerol_matches:
         glycerol_atoms.update(match)
     
-    # 3. Verify that the phosphate group is attached to the glycerol fragment.
-    # For each phosphorus-containing match, check if any oxygen neighbor is bonded to a carbon that’s in glycerol.
-    valid_phosphate_found = False
+    # 3. Verify that the phosphate group is attached to the glycerol backbone.
+    # For each phosphate match, look at the phosphorus atom’s oxygen neighbors.
+    found_linkage = False
     for match in phos_matches:
-        for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 15:  # phosphorus
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() == 15:  # phosphorus atom
                 for nbr in atom.GetNeighbors():
                     if nbr.GetAtomicNum() == 8:  # oxygen neighbor
-                        # if one of oxygen's neighbors (except the phosphorus) is in the glycerol fragment, we consider it attached.
+                        # Check if oxygen's neighbors (except the P) include a carbon in the glycerol fragment.
                         for nbr2 in nbr.GetNeighbors():
-                            if nbr2.GetIdx() in glycerol_atoms and nbr2.GetAtomicNum() == 6:
-                                valid_phosphate_found = True
-                                break
-                    if valid_phosphate_found:
-                        break
-            if valid_phosphate_found:
-                break
-        if valid_phosphate_found:
+                            if nbr2.GetIdx() != atom_idx and nbr2.GetAtomicNum() == 6:
+                                if nbr2.GetIdx() in glycerol_atoms:
+                                    found_linkage = True
+                                    break
+                        if found_linkage:
+                            break
+                if found_linkage:
+                    break
+        if found_linkage:
             break
-    if not valid_phosphate_found:
-        return False, "Phosphate group not directly linked to a glycerol backbone."
-
-    # 4. Identify the ester bond: the fatty acid attachment.
-    # We look for the ester substructure "OC(=O)".
+    if not found_linkage:
+        return False, "Phosphate group not directly linked to glycerol backbone."
+    
+    # 4. Identify the ester bond (attachment of one fatty acyl chain).
+    # We search for the ester substructure "OC(=O)".
     ester_pattern = Chem.MolFromSmarts("OC(=O)")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    # We now count only those ester matches where the oxygen (first atom in the match) is part of the glycerol backbone.
     ester_count = 0
     for match in ester_matches:
+        # The first atom (an oxygen) in the match should belong to the glycerol backbone.
         oxygen_idx = match[0]
         if oxygen_idx in glycerol_atoms:
             ester_count += 1
     if ester_count != 1:
         return False, f"Found {ester_count} ester bond(s) attached to glycerol; expected exactly 1 for monoacyl LPA."
-
-    # 5. Check that the molecular weight is within an expected range for an LPA molecule.
+    
+    # 5. Check the molecular weight (filter out very small molecules).
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 250:
         return False, "Molecular weight too low to be a lysophosphatidic acid."
@@ -108,7 +106,7 @@ def is_lysophosphatidic_acids(smiles: str):
 
 # Example usage:
 if __name__ == "__main__":
-    # Test with one of the provided examples.
+    # Test with one example SMILES string.
     test_smiles = "P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\CCCCCCC)(O)(O)=O"  # PA(17:1(9Z)/0:0)
     result, reason = is_lysophosphatidic_acids(test_smiles)
     print(result, reason)
