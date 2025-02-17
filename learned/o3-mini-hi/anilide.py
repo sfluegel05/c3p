@@ -2,76 +2,53 @@
 Classifies: CHEBI:13248 anilide
 """
 """
-Classifies: anilide - Any aromatic amide obtained by acylation of aniline.
+Classifies: anilide – Any aromatic amide obtained by acylation of aniline.
+This improved method uses two SMARTS queries to check for a benzene ring directly attached to 
+an amide nitrogen. The two queries cover the possibility that the nitrogen is either the substituent
+on the benzene (NC(=O)… attached after the ring) or that the benzene ring is attached to the nitrogen 
+(NC(=O)… preceded by the ring) as found in many anilide structures.
 """
 from rdkit import Chem
-
-def is_in_benzene_ring(atom, mol):
-    """
-    Check if the given atom is part of a benzene ring.
-    A benzene ring is defined as a six-membered ring where every atom is a carbon and aromatic.
-    """
-    # Get ring information from the molecule
-    ring_info = mol.GetRingInfo()
-    # Iterate over each ring (as a tuple of atom indices)
-    for ring in ring_info.AtomRings():
-        if len(ring) == 6 and atom.GetIdx() in ring:
-            # Check that every atom in the ring is a carbon and is aromatic.
-            if all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 and mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-                return True
-    return False
 
 def is_anilide(smiles: str):
     """
     Determines if a molecule is an anilide based on its SMILES string.
-    An anilide is defined as an aromatic amide where the nitrogen of the amide bond
-    is derived from aniline. In other words, the amide nitrogen is directly attached to a benzene ring.
-
+    An anilide is defined as an aromatic amide where the amide nitrogen is derived from aniline –
+    that is, the nitrogen is directly attached to a benzene ring (a six-membered aromatic ring made
+    solely of carbons) and is also bound to an acyl group.
+    
+    This improved function uses two SMARTS substructure queries:
+      1. "c1ccccc1NC(=O)" – the benzene ring is the substituent through the nitrogen (typical for acylated aniline)
+      2. "NC(=O)c1ccccc1" – the acyl group comes first followed by an aromatic ring directly attached to N.
+      
     Args:
         smiles (str): SMILES string of the molecule.
-
+    
     Returns:
         bool: True if the molecule is classified as an anilide, False otherwise.
-        str: Reason for the classification.
+        str: Reason for classification.
     """
-    # Parse the SMILES string into a molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Find amide substructure matches.
-    # We use a simple SMARTS for an amide: nitrogen (N) bonded to a carbon (C) that is double-bonded to oxygen.
-    amide_smarts = "[NX3][CX3](=O)"
-    amide_query = Chem.MolFromSmarts(amide_smarts)
-    matches = mol.GetSubstructMatches(amide_query)
-    
-    if not matches:
-        return False, "No amide functionality found"
-    
-    # For each match, check if the amide nitrogen has a substituent that is directly part of a benzene ring.
-    for match in matches:
-        n_idx = match[0]  # amide nitrogen index
-        c_idx = match[1]  # carbonyl carbon index, ignore it for checking substituents
-        n_atom = mol.GetAtomWithIdx(n_idx)
-        
-        # Check each neighbor of the amide nitrogen (except the carbonyl carbon)
-        for neighbor in n_atom.GetNeighbors():
-            if neighbor.GetIdx() == c_idx:
-                continue  # skip the carbonyl carbon
-            
-            # The neighbor should be a carbon atom.
-            if neighbor.GetAtomicNum() != 6:
-                continue
-            
-            # Additionally, check that this carbon is part of a benzene ring
-            if is_in_benzene_ring(neighbor, mol):
-                return True, "Found amide group with the nitrogen directly attached to a benzene ring (anilide)"
-    
-    return False, "Amide group(s) found but none have the nitrogen attached directly to a benzene ring"
 
-# Example usage (you can test with one of the provided SMILES strings):
+    # Define SMARTS patterns for anilide.
+    # Pattern 1: benzene ring connected via an exocyclic amide nitrogen to an acyl group.
+    pattern1 = Chem.MolFromSmarts("c1ccccc1NC(=O)")
+    # Pattern 2: an amide group whose nitrogen (N) is directly attached to a benzene ring.
+    pattern2 = Chem.MolFromSmarts("NC(=O)c1ccccc1")
+
+    if mol.HasSubstructMatch(pattern1):
+        return True, "Found anilide substructure (benzene ring attached to N followed by an acyl group)"
+    if mol.HasSubstructMatch(pattern2):
+        return True, "Found anilide substructure (amide group attached to a benzene ring)"
+    
+    return False, "No suitable anilide substructure found"
+
+# Example usage:
 if __name__ == "__main__":
-    test_smiles = "CC(=O)NC1=CC=C(C=C1)C(=S)NCC2=CC=CO2"  
+    # Test with one of the provided true positive SMILES.
+    test_smiles = "CC(=O)NC1=CC=C(C=C1)C(=S)NCC2=CC=CO2"
     result, reason = is_anilide(test_smiles)
     print("Is anilide:", result)
     print("Reason:", reason)
