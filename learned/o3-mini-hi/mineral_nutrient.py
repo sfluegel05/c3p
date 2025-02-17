@@ -3,19 +3,22 @@ Classifies: CHEBI:167164 mineral nutrient
 """
 """
 Classifies: Mineral nutrient
-Definition: A mineral that is an inorganic nutrient which must be ingested and
-absorbed in adequate amounts to satisfy a wide range of essential metabolic and/or 
-structural functions in the human body.
-Heuristic idea:
-  - At least one fragment must supply an acceptable metal ion (from a defined set)
-    either as a free ion (one‐atom fragment with positive charge) or as part of a clearly inorganic fragment.
-  - Additionally, if a free metal ion is detected then every other fragment (counterion)
-    must not look “organic” in a way that suggests it is a small, water‐soluble organic acid
-    (for instance sodium acetate is disallowed even though [Na+] is isolated, while caesium formate is allowed).
-  - We flag fragments as “organic” if they have carbon and either (a) contain an aromatic atom 
-    or (b) show a C=C bond that is not part of a carbonyl.
-  
-Because the boundaries are not sharp this implementation is only one possible heuristic.
+Definition: A mineral nutrient is defined as a mineral (from a set of allowed metals)
+that is an inorganic nutrient essential for metabolic/structural function.
+Our heuristic idea is three‐part:
+  (1) There must be at least one acceptable metal ion. We accept only those
+      metal‐containing fragments that are clearly inorganic—in particular,
+      either an isolated metal ion (a one‐atom fragment with a positive formal charge)
+      or a fragment containing no carbon atoms.
+  (2) Any fragment that does not contain an acceptable metal (the counterion)
+      must be checked. If the fragment is organic (contains carbon) then it is allowed only if:
+         – it is very simple (i.e. a carboxylate with 1–3 carbons) or (if larger) very lipophilic 
+           (≥8 carbons) and shows no extra organic (aromatic or non‐carbonyl C=C) features.
+      Additionally, we require a slight metal‐dependency: for alkali metals (Na, K, Cs)
+      only the simplest (one‐carbon, i.e. formate) organic counterion is tolerated.
+  (3) If any non‐water fragment looks overall “organic” (an aromatic or non‐carbonyl double bond between C)
+      outside the allowed counterion patterns then we disqualify the entire molecule.
+Because the boundaries are not sharp, this is just one possible heuristic.
 """
 
 from rdkit import Chem
@@ -25,166 +28,160 @@ def is_mineral_nutrient(smiles: str):
     """
     Determines if a molecule is a mineral nutrient based on its SMILES string.
     
-    Our heuristic has three main parts:
-      (1) The molecule must supply at least one acceptable metal ion.
-          Acceptable metal ions are those whose elemental symbol
-          appears in our allowed metal set and which (a) appear as an isolated ion 
-          (i.e. the only atom in that fragment with a positive formal charge) or (b)
-          appear in an entirely inorganic fragment (i.e. no carbon atoms).
-      (2) Any fragment that does not contain a metal (the counterion) should be checked.
-          Here we allow fragments with no carbon or – if they do contain carbon – only those
-          that are either very simple (e.g. a formate, with one carbon, or a propionate, with three carbons)
-          or very lipophilic (in our crude test: having at least 8 carbons).
-      (3) Independently, if any fragment (other than water) is overall “organic”
-          (for example having aromatic rings or non‐carbonyl C=C bonds), we flag the entire molecule as disqualified.
-    
-    If these criteria are met then we return True plus a reason string; otherwise False with a reason.
-    
-    Args:
-        smiles (str): SMILES string of the molecule.
-        
     Returns:
-        (bool, str): Tuple of classification and explanation.
+        (bool, str): Tuple of classification (True for a mineral nutrient) and an explanation.
     """
-    # Parse SMILES and add explicit hydrogens (to help assess –OH groups later)
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    # For assessing small fragments we add explicit hydrogens.
     mol = Chem.AddHs(mol)
     
-    # Define allowed metal elements
-    metal_set = {"Pd", "K", "Fe", "Cs", "Ca", "Zn", "Al", "Mg", "Sb", "Ba", "Na", "La"}
+    # Allowed metal symbols (nutrient metals). Note that later we distinguish alkali metals.
+    allowed_metals = {"Pd", "K", "Fe", "Cs", "Ca", "Zn", "Al", "Mg", "Sb", "Ba", "Na", "La"}
+    alkali_metals = {"Na", "K", "Cs"}
     
-    # ---------------------------------------------------------------------
-    # Helper functions
-    # ---------------------------------------------------------------------
+    # ----------------------------- Helper functions -----------------------------
     def is_water(frag):
-        # Water should have exactly two H and one O.
-        at_syms = sorted([atom.GetSymbol() for atom in frag.GetAtoms()])
-        return len(frag.GetAtoms()) == 3 and at_syms == ["H", "H", "O"]
-    
-    def fragment_is_organic(frag):
-        """
-        Flag a fragment as organic if it contains a carbon and either any aromatic atoms,
-        or any double bond between carbons that is not part of a carbonyl.
-        """
-        if any(atom.GetSymbol() == "C" for atom in frag.GetAtoms()):
-            if any(atom.GetIsAromatic() for atom in frag.GetAtoms()):
-                return True
-            for bond in frag.GetBonds():
-                if bond.GetBondType() == Chem.BondType.DOUBLE:
-                    a1 = bond.GetBeginAtom()
-                    a2 = bond.GetEndAtom()
-                    if a1.GetSymbol()=="C" and a2.GetSymbol()=="C":
-                        # Check if one of these is in a carbonyl group.
-                        def is_carbonyl(atom):
-                            for nbr in atom.GetNeighbors():
-                                b = frag.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                                if nbr.GetSymbol() == "O" and b and b.GetBondType() == Chem.BondType.DOUBLE:
-                                    return True
-                            return False
-                        if not (is_carbonyl(a1) or is_carbonyl(a2)):
-                            return True
-        return False
+        # Identify water: exactly one O and two H (order insensitive)
+        atoms = [atom.GetSymbol() for atom in frag.GetAtoms()]
+        return len(atoms)==3 and sorted(atoms)==["H", "H", "O"]
     
     def carbon_count(frag):
         return sum(1 for atom in frag.GetAtoms() if atom.GetSymbol() == "C")
     
-    # For a non‐metal fragment (a counterion) we allow it if either:
-    #  — It contains no carbon, or
-    #  — It does contain carbon but appears “simple”: either it is very small (1 or 3 C: formate or propionate)
-    #     or—if larger (8 or more carbons)—we assume it is a fatty‐acid type ligand.
-    def allowed_counterion(frag):
-        cnt = carbon_count(frag)
-        if cnt == 0:
+    def fragment_is_organic(frag):
+        """
+        Returns True if the fragment has carbon and either contains any aromatic atom,
+        or has a double bond between carbons that is not part of a carbonyl.
+        """
+        if not any(atom.GetSymbol() == "C" for atom in frag.GetAtoms()):
+            return False
+        # Check for aromatic atoms:
+        if any(atom.GetIsAromatic() for atom in frag.GetAtoms()):
             return True
-        if cnt in [1, 3]:
-            return True
-        if cnt >= 8:
-            # But if it is obviously organic (for example showing aromatic atoms or non‐carbonyl double bonds),
-            # then reject.
-            if fragment_is_organic(frag):
-                return False
-            return True
-        # Otherwise (2, 4–7 carbons) we do not allow it.
+        # Check bonds: if a double bond exists between carbons and is not a carbonyl bond.
+        for bond in frag.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                a1 = bond.GetBeginAtom()
+                a2 = bond.GetEndAtom()
+                if a1.GetSymbol()=="C" and a2.GetSymbol()=="C":
+                    # verify if either is in a carbonyl
+                    def in_carbonyl(atom):
+                        for nbr in atom.GetNeighbors():
+                            b = frag.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
+                            if nbr.GetSymbol() == "O" and b and b.GetBondType() == Chem.BondType.DOUBLE:
+                                return True
+                        return False
+                    if not (in_carbonyl(a1) or in_carbonyl(a2)):
+                        return True
         return False
+
+    def is_carboxylate(frag):
+        """
+        Checks if the fragment contains a carboxylate substructure.
+        For our purposes we use the SMARTS: [CX3](=O)[O-] 
+        (that is: a trigonal carbon bound to a doubly bonded O and an O-).
+        """
+        carboxylate_smarts = Chem.MolFromSmarts("[CX3](=O)[O-]")
+        return frag.HasSubstructMatch(carboxylate_smarts)
     
-    # ---------------------------------------------------------------------
-    # Main analysis
-    # ---------------------------------------------------------------------
-    # Split the molecule into fragments (based on dot notation)
+    def allowed_organic_counterion(frag, metal_is_alkali: bool):
+        """
+        Decides if an organic (carbon‐containing) counterion fragment is allowed.
+         – It must be very simple (i.e. a carboxylate with only a few carbons)
+           OR if it is large (>=8 carbons) then it must not show additional organic features.
+         – For alkali metals, only one–carbon carboxylates (i.e. formate) are allowed.
+        """
+        cnt = carbon_count(frag)
+        # First, require that it looks like a carboxylate.
+        if not is_carboxylate(frag):
+            # If not carboxylate then if it is lipophilic and shows no extra organic features, allow it.
+            if cnt >= 8 and not fragment_is_organic(frag):
+                return True
+            return False
+        # It is a carboxylate.
+        if metal_is_alkali:
+            # For alkali metals, only allow formate (1 carbon).
+            return cnt == 1
+        else:
+            # For non-alkali allowed metals, allow 1-3 carbons.
+            return cnt in {1, 2, 3}
+    
+    # ------------------------- Main classification -------------------------
+    
+    # Split into fragments (on '.')
     frags = Chem.rdmolops.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
     
-    free_metal_found = False
-    inorganic_metal_found = False
-    metal_reasons = []
-    counterions_ok = True
-    counterion_reasons = []
-    overall_disqual = False
-    dq_reason = ""
+    accepted_metal_fragments = []  # list of (metal_symbol, description) for accepted metal ions
+    # We'll also record metal fragments that are found but that may be “borderline”
+    metal_reason_msgs = []
     
-    # (A) First pass: if any fragment (other than water) appears organic in a disqualifying way, flag molecule.
+    # (A) Process each fragment to identify acceptable metal-containing fragments.
     for frag in frags:
         if is_water(frag):
             continue
-        # We check fragments that do not contain a metal from our allowed set.
-        if not any(atom.GetSymbol() in metal_set for atom in frag.GetAtoms()):
-            if any(atom.GetSymbol()=="C" for atom in frag.GetAtoms()):
-                if fragment_is_organic(frag):
-                    overall_disqual = True
-                    dq_reason = "Disqualifying organic fragment detected: " + Chem.MolToSmiles(frag)
-                    break
-    
-    # (B) Now look for metal‐containing fragments.
-    for frag in frags:
-        if is_water(frag):
-            continue
-        for atom in frag.GetAtoms():
+        frag_atoms = frag.GetAtoms()
+        frag_has_allowed_metal = False
+        # For each atom in this fragment, if it is an allowed metal…
+        for atom in frag_atoms:
             sym = atom.GetSymbol()
-            if sym not in metal_set:
+            if sym not in allowed_metals:
                 continue
-            # If the fragment consists only of the metal atom, then we require a positive formal charge.
-            if frag.GetNumAtoms() == 1:
-                if atom.GetFormalCharge() > 0:
-                    free_metal_found = True
-                    metal_reasons.append(f"Found isolated metal ion: {sym}{atom.GetFormalCharge()}")
-            else:
-                # In a multi‐atom fragment:
-                # if no carbon is present, then we accept it as an inorganic complex.
-                if carbon_count(frag) == 0:
-                    if atom.GetFormalCharge() >= 0:
-                        inorganic_metal_found = True
-                        metal_reasons.append(f"Found inorganic metal in non-organic fragment: {sym}{'' if atom.GetFormalCharge()==0 else atom.GetFormalCharge()}")
-                # If metal is in a fragment that contains carbon we consider it “complex”
-                # and (by our simple heuristic) we reject that metal.
+            # If the fragment has any carbon, we do not accept the metal in that fragment (it is too “organic”)
+            if carbon_count(frag) > 0:
+                continue
+            # Case 1: The fragment is only one atom and its formal charge is positive.
+            if frag.GetNumAtoms() == 1 and atom.GetFormalCharge() > 0:
+                accepted_metal_fragments.append((sym, f"Found isolated metal ion: {sym}{atom.GetFormalCharge()}"))
+                frag_has_allowed_metal = True
+                break
+            # Case 2: Multi-atom inorganic fragment (no carbon). For our heuristic we require that at least one metal
+            # atom in the fragment has a nonzero formal charge (or the overall fragment charge is positive).
+            overall_frag_charge = Chem.GetFormalCharge(frag)
+            if overall_frag_charge > 0:
+                accepted_metal_fragments.append((sym, f"Found inorganic metal in non-organic fragment: {sym}{'' if atom.GetFormalCharge()==0 else atom.GetFormalCharge()}"))
+                frag_has_allowed_metal = True
+                break
+        if frag_has_allowed_metal:
+            # also record a message for this fragment
+            pass
+    # If no accepted metal-containing fragment is found, disqualify.
+    if not accepted_metal_fragments:
+        return False, "No acceptable metal nutrient ion found"
     
-    # (C) Finally, if a free metal ion has been found, examine every other fragment (that does NOT contain a metal)
-    # as a “counterion”. If any such fragment looks unacceptable (i.e. its structure is not allowed by allowed_counterion),
-    # then we disqualify the whole molecule.
+    # Determine if any accepted metal is alkali (we require a conservative counterion check for them).
+    metal_is_alkali = any(m[0] in alkali_metals for m in accepted_metal_fragments)
+    
+    # (B) Now check counterion (non–metal) fragments.
+    counterion_msgs = []
     for frag in frags:
         if is_water(frag):
             continue
-        # Skip fragments that already contain a metal.
-        if any(atom.GetSymbol() in metal_set for atom in frag.GetAtoms()):
+        # Skip fragments that contain any allowed metal (they were already processed)
+        if any(atom.GetSymbol() in allowed_metals and carbon_count(frag)==0 for atom in frag.GetAtoms()):
             continue
-        if any(atom.GetSymbol()=="C" for atom in frag.GetAtoms()):
-            if not allowed_counterion(frag):
-                counterions_ok = False
-                counterion_reasons.append("Disallowed counterion fragment: " + Chem.MolToSmiles(frag))
+        # For fragments that contain no allowed metal:
+        # If the fragment has carbon we check if it is acceptable.
+        if carbon_count(frag) > 0:
+            # if the fragment appears overtly organic (aromatic or non-carbonyl C=C), disqualify.
+            if fragment_is_organic(frag):
+                return False, "Disqualifying organic fragment detected: " + Chem.MolToSmiles(frag)
+            # Otherwise, if it’s organic but not overtly so, require that it be a simple carboxylate OR big and lipophilic.
+            if not allowed_organic_counterion(frag, metal_is_alkali):
+                counterion_msgs.append("Disallowed counterion fragment: " + Chem.MolToSmiles(frag))
+        # Fragments with no carbon (e.g. chloride, phosphate, etc.) are allowed.
     
-    # (D) Now summarize:
-    if overall_disqual:
-        return False, dq_reason
-    # We require at least one acceptable metal ion.
-    if free_metal_found or inorganic_metal_found:
-        # In case the acceptable metal was present only as a free ion, then we also demand that no disallowed counterions are present.
-        if free_metal_found and not counterions_ok:
-            reason = ("Found free metal ion(s): " + " ; ".join(metal_reasons) +
-                      " but disallowed counterion fragment(s): " + " ; ".join(counterion_reasons))
-            return False, reason
-        reason = "Found metal nutrient ion(s): " + " ; ".join(metal_reasons)
-        return True, reason
-    return False, "No acceptable metal nutrient ion found"
+    # (C) Summarize metal findings.
+    for m in accepted_metal_fragments:
+        metal_reason_msgs.append(m[1])
+    
+    # (D) Final decision: if any counterion issues were found for a molecule with free metal ions then disqualify.
+    if counterion_msgs:
+        return False, ("Found metal nutrient ion(s): " + " ; ".join(metal_reason_msgs)
+                       + " but with counterion issue(s): " + " ; ".join(counterion_msgs))
+    
+    return True, "Found metal nutrient ion(s): " + " ; ".join(metal_reason_msgs)
 
 
 # Example usage (for testing):
@@ -222,10 +219,26 @@ if __name__ == "__main__":
       "calcium difluoride": "[F-].[F-].[Ca++]",
       "potassium sulfate": "[K+].[K+].[O-]S([O-])(=O)=O",
       "calcium hydrogenphosphate": "[Ca++].[H]OP([O-])([O-])=O",
-      # some false positives (expected to be rejected)
-      "Aceglutamide aluminum": "NC(CC[C@@H](C(=O)[O-])NC(C)=O)=O.[Al+3].[Al+3].[Al+3].[OH-].[OH-].[OH-].[OH-].NC(CC[C@@H](C(=O)[O-])NC(C)=O)=O.NC(CC[C@@H](C(=O)[O-])NC(C)=O)=O.NC(CC[C@@H](C(=O)[O-])NC(C)=O)=O.NC(CC[C@@H](C(=O)[O-])NC(C)=O)=O",
+      # Some false positives (expected to be rejected)
+      "antimonic acid": "[H]O[Sb](=O)(O[H])O[H]",
+      "aluminium trichloride hexahydrate": "[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].Cl[Al](Cl)Cl",
+      "hexaaquamagnesium(2+)": "[H][O]([H])[Mg++]([O]([H])[H])([O]([H])[H])([O]([H])[H])([O]([H])[H])[O]([H])[H]",
+      "aluminium hydroxide": "[H]O[Al](O[H])O[H]",
       "sodium hexacyanoferrate(4-)": "[Na+].[Na+].[Na+].[Na+].N#C[Fe-4](C#N)(C#N)(C#N)(C#N)C#N",
-      "sodium acetate": "[Na+].CC(=O)[O-]",
+      "Taurocholic acid sodium salt hydrate": "S([O-])(=O)(=O)CCNC(=O)CC[C@H]([C@@]1([C@@]2([C@]([C@]3([C@@]([C@@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(C[C@@H]2O)[H])[H])(CC1)[H])C)[H])C.[Na+].O",
+      "disodium (alpha-D-galactopyranosyluronate)-(1->4)-alpha-D-galactopyranuronate": "[Na+].[Na+].O[C@H]1O[C@@H]([C@H](O[C@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)C([O-])=O)[C@H](O)[C@H]1O)C([O-])=O",
+      "sodium chlorite": "[Na+].[O-][Cl]=O",
+      "sodium hydroxide": "[OH-].[Na+]",
+      "sodium 3-aminopropyl 2-acetamido-2-deoxy-alpha-D-glucose-1-phosphate": "[Na+].CC(=O)N[C@@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@@H]1OP([O-])(=O)OCCCN",
+      "potassium tetrabromoaurate": "[K+].Br[Au-](Br)(Br)Br",
+      "barium monohydroxide": "O[Ba]",
+      "calcium titanate": "[Ca+2].[Ti+4].[O-2].[O-2].[O-2]",
+      "aluminium phosphide": "[Al+3].[P-3]",
+      "Sodium;(2S)-1-hydroxy-2-[[(2S)-4-methyl-2-[[1-[(2-methylpropan-2-yl)oxycarbonyl]piperidin-4-yl]oxycarbonylamino]pentanoyl]amino]-3-[(3S)-2-oxopyrrolidin-3-yl]propane-1-sulfonate": "[Na+].O=S(=O)(C([C@H](C[C@H]1C(NCC1)=O)NC(C)=O)[O-]",
+      "sodium dihydrogenphosphate monohydrate": "P(=O)(O)([O-])O.[Na+].O",
+      "sodium glycocholate": "[Na+].[Na+].[O-][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC(=O)NCC([O-])=O",
+      "sodium selenate": "[Na+].[Na+].[O-][Se]([O-])(=O)=O",
+      "sodium stibogluconate": "O.O.O.O.O.O.O.O.O.[Na+].[Na+].[Na+].[H][C@@]1(O[Sb]2(O)(O[C@@H](C([O-])=O)[C@@]1([H])O2)O[Sb]12([O-])O[C@@H](C([O-])=O)[C@@]([H])(O1)[C@]([H])(O2)[C@H](O)CO)[C@H](O)CO",
     }
     
     for name, smi in test_smiles.items():
