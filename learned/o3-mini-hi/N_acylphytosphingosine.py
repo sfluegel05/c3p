@@ -5,159 +5,165 @@ Classifies: CHEBI:31998 N-acylphytosphingosine
 """
 Classifies: N-acylphytosphingosine
 Definition: A ceramide that is phytosphingosine having a fatty acyl group attached to the nitrogen.
-This program attempts to improve on the earlier heuristic by (1) explicitly identifying,
-for a given amide bond (C(=O)N), the acyl branch (which must have a contiguous chain of at least 10 carbons)
-and (2) the sphingoid (phytosphingosine-like) branch (which must show at least 6 contiguous carbons in its “tail”
-plus evidence of two hydroxyl groups on the head region). The overall molecular weight is also required to be >500 Da.
-Note: This heuristic approach may not cover all edge cases.
+Heuristic criteria for each candidate amide bond (C(=O)N):
+  1. The acyl branch (from the carbonyl C) must have a contiguous carbon chain of at least 10 carbons.
+  2. The sphingoid branch (from the amide N) must have a carbon tail of >=6 carbons and the head region must show at least 2 –OH groups.
+  3. The molecular weight should be >500 Da.
+Note: This approach is heuristic and may not cover every edge case.
 """
-
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import rdmolops
 
-def longest_carbon_chain(mol, start_idx, exclude=set()):
+def longest_carbon_chain(mol, start_idx, visited=None):
     """
-    Recursively computes the longest contiguous chain length (number of carbon atoms)
-    starting from the atom with index start_idx. Only moves over carbon–carbon single bonds.
+    Recursively computes the longest contiguous carbon chain starting at atom index start_idx.
+    Only traverses carbon–carbon single bonds.
     """
+    if visited is None:
+        visited = set()
     atom = mol.GetAtomWithIdx(start_idx)
-    if atom.GetAtomicNum() != 6:
+    if atom.GetAtomicNum() != 6:  # only carbons are counted
         return 0
-    max_length = 1
+    visited.add(start_idx)
+    max_length = 1  # count the starting carbon
     for bond in atom.GetBonds():
+        # only consider single bonds between carbons
         if bond.GetBondType() != Chem.BondType.SINGLE:
             continue
         nbr = bond.GetOtherAtom(atom)
         nbr_idx = nbr.GetIdx()
-        if nbr_idx in exclude:
+        if nbr_idx in visited:
             continue
         if nbr.GetAtomicNum() == 6:
-            new_exclude = set(exclude)
-            new_exclude.add(start_idx)
-            length = 1 + longest_carbon_chain(mol, nbr_idx, new_exclude)
-            if length > max_length:
-                max_length = length
+            chain_len = 1 + longest_carbon_chain(mol, nbr_idx, visited.copy())
+            if chain_len > max_length:
+                max_length = chain_len
     return max_length
 
 def count_direct_hydroxyls(atom):
     """
-    Counts oxygen atoms directly attached to the provided atom that are likely part of OH groups.
-    (Checks that the bond is single and that the oxygen has at least one hydrogen.)
+    Counts the number of direct oxygen neighbors that appear to be part of an –OH group.
+    (Checks that O is attached via a single bond and that it has at least one hydrogen.)
     """
     oh_count = 0
     for bond in atom.GetBonds():
-        # Only consider single bonds
         if bond.GetBondType() != Chem.BondType.SINGLE:
             continue
         nbr = bond.GetOtherAtom(atom)
-        if nbr.GetAtomicNum() == 8:
-            # Count oxygen if it appears to be an –OH (by having at least one hydrogen)
-            if nbr.GetTotalNumHs() >= 1:
-                oh_count += 1
+        if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() >= 1:
+            oh_count += 1
     return oh_count
 
 def is_N_acylphytosphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylphytosphingosine based on its SMILES string.
-    Heuristic criteria applied for each amide bond (C(=O)N):
-      1. From the carbonyl carbon, the acyl side must deliver a contiguous chain of >=10 carbons.
-      2. From the amide nitrogen, the non-acyl branch is expected to be the sphingoid part.
-         We require that its “tail” (longest contiguous carbon chain) be at least 6 carbons and that
-         the head region (the alpha carbon plus one neighboring carbon) shows evidence of at least 2 -OH groups.
-      3. The overall molecular weight is expected to be >500 Da.
-    Args:
-      smiles (str): SMILES string of the molecule.
+    
+    For each amide bond (recognized by SMARTS "C(=O)N") we:
+      1. Identify the acyl branch starting from the carbonyl carbon (exclude the amide N and carbonyl O).
+         The longest contiguous carbon chain must be >= 10 carbons.
+      2. Identify the sphingoid branch from the amide nitrogen. For at least one carbon neighbor
+         (other than the carbonyl carbon) the contiguous tail length must be >= 6 carbons.
+         In addition, we count –OH groups on the candidate (the head region) and at one of its carbon neighbors.
+         The sum should be >= 2.
+      3. The overall molecular weight (exact MW) must be > 500 Da.
+      
     Returns:
-      bool: True if the molecule meets the criteria for N-acylphytosphingosine, False otherwise.
-      str: Explanation for the classification decision.
+      (bool, str): (True, explanation) if criteria met, else (False, explanation) for failure.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Find all general amide bonds using SMARTS "C(=O)N"
+
+    # Find all amide bonds via SMARTS "C(=O)N"
     amide_smarts = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_smarts)
     if not amide_matches:
         return False, "No amide bond (C(=O)N) found"
-    
-    # Loop over each amide match and try to classify properly.
-    # In our SMARTS, we expect the match tuple to be (carbonyl C, carbonyl O, amide N)
+
+    # Loop over candidate amide bonds and try to classify.
     for match in amide_matches:
+        # In our SMARTS, we expect: index0 = carbonyl C, index1 = carbonyl O, index2 = amide N
         carbonyl_C_idx, carbonyl_O_idx, amide_N_idx = match
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_C_idx)
         amide_N_atom = mol.GetAtomWithIdx(amide_N_idx)
-        
-        # Identify acyl branch: among neighbors of the carbonyl carbon, choose a carbon
-        # that is not the amide nitrogen or the carbonyl oxygen.
-        acyl_branch_indices = []
+
+        # (1) Identify acyl branch on the carbonyl carbon:
+        acyl_candidates = []
         for nbr in carbonyl_atom.GetNeighbors():
             nbr_idx = nbr.GetIdx()
+            # Exclude the amide nitrogen and the carbonyl oxygen
             if nbr_idx in (amide_N_idx, carbonyl_O_idx):
                 continue
             if nbr.GetAtomicNum() == 6:
-                acyl_branch_indices.append(nbr_idx)
-        if not acyl_branch_indices:
-            continue  # no proper acyl branch found; try next amide
-        
-        # For simplicity, take the acyl branch with the longest chain.
-        acyl_chain_length = 0
-        for idx in acyl_branch_indices:
-            chain_len = longest_carbon_chain(mol, idx, exclude={carbonyl_C_idx})
-            if chain_len > acyl_chain_length:
-                acyl_chain_length = chain_len
-        if acyl_chain_length < 10:
-            # Acyl branch too short for this amide; skip to next
+                acyl_candidates.append(nbr_idx)
+        if not acyl_candidates:
+            continue  # try next amide bond if no acyl branch
+
+        # Find the maximum acyl chain length among candidates
+        max_acyl_length = 0
+        for idx in acyl_candidates:
+            chain_len = longest_carbon_chain(mol, idx, visited={carbonyl_C_idx})
+            if chain_len > max_acyl_length:
+                max_acyl_length = chain_len
+        if max_acyl_length < 10:
+            # Acyl chain too short for this amide bond candidate.
             continue
-        
-        # Identify sphingoid branch: choose the neighbor of amide N that is carbon and not the carbonyl C.
-        sph_branch = None
+
+        # (2) Identify sphingoid branch from the amide nitrogen:
+        sph_candidates = []
         for nbr in amide_N_atom.GetNeighbors():
             if nbr.GetIdx() == carbonyl_C_idx:
-                continue
+                continue  # skip the acyl side attachment
             if nbr.GetAtomicNum() == 6:
-                sph_branch = nbr
-                break
-        if sph_branch is None:
-            continue
-        
-        # Compute sphingoid tail length:
-        sph_tail_length = longest_carbon_chain(mol, sph_branch.GetIdx(), exclude={amide_N_idx})
-        if sph_tail_length < 6:
-            continue
-        
-        # Now check for sufficient hydroxylation on the sphingoid head.
-        # We check the alpha carbon (sph_branch) and one of its carbon neighbors (if present).
-        oh_head_count = count_direct_hydroxyls(sph_branch)
-        # Also check one other neighbor (if another carbon is attached) that is not the amide N.
-        for nbr in sph_branch.GetNeighbors():
-            if nbr.GetIdx() == amide_N_idx:
-                continue
-            if nbr.GetAtomicNum() == 6:
-                oh_head_count += count_direct_hydroxyls(nbr)
-                break  # only consider one additional neighbor for the head region
-        
-        if oh_head_count < 2:
-            continue
-        
-        # Check overall molecular weight (usually ceramides are >500 Da)
+                sph_candidates.append(nbr)
+        if not sph_candidates:
+            continue  # no sphingoid branch candidate
+
+        # For each sphingoid candidate, check tail length and hydroxylation on the "head region"
+        valid_sph = False
+        for candidate in sph_candidates:
+            cand_idx = candidate.GetIdx()
+            # Compute tail length starting from candidate; do not go back to the amide N.
+            tail_length = longest_carbon_chain(mol, cand_idx, visited={amide_N_idx})
+            if tail_length < 6:
+                continue  # tail not long enough for this candidate
+
+            # Count hydroxyl groups attached directly to the candidate (alpha position)
+            oh_count = count_direct_hydroxyls(candidate)
+            # Also consider one additional carbon neighbor (if exists) that is not coming from the amide N
+            for nbr in candidate.GetNeighbors():
+                if nbr.GetIdx() == amide_N_idx:
+                    continue
+                if nbr.GetAtomicNum() == 6:
+                    oh_count += count_direct_hydroxyls(nbr)
+                    break  # only consider one additional neighbor
+            if oh_count < 2:
+                continue  # insufficient hydroxylation in head region
+            # This candidate qualifies as the sphingoid branch.
+            valid_sph = True
+            sph_tail_length = tail_length
+            break
+
+        if not valid_sph:
+            continue  # try next amide bond
+
+        # (3) Check overall molecular weight (>500 Da)
         mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
         if mol_wt < 500:
             return False, f"Molecular weight too low ({mol_wt:.1f} Da) for a ceramide structure"
-        
-        # If we have reached here, we consider this amide bond as giving a valid N-acylphytosphingosine.
-        reason = (f"Found amide bond connecting a long acyl chain (length {acyl_chain_length}) "
-                  f"to a sphingoid-like unit with tail length {sph_tail_length} and "
-                  f"{oh_head_count} hydroxyl(s) in the head region; molecular weight {mol_wt:.1f} Da")
+
+        reason = (f"Found amide bond with acyl chain length {max_acyl_length} and "
+                  f"sphingoid branch tail length {sph_tail_length} with sufficient hydroxylation; "
+                  f"molecular weight {mol_wt:.1f} Da")
         return True, reason
-    
-    # If none of the amide bonds satisfy all criteria, provide a rationale.
-    return False, "No amide bond was found with a fatty acyl chain (>=10 C) and a sphingoid unit (>=6 C tail with >=2 OH) on the nitrogen"
+
+    # If none of the amide bonds satisfy all criteria:
+    return False, ("No amide bond was found with a fatty acyl chain (>=10 C) "
+                   "and a sphingoid unit (>=6 C tail with >=2 OH) on the nitrogen")
 
 # Example usage:
 if __name__ == "__main__":
-    # Test one provided example.
+    # Test with one of the provided examples
     test_smiles = "CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC"
     valid, reason = is_N_acylphytosphingosine(test_smiles)
     print("Is N-acylphytosphingosine?", valid)
