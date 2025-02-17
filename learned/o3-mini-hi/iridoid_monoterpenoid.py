@@ -3,16 +3,19 @@ Classifies: CHEBI:50563 iridoid monoterpenoid
 """
 """
 Classifies: Iridoid monoterpenoid
-Definition: Iridoid monoterpenoids are monoterpenoids biosynthesized from isoprene units.
-They typically contain a cyclopentane ring fused to a six-membered oxygen heterocycle.
-Cleavage of a bond in the cyclopentane ring gives rise to secoiridoids.
-This program uses two strategies:
-  Stage 1 (ideal iridoid): Look for a fused bicyclic core where one ring is a cyclopentane
-         (5 carbons) and the other is a six-membered ring containing exactly one oxygen and 5 carbons.
-         In addition, we require that the rings share exactly 2 atoms.
-  Stage 2 (rescue logic for secoiridoids): If no fused core is found, then look for a cyclopentane ring
-         comprised solely of carbons that carries at least two exocyclic carbonyl (C=O) groups.
-Note: These heuristics aim to improve both sensitivity and selectivity.
+Definition:
+  Iridoid monoterpenoids are biosynthesized from isoprene units and typically
+  possess a fused bicyclic core – a cyclopentane ring fused to a six-membered
+  oxygen heterocycle (usually a tetrahydropyran). In some cases, opening of the
+  cyclopentane ring (secoiridoids) is observed. Our improved algorithm uses two stages:
+    Stage 1 – Fused bicyclic core detection. We look for a pair of rings:
+              • one 5-membered ring composed solely of (nonaromatic, sp3) carbons
+              • one 6-membered ring that contains exactly one oxygen (nonaromatic) 
+                and five carbons (again sp3)
+              • the two rings must share exactly 2 atoms.
+    Stage 2 – Rescue for secoiridoids. We look for any cyclopentane ring
+              (again, nonaromatic, sp3 carbon only) that carries at least 2 
+              exocyclic carbonyl (C=O) substituents.
 """
 
 from rdkit import Chem
@@ -22,125 +25,135 @@ def is_iridoid_monoterpenoid(smiles: str):
     Determines if a molecule is an iridoid monoterpenoid (or secoiridoid derivative)
     based on its SMILES string.
 
-    Approach:
-      Stage 1: Look for a fused bicyclic core. We iterate over each pair of rings (from RDKit's
-               ring detection) looking specifically for one 5-membered ring whose atoms are all carbons,
-               and one 6-membered ring containing exactly one oxygen (and five carbons).
-               In addition, we require that the two rings share exactly 2 atoms.
-      Stage 2: If no ideal fused core is found, try to rescue a secoiridoid classification.
-               Search for any cyclopentane ring composed solely of carbons. For each atom in the ring,
-               count exocyclic substituents that are part of a carbonyl group.
-               We classify as secoiridoid if at least 2 such exocyclic carbonyl groups are attached.
+    The algorithm has two stages:
+      Stage 1:
+        Look for a fused bicyclic core. For each pair of rings (as returned by RDKit's
+        ring detection) where one ring has 5 atoms and the other 6, apply these filters:
+         - The 5-membered ring must be composed solely of nonaromatic, sp3 carbons.
+         - The 6-membered ring must contain exactly one nonaromatic oxygen and five nonaromatic carbons,
+           and those atoms should be sp3 as well.
+         - The rings must share exactly 2 atoms.
+      Stage 2:
+        If no fused core is found, scan every 5-membered nonaromatic cyclopentane (all sp3 carbons) and for 
+        each ring count exocyclic carbonyl groups (a double bond from a ring carbon to an exocyclic carbon,
+        which in turn is double-bonded to oxygen). If at least 2 such exocyclic carbonyls are attached, 
+        classify as a secoiridoid.
 
     Args:
-        smiles (str): SMILES string of the molecule.
+      smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if the molecule is classified as an iridoid monoterpenoid (or secoiridoid derivative),
-              False otherwise.
-        str: Reason for the classification decision.
+      (bool, str): A tuple where the first element is True if the molecule is classified as an
+                   iridoid monoterpenoid (or secoiridoid derivative), False otherwise.
+                   The second element gives the reason for the classification.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     ring_info = mol.GetRingInfo().AtomRings()
     if not ring_info:
         return False, "No rings found in the molecule"
-    
-    # Stage 1: Check for fused iridoid core.
-    # Look for two rings, one of size 5 and one of size 6.
-    # For the 5-membered ring, all atoms must be carbon.
-    # For the 6-membered ring, exactly one atom must be oxygen and the rest carbon.
-    # Also, the rings must share exactly 2 atoms.
+
+    # Stage 1: Look for fused bicyclic core satisfying our improved conditions.
     for i in range(len(ring_info)):
         for j in range(i+1, len(ring_info)):
             ring1 = set(ring_info[i])
             ring2 = set(ring_info[j])
-            # Check for sizes: one must be 5 and the other 6.
             if (len(ring1) == 5 and len(ring2) == 6) or (len(ring1) == 6 and len(ring2) == 5):
-                # Identify which is 5-membered and which is 6-membered.
-                if len(ring1) == 5:
-                    ring5 = ring1
-                    ring6 = ring2
-                else:
-                    ring5 = ring2
-                    ring6 = ring1
-                
-                # Verify the 5-membered ring is all carbon.
-                if any(mol.GetAtomWithIdx(idx).GetAtomicNum() != 6 for idx in ring5):
-                    continue
-                # Verify the 6-membered ring: count carbons and oxygens.
-                nC = 0
-                nO = 0
-                for idx in ring6:
-                    atomic_num = mol.GetAtomWithIdx(idx).GetAtomicNum()
-                    if atomic_num == 6:
-                        nC += 1
-                    elif atomic_num == 8:
-                        nO += 1
-                    else:
-                        nC = -1  # if other heteroatoms are present, skip
+                ring5 = ring1 if len(ring1) == 5 else ring2
+                ring6 = ring2 if len(ring2) == 6 else ring1
+
+                # Check that every atom in the 5-membered ring is a nonaromatic carbon with sp3 hybridization.
+                valid_ring5 = True
+                for idx in ring5:
+                    atom = mol.GetAtomWithIdx(idx)
+                    if atom.GetAtomicNum() != 6 or atom.GetIsAromatic() or atom.GetHybridization() != Chem.HybridizationType.SP3:
+                        valid_ring5 = False
                         break
-                if nC != 5 or nO != 1:
+                if not valid_ring5:
                     continue
-                
-                # Check shared atoms: require exactly 2 shared atoms.
+
+                # Check the 6-membered ring: exactly one oxygen and five carbons.
+                count_C = 0
+                count_O = 0
+                valid_ring6 = True
+                for idx in ring6:
+                    atom = mol.GetAtomWithIdx(idx)
+                    # Do not allow aromatic atoms in our ideal core.
+                    if atom.GetIsAromatic():
+                        valid_ring6 = False
+                        break
+                    if atom.GetAtomicNum() == 6 and atom.GetHybridization() == Chem.HybridizationType.SP3:
+                        count_C += 1
+                    elif atom.GetAtomicNum() == 8:
+                        # allow oxygen if nonaromatic (hybridization flexibility allowed)
+                        count_O += 1
+                    else:
+                        valid_ring6 = False
+                        break
+                if not valid_ring6 or count_C != 5 or count_O != 1:
+                    continue
+
+                # Check that the rings are fused with exactly 2 shared atoms.
                 shared_atoms = ring5.intersection(ring6)
                 if len(shared_atoms) == 2:
-                    reason = ("Found fused bicyclic core: a 5-membered cyclopentane (all C) and a 6-membered ring "
-                              "with one oxygen (5C+1O) share exactly 2 atoms.")
+                    reason = ("Found fused bicyclic core: a 5-membered cyclopentane (nonaromatic, sp3 carbons) and "
+                              "a 6-membered ring with one oxygen (5C+1O, nonaromatic) share exactly 2 atoms.")
                     return True, reason
-    
-    # Stage 2: Rescue approach for secoiridoids.
-    # Look for a cyclopentane ring (5-membered ring composed solely of carbons).
+
+    # Stage 2: Rescue logic for secoiridoids.
+    # Look for any 5-membered ring (cyclopentane) that is all carbon, nonaromatic and sp3.
     for ring in ring_info:
-        if len(ring) == 5:
-            if not all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
-                continue
-            carbonyl_count = 0
-            # For each ring atom, examine neighbors not in the ring.
-            for idx in ring:
-                atom = mol.GetAtomWithIdx(idx)
-                for nbr in atom.GetNeighbors():
-                    nbr_idx = nbr.GetIdx()
-                    if nbr_idx in ring:
+        if len(ring) != 5:
+            continue
+        if not all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 and 
+                   not mol.GetAtomWithIdx(idx).GetIsAromatic() and 
+                   mol.GetAtomWithIdx(idx).GetHybridization() == Chem.HybridizationType.SP3 
+                   for idx in ring):
+            continue
+        carbonyl_count = 0
+        # For each atom in the ring, examine exocyclic bonds.
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() in ring:
+                    continue
+                bond = mol.GetBondBetweenAtoms(idx, nbr.GetIdx())
+                if bond is None or bond.GetBondType() != Chem.BondType.DOUBLE:
+                    continue
+                # The neighbor should be a carbon (exocyclic carbon) with at least one double bond to oxygen.
+                if nbr.GetAtomicNum() != 6:
+                    continue
+                for nbr2 in nbr.GetNeighbors():
+                    if nbr2.GetIdx() == idx:
                         continue
-                    # For the bond between atom and neighbor, if that neighbor (an exocyclic carbon)
-                    # has a double bond to oxygen, count it as a carbonyl.
-                    bond = mol.GetBondBetweenAtoms(idx, nbr_idx)
-                    if bond is None or bond.GetBondType() != Chem.BondType.DOUBLE:
-                        continue
-                    # Ensure the neighbor is carbon.
-                    if nbr.GetAtomicNum() != 6:
-                        continue
-                    # Check if this neighbor carbon is in turn double-bonded to at least one oxygen.
-                    for nbr2 in nbr.GetNeighbors():
-                        if nbr2.GetIdx() == idx:
-                            continue
-                        bond2 = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
-                        if bond2 is not None and bond2.GetBondType() == Chem.BondType.DOUBLE and nbr2.GetAtomicNum() == 8:
-                            carbonyl_count += 1
-                            break  # Count each exocyclic carbonyl only once
-            if carbonyl_count >= 2:
-                reason = ("Found cyclopentane ring (all C) with {} exocyclic carbonyl substituents "
-                          "suggestive of a secoiridoid skeleton.".format(carbonyl_count))
-                return True, reason
+                    bond2 = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
+                    if bond2 is not None and bond2.GetBondType() == Chem.BondType.DOUBLE and nbr2.GetAtomicNum() == 8:
+                        carbonyl_count += 1
+                        break  # count each substituent only once
+        if carbonyl_count >= 2:
+            reason = ("Found cyclopentane ring (all nonaromatic sp3 C) with {} exocyclic carbonyl substituents "
+                      "suggestive of a secoiridoid skeleton.".format(carbonyl_count))
+            return True, reason
 
     return False, "No fused iridoid or secoiridoid core detected based on our heuristics."
 
-# Example usage (for testing purposes):
+# Example usage for testing purposes:
 if __name__ == "__main__":
-    # Some example molecules (names given for clarity)
     examples = [
-        # True positive based on fused core: cis-trans-nepetalactone
+        # True positives based on fused bicyclic core:
         ("[C@]12([C@@]([C@H](CC1)C)(C(OC=C2C)=O)[H])[H]", "cis-trans-nepetalactone"),
-        # A secoiridoid example: iridodial (previously missed)
+        ("O[C@@]12[C@@]([C@@](O)([C@@H](OC(=O)/C=C/C3=CC=C(O)c(O)C=C3)C1)C)(C(OC=C2C(OC)=O)O[C@@H]4O[C@@H]([C@@H](O)[C@H](O)[C@H]4O)CO)[H]",
+         "Methyl (1s,4ar,6s,7r,7as)-..."),
+        ("[H][C@@]12C=CO[C@@H](O[C@]3([H])O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)[C@]1([H])C(COC(=O)C1=CC=C(O)C=C1)=C[C@H]2O",
+         "agnuside"),
+        # True secoiridoid rescue example:
         ("CC1CCC(C(C)C=O)C1C=O", "iridodial"),
-        # A false positive example from prior run:
-        ("C1[C@@H](O[C@@H]([C@H]2[C@@H]1C3=C(O2)C=CC(=C3)NS(=O)(=O)C4=CC=CC=C4)CO)CC(=O)NCC(F)(F)F", "Kadsurenone mimic"),
-        # A false negative from before: oleuropein aglycone (more challenging).
+        # A known challenging one (typically false negative with earlier heuristics)
         ("O[C@H]1/C(/[C@](C(=CO1)C(=O)OC)([H])CC(=O)OCCC=2C=CC(=C(C2)O)O)=C/C", "oleuropein aglycone"),
+        # A false positive (should be rejected)
+        ("O=C1OC2=C([C@](O)(C)CC2=O)C=3C1=C(O)C=C(OC)C3", "Rubralactone"),
     ]
     
     for smi, name in examples:
