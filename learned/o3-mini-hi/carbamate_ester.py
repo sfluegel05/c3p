@@ -3,8 +3,8 @@ Classifies: CHEBI:23003 carbamate ester
 """
 """
 Classifies: Carbamate ester 
-Defined as: Any ester of carbamic acid or its N‐substituted derivatives.
-The functional group is characterized as R–O–C(=O)–NR′.
+Defined as: Any ester of carbamic acid or its N-substituted derivatives.
+The functional group is characterized as R–O–C(=O)–NR.
 """
 
 from rdkit import Chem
@@ -12,95 +12,80 @@ from rdkit import Chem
 def is_carbamate_ester(smiles: str):
     """
     Determines if a molecule is a carbamate ester based on its SMILES string.
-    A carbamate ester has the functional group R–O–C(=O)–NR, indicating an 
-    ester oxygen attached to a carbonyl carbon that is in turn bound to a nitrogen.
+    A carbamate ester is defined as an ester of carbamic acid (or an N-substituted derivative)
+    having the functional group R–O–C(=O)–NR.
 
-    This implementation uses a two‐step approach:
-      1. A SMARTS pattern search for any substructure of the form
-         “[*]-O-C(=O)-[NX2,NX3]” (i.e. any heavy atom “R” attached to O, then C(=O),
-         then a nitrogen that can be sp2 or sp3).
-      2. A post‐match check on the carbonyl carbon’s local bonding – it should have
-         exactly three neighbors: (i) the ester oxygen from the substructure,
-         (ii) a double‐bonded oxygen (the carbonyl oxygen) and (iii) the nitrogen.
-         This helps avoid false positives from “accidental” matches.
+    This implementation does two steps:
+      1. It uses a SMARTS pattern "[*]-O-C(=O)-[NX2,NX3]" to search for substructures matching 
+         an arbitrary R attached to an ester oxygen, a carbonyl function and a nitrogen.
+      2. For each match, it relaxes the connectivity check: the carbonyl carbon (C) must have
+         (i) the ester oxygen (O) and (ii) the nitrogen (N) among its neighbors, 
+         and (iii) at least one oxygen in a double bond (the carbonyl oxygen) not explicitly 
+         captured in the SMARTS. In this way, additional substituents or ring closures are allowed.
          
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is classified as a carbamate ester, False otherwise.
-        str: Reason for the classification.
+        (bool, str): Tuple with boolean True if the molecule is classified as a carbamate ester,
+                     and a corresponding reason. Otherwise, False and the reason why it failed.
     """
     
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS: any heavy atom (*) attached to an O, then a carbonyl C(=O), then a nitrogen.
-    # Note: We allow the nitrogen to be either sp2 or sp3 ([NX2,NX3]).
-    pattern = Chem.MolFromSmarts("[*]-O-C(=O)-[NX2,NX3]")
+    # Define a SMARTS to capture the carbamate ester motif: R-O-C(=O)-N
+    smartsmarts = "[*:1]-O:2-C(=O)-[NX2,NX3:3]"
+    pattern = Chem.MolFromSmarts(smartsmarts)
     if pattern is None:
-        return False, "Error in SMARTS pattern creation"
+        return False, "Error creating SMARTS pattern"
     
     matches = mol.GetSubstructMatches(pattern)
     if not matches:
         return False, "Carbamate ester pattern not found in the molecule"
     
-    # Post-match filtering: for each match, check that the C in C(=O) has exactly 3 neighbors:
-    #   (a) the ester oxygen (match[0])
-    #   (b) the nitrogen (match[2])
-    #   (c) a double-bonded oxygen (carbonyl oxygen) that is NOT the one from the match.
+    # Loop over all substructure matches to check for proper connectivity.
     for match in matches:
-        # match returns a tuple of atom indices [r, O, C, N] as we defined the pattern order:
-        # The SMARTS "[*]-O-C(=O)-[NX2,NX3]" gives:
-        #   idx0: the atom attached to O (R, any heavy atom)
-        #   idx1: the ester oxygen
-        #   idx2: the carbonyl carbon
-        #   idx3: the nitrogen
+        # The SMARTS was defined so that match = (r_idx, o_idx, c_idx, n_idx)
         if len(match) != 4:
-            # Our pattern defined 4 atoms; if not, skip
-            continue
+            continue  # skip if not the expected number of atoms
         
         r_idx, o_idx, c_idx, n_idx = match
         c_atom = mol.GetAtomWithIdx(c_idx)
+        # Get the neighbors of the carbonyl carbon
+        neighbor_idxs = [nbr.GetIdx() for nbr in c_atom.GetNeighbors()]
         
-        # The carbonyl carbon must have exactly 3 neighbors.
-        if c_atom.GetDegree() != 3:
+        # Ensure that the ester oxygen and the nitrogen are in the neighbors.
+        if o_idx not in neighbor_idxs or n_idx not in neighbor_idxs:
             continue
         
-        neighbors = [nbr.GetIdx() for nbr in c_atom.GetNeighbors()]
-        # It must be bonded to both the ester oxygen and the nitrogen from the match.
-        if o_idx not in neighbors or n_idx not in neighbors:
-            continue
-        
-        # Identify the carbonyl oxygen: it should be a neighbor (different from the ester oxygen)
-        carbonyl_os = []
+        # Now, check that the carbonyl carbon is double-bonded to at least one oxygen
+        # (which has not been explicitly matched as the ester oxygen).
+        has_carbonyl_oxygen = False
         for nbr in c_atom.GetNeighbors():
             if nbr.GetIdx() == o_idx:
-                continue  # skip the ester oxygen
+                continue  # skip the ester oxygen from the match
             bond = mol.GetBondBetweenAtoms(c_idx, nbr.GetIdx())
-            # Check if this bond is a double bond and neighbor is oxygen.
             if bond is not None and bond.GetBondTypeAsDouble() == 2 and nbr.GetAtomicNum() == 8:
-                carbonyl_os.append(nbr.GetIdx())
-        if len(carbonyl_os) != 1:
-            # The carbonyl carbon must have exactly one double-bonded oxygen (carbonyl oxygen)
-            continue
+                has_carbonyl_oxygen = True
+                break
         
-        # If all conditions are met, then we consider the molecule to contain a valid carbamate ester.
-        return True, "Contains carbamate ester functional group (R-O-C(=O)-NR')"
+        if has_carbonyl_oxygen:
+            return True, "Contains carbamate ester functional group (R-O-C(=O)-NR')"
     
-    # If no valid substructure passes the filtering, then it is not classified as a carbamate ester.
+    # If no match passes the connectivity check, then the molecule is not classified as a carbamate ester.
     return False, "Carbamate ester pattern found but did not meet connectivity requirements"
 
-# Example usage (for testing purposes; can be commented out or removed):
+# Example usage (for testing; can be removed or commented out):
 if __name__ == "__main__":
     test_smiles = [
-        "COc1ccccc1OCC(O)COC(N)=O",        # 2-hydroxy-3-(2-methoxyphenoxy)propyl carbamate (true positive)
-        "CN(C)C(=O)Oc1cc(OC(=O)N(C)C)cc(c1)C(O)CNC(C)(C)C",  # bambuterol (true positive)
-        "CCOC(N)=O",                      # urethane (true positive)
-        "CNC(=O)Oc1cccc2ccccc12",          # carbaryl (true positive)
-        "CNC(=O)ON=C(SC)C(=O)N(C)C",        # oxamyl (previously false negative candidate)
-        "CNC(=O)O\\N=C(\\C)C(C)SC"          # butocarboxim (previously false negative candidate)
+        "COc1ccccc1OCC(O)COC(N)=O",  # 2-hydroxy-3-(2-methoxyphenoxy)propyl carbamate (should be True)
+        "CN(C)C(=O)Oc1cc(OC(=O)N(C)C)cc(c1)C(O)CNC(C)(C)C",  # bambuterol (should be True)
+        "S(SCCNC(=O)CC[C@H](N)C(O)=O)CCNC=1C(=O)C=2[C@H]([C@]3(OC)N(C[C@@H]4N[C@H]34)C2C(=O)C1C)COC(=O)N",  # mitomycin derivative (should be True)
+        "C(=O)(OCC1=CN=CC=C1)NCC2=CC=C(C=C2)C(=O)NC3=CC=C(C=C3N)F",  # pyridin-3-ylmethyl ...carbamate (should be True)
+        "CCOC(N)=O",  # urethane (should be True)
+        "CNC(=O)Oc1cccc2ccccc12",  # carbaryl (should be True)
     ]
     for smi in test_smiles:
         res, reason = is_carbamate_ester(smi)
