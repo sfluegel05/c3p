@@ -2,23 +2,18 @@
 Classifies: CHEBI:67194 cannabinoid
 """
 """
-Classifies: Cannabinoid class
+Classifies: Cannabinoid chemical entities
 
 Definition:
-  "A diverse group of pharmacologically active secondary metabolite characteristic to Cannabis plant
-   as well as produced naturally in the body by humans and animals. Cannabinoids contain oxygen as a 
-   part of the heterocyclic ring or in the form of various functional groups."
+  "A diverse group of pharmacologically active secondary metabolite characteristic to Cannabis plant as well as produced naturally in the body by humans and animals. 
+   Cannabinoids contain oxygen as a part of the heterocyclic ring or in the form of various functional groups."
 
 Heuristic rules in this improved version:
-  1. Molecule must be a valid structure, contain oxygen, have no elements (e.g. phosphorus) deemed inappropriate,
-     a total carbon count of at least 15, and a molecular weight above ~200 Da.
-  2. For phytocannabinoids, the molecule must contain a dihydroxybenzene substructure 
-     (SMARTS "c1cc(O)c(O)cc1").
-  3. For synthetic cannabinoids, we check for an indole ring using the substructure "c1cc2c(c1)[nH]c(c2)".
-  4. For endocannabinoids, if the molecule contains an amide or ester group and a long aliphatic chain
-     (here determined by a DFS search for the longest carbon chain, requiring chain length ≥ 16), then it is classified.
-  5. As a fallback, if the molecule has a heterocyclic ring (≥5 atoms) that includes oxygen and also has a long carbon chain (≥16),
-     then it might be cannabinoid‐related.
+  1. Molecule must be valid, contain oxygen, have no unwanted elements (e.g. phosphorus), have at least 15 carbons and a molecular weight above ~200 Da.
+  2. For phytocannabinoids: look for a dihydroxybenzene (resorcinol) motif (SMARTS "c1cc(O)c(O)cc1") and require that at least one carbon outside the ring is attached as a long side chain (≥5 consecutive carbons).
+  3. For synthetic cannabinoids: check for an indole ring using an alternate SMARTS "c1ccc2[nH]ccc2c1".
+  4. For endocannabinoids: if the molecule contains a polar group (ester, amide, or carboxylic acid) AND the overall longest carbon chain is ≥16, it is classified.
+  5. As a fallback, if the molecule contains a heterocyclic ring (≥5 atoms) that includes oxygen and the molecule has an overall long carbon chain (≥16) then it might be cannabinoid‐related.
   
 If none of these rules apply then the molecule is not classified as a cannabinoid.
 """
@@ -28,13 +23,11 @@ from rdkit.Chem import rdMolDescriptors
 
 def longest_carbon_chain(mol):
     """
-    Returns the length (number of atoms) of the longest chain 
-    of carbon atoms in the molecule. It builds an undirected graph
-    of carbon atoms (atomic number==6) and finds the longest simple path.
+    Returns the length (number of atoms) of the longest chain
+    of carbon atoms in the molecule. We build a simple carbon–only connectivity graph
+    and use DFS to search for the longest simple path.
     """
-    # Obtain indices of all carbon atoms.
     carbon_idxs = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    # Build connectivity: only consider bonds between carbons.
     graph = {idx: [] for idx in carbon_idxs}
     for bond in mol.GetBonds():
         a = bond.GetBeginAtomIdx()
@@ -44,7 +37,6 @@ def longest_carbon_chain(mol):
             graph[b].append(a)
     
     longest = 0
-    # Depth-first search for longest simple path
     def dfs(node, visited, length):
         nonlocal longest
         if length > longest:
@@ -58,24 +50,50 @@ def longest_carbon_chain(mol):
     
     return longest
 
+def longest_chain_from_atom(mol, start, excluded):
+    """
+    Calculate the length of the longest chain (in number of carbon atoms) starting
+    from a given atom index, without traversing any atom in 'excluded'.
+    Only carbons (atomic number 6) are considered.
+    """
+    max_length = 0
+    def dfs(current, visited, length):
+        nonlocal max_length
+        # update maximum chain length found so far
+        if length > max_length:
+            max_length = length
+        for nbr in current.GetNeighbors():
+            idx = nbr.GetIdx()
+            if nbr.GetAtomicNum() == 6 and idx not in visited and idx not in excluded:
+                dfs(nbr, visited | {idx}, length + 1)
+    dfs(mol.GetAtomWithIdx(start), {start}, 1)
+    return max_length
+
+def max_side_chain_length(mol, motif_atom_indices):
+    """
+    For a given match (tuple of atom indices for the motif), check all atoms in the motif.
+    For each neighbor (which is a carbon) not in the motif, compute the longest chain length.
+    Return the maximum chain length found.
+    """
+    max_chain = 0
+    motif_set = set(motif_atom_indices)
+    for idx in motif_atom_indices:
+        atom = mol.GetAtomWithIdx(idx)
+        for nbr in atom.GetNeighbors():
+            nid = nbr.GetIdx()
+            if nbr.GetAtomicNum() == 6 and nid not in motif_set:
+                chain_len = longest_chain_from_atom(mol, nid, motif_set)
+                if chain_len > max_chain:
+                    max_chain = chain_len
+    return max_chain
+
 def is_cannabinoid(smiles: str):
     """
-    Determines if a molecule is a cannabinoid based on selected heuristics.
-    
-    The function implements these checks:
-      - Validity, sufficient oxygen, no phosphorus, a minimum total number of carbons (>=15)
-        and molecular weight (>=200 Da).
-      - If a dihydroxybenzene substructure (resorcinol motif) is present then the molecule is interpreted
-        as a phytocannabinoid.
-      - If an indole ring (common in synthetic cannabinoids) is present then it is classified as cannabinoid.
-      - Otherwise, if the molecule has an amide or ester group AND the longest carbon chain is at least 16 atoms long,
-        then it is treated as an endocannabinoid.
-      - As a fallback, if the molecule contains a heterocyclic ring (≥5 atoms) including oxygen and has a long aliphatic
-        chain (chain length ≥ 16) then it is flagged as possibly cannabinoid-related.
-        
+    Determines if a molecule is a cannabinoid using refined heuristics.
+
     Args:
         smiles (str): SMILES string of the molecule.
-        
+
     Returns:
         bool: True if the molecule is classified as a cannabinoid, False otherwise.
         str: Explanation for the classification decision.
@@ -84,66 +102,73 @@ def is_cannabinoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Exclude molecules with phosphorus (atomic number 15)
+    # Exclude unwanted elements such as phosphorus (atomic number 15).
     if any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms()):
         return False, "Molecule contains phosphorus which is not typical in cannabinoid structures"
     
-    # Ensure molecule contains oxygen.
+    # Must contain oxygen.
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if oxygen_count == 0:
         return False, "Molecule does not contain oxygen, but cannabinoids typically require oxygen."
     
-    # Count total carbons in the molecule.
+    # Minimum carbon count and molecular weight.
     total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     if total_carbons < 15:
         return False, f"Total carbon count ({total_carbons}) is too low to be a typical cannabinoid."
     
-    # Check molecular weight (exact weight) is above ~200 Da.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 200:
         return False, f"Molecular weight ({mol_wt:.1f} Da) is too low to be a typical cannabinoid."
     
-    # Rule 1: Look for a dihydroxybenzene (resorcinol) motif common in phytocannabinoids.
-    dihydroxybenzene = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
-    if dihydroxybenzene and mol.HasSubstructMatch(dihydroxybenzene):
-        return True, "Molecule contains a dihydroxybenzene (resorcinol) motif, common in phytocannabinoids."
+    # Overall longest carbon chain.
+    overall_chain = longest_carbon_chain(mol)
     
-    # Rule 2: Look for an indole ring (common in many synthetic cannabinoids).
-    indole = Chem.MolFromSmarts("c1cc2c(c1)[nH]c(c2)")
+    # Rule 1 (Phytocannabinoids): Check for dihydroxybenzene (resorcinol) motif.
+    resorcinol = Chem.MolFromSmarts("c1cc(O)c(O)cc1")
+    if resorcinol and mol.HasSubstructMatch(resorcinol):
+        matches = mol.GetSubstructMatches(resorcinol)
+        for match in matches:
+            side_chain = max_side_chain_length(mol, match)
+            # Require that at least one alkyl chain of length >=5 is attached to the dihydroxybenzene ring.
+            if side_chain >= 5:
+                return True, f"Molecule contains a resorcinol (dihydroxybenzene) motif with an alkyl side chain (chain length {side_chain}), common in phytocannabinoids."
+        # If motif found but no long side chain, do not classify as cannabinoid based solely on this rule.
+    
+    # Rule 2 (Synthetic cannabinoids): Look for an indole ring.
+    indole = Chem.MolFromSmarts("c1ccc2[nH]ccc2c1")
     if indole and mol.HasSubstructMatch(indole):
         return True, "Molecule contains an indole ring, a feature common in synthetic cannabinoids."
     
-    # Rule 3: Check for polar functionality (amide or ester) paired with a long carbon chain.
-    amide = Chem.MolFromSmarts("[NX3][CX3](=O)")
-    ester = Chem.MolFromSmarts("[CX3](=O)[OX2]")
-    has_amide = mol.HasSubstructMatch(amide) if amide else False
-    has_ester = mol.HasSubstructMatch(ester) if ester else False
+    # Rule 3 (Endocannabinoids): Check for polar groups paired with a long aliphatic chain.
+    # Define SMARTS for amide, ester, and carboxylic acid groups.
+    amide = Chem.MolFromSmarts("[NX3!H0][CX3](=O)")
+    ester = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+    acid  = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
+    has_polar = any(mol.HasSubstructMatch(pattern) for pattern in (amide, ester, acid) if pattern is not None)
+    if has_polar and overall_chain >= 16:
+        return True, f"Molecule has a polar group (amide/ester/acid) and a long aliphatic chain (chain length {overall_chain}), features common in endocannabinoids."
     
-    chain_length = longest_carbon_chain(mol)
-    
-    if (has_amide or has_ester) and chain_length >= 16:
-        return True, f"Molecule has a polar head group (amide/ester) and a long aliphatic chain (chain length {chain_length}), features common in endocannabinoids."
-    
-    # Rule 4: As a fallback, check for any heterocyclic ring (ring of >=5 atoms) containing oxygen
-    # along with evidence of a long carbon chain.
+    # Rule 4 (Fallback): Check for any heterocyclic ring (size ≥5) that includes at least one oxygen,
+    # combined with an overall long carbon chain.
     ring_info = mol.GetRingInfo()
     for ring in ring_info.AtomRings():
         if len(ring) >= 5:
             if any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring):
-                if chain_length >= 16:
+                if overall_chain >= 16:
                     return True, "Molecule contains a heterocyclic ring with oxygen and a long aliphatic chain, a possible cannabinoid feature."
     
-    # If none of the rules apply, do not classify as cannabinoid.
-    return False, "Molecule does not contain key cannabinoid structural features (dihydroxybenzene or indole core, or polar group with long chain, or oxygenated heterocycle with long chain)."
+    # If none of the rules apply, do not classify.
+    return False, "Molecule does not contain key cannabinoid structural features (resorcinol/indole core, or polar group with long chain, or oxygenated heterocycle with long chain)."
 
-# Example calls (uncomment to test):
+# Example calls (for testing; uncomment to run):
 # test_smiles = [
 #    "O=C(O[C@@H]([C@@H](O)[C@H](O)CO)CO)C(=CC(C(O)C(=CC(C(O)C(=CC(C(O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@@H]1O)O)CO)C(=CC(CC(CC)C)C)C)C)C)C)C)C)C",  # Roselipin 3E
 #    "O(C(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)C(CO)CO",  # MG(0:0/20:2(11Z,14Z)/0:0)
 #    "CCCC\\C=C/CCCCCCCC(=O)NCCO",  # palmitoleoyl ethanolamide
-#    "CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCOC(CO)CO",  # 2-arachidonyl glyceryl ether
-#    "N1(C=C(C2=C1C=CC=C2)C(=O)C3=C(C=CC=C3)I)CCCCCF",  # 1-(5-fluoropentyl)-3-(2-iodobenzoyl)indole
+#    "[H][C@]1(CCC(C)=C[C@H]1C1=C(O)C=C(CCCCC)C=C1O)C(C)=C",  # cannabidiol
+#    "CCCCCN1C=C(C(=O)CC2=CC=C(OC)C=C2)C2=CC=CC=C12",  # JWH-201
 # ]
+#
 # for smi in test_smiles:
 #     result, reason = is_cannabinoid(smi)
 #     print(f"SMILES: {smi}\nResult: {result}\nReason: {reason}\n")
