@@ -5,33 +5,35 @@ Classifies: CHEBI:26167 polar amino acid
 """
 Classifies: Polar Amino Acid
 Definition: Any amino acid whose side chain is capable of forming one or more hydrogen bonds.
-This program detects a free (non‐peptide) amino acid backbone by searching for an α‐carbon that
-has exactly three heavy atom neighbors: one nitrogen (the amino group), one carboxyl carbon (which has
-at least one double‐bonded oxygen) and one side‐chain branch. Glycine (side chain = H) is not considered polar,
-and if multiple amino acid backbones are found the molecule is assumed to be a peptide or larger compound.
-Then, the side‐chain is DFS–traversed to search for polar atoms.
+A polar amino acid is defined as a free (non‐peptide) amino acid whose side chain
+contains a polar atom (O or N) or a –SH group from sulfur with attached hydrogen.
+The algorithm:
+  1. Searches for the α–carbon: a carbon atom having exactly three heavy atom (non‐hydrogen) neighbors.
+     These three must include one amino nitrogen (N), one carboxyl carbon (bonded via a double bond to oxygen)
+     and one branch that is taken as the side chain. Glycine is excluded (it has no side chain).
+  2. If more than one such backbone candidate is found, the molecule is assumed to be peptide-like.
+  3. Additionally, we check that the molecular weight is below a threshold (here, 250 Da) as free amino acids 
+     are small molecules. Larger molecules are likely peptides.
+  4. Finally, we traverse the side chain (DFS from the designated side-chain branch) and also require that
+     the side chain fragment has only a limited number of heavy atoms (here, no more than 12) to ensure it is not an extended chain.
+  5. If a polar atom (N, O, or a –SH group from S with an H) is found in the side-chain, the molecule is called polar.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polar_amino_acid(smiles: str):
     """
     Determines whether the input molecule (given by a SMILES string) is a polar amino acid.
-    A polar amino acid is defined as a free amino acid (not part of a peptide) 
-    whose side chain has at least one polar atom (N or O, or S with at least one H).
     
-    Criteria:
-       1. Identify an α–carbon that has exactly three heavy-atom neighbors.
-          (Heavy atoms: non‐hydrogen; note: glycine, having only two, is excluded.)
-       2. The three neighbors must include:
-            a. An amino group: an atom with atomic number 7.
-            b. A carboxyl group: a carbon (atomic number 6) that in turn is bonded (via a double bond)
-               to at least one oxygen (atomic number 8).
-            c. A side-chain branch: any other heavy atom.
-       3. If more than one such α–carbon is detected, return False as the molecule is likely a peptide.
-       4. Traverse the side-chain (avoiding the α–carbon) and search for polar atoms:
-            - Oxygen (8) or nitrogen (7).
-            - Sulfur (16) but only if it has at least one attached hydrogen.
+    It uses these criteria:
+      1. There is exactly one putative free amino acid backbone (non-glycine) display an α–carbon (C)
+         with exactly three heavy-atom neighbors.
+      2. Among these neighbors, one must be an amino nitrogen (N), one must be a carboxyl carbon 
+         (with at least one double bonded oxygen) and one is the start of the side chain.
+      3. The overall molecular weight is small (<250 Da) to prevent peptide fragments from being misclassified.
+      4. The side chain (found by DFS from the side-chain branch, avoiding the α–carbon) must not be overly large (<=12 heavy atoms).
+      5. The side chain must include at least one polar feature (oxygen, nitrogen, or –SH from sulfur with H).
     
     Args:
          smiles (str): SMILES string representation of the molecule.
@@ -40,56 +42,58 @@ def is_polar_amino_acid(smiles: str):
          (bool, str): Tuple of a boolean (True if it is a polar amino acid, False otherwise)
                       and a string with the reason for classification.
     """
-    # Parse the SMILES string into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
+    # Check overall molecular weight (free amino acids are small)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 250:
+        return False, f"Molecular weight ({mol_wt:.1f} Da) too high for a free amino acid"
+        
     candidates = []
-    # Iterate over atoms to find candidate α–carbons (C, with three heavy-atom neighbors)
+    
+    # Look for candidate α–carbons (a carbon with exactly three heavy neighbors).
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 6:  # only carbons can be α–carbon
+        if atom.GetAtomicNum() != 6:  # α–carbon must be carbon
             continue
-        # Get heavy-atom neighbors (hydrogens are implicit)
+        # Identify heavy-atom (non-hydrogen) neighbors
         neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-        # For a (non‑glycine) amino acid, the α–carbon should have exactly three heavy neighbors.
-        if len(neighbors) != 3:
+        if len(neighbors) != 3:  # Should have three heavy neighbors (glycine has 2, so it's excluded)
             continue
 
         amino_found = None
         carboxyl_found = None
         sidechain_found = None
-        # Examine the neighbors
+
+        # Inspect each neighbor.
         for nbr in neighbors:
-            if nbr.GetAtomicNum() == 7:
-                # Found amino nitrogen candidate
+            anum = nbr.GetAtomicNum()
+            if anum == 7:
                 amino_found = nbr
-            elif nbr.GetAtomicNum() == 6:
-                # Could be the carboxyl carbon candidate
-                # Check that this carbon is bonded to at least one oxygen by a double bond.
+            elif anum == 6:
+                # Possibility for carboxyl: check for a double bonded oxygen in its neighbors (excluding back to α–carbon)
                 oxy_double = False
-                for nbr2 in nbr.GetNeighbors():
-                    # Do not inspect the bond going back to our candidate α–carbon.
-                    if nbr2.GetIdx() == atom.GetIdx():
+                for nn in nbr.GetNeighbors():
+                    if nn.GetIdx() == atom.GetIdx():
                         continue
-                    if nbr2.GetAtomicNum() == 8:
-                        bond = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
+                    if nn.GetAtomicNum() == 8:
+                        bond = mol.GetBondBetweenAtoms(nbr.GetIdx(), nn.GetIdx())
                         if bond and bond.GetBondType() == Chem.BondType.DOUBLE:
                             oxy_double = True
                             break
                 if oxy_double:
                     carboxyl_found = nbr
                 else:
-                    # If not carboxyl, then treat it as side chain
                     sidechain_found = nbr
             else:
-                # Any other heavy atom candidate is taken as side chain.
+                # any other heavy atom is assigned to sidechain.
                 sidechain_found = nbr
 
-        # Must have one amino, one carboxyl group; if side chain is missing then it is glycine.
+        # Require all three kinds of neighbor for a valid free amino acid backbone.
         if amino_found is None or carboxyl_found is None or sidechain_found is None:
             continue
-        # More than one candidate α–carbon found (should be exactly one for a free amino acid)
+
         candidates.append({
             'alpha': atom,
             'amino': amino_found,
@@ -102,12 +106,12 @@ def is_polar_amino_acid(smiles: str):
     if len(candidates) > 1:
         return False, "Multiple amino acid backbones detected; molecule appears to be a peptide or larger compound"
     
-    # Use the single candidate found
+    # Use the sole candidate found.
     backbone = candidates[0]
     alpha = backbone['alpha']
     side_start = backbone['sidechain']
     
-    # Now traverse the side chain starting from side_start; avoid going back to the α–carbon
+    # Traverse the side chain (avoid going back to the α–carbon).
     side_atoms = set()
     stack = [side_start.GetIdx()]
     while stack:
@@ -117,30 +121,36 @@ def is_polar_amino_acid(smiles: str):
         side_atoms.add(curr_idx)
         curr_atom = mol.GetAtomWithIdx(curr_idx)
         for nbr in curr_atom.GetNeighbors():
-            # Do not traverse back to the α–carbon or outside (if already visited)
+            # Do not go back to the α–carbon.
             if nbr.GetIdx() == alpha.GetIdx():
                 continue
             if nbr.GetIdx() not in side_atoms:
                 stack.append(nbr.GetIdx())
     
-    # Check for polar features in the side chain.
+    # For a free amino acid, the side-chain portion should be small.
+    # If the number of heavy atoms in the side chain is too high, suspect a peptide derivative.
+    side_heavy_count = sum(1 for idx in side_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() > 1)
+    if side_heavy_count > 12:
+        return False, f"Side chain too large ({side_heavy_count} heavy atoms) for a typical free amino acid"
+    
+    # Now, check for polar features in the side chain.
     polar_features = []
     for idx in side_atoms:
         atom = mol.GetAtomWithIdx(idx)
         anum = atom.GetAtomicNum()
-        if anum in (7, 8):  # nitrogen or oxygen
+        # Oxygen and nitrogen are polar.
+        if anum in (7, 8):
             polar_features.append(atom.GetSymbol())
-        elif anum == 16:  # sulfur; require it has at least one hydrogen (–SH)
-            # GetTotalNumHs counts explicit + implicit hydrogens.
+        elif anum == 16:  # sulfur: count only if attached to at least one hydrogen (–SH group).
             if atom.GetTotalNumHs() > 0:
                 polar_features.append("SH")
-    
+                
     if polar_features:
         return True, "Side chain contains polar feature(s): " + ", ".join(polar_features)
     else:
         return False, "Side chain does not contain polar functional group(s) capable of hydrogen bonding"
 
-# Example test cases from the provided list.
+# If run as a script, example test cases.
 if __name__ == "__main__":
     test_cases = [
         ("NC(CCC(N)=O)C(O)=O", "glutamine"),
@@ -153,7 +163,7 @@ if __name__ == "__main__":
         ("N[C@H](CC(O)=O)C(O)=O", "D-aspartic acid"),
         ("NC(Cc1ccc(O)cc1)C(O)=O", "tyrosine"),
         ("N[C@H](CO)C(O)=O", "D-serine"),
-        ("N[C@H](Cc1c[nH]c2ccccc12)C(O)=O", "tryptophan"),
+        ("NC(Cc1c[nH]c2ccccc12)C(O)=O", "tryptophan"),
         ("N[C@@H](CCCNC(N)=N)C(O)=O", "L-arginine")
     ]
     
