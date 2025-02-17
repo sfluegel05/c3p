@@ -5,10 +5,10 @@ Classifies: CHEBI:48039 dihydroflavonols
 """
 Classifies: dihydroflavonols
 Definition: Any hydroxyflavanone in which a hydroxy group is present at position 3 of the heterocyclic ring.
-This implementation works by locating a carbonyl (C=O) that is directly attached to a saturated carbon bearing an -OH.
-Then it checks that these two atoms are part of a six-membered ring that also contains a heterocyclic oxygen.
-Finally it verifies that a different carbon in that same ring (corresponding to C2 of flavanones)
-bears an external aromatic substituent (the B‐ring).
+This implementation looks for the key flavanone (2-phenylchroman-4-one) scaffold by identifying:
+  - a carbonyl group (C=O) directly bonded to a saturated carbon that bears an –OH (expected to be at C3),
+  - verifying that these atoms belong to a six-membered ring that also contains a heterocyclic oxygen (expected at C1),
+  - and ensuring that a different ring carbon (expected C2) is bonded to an external aromatic (B‐ring) substituent.
 """
 
 from rdkit import Chem
@@ -16,86 +16,84 @@ from rdkit import Chem
 def is_dihydroflavonols(smiles: str):
     """
     Determines if a given SMILES string corresponds to a dihydroflavonol.
-    The key flavanone (2-phenylchroman-4-one) scaffold of dihydroflavonols is identified by:
-      - a carbonyl group (C=O) attached to a saturated carbon that bears an –OH (expected to be C3),
-      - both atoms are in a six-membered ring which also contains a ring oxygen (the heterocycle oxygen, expected to be at C1),
-      - additionally, a different ring carbon (expected to be C2) is connected to an external aromatic group (the B‐ring).
-      
+    
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule can be classified as a dihydroflavonol, False otherwise.
-        str: Reason for the classification decision.
+        bool: True if the molecule conforms to the dihydroflavonol (2-phenylchroman-4-one with C3-OH) scaffold.
+        str: Explanation of the classification decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS to find a fragment: a carbonyl (C=O) directly bonded to a saturated carbon carrying an OH.
-    # This is intended to capture the C4 (carbonyl) - C3 (with OH) fragment.
-    query = Chem.MolFromSmarts("C(=O)[C]([OX2H])")
+    # First, search for the key fragment: Carbonyl (C=O) attached to a saturated carbon with an OH.
+    # We relax the pattern by using "[CH]" instead of "[C]" so that chiral annotations (like [C@@H]) are tolerated.
+    query = Chem.MolFromSmarts("C(=O)[CH]([OH])")
     if query is None:
-        return None, None  # Should not happen.
+        return None, None  # Should not occur.
     
     matches = mol.GetSubstructMatches(query)
     if not matches:
-        return False, "Molecule does not contain the key fragment C(=O)[C]([OX2H]) expected for dihydroflavonols"
+        return False, "Molecule does not contain the key fragment C(=O)[CH]([OH]) expected in dihydroflavonols (indicative of C4 and C3)"
     
-    # Get all rings as sets of atom indices in the molecule.
+    # Get all rings (as sets of atom indices) found by RDKit.
     rings = [set(r) for r in Chem.GetSymmSSSR(mol)]
     
-    # Loop over all fragment matches. For each, we expect:
-    #   match[0] = carbonyl carbon (C4)
-    #   match[1] = saturated carbon bearing -OH (C3)
+    # Loop over each fragment match.
     for match in matches:
+        # In our query:
+        #   match[0] is the carbonyl carbon (C4)
+        #   match[1] is the saturated carbon bearing -OH (C3)
         carbonyl_idx = match[0]
         c3_idx = match[1]
         
-        # Look for a ring that is six members long and includes both carbonyl and c3.
-        candidate_rings = [ring for ring in rings if carbonyl_idx in ring and c3_idx in ring and len(ring) == 6]
+        # Find six-membered rings that contain both the carbonyl and C3 atoms.
+        candidate_rings = [ring for ring in rings if (carbonyl_idx in ring and c3_idx in ring and len(ring) == 6)]
         if not candidate_rings:
-            continue  # Try next match
+            continue  # Try the next fragment match if this one is not in any six-membered ring.
         
-        # For each such ring, check for two features:
-        #   (i) The ring must contain a heterocyclic oxygen (expected to be the ring oxygen at C1).
-        #   (ii) There should be a ring carbon (expected C2) that is connected to an external aromatic group.
+        # Evaluate each candidate ring.
         for ring in candidate_rings:
-            # (i) Find a ring oxygen atom.
-            ring_oxygens = [idx for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 
-                             and mol.GetAtomWithIdx(idx).GetSymbol() == "O"]
-            if not ring_oxygens:
-                continue  # No ring oxygen; skip this ring
-            
-            # (ii) Look for a candidate ring carbon that is attached to an aromatic substituent outside the ring.
-            aromatic_attachment_found = False
+            # (i) Verify that the ring contains a heterocyclic oxygen, expected to be part of the chroman ring.
+            # We only consider ring oxygens that are likely not -OH (i.e. have more than one connection).
+            ring_oxygens = []
             for idx in ring:
                 atom = mol.GetAtomWithIdx(idx)
-                # Consider only carbon atoms that are part of the ring and are not the carbonyl atom or the C3 (with -OH).
-                if atom.GetAtomicNum() != 6 or idx in (carbonyl_idx, c3_idx):
+                if atom.GetAtomicNum() == 8 and atom.GetSymbol() == "O" and atom.GetDegree() > 1:
+                    ring_oxygens.append(idx)
+            if not ring_oxygens:
+                continue  # No suitable ring oxygen found in this candidate ring.
+            
+            # (ii) Look for a ring carbon (excluding the carbonyl and C3) that is bonded externally to an aromatic system.
+            aromatic_attachment_found = False
+            for idx in ring:
+                if idx in (carbonyl_idx, c3_idx):
+                    continue  # Skip atoms already used in the key fragment.
+                atom = mol.GetAtomWithIdx(idx)
+                # Consider only carbon atoms.
+                if atom.GetAtomicNum() != 6:
                     continue
-                # To be a candidate for C2, it should be bonded to the ring oxygen.
-                neighbors_in_ring = set(nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetIdx() in ring)
-                if not neighbors_in_ring.intersection(ring_oxygens):
-                    continue  # Not adjacent to ring oxygen
-                # Now, check if this atom has at least one aromatic neighbor that is not part of the same ring.
+                # Optionally, one might check if this atom is adjacent to the ring oxygen.
+                # Here we require that at least one neighbor (outside the ring) is aromatic.
                 for nbr in atom.GetNeighbors():
                     if nbr.GetIdx() not in ring and nbr.GetIsAromatic():
                         aromatic_attachment_found = True
                         break
                 if aromatic_attachment_found:
-                    break  # We found our candidate (expected C2 with the B‐ring)
+                    break  # Found an atom meeting the condition.
             
-            # If both criteria (ring oxygen and aromatic attachment at a different ring carbon) are satisfied, classify as dihydroflavonol.
             if aromatic_attachment_found:
-                return True, ("Matches dihydroflavonol core: contains a 2-phenylchroman-4-one (flavanone) scaffold with a -OH at the C3 position.")
-        
+                return True, ("Matches dihydroflavonol core: contains a 2-phenylchroman-4-one scaffold with an -OH at the C3 position "
+                              "and a ring oxygen in a six-membered heterocycle.")
+    
     return False, "Molecule does not match the dihydroflavonol core criteria."
 
-# Example usage (for testing purposes):
+# Example usage (for testing purposes)
 if __name__ == "__main__":
-    test_examples = [
-        # Provided examples
+    # List of some example SMILES strings for dihydroflavonols.
+    examples = [
         "O1C(C(O)C(=O)C=2C1=CC=3OCOC3C2O",  # 3,5-Dihydroxy-6,7-methylenedioxyflavanone
         "O[C@@H]1[C@H](Oc2cc(O)ccc2C1=O)c1ccc(O)cc1",    # garbanzol
         "CC(C)=CCc1c(O)cc(O)c2C(=O)[C@H](O)[C@H](Oc12)c1ccccc1",  # glepidotin B
@@ -104,6 +102,6 @@ if __name__ == "__main__":
         "OC1C(Oc2cc(O)cc(O)c2C1=O)c1ccc(O)c(O)c1",           # (+)-taxifolin
         "O[C@H]1[C@@H](Oc2cc(O)cc(O)c2C1=O)c1cc(O)c(O)c(O)c1",  # (-)-dihydromyricetin
     ]
-    for s in test_examples:
+    for s in examples:
         result, reason = is_dihydroflavonols(s)
         print(f"SMILES: {s}\nClassified as dihydroflavonol? {result}\nReason: {reason}\n")
