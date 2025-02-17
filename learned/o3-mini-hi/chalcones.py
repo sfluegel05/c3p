@@ -3,38 +3,35 @@ Classifies: CHEBI:23086 chalcones
 """
 #!/usr/bin/env python3
 """
-Classifies: Chalcones – a family defined as 1,3-diphenylpropenone (benzylideneacetophenone)
-and derivatives. In our implementation a chalcone (or its derivative) is identified by 
-either an α,β-unsaturated ketone core (Ar–C(=O)–CH=CH–Ar) or a related dihydrochalcone variant 
-(Ar–C(=O)–CH2–CH2–Ar) with both terminal aromatic atoms belonging to benzene rings.
+Classifies: Chalcones – defined as compounds containing a 1,3-diphenylpropenone (benzylideneacetophenone)
+core (either unsaturated: Ar-C(=O)-CH=CH-Ar, or the dihydrochalcone variant: Ar-C(=O)-CH2-CH2-Ar)
+with both terminal aromatic atoms part of benzene rings.
 """
 
 from rdkit import Chem
 
 def is_chalcones(smiles: str):
     """
-    Determines if a molecule belongs to the chalcone class based on its SMILES string.
-    We look for a core moiety where a carbonyl group (C(=O)) is conjugated to a two‐carbon
-    linker which in the unsaturated case is a C=C double bond or in the dihydro case is –CH2–CH2–.
-    In both cases, the ketone carbon is attached at one end to an aromatic ring atom and the
-    terminal carbon (of the double or single bond sequence) is also part of an aromatic six‐membered
-    ring (benzene). Only when such a match is found (and the aromatic ends are indeed in benzene rings)
-    is the molecule classified as chalcone (or a chalcone derivative).
-
+    Determines if a molecule belongs to the chalcone class (or its derivatives)
+    based on its SMILES string. The core motif is considered valid when: 
+       (i) either an α,β-unsaturated ketone (Ar-C(=O)-CH=CH-Ar) or a dihydrochalcone variant 
+           (Ar-C(=O)-CH2-CH2-Ar) is present;
+       (ii) both terminal aromatic atoms belong to benzene rings (6-membered rings with only aromatic carbons);
+       (iii) the ketone carbon and the adjacent linking carbon(s) are not embedded in any ring,
+            preventing false positives from fused ring systems.
+            
     Args:
         smiles (str): SMILES string of the molecule.
-
+        
     Returns:
-        bool: True if the molecule is classified as a chalcone or chalcone derivative, False otherwise.
+        bool: True if the molecule is classified as a chalcone (or chalcone derivative), False otherwise.
         str: Reason for the classification decision.
     """
-    # Parse the SMILES string into an RDKit molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Helper function: checks whether an atom (by idx) is a member of at least one benzene ring,
-    # here defined as a 6-membered ring in which every atom is aromatic carbon.
+    # Helper function: checks whether an atom (by idx) is part of at least one benzene ring.
     def in_benzene_ring(atom_idx, mol):
         ring_info = mol.GetRingInfo()
         for ring in ring_info.AtomRings():
@@ -44,31 +41,76 @@ def is_chalcones(smiles: str):
                     return True
         return False
 
-    # Define two SMARTS patterns:
-    # 1) Unsaturated chalcone: aromatic ring - carbonyl - C=C - aromatic ring.
+    # Define SMARTS patterns:
+    # Unsaturated chalcone: aromatic ring (atom0) - carbonyl (atom1) - alkene carbon (atom2) - aromatic ring (atom3)
     unsat_pattern = Chem.MolFromSmarts("[cR]C(=O)[C]=[C][cR]")
-    # 2) Dihydrochalcone variant: aromatic ring - carbonyl - CH2 - CH2 - aromatic ring.
+    # Dihydrochalcone: aromatic ring (atom0) - carbonyl (atom1) - CH2 (atom2) - CH2 (atom3) - aromatic ring (atom4)
     sat_pattern = Chem.MolFromSmarts("[cR]C(=O)CC[cR]")
     
-    # Try to find matches for both patterns.
-    # Combine the matches in a list.
-    matches = []
-    if unsat_pattern is not None:
-        matches.extend(mol.GetSubstructMatches(unsat_pattern))
-    if sat_pattern is not None:
-        matches.extend(mol.GetSubstructMatches(sat_pattern))
+    valid_match_found = False
+    reason = ""
     
-    if not matches:
+    # Attempt both patterns:
+    all_matches = []
+    if unsat_pattern is not None:
+        all_matches.extend(mol.GetSubstructMatches(unsat_pattern))
+    if sat_pattern is not None:
+        all_matches.extend(mol.GetSubstructMatches(sat_pattern))
+    
+    if not all_matches:
         return False, "Chalcone core (unsaturated or dihydro variant) not found"
     
-    # Check each match to ensure that the first and last atoms (the aromatic ends) belong to benzene rings.
-    for match in matches:
-        # match[0] is the aromatic atom connected to the carbonyl,
-        # match[-1] is the terminal aromatic atom.
-        if in_benzene_ring(match[0], mol) and in_benzene_ring(match[-1], mol):
-            return True, "Contains chalcone core (α,β-unsaturated or dihydro ketone with aromatic groups on benzene rings)"
+    for match in all_matches:
+        # For the unsaturated pattern we expect a 4-atom match and for the saturated (dihydro) we expect 5.
+        if len(match) == 4:
+            # For unsaturated chalcone:
+            aromatic1 = match[0]
+            carbonyl = match[1]
+            linker = match[2]
+            aromatic2 = match[3]
+            
+            # Check that both terminal atoms are in benzene rings.
+            if not (in_benzene_ring(aromatic1, mol) and in_benzene_ring(aromatic2, mol)):
+                continue
+            
+            # Check that the carbonyl and its adjacent alkene carbon are not in any ring;
+            # in chalcones the carbonyl should be in an open chain.
+            if mol.GetAtomWithIdx(carbonyl).IsInRing() or mol.GetAtomWithIdx(linker).IsInRing():
+                continue
+            
+            # Additional check: ensure the carbonyl atom is not aromatic.
+            if mol.GetAtomWithIdx(carbonyl).GetIsAromatic():
+                continue
+            
+            valid_match_found = True
+            reason = "Contains chalcone core (α,β-unsaturated ketone with aromatic groups on benzene rings)"
+            break
+            
+        elif len(match) == 5:
+            # For dihydrochalcone variant:
+            aromatic1 = match[0]
+            carbonyl = match[1]
+            linker1 = match[2]
+            linker2 = match[3]
+            aromatic2 = match[4]
+            
+            if not (in_benzene_ring(aromatic1, mol) and in_benzene_ring(aromatic2, mol)):
+                continue
+            
+            if mol.GetAtomWithIdx(carbonyl).IsInRing() or mol.GetAtomWithIdx(linker1).IsInRing() or mol.GetAtomWithIdx(linker2).IsInRing():
+                continue
+            
+            if mol.GetAtomWithIdx(carbonyl).GetIsAromatic():
+                continue
+            
+            valid_match_found = True
+            reason = "Contains chalcone core (dihydroketone variant with aromatic groups on benzene rings)"
+            break
     
-    return False, "Chalcone core found, but terminal aromatic atoms are not in benzene rings as required"
+    if valid_match_found:
+        return True, reason
+    else:
+        return False, "Chalcone core found, but connectivity constraints (non-cyclic carbonyl/linker or benzene terminal rings) not met"
 
 # For basic testing you can uncomment the lines below:
 # test_smiles = "O=C(\\C=C\\c1ccccc1)c1ccccc1"  # trans-chalcone
