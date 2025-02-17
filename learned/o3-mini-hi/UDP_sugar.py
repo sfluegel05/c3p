@@ -5,14 +5,13 @@ Classifies: CHEBI:17297 UDP-sugar
 """
 Classifies: UDP-sugar
 Definition:
-  A pyrimidine nucleotide-sugar having UDP as the nucleotide component attached to 
+  A pyrimidine nucleotide-sugar having UDP as the nucleotide component attached to
   an unspecified sugar via an anomeric diphosphate linkage.
-
-This implementation uses RDKit to verify three criteria:
-  1) An unmethylated uracil substructure is present.
-  2) A diphosphate linkage (P-O-P) is found.
-  3) There is connectivity between (at least one) phosphorus atom of a diphosphate group 
-     and the uracil substructure via a short bond pathway (to ensure that the UDP moiety is intact).
+  
+This script uses RDKit to check:
+  1) That there is a pyrimidine nucleotide substructure. Here we define it as a uracil moiety that is not methylated (i.e. not thymine).
+  2) That there is a diphosphate linkage (P-O-P) with exactly two phosphorus atoms.
+If both features are found, the molecule is classified as a UDP-sugar.
 """
 
 from rdkit import Chem
@@ -22,105 +21,63 @@ def is_UDP_sugar(smiles: str):
     Determines if a molecule is a UDP-sugar based on its SMILES string.
     
     A UDP-sugar must have:
-      - A pyrimidine nucleotide component with an unmethylated uracil moiety.
-      - A diphosphate (P-O-P) linkage.
-      - A phosphorus (from the diphosphate) that is connected to the uracil substructure by a short path.
-    
+      - A pyrimidine nucleotide component. Here we demand a uracil ring (n1ccc(=O)[nH]c1=O)
+        and reject if a thymine ring is found (which would have a methyl substituent, e.g.
+        Cc1c(=O)[nH]c(=O)n1).
+      - A diphosphate linkage (a P-O-P connectivity) and exactly 2 phosphorus atoms.
+      
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if the molecule is classified as a UDP-sugar, False otherwise.
-        str: Explanation of the classification.
+        bool: True if the molecule is considered a UDP-sugar, False otherwise.
+        str: Reason for the classification.
     """
     # Parse the SMILES string into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # 1. Look for an unmethylated uracil substructure.
-    # SMARTS for a uracil moiety.
+        
+    # We now define a SMARTS for an unmethylated uracil ring.
+    # This pattern finds a uracil moiety: (pyrimidine with two carbonyls and no extra substituents on the ring).
+    # Note that a thymine (5-methyluracil) would have an extra CH3 at one position.
     uracil_smarts = "n1ccc(=O)[nH]c1=O"
     uracil_pattern = Chem.MolFromSmarts(uracil_smarts)
-    uracil_matches = mol.GetSubstructMatches(uracil_pattern)
-    if not uracil_matches:
-        return False, "Uracil substructure not found"
+    if not mol.HasSubstructMatch(uracil_pattern):
+        return False, "Uracil (nucleotide) substructure not found"
+        
+    # Now define a SMARTS for thymine (5-methyluracil).
+    # This pattern looks for a methyl group attached to the ring in the position typical for thymine.
+    thymine_smarts = "Cc1c(=O)[nH]c(=O)n1"
+    thymine_pattern = Chem.MolFromSmarts(thymine_smarts)
+    if mol.HasSubstructMatch(thymine_pattern):
+        return False, "Thymine (5-methyluracil) substructure found; not UDP-sugar"
     
-    # Check each uracil match to ensure that none of its atoms has a terminal methyl substituent,
-    # which would indicate methylation (as in thymine).
-    valid_uracil_matches = []
-    for match in uracil_matches:
-        methyl_found = False
-        for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
-            for nbr in atom.GetNeighbors():
-                # Only consider neighbors not part of the uracil ring.
-                if nbr.GetIdx() not in match:
-                    # If the neighbor is a carbon and is terminal (degree 1), it is a methyl.
-                    if nbr.GetAtomicNum() == 6 and nbr.GetDegree() == 1:
-                        methyl_found = True
-                        break
-            if methyl_found:
-                break
-        if not methyl_found:
-            valid_uracil_matches.append(match)
-    
-    if not valid_uracil_matches:
-        return False, "Only methylated uracil (thymine-like) substructures found; not UDP-sugar"
-    
-    # 2. Check for a diphosphate (P-O-P) linkage.
+    # Define SMARTS for a diphosphate (P-O-P) connectivity.
+    # This pattern looks for a phosphorus atom connected through an oxygen to another phosphorus atom.
     diphosphate_smarts = "[P]-O-[P]"
     diphosphate_pattern = Chem.MolFromSmarts(diphosphate_smarts)
-    diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
-    if not diphosphate_matches:
-        return False, "Diphosphate (P-O-P) linkage not found"
-    
-    # 3. Verify connectivity between the UDP moiety and the uracil substructure.
-    # Instead of checking immediate neighbors, we check for any short bond path (within a threshold)
-    # between any phosphorus atom in a diphosphate motif and any atom of an unmethylated uracil.
-    # This accounts for the fact that uracil is connected to a ribose which is then bonded to a phosphate.
-    connectivity_found = False
-    # Define a maximum bond distance threshold (e.g. 4 bonds) as acceptable for a connection.
-    max_distance = 4
-    
-    # First, get all phosphorus atom indices that occur in a diphosphate match.
-    phosphate_indices = set()
-    for match in diphosphate_matches:
-        # Each match returns indices corresponding to the pattern [P]-O-[P].
-        # Extract phosphorus indices (atoms with atomic number 15).
-        for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 15:
-                phosphate_indices.add(idx)
-    
-    # Now for each phosphorus atom, check for a short linkage to any atom in any valid uracil match.
-    for p_idx in phosphate_indices:
-        for uracil_match in valid_uracil_matches:
-            for u_idx in uracil_match:
-                # Use RDKit's GetShortestPath function.
-                path = Chem.GetShortestPath(mol, p_idx, u_idx)
-                if path and len(path) - 1 <= max_distance:
-                    connectivity_found = True
-                    break
-            if connectivity_found:
-                break
-        if connectivity_found:
-            break
-            
-    if not connectivity_found:
-        return False, "Uracil substructure not connected to a diphosphate phosphorus within a short bond distance (UDP moiety missing)"
-    
-    return True, "Molecule contains an unmethylated uracil substructure and a diphosphate linkage connected via a short path, consistent with a UDP-sugar"
+    if not mol.HasSubstructMatch(diphosphate_pattern):
+        return False, "Diphosphate linkage (P-O-P) not found"
 
-# Example usage (for testing purposes)
+    # Count the total number of phosphorus atoms in the molecule.
+    n_phosphorus = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    if n_phosphorus != 2:
+        return False, f"Expected 2 phosphorus atoms in a UDP moiety, found {n_phosphorus}"
+        
+    return True, "Molecule contains an unmethylated uracil substructure and a diphosphate (P-O-P) linkage indicative of a UDP-sugar"
+
+
+# Example usage (remove or comment out if integrating into a larger codebase)
 if __name__ == "__main__":
+    # List of some example SMILES for UDP-sugars (only one example is shown here)
     test_smiles = [
-        # UDP-alpha-D-mannuronic acid
+        # UDP-alpha-D-mannuronic acid:
         "O[C@@H]1[C@@H](COP(O)(=O)OP(O)(=O)O[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@@H]2O)C(O)=O)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O",
-        # UDP-4-amino-4,6-dideoxy-L-N-acetyl-beta-L-altrosamine
-        "C[C@@H]1O[C@H](OP([O-])(=O)OP([O-])(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@H](NC(C)=O)[C@@H](O)[C@H]1[NH3+]",
-        # UDP-D-glucosamine
-        "N[C@@H]1[C@@H](O)[C@H](O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O",
+        # This SMILES for dTDP-4-acetamido-4,6-dideoxy-alpha-D-galactose (a known false positive) should be rejected:
+        "C[C@H]1O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H](C[C@@H]2O)n2cc(C)c(=O)[nH]c2=O)[C@H](O)[C@@H](O)[C@H]1NC(C)=O",
+        # An example of a UTP molecule (3 phosphates) should also be rejected.
+        "O[C@@H]1[C@@H](COP(O)(=O)OP(O)(=O)OP(O)(=O)OCC=C)O[C@H]([C@@H]1O)n1ccc(=O)[nH]c1=O",
     ]
     
     for s in test_smiles:
