@@ -7,94 +7,92 @@ Definition: A fatty acyl-CoA that results from the formal condensation of the th
 of coenzyme A with the carboxy group of any medium-chain fatty acid.
 
 Heuristics used:
- 1. The molecule must contain a recognizable CoA moiety. We use a characteristic fragment 
-    found in the CoA’s phosphoester part. (SMARTS: "COP(O)(=O)OP(O)(=O)")
- 2. There must be a thioester linkage ("C(=O)S") joining the fatty acyl chain to CoA.
- 3. From the thioester carbonyl carbon (counted as 1), a DFS is used to compute the length 
-    of the contiguous acyclic chain (traversing only C or S atoms that are not part of CoA).
- 4. For a medium‐chain fatty acyl, the computed chain length should be between 6 and 12.
-    
-Note: These heuristics may omit edge cases.
+ 1. The molecule must contain a recognizable CoA moiety (identified by a characteristic SMARTS fragment).
+ 2. There must be a thioester group (C(=O)S) linking a fatty acyl chain to the CoA.
+ 3. Starting from the thioester carbonyl carbon (which is counted as carbon 1), the molecule is “walked”
+    along a contiguous, acyclic chain. Only atoms that are carbon (atomic number 6) or sulfur (atomic number 16)
+    (to capture thia–substituted analogs) are allowed, provided they are not part of any CoA fragment.
+    Only bonds of type single or double are followed.
+ 4. The longest linear extension (if branches occur) is chosen.
+ 5. To be “medium‐chain”, the chain length (including the carbonyl) must be between 6 and 12.
+  
+Note that this is a heuristic and will mis‐classify some edge cases.
 """
 
 from rdkit import Chem
 
 def is_medium_chain_fatty_acyl_CoA(smiles: str):
     """
-    Determines whether the given molecule (as a SMILES string) is a 
-    medium-chain fatty acyl-CoA according to heuristics.
-
-    Args:
-      smiles (str): SMILES string of the molecule.
-      
-    Returns:
-      bool: True if the molecule is classified as a medium-chain fatty acyl-CoA, else False.
-      str: Explanation (reason) for the result.
-    """
+    Determines whether a molecule (given as a SMILES string) is a medium-chain fatty acyl-CoA.
     
+    It checks that:
+       - a CoA moiety is present (via a characteristic substructure)
+       - a thioester linkage (C(=O)S) exists
+       - the acyl chain connected (starting from the thioester carbonyl carbon) extends 
+         (following only linear, acyclic bonds through permitted atoms) for a length between 6 and 12 atoms.
+         The allowed atoms in the chain are carbon (C) and, to catch thia replacements, sulfur (S).
+         
+    Args:
+       smiles (str): SMILES string of the molecule.
+       
+    Returns:
+       bool: True if classified as medium-chain fatty acyl-CoA, False otherwise.
+       str: Explanation for the decision.
+    """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # 1. Check for a CoA moiety by using a simplified and valid fragment SMARTS.
-    coa_smarts = "COP(O)(=O)OP(O)(=O)"
+        
+    # 1. Check for CoA moiety.
+    # Use a characteristic fragment that is commonly found in CoA.
+    coa_smarts = "SCCNC(=O)CCNC(=O)"
     coa_pattern = Chem.MolFromSmarts(coa_smarts)
-    if coa_pattern is None:
-        return False, "Error in CoA SMARTS pattern"
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "CoA moiety not detected"
     
-    # Get indices for atoms in any CoA fragment match.
+    # Gather atom indices that are in any CoA fragment match.
     coa_idxs = set()
     for match in mol.GetSubstructMatches(coa_pattern):
         coa_idxs.update(match)
-        
-    # 2. Look for a thioester linkage defined by the SMARTS "C(=O)S"
+    
+    # 2. Look for a thioester linkage. We search for the C(=O)S pattern.
     thioester_smarts = "C(=O)S"
     thioester_pattern = Chem.MolFromSmarts(thioester_smarts)
-    if thioester_pattern is None:
-        return False, "Error in thioester SMARTS pattern"
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester linkage found"
-    
-    # 3. Helper DFS to find the longest simple acyclic chain.
-    # Only traverse atoms that are allowed (atomic numbers {6 (C), 16 (S)}),
-    # avoid atoms in the CoA moiety, and skip ring atoms.
-    def dfs_longest_path(atom, coming_from, visited):
-        longest = 0  # branch length count (excluding the start atom; caller adds 1)
+        
+    # Helper: recursively determine the length of a contiguous linear chain.
+    # We allow atoms that are carbon (6) or sulfur (16) as part of the acyl chain.
+    # We only traverse bonds of type SINGLE or DOUBLE.
+    def linear_chain_length(atom, prev_idx):
+        length = 1  # count current atom
+        next_extensions = []
         for bond in atom.GetBonds():
-            # Only allow single/double bonds.
-            if bond.GetBondType() not in (Chem.BondType.SINGLE, Chem.BondType.DOUBLE):
+            # Ignore bonds not single or double
+            if bond.GetBondType() not in [Chem.BondType.SINGLE, Chem.BondType.DOUBLE]:
                 continue
             nbr = bond.GetOtherAtom(atom)
-            if nbr.GetIdx() == coming_from:
+            if nbr.GetIdx() == prev_idx:
                 continue
-            if nbr.GetIdx() in visited:
-                continue
-            # Only traverse allowed atoms.
-            if nbr.GetAtomicNum() not in (6, 16):
-                continue
-            # Do not traverse if the neighbor is part of the CoA moiety.
-            if nbr.GetIdx() in coa_idxs:
-                continue
-            # Do not traverse ring atoms.
-            if nbr.IsInRing():
-                continue
-            new_visited = visited.union({nbr.GetIdx()})
-            branch_length = 1 + dfs_longest_path(nbr, atom.GetIdx(), new_visited)
-            if branch_length > longest:
-                longest = branch_length
-        return longest
-    
+            # Only allow chain atoms that are C (6) or S (16), not in CoA, and not in a ring.
+            if nbr.GetAtomicNum() in (6, 16) and (nbr.GetIdx() not in coa_idxs) and (not nbr.IsInRing()):
+                next_extensions.append(linear_chain_length(nbr, atom.GetIdx()))
+        if next_extensions:
+            return length + max(next_extensions)
+        else:
+            return length
+
     reasons = []
-    # 4. Process each thioester match.
+    # 3. Process each thioester match.
     for match in thioester_matches:
-        # Assume in the thioester SMARTS "C(=O)S", index 0 is the carbonyl carbon.
+        # Identify the carbonyl carbon in the thioester.
+        # In the SMARTS "C(=O)S" the match tuple should include the carbonyl carbon;
+        # we assume this is at index 0.
         carbonyl_idx = match[0]
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
         
-        # Verify that the carbonyl has a neighboring sulfur.
+        # Verify that one of its neighbors is sulfur (the thioester S).
         sulfur_found = False
         sulfur_idx = None
         for nbr in carbonyl_atom.GetNeighbors():
@@ -106,29 +104,28 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
             reasons.append("Thioester match did not yield an adjacent sulfur.")
             continue
         
-        # Identify neighbor atoms (outside the thioester S) that are allowed and not in CoA.
+        # The fatty acyl chain should be linked to the carbonyl carbon via a neighbor that is not:
+        #   (a) the sulfur, and (b) part of the CoA fragment.
         acyl_neighbors = [nbr for nbr in carbonyl_atom.GetNeighbors() 
-                          if nbr.GetIdx() != sulfur_idx and 
-                             nbr.GetAtomicNum() in (6, 16) and 
-                             nbr.GetIdx() not in coa_idxs and 
-                             not nbr.IsInRing()]
+                          if nbr.GetIdx() != sulfur_idx and nbr.GetAtomicNum() in (6, 16)
+                          and nbr.GetIdx() not in coa_idxs]
         if not acyl_neighbors:
-            reasons.append("Thioester carbonyl has no valid acyl neighbor outside CoA.")
+            reasons.append("Thioester carbonyl does not have a neighboring alkyl (or thia-alkyl) atom outside CoA.")
             continue
         
+        # Evaluate each potential acyl chain neighbor.
+        # Count chain length starting from the carbonyl (which is counted as 1);
+        # then add the length of the longest contiguous extension.
         for acyl_start in acyl_neighbors:
-            # Start chain length counting with the carbonyl (1 atom)
-            visited = {carbonyl_idx, acyl_start.GetIdx()}
-            branch_length = 1 + dfs_longest_path(acyl_start, carbonyl_idx, visited)
-            # Check if chain length (including carbonyl) is between 6 and 12.
-            if 6 <= branch_length <= 12:
-                reason = f"Found thioester linkage with fatty acyl chain length of {branch_length} atoms (medium-chain)."
+            chain_len = 1 + linear_chain_length(acyl_start, carbonyl_idx)
+            if 6 <= chain_len <= 12:
+                reason = f"Found thioester linkage with fatty acyl chain length of {chain_len} atoms (medium-chain)."
                 return True, reason
             else:
-                reasons.append(f"Found thioester linkage but fatty acyl chain length is {branch_length} atoms (not between 6 and 12).")
+                reasons.append(f"Thioester found but fatty acyl chain length is {chain_len} atoms (not between 6 and 12).")
     
     if reasons:
         return False, " ; ".join(reasons)
     return False, "No valid fatty acyl chain detected"
 
-# End of program
+# (End of program)
