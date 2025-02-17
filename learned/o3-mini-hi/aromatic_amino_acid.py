@@ -4,8 +4,7 @@ Classifies: CHEBI:33856 aromatic amino acid
 """
 Classifies: aromatic amino acid
 Definition: An amino acid whose structure includes an aromatic ring. In other words,
-the molecule must contain an integrated (free) alpha–amino acid backbone
-(with a free –NH2 attached to an alpha–carbon that also bears a free carboxyl group)
+the molecule must contain an integrated (free) alpha–amino acid backbone (with a free –NH2 and a free –COOH on the same carbon)
 and that backbone must carry an aromatic side chain.
 """
 
@@ -14,10 +13,9 @@ from rdkit import Chem
 def is_aromatic_amino_acid(smiles: str):
     """
     Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    To qualify, the molecule must contain an alpha–amino acid backbone (an alpha–carbon
-    that carries a free (non‐amidic) amino group and a free carboxyl group) and the side chain 
-    (the substituent on the alpha–carbon that is not the amino or carboxyl group)
-    must lead to an aromatic ring.
+    For a positive classification, the molecule must contain an alpha–amino acid backbone
+    (an sp3 alpha–carbon attached to a free (non‐amidic) amino group and the directly connected carboxyl carbon)
+    and the side chain attached to the alpha–carbon must include an aromatic ring.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -31,17 +29,12 @@ def is_aromatic_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens to count attached H's reliably.
+    # Add explicit hydrogens for better matching.
     mol = Chem.AddHs(mol)
     
-    # --- Step 1. Look for an alpha-amino acid backbone ---
-    # Here we require:
-    #  - an sp3 (non-aromatic) carbon (the alpha carbon) that has exactly one hydrogen.
-    #  - that carbon is attached to a nitrogen (the free amine) and to a carboxyl group
-    #    (a carbon bonded to a double-bonded oxygen and an –OH or –O^-).
-    #
-    # The SMARTS below is designed to recognize the alpha carbon.
-    # Note: We require the alpha carbon to have exactly one hydrogen [H1].
+    # --- Step 1. Look for an alpha–amino acid backbone ---
+    # The SMARTS is intended to match the alpha–carbon (non‐aromatic, sp3 with exactly one hydrogen),
+    # a free amino group, and the carboxyl group (we match the carboxyl carbon and one carboxyl oxygen).
     backbone_smarts = "[C;!a;H1](N)(C(=O)[O;H1,-])"
     aa_backbone = Chem.MolFromSmarts(backbone_smarts)
     matches = mol.GetSubstructMatches(aa_backbone)
@@ -49,13 +42,17 @@ def is_aromatic_amino_acid(smiles: str):
         return False, "Missing integrated alpha–amino acid backbone (free amino and acid groups on same carbon)"
     
     # --- Step 2. Check for aromatic side chain ---
-    # For each alpha–carbon found in a matching backbone, get its neighbors.
-    # Two of the neighbors are already assigned: the free amino (N) and the carboxyl carbon.
-    # The remaining neighbor (if any) is the side chain.
+    # The typical match will produce a tuple with 4 indices:
+    #   index 0: alpha–carbon
+    #   index 1: free amino nitrogen
+    #   index 2: carboxyl carbon (directly attached to alpha–carbon)
+    #   index 3: carboxyl oxygen (attached to the carboxyl carbon)
+    # We ignore the oxygen (match[3]) and focus on the neighbors of the alpha–carbon.
+    
     def side_chain_has_aromatic(start_idx, visited, max_depth=6):
         """
-        Depth-first search from atom with index start_idx to see if any aromatic atom
-        is encountered. Only traverses bonds; stops if max_depth reached.
+        Depth-first search starting from atom with index start_idx to detect an aromatic atom.
+        Traverses bonds up to a specified max_depth.
         """
         if max_depth < 0:
             return False
@@ -73,17 +70,24 @@ def is_aromatic_amino_acid(smiles: str):
 
     aromatic_sidechain_found = False
     # Iterate over each backbone match.
-    # In our SMARTS the order is assumed: (alpha-carbon, free amine, carboxyl carbon).
     for match in matches:
-        alpha_idx, amine_idx, acid_idx = match
+        if len(match) < 3:
+            continue  # safety check; we expect 3 or 4 members
+        alpha_idx = match[0]
+        amine_idx = match[1]
+        carboxyl_c_idx = match[2]  # the carboxyl carbon directly attached to the alpha–carbon
+
+        # Get all neighbors of the alpha–carbon.
         alpha_atom = mol.GetAtomWithIdx(alpha_idx)
         neighbor_indices = [nbr.GetIdx() for nbr in alpha_atom.GetNeighbors()]
-        # Exclude the amino and carboxyl atoms.
-        side_chain_indices = [idx for idx in neighbor_indices if idx not in (amine_idx, acid_idx)]
-        # We require that the residue has a side-chain (if not, it might be glycine which is not aromatic).
+        # Exclude the amino nitrogen and the carboxyl carbon.
+        side_chain_indices = [idx for idx in neighbor_indices if idx not in (amine_idx, carboxyl_c_idx)]
+        
+        # If there is no side chain (e.g., glycine), continue checking other matches.
         if not side_chain_indices:
             continue
-        # For each candidate side-chain atom, search in its vicinity (up to a few bonds) for an aromatic atom.
+        
+        # For each candidate side-chain atom, search nearby for an aromatic atom.
         for sc_idx in side_chain_indices:
             if side_chain_has_aromatic(sc_idx, visited={alpha_idx, sc_idx}, max_depth=6):
                 aromatic_sidechain_found = True
@@ -98,7 +102,7 @@ def is_aromatic_amino_acid(smiles: str):
 
 # Example usage:
 if __name__ == "__main__":
-    # Test one of the true positive examples:
-    test_smiles = "NC1=C(C=C(Cl)C=C1)C(O)=O"  # 2-amino-5-chlorobenzoic acid
+    # Test one of the examples: D-histidine
+    test_smiles = "N[C@H](Cc1c[nH]cn1)C(O)=O"
     result, reason = is_aromatic_amino_acid(test_smiles)
     print(result, reason)
