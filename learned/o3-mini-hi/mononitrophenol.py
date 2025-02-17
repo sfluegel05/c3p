@@ -3,10 +3,8 @@ Classifies: CHEBI:39362 mononitrophenol
 """
 """
 Classifies: mononitrophenol
-Definition: A mononitrophenol is defined as a phenol (an aromatic benzene ring with a single -OH substituent)
+Definition: A mononitrophenol is defined as a phenol (a benzene ring with a single -OH substituent that is neutral)
 carrying exactly one nitro group ([N+](=O)[O-]) attached to the ring.
-This updated approach requires that the ring is a 6-membered (benzene) ring having exactly one –OH (or its deprotonated form)
-attached and one nitro group bonded to one of its carbons.
 """
 
 from rdkit import Chem
@@ -17,9 +15,9 @@ def is_mononitrophenol(smiles: str):
     
     A mononitrophenol must:
       1. Contain exactly one nitro group ([N+](=O)[O-]).
-      2. Have that nitro group attached to an aromatic (benzene) ring.
-      3. The benzene ring must carry exactly one hydroxyl substituent (as -OH or deprotonated -O-)
-         attached directly to a ring carbon. This is used as a proxy for a phenol.
+      2. Have that nitro group attached to an aromatic benzene ring (6-membered, all carbons aromatic).
+      3. This benzene ring must carry exactly one substituent hydroxyl group –OH (as a neutral oxygen with at least one hydrogen).
+         (Any deprotonated oxygen, e.g. an O–, does not count.)
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -33,98 +31,88 @@ def is_mononitrophenol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
         
-    # Add explicit hydrogens so we can count H's on oxygen atoms.
+    # Add explicit hydrogens so we can properly count H's on oxygens.
     mol = Chem.AddHs(mol)
     
-    # Define SMARTS pattern for a nitro group and search.
+    # Define the SMARTS pattern for a nitro group.
     nitro_smarts = "[N+](=O)[O-]"
     nitro_pattern = Chem.MolFromSmarts(nitro_smarts)
     nitro_matches = mol.GetSubstructMatches(nitro_pattern)
     
-    # Check that there is exactly one nitro group.
+    # Check that there is exactly one nitro group present.
     if len(nitro_matches) != 1:
         return False, f"Found {len(nitro_matches)} nitro groups; exactly one is required"
     
+    nitro_match = nitro_matches[0]  # tuple of atom indices in the nitro group
+    
     # Identify the nitrogen atom in the nitro group.
-    nitro_match = nitro_matches[0]  # tuple of atom indices corresponding to the nitro group.
-    nitro_N_index = None
+    nitro_N = None
     for idx in nitro_match:
         atom = mol.GetAtomWithIdx(idx)
         if atom.GetAtomicNum() == 7:
-            nitro_N_index = idx
+            nitro_N = atom
             break
-    if nitro_N_index is None:
-        return False, "Error detecting the nitro nitrogen atom"
+    if nitro_N is None:
+        return False, "Could not identify the nitro nitrogen atom"
     
-    # Ensure the nitro group is attached to an aromatic carbon.
-    nitro_N = mol.GetAtomWithIdx(nitro_N_index)
-    aromatic_carbon_idx = None
-    for neighbor in nitro_N.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIsAromatic():
-            aromatic_carbon_idx = neighbor.GetIdx()
+    # Find an aromatic carbon neighbor attached to the nitro group.
+    attached_aromatic_c = None
+    for nb in nitro_N.GetNeighbors():
+        if nb.GetAtomicNum() == 6 and nb.GetIsAromatic():
+            attached_aromatic_c = nb
             break
-    if aromatic_carbon_idx is None:
+    if attached_aromatic_c is None:
         return False, "Nitro group is not attached to an aromatic carbon"
     
-    # Get ring information.
-    rings = mol.GetRingInfo().AtomRings()
-    # Identify candidate rings that contain the aromatic carbon bonded to nitro.
-    candidate_rings = [ring for ring in rings if aromatic_carbon_idx in ring]
-    if not candidate_rings:
-        return False, "The aromatic carbon bearing the nitro group is not part of any ring"
+    attached_idx = attached_aromatic_c.GetIdx()
     
-    # Check candidate rings for a benzene ring (6-membered ring with all atoms as carbon)
-    # and that the ring carries exactly one hydroxyl substituent.
-    for ring in candidate_rings:
+    # Identify candidate rings that are benzene rings:
+    # a benzene ring is defined here as a 6-membered ring where every atom is carbon and aromatic.
+    rings = mol.GetRingInfo().AtomRings()
+    candidate_rings = []
+    for ring in rings:
         if len(ring) != 6:
-            continue  # not a benzene ring
-        
-        # Check that all atoms in the ring are carbons.
-        if not all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
             continue
-        
-        # Count the number of hydroxyl substituents attached to the ring.
+        atoms_in_ring = [mol.GetAtomWithIdx(i) for i in ring]
+        if not all(a.GetAtomicNum() == 6 and a.GetIsAromatic() for a in atoms_in_ring):
+            continue
+        # Only consider rings that include the carbon attached to the nitro group.
+        if attached_idx in ring:
+            candidate_rings.append(ring)
+    
+    if not candidate_rings:
+        return False, "No benzene ring with nitro attachment found"
+    
+    # For each candidate benzene ring, count the hydroxyl substituents.
+    # We require exactly one substituent oxygen attached to the ring that shows an O-H pattern (neutral).
+    for ring in candidate_rings:
         oh_count = 0
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
             for nb in atom.GetNeighbors():
-                # Consider only neighbors not in the ring.
+                # Consider only substituents not part of the ring.
                 if nb.GetIdx() in ring:
                     continue
-                # Look only at oxygen atoms.
+                # Look for oxygen atoms.
                 if nb.GetAtomicNum() != 8:
                     continue
-                # Exclude oxygens that are part of a nitro group.
-                # If the neighbor oxygen is in the same nitro match, skip.
-                is_nitro_oxygen = False
-                for nitro_idx in nitro_match:
-                    if nb.GetIdx() == nitro_idx:
-                        is_nitro_oxygen = True
-                        break
-                if is_nitro_oxygen:
+                # Skip oxygens that are part of the nitro group.
+                if nb.GetIdx() in nitro_match:
                     continue
-                
-                # Determine if oxygen is in a hydroxyl state.
-                # Either it possesses at least one hydrogen (explicitly attached)
-                # or it carries a negative formal charge (phenolate form).
-                h_count = nb.GetTotalNumHs()
-                if h_count > 0 or nb.GetFormalCharge() == -1:
+                # Check for the hydroxyl property: 
+                # It must have at least one hydrogen attached and it must be neutral (formal charge 0).
+                if nb.GetFormalCharge() == 0 and nb.GetTotalNumHs() >= 1:
                     oh_count += 1
-        if oh_count != 1:
-            # For a phenol ring there must be exactly one hydroxyl substituent.
-            return False, f"Ring found (with nitro attachment) has {oh_count} hydroxyl(s) instead of exactly one"
-
-        # If we reach here then the ring is a benzene with exactly one hydroxyl substituent.
-        # Our nitro group is attached to this ring as well.
-        return True, "Molecule contains exactly one nitro group attached to a benzene ring with one hydroxyl substituent"
+                    
+        if oh_count == 1:
+            return True, "Molecule contains exactly one nitro group attached to a benzene ring with one neutral hydroxyl substituent"
     
-    # If none of the candidate rings meets the criteria then return False.
-    return False, "No benzene ring with exactly one hydroxyl substituent (phenol) attached to the nitro group was found"
+    return False, "No benzene ring with exactly one neutral hydroxyl substituent (phenol) attached to the nitro group was found"
 
 
 # Example usage for testing:
 if __name__ == "__main__":
-    # A simple test with 3-nitrophenol:
+    # Test with 3-nitrophenol:
     test_smiles = "Oc1cccc(c1)[N+]([O-])=O"
     result, reason = is_mononitrophenol(test_smiles)
     print("Result:", result)
