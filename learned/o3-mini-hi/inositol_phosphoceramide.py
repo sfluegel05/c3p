@@ -6,12 +6,13 @@ Classifies: Inositol Phosphoceramide
 Definition: A phosphosphingolipid in which an inositol residue and the ceramide moiety are 
 linked via a phosphodiester bridge. The ceramide moiety contains substituents (typically an amide bond
 and long aliphatic chains) that vary with different sphingoid bases and fatty acyl moieties.
-This implementation:
-  - Searches for an inositol ring with a relaxed SMARTS (allowing alternate stereo annotations).
-  - Looks for an amide bond (C(=O)N) as evidence of the ceramide part.
-  - Iterates phosphorus atoms to find one that has at least one P=O and at least two single-bonded oxygens,
-    with the single bonds connecting one branch to the inositol ring and one branch to non-inositol (the ceramide).
-  - Requires the molecule to meet minimal molecular weight and carbon count.
+This implementation improves upon a previous attempt by:
+  - Using two alternate SMARTS patterns to detect an inositol ring.
+  - Requiring the presence of an amide bond (C(=O)N) as evidence of the ceramide.
+  - Checking for a phosphorus atom bearing at least one P=O (double‐bonded oxygen) and two single‐bonded oxygens,
+    one of which must be directly attached to an inositol atom and at least one branch (checked via a short bond path)
+    must lead to an amide carbon.
+  - Requiring the overall molecule to meet minimal molecular weight and carbon count thresholds.
 """
 
 from rdkit import Chem
@@ -22,13 +23,14 @@ def is_inositol_phosphoceramide(smiles: str):
     Determines if a molecule is an inositol phosphoceramide based on its SMILES string.
     
     The method checks:
-      1) The presence of an inositol ring substructure: a cyclohexane bearing an OH on each carbon.
-         (Here we try a main SMARTS and an alternate as backup.)
+      1) The presence of an inositol ring substructure using two alternate SMARTS patterns.
       2) The presence of a ceramide moiety indicated by an amide bond (C(=O)N).
-      3) A phosphodiester linkage in which a phosphorus atom (P) has at least one double‐bonded oxygen (P=O)
-         and two single‐bonded oxygens, among which one branch is linked to the inositol substructure
-         and the other branch goes to the ceramide side.
-      4) A minimum overall molecular weight and number of carbon atoms.
+      3) For at least one phosphorus atom (P):
+            - It must have at least one P=O (double‐bonded oxygen) and at least two oxygens bound via single bonds.
+            - Among its single‐bonded oxygens, one must attach to a carbon known to be part of an inositol ring.
+            - At least one of the remaining oxygens must connect (via a short path, ≤3 bonds) to a carbonyl
+              carbon from an amide bond.
+      4) A minimum overall molecular weight and number of carbon atoms (to avoid very small molecules).
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -41,42 +43,42 @@ def is_inositol_phosphoceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # --- Step 1: Find the inositol ring ---
-    # Try a primary SMARTS pattern for myo-inositol as seen in many compounds.
+    # --- Step 1: Detect an inositol ring ---
+    # First try a stereochemically strict myo-inositol pattern.
     inositol_smarts1 = "O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O"
     inositol_query = Chem.MolFromSmarts(inositol_smarts1)
     inositol_matches = mol.GetSubstructMatches(inositol_query)
-    # If no match, try an alternate pattern that is less stereochemically strict.
     if not inositol_matches:
+        # If not found, try a less stereochemically strict pattern.
         inositol_smarts2 = "OC1C(O)C(O)C(O)C(O)C1O"
         inositol_query = Chem.MolFromSmarts(inositol_smarts2)
         inositol_matches = mol.GetSubstructMatches(inositol_query)
     if not inositol_matches:
         return False, "Missing inositol ring substructure"
     
-    # Collect all atom indices that are part of an inositol match.
+    # Collect all atom indices that constitute the inositol(s)
     inositol_atom_indices = set()
     for match in inositol_matches:
         inositol_atom_indices.update(match)
     
-    # --- Step 2: Find evidence of a ceramide moiety (look for at least one amide bond: C(=O)N) ---
+    # --- Step 2: Find evidence for a ceramide moiety (look for an amide bond: C(=O)N) ---
     amide_smarts = "C(=O)N"
     amide_query = Chem.MolFromSmarts(amide_smarts)
     amide_matches = mol.GetSubstructMatches(amide_query)
     if not amide_matches:
         return False, "Missing ceramide amide bond"
     
-    # For reference we collect the carbonyl carbons involved in amide bonds.
+    # For later use, note the carbonyl carbons (first atom in the match) that appear in amide bonds.
     amide_carbons = set(match[0] for match in amide_matches)
     
-    # --- Step 3: Check for the phosphodiester linkage ---
+    # --- Step 3: Check for a phosphodiester linkage that bridges inositol and ceramide ---
     phosphate_found = False
+    # Loop over all phosphorus atoms.
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 15:   # phosphorus atomic number
+        if atom.GetAtomicNum() != 15:
             continue
         p_atom = atom
         bonds = p_atom.GetBonds()
-        # Collect oxygens attached to phosphorus via different bond types.
         double_bonded_os = []
         single_bonded_os = []
         for bond in bonds:
@@ -91,34 +93,36 @@ def is_inositol_phosphoceramide(smiles: str):
         if len(double_bonded_os) < 1 or len(single_bonded_os) < 2:
             continue
         
-        # Check the connectivity: 
-        # - Look for at least one single-bonded oxygen that connects (via its other bond) 
-        #   to the inositol ring.
-        # - Look for at least one single-bonded oxygen that connects to a fragment outside inositol.
-        inositol_connected = False
-        ceramide_connected = False
+        found_inositol_branch = False
+        found_ceramide_branch = False
+        # For each single-bonded oxygen check connectivity.
         for oxy in single_bonded_os:
-            # For each oxygen, check its neighbors (other than phosphorus)
+            # Look at neighbors of the oxygen besides the phosphorus.
             for nbr in oxy.GetNeighbors():
                 if nbr.GetIdx() == p_atom.GetIdx():
                     continue
-                # If the neighbor is part of the inositol substructure, mark it.
+                # If the neighbor is part of the inositol ring, mark that branch.
                 if nbr.GetIdx() in inositol_atom_indices:
-                    inositol_connected = True
+                    found_inositol_branch = True
                 else:
-                    # As a proxy for ceramide connectivity, we require either
-                    # that atom is not in the inositol set OR it is near an amide bond.
-                    ceramide_connected = True
-            if inositol_connected and ceramide_connected:
+                    # Otherwise, check if this branch leads to a ceramide signature.
+                    # We check if the current oxygen is within a short path (<=3 bonds) to any amide carbon.
+                    for amide_c in amide_carbons:
+                        path = Chem.rdmolops.GetShortestPath(mol, oxy.GetIdx(), amide_c)
+                        if 0 < len(path) - 1 <= 3:
+                            found_ceramide_branch = True
+                            break
+            # If already found both connections, no need to check further.
+            if found_inositol_branch and found_ceramide_branch:
                 phosphate_found = True
                 break
         if phosphate_found:
             break
-    
+
     if not phosphate_found:
-        return False, "Phosphodiester linkage (connecting phosphate to both inositol and ceramide) not detected"
+        return False, "Phosphodiester linkage (bridging inositol and ceramide) not detected"
     
-    # --- Step 4: Overall molecular size check ---
+    # --- Step 4: Overall size checks ---
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 500:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) for inositol phosphoceramide"
@@ -126,12 +130,18 @@ def is_inositol_phosphoceramide(smiles: str):
     if carbon_count < 25:
         return False, f"Too few carbons ({carbon_count}) to be an inositol phosphoceramide"
     
-    return True, "Molecule contains an inositol ring, an amide bond (indicative of ceramide), and a phosphate group that bridges inositol to ceramide"
+    return True, "Molecule contains an inositol ring, an amide bond (ceramide), and a phosphate that bridges them"
 
-# Example usage for testing:
+# For example usage:
 if __name__ == "__main__":
-    # A sample SMILES from one of the provided examples:
-    test_smiles = "CCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CCCCCCCCCCCCCC"
-    result, reason = is_inositol_phosphoceramide(test_smiles)
-    print("Classification:", result)
-    print("Reason:", reason)
+    # A positive example SMILES:
+    smiles_examples = [
+        "C(CCCCCCCC[C@H]([C@H]([C@H](COP(O[C@H]1[C@@H]([C@H]([C@@H]([C@H]([C@H]1O)O)O)O)O)(=O)O)NC(=O)C(CCCCCCCCCCCCCCCCCCCCCCCC)O)O)OCCCCC",
+        "CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1OC1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O)[C@H](O)C(O)CCCCCCCCCCCCCCCC"
+    ]
+    for smi in smiles_examples:
+        result, reason = is_inositol_phosphoceramide(smi)
+        print("SMILES:", smi)
+        print("Classification:", result)
+        print("Reason:", reason)
+        print("-----")
