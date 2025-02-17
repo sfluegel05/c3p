@@ -3,10 +3,13 @@ Classifies: CHEBI:47908 alkanethiol
 """
 """
 Classifies: alkanethiol
-Definition: An alkanethiol is a compound in which a thiol (-SH) group is attached to an alkyl (i.e. non‐aromatic, “simple”) carbon.
-The classifier first rejects molecules that contain extra functional groups (for example, carboxyl, carbonyl, phosphate, sulfonic, ester, amide, or dithiocarbamate groups)
-that indicate the –SH function is embedded in a more complex framework.
-Then it looks for at least one –SH (thiol) group attached to a non‐aromatic carbon that is not itself directly conjugated to a carbonyl.
+Definition: An alkanethiol is a compound in which a sulfanyl (-SH) group is attached to an alkyl (i.e. non‐aromatic, “simple”) carbon.
+This classifier first rejects molecules that contain additional functional groups (e.g. carbonyl, phosphate, sulfonic acid, dithiocarbamate and amide groups)
+that indicate the –SH is embedded in a more complex framework. Next it looks for at least one –SH group where the sulfur
+(a) carries at least one hydrogen;
+(b) is attached to exactly one heavy neighbor which is a carbon;
+(c) that carbon is non‐aromatic, sp³ (i.e. “saturated”) and is not directly bound (via double bonds or certain heteroatoms) to groups 
+that would indicate additional functionalities (e.g. nitrogen, phosphorus, or a carbonyl bonded oxygen).
 """
 
 from rdkit import Chem
@@ -15,9 +18,10 @@ def is_alkanethiol(smiles: str):
     """
     Determines if a molecule is a simple alkanethiol based on its SMILES string.
     
-    A simple alkanethiol is defined as one that contains at least one thiol (-SH) group attached directly to an alkyl (non‐aromatic) carbon and 
-    does not contain additional functional groups (e.g. carboxyl, carbonyl (ketone/aldehyde), ester, amide, phosphate, sulfonic, or dithiocarbamate)
-    that would complicate the classification.
+    A valid alkanethiol contains at least one thiol (-SH) group attached directly to an sp3 (saturated) non‐aromatic alkyl carbon.
+    Additionally, the molecule must not contain extra functional groups such as carbonyl, phosphate, sulfonic or dithiocarbamate groups.
+    Also, the carbon directly bound to the SH must not be directly attached to disallowed atoms (e.g. nitrogen, phosphorus, halogens)
+    or be involved in a C=O bond.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -26,93 +30,80 @@ def is_alkanethiol(smiles: str):
         bool: True if the molecule is classified as a simple alkanethiol, False otherwise.
         str: Explanation for the classification decision.
     """
-    # Try to parse the SMILES. If invalid, we immediately return an error.
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Note: UpdatePropertyCache may be useful.
-    mol.UpdatePropertyCache()
-
-    # Disallowed functionality patterns indicating a molecule is more complex than a simple alkanethiol.
+    
+    mol.UpdatePropertyCache(strict=False)
+    
+    # Disallowed functionality patterns.
+    # We reject molecules that include groups beyond a simple alkyl framework.
     disallowed_smarts = [
-        "C(=O)N",         # amide group
-        "[CX3](=O)[OX1,H]",# carboxylic acid or ester group
-        "[CX3](=O)[#6]",   # ketone or aldehyde (carbonyl adjacent to a carbon)
-        "P(=O)(O)O",      # phosphate group
-        "S(=O)(=O)[O;H,-]",# sulfonic acid group
-        "C(=S)(S)",       # dithiocarbamate motif
+        "[CX3]=[OX1]",      # Carbonyl groups (ketones, aldehydes, carboxylic acids, esters etc.)
+        "P(=O)(O)(O)",      # Phosphate/phosphonic acid groups
+        "S(=O)(=O)",        # Sulfonic acid groups
+        "C(=S)(S)",         # Dithiocarbamate motif
+        "C(=O)N",           # Amide groups
     ]
     for smarts in disallowed_smarts:
         pat = Chem.MolFromSmarts(smarts)
         if pat is not None and mol.HasSubstructMatch(pat):
             return False, f"Molecule contains disallowed functionality matching: {smarts}"
-
-    # Now search for valid thiol (-SH) groups.
-    # A valid thiol here is defined as:
-    #   (1) A sulfur atom (atomic number 16) that has at least one hydrogen (explicit or implicit).
-    #   (2) It has exactly one heavy (non-hydrogen) neighbor.
-    #   (3) That neighbor is a carbon (atomic number 6) that is not aromatic.
-    #   (4) In addition, the carbon neighbor should not be directly linked to a carbonyl (C=O) or an aromatic atom.
-    found_valid_thiol = False
-    found_thiol = False  # any S with H
     
+    # Now search for valid thiol (-SH) candidates.
+    valid_candidate = False
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 16:
-            continue  # not sulfur
-        # Check that the sulfur carries at least one hydrogen (explicit or implicit)
+        if atom.GetAtomicNum() != 16:  # must be sulfur
+            continue
+        # Check that sulfur carries at least one hydrogen (explicit or implicit)
         if atom.GetTotalNumHs() < 1:
             continue
-
-        # Get heavy (non-hydrogen) neighbors. For a –SH group we expect exactly one.
+        # Get heavy (non-hydrogen) neighbors
         heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
         if len(heavy_neighbors) != 1:
-            continue  # not a simple thiol moiety
-        found_thiol = True  # we at least encountered a candidate S
-
+            continue
         neighbor = heavy_neighbors[0]
-        if neighbor.GetAtomicNum() != 6:
-            continue  # sulfur must be bound to a carbon
-        if neighbor.GetIsAromatic():
-            continue  # disqualify if the carbon is aromatic
-
-        # Check the carbon neighbor's attachments.
-        # It should not be directly attached (via a double bond) to an oxygen
-        # or be attached to any aromatic atom.
+        if neighbor.GetAtomicNum() != 6:  # must be carbon
+            continue
+        if neighbor.GetIsAromatic():    # should be alkyl, not aromatic
+            continue
+        # Require that the neighboring carbon is sp3 (saturated).
+        if neighbor.GetHybridization() != Chem.rdchem.HybridizationType.SP3:
+            continue
+        
+        # Now inspect the neighbors of the carbon (except the sulfur in question).
+        # Allowed atoms for the carbon attached to the thiol: H, C, O, and S.
+        # Disallow if the carbon is directly bonded to disallowed atoms (e.g., nitrogen, phosphorus, halogens)
+        allowed_atomic_nums = {1, 6, 8, 16}
         disqualify = False
         for nbr in neighbor.GetNeighbors():
             if nbr.GetIdx() == atom.GetIdx():
                 continue
-            bond = mol.GetBondBetweenAtoms(neighbor.GetIdx(), nbr.GetIdx())
-            if bond is None:
-                continue
-            # if there is a double bond to an oxygen → carbonyl functionality
-            if bond.GetBondTypeAsDouble() == 2 and nbr.GetAtomicNum() == 8:
+            if nbr.GetAtomicNum() not in allowed_atomic_nums:
                 disqualify = True
                 break
-            # if the neighbor is aromatic then do not count this candidate
-            if nbr.GetIsAromatic():
+            # Also, if the bond is a double bond to an oxygen then it indicates a carbonyl and must be disqualified.
+            bond = mol.GetBondBetweenAtoms(neighbor.GetIdx(), nbr.GetIdx())
+            if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and nbr.GetAtomicNum() == 8:
                 disqualify = True
                 break
         if disqualify:
             continue
-
-        # We found a valid –SH group attached to a non-aromatic alkyl carbon.
-        found_valid_thiol = True
+        
+        # Passed all tests: we found a valid simple -SH candidate.
+        valid_candidate = True
         break
-
-    if found_valid_thiol:
-        return True, "Contains at least one -SH group on a non-aromatic alkyl carbon with no disqualifying adjacent functionalities."
-    elif found_thiol:
-        # We found a thiol group but its neighboring environment was not acceptable.
-        return False, "Found -SH group(s) but attached carbon is conjugated or attached to disallowed functionality."
+    
+    if valid_candidate:
+        return True, "Contains at least one -SH group attached to an sp3 alkyl carbon with no disqualifying adjacent functionalities."
     else:
-        return False, "No valid -SH (thiol) group found in the molecule."
+        return False, "No valid simple alkanethiol group found or molecule contains disallowed functionalities."
 
 # Example usage when running this script directly.
 if __name__ == "__main__":
     test_examples = [
-        # True positives (expected to be classified as simple alkanethiols)
+        # True positives (should be classified as simple alkanethiols)
         ("SC(C(C)C)C", "3-Methyl-2-butanethiol"),
         ("CC(C)S", "propane-2-thiol"),
         ("SC(C(C)C)CO", "xi-2-Mercapto-3-methyl-1-butanol"),
@@ -130,7 +121,7 @@ if __name__ == "__main__":
         ("SCCCCCCS", "1,6-Hexanedithiol"),
         ("CCSCCS", "2-(ethylsulfanyl)ethanethiol"),
         ("S\\C=C(\\CC)/C", "2-Methyl-1-propenethiol"),
-        ("CCCC(C)SCCCO", "4-sulfanyloctan-1-ol"),  # slight variation of the SMILES given
+        ("CCCC(C)SCCCO", "4-sulfanyloctan-1-ol"),
         ("SCC(CC)C", "2-Methyl-1-butanethiol"),
         ("C(C(S)CCO)C", "3-mercaptopentanol"),
         ("SCCCCCCCCS", "1,8-Octanedithiol"),
@@ -139,34 +130,34 @@ if __name__ == "__main__":
         ("SC(CCC)(CO)C", "2-Mercapto-2-methyl-1-pentanol"),
         ("SCC(CCCC)CC", "2-Ethyl-1-hexanethiol"),
         ("SC1CCCC1", "Cyclopentanethiol"),
-        # Molecules with extra functionality that should be rejected.
-        ("NC(CCS)C(O)=O", "homocysteine"),
-        ("S(O)(=O)(=O)CCC(N)CS", "3-Amino-4-sulfanylbutane-1-sulfonic acid"),
+        # Molecules that should be rejected (for extra functionality or non-alkyl attachment)
         ("SCCC(O)C", "4-Mercapto-2-butanol"),
-        ("[O-]C(=O)CC(S)C([O-])=O", "2-mercaptosuccinate"),
-        ("[NH3+][C@@H](CCS)C([O-])=O", "L-homocysteine zwitterion"),
-        ("SC(CC(=O)C)C", "4-Mercapto-2-pentanone"),
-        ("C1CC2C(C1)C3CC2CC3OC(=S)S", "LSM-5150"),
-        ("SC(CC)C(=O)C", "3-Mercapto-2-pentanone"),
-        ("SC(CCC)CCOC(=O)CCCCC", "3-Mercaptohexyl hexanoate"),
-        ("SC(CCCCC(O)=O)CCSCN", "8-[(Aminomethyl)sulfanyl]-6-sulfanyloctanoic acid"),
-        ("N[C@@H](CS)C(O)=O", "L-cysteine"),
-        ("[O-]C(=O)CS", "thioglycolate(1-)"),
-        ("OC(=O)CCCC[C@H](S)CCS", "(S)-dihydrolipoic acid"),
-        ("CC(S)C(O)=O", "2-mercaptopropanoic acid"),
-        ("SC1(CCC(C(C)C)C(=O)C1)C", "cis- and trans-L-Mercapto-p-menthan-3-one"),
-        ("SC(C)C(OCC)=O", "Ethyl 2-mercaptopropionate"),
-        ("C([C@H](CS)N)(=O)O.Cl", "L-cysteine hydrochloride"),
-        ("S[C@H]1[C@H](O)[C@](O)(C=2C(=O)C=3C(O)=CC=CC3OC2C1)C(=O)OC", "Incarxanthone B"),
-        ("SC(C1=CC=CC=C1)C", "1-Phenylethane-1-thiol"),
-        ("C(=S)(S)N(CC)CC", "diethyldithiocarbamic acid"),
-        ("SCCC(=O)C", "4-Mercapto-2-butanone"),
-        ("CC(C)(S)[C@H](N)C(O)=O", "L-penicillamine"),
-        ("[NH3+][C@@H](CS)C([O-])=O", "L-cysteine zwitterion"),
-        ("[O-]C(=O)CCS", "3-mercaptopropionate"),
-        ("C(=S)(S)N(CCCC)CCCC", "dibutyldithiocarbamic acid"),
+        ("SC#N", "thiocyanic acid"),
+        ("O[C@@H](CS)[C@@H](O)CS", "L-1,4-dithiothreitol"),
+        ("SC(C(O)C)C", "3-Mercapto-2-butanol"),
+        ("S/C(=N\\C1=C(CC)C=CC=C1CC)/NN", "N1-(2,6-diethylphenyl)hydrazine-1-carbothioamide"),
+        ("S(C(S)CCCCC)C", "1-(Methylthio)-1-hexanethiol"),
+        ("S1CCC(S)=C1C", "4,5-Dihydro-2-methyl-3-thiophenethiol"),
+        ("NCCS", "cysteamine"),
+        ("S(C(C(S)C)C)C(C(O)C)C", "3-[(2-Mercapto-1-methylpropyl)thio]-2-butanol"),
+        ("SC(C1CCC(=CC1)C)(C)C", "2-(4-Methylcyclohex-3-en-1-yl)propane-2-thiol"),
+        ("SC(CC(O)C)(C)C", "(+/-)-4-Mercapto-4-methyl-2-pentanol"),
+        ("SC(CCOC=O)(C)C", "3-Mercapto-3-methylbutyl formate"),
+        ("O([C@@H]1[C@H]([C@H]([C@@H]([C@H](O1)CO)O)O[C@@H]2[C@H]([C@H]([C@@H]([C@H](O2)CO)O)O)O)C[C@H]3O[C@@H]([C@H]([C@H]([C@@H]3O)O)O)O[C@H]4[C@@H]([C@H]([C@@H](O[C@@H]4CO)OCCCCCCS)N)O", "alpha-D-Man-(1->2)-alpha-D-Man-(1->6)-alpha-D-Man-(1->4)-beta-D-GlcN-O[CH2]6SH"),
+        ("S(C(S)CC)CCC", "xi-1-(Propylthio)-1-propanethiol"),
+        ("OCC(O)CS", "monothioglycerol"),
+        ("C1=NC2=C(C(=N1)N)N=CN2C3[C@H]([C@H](C(O3)CO)O)S", "(3S,4S)-5-(6-aminopurin-9-yl)-2-(hydroxymethyl)-4-mercapto-3-oxolanol"),
+        ("SCCCS", "propane-1,3-dithiol"),
+        ("OC(CS)C(O)CS", "1,4-dimercaptobutane-2,3-diol"),
+        ("CSCCC\\C(S)=N\\O", "4-Methylthiobutylthiohydroximate"),
+        ("O[C@H](CS)[C@H](O)CS", "D-1,4-dithiothreitol"),
+        ("OCC(S)CS", "dimercaprol"),
+        ("S(C(S)CC)C(S)CC", "1,1'-Thiobis-1-propanethiol"),
+        ("O[C@@H](CS)[C@H](O)CS", "dithioerythritol"),
+        ("SC1CC(OC1C)C", "2,5-Dimethyl-3-mercaptotetrahydrofuran"),
+        ("SC(CCOC)(C)C", "4-Methoxy-2-methyl-2-butanethiol"),
     ]
     
     for smi, name in test_examples:
         result, explanation = is_alkanethiol(smi)
-        print(f"SMILES: {smi:50s} NAME: {name:40s} -> {result} ({explanation})")
+        print(f"SMILES: {smi:70s} NAME: {name:40s} -> {result} ({explanation})")
