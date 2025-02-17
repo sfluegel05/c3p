@@ -3,103 +3,88 @@ Classifies: CHEBI:36233 disaccharide
 """
 """
 Classifies: Disaccharide
-A disaccharide is defined as a compound in which two monosaccharides (typically in the form of a furanose or pyranose ring)
-are joined by a glycosidic bond.
-The algorithm works in two stages:
-  1) Identify candidate monosaccharide rings by examining each ring (from rdkit's ring info) for being either a 5-membered (furanose)
-     ring with exactly 1 oxygen and 4 carbons, or a 6-membered (pyranose) ring with exactly 1 oxygen and 5 carbons.
-  2) Identify a glycosidic linkage by finding an oxygen (outside of the rings) that connects (via bonds) to at least one carbon in each of the two rings.
-If both conditions are met then the molecule is classified as a disaccharide.
+A disaccharide is defined as a compound in which two monosaccharides are joined by a glycosidic bond.
+This algorithm makes two key checks:
+  1) Identify candidate monosaccharide rings – we assume these are 5-membered (furanose) or 6-membered (pyranose)
+     rings that contain exactly one ring oxygen and the remaining ring atoms are carbons.
+  2) Check that exactly two such rings are found and that there is at least one exocyclic oxygen 
+     that bonds to one atom in one ring and one atom in the other (i.e. a glycosidic linkage).
 """
 from rdkit import Chem
 
 def is_disaccharide(smiles: str):
     """
     Determines if a molecule is a disaccharide based on its SMILES string.
-    
-    A disaccharide should contain exactly two candidate sugar rings (either 5-membered or 6-membered with one ring oxygen)
-    connected by a glycosidic linkage (an oxygen bridging carbons from each ring).
-    
+
+    A disaccharide should be composed of exactly two monosaccharide rings (typically 5- or 6-membered rings
+    with one ring oxygen and the rest carbons) connected by a glycosidic linkage, which is assumed here to be
+    an exocyclic oxygen that is simultaneously bonded to atoms in both rings.
+
     Args:
-        smiles (str): SMILES string of the molecule.
-        
+        smiles (str): SMILES string of the molecule
+
     Returns:
-        bool: True if the molecule is classified as a disaccharide, False otherwise.
-        str: A reason for the classification result.
+        bool: True if molecule is a disaccharide, False otherwise
+        str: Reason for classification
     """
-    # Convert SMILES to molecule
+    # Parse SMILES string into molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Retrieve ring information from the molecule
-    ring_info = mol.GetRingInfo()
-    rings = ring_info.AtomRings()  # each ring is a tuple of atom indices
 
-    candidate_rings = []  # to store sets of atom indices that look like sugar rings
-    
-    # Check each ring to see if it qualifies as a monosaccharide ring.
-    for ring in rings:
-        ring_atoms = list(ring)
-        # Only consider rings of size 5 or 6
-        if len(ring_atoms) not in (5, 6):
-            continue
-        # Count oxygen and carbon atoms in the ring.
-        o_count = 0
-        c_count = 0
-        for idx in ring_atoms:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 8:
-                o_count += 1
-            elif atom.GetAtomicNum() == 6:
-                c_count += 1
-        # For a 5-membered ring (furanose): expect 1 oxygen and 4 carbons.
-        if len(ring_atoms) == 5 and o_count == 1 and c_count == 4:
-            candidate_rings.append(set(ring_atoms))
-        # For a 6-membered ring (pyranose): expect 1 oxygen and 5 carbons.
-        elif len(ring_atoms) == 6 and o_count == 1 and c_count == 5:
-            candidate_rings.append(set(ring_atoms))
-    
-    # We expect exactly 2 candidate sugar rings for a disaccharide.
+    # Extract ring information from the molecule
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()  # tuple of tuples; each tuple contains atom indices for that ring
+
+    candidate_rings = []  # list of sets; each set is the indices of a candidate monosaccharide ring
+    # Look for rings that are either 5- or 6-membered and contain exactly one oxygen with the rest carbons.
+    for ring in atom_rings:
+        if len(ring) not in (5, 6):
+            continue  # only consider 5- or 6-membered rings
+        atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
+        oxygen_count = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 8)
+        carbon_count = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 6)
+        # In a typical sugar ring, there is exactly one ring oxygen and the other atoms are carbons.
+        if oxygen_count == 1 and carbon_count == (len(ring) - 1):
+            candidate_rings.append(set(ring))
+
+    # For a disaccharide we require exactly two candidate sugar rings.
     if len(candidate_rings) != 2:
         return False, f"Found {len(candidate_rings)} candidate sugar ring(s); exactly 2 are needed for a disaccharide."
-    
-    ring1, ring2 = candidate_rings
 
-    # Now look for the glycosidic bridge:
-    # We search for an oxygen atom that is not part of either ring, and that is bonded to at least one carbon atom in each ring.
-    glyco_found = False
+    ring1, ring2 = candidate_rings[0], candidate_rings[1]
+
+    # Look for a glycosidic linkage.
+    # We assume that the glycosidic bond is an exocyclic oxygen (i.e. not in either ring)
+    # that bridges atoms from ring1 and ring2.
+    glycosidic_found = False
     for atom in mol.GetAtoms():
-        # Work only with oxygen atoms.
+        # Consider only oxygen atoms
         if atom.GetAtomicNum() != 8:
             continue
-        # Skip oxygens that are already part of one of the rings.
-        if atom.GetIdx() in ring1 or atom.GetIdx() in ring2:
+        idx = atom.GetIdx()
+        # Skip oxygen atoms that are part of one of the candidate rings;
+        # the bridging oxygen should lie outside the ring.
+        if idx in ring1 or idx in ring2:
             continue
-        
-        # Check neighbors: we want at least one neighbor in ring1 and one in ring2 that is a carbon.
         neighbors = atom.GetNeighbors()
-        in_ring1 = False
-        in_ring2 = False
-        for nbr in neighbors:
-            if nbr.GetAtomicNum() != 6:   # only consider carbon neighbors
-                continue
-            if nbr.GetIdx() in ring1:
-                in_ring1 = True
-            if nbr.GetIdx() in ring2:
-                in_ring2 = True
+        if len(neighbors) < 2:
+            continue  # unlikely to be a bridging oxygen
+        # Check if one neighbor belongs to ring1 and a different neighbor belongs to ring2.
+        in_ring1 = any(nei.GetIdx() in ring1 for nei in neighbors)
+        in_ring2 = any(nei.GetIdx() in ring2 for nei in neighbors)
         if in_ring1 and in_ring2:
-            glyco_found = True
+            glycosidic_found = True
             break
-    
-    if not glyco_found:
-        return False, "No glycosidic linkage bridging the two sugar rings was found."
-    
-    return True, "Contains exactly two monosaccharide rings joined by a glycosidic bond."
 
-# Example usage for testing (uncomment the code below to run tests):
+    if glycosidic_found:
+        return True, "Contains exactly two monosaccharide rings joined by a glycosidic bond."
+    else:
+        return False, "No glycosidic linkage found that connects the two sugar rings."
+
+# Example usage (for testing):
 if __name__ == "__main__":
-    # Example: alpha-L-Fucp-(1->6)-alpha-D-Glcp
+    # Test with one of the known disaccharide SMILES strings
     test_smiles = "O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@H]1O)CO[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C"
     result, reason = is_disaccharide(test_smiles)
     print(result, reason)
