@@ -4,16 +4,15 @@ Classifies: CHEBI:17636 sphingomyelin d18:1
 #!/usr/bin/env python
 """
 Classifies: Sphingomyelin d18:1 – any sphingomyelin having sphingosine as the sphingoid component.
-
-Heuristic criteria applied in this version:
+Heuristic criteria (improved):
   1. Must contain the phosphocholine head group (SMARTS: "COP(=O)([O-])OCC[N+](C)(C)C").
   2. Must contain an amide bond (SMARTS: "NC(=O)").
-  3. Must NOT contain ester bonds indicative of glycerophospholipids (SMARTS: "[CX3](=O)O[CX4]").
-  4. Must have a minimum overall number of carbon atoms (here, at least 35).
-  5. Must have at least one isolated (i.e. nonaromatic) C=C double bond.
-  6. Must contain a sphingosine-like backbone – a fragment where a chiral carbon bears the phosphocholine head group,
-     is directly attached to a second chiral carbon that carries the amide substituent (i.e. the fatty acyl chain),
-     followed by a third chiral carbon bearing an –OH group.
+  3. Must NOT contain ester bonds (SMARTS: "[CX3](=O)O[CX4]") typical for glycerophospholipids.
+  4. Must have a minimum overall number of carbons (here, at least 35).
+  5. Must have at least one isolated (nonaromatic) C=C double bond.
+  6. Must contain a sphingosine-like backbone – a fragment where a carbon bearing an –O–phosphocholine group
+     is directly connected to a carbon carrying an N-acyl substituent, followed by a carbon bearing an –OH group.
+     (A relaxed SMARTS is used for this fragment.)
      
 Note: These are heuristic rules and may not capture every nuance of sphingomyelin d18:1.
 """
@@ -33,13 +32,12 @@ def is_sphingomyelin_d18_1(smiles: str):
         bool: True if the molecule is classified as sphingomyelin d18:1, False otherwise.
         str: Reason for the classification.
     """
-    # Try to parse the molecule.
+    # Parse the molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string."
     
     # 1. Check for the phosphocholine head group.
-    # SMARTS that matches –O–P(=O)([O-])–O–CC[N+](C)(C)C
     phos_choline_smarts = "COP(=O)([O-])OCC[N+](C)(C)C"
     phos_choline = Chem.MolFromSmarts(phos_choline_smarts)
     if not mol.HasSubstructMatch(phos_choline):
@@ -69,19 +67,20 @@ def is_sphingomyelin_d18_1(smiles: str):
         return False, "No isolated C=C double bond found (required for unsaturation in sphingosine backbone)."
     
     # 6. Check for the sphingosine backbone.
-    # Heuristic SMARTS: A chiral carbon bearing the phosphocholine head group
-    # linked to a chiral carbon that bears an amide substituent, followed by a chiral carbon with an –OH.
-    sphingosine_smarts = "[C@@H](OP(=O)([O-])OCC[N+](C)(C)C)-[C@@H](NC(=O))-[C@@H](O)"
+    # Improved heuristic SMARTS: a carbon bearing an –O–phosphocholine group, directly connected to
+    # a carbon with an amide substituent, followed by a carbon with an –OH.
+    #
+    # This SMARTS does not rely on strict chiral specification.
+    sphingosine_smarts = "C(OP(=O)([O-])OCC[N+](C)(C)C)-C(NC(=O))-C(O)"
     sphingosine_frag = Chem.MolFromSmarts(sphingosine_smarts)
     if not mol.HasSubstructMatch(sphingosine_frag):
         return False, "Sphingosine backbone (with phosphocholine attachment, N-acyl linkage and hydroxyl) not detected."
     
-    # If all heuristic criteria are met, classify as sphingomyelin d18:1.
-    return True, "Molecule contains the phosphocholine head group, N-acyl linkage, no extraneous ester bonds, adequate carbon count, unsaturation, and a sphingosine-like backbone."
+    # Molecule passed all criteria.
+    return True, "Molecule contains the phosphocholine head group, N-acyl linkage, no ester bonds, adequate carbon count, unsaturation, and a sphingosine-like backbone."
 
 # Example usage:
 if __name__ == "__main__":
-    # Test examples that should be classified as sphingomyelin d18:1.
     examples = [
         # N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine
         "C(=C\\C/C=C\\CCCCC)\\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\\C=C\\CCCCCCCCCCCCC)O)O",
