@@ -3,92 +3,102 @@ Classifies: CHEBI:15693 aldose
 """
 """
 Classifies: Aldose – Aldehydic parent sugars (polyhydroxy aldehydes H[CH(OH)]nC(=O)H, n >= 2) and their intramolecular hemiacetals.
+We now require that the overall molecule be of a size consistent with a monosaccharide (3 to 8 carbons).
+For open-chain aldoses we require a terminal aldehyde group, at least 3 hydroxyl groups, and the overall carbon count in range.
+For cyclic aldoses we require a 5- or 6-membered ring with exactly one ring oxygen, at least 2 exocyclic hydroxyl groups on ring carbons,
+and again that the overall carbon count is small.
 """
 
 from rdkit import Chem
 
 def is_aldose(smiles: str):
     """
-    Determines if a molecule is an aldose (open-chain polyhydroxy aldehyde or its intramolecular hemiacetal)
+    Determines if a molecule is an aldose (either an open-chain polyhydroxy aldehyde or its cyclic hemiacetal form)
     based on its SMILES string.
     
-    The criteria are:
-      - For open-chain aldoses: Must contain a terminal aldehyde group (–CHO), at least three hydroxyl (–OH) groups,
-        and at least three carbon atoms.
-      - For cyclic (hemiacetal) forms: Looks for a 5- or 6-membered ring that contains exactly one oxygen (the ring oxygen)
-        and several hydroxyl groups attached to the ring carbons.
-      
+    Improving on the previous version:
+      - We first check that the molecule is not “too big” (typical parent sugars have 3-8 carbons).
+      - For open-chain: we require the presence of a terminal aldehyde group ([CH1](=O))
+        and at least three hydroxyl groups (as measured by [OX2H]).
+      - For cyclic forms (typically furanose/pyranose rings): we require a 5- or 6-membered ring with exactly one oxygen,
+        with the remaining atoms being carbons and with at least 2 exocyclic hydroxyl groups attached.
+    
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
         bool: True if molecule qualifies as an aldose, False otherwise.
         str: Reason for the classification.
     """
     
-    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Count total carbon atoms; an aldose must have at least 3 carbons.
+    # Count total carbon atoms in the molecule
     c_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
-    if len(c_atoms) < 3:
-        return False, "Not enough carbon atoms to be an aldose"
+    n_carbons = len(c_atoms)
+    # Parent sugars (aldoses) are small molecules (typically 3-8 carbons)
+    if not (3 <= n_carbons <= 8):
+        return False, f"Total carbon count ({n_carbons}) is not in the typical range for a parent aldose (3-8)"
     
-    # Count hydroxyl groups (-OH) using a simple SMARTS pattern.
+    # Count hydroxyl groups (-OH) using a SMARTS pattern [OX2H]
     oh_pattern = Chem.MolFromSmarts("[OX2H]")
-    hydroxyl_matches = mol.GetSubstructMatches(oh_pattern)
-    if len(hydroxyl_matches) < 3:
-        return False, "Not enough hydroxyl groups for a polyhydroxy aldehyde (need at least three -OH groups)"
+    oh_matches = mol.GetSubstructMatches(oh_pattern)
+    n_oh = len(oh_matches)
     
-    # First, check for an open-chain aldehyde.
-    # The SMARTS pattern looks for a CHO group (a carbon with one hydrogen bound to a =O).
+    # Try open-chain aldose: must have a terminal aldehyde and at least 3 hydroxyl groups.
     aldehyde_pattern = Chem.MolFromSmarts("[CH1](=O)")
     if mol.HasSubstructMatch(aldehyde_pattern):
-        # Found an aldehyde. This meets the open-chain part of the definition.
-        return True, "Open-chain molecule with aldehyde and sufficient hydroxyl groups detected"
+        if n_oh >= 3:
+            return True, "Open-chain molecule with aldehyde and sufficient hydroxyl groups detected"
+        else:
+            return False, f"Open-chain aldehyde detected but only {n_oh} hydroxyl groups found (need at least 3)"
     
-    # If no free aldehyde is found, check for a cyclic structure (intramolecular hemiacetal).
+    # Otherwise, try cyclic (hemiacetal) structure.
     ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
+    rings = ring_info.AtomRings()
     
-    # Look at each ring and try to find a typical carbohydrate ring
-    for ring in atom_rings:
-        ring_size = len(ring)
-        # Only consider 5- or 6-membered rings (furanose or pyranose rings)
-        if ring_size not in (5, 6):
+    # Check each ring that is 5 or 6 atoms in size
+    for ring in rings:
+        if len(ring) not in (5, 6):
             continue
-
-        # Count oxygen atoms within the ring.
-        ring_o_count = 0
+        # Count oxygens in the ring and collect the ring carbon indices
+        ring_oxygen_count = 0
         ring_carbon_indices = []
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
             if atom.GetAtomicNum() == 8:
-                ring_o_count += 1
+                ring_oxygen_count += 1
             elif atom.GetAtomicNum() == 6:
                 ring_carbon_indices.append(idx)
-        # In typical aldose rings there is exactly one ring oxygen.
-        if ring_o_count != 1:
+        
+        # In a typical carbohydrate ring (pyranose or furanose) there is exactly one ring oxygen.
+        if ring_oxygen_count != 1:
             continue
-
-        # Now count hydroxyl groups attached to the ring carbons.
-        ring_oh_count = 0
+        
+        # For a furanose ring, there are 4 carbons; for pyranose, 5 carbons.
+        if len(ring_carbon_indices) not in (4, 5):
+            continue
+        
+        # Check for exocyclic hydroxyl groups at the ring carbons.
+        exo_oh_count = 0
         for idx in ring_carbon_indices:
             atom = mol.GetAtomWithIdx(idx)
-            # For each carbon, check neighbors for an -OH group.
+            # Look at neighbors outside the ring
             for neighbor in atom.GetNeighbors():
-                # Exclude atoms that are also in the ring to consider only exocyclic hydroxyls.
                 if neighbor.GetIdx() in ring:
                     continue
+                # Look for an -OH group connected: oxygen with at least one hydrogen
                 if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() >= 1:
-                    ring_oh_count += 1
-                    break  # Count one -OH per ring carbon
+                    exo_oh_count += 1
+                    break  # count only one per ring carbon
         
-        # It is common for a monosaccharide ring to have hydroxyl groups attached
-        # to at least 2 (often more) of its ring carbons.
-        if ring_oh_count >= 2:
+        if exo_oh_count >= 2:
             return True, "Cyclic hemiacetal structure consistent with an aldose detected (sugar ring with hydroxyls)"
     
     return False, "No open-chain aldehyde or typical cyclic monosaccharide (hemiacetal) pattern detected"
+
+# For testing you might call:
+# print(is_aldose("OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O"))  # alpha-D-glucose (True)
+# print(is_aldose("O=C1OC[C@@H]2O[C@@H](O[C@@H]3..."))  # should be rejected as too large
