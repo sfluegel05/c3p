@@ -2,18 +2,20 @@
 Classifies: CHEBI:33857 aromatic primary alcohol
 """
 """
-Classifies: Aromatic primary alcohol
+Classifies: Aromatic Primary Alcohol
 Definition:
-  An aromatic primary alcohol is defined as any primary alcohol in which the alcoholic hydroxy group 
-  is attached to a carbon which is itself bonded to an aromatic ring.
+  An aromatic primary alcohol is any primary alcohol in which the alcoholic hydroxy 
+  group (-OH) is attached to a carbon which is itself bonded to an aromatic ring.
   
-We improved the previous approach that solely relied on the SMARTS "c[CH2][OH]". Instead, we:
+Improved approach:
   1. Parse the molecule and add explicit hydrogens.
   2. Iterate over all carbon atoms.
-  3. For each carbon, check if it is bonded to a terminal –OH group (i.e. its only oxygen neighbor has degree 1),
-     and verify that it is a CH2 group (by counting its hydrogens).
-  4. Also check whether that carbon is connected to at least one aromatic atom.
-If all these criteria are met, we classify the molecule as an aromatic primary alcohol.
+  3. For each carbon, check if it has a hydroxyl neighbor. Instead of using GetDegree() 
+     for the oxygen, count its heavy (non-hydrogen) neighbors: for a hydroxyl group, the oxygen
+     should have exactly one heavy neighbor (i.e. the carbon).
+  4. Verify that the carbon is primary by checking that it has exactly 2 hydrogens.
+  5. Also check that this carbon is connected to at least one aromatic atom.
+If all these conditions are met for at least one carbon, we classify the molecule as an aromatic primary alcohol.
 """
 
 from rdkit import Chem
@@ -22,9 +24,8 @@ def is_aromatic_primary_alcohol(smiles: str):
     """
     Determines if a molecule is an aromatic primary alcohol based on its SMILES string.
     
-    An aromatic primary alcohol is one in which the hydroxyl group (-OH) is attached to a primary
-    carbon (CH2) and that carbon is also bonded to at least one aromatic atom. This implementation 
-    explicitly checks for these criteria.
+    An aromatic primary alcohol is one where the hydroxyl group (-OH) is attached to a primary
+    carbon (CH2) and that carbon is also bonded (directly) to at least one aromatic atom.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -39,60 +40,92 @@ def is_aromatic_primary_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add explicit hydrogens (this is crucial to properly count H atoms on the CH2 group)
+    # Add explicit hydrogens so that we can count them correctly.
     mol = Chem.AddHs(mol)
     
-    # Iterate over all atoms to look for a primary alcohol group (CH2OH) whose 
-    # carbon is bonded to at least one aromatic atom.
+    # Iterate over carbons to look for a candidate primary alcohol group.
     for atom in mol.GetAtoms():
-        # We are interested in carbon atoms only.
-        if atom.GetAtomicNum() == 6:
-            # Check if this carbon has an attached hydroxyl group and is CH2.
-            oh_neighbor = None
-            # Look at the neighbors.
-            for nbr in atom.GetNeighbors():
-                # Identify an oxygen that is part of a hydroxyl group.
-                # Here we require that the oxygen is terminal (has degree 1, i.e. bonded only to the carbon)
-                if nbr.GetAtomicNum() == 8 and nbr.GetDegree() == 1:
-                    oh_neighbor = nbr
+        # Consider only carbon atoms.
+        if atom.GetAtomicNum() != 6:
+            continue
+
+        # Look for a hydroxyl oxygen among its neighbors.
+        oh_found = False
+        for nbr in atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 8:  # oxygen
+                # Count "heavy" (non-hydrogen) neighbors of the oxygen.
+                heavy_neighbors = [n for n in nbr.GetNeighbors() if n.GetAtomicNum() != 1]
+                # For a terminal hydroxyl group, oxygen should have exactly one heavy neighbor (the carbon).
+                if len(heavy_neighbors) == 1:
+                    oh_found = True
                     break
-            
-            # If no hydroxyl neighbor was found, skip this carbon.
-            if oh_neighbor is None:
+                    
+        if not oh_found:
+            # No hydroxyl group on this carbon, so skip.
+            continue
+        
+        # Check that this carbon is primary: it should have exactly two hydrogens.
+        # GetTotalNumHs() includes all implicit and explicit hydrogens.
+        if atom.GetTotalNumHs() != 2:
+            continue
+        
+        # Now check that this carbon is bonded to at least one aromatic atom.
+        aromatic_neighbor = False
+        for nbr in atom.GetNeighbors():
+            # Exclude the oxygen we already used for -OH by ensuring neighbor is not oxygen 
+            # or, if oxygen, it might not be aromatic.
+            if nbr.GetAtomicNum() == 8:
                 continue
+            if nbr.GetIsAromatic():
+                aromatic_neighbor = True
+                break
             
-            # Check that the carbon is primary: it should have exactly two hydrogen atoms.
-            # Using GetTotalNumHs (which includes implicit hydrogens after AddHs)
-            num_h = atom.GetTotalNumHs()
-            if num_h != 2:
-                continue
-            
-            # Check that the same carbon is bonded to at least one aromatic atom.
-            has_aromatic_neighbor = False
-            for nbr in atom.GetNeighbors():
-                # Skip the oxygen we already used.
-                if nbr.GetAtomicNum() == 8:
-                    continue
-                if nbr.GetIsAromatic():
-                    has_aromatic_neighbor = True
-                    break
-            
-            if has_aromatic_neighbor:
-                return True, "Molecule contains an aromatic primary alcohol group"
+        if aromatic_neighbor:
+            return True, "Molecule contains an aromatic primary alcohol group"
     
-    # If no matching substructure was found, return False.
     return False, "No aromatic primary alcohol group found"
 
-# Example usage (for manual testing; can be removed if using as a module):
+# Example usage (for manual testing; can be removed when using as a module):
 if __name__ == "__main__":
     examples = {
         "4-acetoxybenzyl alcohol": "CC(=O)OC1=CC=C(CO)C=C1",
         "3-pyridinemethanol": "C1=CC(=CN=C1)CO",
+        "triptohypol A": "O=C1C=C2[C@@]3([C@]([C@]4([C@@](CC3)(CC[C@](C4)(C(=O)O)C)C)[H])(CC[C@]2(C=5C1=C(C(OC)=C(O)C5)CO)C)C)C",
+        "(7R,8R)-AGI-B4": "COC(=O)[C@H]1[C@H](O)C=Cc2oc3cc(CO)cc(O)c3c(=O)c12",
+        "virensol A": "CCCCC\\C=C\\C=C\\C=C\\C1=C(CO)C(O)=CC=C1O",
+        "4-amino-5-hydroxymethyl-2-methylpyrimidine": "Cc1ncc(CO)c(N)n1",
+        "tremuloidin": "O1[C@@H]([C@@H](O)[C@H](O)[C@@H](OC(=O)C2=CC=CC=C2)[C@@H]1OC=3C(=CC=CC3)CO)CO",
+        "dihydropyriculariol": "C1=CC=C(C(=C1/C=C/C=C/[C@H]([C@H](C)O)O)CO)O",
+        "1',4-dihydroxymidazolam": "C1(=NC(C=2N(C=3C1=CC(=CC3)Cl)C(=NC2)CO)O)C=4C=CC=CC4F",
         "2-methylbenzyl alcohol": "CC1=C(CO)C=CC=C1",
+        "4-aminopyridine-3-methanol": "C=1C=NC=C(C1N)CO",
+        "5-hydroxymethyl-2-furoic acid": "OCC=1OC(C(O)=O)=CC1",
+        "1-hydroxymidazolam": "C1(=NCC=2N(C=3C1=CC(=CC3)Cl)C(=NC2)CO)C=4C=CC=CC4F",
+        "12-hydroxynevirapine": "O=C1NC=2C(N(C3CC3)C=4N=CC=CC41)=NC=CC2CO",
+        "michigazone": "COC1=CC2=NC3=C(OC2=C(OC)C1=O)C=CC(CO)=C3",
+        "gentisyl alcohol": "C=1(C=C(C(=CC1)O)CO)O",
+        "3,5-dimethylbenzyl alcohol": "CC1=CC(CO)=CC(C)=C1",
+        "2-hydroxy-4-hydroxymethylbenzylidenepyruvic acid": "[H]C(=CC(=O)C(O)=O)c1ccc(CO)cc1O",
+        "GSK1016790A": "C=1C2=C(C=CC1)SC(=C2)C(=O)N[C@@H](CC(C)C)C(=O)N3CCN(CC3)C(=O)[C@H](CO)NS(C=4C=CC(=CC4Cl)Cl)(=O)=O",
+        "5-(hydroxymethyl)cytosine": "Nc1nc(=O)[nH]cc1CO",
+        "salicin": "OC[C@H]1O[C@@H](Oc2ccccc2CO)[C@H](O)[C@@H](O)[C@@H]1O",
+        "2-pyrimidinemethanol": "OCC1=NC=CC=N1",
+        "(S)-oxamniquine": "CC(C)NC[C@@H]1CCc2cc(CO)c(cc2N1)[N+]([O-])=O",
+        "1-butylpyrraline": "CCCCn1c(CO)ccc1C=O",
+        "2-hydroxymethyl-3-pentylphenol": "CCCCCC1=C(CO)C(O)=CC=C1",
+        "1-neopentylpyrraline": "CC(C)(C)Cn1c(CO)ccc1C=O",
+        "1-propylpyrraline": "CCCCn1c(CO)ccc1C=O",
+        "1-(5-carboxypentyl)pyrraline": "OCc1ccc(C=O)n1CCCCCC(O)=O",
+        "lificiguat": "C(N1N=C(C2=C1C=CC=C2)C=3OC(=CC3)CO)C=4C=CC=CC4",
+        "4-(hydroxymethyl)-2-propylfuran-3-carboxylic acid": "CCCC1=C(C(O)=O)C(CO)=CO1",
+        "virensol B": "CCCCC\\C=C\\C=C\\C=C\\C1=C(CO)C(O)=CC=C1",
+        "2,4-dimethylbenzyl alcohol": "CC1=CC=C(CO)C(C)=C1",
+        "(R)-oxamniquine": "CC(C)NC[C@H]1CCc2cc(CO)c(cc2N1)[N+]([O-])=O",
+        "3,4-dimethylbenzyl alcohol": "CC1=CC=C(CO)C=C1C",
+        "Aloe emodin": "OCc1cc(O)c2C(=O)c3c(O)cccc3C(=O)c2c1",
         "4-cyanobenzyl alcohol": "C1(=CC=C(C=C1)C#N)CO",
-        # Some additional examples to test borderline cases.
     }
     
-    for name, smiles in examples.items():
-        result, reason = is_aromatic_primary_alcohol(smiles)
-        print(f"{name} ({smiles}): {result}, {reason}")
+    for name, smi in examples.items():
+        res, reason = is_aromatic_primary_alcohol(smi)
+        print(f"{name}: {res} - {reason}")
