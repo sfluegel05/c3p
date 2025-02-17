@@ -3,10 +3,10 @@ Classifies: CHEBI:134249 alkanesulfonate oxoanion
 """
 """
 Classifies: alkanesulfonate oxoanion
-Definition: An alkanesulfonate in which the carbon at position 1 (attached to the sulfonate group)
-represents the terminal carbon of an alkyl chain. In other words, the molecule must contain a sulfonate
-group –S(=O)(=O)[O-] directly attached to an sp3 (non‐aromatic, acyclic) carbon that has at most one 
-other carbon neighbour.
+Definition: An alkanesulfonate oxoanion is one in which the sulfonate group –S(=O)(=O)[O–]
+is directly attached to an sp³ (non‐aromatic, acyclic) carbon. In the original definition this carbon 
+was meant to be at position 1 (the “alkyl” terminus) but some valid examples (e.g. isopropyl sulfonate)
+show that the carbon may have two alkyl substituents provided those substituents are not aromatic.
 """
 
 from rdkit import Chem
@@ -15,11 +15,14 @@ from rdkit.Chem import rdchem
 def is_alkanesulfonate_oxoanion(smiles: str):
     """
     Determines if a molecule is an alkanesulfonate oxoanion based on its SMILES string.
-    For our purposes we require that the molecule contains a –S(=O)(=O)[O-] group directly 
+    
+    For our purposes we require that the molecule contains a –S(=O)(=O)[O–] group that is directly 
     attached to a carbon that is:
-       • sp3 hybridized,
+       • sp³ hybridized,
        • not in a ring,
-       • and terminal in an alkyl chain (i.e. that carbon has at most one carbon neighbor).
+       • and while it may have one or two carbon neighbors, any such carbon neighbor must not be aromatic.
+       
+    For example, taurine and its acyl derivatives or even isopropyl sulfonate (propane-2-sulfonate) would be acceptable.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -28,76 +31,73 @@ def is_alkanesulfonate_oxoanion(smiles: str):
         bool: True if the molecule is classified as an alkanesulfonate oxoanion, False otherwise.
         str: Reason for the classification decision.
     """
-    # Parse the SMILES string into an RDKit molecule.
+    # Parse SMILES into a molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern for sulfonate group attached to a non-aromatic carbon.
-    # "[C;!a]S(=O)(=O)[O-]" means:
-    # • a carbon that is not aromatic,
-    # • that is directly attached to a sulfur bearing two double-bonded oxygens and one negative oxygen.
-    sulfonate_pattern = Chem.MolFromSmarts("[C;!a]S(=O)(=O)[O-]")
-    
-    # Find all matches for that pattern.
+    # Define a SMARTS pattern for a sulfonate moiety attached to a carbon.
+    # We start with a general pattern: a non‐aromatic carbon ([#6;!a]) directly attached to a sulfur 
+    # that is doubly bonded to two oxygens and singly bonded to an oxygen with negative charge.
+    sulfonate_pattern = Chem.MolFromSmarts("[#6;!a]S(=O)(=O)[O-]")
     matches = mol.GetSubstructMatches(sulfonate_pattern)
     if not matches:
         return False, "No sulfonate pattern (C-S(=O)(=O)[O-]) found"
     
-    # Iterate over each match and apply extra filtering.
-    # The match indices correspond to (carbon, sulfur, oxygen, oxygen, oxygen).
+    # Iterate over each matching candidate; the match is a tuple of atom indices corresponding to:
+    # (candidate carbon, sulfur, oxygen, oxygen, oxygen).
     for match in matches:
-        # Get the candidate carbon (first index) and the attached sulfur (second index)
-        carbon = mol.GetAtomWithIdx(match[0])
-        sulfur = mol.GetAtomWithIdx(match[1])
+        candidate_idx = match[0]
+        sulfur_idx = match[1]
+        candidate = mol.GetAtomWithIdx(candidate_idx)
+        sulfur = mol.GetAtomWithIdx(sulfur_idx)
         
-        # Check 1: Carbon must be sp3 hybridized.
-        if carbon.GetHybridization() != rdchem.HybridizationType.SP3:
-            continue  # skip if not sp3
-        
-        # Check 2: Carbon must not be in a ring.
-        if carbon.IsInRing():
-            continue  # skip if in a ring
-            
-        # Check 3: Verify that aside from the sulfur bond, the carbon is terminal.
-        # Count the number of carbon neighbors (atomic num 6) other than the sulfur.
-        carbon_neighbors = 0
-        for neighbor in carbon.GetNeighbors():
-            # Ignore the sulfur directly attached.
-            if neighbor.GetIdx() == sulfur.GetIdx():
-                continue
-            if neighbor.GetAtomicNum() == 6:
-                carbon_neighbors += 1
-                
-        # For a terminal carbon, we expect at most one carbon neighbor.
-        if carbon_neighbors > 1:
-            continue  # not terminal on an alkyl chain
-        
-        # (Optional extra check: Make sure that none of the other heavy neighbors are aromatic.
-        # This was part of the earlier filter; here we mainly focus on the terminal nature.)
-        valid = True
-        for neighbor in carbon.GetNeighbors():
-            if neighbor.GetIdx() == sulfur.GetIdx():
-                continue
-            if neighbor.GetAtomicNum() > 1 and neighbor.GetIsAromatic():
-                valid = False
-                break
-        if not valid:
+        # Check 1: candidate carbon must be sp3 hybridized.
+        if candidate.GetHybridization() != rdchem.HybridizationType.SP3:
             continue
         
-        # If we reached here, we have a valid alkanesulfonate oxoanion moiety.
-        return True, "Contains an alkanesulfonate oxoanion moiety attached to a terminal sp3 carbon"
+        # Check 2: candidate carbon must not be in a ring.
+        if candidate.IsInRing():
+            continue
         
-    # If no match passes all filters, then the moiety is not in an appropriate alkane context.
-    return False, "Found sulfonate group but not attached to a terminal sp3 (acyclic, non-aromatic) carbon"
+        # Check 3: Determine the number of carbon neighbors (ignoring the bonded sulfur).
+        # In our revised criteria, we allow one or two carbon neighbors.
+        carbon_neighbors = []
+        for neighbor in candidate.GetNeighbors():
+            if neighbor.GetIdx() == sulfur.GetIdx():
+                continue  # skip the attached sulfur
+            if neighbor.GetAtomicNum() == 6:
+                carbon_neighbors.append(neighbor)
+        
+        # Allow candidate carbon with at most 2 carbon neighbors.
+        if len(carbon_neighbors) > 2:
+            continue
+        
+        # Check 4: Ensure that any directly attached carbon neighbor is not aromatic;
+        # if one is aromatic, then the local environment is not a simple alkyl chain.
+        skip = False
+        for nbr in carbon_neighbors:
+            if nbr.GetIsAromatic():
+                skip = True
+                break
+        if skip:
+            continue
+        
+        # If all criteria are satisfied for this matching candidate, we classify this molecule as valid.
+        return True, "Contains an alkanesulfonate oxoanion moiety attached to an sp3 (acyclic, non-aromatic) carbon"
     
-# (Optional) Main block to run simple tests:
+    # If no valid candidate passed all filters, then we do not classify this molecule as an alkanesulfonate oxoanion.
+    return False, "Found sulfonate group but not attached to a suitable sp3 (acyclic, non-aromatic) carbon"
+
+# (Optional) Main block to run a few tests:
 if __name__ == "__main__":
     test_smiles = [
-        "C(C(NCCS([O-])(=O)=O)=O)CCCCCCCCCCCCCCCCCC",      # N-icosanoyltaurine(1-): should be True
-        "CC(=O)NCCCS([O-])(=O)=O",                        # acamprosate(1-): True
-        "OCCS([O-])(=O)=O",                              # isethionate: True
-        "[K+].[K+].[H]C(=CC([H])=CC([H])=C1N(CCCCS([O-])(=O)=O)c2ccc(cc2C1(C)C)C=C([H])C1=[N+](CCCCS([O-])(=O)=O)c2ccc(cc2C1(C)C)S([O-])(=O)=O",  # NIR-3 dye; likely False
+        "C(C(NCCS([O-])(=O)=O)=O)CCCCCCCCCCCCCCCCCC",      # N-icosanoyltaurine(1-) should pass.
+        "CC(=O)NCCCS([O-])(=O)=O",                        # acamprosate(1-) should pass.
+        "OCCS([O-])(=O)=O",                              # isethionate should pass.
+        "OC[C@H](O)CS([O-])(=O)=O",                       # (2S)-3-sulfopropanediol(1-) should pass.
+        "CC(C)S([O-])(=O)=O",                            # propane-2-sulfonate; our revised method accepts a secondary (non-terminal) alkyl.
+        "[K+].[K+].[H]C(=CC([H])=CC([H])=C1N(CCCCS([O-])(=O)=O)c2ccc(cc2C1(C)C)C=C([H])C1=[N+](CCCCS([O-])(=O)=O)c2ccc(cc2C1(C)C)S([O-])(=O)=O",  # False positive dye expected to fail.
     ]
     for sm in test_smiles:
         res, reason = is_alkanesulfonate_oxoanion(sm)
