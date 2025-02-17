@@ -4,11 +4,14 @@ Classifies: CHEBI:28034 beta-D-galactoside
 """
 Classifies: beta-D-galactoside
 
-Definition: A beta-D-galactoside is any D-galactoside having beta-configuration at its anomeric centre.
-Here we adopt a heuristic approach by looking for a pyranose ring fragment that is characteristic of
-a beta-D-galactopyranoside. Many beta-D-galactosides have a glycosidic linkage depicted as an O–C( ) bond
-joining the aglycone and a six-membered sugar ring whose stereochemistry corresponds to that of D-galactose.
-We use two SMARTS patterns that capture common portrayals of this motif.
+Definition: A beta-D-galactoside is any D-galactoside having beta-configuration
+at its anomeric centre. In many examples (e.g. methyl beta-D-galactoside),
+the glycosidic linkage is drawn as:
+  CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O
+In this improved approach we require that the fragment is a complete pyranose ring
+(i.e. exactly one ring oxygen, five carbons, and the CH2OH substituent)
+with the anomeric carbon drawn with beta stereochemistry ([C@@H]).
+This more strict SMARTS pattern is intended to reduce false positive matches.
 """
 
 from rdkit import Chem
@@ -17,44 +20,54 @@ def is_beta_D_galactoside(smiles: str):
     """
     Determines if a molecule is a beta-D-galactoside based on its SMILES string.
     
-    Uses a couple of SMARTS fragments that capture a beta-D-galactopyranoside moiety.
-    (A beta glycoside is one in which the substituent at the anomeric carbon is on the same side as the 
-    CH2OH group of the sugar ring; the SMARTS here are chosen from common examples and may not catch all cases.)
-    
+    This function uses a SMARTS pattern that captures a complete beta-D-galactopyranoside 
+    moiety. The pattern is designed to require:
+      - a six-membered sugar ring (pyranose) with exactly one oxygen atom,
+      - the anomeric center specified with beta stereochemistry ([C@@H]),
+      - and the primary alcohol (CH2OH) substituent.
+      
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
         bool: True if molecule appears to be a beta-D-galactoside, False otherwise.
-        str: Reason for the classification.
+        str: Explanation for the classification.
     """
     
-    # Parse the SMILES string into an RDKit molecule.
+    # Parse the SMILES into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define two SMARTS patterns that are intended to capture the beta-D-galactoside sugar ring.
-    # Many beta-D-galactosides (e.g. methyl beta-D-galactoside) feature a glycosidic oxygen 
-    # attached to a six-membered ring with a pattern such as one of the following.
+    # Improved SMARTS pattern for a beta-D-galactopyranoside moiety.
+    # This pattern matches a six-membered ring with one ring oxygen and five carbons,
+    # where the anomeric carbon (the one connected to an external O) is drawn as [C@@H]
+    # (indicating beta linkage) and the ring contains the primary CH2OH substituent.
     #
-    # Pattern 1: uses the chiral specification [C@@H] at the anomeric carbon.
-    # Example match: "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"
+    # The pattern below was built based on the common example for methyl beta-D-galactoside:
+    # "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"
     #
-    # Pattern 2: a variant allowing the anomeric carbon to be specified as [C@H] (depending on how the sugar is
-    # rendered in the SMILES). These patterns are heuristic.
-    smarts_pattern1 = "O[C@@H]1O[C@H]([*])[C@H](O)[C@H](O)[C@H]1O"
-    smarts_pattern2 = "O[C@H]1O[C@H]([*])[C@H](O)[C@H](O)[C@H]1O"
+    # Explanation of the pattern:
+    #  - "O[C@@H]1" : a glycosidic oxygen bonded to an anomeric carbon with beta configuration.
+    #  - "O[C@H](CO)" : the next ring atom is an oxygen-bearing carbon with a CH2OH group.
+    #  - Followed by three consecutive "[C@H](O)" atoms;
+    #  - "[C@H]1O" closes the ring with a hydroxyl substituent.
+    #
+    # Note: While some valid variations exist, this pattern is more selective than the previous ones.
+    smarts_beta_gal = "O[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"
+    patt = Chem.MolFromSmarts(smarts_beta_gal)
+    if patt is None:
+        return None, "Error creating SMARTS pattern"
     
-    patt1 = Chem.MolFromSmarts(smarts_pattern1)
-    patt2 = Chem.MolFromSmarts(smarts_pattern2)
-    
-    # Check if either of the patterns is present in the molecule.
-    if mol.HasSubstructMatch(patt1) or mol.HasSubstructMatch(patt2):
-        return True, "Contains beta-D-galactoside moiety based on SMARTS matching"
+    # Search for the SMARTS pattern in the molecule.
+    if mol.HasSubstructMatch(patt):
+        return True, "Contains beta-D-galactoside moiety based on specific SMARTS matching"
     else:
         return False, "Beta-D-galactoside moiety not found"
         
-# Example usage (uncomment to test):
-# test_smiles = "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"  # methyl beta-D-galactoside
-# print(is_beta_D_galactoside(test_smiles))
+# Example usage:
+if __name__ == "__main__":
+    # Example: methyl beta-D-galactoside (should be classified as True)
+    test_smiles = "CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O"
+    result, reason = is_beta_D_galactoside(test_smiles)
+    print(test_smiles, "->", result, "|", reason)
