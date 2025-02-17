@@ -3,9 +3,10 @@ Classifies: CHEBI:32955 epoxide
 """
 """
 Classifies: Epoxide
-Definition: Any cyclic ether in which the oxygen atom forms part of a 3‐membered ring.
-An epoxide has one oxygen and two carbons in a three‐membered ring, with all bonds being single bonds
-and (typically) all atoms adopting sp³ hybridization.
+Definition: Any cyclic ether in which the oxygen atom forms part of a 3-membered ring.
+An epoxide is defined here as a 3-membered ring that contains exactly one oxygen and two carbons,
+all bonds in the ring must be single, and the carbons must not be directly conjugated (i.e. have
+exocyclic double bonds) so that they represent a saturated epoxide motif.
 """
 
 from rdkit import Chem
@@ -15,7 +16,8 @@ def is_epoxide(smiles: str):
     """
     Determines whether the molecule (given as a SMILES string) can be classified as an epoxide.
     We define an epoxide as any 3-membered ring (cyclic) containing exactly one oxygen and two carbons,
-    where all bonds in the ring are single bonds and all three atoms are sp³-hybridized.
+    where all bonds in the ring are single and none of the carbon atoms is directly conjugated to an external
+    double bond.
 
     Args:
         smiles (str): SMILES string for the molecule.
@@ -29,26 +31,31 @@ def is_epoxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    valid_epoxide_count = 0
-    ring_info = mol.GetRingInfo().AtomRings()  # list of tuples of atom indices for each ring
+    # Retrieve ring information.
+    ring_info = mol.GetRingInfo().AtomRings()  # each ring is a tuple of atom indices
 
-    # Iterate over each ring and check if it is a 3-membered ring matching our criteria.
+    valid_epoxide_count = 0
+
+    # Iterate over each ring.
     for ring in ring_info:
         if len(ring) != 3:
-            continue  # not a 3-membered ring
+            continue  # Only consider 3-membered rings
 
-        # Get the atoms in the ring.
+        # Get atoms in the ring.
         atoms_in_ring = [mol.GetAtomWithIdx(idx) for idx in ring]
         
-        # Count how many oxygens and carbons are present.
+        # Quick check: if any atom is aromatic, skip the ring.
+        if any(atom.GetIsAromatic() for atom in atoms_in_ring):
+            continue
+
+        # Count the types.
         oxygen_count = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 8)
         carbon_count = sum(1 for atom in atoms_in_ring if atom.GetAtomicNum() == 6)
-        # For a valid epoxide, we should have exactly one oxygen and two carbons.
         if oxygen_count != 1 or carbon_count != 2:
             continue
 
-        # Check that the bonds connecting the 3 atoms are all single bonds.
-        # In a 3-membered ring the bonds are between: atom0-atom1, atom1-atom2, and atom2-atom0.
+        # Check that all bonds in the ring are single bonds.
+        # There are three bonds: between atom0-atom1, atom1-atom2, and atom2-atom0.
         bond01 = mol.GetBondBetweenAtoms(ring[0], ring[1])
         bond12 = mol.GetBondBetweenAtoms(ring[1], ring[2])
         bond20 = mol.GetBondBetweenAtoms(ring[2], ring[0])
@@ -59,9 +66,23 @@ def is_epoxide(smiles: str):
             bond20.GetBondType() != rdchem.BondType.SINGLE):
             continue
 
-        # Check that all atoms in the ring are sp³ hybridized.
-        # (Epoxides are typically sp³; a deviation may indicate a different chemical environment.)
-        if not all(atom.GetHybridization() == rdchem.HybridizationType.SP3 for atom in atoms_in_ring):
+        # For each carbon in the epoxide ring, make sure that no bond going outside the ring is a double bond.
+        ring_set = set(ring)
+        skip_ring = False
+        for atom in atoms_in_ring:
+            if atom.GetAtomicNum() == 6:  # only check for carbons
+                for bond in atom.GetBonds():
+                    # if the neighbor is inside the ring, skip; else check bond type.
+                    nei = bond.GetOtherAtom(atom)
+                    if nei.GetIdx() in ring_set:
+                        continue
+                    # If an exocyclic double bond is found, then this ring is conjugated.
+                    if bond.GetBondType() == rdchem.BondType.DOUBLE:
+                        skip_ring = True
+                        break
+                if skip_ring:
+                    break
+        if skip_ring:
             continue
 
         # If all criteria are met, count this ring as a valid epoxide.
@@ -72,12 +93,14 @@ def is_epoxide(smiles: str):
     else:
         return False, "No valid epoxide ring (3-membered cyclic ether with one oxygen and two carbons) found"
 
+
 # (Optional test code)
 if __name__ == "__main__":
-    # Examples and counterexamples can be tried here.
+    # A few test cases to see how classification works.
     test_smiles = [
-        "CCCCC\\C=C/C\\C=C/C=C/C=C/[C@@H]1O[C@H]1CCCC(O)=O",  # leukotriene A4 (should be True)
-        "O=C1C2=C(O)C3=C(O)C=C(OC)C4=C3C(=C2C5(O)C6(C1(O)C(O)=C(C(=O)C6)C(=O)N)O5)CC74C(=CCCC7(C)C)C"  # example false positive
+        "CCCCCC\\C=C/C\\C=C/C=C/C=C/[C@@H]1O[C@H]1CCCC(O)=O",  # leukotriene A4; should be True
+        "COc1cc2CN3CC[C@]4([C@H]5O[C@H]5CCC34)c2cc1OC",          # Zephyramine; expected NOT to be a valid isolated epoxide.
+        "C1O[C@@H]1c1ccccc1",                                      # (R)-styrene oxide; should be True
     ]
     for s in test_smiles:
         result, reason = is_epoxide(s)
