@@ -4,103 +4,130 @@ Classifies: CHEBI:36916 cation
 """
 Classifies chemical entities of the class cation:
 A monoatomic or polyatomic species having one or more elementary charges of the proton.
-This improved classifier uses overall net formal charge along with SMARTS matching
-for permanent (non-pH‐dependent) cationic functional groups.
+This improved classifier combines overall net charge, molecular weight and SMARTS matching for
+permanent cationic functional groups to better separate standalone cations from zwitterions
+or molecules with only pH‐dependent protonations.
 """
 
 from rdkit import Chem
+from rdkit.Chem import Descriptors
 
 def is_cation(smiles: str):
     """
     Determines if a molecule is a cation based on its SMILES string.
     
-    A molecule is classified as a cation if:
-      - It has a net formal charge greater than zero and at least one cationic site is recognized,
-    OR
-      - It shows net zero overall formal charge but contains a permanent cationic functional group
-        (such as quaternary ammonium or aromatic nitrogen) or the sum of positive formal charges
-        outweighs negative ones.
-        
-    Note:
-      Because many molecules are zwitterions, the algorithm first checks the net charge.
-      Then for species with net zero, it compares the total positive versus negative centers.
-      It also uses refined SMARTS patterns: for example, protonated primary amines (e.g. [NH3+])
-      may be pH dependent; so only if such groups are present without a typical carboxylate (C(=O)[O-])
-      will they be taken as evidence of a standalone cation.
+    Improved strategy:
+      1. Compute the overall net formal charge.
+      2. For net positive species:
+           a. If the molecule is a single atom (e.g. metal cation) => classify as cation.
+           b. If the molecular weight is low (<150 Da), require the presence of a robust 
+              (permanent) cationic substructure (e.g. quaternary ammonium, aromatic nitrogen, 
+              guanidinium).
+           c. For heavier molecules (>=150 Da), also reject those that combine a protonated amine 
+              with a carboxylate (suggesting a zwitterion) unless a permanent cationic group is present.
+      3. For net zero species, check if the sum of positive charges outweighs the negatives 
+         or if a permanent cationic fragment is present.
+      4. Net negative species are not cations.
       
-    Args:
-        smiles (str): SMILES string of the molecule.
-        
     Returns:
-        bool: True if the molecule is classified as a cation, False otherwise.
-        str: Explanation of the classification.
+        bool: True if classified as a cation, False otherwise.
+        str: Explanation for the classification decision.
     """
+    
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     # Compute overall net formal charge
     net_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    mol_wt = Descriptors.ExactMolWt(mol)
     
-    # Define several SMARTS patterns for (potentially) permanent cationic groups
-    # Here the quaternary ammonium (no attached hydrogen) is generally pH‐independent:
-    quaternary_ammonium = Chem.MolFromSmarts("[N+](C)(C)(C)")
-    # Aromatic or heterocyclic nitrogen positive centers (e.g. thiazolium, pyridinium)
+    # Define SMARTS patterns for permanent cationic groups:
+    # Quaternary ammonium (no attached hydrogen – pH‐independent)
+    quaternary = Chem.MolFromSmarts("[N+;H0]")
+    # Aromatic nitrogen cation (e.g. pyridinium)
     aromatic_nitrogen = Chem.MolFromSmarts("[n+]")
-    # Protonated amines (often pH-dependent); these appear in many zwitterions.
-    protonated_amine = Chem.MolFromSmarts("[NH3+]")
+    # Guanidinium group (commonly seen in arginine derivatives)
+    guanidinium = Chem.MolFromSmarts("NC(=[NH2+])N")
+    # Generic positive nitrogen (any nitrogen with positive formal charge)
+    positive_n = Chem.MolFromSmarts("[N+]")
+    # (For our purposes we treat a positively charged N that is not quaternary/aromatic/guanidinium
+    #  as pH-dependent and subject to molecular-weight filtering.)
     
-    # Also define anionic groups that are common counter ions:
+    # Define a pattern for a carboxylate group (which may indicate partners in zwitterions)
     carboxylate = Chem.MolFromSmarts("C(=O)[O-]")
-    phosphate = Chem.MolFromSmarts("P(=O)([O-])")
     
-    # ---------------------------
-    # Case 1. net_charge > 0:
-    if net_charge > 0:
-        # When overall net charge is positive, require that a recognizable cationic group is present.
-        if (mol.HasSubstructMatch(quaternary_ammonium) or 
-            mol.HasSubstructMatch(aromatic_nitrogen) or 
-            mol.HasSubstructMatch(protonated_amine)):
-            return True, f"Molecule has a net positive charge of {net_charge} and contains a cationic site."
+    # Special check: if the molecule is a single atom and has a net positive charge,
+    # classify it as a cation (e.g. [In+], [Fe++], [Cr+6])
+    if mol.GetNumAtoms() == 1:
+        if net_charge > 0:
+            return True, f"Single atom cation with net positive charge of {net_charge}."
         else:
-            return False, f"Molecule has a net positive charge of {net_charge} but lacks a recognizable permanent cationic group."
+            return False, f"Single atom with net charge {net_charge} is not a cation."
     
     # ---------------------------
-    # Case 2. net_charge < 0:
+    # Case 1. net_charge > 0
+    if net_charge > 0:
+        # Helper: does the molecule have any robust (pH-independent) cationic substructure?
+        has_permanent = (mol.HasSubstructMatch(quaternary) or 
+                         mol.HasSubstructMatch(aromatic_nitrogen) or 
+                         (guanidinium is not None and mol.HasSubstructMatch(guanidinium)))
+        
+        # For smaller molecules, only count permanent groups.
+        if mol_wt < 150:
+            if has_permanent:
+                return True, f"Small molecule (MW={mol_wt:.1f} Da) has net positive charge {net_charge} and contains a permanent cationic group."
+            else:
+                return False, f"Small molecule (MW={mol_wt:.1f} Da) has net positive charge {net_charge} but lacks a robust cationic substructure (likely only pH-dependent protonation)."
+        else:
+            # For heavier species, also allow a general positive site—but be careful about zwitterions.
+            # If the only positive site is pH-dependent (i.e. positive nitrogen not matching a permanent group)
+            # and there is a carboxylate present, we suspect a zwitterion so do not classify as a cation.
+            has_positive = mol.HasSubstructMatch(positive_n)
+            has_carboxylate = mol.HasSubstructMatch(carboxylate)
+            if not has_permanent:
+                if has_positive and has_carboxylate:
+                    return False, "Molecule is heavy and has a protonated amine together with a carboxylate group (suggesting a zwitterion) rather than a free cation."
+                elif has_positive:
+                    return True, f"Heavy molecule (MW={mol_wt:.1f} Da) has net positive charge {net_charge} and a recognized positive site (though pH-dependent)."
+                else:
+                    return False, f"Heavy molecule has net positive charge {net_charge} but no identifiable positive site."
+            else:
+                return True, f"Heavy molecule (MW={mol_wt:.1f} Da) has net positive charge {net_charge} and contains a permanent cationic group."
+    
+    # ---------------------------
+    # Case 2. net_charge < 0
     if net_charge < 0:
-        return False, f"Molecule has a net negative charge of {net_charge} (not a cation)."
+        return False, f"Molecule has net negative charge ({net_charge}), not a cation."
     
     # ---------------------------
-    # Case 3. net_charge == 0 (zwitterionic candidates)
-    # Sum of positive and negative formal charges (as absolute amounts)
+    # Case 3. net_charge == 0 (potential zwitterions)
+    # Count positive and negative centers
     pos_sum = sum(atom.GetFormalCharge() for atom in mol.GetAtoms() if atom.GetFormalCharge() > 0)
     neg_sum = -sum(atom.GetFormalCharge() for atom in mol.GetAtoms() if atom.GetFormalCharge() < 0)
     
-    # If the positive centers outnumber the negative ones, we consider it cationic.
+    # If positive centers outweigh negatives, treat as cationic
     if pos_sum > neg_sum:
-        return True, f"Molecule has a net zero charge but positive centers ({pos_sum}) outweigh negative centers ({neg_sum})."
+        return True, f"Molecule has net zero overall charge but positive centers ({pos_sum}) outweigh negative centers ({neg_sum})."
     
-    # If the totals balance, look for a definitive permanent cationic substructure.
+    # If balanced, see if a robust (permanent) cationic group is present.
     if pos_sum == neg_sum:
-        # Quaternary ammonium or aromatic nitrogen are less pH‐dependent indicators.
-        if mol.HasSubstructMatch(quaternary_ammonium) or mol.HasSubstructMatch(aromatic_nitrogen):
-            return True, "Molecule contains a permanent cationic functional group (e.g., quaternary ammonium or aromatic nitrogen) despite net zero charge."
-        # Next, if a protonated amine is present and no carboxylate is found (which could indicate an acid–base zwitterion), classify as cation.
-        if mol.HasSubstructMatch(protonated_amine) and not mol.HasSubstructMatch(carboxylate):
-            return True, "Molecule contains a protonated amine without a carboxylate group, indicative of a cation despite net zero charge."
+        if mol.HasSubstructMatch(quaternary) or mol.HasSubstructMatch(aromatic_nitrogen) or (guanidinium is not None and mol.HasSubstructMatch(guanidinium)):
+            return True, "Molecule has net zero charge but contains a permanent cationic functional group."
     
-    # If none of the above conditions are met, we do not classify the entity as a cation.
-    return False, f"Molecule has a net charge of {net_charge} and no identified permanent cationic group or unbalanced charge centers."
+    # If no rule applies, then do not classify as a cation.
+    return False, f"Molecule has a net charge of {net_charge} with balanced positive ({pos_sum}) and negative ({neg_sum}) centers and no unambiguous permanent cationic substructure."
 
-# Example usage (uncomment to test):
+# Example usage (for testing, uncomment the following lines):
 # test_smiles = [
-#     # Examples that should be classified as cations:
-#     "P(OCC[N+](C)(C)C)(OCC(OC(=O)CCCCCCCCCCCCC=1OC(CCCCC)=CC1C)COC(=O)CCCCCCCCCCC=2OC(=C(C2C)C)CCCCC)(O)=O",  # phosphinic acid derivative (cationic functional group)
+#     # True positives:
+#     "P(OCC[N+](C)(C)C)(OCC(OC(=O)CCCCCCCCCCCCC=1OC(CCCCC)=CC1C)COC(=O)CCCCCCCCCCC=2OC(=C(C2C)C)CCCCC)(O)=O",  # phosphinic acid derivative with cationic site
 #     "[NH3+]CCC(=O)NCCC1=CNC=N1",  # carcininium
 #     "COc1cccc(c1)[C@@]1(O)CCCC[C@@H]1C[NH+](C)C",  # (R,R)-tramadol(1+)
-#     # Examples that should not be classified as cations:
-#     "O=C(NCC[NH3+])C[C@](CC(=O)NC[C@@H](C([O-])=O)[NH3+])(C([O-])=O)O",  # zwitterionic peptide-like species
-#     "OCC[NH+](C)C"  # N-dimethylethanolamine (a false positive case)
+#     # False positives examples (should return False):
+#     "OCC[NH+](C)C",  # N-dimethylethanolamine (small and pH-dependent; likely zwitterionic salt)
+#     "CCCC\C=C\C\C=C\CCCCCCCC(=O)OC(CC([O-])=O)C[N+](C)(C)C"  # example for a carnitine derivative (zwitterion)
 # ]
 #
 # for smi in test_smiles:
