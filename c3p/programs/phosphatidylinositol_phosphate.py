@@ -4,10 +4,11 @@ Classifies: CHEBI:28765 phosphatidylinositol phosphate
 """
 Classifies: Phosphatidylinositol phosphate
 A phosphatidylinositol phosphate (PIP, PIP2, PIP3, etc.) is a phosphoinositide that
-contains a (myo-)inositol head group with one or more phosphate substituents on the ring,
-a linking phosphate connecting the inositol to a glycerol backbone, and at least two acyl chains.
-This version aims at reducing false positives (e.g. normal PI lipids) by requiring that the inositol head
-has an extra phosphate substituent (other than the linking phosphate).
+contains a (myo-)inositol head group that is substituted by at least two phosphate groups:
+one that links the inositol to the glycerol backbone and at least one extra phosphate
+on the ring to distinguish it from plain phosphatidylinositol (PI). Additionally,
+the molecule should contain at least two acyl chains (via ester bonds) and have a high
+molecular weight.
 """
 
 from rdkit import Chem
@@ -19,14 +20,14 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     
     The classifier checks that:
       0. The molecule does not contain any negative formal charges.
-      1. It contains a myo-inositol head group (using a canonical inositol pattern).
-      2. One of the inositol oxygens is connected to a 'linking phosphate' that in turn is attached (via an oxygen)
-         to a carbon outside the inositol. This connects the inositol head to the glycerol backbone.
-      3. At least one other inositol oxygen (i.e. not used for the linking phosphate) is phosphorylated. This extra
-         phosphate on the ring differentiates phosphatidylinositol phosphates from the plain PI lipids.
-      4. The molecule has at least two acyl ester groups (fatty acid chains attached via ester bonds) that are not
+      1. It contains a myo-inositol head group (based on the canonical inositol pattern).
+      2. At least two distinct phosphorus atoms are directly attached to inositol (one being the linking phosphate
+         which connects the inositol to a glycerol backbone, and at least one extra phosphate on the ring).
+      3. At least one of the phosphate groups attached to the inositol shows “linking” behavior, meaning it is bound
+         via an oxygen to a carbon atom that is not part of the inositol.
+      4. The molecule contains at least two acyl ester groups (fatty acid chains attached via ester bonds) that are not
          part of any phosphate group.
-      5. The molecular weight is above a minimal threshold typical for these lipids.
+      5. The molecular weight is above a lower threshold typical for these lipids.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -39,65 +40,63 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # 0. Reject molecules with any negative formal charges (to avoid deprotonated salts).
+    # 0. Reject molecules with any negative formal charges (to avoid deprotonated/salt forms).
     for atom in mol.GetAtoms():
         if atom.GetFormalCharge() < 0:
             return False, "Molecule has negative formal charges; likely drawn as a salt form"
     
-    # 1. Check for a myo-inositol head group using the canonical pattern.
-    # This pattern corresponds to a fully hydroxylated cyclohexane: OC1C(O)C(O)C(O)C(O)C1O
+    # 1. Locate the myo-inositol head group.
+    # Use the canonical myo-inositol structure: OC1C(O)C(O)C(O)C(O)C1O
     inositol = Chem.MolFromSmiles("OC1C(O)C(O)C(O)C(O)C1O")
     inositol_matches = mol.GetSubstructMatches(inositol)
     if not inositol_matches:
         return False, "Inositol head group not found"
-    
-    # Use the first matching inositol fragment.
+    # For our purposes, use the first matching fragment.
     inositol_atom_indices = set(inositol_matches[0])
     
-    # Variables to track the linking phosphate and extra phosphorylation on the inositol head.
-    linking_found = False
-    extra_phospho_found = False
-
-    # We will loop over all atoms in the molecule whose index is in the inositol match.
-    # For each inositol oxygen, examine if it is bound to phosphorus.
+    # 2. Collect all P atoms directly attached to any inositol oxygen.
+    # We also record from which oxygen they are attached.
+    p_attach = {}  # p_idx -> list of inositol oxygen indices that attach to it
     for idx in inositol_atom_indices:
         atom = mol.GetAtomWithIdx(idx)
-        # We're only interested in oxygen atoms from the inositol (the pattern gives both O and C,
-        # but phosphate substitutions come via O atoms)
+        # Only consider oxygen atoms (the –OH groups on inositol)
         if atom.GetSymbol() != "O":
             continue
         for nbr in atom.GetNeighbors():
-            if nbr.GetSymbol() != "P":
+            if nbr.GetSymbol() == "P":
+                p_idx = nbr.GetIdx()
+                p_attach.setdefault(p_idx, []).append(idx)
+    
+    # For a PIP family member we expect at least two distinct phosphate groups on inositol:
+    if len(p_attach) < 2:
+        return False, "No extra phosphate substituent on the inositol head found (only %d phosphate group(s) attached)" % len(p_attach)
+    
+    # 3. For at least one of these phosphorus atoms, check for linking phosphate behavior.
+    linking_found = False
+    for p_idx, o_list in p_attach.items():
+        p_atom = mol.GetAtomWithIdx(p_idx)
+        # Look at all oxygen neighbors of this phosphorus.
+        for o_neigh in p_atom.GetNeighbors():
+            # Skip if this oxygen is one of the ones attached to the inositol.
+            if o_neigh.GetIdx() in inositol_atom_indices:
                 continue
-            # For each phosphorus neighbor, differentiate linking vs extra phosphorylation.
-            # A linking phosphate is defined as: from the phosphorus (P_link)
-            # there is an oxygen (other than the current one) that is bound to a carbon not in the inositol.
-            is_linking = False
-            for p_nbr in nbr.GetNeighbors():
-                if p_nbr.GetIdx() == atom.GetIdx():
-                    continue  # skip the inositol oxygen in question
-                if p_nbr.GetSymbol() == "O":
-                    # Check if this oxygen is attached to a carbon outside the inositol.
-                    for second_nbr in p_nbr.GetNeighbors():
-                        if second_nbr.GetSymbol() == "C" and second_nbr.GetIdx() not in inositol_atom_indices:
-                            is_linking = True
-                            break
-                if is_linking:
+            if o_neigh.GetSymbol() != "O":
+                continue
+            # Check if this oxygen is further bound to a carbon that is not part of the inositol.
+            for second_neigh in o_neigh.GetNeighbors():
+                if second_neigh.GetSymbol() == "C" and second_neigh.GetIdx() not in inositol_atom_indices:
+                    linking_found = True
                     break
-            if is_linking:
-                linking_found = True
-            else:
-                # If the phosphorus does not fulfill the linking role, assume it is a phosphoryl substituent on the inositol.
-                extra_phospho_found = True
+            if linking_found:
+                break
+        if linking_found:
+            break
 
     if not linking_found:
         return False, "Linking phosphate connecting inositol to glycerol backbone not found"
-    if not extra_phospho_found:
-        return False, "No extra phosphate substituent on the inositol head found; likely a plain PI rather than PIP/PIP2/PIP3"
     
     # 4. Count acyl ester groups.
-    # Look for ester linkages defined as an oxygen single-bonded to a carbon that is double-bonded to another oxygen.
-    # Exclude any ester oxygen that is bonded to phosphorus (they might be part of a phosphate).
+    # We define acyl ester groups as an oxygen (not involved in any phosphate) bridging a carbonyl group.
     acyl_count = 0
     seen_ester_bonds = set()
     for bond in mol.GetBonds():
@@ -105,7 +104,7 @@ def is_phosphatidylinositol_phosphate(smiles: str):
             continue
         a1 = bond.GetBeginAtom()
         a2 = bond.GetEndAtom()
-        # Identify candidate pair: one atom must be oxygen and the other must be carbon.
+        # Identify candidate pair: one atom must be oxygen and the other carbon.
         if a1.GetSymbol() == "O" and a2.GetSymbol() == "C":
             oxygen = a1
             carbon = a2
@@ -115,14 +114,13 @@ def is_phosphatidylinositol_phosphate(smiles: str):
         else:
             continue
         
-        # Exclude if this oxygen is attached to any phosphorus (it could be part of a phosphate group)
+        # Exclude oxygen if it is bonded to any phosphorus (likely part of a phosphate group).
         if any(nb.GetSymbol() == "P" for nb in oxygen.GetNeighbors()):
             continue
         
-        # Confirm the carbon is a carbonyl: it must have a double bond to an oxygen (other than our ester oxygen).
+        # Confirm that the carbon is part of a carbonyl (has a double bond to an oxygen aside from the ester oxygen).
         carbonyl_found = False
         for nbr in carbon.GetNeighbors():
-            # Skip the bond already considered.
             if nbr.GetIdx() == oxygen.GetIdx():
                 continue
             if nbr.GetSymbol() != "O":
@@ -138,19 +136,19 @@ def is_phosphatidylinositol_phosphate(smiles: str):
                 acyl_count += 1
 
     if acyl_count < 2:
-        return False, f"Found only {acyl_count} acyl ester group(s), need at least 2"
-    
-    # 5. Check molecular weight (typically these lipids are >500 Da).
+        return False, "Found only %d acyl ester group(s); need at least 2" % acyl_count
+
+    # 5. Check molecular weight (typically these lipids have a high molecular weight).
     mw = rdMolDescriptors.CalcExactMolWt(mol)
     if mw < 500:
-        return False, f"Molecular weight too low ({mw:.1f} Da) for a phosphatidylinositol phosphate"
-    
+        return False, "Molecular weight too low (%.1f Da) for a phosphatidylinositol phosphate" % mw
+
     return True, "Molecule contains a phosphorylated inositol head (with linking and extra phosphate), and at least two acyl chains"
 
 
 # Example usage (for testing):
 if __name__ == "__main__":
-    # Example true positive (a PIP2 type molecule)
-    test_smiles = "CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC"
+    # Test with a known example: 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4-bisphosphate)
+    test_smiles = "CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCC"
     result, reason = is_phosphatidylinositol_phosphate(test_smiles)
     print(result, reason)
