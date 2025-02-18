@@ -1,0 +1,308 @@
+"""
+Classifies: CHEBI:68452 azole
+"""
+ - 2,4-Dimethyl-5-(1-pyrrolidinyl)thiazole: SMILES: CN1CCCC1C2=NC(=CS2)C
+ - 5-(4-chlorophenyl)-1H-pyrazole-3-carboxylic acid: SMILES: Clc1ccc(cc1)c2cc(nn2)C(=O)O
+ - 4-(2-chloro-6-fluorobenzyl)-1-(2,6-difluorobenzyl)-5-(4-methyl-1-piperazinyl)imidazole: SMILES: CN1CCN(CC1)C2=CN=CN2Cc3c(F)c(Cl)ccc3F.Cc1cc(F)cc(F)c1
+ - 2-(4-chlorophenyl)-1-(4-ethoxyphenyl)-6,7,8,9-tetrahydro-5H-imidazo[1,2-a]azepin-4-ium: SMILES: CCOC1=CC=C(C=C1)N2C3=[N+](CCCCC3)C=C2C4=CC=C(C=C4)Cl
+ - 4-(3-chlorophenyl)-3-(1H-pyrazol-1-yl)-1,2,5-oxadiazole: SMILES: Clc1cccc(c1)-c1noc(n1)-n1nccc1
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)O)C3=CC=C(C=C3)F
+ - 2-(2,4-dichlorophenyl)-5-methyl-4-phenyloxazole: SMILES: Clc1ccc(Cl)c(c1)C2=NC(=CO2)C(C)c3ccccc3
+ - 4-(4-fluorophenyl)-3-(1H-pyrazol-1-yl)-1,2,5-oxadiazole: SMILES: Fc1ccc(cc1)-c1noc(n1)-n1nccc1
+ - 5-(4-fluorophenyl)-1,3-dimethyl-1H-pyrazole-4-carboxylic acid: SMILES: CC1=C(C(=NN1C)C(=O)O)C2=CC=C(C=C2)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxylic acid: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)O)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES: C1=CC=C(C=C1)N2C=C(C(=N2)C#N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole: SMILES: CC1=NN(C(=C1)C2=CC=C(C=C2)F)C3=CC=CC=C3
+ - 5-(4-fluorophenyl)-1-phenyl-1H-pyrazole: SMILES: C1=CC=C(C=C1)N2C=C(C=N2)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carboxamide: SMILES: CC1=C(C(=NN1C2=CC=CC=C2)C(=O)N)C3=CC=C(C=C3)F
+ - 5-(4-fluorophenyl)-3-methyl-1-phenyl-1H-pyrazole-4-carbonitrile: SMILES:
