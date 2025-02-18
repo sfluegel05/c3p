@@ -26,7 +26,7 @@ def is_triradylglycerol(smiles: str):
         return False, "Invalid SMILES string"
 
     # Check for glycerol backbone with three O-linked substituents
-    backbone_pattern = Chem.MolFromSmarts('C(-O)-C(-O)-C(-O)')
+    backbone_pattern = Chem.MolFromSmarts('[CH2]-[CH](-O-!@*)-[CH2]')
     if not mol.HasSubstructMatch(backbone_pattern):
         return False, "No glycerol backbone with three O-linked groups"
 
@@ -35,31 +35,45 @@ def is_triradylglycerol(smiles: str):
     if not matches:
         return False, "No backbone match found"
     
-    # Extract O indices from the first match (C-O positions)
+    # Extract O indices (positions 2, 4, 6 in the SMARTS [CH2:1]-[CH:2](-O:3-!@*)-[CH2:4])
     try:
-        o_indices = [matches[0][1], matches[0][3], matches[0][5]]  # C-O positions in SMARTS
+        o_indices = [match[2], match[5], match[8]]  # Adjust indices based on SMARTS structure
     except IndexError:
         return False, "Invalid backbone structure"
 
-    # Define patterns for substituent types
-    ester_pattern = Chem.MolFromSmarts('[OX2]-C(=O)')
-    vinyl_ether_pattern = Chem.MolFromSmarts('[OX2]-C=C')
-
     substituent_types = []
     for o_idx in o_indices:
-        # Check for ester (acyl)
-        ester_matches = mol.GetSubstructMatches(ester_pattern)
-        if any(o_idx == match[0] for match in ester_matches):
+        o_atom = mol.GetAtomWithIdx(o_idx)
+        # Verify oxygen has single bond to carbon
+        if o_atom.GetDegree() != 1:
+            return False, f"Oxygen {o_idx} has multiple bonds"
+        neighbor = o_atom.GetNeighbors()[0]
+        if neighbor.GetAtomicNum() != 6:
+            return False, f"Substituent at O {o_idx} is not carbon-based"
+
+        # Check for ester (O-C=O)
+        ester = False
+        for bond in neighbor.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                other_atom = bond.GetOtherAtom(neighbor)
+                if other_atom.GetAtomicNum() == 8:  # Connected to oxygen
+                    ester = True
+                    break
+        if ester:
             substituent_types.append('acyl')
             continue
-        
-        # Check for vinyl ether (alkenyl)
-        vinyl_matches = mol.GetSubstructMatches(vinyl_ether_pattern)
-        if any(o_idx == match[0] for match in vinyl_matches):
+
+        # Check for vinyl ether (O-C=C)
+        vinyl = False
+        for bond in neighbor.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetOtherAtom(neighbor).GetAtomicNum() == 6:
+                vinyl = True
+                break
+        if vinyl:
             substituent_types.append('alkenyl')
             continue
-        
-        # Default to alkyl (ether)
+
+        # Default to alkyl if no other matches
         substituent_types.append('alkyl')
 
     # Verify all substituents are valid types
