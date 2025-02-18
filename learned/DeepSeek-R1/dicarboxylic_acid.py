@@ -5,11 +5,12 @@ Classifies: CHEBI:35692 dicarboxylic acid
 Classifies: CHEBI:17895 dicarboxylic acid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_dicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a dicarboxylic acid based on its SMILES string.
-    A dicarboxylic acid has exactly two carboxy (-COOH) groups that are not part of an anhydride.
+    A dicarboxylic acid has exactly two carboxy (-COOH) groups and no anhydride bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,29 +24,27 @@ def is_dicarboxylic_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define carboxy group pattern (accounts for -COOH or -COO-)
-    carboxy_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-
-    # Find all matches
-    matches = mol.GetSubstructMatches(carboxy_pattern)
+    # Count carboxylic acid groups using RDKit's built-in method
+    num_carboxy = rdMolDescriptors.CalcNumCarboxylicAcids(mol)
     
-    # Check for exactly two carboxy groups
-    if len(matches) != 2:
-        return False, f"Found {len(matches)} carboxy groups, need exactly 2"
+    if num_carboxy != 2:
+        return False, f"Found {num_carboxy} carboxylic acid groups, need exactly 2"
 
-    # Collect all atoms in the carboxy groups
-    atoms_in_groups = set()
-    for match in matches:
-        atoms_in_groups.update(match)  # match is a tuple of atom indices
+    # Check for anhydride pattern (two carbonyls connected via oxygen)
+    anhydride_pattern = Chem.MolFromSmarts("[CX3](=O)-O-[CX3](=O)")
+    if mol.HasSubstructMatch(anhydride_pattern):
+        return False, "Contains anhydride linkage between carboxy groups"
 
-    # Get all oxygen atoms in the molecule
-    o_atoms = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8]
+    # Verify groups are distinct (optional check for conjugated systems)
+    carboxy_atoms = set()
+    for group in mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=O)[OH]")):
+        carboxy_atoms.update(group)
     
-    # Count oxygen atoms that are part of the carboxy groups
-    shared_os = sum(1 for o in o_atoms if o in atoms_in_groups)
+    # Check we have exactly 4 oxygens in carboxy groups (2 groups * 2 oxygens each)
+    o_in_groups = sum(1 for atom in mol.GetAtoms() 
+                      if atom.GetAtomicNum() == 8 and atom.GetIdx() in carboxy_atoms)
     
-    # Valid dicarboxylic acid must have exactly 4 oxygen atoms in the carboxy groups (no sharing)
-    if shared_os == 4:
-        return True, "Contains two distinct carboxy groups"
-    else:
-        return False, "Carboxy groups share oxygen atoms (likely anhydride or conjugated)"
+    if o_in_groups != 4:
+        return False, "Oxygen count mismatch in carboxy groups"
+
+    return True, "Contains two distinct carboxylic acid groups"
