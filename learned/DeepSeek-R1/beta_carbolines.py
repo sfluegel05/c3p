@@ -25,15 +25,17 @@ def is_beta_carbolines(smiles: str):
         return False, "Invalid SMILES string"
 
     # Define beta-carboline core pattern (pyrido[3,4-b]indole skeleton)
-    # Core structure with aromatic rings
-    core_pattern = Chem.MolFromSmarts("[nH]1c2ccccc2c2cnccc12")
+    # Corrected core pattern to match pyrido[3,4-b]indole with any substitution on nitrogen
+    core_pattern = Chem.MolFromSmarts("n1c2ccccc2c2cnccc12")
     if core_pattern is not None and mol.HasSubstructMatch(core_pattern):
         return True, "Contains aromatic beta-carboline core structure"
 
-    # Check for hydrogenated derivatives (single bonds in the rings)
-    # Flexible pattern allowing single bonds
-    flexible_pattern = Chem.MolFromSmarts("[nH]1-C-C-C2-C1-C1-C-C-C3-C1-N-C-C-C2-C3")
-    if flexible_pattern is not None and mol.HasSubstructMatch(flexible_pattern):
+    # Check for hydrogenated derivatives (non-aromatic fused rings)
+    # Pattern allows single bonds but maintains fused ring structure
+    hydrogenated_pattern = Chem.MolFromSmarts(
+        "[n]1-&@[C,c-&@]-&@[C,c-&@]-&@[C,c-&@]-&@[C,c-&@]-&@[C,c-&@]-&@[C,c-&@]2-&@[C,c-&@]-&@1-&@[C,c-&@]-&@[C,c-&@]-&@[N,n-&@]-&@[C,c-&@]-&@[C,c-&@]-&@2"
+    )
+    if hydrogenated_pattern is not None and mol.HasSubstructMatch(hydrogenated_pattern):
         return True, "Contains hydrogenated beta-carboline core"
 
     # If no matches, return False
