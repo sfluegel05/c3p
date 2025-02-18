@@ -25,22 +25,63 @@ def is_cephalosporin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define cephalosporin core SMARTS pattern
-    cepha_core_smarts = '[#6]1[#6]2N1C(=O)[#6]=[#6][#16][#6]2'
-    cepha_core_mol = Chem.MolFromSmarts(cepha_core_smarts)
-    if cepha_core_mol is None:
-        return False, "Failed to create cephalosporin core SMARTS pattern"
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
 
-    # Check for cephalosporin core in the molecule
-    if not mol.HasSubstructMatch(cepha_core_mol):
-        return False, "Cephalosporin core structure not found"
+    # Lists to store ring indices
+    beta_lactam_rings = []
+    dihydrothiazine_rings = []
 
-    return True, "Contains cephalosporin core structure"
+    # Identify beta-lactam and dihydrothiazine rings
+    for ring in atom_rings:
+        if len(ring) == 4:
+            # Potential beta-lactam ring
+            num_N = 0
+            has_carbonyl = False
+            for idx in ring:
+                atom = mol.GetAtomWithIdx(idx)
+                if atom.GetAtomicNum() == 7:
+                    num_N += 1
+            if num_N == 1:
+                # Check for carbonyl group (C=O) in ring
+                for idx in ring:
+                    atom = mol.GetAtomWithIdx(idx)
+                    if atom.GetAtomicNum() == 6:
+                        for neighbor in atom.GetNeighbors():
+                            if neighbor.GetAtomicNum() == 8:
+                                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                                    has_carbonyl = True
+                if has_carbonyl:
+                    beta_lactam_rings.append(set(ring))
+        elif len(ring) == 6:
+            # Potential dihydrothiazine ring
+            num_N = 0
+            num_S = 0
+            for idx in ring:
+                atom = mol.GetAtomWithIdx(idx)
+                if atom.GetAtomicNum() == 7:
+                    num_N += 1
+                elif atom.GetAtomicNum() == 16:
+                    num_S += 1
+            if num_N == 1 and num_S == 1:
+                dihydrothiazine_rings.append(set(ring))
+
+    # Check for fused rings
+    for beta_ring in beta_lactam_rings:
+        for dihydro_ring in dihydrothiazine_rings:
+            shared_atoms = beta_ring & dihydro_ring
+            if len(shared_atoms) >= 2:
+                # Rings are fused
+                return True, "Contains fused beta-lactam and dihydrothiazine rings characteristic of cephalosporins"
+
+    return False, "Cephalosporin core structure not found"
 
 __metadata__ = {
     'chemical_class': {
         'id': 'CHEBI:23066',
         'name': 'cephalosporin',
-        'definition': 'A class of beta-lactam antibiotics differing from the penicillins in having a 6-membered, rather than a 5-membered, side ring.',
+        'definition': 'A class of beta-lactam antibiotics differing from the penicillins in having a 6-membered, rather than a 5-membered, side ring. Although cephalosporins are among the most commonly used antibiotics in the treatment of routine infections, and their use is increasing over time, they can cause a range of hypersensitivity reactions, from mild, delayed-onset cutaneous reactions to life-threatening anaphylaxis in patients with immunoglobulin E (IgE)-mediated allergy.',
     },
 }
