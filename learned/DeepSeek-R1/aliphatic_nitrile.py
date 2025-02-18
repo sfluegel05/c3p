@@ -18,23 +18,26 @@ def is_aliphatic_nitrile(smiles: str):
         bool: True if molecule is an aliphatic nitrile, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
+    # Parse SMILES and sanitize to ensure proper aromaticity detection
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all nitrile groups (C#N)
-    nitrile_pattern = Chem.MolFromSmarts('[C]#[N]')
+    # Find all nitrile groups (C#N) with adjacent carbon context
+    # Pattern matches: [C(connected to other atoms)]#[N(terminal)]-[any atom]
+    nitrile_pattern = Chem.MolFromSmarts('[CX3]#[NX1]-[*]')
     nitrile_matches = mol.GetSubstructMatches(nitrile_pattern)
     
     if not nitrile_matches:
         return False, "No nitrile groups found"
     
-    # Check each nitrile's carbon atom for aromaticity
+    # Check the carbon adjacent to each nitrile group
     for match in nitrile_matches:
-        # Match tuple contains (carbon_idx, nitrogen_idx)
-        carbon_atom = mol.GetAtomWithIdx(match[0])
-        if carbon_atom.GetIsAromatic():
-            return False, f"Nitrile group attached to aromatic carbon at position {match[0]+1}"
+        # Match format: (nitrile_carbon_idx, nitrile_nitrogen_idx, adjacent_atom_idx)
+        adjacent_atom = mol.GetAtomWithIdx(match[2])
+        
+        # Check if adjacent atom is aromatic (part of aromatic system)
+        if adjacent_atom.GetIsAromatic():
+            return False, f"Nitrile group attached to aromatic system at position {adjacent_atom.GetIdx()+1}"
 
     return True, "All nitrile groups are attached to aliphatic carbons"
