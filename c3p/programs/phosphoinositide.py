@@ -26,15 +26,14 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight - phosphoinositides are typically >600 Da
+    # Check molecular weight - phosphoinositides are typically >700 Da
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 600:
+    if mol_wt < 700:
         return False, "Molecular weight too low for phosphoinositide"
 
     # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
+    has_glycerol = mol.HasSubstructMatch(glycerol_pattern)
         
     # Look for 2 ester groups (-O-C(=O)-) for fatty acid chains
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
@@ -47,12 +46,13 @@ def is_phosphoinositide(smiles: str):
     if not mol.HasSubstructMatch(phosphate_glycerol_pattern):
         return False, "No phosphate group attached to glycerol backbone"
 
-    # Look for inositol ring (6-membered ring with 6 oxygens, no stereochemistry requirement)
+    # More specific inositol ring pattern with phosphorylation sites
     inositol_pattern = Chem.MolFromSmarts("[C]1([C]([C]([C]([C]([C]1O)O)O)O)O)O")
-    if not mol.HasSubstructMatch(inositol_pattern):
+    inositol_matches = mol.GetSubstructMatches(inositol_pattern)
+    if not inositol_matches:
         return False, "No inositol ring found"
 
-    # Look for phosphate groups attached to inositol (more flexible pattern)
+    # Look for phosphate groups attached to inositol (more specific pattern)
     phosphate_inositol_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2][C]1[C]([C]([C]([C]([C]1O)O)O)O)O)[OX2]")
     phosphate_inositol_matches = mol.GetSubstructMatches(phosphate_inositol_pattern)
     
@@ -70,11 +70,23 @@ def is_phosphoinositide(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     
-    if c_count < 20:
+    if c_count < 30:
         return False, "Too few carbons for phosphoinositide"
-    if o_count < 10:
+    if o_count < 12:
         return False, "Too few oxygens for phosphoinositide"
     if p_count < 2:
         return False, "Too few phosphorus atoms for phosphoinositide"
 
-    return True, "Contains glycerol backbone with 2 fatty acid chains, phosphate groups, and phosphorylated inositol ring"
+    # Check for connection between glycerol and inositol
+    if has_glycerol:
+        # Look for glycerol-phosphate-inositol connection
+        connection_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]~[OX2]~[PX4]~[OX2]~[C]1[C]([C]([C]([C]([C]1O)O)O)O)O")
+        if not mol.HasSubstructMatch(connection_pattern):
+            return False, "No proper connection between glycerol and inositol"
+    else:
+        # Allow for modified backbones but require at least one phosphate-inositol connection
+        phosphate_inositol_connection = Chem.MolFromSmarts("[PX4](=[OX1])([OX2][C]1[C]([C]([C]([C]([C]1O)O)O)O)O)[OX2]")
+        if not mol.HasSubstructMatch(phosphate_inositol_connection):
+            return False, "No proper phosphate-inositol connection"
+
+    return True, "Contains required structural features of a phosphoinositide"
