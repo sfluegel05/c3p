@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_monoradylglycerol(smiles: str):
     """
     Determines if a molecule is a monoradylglycerol based on its SMILES string.
-    A monoradylglycerol has a glycerol backbone with a single acyl (ester), alkyl (ether), or alk-1-enyl (vinyl ether) substituent.
+    A monoradylglycerol has a glycerol backbone with exactly one acyl (ester), alkyl (ether), or alk-1-enyl (vinyl ether) substituent.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,79 +23,46 @@ def is_monoradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # SMARTS pattern for glycerol backbone with two hydroxyls and one O-linked substituent (any position)
-    glycerol_pattern = Chem.MolFromSmarts(
-        "[C](-[OH])-[C](-[OH])-[C](-O[!H0]) | "  # substituent on third carbon
-        "[C](-[OH])-[C](-O[!H0])-[C](-[OH]) | "  # substituent on second carbon
-        "[C](-O[!H0])-[C](-[OH])-[C](-[OH])"     # substituent on first carbon
-    )
-    if not mol.HasSubstructMatch(glycerol_pattern):
+    # Define glycerol backbone patterns with substituent in any position
+    glycerol_patterns = [
+        Chem.MolFromSmarts("[CH2](-O[!H0])-[CH](-O)-[CH2](-O)"),  # substituent on C1
+        Chem.MolFromSmarts("[CH2](-O)-[CH](-O[!H0])-[CH2](-O)"),  # substituent on C2
+        Chem.MolFromSmarts("[CH2](-O)-[CH](-O)-[CH2](-O[!H0])")   # substituent on C3
+    ]
+
+    # Check if any glycerol pattern matches
+    backbone_found = any(mol.HasSubstructMatch(patt) for patt in glycerol_patterns if patt)
+    if not backbone_found:
         return False, "No glycerol backbone with two hydroxyls and one O-linked group"
 
-    # Check for exactly one O-linked substituent (excluding hydroxyls)
-    o_substituents = 0
+    # Find all oxygen atoms in non-hydroxyl linkages (substituents)
+    substituent_oxygens = []
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:
-            # Check if oxygen is part of a substituent (not hydroxyl)
-            if not any(n.GetAtomicNum() == 1 for n in atom.GetNeighbors()):
-                # Check if connected to a carbon in the glycerol backbone
-                for neighbor in atom.GetNeighbors():
-                    if neighbor.GetAtomicNum() == 6 and neighbor.HasSubstructMatch(glycerol_pattern):
-                        o_substituents += 1
-                        break
-    if o_substituents != 1:
-        return False, f"Found {o_substituents} substituents, need exactly 1"
-
-    # Check substituent type (acyl, alkyl, alk-1-enyl)
-    matches = mol.GetSubstructMatches(glycerol_pattern)
-    for match in matches:
-        # Find the substituent oxygen
-        substituent_oxygen = None
-        for atom_idx in match:
-            atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() == 8 and not atom.GetTotalNumHs():
+            # Check if connected to glycerol carbon
             for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and not any(n.GetAtomicNum() == 1 for n in neighbor.GetNeighbors()):
-                    substituent_oxygen = neighbor
-                    break
-            if substituent_oxygen:
-                break
+                if neighbor.GetAtomicNum() == 6:
+                    # Verify neighbor is part of glycerol backbone
+                    for patt in glycerol_patterns:
+                        if patt and neighbor.HasSubstructMatch(patt):
+                            substituent_oxygens.append(atom)
+                            break
 
-        if not substituent_oxygen:
-            continue
+    if len(substituent_oxygens) != 1:
+        return False, f"Found {len(substituent_oxygens)} substituents, need exactly 1"
 
-        # Check for ester (acyl)
-        ester = False
-        for bond in substituent_oxygen.GetBonds():
-            if bond.GetBondType() == Chem.BondType.SINGLE:
-                next_atom = bond.GetOtherAtom(substituent_oxygen)
-                if next_atom.GetAtomicNum() == 6:
-                    for next_bond in next_atom.GetBonds():
-                        if next_bond.GetBondType() == Chem.BondType.DOUBLE:
-                            other_atom = next_bond.GetOtherAtom(next_atom)
-                            if other_atom.GetAtomicNum() == 8:
-                                ester = True
-                                break
+    # Check substituent type using SMARTS patterns
+    ester = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2][CX3]=[OX1]"))  # Acyl (ester)
+    ether = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2][CX4H2]"))      # Alkyl (ether)
+    vinyl_ether = mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2]C=C"))    # Alk-1-enyl (vinyl ether)
 
-        # Check for vinyl ether (alk-1-enyl)
-        vinyl_ether = False
-        if not ester:
-            for bond in substituent_oxygen.GetBonds():
-                if bond.GetBondType() == Chem.BondType.SINGLE:
-                    next_atom = bond.GetOtherAtom(substituent_oxygen)
-                    if next_atom.GetAtomicNum() == 6:
-                        for next_bond in next_atom.GetBonds():
-                            if next_bond.GetBondType() == Chem.BondType.DOUBLE:
-                                other_atom = next_bond.GetOtherAtom(next_atom)
-                                if other_atom.GetAtomicNum() == 6:
-                                    vinyl_ether = True
-                                    break
+    if not any([ester, ether, vinyl_ether]):
+        return False, "Substituent is not acyl, alkyl, or alk-1-enyl type"
 
-        substituent_type = "alkyl"  # default to alkyl if not ester or vinyl
-        if ester:
-            substituent_type = "acyl"
-        elif vinyl_ether:
-            substituent_type = "alk-1-enyl"
-
-        return True, f"Glycerol with one {substituent_type} substituent"
-
-    return False, "No valid substituent type found"
+    # Determine exact substituent type
+    if ester:
+        return True, "Glycerol with one acyl (ester) substituent"
+    elif vinyl_ether:
+        return True, "Glycerol with one alk-1-enyl (vinyl ether) substituent"
+    else:
+        return True, "Glycerol with one alkyl (ether) substituent"
