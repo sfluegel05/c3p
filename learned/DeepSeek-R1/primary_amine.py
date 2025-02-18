@@ -22,8 +22,10 @@ def is_primary_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for a primary amine: nitrogen with two hydrogens and one carbon bond
-    primary_amine_pattern = Chem.MolFromSmarts("[N;H2;D1]")
+    # SMARTS pattern for primary amine: NH2 group attached to a carbon
+    # [N;H2;D1] ensures nitrogen has two hydrogens and one bond
+    # connected to a carbon (not part of amide, etc.)
+    primary_amine_pattern = Chem.MolFromSmarts("[N;H2;D1;+0]-[#6]")
     matches = mol.GetSubstructMatches(primary_amine_pattern)
     
     if len(matches) > 0:
