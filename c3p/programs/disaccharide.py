@@ -22,28 +22,30 @@ def is_disaccharide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the presence of exactly two ring structures (suggests two sugar units)
-    if rdMolDescriptors.CalcNumRings(mol) != 2:
-        return False, "Does not contain exactly two ring structures"
+    # Check for at least two rings, allowing for some flexibility in complex disaccharides
+    if rdMolDescriptors.CalcNumRings(mol) < 2:
+        return False, "Too few ring structures to represent a disaccharide"
         
-    # A pattern suggesting a glycosidic bond: an ether linkage where one oxygen connects two sugar rings
-    glycosidic_pattern = Chem.MolFromSmarts("[C;R1]1[O;X2]!@[C;R1]2")  # Smart pattern for acetal/ketal linkages between two rings
+    # Define a pattern indicating glycosidic linkage (oxygen linking two sugar-like units)
+    glycosidic_pattern = Chem.MolFromSmarts("O[C;R][C;R]")
     if not mol.HasSubstructMatch(glycosidic_pattern):
-        return False, "No glycosidic bond pattern found"
+        return False, "No clear glycosidic bond pattern found"
 
-    # Count atoms to verify absence of non-sugar elements; typical disaccharides have carbon and oxygen with possible functional groups
+    # Count typical atoms for disaccharides: carbon, oxygen, optional nitrogen (for derivatives)
     carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Assuming typical disaccharide mass range based on carbon and oxygen count
-    if carbon_count < 10 or carbon_count > 24:
+    nitrogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+
+    # Loosen the constraints, given some derivatives or substitutions: note commonly with 10-24 carbons and 6-12 oxygens
+    if carbon_count < 10 or carbon_count > 28:
         return False, f"Unexpected number of carbons: {carbon_count} for disaccharide"
-    if oxygen_count < 6 or oxygen_count > 12:
+    if oxygen_count < 6 or oxygen_count > 16:
         return False, f"Unexpected number of oxygens: {oxygen_count} for disaccharide"
 
-    # Check for sugars-like hydroxyl groups
-    hydroxyl_groups = mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2H]"))
-    if len(hydroxyl_groups) < 5:
-        return False, f"Too few hydroxyl groups for a disaccharide structure, found: {len(hydroxyl_groups)}"
-    
+    # Check for sugars-like features, such as hydroxyl groups or ethers
+    if len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2H]"))) < 4:
+        return False, "Too few hydroxyl groups for a sugar-like structure"
+    if not mol.HasSubstructMatch(Chem.MolFromSmarts("[OX2][CX4]")):
+        return False, "Lack of typical ether linkage in a disaccharide"
+
     return True, "Contains features characteristic of disaccharides: two sugar units linked by a glycosidic bond"
