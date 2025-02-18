@@ -2,7 +2,6 @@
 Classifies: CHEBI:35359 carboxamidine
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_carboxamidine(smiles: str):
     """
@@ -20,9 +19,12 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the carboxamidine pattern: C connected to two nitrogens, one via double bond
-    # SMARTS pattern: [CX3](=[NX2])[NX3]
-    pattern = Chem.MolFromSmarts("[CX3](=[NX2])[NX3]")
+    # SMARTS pattern for carboxamidine group
+    # [CX3;!a]: non-aromatic carbon with three bonds
+    # =[NX2;D2]: double bond to N with two connections (C and R/H)
+    # [NX3;D3]: single bond to N with three connections (C and two R/H)
+    pattern = Chem.MolFromSmarts("[CX3;!a](=[NX2;D2])[NX3;D3]")
+    
     if mol.HasSubstructMatch(pattern):
         return True, "Contains carboxamidine group (RC(=NR)NR2)"
     else:
