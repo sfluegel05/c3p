@@ -17,31 +17,35 @@ def is_flavin(smiles: str):
     """
     # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    if not mol:
         return False, "Invalid SMILES string"
 
-    # Define the dimethylisoalloxazine core pattern; we use a simplified SMARTS string
-    flavin_core_smarts = "Cc1cc2nc3c(nc(=O)[nH]c3=O)n(C)c2cc1C"
+    # Define the dimethylisoalloxazine core pattern; Start by capturing variations
+    flavin_core_smarts = "Cc1cc2nc3c(nc(=O)[nH]c3=O)n(c2cc1[C,N,O,S])[C,N,O,S]"  # Adjusted for more flexible core matching
     flavin_core = Chem.MolFromSmarts(flavin_core_smarts)
     
     # Check if the molecule contains the core structure
     if not mol.HasSubstructMatch(flavin_core):
         return False, "Does not contain the dimethylisoalloxazine core"
     
-    # Get matches and check for substitution at the 10 position
+    # Get matches for the core structure
     matches = mol.GetSubstructMatch(flavin_core)
     if matches:
-        # Assuming position 10 corresponds to the nitrogen atom in the core
-        position_10 = matches[5]  # example index for position 10, adjust as necessary
-        atom = mol.GetAtomWithIdx(position_10)
-        
-        # Check for substitution at position 10 (it should have more than one bond)
-        if len(atom.GetNeighbors()) <= 1:
-            return False, "No substitution at position 10"
+        # Check for substitution at the position typically bonded to the core at position 10
+        core_atoms = set(matches)
+        for atom in mol.GetAtoms():
+            if atom.GetIdx() not in core_atoms and atom.GetSymbol() in ['C', 'N', 'O', 'S']:  # Ensure substitution involves valid atoms
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() in core_atoms:
+                        return True, "Contains dimethylisoalloxazine core with substitution at position 10"
     
-    return True, "Contains dimethylisoalloxazine core with substitution at position 10"
+    return False, "No substitution at position 10 of the dimethylisoalloxazine core"
 
 # Example usage
-smiles = "Cc1cc2nc3c(nc(=O)[nH]c3=O)n(C)c2cc1C"
-result, reason = is_flavin(smiles)
-print(result, reason)
+examples = [
+    "Cc1cc2nc3c(nc(=O)[nH]c3=O)n(C)c2cc1C",  # Known base flavin structure
+    "Cc1cc2N(C3=NC(=O)NC(=O)C3=N2)C[C@H](O)[C@H](O)[C@H](O)COC4OC(CO)C(C4O)O"  # Example of flavin with complex substitution
+]
+for smiles in examples:
+    result, reason = is_flavin(smiles)
+    print(f"SMILES: {smiles}\nResult: {result}, Reason: {reason}\n")
