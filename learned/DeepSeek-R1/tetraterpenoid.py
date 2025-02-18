@@ -15,36 +15,33 @@ def is_tetraterpenoid(smiles: str):
 
     # Basic size check - tetraterpenoids typically have ~40 carbons (allowing modifications)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 30:  # Allow for some methyl removals
+    if c_count < 35:  # Allow for significant modifications but maintain core structure
         return False, f"Only {c_count} carbons, insufficient for tetraterpenoid"
 
-    # Molecular weight check (C40H64 ~536 g/mol, but modified versions may be lower)
+    # Molecular weight check (C40 base ~536 g/mol, modified versions could be lower)
     mol_wt = Descriptors.ExactMolWt(mol)
-    if mol_wt < 400:
+    if mol_wt < 350:
         return False, f"Molecular weight {mol_wt:.1f} too low"
 
-    # Look for isoprene (C5H8) patterns - modified to account for possible rearrangements
-    # Basic isoprene unit pattern (approximate)
-    isoprene_pattern = Chem.MolFromSmarts("[CH2](-[CH2])-[CH2]-[CH]=[CH2]")
-    matches = len(mol.GetSubstructMatches(isoprene_pattern))
-    
-    # Alternative pattern for conjugated systems
-    conjugated_pattern = Chem.MolFromSmarts("[CH2]=[CH]-[CH2]-[CH2]")
-    conjugated_matches = len(mol.GetSubstructMatches(conjugated_pattern))
-    
-    # Check for at least 6 isoprene-like units (allowing for modifications)
-    total_units = matches + conjugated_matches
-    if total_units < 6:
-        return False, f"Only {total_units} isoprene-like units found"
+    # Count all double bonds - tetraterpenoids typically have multiple conjugated bonds
+    double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if double_bonds < 8:
+        return False, f"Only {double_bonds} double bonds, need ≥8 for conjugated system"
 
-    # Check for methyl branches common in terpenoids
-    methyl_branch = Chem.MolFromSmarts("[CH3;!R]-[CX4](-[CX4])-[CX4]")
-    if len(mol.GetSubstructMatches(methyl_branch)) < 3:
-        return False, "Insufficient methyl branches for terpenoid structure"
+    # Check for extended conjugation (at least 4 consecutive double bonds)
+    conjugated_system = Chem.MolFromSmarts("*=*~*=*~*=*~*=*")  # At least 4 conjugated double bonds
+    if not mol.HasSubstructMatch(conjugated_system):
+        return False, "No extended conjugated system detected"
 
-    # Check for long aliphatic chain or cyclic system with multiple double bonds
-    chain_pattern = Chem.MolFromSmarts("[CH2]~[CH2]~[CH2]~[CH2]~[CH2]~[CH2]")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "No long chain structure detected"
+    # Check for methyl groups attached to conjugated system (common in isoprenoids)
+    methyl_on_conjugated = Chem.MolFromSmarts("[CH3]-[C]=[C]")
+    if len(mol.GetSubstructMatches(methyl_on_conjugated)) < 3:
+        return False, "Insufficient methyl groups on conjugated system"
 
-    return True, "Meets criteria for tetraterpenoid: high carbon count, isoprene-like units, methyl branches"
+    # Check for possible isoprene skeleton pattern (head-to-tail linkage)
+    # More flexible pattern allowing modifications
+    isoprene_unit = Chem.MolFromSmarts("[C]=[C]-[C]([CH3])-[CH2]-[C] |(1:5,4:0)|")
+    if len(mol.GetSubstructMatches(isoprene_unit)) < 6:  # At least 6 head-tail units
+        return False, "Insufficient isoprene-like linkage patterns"
+
+    return True, "Meets criteria: high carbons, conjugated system, methyl groups, isoprene patterns"
