@@ -5,69 +5,73 @@ Classifies: CHEBI:83813 proteinogenic amino acid
 Classifies: proteinogenic amino acid
 """
 from rdkit import Chem
-from rdkit.Chem import Mol
-from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import ChemicalFeatures
-from rdkit import RDConfig
-import os
+from rdkit.Chem import AllChem
+
+# Predefined L-amino acid templates (including modified ones)
+L_AMINO_TEMPLATES = {
+    'alanine': 'C[C@H](N)C(=O)O',
+    'arginine': 'N[C@@H](CCCNC(=N)N)C(=O)O',
+    'asparagine': 'N[C@@H](CC(N)=O)C(=O)O',
+    'aspartic_acid': 'N[C@@H](CC(=O)O)C(=O)O',
+    'cysteine': 'N[C@@H](CS)C(=O)O',
+    'glutamic_acid': 'N[C@@H](CCC(=O)O)C(=O)O',
+    'glutamine': 'N[C@@H](CCC(N)=O)C(=O)O',
+    'glycine': 'NCC(=O)O',
+    'histidine': 'N[C@@H](CC1=CN=CN1)C(=O)O',
+    'isoleucine': 'CC[C@H](C)[C@H](N)C(=O)O',
+    'leucine': 'CC(C)C[C@H](N)C(=O)O',
+    'lysine': 'NCCCC[C@H](N)C(=O)O',
+    'methionine': 'CSCC[C@H](N)C(=O)O',
+    'phenylalanine': 'N[C@@H](CC1=CC=CC=C1)C(=O)O',
+    'proline': 'OC(=O)[C@@H]1CCCN1',
+    'pyrrolysine': 'C(=O)([C@@H](N)CCCCNC([C@H]1[C@@H](CC=N1)C)=O)O',
+    'selenocysteine': 'N[C@@H](C[SeH])C(=O)O',
+    'serine': 'N[C@@H](CO)C(=O)O',
+    'threonine': 'C[C@H](O)[C@H](N)C(=O)O',
+    'tryptophan': 'N[C@@H](CC1=CNC2=CC=CC=C12)C(=O)O',
+    'tyrosine': 'N[C@@H](CC1=CC=C(O)C=C1)C(=O)O',
+    'valine': 'CC(C)[C@H](N)C(=O)O',
+    'n-formylmethionine': 'CN(C(=O)SCCC[C@H](N)C(=O)O)C=O',  # Example, adjust as needed
+}
 
 def is_proteinogenic_amino_acid(smiles: str):
     """
-    Determines if a molecule is a proteinogenic amino acid based on its SMILES string.
-    These are alpha-amino acids with L-configuration (except glycine), including selenocysteine, pyrrolysine, and N-formylmethionine.
-    
-    Args:
-        smiles (str): SMILES string of the molecule
-        
-    Returns:
-        bool: True if proteinogenic amino acid, False otherwise
-        str: Reason for classification
+    Determines if a molecule is a proteinogenic amino acid.
     """
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return False, "Invalid SMILES"
+
+    # Check for exactly one amino group and one carboxyl group
+    amino_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[NX3&!$(NC=O)]")))
+    carboxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=O)[OX2H1]")))
     
-    # Check for alpha-amino acid structure: NH2-CH(R)-COOH
-    # SMARTS pattern for N connected to alpha carbon connected to carboxyl
-    # This allows for primary/secondary amines (proline) and different protonation states
-    backbone_smarts = Chem.MolFromSmarts("[NX3]-[CX4H]([CX3](=O)[OX2H1])-*")
-    if not mol.HasSubstructMatch(backbone_smarts):
-        return False, "No alpha-amino acid backbone"
-    
-    # Check for at least one carboxylic acid group (redundant but safe)
-    carboxyl_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=O)[OX2H1]"))
-    if not carboxyl_matches:
-        return False, "No carboxylic acid group"
-    
-    # Find the alpha carbon(s) (connected to both N and COOH)
-    alpha_carbons = set()
-    for match in mol.GetSubstructMatches(backbone_smarts):
-        alpha_carbon = match[1]
-        alpha_carbons.add(alpha_carbon)
-    
-    # Check chirality for each alpha carbon (should be only one)
-    for alpha_idx in alpha_carbons:
-        alpha_atom = mol.GetAtomWithIdx(alpha_idx)
-        chiral_tag = alpha_atom.GetChiralTag()
-        
-        # Glycine case: no chiral center, R is H
-        if chiral_tag == Chem.ChiralType.CHI_UNSPECIFIED:
-            # Check if R is H (only N and COOH attached)
-            neighbors = alpha_atom.GetNeighbors()
-            heavy_neighbors = [n for n in neighbors if n.GetAtomicNum() != 1]
-            if len(heavy_neighbors) != 2:  # Expect N and COOH C
-                return False, "Non-chiral alpha carbon with non-H substituents (not glycine)"
-        else:
-            # Check L-configuration (S in CIP if priorities are N > COOH > R > H)
-            # Assign CIP labels
-            Chem.AssignStereochemistry(mol)
-            cip = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
-            cip_dict = dict(cip)
-            if alpha_idx not in cip_dict:
-                return False, "Chiral center not assigned"
-            
-            cip_code = cip_dict[alpha_idx]
-            if cip_code != 'S':
-                return False, f"Alpha carbon has {cip_code} configuration, expected S (L)"
-    
-    return True, "Alpha-amino acid with correct backbone and L-configuration (if chiral)"
+    # Allow N-formyl (pyrrolysine, N-formylmethionine) and other modifications
+    if amino_count != 1 and not any('n-formyl' in k for k in L_AMINO_TEMPLATES if 'methionine' in k):
+        return False, "Multiple amino groups"
+    if carboxyl_count != 1:
+        return False, "Multiple carboxyl groups"
+
+    # Check alpha-amino acid pattern with possible N-substituents (like formyl)
+    pattern = Chem.MolFromSmarts("[NX3][C@@H]([CX3](=O)[OX2H1])*")
+    if not mol.HasSubstructMatch(pattern):
+        return False, "No alpha-amino acid backbone with proper stereochemistry"
+
+    # Check against known L-amino acid templates (including modified ones)
+    for template_smiles in L_AMINO_TEMPLATES.values():
+        template = Chem.MolFromSmiles(template_smiles)
+        if template is None:
+            continue
+        if mol.HasSubstructMatch(template):
+            return True, "Matches known proteinogenic amino acid structure"
+
+    # Special case for glycine (non-chiral)
+    glycine = Chem.MolFromSmiles(L_AMINO_TEMPLATES['glycine'])
+    if mol.HasSubstructMatch(glycine):
+        return True, "Glycine structure detected"
+
+    # Check for peptide bonds to exclude dipeptides
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3](=O)[NX3]")):
+        return False, "Contains peptide bond"
+
+    return False, "Does not match any known proteinogenic amino acid structure"
