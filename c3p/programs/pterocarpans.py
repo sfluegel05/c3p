@@ -39,10 +39,16 @@ def is_pterocarpans(smiles: str):
     if len(fused_rings) < 4:
         return False, "Does not have enough fused rings"
 
-    # Check for required heteroatoms
-    atom_counts = mol.GetAtomSMARTSPatternCount("O", 2, 4)
-    if atom_counts <= 0:
-        return False, "Does not contain the required oxygen atoms"
+    # Check for required oxygen atoms
+    ether_pattern = Chem.MolFromSmarts("[OX2]")
+    ether_matches = mol.GetSubstructMatches(ether_pattern)
+    if len(ether_matches) < 2:
+        return False, "Does not contain the required ether oxygen atoms"
+    
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX1]")
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    if len(hydroxyl_matches) < 2:
+        return False, "Does not contain the required hydroxyl oxygen atoms"
 
     # Check for common substitutions
     subs_pattern = Chem.MolFromSmarts("[OC,OCC]")
