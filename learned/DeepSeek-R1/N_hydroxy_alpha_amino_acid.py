@@ -20,39 +20,51 @@ def is_N_hydroxy_alpha_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for carboxylic acid group (either -COOH or deprotonated form)
+    # Check for carboxylic acid group (either -COOH or deprotonated)
     carboxylic_acid = Chem.MolFromSmarts('[CX3](=[OX1])[OX2H1]')
     if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group"
 
-    # Verify alpha-amino acid structure (amino group on adjacent carbon)
-    alpha_has_n = False
+    # Find alpha carbon (adjacent to carboxylic acid's carbonyl carbon)
+    alpha_carbon = None
     for match in mol.GetSubstructMatches(carboxylic_acid):
-        carb_carbon_idx = match[0]
-        carb_carbon = mol.GetAtomWithIdx(carb_carbon_idx)
-        for neighbor in carb_carbon.GetNeighbors():
+        carbonyl_carbon = match[0]
+        for neighbor in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors():
             if neighbor.GetSymbol() == 'C':
                 alpha_carbon = neighbor
-                # Check if alpha carbon has any nitrogen neighbors
-                if any(nbr.GetSymbol() == 'N' for nbr in alpha_carbon.GetNeighbors()):
-                    alpha_has_n = True
-                    break
-            if alpha_has_n:
                 break
-        if alpha_has_n:
+        if alpha_carbon:
             break
+    if not alpha_carbon:
+        return False, "No alpha carbon found"
 
-    if not alpha_has_n:
-        return False, "Not an alpha-amino acid"
+    # Check if alpha carbon has a nitrogen attached
+    nitrogen = None
+    for nbr in alpha_carbon.GetNeighbors():
+        if nbr.GetSymbol() == 'N':
+            nitrogen = nbr
+            break
+    if not nitrogen:
+        return False, "No nitrogen attached to alpha carbon"
 
-    # Check for any N-hydroxy group (N-O single bond with H on oxygen)
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'N':
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'O':
-                    bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
-                    if bond and bond.GetBondType() == Chem.BondType.SINGLE:
-                        if neighbor.GetTotalNumHs() >= 1:
-                            return True, "N-hydroxy group found on an amino group"
+    # Check for N-hydroxy group (N-O single bond)
+    has_n_oxide = False
+    for nbr in nitrogen.GetNeighbors():
+        if nbr.GetSymbol() == 'O':
+            bond = mol.GetBondBetweenAtoms(nitrogen.GetIdx(), nbr.GetIdx())
+            if bond and bond.GetBondType() == Chem.BondType.SINGLE:
+                has_n_oxide = True
+                break
+    if not has_n_oxide:
+        return False, "No N-hydroxy group found"
 
-    return False, "No N-hydroxy group found on any amino group"
+    # Exclude amides/hydroxamates (nitrogen connected to carbonyl carbon)
+    for nbr in nitrogen.GetNeighbors():
+        if nbr.GetSymbol() == 'C':
+            for bond in nbr.GetBonds():
+                if bond.GetBondType() == Chem.BondType.DOUBLE:
+                    atoms = [bond.GetBeginAtom(), bond.GetEndAtom()]
+                    if any(atom.GetSymbol() == 'O' for atom in atoms):
+                        return False, "Nitrogen is part of amide/hydroxamate group"
+
+    return True, "N-hydroxy group found on amino group attached to alpha carbon"
