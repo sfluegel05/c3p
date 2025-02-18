@@ -23,30 +23,33 @@ def is_tetradecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Find all ester groups (O-C=O)
-    ester_pattern = Chem.MolFromSmarts('[O]-[C]=O')
+    # Find all ester groups (O-C=O), explicit valence matching
+    ester_pattern = Chem.MolFromSmarts('[O;X2]-[C;X3]=[O;X1]')
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
     for match in ester_matches:
-        o_idx, c_idx = match
-        carbonyl_atom = mol.GetAtomWithIdx(c_idx)
-        
-        # Get the carbon adjacent to the carbonyl (part of the acyl chain)
-        acyl_start = [n for n in carbonyl_atom.GetNeighbors() if n.GetIdx() != o_idx and n.GetAtomicNum() == 6]
-        if not acyl_start:
+        # Match returns (O, C, =O) indices, we need O and C positions
+        if len(match) < 2:
             continue
-        acyl_start = acyl_start[0]
+        o_idx, c_idx = match[0], match[1]
         
-        # Traverse the acyl chain to check length
-        current_atom = acyl_start
-        chain_length = 1
+        # Get the carbon adjacent to carbonyl (acyl chain direction)
+        neighbors = [n for n in mol.GetAtomWithIdx(c_idx).GetNeighbors() 
+                    if n.GetIdx() != o_idx and n.GetAtomicNum() == 6]
+        if not neighbors:
+            continue
+        current_atom = neighbors[0]
+        
+        # Traverse the carbon chain
+        chain_length = 1  # Already counting the first carbon after carbonyl
         visited = {c_idx, o_idx, current_atom.GetIdx()}
         
         while True:
-            next_carbons = [n for n in current_atom.GetNeighbors() 
-                            if n.GetAtomicNum() == 6 
-                            and n.GetIdx() not in visited 
-                            and n.GetBond(current_atom).GetBondType() == Chem.BondType.SINGLE]
+            # Follow only single bonds to carbons
+            next_carbons = [n for n in current_atom.GetNeighbors()
+                           if n.GetAtomicNum() == 6
+                           and n.GetIdx() not in visited
+                           and mol.GetBondBetweenAtoms(current_atom.GetIdx(), n.GetIdx()).GetBondType() == Chem.BondType.SINGLE]
             
             if len(next_carbons) != 1:
                 break  # Branch or end of chain
@@ -54,8 +57,8 @@ def is_tetradecanoate_ester(smiles: str):
             visited.add(current_atom.GetIdx())
             chain_length += 1
         
-        # Check if chain ends with a methyl group (degree 1) and length is 13 (14 carbons total)
-        if current_atom.GetDegree() == 1 and chain_length == 13:
-            return True, "Contains a myristoyl (tetradecanoyl) ester group"
+        # Check chain length (13 carbons after carbonyl = total 14)
+        if chain_length == 13:
+            return True, "Contains a myristoyl (14-carbon) ester group"
     
-    return False, "No myristoyl ester group found"
+    return False, "No 14-carbon ester group found"
