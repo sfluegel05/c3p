@@ -32,20 +32,11 @@ def is_acrovestone(smiles: str):
     if n_phenol_groups < 2:
         return False, "Too few phenol groups for acrovestone"
 
-    # Acrovestones are isoflavones or related compounds, so should have an isoflavone backbone
-    isoflavone_pattern = Chem.MolFromSmarts("C1=CC(=O)Oc2c1cc(O)c(c2)c3ccc(O)cc3")
-    if not mol.HasSubstructMatch(isoflavone_pattern):
-        return False, "No isoflavone backbone found"
-    
-    # Acrovestones typically have a molecular weight between 300-600 Da
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300 or mol_wt > 600:
-        return False, "Molecular weight outside typical acrovestone range"
-
     # Acrovestones often have glycosidic substituents, so look for sugar groups
     has_sugar_groups = any(atom.GetSmarts() in ['OC', 'OCC'] for atom in mol.GetAtoms())
     
     # Calculate common molecular descriptors and properties
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     n_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
     n_rings = rdMolDescriptors.CalcNumRings(mol)
     n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
@@ -53,10 +44,18 @@ def is_acrovestone(smiles: str):
     logp = Descriptors.MolLogP(mol)
 
     # Use a combination of structural features and molecular properties to classify
-    if n_phenol_groups >= 2 and n_rotatable_bonds > 5 and n_rings >= 3 and n_aromatic_rings >= 2 and 100 < tpsa < 200 and 2 < logp < 6:
+    if (
+        n_phenol_groups >= 2
+        and 300 < mol_wt < 800
+        and n_rotatable_bonds > 5
+        and n_rings >= 3
+        and n_aromatic_rings >= 2
+        and 100 < tpsa < 200
+        and 2 < logp < 6
+    ):
         if has_sugar_groups:
-            return True, "Polyphenolic isoflavone backbone with glycosidic substituents, consistent with acrovestone"
+            return True, "Polyphenolic structure with glycosidic substituents, consistent with acrovestone"
         else:
-            return True, "Polyphenolic isoflavone backbone, consistent with acrovestone"
+            return True, "Polyphenolic structure, consistent with acrovestone"
     else:
         return False, "Structural features and molecular properties not typical of acrovestones"
