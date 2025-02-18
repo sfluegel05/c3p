@@ -1,67 +1,26 @@
 """
 Classifies: CHEBI:25608 nucleoside phosphate
 """
-"""
-Classifies: CHEBI:17596 nucleoside phosphate
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
+</think>
 
-def is_nucleoside_phosphate(smiles: str):
-    """
-    Determines if a molecule is a nucleoside phosphate based on its SMILES string.
-    A nucleoside phosphate consists of a nucleobase attached to a sugar with one or more phosphate groups.
+Okay, let's figure out why the previous code had issues. From the error message, the main problems were false positives and false negatives. 
 
-    Args:
-        smiles (str): SMILES string of the molecule
+First, looking at the false negatives: some valid examples like UDP-N-acetylmuramoyl... were missed because the code didn't detect the nucleobase. The original code used SMARTS patterns for purine and pyrimidine bases. But maybe those patterns are too strict. For example, the purine pattern was looking for a specific arrangement of nitrogens and carbons in a ring, but some valid nucleobases might have substituents or different structures. Also, some examples like NMN(+) have a nicotinamide group instead of a traditional purine/pyrimidine, so the base detection needs to be broader.
 
-    Returns:
-        bool: True if molecule is a nucleoside phosphate, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+Then, the false positives: some molecules were incorrectly classified because they had a phosphate attached to something else, not a nucleoside. The previous code checked for a sugar and a phosphate attached to it, but maybe the phosphate was part of a different group, not the nucleoside. So, the code needs to ensure that the phosphate is directly connected to the sugar in the nucleoside structure.
 
-    # Check for presence of phosphorus (phosphate requirement)
-    has_phosphorus = any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms())
-    if not has_phosphorus:
-        return False, "No phosphorus atoms found"
+Another issue could be the sugar pattern. The original code used a specific ribose-like structure, but some nucleoside phosphates might have deoxyribose or modified sugars. The sugar pattern might be too strict, leading to false negatives.
 
-    # Define nucleobase pattern (purine/pyrimidine core)
-    base_pattern = Chem.MolFromSmarts("[n&R]1[c&R][n&R][c&R][n&R]1")  # Purine base
-    if not mol.HasSubstructMatch(base_pattern):
-        # Try pyrimidine pattern if purine not found
-        base_pattern = Chem.MolFromSmarts("[n&R]1[c&R][n&R][c&R][c&R]1")  # Pyrimidine base
-        if not mol.HasSubstructMatch(base_pattern):
-            return False, "No nucleobase detected"
+So, here's what to improve:
 
-    # Define sugar pattern (ribose-like structure)
-    sugar_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
-    if not sugar_matches:
-        return False, "No sugar moiety detected"
+1. **Nucleobase Detection**: Use a more flexible approach to detect nucleobases. Instead of relying on specific ring patterns, check for common heterocyclic atoms (like nitrogens in rings) that are characteristic of nucleobases. Alternatively, use a substructure search that includes both purines, pyrimidines, and other possible bases like nicotinamide.
 
-    # Check phosphate linkage to sugar
-    phosphate_attached = False
-    for sugar_match in sugar_matches:
-        # Get the oxygen atoms in the sugar
-        sugar_o_indices = [i for i in sugar_match if mol.GetAtomWithIdx(i).GetAtomicNum() == 8]
-        
-        # Check if any sugar oxygen is connected to phosphorus
-        for o_idx in sugar_o_indices:
-            atom = mol.GetAtomWithIdx(o_idx)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 15:  # Phosphorus
-                    phosphate_attached = True
-                    break
-            if phosphate_attached:
-                break
-        if phosphate_attached:
-            break
+2. **Phosphate Attachment**: Ensure that the phosphate is directly connected to the sugar moiety. The previous code checked for any sugar oxygen connected to phosphorus, but maybe there's a need to check for the ester linkage (O-P-O) specifically attached to the sugar's hydroxyl group.
 
-    if not phosphate_attached:
-        return False, "No phosphate attached to sugar"
+3. **Sugar Detection**: Use a more general sugar pattern that allows for variations like deoxyribose or other modifications. Maybe look for a five-membered ring (furanose) with oxygen and carbons, but not enforce all hydroxyl groups.
 
-    return True, "Contains nucleobase-sugar with phosphate linkage"
+4. **Check Connectivity**: Make sure the nucleobase is attached to the sugar (like the anomeric carbon) and the phosphate is on the sugar's hydroxyl. This would require checking the connectivity between the base, sugar, and phosphate.
+
+Let me adjust the code accordingly. For the nucleobase, I'll use a more generic pattern that looks for rings with at least two nitrogens, which covers purines, pyrimidines, and similar structures. Also, check if the base is connected to the sugar's anomeric carbon. For the phosphate, ensure it's ester-linked to the sugar's hydroxyl. Also, handle cases where the phosphate might be part of a diphosphate or triphosphate group.
+
+Testing this approach should reduce false negatives by accepting more nucleobase types and ensure the phosphate is correctly attached, reducing false positives.
