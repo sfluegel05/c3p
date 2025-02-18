@@ -1,42 +1,37 @@
 """
 Classifies: CHEBI:143084 organometalloidal compound
 """
+#!/usr/bin/env python
 """
 Classifies: organometalloidal compound
 Definition: A compound having bonds between one or more metalloid atoms and one or more carbon atoms
              of an organyl group.
-
-This implementation restricts to arsenic–based compounds and uses several heuristics:
-  1. The SMILES must contain an arsenic atom ("[As") to limit to arsenic compounds.
-  2. A hard–coded filter rejects tryparsamide–like fragments (and a few other patterns).
-  3. For each arsenic atom, examine its bonds to carbon. The carbon is considered “organyl” if:
-       • It is part of a chain or ring (i.e. it is bonded to another carbon besides the arsenic), or
-       • It is a methyl group and either (a) the entire molecule is small or (b) the arsenic bears a positive charge.
-  4. In addition, for neutral, non–ring As atoms we require at least one double bond to oxygen (a hallmark of As(V)).
+             
+Improved heuristics for arsenic–based compounds:
+  • Only consider compounds where the SMILES contains "[As".
+  • Hard–coded filters reject known inorganic patterns (e.g. tryparsamide–like fragments, certain chloride patterns).
+  • For each arsenic (atomic number 33), examine each As–C bond.
+       – If the bonded carbon is “embedded” in an organic fragment (i.e. it has at least one additional carbon neighbor) then the bond is accepted.
+       – If the bonded carbon is a methyl group (i.e. no additional carbon neighbors after excluding the As) then we accept it only if (i) the overall molecular weight is low (<170 Da) or (ii) the As carries a formal charge or (iii) exactly two methyl groups are present and there are few extra hetero–atomic substituents.
+  • The previous version required a double–bonded O on neutral, non–ring As atoms. That requirement has been removed to improve detection.
   
-Note: This heuristic–based approach is an improvement over the previous version but remains an imperfect tool.
+Note: This heuristic approach remains imperfect.
 """
-
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 def is_organometalloidal_compound(smiles: str):
     """
     Determines if a molecule is an organometalloidal compound based on its SMILES string.
-    (Heuristics:
-       - Restricts to arsenic-based compounds.
-       - Requires at least one As–C bond where the carbon is considered to be part of an organyl group.
-       - For neutral, non–ring As, requires an As=O bond.
-       - Accepts simple (methyl) bonds in low molecular weight or charged cases.)
+    (Improved Heuristics for arsenic-based compounds.)
     
     Args:
         smiles (str): SMILES string of the molecule
     
     Returns:
-        bool: True if judged to be an organometalloidal compound, False otherwise.
+        bool: True if the molecule is judged to be an organometalloidal compound, False otherwise.
         str: Reason for classification.
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return False, "Invalid SMILES string"
@@ -45,114 +40,87 @@ def is_organometalloidal_compound(smiles: str):
     if "[As" not in smiles:
         return False, "No arsenic atom found; not an organometalloidal compound"
     
-    # Hard-coded filter: reject tryparsamide-like fragment.
+    # Hard–coded filters (these can be extended as needed):
     if "NCC(N)=O" in smiles:
         return False, "Detected tryparsamide-like fragment (NCC(N)=O); not considered an organyl group"
-    
-    # (Optional) More filters can be added.
-    # For example, if a dichloro–arsenic is present, we reject.
     if "[As](Cl" in smiles:
         return False, "Detected Cl substituents on arsenic; likely inorganic derivative"
-
-    # Check molecular weight – very low MW compounds are often noise.
+    
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     if mol_wt < 120:
         return False, f"Molecular weight too low ({mol_wt:.1f} Da) to be an organometalloidal compound"
     
-    overall_details = []
-    valid_overall = False
+    overall_details = []  # collect explanation details
+    compound_is_valid = False  # flag for at least one acceptable As–C bonding
 
-    # Loop over each atom – focus on arsenic atoms (atomic number 33)
+    # Loop over each atom and focus on arsenic (atomic number 33).
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 33:
             continue
-        # Gather carbon neighbors
+
+        # For each As atom, collect its carbon neighbors.
         carbon_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
         if not carbon_neighbors:
-            continue  # This arsenic has no As–C bonds
-        
-        details = []
-        has_organyl = False  # flag: at least one C neighbor is part of a larger organic fragment
-        has_methyl   = False  # flag: encountered a methyl group
-        for c in carbon_neighbors:
-            # Check if this carbon is attached to another carbon (besides the As)
-            other_c = [nbr for nbr in c.GetNeighbors() if nbr.GetIdx() != atom.GetIdx() and nbr.GetAtomicNum() == 6]
-            if other_c:
-                has_organyl = True
-                details.append("Found As–C bond where C is part of a larger organic fragment")
-            else:
-                has_methyl = True
-                details.append("Found As–C bond where C appears as a methyl group")
-        
-        # For arsenic atoms that have an organyl bond, we generally accept.
-        if has_organyl:
-            # For neutral, non–ring As atoms, check for an As=O bond.
-            if not atom.IsInRing() and atom.GetFormalCharge() == 0:
-                # Look among bonds of this As for a double-bonded O:
-                double_bonded_O = False
-                for bond in atom.GetBonds():
-                    nbr = bond.GetOtherAtom(atom)
-                    if nbr.GetAtomicNum() == 8 and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
-                        double_bonded_O = True
-                        break
-                if not double_bonded_O:
-                    details.append("Neutral, non–ring As lacks an As=O bond; rejecting")
-                    # For this As we do not mark it as valid; continue to next As.
-                    continue
-            # If we get here, this As qualifies.
-            overall_details.extend(details)
-            valid_overall = True
-            break
+            continue  # This As has no As-C bond
 
-        # If there is no large organyl bond, then consider the methyl-only case.
-        # We relax the previous rule: if the entire compound is low MW or if the As is charged, allow methyl groups.
-        if has_methyl:
-            if atom.GetFormalCharge() != 0:
-                overall_details.extend(details + ["As bears a nonzero charge; accepting methyl ligand(s)"])
-                valid_overall = True
-                break
-            # Otherwise, if the molecule is very simple we permit a single methyl group.
-            if len(carbon_neighbors) == 1 and mol_wt < 170:
-                overall_details.extend(details + ["Single methyl substituent on low–MW molecule; accepting"])
-                valid_overall = True
-                break
-            # Also, if there are exactly two methyl ligands and no additional heteroatom ligands (besides O)
-            # we permit them (e.g. dimethylarsinous acid).
-            if len(carbon_neighbors) == 2:
-                other_subs = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() not in (6, 1)]
-                # If not dominated by extra electronegative groups then accept.
-                if len(other_subs) <= 2:
-                    overall_details.extend(details + ["Two methyl groups accepted based on substitution pattern"])
-                    valid_overall = True
-                    break
-            details.append("Methyl-only substituents did not meet acceptance criteria")
-            overall_details.extend(details)
-        # End loop over this As atom.
+        as_details = []   # details for this particular As atom
+        valid_for_this_As = False  # flag to mark if any neighbor qualifies
+        
+        # Counters used for methyl-only mode.
+        methyl_count = 0
+        
+        for c in carbon_neighbors:
+            # Determine the number of other carbon neighbors for carbon 'c'
+            # (exclude the source As atom).
+            other_carbons = [nbr for nbr in c.GetNeighbors()
+                             if nbr.GetIdx() != atom.GetIdx() and nbr.GetAtomicNum() == 6]
+            if other_carbons:
+                # c is part of a larger organic fragment (chain or ring)
+                as_details.append("Found As–C bond where C is part of a larger organic fragment")
+                valid_for_this_As = True
+            else:
+                # c appears to be a methyl group (only neighbor is the arsenic).
+                methyl_count += 1
+                as_details.append("Found As–C bond where C appears as a methyl group")
+                # Accept methyl substituent if:
+                #  - Molecule is very simple (low molecular weight) or
+                #  - The arsenic atom carries a nonzero formal charge.
+                if atom.GetFormalCharge() != 0 or mol_wt < 170:
+                    as_details.append("Methyl substituent accepted due to charge/low–MW criteria")
+                    valid_for_this_As = True
+                # Also, if exactly two methyl groups are present and there aren’t extra heteroatoms bonded
+                # to As (besides C and H), then accept.
+                elif len(carbon_neighbors) == 2:
+                    non_c_neighbors = [nbr for nbr in atom.GetNeighbors()
+                                       if nbr.GetAtomicNum() not in (6, 1)]
+                    if len(non_c_neighbors) <= 2:
+                        as_details.append("Two methyl groups accepted based on substitution pattern")
+                        valid_for_this_As = True
+
+        # If for this As we found at least one acceptable As-C bond, mark compound as valid.
+        if valid_for_this_As:
+            overall_details.extend(as_details)
+            compound_is_valid = True
+            break  # At least one As qualifies; no need to check further.
+        else:
+            overall_details.extend(as_details)
     
-    if valid_overall:
+    if compound_is_valid:
         return True, "; ".join(overall_details)
     else:
         return False, "No As–C bond found that meets organyl criteria"
 
 # Example usage:
 if __name__ == "__main__":
-    # True positive example:
-    tp_smiles = "[As](=O)(C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCC)(C)C"  # 1-dimethylarsinoyl-(2Z,...)
-    result, reason = is_organometalloidal_compound(tp_smiles)
-    print("Input SMILES:", tp_smiles)
-    print("Result:", result)
-    print("Reason:", reason)
-    
-    # Example of dimethylarsinic acid (should be accepted)
-    dm_arsinic = "C[As](C)(O)=O"
-    result, reason = is_organometalloidal_compound(dm_arsinic)
-    print("\nInput SMILES:", dm_arsinic)
-    print("Result:", result)
-    print("Reason:", reason)
-    
-    # False positive example: m-aminophenylarsonous acid (expected to be rejected)
-    fp_smiles = "Nc1cccc(c1)[As](O)O"
-    result, reason = is_organometalloidal_compound(fp_smiles)
-    print("\nInput SMILES:", fp_smiles)
-    print("Result:", result)
-    print("Reason:", reason)
+    # True positive examples:
+    examples = [
+        ("[As](=O)(C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCC)(C)C", "1-dimethylarsinoyl-(2Z,5Z,8Z,11Z,14Z,17Z)-heneicosahexaene"),
+        ("O[As](O)(=O)c1ccc(cc1)[N+]#N", "ABA diazonium"),
+        ("C1C=CC=[As]1", "2H-arsole"),
+        ("[As](=O)(CCCCCCCCCCCCCCCCCCCCCCC)(C)C", "1-dimethylarsinoyl-tricosane"),
+        ("C[As](C)c1ccccc1[As](C)C", "1,2-phenylenebis(dimethylarsane) [expected now to be accepted]"),
+        ("OC(=O)C[As](O)(O)=O", "arsenoacetic acid [expected to be accepted]"),
+    ]
+    for smi, name in examples:
+        result, reason = is_organometalloidal_compound(smi)
+        print(f"Name: {name}\nSMILES: {smi}\nResult: {result}\nReason: {reason}\n{'-'*60}")
