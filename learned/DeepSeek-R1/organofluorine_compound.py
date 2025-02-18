@@ -1,374 +1,68 @@
 """
 Classifies: CHEBI:37143 organofluorine compound
 """
- - (1R,2S)-1-fluoro-2-(trifluoromethyl)cyclopropane: SMILES: F[C@]1([C@@H]1C(F)(F)F)C
- - (S)-3-fluoro-4-(3-fluorophenoxy)benzenesulfonamide: SMILES: NS(=O)(=O)C1=CC(=C(C=C1)OC2=CC=CC=C2F)F
- - 2,3-difluoro-4-methoxybenzaldehyde: SMILES: COC1=C(C(=O)C=CC1F)F
- - (3R,4R)-3-fluoro-4-(4-fluorophenyl)piperidine: SMILES: C1CN[C@H](C[C@H]1F)C2=CC=C(C=C2)F
- - 2-fluoro-3-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=C(C=CC=C1F)C(F)(F)F
- - 2-fluoro-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C=C1)C(F)(F)F)F
- - 4-fluoro-3-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=CC(=C(C=C1)F)C(F)(F)F
- - 3-fluoro-4-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=CC(=C(C=C1)F)C(F)(F)F
- - 5-fluoro-2-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=C(C=CC(=C1)C(F)(F)F)F
- - 3-fluoro-5-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=CC(=CC(=C1)F)C(F)(F)F
- - 2-fluoro-4-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=CC(=C(C=C1)F)C(F)(F)F
- - 3-fluoro-2-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=C(C=CC(=C1)F)C(F)(F)F
- - 4-fluoro-2-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=CC(=C(C=C1)F)C(F)(F)F
- - 2-fluoro-6-(trifluoromethyl)benzoic acid: SMILES: OC(=O)C1=C(C=CC=C1C(F)(F)F)F
- - 3-fluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C=C1)F)C(F)(F)F
- - 4-fluoro-3-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C=C1)F)C(F)(F)F
- - 5-fluoro-2-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C=CC(=C1)C(F)(F)F)F
- - 2-fluoro-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C=C1)C(F)(F)F)F
- - 3-fluoro-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=CC(=C1)F)C(F)(F)F
- - 2-fluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C=C1)F)C(F)(F)F
- - 3-fluoro-2-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C=CC(=C1)F)C(F)(F)F
- - 4-fluoro-2-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C=C1)F)C(F)(F)F
- - 2-fluoro-6-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C=CC=C1C(F)(F)F)F
- - 2,3-difluoro-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C=C1)F)F)C(F)(F)F
- - 2,4-difluoro-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C=C1)F)C(F)(F)F)F
- - 2,5-difluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C=C1)F)F)C(F)(F)F
- - 3,4-difluoro-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1)F)F)C(F)(F)F)F
- - 3,5-difluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1)F)F)C(F)(F)F)F
- - 2,6-difluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C(=C1)F)F)C(F)(F)F
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)F
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)F
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)F
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)F
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C(=C1F)F)C(F)(F)F)F
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)F
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)F
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(=C(C(=C1F)F)C(F)(F)F)F
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)F
- - 3-fluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=C(C=C1)F)C(F)(F)F
- - 4-fluoro-3-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=C(C=C1)F)C(F)(F)F
- - 5-fluoro-2-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C=CC(=C1)C(F)(F)F)F
- - 2-fluoro-5-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=C(C=C1)C(F)(F)F)F
- - 3-fluoro-5-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=CC(=C1)F)C(F)(F)F
- - 2-fluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=C(C=C1)F)C(F)(F)F
- - 3-fluoro-2-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C=CC(=C1)F)C(F)(F)F
- - 4-fluoro-2-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=C(C=C1)F)C(F)(F)F
- - 2-fluoro-6-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C=CC=C1C(F)(F)F)F
- - 2,3-difluoro-5-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C=C1)F)F)C(F)(F)F
- - 2,4-difluoro-5-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C=C1)F)C(F)(F)F)F
- - 2,5-difluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C=C1)F)F)C(F)(F)F
- - 3,4-difluoro-5-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1)F)F)C(F)(F)F)F
- - 3,5-difluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1)F)F)C(F)(F)F)F
- - 2,6-difluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=C(C(=C1)F)F)C(F)(F)F
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)F
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)F
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)F
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)F
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=C(C(=C1F)F)C(F)(F)F)F
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)F
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)F
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=CC(=C(C(=C1F)F)C(F)(F)F)F
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzonitrile: SMILES: N#CC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)F
- - 3-fluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CBr
- - 4-fluoro-3-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CBr
- - 5-fluoro-2-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CBr
- - 2-fluoro-5-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CBr
- - 3-fluoro-5-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CBr
- - 2-fluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CBr
- - 3-fluoro-2-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CBr
- - 4-fluoro-2-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CBr
- - 2-fluoro-6-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C=CC=C1C(F)(F)F)CBr
- - 2,3-difluoro-5-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CBr
- - 2,4-difluoro-5-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CBr
- - 2,5-difluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CBr
- - 3,4-difluoro-5-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CBr
- - 3,5-difluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CBr
- - 2,6-difluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CBr
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CBr
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CBr
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CBr
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CBr
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CBr
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CBr
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CBr
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CBr
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl bromide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CBr
- - 3-fluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CCl
- - 4-fluoro-3-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CCl
- - 5-fluoro-2-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CCl
- - 2-fluoro-5-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CCl
- - 3-fluoro-5-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CCl
- - 2-fluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CCl
- - 3-fluoro-2-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CCl
- - 4-fluoro-2-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CCl
- - 2-fluoro-6-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C=CC=C1C(F)(F)F)CCl
- - 2,3-difluoro-5-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CCl
- - 2,4-difluoro-5-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CCl
- - 2,5-difluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CCl
- - 3,4-difluoro-5-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CCl
- - 3,5-difluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CCl
- - 2,6-difluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CCl
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CCl
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CCl
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CCl
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CCl
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CCl
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CCl
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CCl
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CCl
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl chloride: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CCl
- - 3-fluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CI
- - 4-fluoro-3-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CI
- - 5-fluoro-2-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CI
- - 2-fluoro-5-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CI
- - 3-fluoro-5-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CI
- - 2-fluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CI
- - 3-fluoro-2-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CI
- - 4-fluoro-2-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CI
- - 2-fluoro-6-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C=CC=C1C(F)(F)F)CI
- - 2,3-difluoro-5-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CI
- - 2,4-difluoro-5-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CI
- - 2,5-difluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CI
- - 3,4-difluoro-5-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CI
- - 3,5-difluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CI
- - 2,6-difluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CI
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CI
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CI
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CI
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CI
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CI
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CI
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CI
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CI
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl iodide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CI
- - 3-fluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CO
- - 4-fluoro-3-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CO
- - 5-fluoro-2-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CO
- - 2-fluoro-5-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CO
- - 3-fluoro-5-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CO
- - 2-fluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CO
- - 3-fluoro-2-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CO
- - 4-fluoro-2-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CO
- - 2-fluoro-6-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C=CC=C1C(F)(F)F)CO
- - 2,3-difluoro-5-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CO
- - 2,4-difluoro-5-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CO
- - 2,5-difluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CO
- - 3,4-difluoro-5-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CO
- - 3,5-difluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CO
- - 2,6-difluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CO
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CO
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CO
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CO
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CO
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CO
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CO
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CO
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CO
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl alcohol: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CO
- - 3-fluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN
- - 4-fluoro-3-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN
- - 5-fluoro-2-(trifluoromethyl)benzylamine: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CN
- - 2-fluoro-5-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN
- - 3-fluoro-5-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CN
- - 2-fluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN
- - 3-fluoro-2-(trifluoromethyl)benzylamine: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CN
- - 4-fluoro-2-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN
- - 2-fluoro-6-(trifluoromethyl)benzylamine: SMILES: FC1=C(C=CC=C1C(F)(F)F)CN
- - 2,3-difluoro-5-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CN
- - 2,4-difluoro-5-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CN
- - 2,5-difluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CN
- - 3,4-difluoro-5-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CN
- - 3,5-difluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CN
- - 2,6-difluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CN
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CN
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CN
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzylamine: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN
- - 3-fluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC
- - 4-fluoro-3-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC
- - 5-fluoro-2-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)COC
- - 2-fluoro-5-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC
- - 3-fluoro-5-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)COC
- - 2-fluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC
- - 3-fluoro-2-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)COC
- - 4-fluoro-2-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC
- - 2-fluoro-6-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C=CC=C1C(F)(F)F)COC
- - 2,3-difluoro-5-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)COC
- - 2,4-difluoro-5-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)COC
- - 2,5-difluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)COC
- - 3,4-difluoro-5-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)COC
- - 3,5-difluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)COC
- - 2,6-difluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)COC
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)COC
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)COC
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)COC
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)COC
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)COC
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)COC
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)COC
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)COC
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl methyl ether: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)COC
- - 3-fluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC(C)=O
- - 4-fluoro-3-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC(C)=O
- - 5-fluoro-2-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)COC(C)=O
- - 2-fluoro-5-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC(C)=O
- - 3-fluoro-5-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)COC(C)=O
- - 2-fluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC(C)=O
- - 3-fluoro-2-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)COC(C)=O
- - 4-fluoro-2-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)COC(C)=O
- - 2-fluoro-6-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C=CC=C1C(F)(F)F)COC(C)=O
- - 2,3-difluoro-5-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)COC(C)=O
- - 2,4-difluoro-5-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)COC(C)=O
- - 2,5-difluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)COC(C)=O
- - 3,4-difluoro-5-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)COC(C)=O
- - 3,5-difluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)COC(C)=O
- - 2,6-difluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)COC(C)=O
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)COC(C)=O
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)COC(C)=O
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)COC(C)=O
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)COC(C)=O
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)COC(C)=O
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)COC(C)=O
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)COC(C)=O
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)COC(C)=O
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl acetate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)COC(C)=O
- - 3-fluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CC#N
- - 4-fluoro-3-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CC#N
- - 5-fluoro-2-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CC#N
- - 2-fluoro-5-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CC#N
- - 3-fluoro-5-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CC#N
- - 2-fluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CC#N
- - 3-fluoro-2-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CC#N
- - 4-fluoro-2-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CC#N
- - 2-fluoro-6-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C=CC=C1C(F)(F)F)CC#N
- - 2,3-difluoro-5-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CC#N
- - 2,4-difluoro-5-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CC#N
- - 2,5-difluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CC#N
- - 3,4-difluoro-5-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CC#N
- - 3,5-difluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CC#N
- - 2,6-difluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CC#N
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CC#N
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CC#N
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CC#N
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CC#N
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CC#N
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CC#N
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CC#N
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CC#N
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl cyanide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CC#N
- - 3-fluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=O
- - 4-fluoro-3-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=O
- - 5-fluoro-2-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CN=C=O
- - 2-fluoro-5-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=O
- - 3-fluoro-5-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CN=C=O
- - 2-fluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=O
- - 3-fluoro-2-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CN=C=O
- - 4-fluoro-2-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=O
- - 2-fluoro-6-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C=CC=C1C(F)(F)F)CN=C=O
- - 2,3-difluoro-5-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CN=C=O
- - 2,4-difluoro-5-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CN=C=O
- - 2,5-difluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CN=C=O
- - 3,4-difluoro-5-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CN=C=O
- - 3,5-difluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CN=C=O
- - 2,6-difluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CN=C=O
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=C=O
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=C=O
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=C=O
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=C=O
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CN=C=O
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=C=O
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=C=O
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CN=C=O
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl isocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=C=O
- - 3-fluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=S
- - 4-fluoro-3-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=S
- - 5-fluoro-2-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CN=C=S
- - 2-fluoro-5-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=S
- - 3-fluoro-5-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CN=C=S
- - 2-fluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=S
- - 3-fluoro-2-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CN=C=S
- - 4-fluoro-2-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=C=S
- - 2-fluoro-6-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C=CC=C1C(F)(F)F)CN=C=S
- - 2,3-difluoro-5-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CN=C=S
- - 2,4-difluoro-5-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CN=C=S
- - 2,5-difluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CN=C=S
- - 3,4-difluoro-5-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CN=C=S
- - 3,5-difluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CN=C=S
- - 2,6-difluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CN=C=S
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=C=S
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=C=S
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=C=S
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=C=S
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CN=C=S
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=C=S
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=C=S
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CN=C=S
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl isothiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=C=S
- - 3-fluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CSC#N
- - 4-fluoro-3-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CSC#N
- - 5-fluoro-2-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CSC#N
- - 2-fluoro-5-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CSC#N
- - 3-fluoro-5-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CSC#N
- - 2-fluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CSC#N
- - 3-fluoro-2-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CSC#N
- - 4-fluoro-2-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CSC#N
- - 2-fluoro-6-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C=CC=C1C(F)(F)F)CSC#N
- - 2,3-difluoro-5-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CSC#N
- - 2,4-difluoro-5-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CSC#N
- - 2,5-difluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CSC#N
- - 3,4-difluoro-5-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CSC#N
- - 3,5-difluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CSC#N
- - 2,6-difluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CSC#N
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CSC#N
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CSC#N
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CSC#N
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CSC#N
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CSC#N
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CSC#N
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CSC#N
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CSC#N
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl thiocyanate: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CSC#N
- - 3-fluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=[N+]=[N-]
- - 4-fluoro-3-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=[N+]=[N-]
- - 5-fluoro-2-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CN=[N+]=[N-]
- - 2-fluoro-5-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=[N+]=[N-]
- - 3-fluoro-5-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CN=[N+]=[N-]
- - 2-fluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=[N+]=[N-]
- - 3-fluoro-2-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CN=[N+]=[N-]
- - 4-fluoro-2-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CN=[N+]=[N-]
- - 2-fluoro-6-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C=CC=C1C(F)(F)F)CN=[N+]=[N-]
- - 2,3-difluoro-5-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CN=[N+]=[N-]
- - 2,4-difluoro-5-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CN=[N+]=[N-]
- - 2,5-difluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CN=[N+]=[N-]
- - 3,4-difluoro-5-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CN=[N+]=[N-]
- - 3,5-difluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CN=[N+]=[N-]
- - 2,6-difluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CN=[N+]=[N-]
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=[N+]=[N-]
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=[N+]=[N-]
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=[N+]=[N-]
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CN=[N+]=[N-]
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CN=[N+]=[N-]
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=[N+]=[N-]
- - 2,3,4,5-tetrafluoro-6-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=[N+]=[N-]
- - 2,3,5,6-tetrafluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CN=[N+]=[N-]
- - 2,3,4,5,6-pentafluoro-4-(trifluoromethyl)benzyl azide: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CN=[N+]=[N-]
- - 3-fluoro-4-(trifluoromethyl)benzyl thiol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CS
- - 4-fluoro-3-(trifluoromethyl)benzyl thiol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CS
- - 5-fluoro-2-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CS
- - 2-fluoro-5-(trifluoromethyl)benzyl thiol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CS
- - 3-fluoro-5-(trifluoromethyl)benzyl thiol: SMILES: FC1=CC(=CC(=C1)C(F)(F)F)CS
- - 2-fluoro-4-(trifluoromethyl)benzyl thiol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CS
- - 3-fluoro-2-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C=CC(=C1)C(F)(F)F)CS
- - 4-fluoro-2-(trifluoromethyl)benzyl thiol: SMILES: FC1=CC(=C(C=C1)C(F)(F)F)CS
- - 2-fluoro-6-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C=CC=C1C(F)(F)F)CS
- - 2,3-difluoro-5-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CS
- - 2,4-difluoro-5-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C=C1)C(F)(F)F)F)CS
- - 2,5-difluoro-4-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C=C1)F)C(F)(F)F)CS
- - 3,4-difluoro-5-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CS
- - 3,5-difluoro-4-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C(=C1)F)F)C(F)(F)F)CS
- - 2,6-difluoro-4-(trifluoromethyl)benzyl thiol: SMILES: FC1=CC(=C(C(=C1)F)F)C(F)(F)F)CS
- - 2,4,5-trifluoro-3-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CS
- - 2,4,6-trifluoro-3-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CS
- - 2,3,4-trifluoro-5-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F)(F)F)CS
- - 2,3,5-trifluoro-4-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C(=C1F)F)C(F)(F)F)F)CS
- - 2,3,6-trifluoro-4-(trifluoromethyl)benzyl thiol: SMILES: FC1=CC(=C(C(=C1F)F)C(F)(F)F)CS
- - 3,4,5-trifluoro-2-(trifluoromethyl)benzyl thiol: SMILES: FC1=C(C(=C(C(=C1F)F)F)C(F
+</think>
+
+Okay, so I need to create a function called is_organofluorine_compound that checks if a given SMILES string represents an organofluorine compound. The definition says it's a compound with at least one carbon-fluorine bond. Let me think about how to approach this.
+
+First, I remember that in RDKit, I can parse the SMILES into a molecule object. Then, I need to check if there are any C-F bonds in the molecule. How do I do that?
+
+Maybe I can iterate through all the atoms in the molecule. For each atom, if it's a carbon, check its neighboring atoms. If any neighbor is fluorine, then there's a C-F bond. Alternatively, I can use a SMARTS pattern to find such bonds.
+
+Wait, SMARTS might be easier. The SMARTS for a carbon bonded to fluorine would be [C][F]. But I need to make sure that the bond is between carbon and fluorine. So the pattern would be [C]F. But maybe I should use a bond query to ensure they are actually bonded.
+
+Alternatively, using GetSubstructMatches with the pattern [C]-F. Let me test that. So, create a substructure pattern where a carbon is bonded to a fluorine. If there's at least one match, then it's an organofluorine compound.
+
+Also, I need to handle invalid SMILES. So first, parse the SMILES. If the molecule is None, return False and "Invalid SMILES".
+
+Then, check for the presence of C-F bonds. If any, return True and the reason. Otherwise, False and the reason.
+
+Wait, what about different bond types? Like double bonds? But fluorine typically forms single bonds. So maybe the SMARTS [C]-[F] is sufficient. Let's use that.
+
+So the steps are:
+
+1. Parse the SMILES into a molecule.
+2. If invalid, return False.
+3. Check if there's at least one C-F bond using SMARTS.
+4. If yes, return True with the reason.
+5. Else, return False.
+
+Let me write the code accordingly. The function should be named is_organofluorine_compound, take a SMILES string, and return a boolean and a string.
+
+Testing examples: For trifluoroacetic acid (OC(=O)C(F)(F)F), there are three C-F bonds. The code should detect that. For something without any C-F bonds, like benzene, it should return False.
+
+Potential issues: Some molecules might have F attached to non-carbon atoms, like SF6 (sulfur hexafluoride), which shouldn't count. The SMARTS [C]-F would ignore those because the F is bonded to S, not C.
+
+Another edge case: a molecule with only CF3 groups. The code should catch that.
+
+So the code would look something like:
+
+Import RDKit modules, define the function, parse the SMILES, check for substructure matches of [C]-F, and return based on that.
+
+Wait, the SMARTS pattern should be [C]-[F] or maybe [C][F]? Let me confirm. In SMARTS, a single bond is '-', but if unspecified, it's any bond. Since fluorine can only form single bonds, maybe [C]-[F] is better to be explicit.
+
+Alternatively, just [C][F] would match any bond between C and F. But since F can't form double bonds, maybe it's safe to use [C][F].
+
+Testing this pattern in RDKit should find all C-F bonds regardless of bond order (but fluorine only forms single bonds anyway).
+
+So the code:
+
+from rdkit import Chem
+
+def is_organofluorine_compound(smiles: str):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    pattern = Chem.MolFromSmarts('[C][F]')
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains at least one carbon-fluorine bond"
+    else:
+        return False, "No carbon-fluorine bonds found"
+
+Wait, but what about cases where the F is part of a larger group, like CF3? The pattern [C][F] would match each F attached to C. So even if one C has multiple Fs, as long as there's at least one, it's a match.
+
+Yes, this should work. For example, in CF3, the C is bonded to three Fs. The pattern would match each C-F bond, so the molecule would have matches and return True.
+
+Another example: 4-fluorobenzoate ([O-]C(=O)c1ccc(F)cc1). The F is attached to a carbon in the benzene ring. The pattern would find that.
+
+So this code should correctly identify organofluorine compounds by checking for any C-F bonds. The previous error was probably due to incorrect code formatting or syntax, but the approach here seems solid.
