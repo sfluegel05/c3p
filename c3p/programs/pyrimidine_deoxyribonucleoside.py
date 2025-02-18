@@ -24,98 +24,61 @@ def is_pyrimidine_deoxyribonucleoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Remove salts and small fragments
-    frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
-    if len(frags) > 1:
-        mol = max(frags, default=mol, key=lambda m: m.GetNumAtoms())
-
-    # Exclude molecules with phosphate groups (nucleotides)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
+    # Check for phosphate group (to exclude nucleotides)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)O")
+    if phosphate_pattern is None:
+        return None, "Invalid phosphate SMARTS pattern"
     if mol.HasSubstructMatch(phosphate_pattern):
-        return False, "Contains phosphate group, likely a nucleotide"
+        return False, "Molecule is a nucleotide (contains phosphate group)"
 
-    ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-
-    pyrimidine_ring_atoms = None
-    # Identify pyrimidine rings (aromatic, six-membered, with exactly two nitrogen atoms)
-    for ring in atom_rings:
-        if len(ring) == 6:
-            aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
-            num_nitrogens = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
-            if aromatic and num_nitrogens == 2:
-                pyrimidine_ring_atoms = set(ring)
-                break
-
-    if pyrimidine_ring_atoms is None:
+    # Find pyrimidine ring
+    pyrimidine_pattern = Chem.MolFromSmarts("n1cnccc1")
+    if pyrimidine_pattern is None:
+        return None, "Invalid pyrimidine SMARTS pattern"
+    pyrimidine_matches = mol.GetSubstructMatches(pyrimidine_pattern)
+    if not pyrimidine_matches:
         return False, "No pyrimidine base found"
 
-    sugar_ring_atoms = None
-    # Identify sugar rings (five-membered rings containing an oxygen atom)
-    for ring in atom_rings:
-        if len(ring) == 5:
-            has_oxygen = any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring)
-            if has_oxygen:
-                sugar_ring_atoms = set(ring)
-                break
+    # Find sugar ring (five-membered ring containing oxygen)
+    sugar_pattern = Chem.MolFromSmarts("C1OC(CO)C(O)C1")
+    if sugar_pattern is None:
+        return None, "Invalid sugar SMARTS pattern"
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
+        return False, "No deoxyribose sugar found"
 
-    if sugar_ring_atoms is None:
-        return False, "No sugar ring found"
+    # Now check for glycosidic bond between N1 of pyrimidine and C1' of sugar
+    # For each pyrimidine ring
+    for pyrimidine in pyrimidine_matches:
+        n1_idx = pyrimidine[0]  # N1 atom index
+        n1_atom = mol.GetAtomWithIdx(n1_idx)
+        # Check bonds from N1
+        for bond in n1_atom.GetBonds():
+            neighbor_atom = bond.GetOtherAtom(n1_atom)
+            neighbor_idx = neighbor_atom.GetIdx()
+            if neighbor_atom.GetAtomicNum() == 6:
+                # Check if neighbor atom is part of sugar ring
+                for sugar in sugar_matches:
+                    if neighbor_idx in sugar:
+                        # Found potential glycosidic bond
+                        # Now check for deoxyribose (no OH at 2' position)
+                        # Identify the carbons in the sugar ring
+                        carbon_indices = [idx for idx in sugar if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6]
+                        # Check for OH group at 2' position
+                        has_2prime_OH = False
+                        for c_idx in carbon_indices:
+                            c_atom = mol.GetAtomWithIdx(c_idx)
+                            # Count how many carbons in ring the carbon atom is connected to
+                            ring_carbons = [nbr for nbr in c_atom.GetNeighbors() if nbr.GetIdx() in carbon_indices]
+                            if len(ring_carbons) == 2:
+                                # This is likely C2' position
+                                for neighbor in c_atom.GetNeighbors():
+                                    if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in sugar:
+                                        # Found OH group at 2' position
+                                        has_2prime_OH = True
+                        if has_2prime_OH:
+                            return False, "Sugar is ribose (has OH at 2' position)"
+                        else:
+                            return True, "Contains pyrimidine base attached to deoxyribose via N-glycosidic bond"
 
-    # Check for glycosidic bond between pyrimidine base nitrogen and sugar carbon
-    glycosidic_bond_found = False
-    for atom_idx in pyrimidine_ring_atoms:
-        atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetAtomicNum() == 7:  # Nitrogen atom in base
-            for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx in sugar_ring_atoms and neighbor.GetAtomicNum() == 6:
-                    # Check if this carbon is the anomeric carbon (attached to oxygen)
-                    for nb in neighbor.GetNeighbors():
-                        if nb.GetIdx() in sugar_ring_atoms and nb.GetAtomicNum() == 8:
-                            glycosidic_bond_found = True
-                            break
-                if glycosidic_bond_found:
-                    break
-        if glycosidic_bond_found:
-            break
-
-    if not glycosidic_bond_found:
-        return False, "No glycosidic bond between base nitrogen and sugar carbon"
-
-    # Check that the sugar is deoxyribose (lacks 2' hydroxyl group)
-    # In deoxyribose, the 2' carbon (next to ring oxygen) should not have an -OH group
-    ring_oxygen_idx = None
-    for idx in sugar_ring_atoms:
-        if mol.GetAtomWithIdx(idx).GetAtomicNum() == 8:
-            ring_oxygen_idx = idx
-            break
-
-    if ring_oxygen_idx is None:
-        return False, "Sugar ring does not contain ring oxygen"
-
-    # Find 2' carbon (attached to ring oxygen)
-    two_prime_carbons = [nbr.GetIdx() for nbr in mol.GetAtomWithIdx(ring_oxygen_idx).GetNeighbors()
-                         if nbr.GetIdx() in sugar_ring_atoms and nbr.GetAtomicNum() == 6]
-
-    if len(two_prime_carbons) != 2:
-        return False, "Sugar ring structure invalid"
-
-    # Identify the 2' carbon (the one not connected to the glycosidic bond)
-    for c_idx in two_prime_carbons:
-        if c_idx not in [neighbor_idx,]:  # Exclude anomeric carbon
-            two_prime_carbon_idx = c_idx
-            break
-
-    # Check if 2' carbon has an -OH group (should not in deoxyribose)
-    two_prime_carbon = mol.GetAtomWithIdx(two_prime_carbon_idx)
-    has_2prime_OH = False
-    for nbr in two_prime_carbon.GetNeighbors():
-        if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in sugar_ring_atoms:
-            has_2prime_OH = True
-            break
-
-    if has_2prime_OH:
-        return False, "Sugar is ribose (has 2' OH group), not deoxyribose"
-
-    return True, "Contains pyrimidine base attached to deoxyribose via N-glycosidic bond"
+    return False, "No glycosidic bond between pyrimidine base and sugar found"
