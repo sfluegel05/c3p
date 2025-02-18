@@ -13,18 +13,24 @@ from rdkit import Chem
 
 def is_flavonols(smiles: str):
     """
-    Determines if a molecule is a flavonol based on its SMILES string.
-    Flavonols are defined as 2-phenylchromen-4-ones that have a hydroxy 
-    substituent (or an O–glycoside) at position 3 (i.e. the ring hydrogen 
-    of a flavone replaced by –OH).
+    Determines if a molecule is a flavonol (3-hydroxyflavone)
+    based on its SMILES string.
     
-    The function first checks for the flavone core with a mapped atom (atom map 3),
-    which must carry an exocyclic oxygen (atom mapped as 4). After a substructure
-    match is found, the oxygen substituent is examined:
-      • If the O has no other neighbor (besides the ring carbon) then it is considered a free –OH.
-      • If the only extra neighbor is a carbon that is CH3 (a methoxy group),
-        then the flavone is not a flavonol.
-      • Otherwise (e.g. glycosides or larger groups) the 3-O functionality is acceptable.
+    The approach is to search for a 2-phenylchromen-4-one core (flavone core)
+    with a hydroxyl substituent at position 3. To allow for additional substituents
+    (such as glycosides, extra methoxies, etc.) on the aromatic rings we use aromatic
+    atom queries ("a") in the SMARTS rather than rigid aliphatic ("c").
+    
+    The SMARTS we use is:
+      a1ccc(-a2oc3cc([O:3])cc(=O)c3c2)cc1
+    which looks for a benzene ring (ring "1") attached to a heterocycle ("2" and "3")
+    where the heterocycle carries an –OH (atom mapped “3”) at the position corresponding
+    to C3 in the flavone nomenclature.
+    
+    After matching the core, the substituent attached to the oxygen mapped as 3
+    is inspected. If the oxygen bears no extra neighbor (besides the core carbon), it is 
+    assumed to be a free –OH. If it has one additional neighbor that is a CH3 (i.e. a methoxy),
+    the molecule is rejected. Otherwise (e.g. a glycoside), the match is accepted.
     
     Args:
         smiles (str): SMILES representation of the molecule.
@@ -37,80 +43,67 @@ def is_flavonols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define a SMARTS for a 2-phenylchromen-4-one core with mapping.
-    # The query requires:
-    #   • A benzene ring (the 2-phenyl substituent) attached via a single bond (the dash)
-    #   • To a heterocycle: c2oc([c:3]([O:4])c2=O)
-    #     where the atom mapped as "3" must carry an oxygen substituent (mapped "4")
-    query_smarts = "c1ccc(-c2oc([c:3]([O:4])c2=O))cc1"
+    
+    # Define a SMARTS query for the flavonol core.
+    # Using aromatic atom query "a" (instead of strict "c") allows extra substituents.
+    # The SMARTS enforces a 2-phenylchromen-4-one core with an -OH at C3 (mapped as [O:3]).
+    query_smarts = 'a1ccc(-a2oc3cc([O:3])cc(=O)c3c2)cc1'
     query = Chem.MolFromSmarts(query_smarts)
     if query is None:
-        return False, "Error in generating the SMARTS query"
-
-    # Look for substructure matches.
-    # Use GetSubstructMatches; note that multiple matching fragments might be found.
-    matches = mol.GetSubstructMatches(query)
+        return False, "Error in generating SMARTS query for flavonol core"
+    
+    # Find all substructure matches
+    matches = mol.GetSubstructMatches(query, useChirality=True)
     if not matches:
-        return False, "Molecule does not contain a 3-hydroxyflavone core required for flavonols"
-
-    # To know which atom in the molecule corresponds to the mapped atoms, build a mapping:
-    # (In our SMARTS, atom with map num 3 is the heterocyclic carbon expected to be at C3,
-    # and it is bonded to an oxygen with map num 4.)
-    mapnum_to_queryidx = {}
-    for i, atom in enumerate(query.GetAtoms()):
-        mapnum = atom.GetAtomMapNum()
-        if mapnum:
-            mapnum_to_queryidx[mapnum] = i
-
-    # Now, for each match, retrieve the atom indices for mappings 3 and 4.
-    # Then check the oxygen substituent (atom mapped 4) to ensure it is not a methoxy.
-    valid_match_found = False
-    for match in matches:
-        # match is a tuple of indices corresponding to query atoms in order.
-        # Using our mapping dictionary, get the atom index for map 3 and map 4.
-        try:
-            idx3 = match[ mapnum_to_queryidx[3] ]
-            idx4 = match[ mapnum_to_queryidx[4] ]
-        except KeyError:
-            continue  # skip if mapping not found (should not happen)
-
-        atom3 = mol.GetAtomWithIdx(idx3)
-        atom4 = mol.GetAtomWithIdx(idx4)
-        # Confirm that atom4 is exocyclic: besides its bond to atom3 (the ring carbon),
-        # examine its other neighbors.
-        o_neighbors = [nbr for nbr in atom4.GetNeighbors() if nbr.GetIdx() != idx3]
-        
-        # If there are no extra neighbors, then the substituent is a free –OH.
-        if not o_neighbors:
-            valid_match_found = True
-            break
-        # If there is exactly one extra neighbor, check if this neighbor is a methyl group.
-        if len(o_neighbors) == 1:
-            nbr = o_neighbors[0]
-            # For a methoxy group, the oxygen will be attached to a single carbon that
-            # carries three (implicit) hydrogens. (Use GetTotalNumHs to count H's)
-            if nbr.GetAtomicNum() == 6 and nbr.GetTotalNumHs() == 3:
-                # This match indicates a methoxy at position 3,
-                # which disqualifies the structure as a flavonol.
-                continue
-            else:
-                valid_match_found = True
-                break
-        else:
-            # If the oxygen bears a substituent other than just a methyl group (e.g. a sugar),
-            # we will accept this match.
-            valid_match_found = True
-            break
-
-    if valid_match_found:
-        return True, "Molecule contains a valid 3-hydroxyflavone core (flavonol scaffold)"
+        return False, "Molecule does not contain a valid 3-hydroxyflavone (flavonol) core"
+    
+    # For interpretation of the match, we need to know which query atom is mapped as 3.
+    mapnum_to_query_idx = {}
+    for atom in query.GetAtoms():
+        amap = atom.GetAtomMapNum()
+        if amap:
+            mapnum_to_query_idx[amap] = atom.GetIdx()
+    if 3 not in mapnum_to_query_idx:
+        return False, "SMARTS query did not map the 3-OH group properly"
+    
+    # Use the first match (if multiple exist, one valid match is enough).
+    match = matches[0]
+    flavonol_oh_query_idx = mapnum_to_query_idx[3]
+    flavonol_oh_idx = match[flavonol_oh_query_idx]
+    oh_atom = mol.GetAtomWithIdx(flavonol_oh_idx)
+    
+    # Identify the core carbon to which the hydroxyl is attached.
+    # In our query the OH is attached to exactly one core atom.
+    core_neighbor = None
+    nbrs = oh_atom.GetNeighbors()
+    if not nbrs:
+        return False, "3-OH oxygen not attached to any atom (unexpected)"
     else:
-        return False, "The oxygen substituent at position 3 appears to be a methoxy group rather than a hydroxy or glycoside function."
+        # It should at least be attached to the flavonol carbon in the core
+        core_neighbor = nbrs[0]
+    
+    # Examine extra neighbors (besides the core connection)
+    extra_neighbors = [nbr for nbr in oh_atom.GetNeighbors() if nbr.GetIdx() != core_neighbor.GetIdx()]
+    
+    # Decide based on substituent on the oxygen:
+    if len(extra_neighbors) == 0:
+        # Free hydroxyl
+        return True, "Molecule contains a valid 3-hydroxyflavone core with a free hydroxyl at position 3"
+    elif len(extra_neighbors) == 1:
+        nbr = extra_neighbors[0]
+        # If the extra neighbor is a methyl group (CH3), it indicates a methoxy group.
+        if nbr.GetAtomicNum() == 6 and nbr.GetTotalNumHs() == 3:
+            return False, "The 3-O substituent appears to be a methoxy group rather than a hydroxyl or glycoside"
+        else:
+            return True, "Molecule contains a valid 3-hydroxyflavone core with a substituent at position 3"
+    else:
+        # More than one extra neighbor (as in glycosidic attachments) is acceptable.
+        return True, "Molecule contains a valid 3-hydroxyflavone core with a glycoside or larger substituent at position 3"
+
 
 # Example usage (for testing purposes):
 if __name__ == "__main__":
-    # Test example: tambulin (should be classified as a flavonol)
+    # Test example: tambulin should be classified as a flavonol.
     test_smiles = "COc1ccc(cc1)-c1oc2c(OC)c(OC)cc(O)c2c(=O)c1O"
     classification, explanation = is_flavonols(test_smiles)
     print("SMILES:", test_smiles)
