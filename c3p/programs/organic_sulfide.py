@@ -3,19 +3,18 @@ Classifies: CHEBI:16385 organic sulfide
 """
 """
 Classifies: Organic sulfide (thioether)
-Definition: Compounds having the structure R–S–R (with R ≠ H). Such compounds were once called thioethers.
+Definition: Compounds having the structure R–S–R (with R ≠ H).
+Such compounds were once called thioethers.
 
-In this improved implementation we:
-  • Exclude molecules that appear to be peptides or peptide‐conjugates
-    by counting amide bonds (a peptide typically has at least two).
-  • Then for each sulfur atom in the molecule we require:
-       - The sulfur can have exactly 2 heavy-atom neighbors (i.e. non‐hydrogen).
-       - Both bonds from S are SINGLE bonds.
-       - Neither neighbor is oxygen (to avoid oxidized S).
-       - The sulfur is not part of an aromatic ring (thus excluding e.g. thiophenes).
-       
-If any sulfur meets these criteria the molecule is classified as an organic sulfide.
-If no S atom qualifies then the molecule will not be classified as an organic sulfide.
+Improvements compared with the previous classifier:
+  • Excludes many peptides or free amino acids by checking for a typical amino acid zwitterion
+    and by counting amide bonds.
+  • For each sulfur atom, requires:
+       - Exactly two explicit neighbors.
+       - Each S–neighbor bond is a single bond.
+       - Both neighbors are carbon (atomic number 6).
+       - The sulfur is not flagged as aromatic (so that fused/sulfur‐in‐ring systems are avoided).
+  • This more stringent approach helps to lower false positives.
 """
 
 from rdkit import Chem
@@ -23,53 +22,61 @@ from rdkit import Chem
 def is_organic_sulfide(smiles: str):
     """
     Determines if a molecule is an organic sulfide (thioether) based on its SMILES string.
-
-    An organic sulfide is defined as a compound containing at least one R–S–R moiety,
-    where both substituents R are not hydrogen. In our implementation we require:
-      - The S atom has exactly two bonds (to non-H atoms) and both are single bonds.
-      - None of the neighbors is an oxygen (which would indicate oxidation).
-      - The sulfur is not part of an aromatic ring (e.g. thiophenes are excluded).
-    We additionally try to filter out peptide or CoA‐like molecules by excluding molecules
-    with multiple amide bonds.
-
+    
+    An organic sulfide is defined as a molecule containing at least one R–S–R moiety,
+    where both substituents (R) are not hydrogen and the sulfur is not oxidized (e.g. no bonds
+    to oxygen) and is not part of a fused aromatic moiety. In addition, we filter out
+    many simple peptides or free amino acids.
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+        
     Returns:
-        bool: True if molecule is classified as an organic sulfide, False otherwise.
+        bool: True if the molecule is classified as an organic sulfide, False otherwise.
         str: Explanation of the classification.
     """
+    
     # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # ----- Exclude molecules that likely are peptides or related conjugates -----
-    # Here we use a simple SMARTS that matches an amide bond.
-    amide = Chem.MolFromSmarts("C(=O)N")
-    n_amide = len(mol.GetSubstructMatches(amide))
-    # Many peptides or conjugates contain 2 or more amide bonds.
-    if n_amide >= 2:
-        return False, "Molecule appears to be a peptide or peptide conjugate (multiple amide bonds detected)"
+    # ----- Filter out obvious peptides / free amino acids -----
+    # (a) Check for a typical amino acid zwitterion (e.g. methionine side-chain in a free amino acid)
+    amino_acid_pattern = Chem.MolFromSmarts("[C@H]([NH3+])C(=O)[O-]")
+    if mol.GetNumAtoms() < 50 and mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "Molecule appears to be a free amino acid (not classified as organic sulfide)"
     
-    # ----- Now scan for a genuine thioether (R–S–R) motif -----
-    # Loop over all sulfur atoms in the molecule.
+    # (b) Count amide bonds. Many peptide‐derived molecules contain more than one amide bond.
+    # There is a risk that a lone amide is present in a non‐peptidic context
+    # so we only disqualify if there is more than one.
+    amide_pattern = Chem.MolFromSmarts("C(=O)N")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if len(amide_matches) > 1:
+        return False, "Molecule appears to be peptide-derived (contains multiple amide bonds)"
+    
+    # ----- Scan for a genuine thioether motif (R–S–R) -----
+    # Iterate over every sulfur atom. For each sulfur, we demand:
+    #   1. The S atom is not aromatic.
+    #   2. It has exactly two neighbors (explicit heavy atoms).
+    #   3. Both connecting bonds are SINGLE bonds.
+    #   4. Both neighbors are carbon atoms.
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() != 16:  # Only consider sulfur
+        if atom.GetAtomicNum() != 16:  # Only consider sulfur atoms.
             continue
         
-        # Exclude if the sulfur is flagged as aromatic and is in an aromatic ring.
-        if atom.IsInRing() and atom.GetIsAromatic():
+        # Check if the sulfur atom is aromatic.
+        if atom.GetIsAromatic():
+            continue  # likely part of a fused or heterocyclic system (not our desired thioether)
+        
+        # We require exactly 2 explicit neighbors.
+        neighbors = atom.GetNeighbors()
+        if len(neighbors) != 2:
             continue
         
-        # Get heavy-atom neighbors (exclude hydrogens).
-        heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() != 1]
-        if len(heavy_neighbors) != 2:
-            continue
-        
-        # Check that both bonds from S are single bonds.
+        # Check each bond from S to neighbor is SINGLE.
         valid_bonds = True
-        for nbr in heavy_neighbors:
+        for nbr in neighbors:
             bond = mol.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
             if bond is None or bond.GetBondType() != Chem.rdchem.BondType.SINGLE:
                 valid_bonds = False
@@ -77,34 +84,27 @@ def is_organic_sulfide(smiles: str):
         if not valid_bonds:
             continue
         
-        # Exclude if any neighbor is oxygen (atomic number 8).
-        if any(nbr.GetAtomicNum() == 8 for nbr in heavy_neighbors):
+        # Check that both neighbors are carbon atoms.
+        if not (neighbors[0].GetAtomicNum() == 6 and neighbors[1].GetAtomicNum() == 6):
             continue
 
-        # If we reach here, this S atom is in a –S– bond with two non-H, non-O atoms,
-        # its bonds are single, and it is not part of an aromatic ring.
+        # If we pass all the checks, then we have found a genuine thioether moiety.
         return True, "Molecule contains at least one organic sulfide (thioether) group (R–S–R bond)"
     
-    return False, "No organic sulfide (thioether) moiety found in the molecule"
+    return False, "No organic sulfide (R–S–R) moiety found in the molecule"
 
-
-# Example usage (testing on a few provided SMILES strings)
+# Example usage: (testing on a subset of the provided SMILES)
 if __name__ == "__main__":
     test_smiles = [
-        # True positives (expected to be organic sulfides):
+        # True positives (should classify as organic sulfide)
         "CCCCCCCCCCCCCCCSC[C@H](COP(O)(=O)OCC[N+](C)(C)C)OP(O)(=O)CCCCCCCCCCCCCCCC",  # long-chain thioether
-        "COC(=O)C(CC1=CC2C(CC(NC2C=C1)c1c(Cl)cccc1Cl)Sc1ccccc1)NC(=O)OC(C)(C)C",       # thioether in a fused system
+        "COC(=O)C(CC1=CC2C(CC(NC2C=C1)c1c(Cl)cccc1Cl)Sc1ccccc1)NC(=O)OC(C)(C)C",       # thioether with aromatic groups
         "C1CC2=C(C1)NC(=NC2=O)SCC3=CC=C(C=C3)Cl",                                      # thioether group present
         "CC1=C(C(=NN1)SCC(=O)N2CCCCCC2)[N+](=O)[O-]",                                 # another thioether motif
-        # False positives (should not be classified as organic sulfides):
-        "S(C(=O)C(CCCC(CCCC(C)C)C)C)CCNC(=O)CCNC(=O)C(O)C(COP(OP(OCC1OC(N2C3=NC=NC(N)=C3N=C2)C(O)C1OP(O)(O)=O)(O)=O)(O)=O)(C)C",
-        "S(CC[C@H](NC(=O)[C@@H](N)CC(O)=O)C(=O)N[C@@H](CC=1NC=NC1)C(O)=O)C",
-        "C[C@H](CCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N2C=NC3=C(N)N=CN=C23)O[C@@H]4O[C@@H](C)[C@H](O)C[C@H]4O",
-        # False negatives (molecules that are organic sulfides but were missed previously)
-        "C1COCCN1C2=NC3=C(C(=N2)NCC4=NC5=CC=CC=C5N4)N=CN3C6=CSC=C6",  # thiophenyl S is in a ring -> not flagged
-        "OCC(NC=1N=C2N(C(C)C)C=NC2=C(N1)NCC3=CC=CC=C3)CC"
+        # False positive candidates (expected to be rejected due to peptide patterns or non-thioether S)
+        "CN1C(C(=O)Nc2ccccn2)=C(O)c2sccc2S1(=O)=O",  # tenoxicam-like structure, S in heterocycle
+        "CCOC(=O)C1C(C2=C(CCCC2=O)N=C1C)C3=CC=CS3"     # thiophen-containing, not a genuine R–S–R pattern
     ]
-    
     for s in test_smiles:
         result, reason = is_organic_sulfide(s)
         print(f"SMILES: {s}\nResult: {result} | Reason: {reason}\n")
