@@ -16,23 +16,17 @@ def is_amine(smiles: str):
         bool: True if molecule is an amine, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
     # Define SMARTS patterns for primary, secondary, and tertiary amines
-    primary_amine_pattern = Chem.MolFromSmarts("[NX3;H2][C]")
-    secondary_amine_pattern = Chem.MolFromSmarts("[NX3;H1][C][C]")
-    tertiary_amine_pattern = Chem.MolFromSmarts("[NX3][C][C][C]")
+    # Nitrogen atom with at least one hydrocarbyl group attached.
+    amine_pattern = Chem.MolFromSmarts("[NX3;!$(NC=[O,S,N])][C]")
     
     # Match SMARTS patterns
-    if mol.HasSubstructMatch(primary_amine_pattern):
-        return True, "Contains primary amine group"
-    if mol.HasSubstructMatch(secondary_amine_pattern):
-        return True, "Contains secondary amine group"
-    if mol.HasSubstructMatch(tertiary_amine_pattern):
-        return True, "Contains tertiary amine group"
+    if mol.HasSubstructMatch(amine_pattern):
+        return True, "Contains amine group"
     
     return False, "No amine group found, or nitrogen not bonded as required for amines"
