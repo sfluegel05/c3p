@@ -4,15 +4,9 @@ Classifies: CHEBI:26208 polyunsaturated fatty acid
 """
 Classifies: Polyunsaturated Fatty Acid
 Definition: A fatty acid is defined here as a molecule having a terminal carboxylic acid group 
-attached to a single, linear, non‐aromatic aliphatic chain containing more than one 
-non‐aromatic C=C double bond.
-Additional criteria:
-  - The acid carbon in the terminal –COOH group must be attached to exactly one carbon.
-  - The chain is “traced” by starting from that unique neighbor and then following the only 
-    available non‐aromatic, non‐ring carbon link at each step. If at any stage a branching is encountered,
-    we reject the molecule.
-  - Bonds of type triple are not allowed in the chain.
-  - The chain must have a minimum number of carbons (here 8) and at least two non‐aromatic C=C bonds.
+attached to a single, linear, non‐aromatic aliphatic chain that contains more than one 
+non‐aromatic C=C double bond. Additional checks attempt to ensure that the chain is unbranched 
+and that no extra functional groups (for example, amides) are present along the chain.
 """
 
 from rdkit import Chem
@@ -20,46 +14,48 @@ from rdkit.Chem import rdMolDescriptors
 
 def is_polyunsaturated_fatty_acid(smiles: str):
     """
-    Determines if a molecule qualifies as a polyunsaturated fatty acid (PUFA).
-    The criteria are:
-      1. The molecule has a terminal carboxylic acid group. The carbon in the COOH must
-         be bonded to exactly one carbon (thus marking the start of the chain).
-      2. Starting from the chain-start carbon (the unique neighbor of the acid carbon),
-         we trace a linear (non-branched), acyclic, non-aromatic chain comprising carbon atoms.
-         If branching (more than one candidate) is encountered, the molecule is rejected.
-      3. The chain must be at least MIN_CHAIN_LENGTH carbons long.
-      4. Along the chain (i.e. between consecutive carbons in the traversed path), there must be 
-         at least 2 non-aromatic double bonds (and no triple bonds).
+    Determines if a molecule qualifies as a polyunsaturated fatty acid (PUFA) based on:
+      1. Presence of a terminal carboxylic acid group, where the acid carbon is attached to exactly one carbon.
+      2. A linear (“walkable”), unbranched, acyclic, non‐aromatic aliphatic chain traced from that single neighbor.
+         (Any branching in the carbon chain will cause rejection.)
+      3. The absence of any carbon–carbon triple bonds along the traced chain.
+      4. The presence of at least two non‐aromatic C=C double bonds (counted along the chain).
+      5. A couple of extra heuristics: minimal chain length and no extra (non‐Heteroatom) substituents and no amide bonds.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if the molecule qualifies as a PUFA, False otherwise.
-        str: Explanation for the classification decision.
+        bool: True if molecule qualifies as a PUFA, otherwise False.
+        str: Explanation of the classification decision.
     """
-    # Parse the SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # 1. Identify a carboxylic acid (COOH) group using SMARTS.
-    # The pattern matches a carbon (sp2) with one double-bonded oxygen and one hydroxyl.
-    ca_smarts = "[CX3](=O)[O;H]"
-    ca_group = Chem.MolFromSmarts(ca_smarts)
-    ca_matches = mol.GetSubstructMatches(ca_group)
-    if not ca_matches:
-        return False, "No carboxylic acid group found; not a fatty acid"
     
-    # 2. Among the acid groups, select one that is terminal.
-    # That is, the acid carbon should be attached to exactly one carbon (the start of the chain).
+    # 0. Reject molecules with amide bonds (outside the carboxylic acid). We define an amide
+    # SMARTS that should not be present (excluding the terminal -COOH itself).
+    amide_smarts = Chem.MolFromSmarts("[NX3;!$(NC(=O)[O;H])][CX3](=O)[#6]")  # any N-C(=O)-C (roughly)
+    if mol.HasSubstructMatch(amide_smarts):
+        return False, "Molecule contains an amide bond which is not allowed in a typical fatty acid"
+    
+    # 1. Look for carboxylic acid group
+    # We use SMARTS matching a COOH: carbon with a double-bonded O and an OH.
+    acid_smarts = "[CX3](=O)[O;H]"
+    acid_query = Chem.MolFromSmarts(acid_smarts)
+    acid_matches = mol.GetSubstructMatches(acid_query)
+    if not acid_matches:
+        return False, "No terminal carboxylic acid group found; not a fatty acid"
+    
+    # 2. Among acid groups, pick one where the acid carbon (first atom in match) is attached to exactly one carbon.
     terminal_acid_found = False
     acid_atom = None
     chain_start = None
-    for match in ca_matches:
-        # match[0] is taken as the acid carbon (which is part of the COOH group)
+    for match in acid_matches:
+        # We assume match[0] is the acid carbon (sp2 C of the COOH)
         acid_c = mol.GetAtomWithIdx(match[0])
-        # Look for neighboring carbon atoms (atomic number 6)
+        # Find neighboring carbon atoms (atomic num 6)
         carbon_neighbors = [nbr for nbr in acid_c.GetNeighbors() if nbr.GetAtomicNum() == 6]
         if len(carbon_neighbors) == 1:
             terminal_acid_found = True
@@ -68,21 +64,19 @@ def is_polyunsaturated_fatty_acid(smiles: str):
             break
     if not terminal_acid_found or chain_start is None:
         return False, "Carboxylic acid group is not terminal; not a typical fatty acid"
-
-    # 3. Trace the acyl chain starting at chain_start.
-    # We “walk” along the chain by taking at each step the only possible non-aromatic,
-    # non-ring carbon neighbor (excluding the atom we came from).
-    chain_indices = []  # indices of carbon atoms in the chain
-    current = chain_start
-    previous = acid_atom  # the acid carbon is the previous atom at start
-    chain_indices.append(current.GetIdx())
-
+    
+    # 3. Trace the acyl chain beginning from chain_start.
+    # The rule is: at each step, only one non‐aromatic, non‐ring carbon (atomic num 6) that is not the atom we came from is accepted.
+    chain_atom_idxs = []  # indices in order along the chain
+    current_atom = chain_start
+    previous_atom = acid_atom
+    chain_atom_idxs.append(current_atom.GetIdx())
+    
     while True:
-        # Get neighbors that are carbons, non-aromatic, not in a ring
+        # Look for neighbor carbons that are (a) not the atom we came from, (b) non‐aromatic, and (c) not in any ring.
         candidates = []
-        for nbr in current.GetNeighbors():
-            # Exclude the atom we came from
-            if nbr.GetIdx() == previous.GetIdx():
+        for nbr in current_atom.GetNeighbors():
+            if nbr.GetIdx() == previous_atom.GetIdx():
                 continue
             if nbr.GetAtomicNum() != 6:
                 continue
@@ -90,46 +84,66 @@ def is_polyunsaturated_fatty_acid(smiles: str):
                 continue
             candidates.append(nbr)
         if len(candidates) == 0:
-            # reached an endpoint
+            # End of chain reached.
             break
         if len(candidates) > 1:
             return False, "Acyl chain is branched; expected a single linear chain for a typical fatty acid"
-        # Proceed to the only candidate neighbor
+        # Proceed along the only available neighbor.
         next_atom = candidates[0]
-        chain_indices.append(next_atom.GetIdx())
-        previous = current
-        current = next_atom
+        chain_atom_idxs.append(next_atom.GetIdx())
+        previous_atom = current_atom
+        current_atom = next_atom
 
-    chain_length = len(chain_indices)
-    MIN_CHAIN_LENGTH = 8
+    chain_length = len(chain_atom_idxs)
+    MIN_CHAIN_LENGTH = 8  # at least 8 carbons in the chain (this is a heuristic)
     if chain_length < MIN_CHAIN_LENGTH:
         return False, f"Fatty acid chain length only {chain_length} carbons; too short to be typical"
     
-    # 4. Count the number of non-aromatic double bonds along the traced chain.
+    # 4. Verify that the chain is truly unbranched.
+    # For each carbon in the chain (except the first one which is attached to the acid),
+    # check that no extra carbon-neighbor (other than the one coming from the chain) is present.
+    # (Extra carbon substituents would indicate branching.)
+    chain_atom_set = set(chain_atom_idxs)
+    for idx in chain_atom_idxs:
+        atom = mol.GetAtomWithIdx(idx)
+        # Consider all carbon neighbors that are non‐aromatic and not in a ring.
+        ext_cntrs = []
+        for nbr in atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 6 and (not nbr.GetIsAromatic()) and (not nbr.IsInRing()):
+                # Allow neighbor if it is either the preceding or following atom in the chain.
+                if nbr.GetIdx() in chain_atom_set:
+                    continue
+                ext_cntrs.append(nbr)
+        if ext_cntrs:
+            return False, "Acyl chain is substituted (has extra carbon substituents); expected a single linear chain"
+    
+    # 5. Now count the non‐aromatic double bonds and check for any triple bonds along the (traced) chain.
     double_bond_count = 0
-    for i in range(len(chain_indices)-1):
-        bond = mol.GetBondBetweenAtoms(chain_indices[i], chain_indices[i+1])
+    for i in range(len(chain_atom_idxs)-1):
+        a1 = chain_atom_idxs[i]
+        a2 = chain_atom_idxs[i+1]
+        bond = mol.GetBondBetweenAtoms(a1, a2)
         if bond is None:
             continue
-        # Reject if a triple bond is found in the chain.
+        # Reject if the bond is a triple bond.
         if bond.GetBondType() == Chem.BondType.TRIPLE:
             return False, "Chain contains a carbon–carbon triple bond which is not allowed in typical fatty acids"
-        # Count non-aromatic double bonds.
+        # Count double bonds that are not aromatic.
         if bond.GetBondType() == Chem.BondType.DOUBLE and not bond.GetIsAromatic():
             double_bond_count += 1
 
-    if double_bond_count <= 1:
-        return False, f"Found {double_bond_count} non-aromatic C=C bond(s) in chain; need more than one to qualify as polyunsaturated"
-
-    # Form a reason message including chain length and double bond count.
+    if double_bond_count < 2:
+        return False, f"Found {double_bond_count} non-aromatic C=C bond(s) in chain; need at least 2 for polyunsaturation"
+    
+    # All checks passed: provide a reason message that includes chain length and double bond count.
     reason = (f"Contains a terminal carboxylic acid group attached to a linear chain of {chain_length} carbons "
-              f"with {double_bond_count} non-aromatic double bonds; qualifies as a polyunsaturated fatty acid")
+              f"with {double_bond_count} non-aromatic double bond(s); qualifies as a polyunsaturated fatty acid")
     return True, reason
 
 
 # Example usage:
 if __name__ == "__main__":
-    # Test with one example, resolvin D6
+    # Test with one example; for instance, resolvin D6.
     test_smiles = "C(C(O)=O)C[C@@H](/C=C/C=C\\C/C=C\\C/C=C\\C=C\\[C@H](C/C=C\\CC)O)O"
     result, explanation = is_polyunsaturated_fatty_acid(test_smiles)
     print(result, explanation)
