@@ -1,0 +1,352 @@
+"""
+Classifies: CHEBI:33857 aromatic primary alcohol
+"""
+ - 2,5-dimethylbenzyl alcohol: SMILES: CC1=CC=C(CO)C(C)=C1
+ - 4-methylbenzyl alcohol: SMILES: CC1=CC=C(CO)C=C1
+ - 3,4-dihydroxybenzyl alcohol: SMILES: OCC1=CC(O)=C(O)C=C1
+ - 3-methylbenzyl alcohol: SMILES: CC1=CC(CO)=CC=C1
+ - 4-hydroxybenzyl alcohol: SMILES: OCC1=CC=C(O)C=C1
+ - 3-hydroxybenzyl alcohol: SMILES: OCC1=CC(O)=CC=C1
+ - 2-hydroxybenzyl alcohol: SMILES: OCC1=CC=CC=C1O
+ - 2,4-dihydroxybenzyl alcohol: SMILES: OCC1=CC=C(O)C=C1O
+ - 2,3-dihydroxybenzyl alcohol: SMILES: OCC1=CC(O)=C(O)C=C1
+ - 3,5-dihydroxybenzyl alcohol: SMILES: OCC1=CC(O)=CC(O)=C1
+ - 2,6-dihydroxybenzyl alcohol: SMILES: OCC1=C(O)C=CC=C1O
+ - 4-(hydroxymethyl)benzoic acid: SMILES: O=C(O)C1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzoic acid: SMILES: O=C(O)C1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzoic acid: SMILES: O=C(O)C1=CC=CC=C1CO
+ - 4-(hydroxymethyl)phenylacetic acid: SMILES: O=C(O)CC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)phenylacetic acid: SMILES: O=C(O)CC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)phenylacetic acid: SMILES: O=C(O)CC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)cinnamic acid: SMILES: O=C(O)C=CC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)cinnamic acid: SMILES: O=C(O)C=CC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)cinnamic acid: SMILES: O=C(O)C=CC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzaldehyde: SMILES: O=CC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzaldehyde: SMILES: O=CC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzaldehyde: SMILES: O=CC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzamide: SMILES: NC(=O)C1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzamide: SMILES: NC(=O)C1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzamide: SMILES: NC(=O)C1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzylamine: SMILES: NCC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzylamine: SMILES: NCC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzylamine: SMILES: NCC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl chloride: SMILES: ClC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl chloride: SMILES: ClC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl chloride: SMILES: ClC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl bromide: SMILES: BrC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl bromide: SMILES: BrC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl bromide: SMILES: BrC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl iodide: SMILES: IC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl iodide: SMILES: IC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl iodide: SMILES: IC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl cyanide: SMILES: C(#N)C1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl cyanide: SMILES: C(#N)C1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl cyanide: SMILES: C(#N)C1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl alcohol: SMILES: OCC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl alcohol: SMILES: OCC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl alcohol: SMILES: OCC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl methyl ether: SMILES: COC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl methyl ether: SMILES: COC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl methyl ether: SMILES: COC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl ethyl ether: SMILES: CCOC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl ethyl ether: SMILES: CCOC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl ethyl ether: SMILES: CCOC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl propyl ether: SMILES: CCCOC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl propyl ether: SMILES: CCCOC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl propyl ether: SMILES: CCCOC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl isopropyl ether: SMILES: CC(C)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl isopropyl ether: SMILES: CC(C)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl isopropyl ether: SMILES: CC(C)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tert-butyl ether: SMILES: CC(C)(C)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tert-butyl ether: SMILES: CC(C)(C)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tert-butyl ether: SMILES: CC(C)(C)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl phenyl ether: SMILES: C1=CC=C(C=C1)OC2=CC=C(CO)C=C2
+ - 3-(hydroxymethyl)benzyl phenyl ether: SMILES: C1=CC=C(C=C1)OC2=CC=CC(CO)=C2
+ - 2-(hydroxymethyl)benzyl phenyl ether: SMILES: C1=CC=C(C=C1)OC2=CC=CC=C2CO
+ - 4-(hydroxymethyl)benzyl benzyl ether: SMILES: OCC1=CC=C(COC2=CC=CC=C2)C=C1
+ - 3-(hydroxymethyl)benzyl benzyl ether: SMILES: OCC1=CC=CC(COC2=CC=CC=C2)=C1
+ - 2-(hydroxymethyl)benzyl benzyl ether: SMILES: OCC1=CC=CC=C1COC2=CC=CC=C2
+ - 4-(hydroxymethyl)benzyl allyl ether: SMILES: C=CC1=CC=C(COC2=CC=C(CO)C=C2)C=C1
+ - 3-(hydroxymethyl)benzyl allyl ether: SMILES: C=CC1=CC=CC(COC2=CC=CC(CO)=C2)=C1
+ - 2-(hydroxymethyl)benzyl allyl ether: SMILES: C=CC1=CC=CC=C1COC2=CC=CC=C2CO
+ - 4-(hydroxymethyl)benzyl propargyl ether: SMILES: C#CC1=CC=C(COC2=CC=C(CO)C=C2)C=C1
+ - 3-(hydroxymethyl)benzyl propargyl ether: SMILES: C#CC1=CC=CC(COC2=CC=CC(CO)=C2)=C1
+ - 2-(hydroxymethyl)benzyl propargyl ether: SMILES: C#CC1=CC=CC=C1COC2=CC=CC=C2CO
+ - 4-(hydroxymethyl)benzyl acetate: SMILES: CC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl acetate: SMILES: CC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl acetate: SMILES: CC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl propionate: SMILES: CCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl propionate: SMILES: CCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl propionate: SMILES: CCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl butyrate: SMILES: CCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl butyrate: SMILES: CCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl butyrate: SMILES: CCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl isobutyrate: SMILES: CC(C)C(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl isobutyrate: SMILES: CC(C)C(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl isobutyrate: SMILES: CC(C)C(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl valerate: SMILES: CCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl valerate: SMILES: CCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl valerate: SMILES: CCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexanoate: SMILES: CCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexanoate: SMILES: CCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexanoate: SMILES: CCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptanoate: SMILES: CCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptanoate: SMILES: CCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptanoate: SMILES: CCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octanoate: SMILES: CCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octanoate: SMILES: CCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octanoate: SMILES: CCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonanoate: SMILES: CCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonanoate: SMILES: CCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl nonanoate: SMILES: CCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl decanoate: SMILES: CCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl decanoate: SMILES: CCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl decanoate: SMILES: CCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl laurate: SMILES: CCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl laurate: SMILES: CCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl laurate: SMILES: CCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl myristate: SMILES: CCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl myristate: SMILES: CCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl myristate: SMILES: CCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl palmitate: SMILES: CCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl palmitate: SMILES: CCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl palmitate: SMILES: CCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl stearate: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl stearate: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl stearate: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl oleate: SMILES: CCCCCCCCC=CCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl oleate: SMILES: CCCCCCCCC=CCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl oleate: SMILES: CCCCCCCCC=CCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl linoleate: SMILES: CCCCCCC=CCC=CCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl linoleate: SMILES: CCCCCCC=CCC=CCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl linoleate: SMILES: CCCCCCC=CCC=CCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl linolenate: SMILES: CCCCC=CCC=CCC=CCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl linolenate: SMILES: CCCCC=CCC=CCC=CCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl linolenate: SMILES: CCCCC=CCC=CCC=CCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl arachidonate: SMILES: CCCCC=CCC=CCCC=CCC=CCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl arachidonate: SMILES: CCCCC=CCC=CCCC=CCC=CCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl arachidonate: SMILES: CCCCC=CCC=CCCC=CCC=CCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl eicosenoate: SMILES: CCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl eicosenoate: SMILES: CCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl eicosenoate: SMILES: CCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl docosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl docosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl docosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetracosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetracosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetracosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl triacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl triacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl triacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl dotriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl dotriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl dotriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl pentacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl pentacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl pentacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl nonacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl dodecanoate: SMILES: CCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl dodecanoate: SMILES: CCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl dodecanoate: SMILES: CCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tridecanoate: SMILES: CCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tridecanoate: SMILES: CCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tridecanoate: SMILES: CCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetradecanoate: SMILES: CCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetradecanoate: SMILES: CCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetradecanoate: SMILES: CCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl pentadecanoate: SMILES: CCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl pentadecanoate: SMILES: CCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl pentadecanoate: SMILES: CCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexadecanoate: SMILES: CCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexadecanoate: SMILES: CCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexadecanoate: SMILES: CCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptadecanoate: SMILES: CCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptadecanoate: SMILES: CCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptadecanoate: SMILES: CCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octadecanoate: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octadecanoate: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octadecanoate: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonadecanoate: SMILES: CCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonadecanoate: SMILES: CCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl nonadecanoate: SMILES: CCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl eicosanoate: SMILES: CCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl eicosanoate: SMILES: CCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl eicosanoate: SMILES: CCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heneicosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heneicosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heneicosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl docosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl docosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl docosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tricosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tricosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tricosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetracosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetracosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetracosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl pentacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl pentacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl pentacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl nonacosanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl triacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl triacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl triacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hentriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hentriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hentriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl dotriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl dotriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl dotriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tritriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tritriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tritriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetratriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetratriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetratriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl pentatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl pentatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl pentatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl nonatriacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hentetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hentetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hentetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl dotetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl dotetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl dotetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tritetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tritetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tritetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetratetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetratetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetratetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl pentatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl pentatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl pentatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl nonatetracontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl pentacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl pentacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl pentacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl nonacontanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl dohectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl dohectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl dohectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl trihectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl trihectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl trihectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetrahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetrahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetrahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl pentahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl pentahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl pentahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl nonahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl dohectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl dohectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl dohectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl trihectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl trihectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl trihectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl tetrahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl tetrahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl tetrahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl pentahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl pentahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl pentahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl hexahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl hexahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl hexahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl heptahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl heptahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl heptahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl octahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl octahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C1
+ - 2-(hydroxymethyl)benzyl octahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC=C1CO
+ - 4-(hydroxymethyl)benzyl nonahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=C(CO)C=C1
+ - 3-(hydroxymethyl)benzyl nonahectanoate: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)OC1=CC=CC(CO)=C
