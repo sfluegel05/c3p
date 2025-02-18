@@ -1,252 +1,57 @@
 """
 Classifies: CHEBI:18254 ribonucleoside
 """
- - 5-formyluridine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(C=O)c(=O)[nH]c1=O
- - 2'-O-methyladenosine: SMILES: CO[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1n1cnc2c(N)ncnc12
- - 3-methyluridine: SMILES: Cc1n([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c(=O)c1
- - 2'-O-methyluridine: SMILES: CO[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1n1ccc(=O)[nH]c1=O
- - 5-methyluridine: SMILES: Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-aminomethyluridine: SMILES: NCc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-fluorouridine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(F)c(=O)[nH]c1=O
- - 2-thiouridine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(S)c(=O)[nH]c1=O
- - 5-iodouridine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(I)c(=O)[nH]c1=O
- - 5,6-dihydrouridine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O
- - 4-thiouridine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cc(=O)[nH]c1=S
- - pseudouridine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1c(=O)[nH]c2ccccc12
- - inosine: SMILES: OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(O)ncnc12
- - 2'-O-methylinosine: SMILES: CO[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1n1cnc2c(O)ncnc12
- - 5-methylcytidine: SMILES: Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 2'-O-methylguanosine: SMILES: CO[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1n1cnc2c(N)ncnc12
- - 2'-O-methylcytidine: SMILES: CO[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1n1ccc(N)nc1=O
- - 2'-deoxyuridine: SMILES: [C@H]1(C[C@H](O)[C@@H](CO)O1)n1ccc(=O)[nH]c1=O
- - 2'-deoxyinosine: SMILES: [C@H]1(C[C@H](O)[C@@H](CO)O1)n1cnc2c(O)ncnc12
- - 2'-deoxyguanosine: SMILES: NC1=NC2=C(N=CN2[C@H]2C[C@H](O)[C@@H](CO)O2)C(=O)N1
- - 2'-deoxycytidine: SMILES: [C@H]1(C[C@H](O)[C@@H](CO)O1)n1ccc(N)nc1=O
- - 2'-deoxyadenosine: SMILES: [C@H]1(C[C@H](O)[C@@H](CO)O1)n1cnc2c(N)ncnc12
- - 5-methylcytidine: SMILES: Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-hydroxymethylcytidine: SMILES: OCc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-formylcytidine: SMILES: O=Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-carboxycytidine: SMILES: OC(=O)c1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - N(4)-acetylcytidine: SMILES: CC(=O)Nc1ccn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c1=O
- - 5,6-dihydrocytidine: SMILES: [C@H]1(C[C@H](O)[C@@H](CO)O1)n1ccc(N)nc1=O
- - 5-methyladenosine: SMILES: Cc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O
- - 2'-O-methylpseudouridine: SMILES: CO[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1n1c(=O)[nH]c2ccccc12
- - 5-methoxyuridine: SMILES: COc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-carboxymethyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-carboxyuridine: SMILES: OC(=O)c1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-methyluridine: SMILES: Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-hydroxycytidine: SMILES: Oc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-carbamoyluridine: SMILES: NC(=O)c1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(carboxyhydroxymethyl)uridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(isopentenylaminomethyl)uridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-taurinomethyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(carboxymethylaminomethyl)uridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(methoxycarbonylmethyl)uridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(methoxycarbonylmethyl)-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(carboxyhydroxymethyl)-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(isopentenylaminomethyl)-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-taurinomethyl-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(carboxymethylaminomethyl)-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(carboxymethyl)-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(methoxycarbonyl)-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(carboxyhydroxymethyl)-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(isopentenylaminomethyl)-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-taurinomethyl-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(carboxymethylaminomethyl)-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=O
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2'-O-methyl-2-thiouridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2'-O-methyl-2-thiouridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)c1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxyhydroxymethyl)-2-thio-2'-O-methyluridine: SMILES: OC(=O)COc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(isopentenylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: CC(=C)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-taurinomethyl-2-thio-2'-O-methyluridine: SMILES: NC(CS(=O)(=O)O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: NC(CC(O)=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethylaminomethyl)-2-thio-2'-O-methyluridine: SMILES: COC(=O)CNCc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(methoxycarbonylmethyl)-2'-O-methyl-2-thiouridine: SMILES: COC(=O)Cc1cn([C@@H]2O[C@H](COC)[C@@H](O)[C@H]2O)c(=O)[nH]c1=S
- - 5-(carboxymethyl)-2
+"""
+Classifies: CHEBI:46617 ribonucleoside
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_ribonucleoside(smiles: str):
+    """
+    Determines if a molecule is a ribonucleoside based on its SMILES string.
+    A ribonucleoside consists of D-ribose connected to a nucleobase via a glycosidic bond.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a ribonucleoside, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+
+    # Define D-ribose pattern (furanose form with correct stereochemistry)
+    ribose_pattern = Chem.MolFromSmarts(
+        "[C@H]1(O[C@H](CO)[C@H](O)[C@@H]1O)"
+    )
+    if not mol.HasSubstructMatch(ribose_pattern):
+        return False, "No D-ribose sugar detected"
+
+    # Find the ribose oxygen (O in the ring)
+    ribose_matches = mol.GetSubstructMatches(ribose_pattern)
+    if not ribose_matches:
+        return False, "Ribose structure mismatch"
+
+    # Check glycosidic bond (ribose C1 connected to nucleobase N)
+    glycosidic_bond = False
+    for match in ribose_matches:
+        anomeric_carbon = match[0]  # First atom in SMARTS (C1)
+        for neighbor in mol.GetAtomWithIdx(anomeric_carbon).GetNeighbors():
+            if neighbor.GetAtomicNum() == 7:  # Connected to nitrogen (nucleobase)
+                glycosidic_bond = True
+                break
+        if glycosidic_bond:
+            break
+
+    if not glycosidic_bond:
+        return False, "No glycosidic bond to nucleobase"
+
+    # Check for at least one ring aromatic atom (crude nucleobase check)
+    has_aromatic = any(atom.GetIsAromatic() for atom in mol.GetAtoms())
+    if not has_aromatic:
+        return False, "No aromatic system (missing nucleobase?)"
+
+    return True, "D-ribose sugar connected to nucleobase via glycosidic bond"
