@@ -23,14 +23,15 @@ def is_methyl_sulfide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Aliphatic sulfide (non-aromatic sulfur) with at least one methyl group attached
-    # SMARTS: [SX2;!a] connected to [CH3;!a] and any carbon (including aromatic)
-    methyl_sulfide_pattern = MolFromSmarts('[SX2;!a]([CH3;!a])[#6]')
-    if mol.HasSubstructMatch(methyl_sulfide_pattern):
+    # Check for aliphatic sulfide (thioether) with at least one methyl group attached to sulfur
+    # Sulfur must have exactly two single bonds (SX2) and not be aromatic
+    # At least one substituent is a methyl group (CH3)
+    sulfide_pattern = MolFromSmarts('[SX2;!a]([CH3])[#6]')
+    if mol.HasSubstructMatch(sulfide_pattern):
         return True, "Aliphatic sulfide with methyl group attached to sulfur"
 
-    # Check for dimethyl sulfide (both groups are methyl)
-    dimethyl_pattern = MolFromSmarts('[SX2;!a]([CH3;!a])([CH3;!a])')
+    # Check for dimethyl sulfide case (both substituents are methyl)
+    dimethyl_pattern = MolFromSmarts('[SX2;!a]([CH3])([CH3])')
     if mol.HasSubstructMatch(dimethyl_pattern):
         return True, "Dimethyl sulfide (both groups are methyl)"
 
