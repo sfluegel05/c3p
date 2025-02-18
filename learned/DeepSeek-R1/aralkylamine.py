@@ -1,420 +1,56 @@
 """
 Classifies: CHEBI:18000 aralkylamine
 """
- - 4-(3,4-Dichlorophenyl)-1-piperazineethanol: SMILES: ClC1=C(C=CC(=C1)N2CCN(CC2)CCO)Cl
- - 2-(4-Methylphenyl)-1-pyrrolidineethanol: SMILES: CC1=CC=C(C=C1)C2(CCCN2)CCO
- - 1-(2-Pyridinyl)-3-pyrrolidinamine: SMILES: N1CCCN1C2=CC=CC=N2
- - 1-(4-Chlorophenyl)-3-piperidinamine: SMILES: ClC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Methylphenyl)-3-piperidinamine: SMILES: CC1=CC=C(C=C1)N2CCCCC2N
- - 1-(3-Chlorophenyl)-3-piperidinamine: SMILES: ClC1=CC(=CC=C1)N2CCCCC2N
- - 1-(2-Chlorophenyl)-3-piperidinamine: SMILES: ClC1=CC=CC=C1N2CCCCC2N
- - 1-(2-Methylphenyl)-3-piperidinamine: SMILES: CC1=CC=CC=C1N2CCCCC2N
- - 1-(3-Methylphenyl)-3-piperidinamine: SMILES: CC1=CC(=CC=C1)N2CCCCC2N
- - 1-(4-Ethylphenyl)-3-piperidinamine: SMILES: CCC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Isopropylphenyl)-3-piperidinamine: SMILES: CC(C)C1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-tert-Butylphenyl)-3-piperidinamine: SMILES: CC(C)(C)C1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Fluorophenyl)-3-piperidinamine: SMILES: FC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Bromophenyl)-3-piperidinamine: SMILES: BrC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Iodophenyl)-3-piperidinamine: SMILES: IC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Nitrophenyl)-3-piperidinamine: SMILES: [O-][N+](=O)C1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Aminophenyl)-3-piperidinamine: SMILES: NC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Hydroxyphenyl)-3-piperidinamine: SMILES: OC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Methoxyphenyl)-3-piperidinamine: SMILES: COC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Trifluoromethylphenyl)-3-piperidinamine: SMILES: FC(F)(F)C1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Cyanophenyl)-3-piperidinamine: SMILES: N#CC1=CC=C(C=C1)N2CCCCC2N
- - 1-(4-Phenoxyphenyl)-3-piperidinamine: SMILES: O(C1=CC=CC=C1)C2=CC=C(C=C2)N3CCCCC3N
- - 1-(4-Benzylphenyl)-3-piperidinamine: SMILES: C1=CC=C(C=C1)CC2=CC=C(C=C2)N3CCCCC3N
- - 1-(4-Pyridinyl)-3-piperidinamine: SMILES: N1CCCCC1N2C=CC=NC2
- - 1-(3-Pyridinyl)-3-piperidinamine: SMILES: N1CCCCC1N2C=NC=CC2
- - 1-(2-Pyridinyl)-3-piperidinamine: SMILES: N1CCCCC1N2C=CC=N2
- - 1-(4-Quinolinyl)-3-piperidinamine: SMILES: N1CCCCC1N2C=CC3=CC=CC=C32
- - 1-(2-Quinolinyl)-3-piperidinamine: SMILES: N1CCCCC1N2C=CC3=CC=CC=C23
- - 1-(3-Isoquinolinyl)-3-piperidinamine: SMILES: N1CCCCC1N2C=CC3=CC=CC=C32
- - 1-(1-Naphthyl)-3-piperidinamine: SMILES: N1CCCCC1N2C=CC3=CC=CC=C32
- - 1-(2-Naphthyl)-3-piperidinamine: SMILES: N1CCCCC1N2C3=CC=CC=C3C=CC2
- - 1-(4-Biphenylyl)-3-piperidinamine: SMILES: C1=CC=C(C=C1)C2=CC=C(C=C2)N3CCCCC3N
- - 1-(4-Thienyl)-3-piperidinamine: SMILES: S1C=CC=C1N2CCCCC2N
- - 1-(3-Thienyl)-3-piperidinamine: SMILES: S1C=C(C=C1)N2CCCCC2N
- - 1-(2-Thienyl)-3-piperidinamine: SMILES: S1C=CC=C1N2CCCCC2N
- - 1-(4-Furyl)-3-piperidinamine: SMILES: O1C=CC=C1N2CCCCC2N
- - 1-(3-Furyl)-3-piperidinamine: SMILES: O1C=CC=C1N2CCCCC2N
- - 1-(2-Furyl)-3-piperidinamine: SMILES: O1C=CC=C1N2CCCCC2N
- - 1-(4-Pyrimidinyl)-3-piperidinamine: SMILES: C1=NC=NC=C1N2CCCCC2N
- - 1-(5-Pyrimidinyl)-3-piperidinamine: SMILES: C1=NC=NC=C1N2CCCCC2N
- - 1-(6-Pyrimidinyl)-3-piperidinamine: SMILES: C1=NC=NC=C1N2CCCCC2N
- - 1-(2-Pyrazinyl)-3-piperidinamine: SMILES: C1=NC=CN=C1N2CCCCC2N
- - 1-(3-Pyridazinyl)-3-piperidinamine: SMILES: C1=CC=NN=C1N2CCCCC2N
- - 1-(4-Pyridazinyl)-3-piperidinamine: SMILES: C1=CC=NN=C1N2CCCCC2N
- - 1-(5-Pyridazinyl)-3-piperidinamine: SMILES: C1=CC=NN=C1N2CCCCC2N
- - 1-(6-Pyridazinyl)-3-piperidinamine: SMILES: C1=CC=NN=C1N2CCCCC2N
- - 1-(2-Thiazolyl)-3-piperidinamine: SMILES: C1=NC=CS1N2CCCCC2N
- - 1-(4-Thiazolyl)-3-piperidinamine: SMILES: C1=NC=CS1N2CCCCC2N
- - 1-(5-Thiazolyl)-3-piperidinamine: SMILES: C1=NC=CS1N2CCCCC2N
- - 1-(2-Oxazolyl)-3-piperidinamine: SMILES: C1=NC=CO1N2CCCCC2N
- - 1-(4-Oxazolyl)-3-piperidinamine: SMILES: C1=NC=CO1N2CCCCC2N
- - 1-(5-Oxazolyl)-3-piperidinamine: SMILES: C1=NC=CO1N2CCCCC2N
- - 1-(3-Isoxazolyl)-3-piperidinamine: SMILES: C1=CON=C1N2CCCCC2N
- - 1-(4-Isoxazolyl)-3-piperidinamine: SMILES: C1=CON=C1N2CCCCC2N
- - 1-(5-Isoxazolyl)-3-piperidinamine: SMILES: C1=CON=C1N2CCCCC2N
- - 1-(1,2,3-Triazol-1-yl)-3-piperidinamine: SMILES: C1=NNN=C1N2CCCCC2N
- - 1-(1,2,4-Triazol-1-yl)-3-piperidinamine: SMILES: C1=NN=CN1N2CCCCC2N
- - 1-(1,2,3-Triazol-2-yl)-3-piperidinamine: SMILES: C1=NNN=C1N2CCCCC2N
- - 1-(1,2,4-Triazol-4-yl)-3-piperidinamine: SMILES: C1=NN=CN1N2CCCCC2N
- - 1-(Tetrazol-1-yl)-3-piperidinamine: SMILES: C1=NN=NN1N2CCCCC2N
- - 1-(Tetrazol-2-yl)-3-piperidinamine: SMILES: C1=NN=NN1N2CCCCC2N
- - 1-(Tetrazol-5-yl)-3-piperidinamine: SMILES: C1=NN=NN1N2CCCCC2N
- - 1-(Benzimidazol-1-yl)-3-piperidinamine: SMILES: C1=NC2=CC=CC=C2N1N3CCCCC3N
- - 1-(Benzotriazol-1-yl)-3-piperidinamine: SMILES: C1=NC2=CC=CC=C2N1N3CCCCC3N
- - 1-(Benzothiazol-2-yl)-3-piperidinamine: SMILES: C1=NC2=CC=CC=C2S1N3CCCCC3N
- - 1-(Benzoxazol-2-yl)-3-piperidinamine: SMILES: C1=NC2=CC=CC=C2O1N3CCCCC3N
- - 1-(Indol-1-yl)-3-piperidinamine: SMILES: C1=CNC2=CC=CC=C12N3CCCCC3N
- - 1-(Indol-3-yl)-3-piperidinamine: SMILES: C1=CNC2=CC=CC=C21N3CCCCC3N
- - 1-(Indazol-1-yl)-3-piperidinamine: SMILES: C1=CNC2=C1C=CC=C2N3CCCCC3N
- - 1-(Indazol-3-yl)-3-piperidinamine: SMILES: C1=CNC2=C1C=CC=C2N3CCCCC3N
- - 1-(Purine-7-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)C=NC=N2N3CCCCC3N
- - 1-(Purine-9-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)N=CN=C2N3CCCCC3N
- - 1-(Adenin-9-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)N=CN=C2N3CCCCC3N
- - 1-(Guanin-9-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)N=C(NC2=O)N3CCCCC3N
- - 1-(Hypoxanthin-9-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)NC=NC2=O)N3CCCCC3N
- - 1-(Xanthin-9-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)NC(=O)NC2=O)N3CCCCC3N
- - 1-(Pteridin-2-yl)-3-piperidinamine: SMILES: C1=NC2=NC=CN=C2N=C1N3CCCCC3N
- - 1-(Pteridin-4-yl)-3-piperidinamine: SMILES: C1=NC2=NC=CN=C2N=C1N3CCCCC3N
- - 1-(Pteridin-6-yl)-3-piperidinamine: SMILES: C1=NC2=NC=CN=C2N=C1N3CCCCC3N
- - 1-(Pteridin-7-yl)-3-piperidinamine: SMILES: C1=NC2=NC=CN=C2N=C1N3CCCCC3N
- - 1-(Alloxazin-10-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)C(=O)NC(=O)C2=O)N3CCCCC3N
- - 1-(Flavin-10-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)C(=O)NC(=O)C2=O)N3CCCCC3N
- - 1-(Riboflavin-10-yl)-3-piperidinamine: SMILES: C1=NC2=C(N1)C(=O)NC(=O)C2=O)N3CCCCC3N
- - 1-(Nicotinamide-3-yl)-3-piperidinamine: SMILES: C1=CC(=CN=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-4-yl)-3-piperidinamine: SMILES: C1=CN=CC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-5-yl)-3-piperidinamine: SMILES: C1=CC=C(N=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-6-yl)-3-piperidinamine: SMILES: C1=CC=CN=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-7-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-8-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-9-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-10-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-11-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-12-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-13-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-14-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-15-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-16-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-17-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-18-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-19-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-20-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-21-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-22-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-23-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-24-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-25-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-26-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-27-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-28-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-29-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-30-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-31-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-32-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-33-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-34-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-35-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-36-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-37-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-38-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-39-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-40-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-41-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-42-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-43-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-44-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-45-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-46-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-47-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-48-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-49-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-50-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-51-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-52-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-53-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-54-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-55-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-56-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-57-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-58-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-59-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-60-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-61-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-62-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-63-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-64-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-65-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-66-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-67-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-68-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-69-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-70-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-71-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-72-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-73-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-74-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-75-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-76-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-77-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-78-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-79-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-80-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-81-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-82-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-83-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-84-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-85-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-86-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-87-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-88-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-89-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-90-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-91-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-92-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-93-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-94-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-95-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-96-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-97-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-98-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-99-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-100-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-101-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-102-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-103-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-104-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-105-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-106-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-107-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-108-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-109-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-110-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-111-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-112-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-113-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-114-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-115-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-116-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-117-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-118-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-119-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-120-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-121-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-122-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-123-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-124-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-125-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-126-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-127-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-128-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-129-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-130-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-131-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-132-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-133-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-134-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-135-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-136-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-137-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-138-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-139-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-140-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-141-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-142-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-143-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-144-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-145-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-146-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-147-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-148-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-149-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-150-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-151-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-152-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-153-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-154-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-155-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-156-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-157-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-158-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-159-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-160-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-161-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-162-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-163-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-164-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-165-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-166-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-167-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-168-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-169-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-170-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-171-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-172-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-173-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-174-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-175-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-176-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-177-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-178-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-179-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-180-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-181-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-182-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-183-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-184-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-185-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-186-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-187-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-188-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-189-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-190-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-191-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-192-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-193-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-194-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-195-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-196-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-197-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-198-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-199-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-200-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-201-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-202-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-203-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-204-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-205-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-206-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-207-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-208-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-209-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-210-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-211-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-212-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-213-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-214-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-215-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-216-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-217-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-218-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-219-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-220-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-221-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-222-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-223-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-224-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-225-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-226-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-227-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-228-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-229-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-230-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-231-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-232-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-233-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-234-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-235-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-236-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-237-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-238-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-239-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-240-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-241-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-242-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-243-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-244-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-245-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-246-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-247-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-248-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-249-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-250-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-251-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-252-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-253-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-254-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-255-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-256-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-257-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-258-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-259-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-260-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-261-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-262-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-263-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-264-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-265-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-266-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-267-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-268-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-269-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-270-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-271-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-272-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-273-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-274-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-275-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-276-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-277-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-278-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-279-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-280-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-281-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-282-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-283-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-284-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-285-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-286-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-287-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-288-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-289-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-290-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-291-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-292-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-293-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-294-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-295-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-296-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-297-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-298-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-299-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-300-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-301-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-302-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-303-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-304-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-305-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-306-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-307-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-308-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-309-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-310-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-311-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-312-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-313-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-314-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-315-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-316-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-317-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-318-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-319-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-320-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-321-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-322-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-323-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-324-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-325-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-326-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-327-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-328-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-329-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-330-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-331-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-332-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-333-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-334-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1-(Nicotinamide-335-yl)-3-piperidinamine: SMILES: C1=CC=NC(=C1C(=O)N)N2CCCCC2N
- - 1
+"""
+Classifies: CHEBI:aralkylamine
+An alkylamine in which the alkyl group is substituted by an aromatic group.
+"""
+from rdkit import Chem
+
+def is_aralkylamine(smiles: str):
+    """
+    Determines if a molecule is an aralkylamine based on its SMILES string.
+    An aralkylamine has an amine group connected to an alkyl chain which is substituted by an aromatic group.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an aralkylamine, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Find all amine groups (primary, secondary; exclude amides)
+    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)]")
+    amine_matches = mol.GetSubstructMatches(amine_pattern)
+    if not amine_matches:
+        return False, "No amine group found"
+    
+    # Check each amine for connection to aromatic via alkyl chain (at least one carbon)
+    for amine_match in amine_matches:
+        n_idx = amine_match[0]
+        n_atom = mol.GetAtomWithIdx(n_idx)
+        for neighbor in n_atom.GetNeighbors():
+            # Traverse the alkyl chain starting from the neighbor atom
+            visited = set()
+            stack = [(neighbor, 0)]  # (atom, depth)
+            while stack:
+                current_atom, depth = stack.pop()
+                if current_atom.GetIdx() in visited:
+                    continue
+                visited.add(current_atom.GetIdx())
+                
+                # Check if current atom is aromatic and depth >=1 (at least one carbon from amine)
+                if current_atom.GetIsAromatic() and depth >= 1:
+                    return True, "Amine connected to aromatic group via alkyl chain"
+                
+                # Continue traversal for carbon atoms
+                if current_atom.GetAtomicNum() == 6:
+                    for next_neighbor in current_atom.GetNeighbors():
+                        if next_neighbor.GetIdx() != n_idx:  # avoid backtracking to amine
+                            stack.append((next_neighbor, depth + 1))
+    
+    return False, "No aromatic group connected via alkyl chain to amine"
