@@ -31,6 +31,8 @@ def is_branched_chain_fatty_acyl_CoA(smiles: str):
     
     # Check each thioester match for branched R group
     for match in thioester_matches:
+        if len(match) != 3:
+            continue  # Skip invalid matches
         s_idx, co_idx, r_start_idx = match
         
         # Traverse R group starting from r_start_idx, excluding thioester atoms
