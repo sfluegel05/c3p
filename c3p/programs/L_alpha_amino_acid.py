@@ -3,10 +3,18 @@ Classifies: CHEBI:15705 L-alpha-amino acid
 """
 """
 Classifies: L-alpha-amino acid
-Definition: A free L-alpha-amino acid is defined as a molecule having one (and only one)
-free amino acid backbone. That is, it contains an unmodified (non-amidated) amino group
-(NH2) attached to a chiral α‐carbon which is bonded to a protonated carboxylic acid 
-group (–C(=O)[OH]) and the α‑carbon has the “S” (L) CIP configuration.
+Definition: Any alpha-amino acid having L-configuration (that is, the α-carbon has 
+the “S” CIP configuration) and a free (non-amidated, protonated) carboxylic acid group.
+
+The function is_L_alpha_amino_acid determines if a molecule (given as SMILES) has exactly one
+free amino acid backbone: a free (non‐amidated) NH2 group directly bonded to a chiral α‐carbon 
+which is bonded to a carboxylic acid group (C(=O)[OH]). This function uses a pair of SMARTS patterns 
+to detect the proper chirality (either [C@H] or [C@@H]) and then verifies that:
+  1. The amino nitrogen is free (bound only to H’s and the α‑carbon).
+  2. The corresponding carboxyl carbon is bonded to exactly two oxygen atoms (one double‐bonded,
+     and one single‐bonded, ideally carrying a hydrogen).
+  3. The α‑carbon’s CIP code is “S”.
+If any of these checks fail, a meaningful error message is returned.
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -14,15 +22,7 @@ from rdkit.Chem import AllChem
 def is_L_alpha_amino_acid(smiles: str):
     """
     Determines if a molecule is a free L-alpha-amino acid.
-    Checks:
-      1. That the molecule parses and hydrogens are added.
-      2. That exactly one free amino acid backbone (NH2–C*–COOH) is found.
-         This is done with two SMARTS patterns (one for each chiral annotation).
-      3. The backbone is “free” – that is, the amino nitrogen is only bound to the α‐carbon, 
-         and the carboxyl carbon is only bound to the α‐carbon and exactly two oxygens,
-         one of which is single‐bonded and bears a hydrogen, and the other double‐bonded.
-      4. That the α‐carbon has a CIP code (assigned by RDKit) and that it is “S”.
-    
+
     Args:
         smiles (str): SMILES string of the molecule.
         
@@ -33,16 +33,16 @@ def is_L_alpha_amino_acid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    # Add explicit hydrogens so that we can inspect the connectivity and H counts.
+    
+    # Add explicit hydrogens to inspect connectivity reliably.
     mol = Chem.AddHs(mol)
     
     # Compute stereochemistry and assign CIP codes.
     Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
     
     # Define SMARTS patterns for the free amino acid backbone.
-    # These patterns look for an amino nitrogen that is not amidated,
-    # attached to a chiral α‐carbon (either @ or @@) bearing a carbon side chain ([#6])
-    # and then attached to a carboxyl group of the form C(=O)[O;H1].
+    # Looking for an amino nitrogen (not amidated) attached to a chiral α‐carbon bonded to a carbon side chain,
+    # which in turn is bonded to a carboxyl carbon with an (assumed) free carboxylic acid.
     pattern1 = Chem.MolFromSmarts("[NX3;H1,H2;!$(N-C(=O))]-[C@H]([#6])-[C](=O)[O;H1]")
     pattern2 = Chem.MolFromSmarts("[NX3;H1,H2;!$(N-C(=O))]-[C@@H]([#6])-[C](=O)[O;H1]")
     
@@ -55,7 +55,7 @@ def is_L_alpha_amino_acid(smiles: str):
     for m in matches2:
         total_matches.append(("pattern2", m))
     
-    # Use unique matches based on the raw indices from the match, but preserve the ordering from match.
+    # Remove duplicate matches (based on atom indices in the match)
     unique_matches = []
     seen = set()
     for label, match in total_matches:
@@ -65,70 +65,70 @@ def is_L_alpha_amino_acid(smiles: str):
             unique_matches.append((label, match))
     
     if len(unique_matches) == 0:
-        return False, "Alpha-amino acid backbone (free NH2 and protonated COOH) not found"
+        return False, "Alpha-amino acid backbone (free NH2 and COOH group) not found"
     if len(unique_matches) > 1:
-        return False, f"Found {len(unique_matches)} amino acid backbones; likely a peptide or multiple motifs exist"
+        return False, f"Found {len(unique_matches)} amino acid backbone motifs; likely a peptide or more than one motif exists"
     
-    # Get the single match.
+    # Our single match is our candidate backbone.
     label, match = unique_matches[0]
-    # According to our SMARTS, the ordering is: 0: amino nitrogen, 1: α-carbon, 2: carboxyl carbon.
+    # According to our SMARTS, atom indices are: 0: amino nitrogen, 1: α-carbon, 2: carboxyl carbon.
     N_idx, Ca_idx, Cc_idx = match[0], match[1], match[2]
     N_atom = mol.GetAtomWithIdx(N_idx)
     Ca_atom = mol.GetAtomWithIdx(Ca_idx)
     Cc_atom = mol.GetAtomWithIdx(Cc_idx)
     
-    # --- Check that the backbone is free (unmodified) ---
-    # For the amino nitrogen: in a free amino acid, it should be NH2 (only bound to hydrogens besides the α‑carbon).
+    # Check that the amino nitrogen is free (only attached to the α-carbon as heavy neighbor).
     heavy_neigh_N = [nbr for nbr in N_atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
     if len(heavy_neigh_N) != 1 or heavy_neigh_N[0].GetIdx() != Ca_idx:
-        return False, "Backbone nitrogen appears modified or not free (unexpected heavy atom connectivity)"
+        return False, "Backbone nitrogen appears modified or is not free (unexpected heavy atom connectivity)"
     
-    # For the carboxyl carbon: It should be bound to exactly three atoms:
-    # the α‑carbon and two oxygens.
-    if Cc_atom.GetDegree() != 3:
-        return False, "Carboxyl carbon connectivity is not as expected for a free COOH group"
-    # Identify the two oxygens attached to Cc_atom.
-    oxy_atoms = [nbr for nbr in Cc_atom.GetNeighbors() if nbr.GetAtomicNum() == 8]
-    if len(oxy_atoms) != 2:
+    # Instead of enforcing that the carboxyl carbon has a strict degree of 3,
+    # we now check that it is attached to exactly two oxygen atoms (aside from the α-carbon).
+    oxy_neighbors = [nbr for nbr in Cc_atom.GetNeighbors() if nbr.GetAtomicNum() == 8]
+    if len(oxy_neighbors) != 2:
         return False, "Carboxyl carbon does not have exactly two oxygen neighbors"
+    
+    # Verify that one oxygen is double-bonded (the carbonyl oxygen) and 
+    # the other is single-bonded (the hydroxyl oxygen, preferably with at least one hydrogen).
     found_double = False
-    found_single_OH = False
-    for nbr in oxy_atoms:
-        bond = mol.GetBondBetweenAtoms(Cc_atom.GetIdx(), nbr.GetIdx())
+    found_single = False
+    for o in oxy_neighbors:
+        bond = mol.GetBondBetweenAtoms(Cc_atom.GetIdx(), o.GetIdx())
         if bond is None:
             continue
-        # Check the bond type.
         if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
             found_double = True
         elif bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
-            # For the OH oxygen, ensure that it has a hydrogen attached.
-            Hs = [nb for nb in nbr.GetNeighbors() if nb.GetAtomicNum() == 1]
-            if len(Hs) >= 1:
-                found_single_OH = True
-    if not (found_double and found_single_OH):
-        return False, "The carboxylic acid group does not appear to be protonated/free (expected C(=O)[OH])"
+            # Check if the single-bonded oxygen carries any hydrogens.
+            if any(n.GetAtomicNum() == 1 for n in o.GetNeighbors()):
+                found_single = True
+    if not (found_double and found_single):
+        return False, "The carboxylic acid group does not appear protonated/free (expected C(=O)[OH])"
     
-    # --- Check α-carbon chirality (CIP code) ---
+    # Check the chirality of the α-carbon using the assigned CIP code.
     if not Ca_atom.HasProp("_CIPCode"):
         return False, "Alpha-carbon lacks a CIP code; cannot determine configuration"
     cip = Ca_atom.GetProp("_CIPCode")
     if cip != "S":
         return False, f"Alpha-amino acid backbone found but alpha-carbon CIP code is '{cip}', not 'S'"
     
-    return True, "Found a free alpha-amino acid backbone with L (S CIP) configuration at the alpha-carbon"
+    return True, "Found a free L-alpha-amino acid backbone (free NH2 and free COOH) with L (S) configuration"
 
 # Example usage:
 if __name__ == '__main__':
-    # Sample tests from the provided list
+    # Testing with a few examples from the provided list
     test_smiles = [
-        "N[C@@H](CC(=O)c1cc(O)ccc1N)C(O)=O",  # 5-hydroxy-L-kynurenine
-        "N[C@@H](CC(=C)C(N)=O)C(O)=O",         # 4-methylene-L-glutamine
-        "CC[C@H](N)C(O)=O",                   # L-alpha-aminobutyric acid
-        "O=C(O)[C@@H](N)CCC1C=CC(N)C=C1",      # Amiclenomycin
-        "N[C@@H](CCCCC(O)=O)C(O)=O",           # L-2-aminopimelic acid
-        "N[C@@H](CCCCNC(O)=O)C(O)=O",          # N(6)-carboxy-L-lysine
-        # You may add additional examples from the list above.
+        "N[C@@H](CC(=O)c1cc(O)ccc1N)C(O)=O",         # 5-hydroxy-L-kynurenine
+        "N[C@@H](CC(=C)C(N)=O)C(O)=O",                # 4-methylene-L-glutamine
+        "CC[C@H](N)C(O)=O",                          # L-alpha-aminobutyric acid
+        "O=C(O)[C@@H](N)CCC1C=CC(N)C=C1",             # Amiclenomycin
+        "N[C@@H](CCCCC(O)=O)C(O)=O",                  # L-2-aminopimelic acid
+        "N[C@@H](CCCCNC(O)=O)C(O)=O",                 # N(6)-carboxy-L-lysine
+        "CNC(=O)C[C@H](N)C(O)=O",                     # N(4)-methyl-L-asparagine
+        "N[C@@H](COS(O)(=O)=O)C(O)=O",                # L-serine O-sulfate
+        "N[C@@H](CCC(N)=O)C(O)=O",                    # L-glutamine
+        "Cn1cncc1C[C@H](N)C(O)=O"                     # N(pros)-methyl-L-histidine
     ]
     for smi in test_smiles:
         res, reason = is_L_alpha_amino_acid(smi)
-        print(smi, "->", res, ":", reason)
+        print(f"SMILES: {smi}\nResult: {res}\nReason: {reason}\n{'-'*60}")
