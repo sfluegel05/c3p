@@ -3,7 +3,6 @@ Classifies: CHEBI:72600 spiroketal
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_spiroketal(smiles: str):
     """
@@ -28,19 +27,18 @@ def is_spiroketal(smiles: str):
     if not ketal_matches:
         return False, "No ketal carbon found."
 
-    # Iterate through each ketal carbon match
     for match in ketal_matches:
         ketal_carbon_idx = match[0]
         ketal_carbon = mol.GetAtomWithIdx(ketal_carbon_idx)
 
-        # Get oxygen atoms bonded to ketal carbon
+         # Get oxygen atoms bonded to ketal carbon
         oxygen_indices = [neighbor.GetIdx() for neighbor in ketal_carbon.GetNeighbors() if neighbor.GetAtomicNum() == 8]
-
         if len(oxygen_indices) != 2:
-            continue  # Should not happen because of the pattern but just in case.
+            continue # Should not happen
 
         oxy1_idx = oxygen_indices[0]
         oxy2_idx = oxygen_indices[1]
+
         oxy1 = mol.GetAtomWithIdx(oxy1_idx)
         oxy2 = mol.GetAtomWithIdx(oxy2_idx)
 
@@ -48,29 +46,27 @@ def is_spiroketal(smiles: str):
         if not oxy1.IsInRing() or not oxy2.IsInRing():
             continue
 
-        # 3. Find the first ring for each oxygen, excluding the ketal carbon.
+        # 3. Find all rings for each oxygen, excluding the ketal carbon.
         ring_info = mol.GetRingInfo()
-        rings_oxy1 = [ring for ring in ring_info.AtomRings() if oxy1_idx in ring]
-        rings_oxy2 = [ring for ring in ring_info.AtomRings() if oxy2_idx in ring]
+        rings_oxy1 = [set(ring) for ring in ring_info.AtomRings() if oxy1_idx in ring]
+        rings_oxy2 = [set(ring) for ring in ring_info.AtomRings() if oxy2_idx in ring]
 
         if not rings_oxy1 or not rings_oxy2:
-            continue
+             continue
 
-        ring1 = rings_oxy1[0]
-        ring2 = rings_oxy2[0]
-        
-        # Exclude the ketal carbon itself for the ring comparison
-        ring1_no_ketal = set(ring1)
-        ring1_no_ketal.discard(ketal_carbon_idx)
+        is_spiroketal_candidate = True
+        #Check all ring combinations for intersection
+        for ring1 in rings_oxy1:
+            ring1.discard(ketal_carbon_idx)
+            for ring2 in rings_oxy2:
+                ring2.discard(ketal_carbon_idx)
+                if ring1.intersection(ring2):
+                    is_spiroketal_candidate = False
+                    break
+            if not is_spiroketal_candidate:
+                break
 
-        ring2_no_ketal = set(ring2)
-        ring2_no_ketal.discard(ketal_carbon_idx)
-
-        # If the two rings (without the ketal carbon) share any atoms, it's NOT a spiroketal.
-        if ring1_no_ketal.intersection(ring2_no_ketal):
-            continue
-
-        #If we get here, the two rings only share the ketal carbon
-        return True, "Spiroketal structure identified."
+        if is_spiroketal_candidate:
+            return True, "Spiroketal structure identified."
 
     return False, "No spiroketal structure detected."
