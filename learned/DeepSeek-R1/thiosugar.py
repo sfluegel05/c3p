@@ -16,48 +16,70 @@ def is_thiosugar(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
+    # Basic carbohydrate check: multiple hydroxyl groups and ring structure
+    hydroxyl_count = sum(1 for atom in mol.GetAtoms() 
+                        if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1)
+    if hydroxyl_count < 3:
+        return False, "Insufficient hydroxyl groups for carbohydrate"
+
     # Check for sulfur presence
     sulfur_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 16]
     if not sulfur_atoms:
         return False, "No sulfur atoms found"
 
-    # Look for carbohydrate-like structure (pyranose/furanose with multiple hydroxyls)
-    sugar_patterns = [
-        Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@@H](O1)O"),  # pyranose template
-        Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@@H](O1)O")           # furanose template
-    ]
-    sugar_matches = any(mol.HasSubstructMatch(patt) for patt in sugar_patterns if patt)
-    
-    # If no classic sugar pattern, check for modified structures with >=2 hydroxyls
-    if not sugar_matches:
-        hydroxyl_count = sum(1 for atom in mol.GetAtoms() 
-                            if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1)
-        if hydroxyl_count < 2:
-            return False, "Insufficient hydroxyl groups for carbohydrate derivative"
+    # Improved carbohydrate backbone detection
+    sugar_ring = False
+    ring_info = mol.GetRingInfo()
+    for ring in ring_info.AtomRings():
+        if len(ring) not in (5, 6):
+            continue
+            
+        # Count hydroxyls on ring carbons
+        ring_oh = 0
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() != 6:
+                continue
+            for bond in atom.GetBonds():
+                if bond.GetBondType() != Chem.BondType.SINGLE:
+                    continue
+                neighbor = bond.GetOtherAtom(atom)
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() >= 1:
+                    ring_oh += 1
+                    break  # Count one OH per carbon
+                    
+        if ring_oh >= 3:
+            sugar_ring = True
+            # Check for sulfur in ring structure
+            for atom_idx in ring:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetAtomicNum() == 16:
+                    return True, "Sulfur in carbohydrate ring"
+            # Check sulfur attachments to ring carbons
+            for atom_idx in ring:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if atom.GetAtomicNum() != 6:
+                    continue
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 16:
+                        return True, "Sulfur attached to ring carbon"
 
-    # Check sulfur positions relative to carbohydrate structure
+    # Check for sulfur in glycosidic/thioether positions
+    glycosidic_s = Chem.MolFromSmarts("[C][SX2][C]")
+    if mol.HasSubstructMatch(glycosidic_s):
+        return True, "Sulfur in glycosidic linkage"
+
+    # Check for sulfur in sidechains of potential carbohydrate structure
     for sulfur in sulfur_atoms:
-        # Case 1: Sulfur in ring position (replacing oxygen)
-        if sulfur.IsInRing():
-            ring = next((r for r in mol.GetRingInfo().AtomRings() if sulfur.GetIdx() in r), None)
-            if ring and len(ring) in (5,6):
-                # Check if this could be a sugar ring with S replacing O
-                return True, "Sulfur in carbohydrate ring position"
-        
-        # Case 2: Sulfur attached to ring carbon (replacing hydroxyl/oxygen)
-        for neighbor in sulfur.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.IsInRing():
-                ring = next((r for r in mol.GetRingInfo().AtomRings() if neighbor.GetIdx() in r), None)
-                if ring and len(ring) in (5,6):
-                    # Check if adjacent to oxygen-rich environment (carbohydrate-like)
-                    o_count = sum(1 for n in neighbor.GetNeighbors() 
-                                 if n.GetAtomicNum() == 8 and n.GetTotalNumHs() >= 1)
-                    if o_count >= 1:
-                        return True, "Sulfur attached to carbohydrate ring carbon"
-        
-        # Case 3: Sulfur in glycosidic linkage (thioether between two sugars)
-        glycosidic_s = Chem.MolFromSmarts("[C][SX2][C@H]1O[C@H]")
-        if mol.HasSubstructMatch(glycosidic_s):
-            return True, "Sulfur in glycosidic linkage"
+        # Look for S connected to carbons with multiple O neighbors
+        for bond in sulfur.GetBonds():
+            carbon = bond.GetOtherAtom(sulfur)
+            if carbon.GetAtomicNum() != 6:
+                continue
+            # Check if carbon has carbohydrate-like features
+            o_neighbors = sum(1 for n in carbon.GetNeighbors() 
+                            if n.GetAtomicNum() == 8 and n.GetTotalNumHs() >= 1)
+            if o_neighbors >= 2:
+                return True, "Sulfur in carbohydrate sidechain"
 
     return False, "No sulfur substitution in carbohydrate structure"
