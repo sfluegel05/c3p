@@ -26,25 +26,27 @@ def is_beta_D_glucoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the beta-D-glucose pattern
-    # The pattern should match the beta-D-glucose moiety with the glycosidic bond at C1
+    # Define the beta-D-glucose pattern with correct stereochemistry
     beta_D_glucose_pattern = Chem.MolFromSmarts("[C@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O)O")
     
     # Check if the molecule contains the beta-D-glucose pattern
     if not mol.HasSubstructMatch(beta_D_glucose_pattern):
         return False, "No beta-D-glucose moiety found"
 
-    # Check the configuration of the glycosidic bond
-    # The glycosidic bond should be in the beta-configuration (axial position)
-    # We can check this by ensuring that the anomeric carbon (C1) is connected to the rest of the molecule in the correct orientation
-    # This is a simplified check and may not cover all cases
-    anomeric_carbon = mol.GetSubstructMatch(beta_D_glucose_pattern)[0]
-    for neighbor in mol.GetAtomWithIdx(anomeric_carbon).GetNeighbors():
-        if neighbor.GetAtomicNum() != 8:  # Not an oxygen (glycosidic bond)
-            continue
-        # Check if the glycosidic bond is in the beta-configuration
-        # This is a heuristic and may not be accurate for all cases
-        if neighbor.GetIdx() in mol.GetSubstructMatch(beta_D_glucose_pattern):
-            return True, "Contains beta-D-glucose moiety with beta-configuration glycosidic bond"
-
+    # Get the matched atoms for the beta-D-glucose pattern
+    matches = mol.GetSubstructMatches(beta_D_glucose_pattern)
+    for match in matches:
+        anomeric_carbon = match[0]  # C1 of the glucose moiety
+        anomeric_atom = mol.GetAtomWithIdx(anomeric_carbon)
+        
+        # Check the glycosidic bond configuration
+        for neighbor in anomeric_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8:  # Oxygen (glycosidic bond)
+                # Check if the glycosidic bond is in the beta-configuration
+                # In beta-D-glucosides, the glycosidic bond is axial (down)
+                # We can use RDKit's stereochemistry tools to check this
+                bond = mol.GetBondBetweenAtoms(anomeric_carbon, neighbor.GetIdx())
+                if bond.GetStereo() == Chem.BondStereo.STEREOE:
+                    return True, "Contains beta-D-glucose moiety with beta-configuration glycosidic bond"
+    
     return False, "No beta-configuration glycosidic bond found"
