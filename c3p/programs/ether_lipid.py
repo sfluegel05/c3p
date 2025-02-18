@@ -7,7 +7,7 @@ def is_ether_lipid(smiles: str):
     """
     Determines if a molecule is an ether lipid based on its SMILES string.
     Ether lipids have at least one carbon atom on glycerol bonded to an alkyl chain via an ether linkage,
-    and often possess specific headgroups like phosphate or choline.
+    and often possess specific headgroups like phosphate, choline, or ethanolamine.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,31 +16,32 @@ def is_ether_lipid(smiles: str):
         bool: True if the molecule is an ether lipid, False otherwise
         str: Reason for classification
     """
-    
     # Parse the SMILES string into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for alkyl ether linkage specifically in ether lipids
-    ether_pattern = Chem.MolFromSmarts("C-O-[CH2]-[CH]")
+    # Generalized pattern for ether linkage in glycerolipids
+    ether_linkage_patterns = [
+        Chem.MolFromSmarts("C-O-[CH2]-[CH2]"),  # Simple ether linkage
+        Chem.MolFromSmarts("[C;H2]-[O]-[C;H2]")  # More general ether pattern accounting for various configurations
+    ]
 
     # Check for ether linkage pattern
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
-    if len(ether_matches) < 1:
+    if not any(mol.HasSubstructMatch(pattern) for pattern in ether_linkage_patterns):
         return False, "No appropriate ether linkage found"
 
-    # Check for common lipid headgroups (e.g., phosphate or choline)
-    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)[O-]")
-    choline_pattern = Chem.MolFromSmarts("[N+](C)(C)C")
-    ethanolamine_pattern = Chem.MolFromSmarts("NCCO")
+    # Check for common lipid headgroups patterns more broadly
+    headgroup_patterns = [
+        Chem.MolFromSmarts("P(=O)(O)[O-]"),  # Phosphate
+        Chem.MolFromSmarts("[N+](C)(C)C"),   # Choline
+        Chem.MolFromSmarts("NCCO"),          # Ethanolamine
+        Chem.MolFromSmarts("NC(=O)C")        # Possible amide linkage
+        # Add more headgroup patterns as necessary for the lipid class
+    ]
     
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
-    has_choline = mol.HasSubstructMatch(choline_pattern)
-    has_ethanolamine = mol.HasSubstructMatch(ethanolamine_pattern)
-
-    # Ensure at least one typical headgroup is attached
-    if has_phosphate or has_choline or has_ethanolamine:
+    # Ensure the presence of at least one typical lipid headgroup
+    if any(mol.HasSubstructMatch(pattern) for pattern in headgroup_patterns):
         return True, "Contains ether linkages with common lipid headgroups such as phosphate, choline, or ethanolamine"
     else:
         return False, "Missing common lipid headgroups"
