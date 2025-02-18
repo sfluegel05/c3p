@@ -1,13 +1,16 @@
 """
 Classifies: CHEBI:26199 polyprenol
 """
+"""
+Classifies: CHEBI:26188 polyprenol
+"""
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_polyprenol(smiles: str):
     """
     Determines if a molecule is a polyprenol based on its SMILES string.
-    A polyprenol has a general formula H-[CH2C(Me)=CHCH2]nOH with n > 1 isoprene units.
+    A polyprenol is a prenol with the general formula H-[CH2C(Me)=CHCH2]nOH (n > 1),
+    composed of multiple isoprene units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,39 +22,30 @@ def is_polyprenol(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for at least one hydroxyl group
-    hydroxyls = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1]
-    if not hydroxyls:
-        return False, "No hydroxyl group found"
-
-    # Check for at least two isoprene units (each with a methyl group and double bond)
-    # SMARTS pattern for a carbon with a methyl group and adjacent double bond
-    isoprene_carbon = Chem.MolFromSmarts("[C&$(C([CH3])-&!@[C]=,*)]=C")
-    matches = mol.GetSubstructMatches(isoprene_carbon)
-    if len(matches) < 2:
-        return False, f"Found {len(matches)} isoprene units, need at least 2"
-
-    # Verify hydroxyl is attached to the isoprene chain
-    for o in hydroxyls:
-        carbon = o.GetNeighbors()[0]
-        # Check if this carbon is part of a chain with isoprene units
-        # Traverse the chain to find connected isoprene carbons
-        visited = set()
-        stack = [(carbon, 0)]
-        max_depth = 0
-        while stack:
-            atom, depth = stack.pop()
-            if atom in visited:
-                continue
-            visited.add(atom)
-            if depth > max_depth:
-                max_depth = depth
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor not in visited:
-                    stack.append((neighbor, depth + 1))
-        # If the chain is long enough (at least 10 atoms for n=2)
-        if max_depth >= 9:
-            return True, "Contains hydroxyl group and at least two isoprene units in chain"
-
-    return False, "Hydroxyl not part of a sufficient isoprene chain"
+    
+    # Check for terminal hydroxyl group
+    hydroxyl_matches = mol.GetSubstructMatches(Chem.MolFromSmarts('[OH]-[C]'))
+    if not hydroxyl_matches:
+        return False, "No hydroxyl group present"
+    
+    # Verify hydroxyl is on a terminal carbon (carbon with degree 1)
+    terminal_hydroxyl = False
+    for match in hydroxyl_matches:
+        carbon_idx = match[1]
+        carbon = mol.GetAtomWithIdx(carbon_idx)
+        if carbon.GetDegree() == 1:
+            terminal_hydroxyl = True
+            break
+    if not terminal_hydroxyl:
+        return False, "Hydroxyl group not on terminal carbon"
+    
+    # Find methyl groups attached to double-bonded carbons (isoprene unit markers)
+    # SMARTS: Carbon with a double bond and a methyl group
+    isoprene_unit_pattern = Chem.MolFromSmarts('[CH0]([CH3])=*')
+    isoprene_matches = mol.GetSubstructMatches(isoprene_unit_pattern)
+    
+    # Need at least two isoprene units (n > 1)
+    if len(isoprene_matches) < 2:
+        return False, f"Found {len(isoprene_matches)} isoprene units (requires >1)"
+    
+    return True, "Terminal hydroxyl with ≥2 isoprene units (methyl on double bond carbons)"
