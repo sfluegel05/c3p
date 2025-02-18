@@ -5,6 +5,7 @@ Classifies: CHEBI:37554 fatty acyl-CoA
 Classifies: CHEBI:15856 fatty acyl-CoA
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_fatty_acyl_CoA(smiles: str):
     """
@@ -23,45 +24,45 @@ def is_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for CoA backbone pattern (pantetheine-phosphate structure)
-    # This pattern matches the thioester bond (C=O-S) connected to CoA's characteristic structure
+    # Define CoA-thioester pattern: C(=O)S followed by CoA backbone components
+    # Pattern matches the thioester carbonyl and adjacent CoA structure
     coa_pattern = Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)")
-    if not mol.HasSubstructMatch(coa_pattern):
+    coa_matches = mol.GetSubstructMatches(coa_pattern)
+    if not coa_matches:
         return False, "Missing CoA-thioester structure"
 
-    # Verify there's an acyl chain (at least 2 carbons in the acid part)
-    # Find the carbonyl carbon in the thioester
-    matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3]=[OX1][SX2]"))
-    if not matches:
-        return False, "No thioester bond found"
-    
-    # Check the acyl chain length (carbon atoms connected to the thioester's carbonyl)
-    # Minimum chain length of 2 carbons (including the carbonyl) to exclude very short acids
-    for match in matches:
+    # Iterate through all CoA-thioester matches to check acyl chains
+    for match in coa_matches:
+        # The first atom in the match is the carbonyl carbon of the thioester
         carbonyl_carbon = match[0]
-        neighbor_count = len(mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors())
-        if neighbor_count < 2:  # Must have at least one carbon in addition to CoA connection
-            continue
         
-        # Traverse the acyl chain
-        chain_carbons = 0
-        stack = [(n.GetIdx(), 1) for n in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors() if n.GetSymbol() == "C"]
+        # Traverse the acyl chain starting from the carbonyl carbon
+        # Exclude the CoA part by not backtracking through the sulfur
         visited = set()
+        stack = []
+        # Get neighbors of carbonyl carbon (excluding sulfur direction)
+        for neighbor in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors():
+            if neighbor.GetSymbol() != "S":  # Follow acyl chain direction
+                stack.append(neighbor.GetIdx())
         
+        chain_carbons = 0
         while stack:
-            atom_idx, depth = stack.pop()
+            atom_idx = stack.pop()
             if atom_idx in visited:
                 continue
             visited.add(atom_idx)
             
-            if mol.GetAtomWithIdx(atom_idx).GetSymbol() == "C":
+            atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetSymbol() == "C":
                 chain_carbons += 1
-                # Stop counting if we reach another functional group (like double bonds are okay)
-                for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
-                    if neighbor.GetIdx() not in visited and neighbor.GetSymbol() in ["C", "H"]:
-                        stack.append((neighbor.GetIdx(), depth + 1))
+                # Add adjacent carbons (including those in double bonds)
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetSymbol() in ["C", "H"] and neighbor.GetIdx() not in visited:
+                        stack.append(neighbor.GetIdx())
         
-        if chain_carbons >= 1:  # At least one carbon beyond the carbonyl
-            return True, "Contains CoA-thioester structure with acyl chain"
+        # Require at least 2 carbons in the acyl chain (e.g., acetyl-CoA would have 1)
+        # Adjust based on definition - fatty acids typically have longer chains
+        if chain_carbons >= 2:
+            return True, "Contains CoA-thioester structure with sufficient acyl chain"
 
-    return False, "Insufficient acyl chain length"
+    return False, "Insufficient acyl chain length or invalid structure"
