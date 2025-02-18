@@ -25,14 +25,24 @@ def is_dihydroflavonols(smiles: str):
     
     # Define SMARTS pattern for 3-hydroxyflavanone core
     # The pattern matches the flavanone skeleton with a hydroxyl group on position 3
-    # Adjusted to allow substituents on the B ring (aromatic carbons)
-    pattern = Chem.MolFromSmarts("[OH]C1C(=O)c2ccccc2C1O")
+    # Flavanone core is a chroman-4-one (O-C2-C3-OH-C4=O in a six-membered ring)
+    # B ring (c2ccccc2) can have any substituents
+    pattern = Chem.MolFromSmarts("[OH]C1C(=O)c2ccccc2OC1")
     
     if not mol.HasSubstructMatch(pattern):
-        # Check if the hydroxyl is present in a different position
-        # Alternative pattern for different substitution patterns
-        alt_pattern = Chem.MolFromSmarts("[OH]C1C(C(=O))c2ccccc2C1")
-        if not mol.HasSubstructMatch(alt_pattern):
-            return False, "Does not contain the 3-hydroxyflavanone core"
+        return False, "Does not contain 3-hydroxyflavanone core structure"
     
-    return True, "Contains 3-hydroxyflavanone structure"
+    # Additional check to exclude false positives: ensure the hydroxyl is directly attached to the C3 in the ring
+    # Get the matching atoms to verify connectivity
+    matches = mol.GetSubstructMatches(pattern)
+    if not matches:
+        return False, "No 3-hydroxyflavanone core match"
+    
+    # Check that the hydroxyl is part of the ring system
+    for match in matches:
+        hydroxyl_atom = mol.GetAtomWithIdx(match[0])
+        ring_info = mol.GetRingInfo()
+        if hydroxyl_atom.IsInRing() and any(len(r) >= 6 for r in ring_info.AtomRings()):
+            return True, "Contains 3-hydroxyflavanone core structure"
+    
+    return False, "Hydroxyl not in a six-membered ring (flavanone structure)"
