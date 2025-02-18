@@ -22,19 +22,18 @@ def is_glucosylceramide(smiles: str):
     if mol is None:
         return (False, "Invalid SMILES string")
 
-    # Check for β-D-glucose moiety using a more precise SMARTS pattern
-    glucose_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H](CO)[C@H](O)[C@H](O)[C@@H]1O")
+    # Refined SMARTS pattern for β-D-glucose moiety
+    glucose_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](O[C@H]1O)CO")
     if not mol.HasSubstructMatch(glucose_pattern):
         return (False, "No β-D-glucose moiety found")
 
-    # Check for an amide bond to a long fatty acid chain
-    amide_pattern = Chem.MolFromSmarts("NC(=O)C[C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0][C;R0]")
+    # Refined SMARTS pattern for an amide bond to a long fatty acid chain
+    amide_pattern = Chem.MolFromSmarts("C(=O)N[C@@H](C=O)C[C;R0][C;R0]")  # Broadened pattern for the fatty chain
     if not mol.HasSubstructMatch(amide_pattern):
         return (False, "No amide linkage to a long fatty acid chain found")
 
-    # Check for a basic sphingosine backbone pattern
-    # We focus on characteristic features: C-OH groups with amine linkages, possibly with C=C for unsaturation
-    sphingosine_pattern = Chem.MolFromSmarts("N[C;$(CO)][CX4H2][CX4H][CX4](OC)[CX4H2]")
+    # Refined pattern for a sphingosine-like backbone; allows flexibility and common functional groups
+    sphingosine_pattern = Chem.MolFromSmarts("[N;R0][CX4]-[CX4]-[CX4](-[CX4])[O]")
     if not mol.HasSubstructMatch(sphingosine_pattern):
         return (False, "No sphingosine backbone found")
 
