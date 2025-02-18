@@ -1,28 +1,61 @@
 """
 Classifies: CHEBI:2440 acrovestone
 """
-The previous program attempted to classify molecules as acrovestones based on a combination of structural features and molecular properties. However, the outcomes indicate that the approach was not very successful, with a high number of false positives and false negatives.
+"""
+Classifies: CHEBI:72099 Acrovestone
+A polyphenol that is isolated from Acronychia pedunculata and exhibits moderate antioxidant and antityrosinase activities.
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors, Descriptors
 
-Here are some potential reasons for the poor performance and suggestions for improvement:
+def is_acrovestone(smiles: str):
+    """
+    Determines if a molecule is an acrovestone based on its SMILES string.
+    Acrovestones are polyphenols with moderate antioxidant and antityrosinase activities, isolated from Acronychia pedunculata.
 
-1. **Structural features**: The program relied heavily on the presence of phenol groups and glycosidic substituents as key structural features of acrovestones. However, it appears that these features alone are not sufficiently specific to distinguish acrovestones from other polyphenolic compounds. Acrovestones may have additional structural motifs or patterns that were not captured by the current approach.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-   Improvement: Analyze the structures of known acrovestones in more detail to identify additional structural patterns or substructures that are characteristic of this class. These could include specific ring systems, substituent patterns, or other structural motifs not captured by the current approach.
+    Returns:
+        bool: True if molecule is an acrovestone, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-2. **Molecular properties**: The program used a set of molecular properties (molecular weight, number of rotatable bonds, rings, aromatic rings, topological polar surface area, and LogP) to further refine the classification. However, the chosen property ranges may not be optimal for distinguishing acrovestones from other polyphenolic compounds.
+    # Acrovestones are polyphenolic compounds, so should contain multiple phenol groups
+    phenol_pattern = Chem.MolFromSmarts("c1ccc(O)cc1")
+    n_phenol_groups = len(mol.GetSubstructMatches(phenol_pattern))
+    if n_phenol_groups < 2:
+        return False, "Too few phenol groups for acrovestone"
 
-   Improvement: Revisit the chosen molecular property ranges and adjust them based on a more comprehensive analysis of known acrovestones and related compounds. Additionally, explore other potentially relevant molecular properties that could help differentiate acrovestones from similar compounds.
+    # Acrovestones often have glycosidic substituents, so look for sugar groups
+    has_sugar_groups = any(atom.GetSmarts() in ['OC', 'OCC'] for atom in mol.GetAtoms())
+    
+    # Calculate common molecular descriptors and properties
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    n_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    n_rings = rdMolDescriptors.CalcNumRings(mol)
+    n_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    tpsa = Descriptors.TPSA(mol)
+    logp = Descriptors.MolLogP(mol)
 
-3. **Confidence in the benchmark**: As mentioned, there may be potential mistakes or inconsistencies in the benchmark data used for evaluation. While it is important to consider the benchmark, it should not be treated as an absolute ground truth, especially if the classifications conflict with your understanding of the chemical class.
-
-   Improvement: Carefully review the false positives and false negatives, and if you are confident that your program's classifications are correct based on your understanding of acrovestones, consider ignoring the outliers in the benchmark data. However, provide a clear justification for your reasoning.
-
-4. **Handling structural diversity**: Acrovestones may exhibit significant structural diversity, and a single set of rules or property ranges may not be sufficient to capture the entire class accurately.
-
-   Improvement: Consider a more flexible or hierarchical approach that can handle structural diversity within the class. This could involve using multiple sets of rules or models, each tailored to specific structural subclasses or patterns within acrovestones.
-
-5. **Substructure matching optimization**: The program uses the `Chem.MolFromSmarts` function for substructure matching, which can be computationally expensive for larger molecules or complex patterns.
-
-   Improvement: Explore more efficient substructure matching techniques or optimize the existing patterns for better performance, especially if the program needs to handle large or complex molecular structures.
-
-Overall, while the previous program attempted a reasonable approach, the poor performance indicates that a more nuanced understanding of the structural features and molecular properties specific to acrovestones is required. Iterative refinement, incorporating additional structural patterns and optimizing property ranges based on a comprehensive analysis of known acrovestones and related compounds, could lead to improved classification performance.
+    # Use a combination of structural features and molecular properties to classify
+    if (
+        n_phenol_groups >= 2
+        and 300 < mol_wt < 800
+        and n_rotatable_bonds > 5
+        and n_rings >= 3
+        and n_aromatic_rings >= 2
+        and 100 < tpsa < 200
+        and 2 < logp < 6
+    ):
+        if has_sugar_groups:
+            return True, "Polyphenolic structure with glycosidic substituents, consistent with acrovestone"
+        else:
+            return True, "Polyphenolic structure, consistent with acrovestone"
+    else:
+        return False, "Structural features and molecular properties not typical of acrovestones"
