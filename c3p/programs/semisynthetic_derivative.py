@@ -7,7 +7,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_semisynthetic_derivative(smiles: str):
     """
     Determines if a molecule is classified as a semisynthetic derivative.
-    Tries to identify natural product cores with notable synthetic modifications.
+    It attempts to identify natural product cores with significant synthetic modifications.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,21 +22,24 @@ def is_semisynthetic_derivative(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Expanded natural product core patterns
+    # Diverse natural product core patterns (more coverage)
     core_patterns = [
-        Chem.MolFromSmarts("O[C@H]1[C@@H](O[C@H]2[C@@H](OC1)[C@H](O)[C@@H]1[C@@H]3[C@H](O)[C@@H](O)[C@@H]3C2)C"),  # Complex macrolide
-        Chem.MolFromSmarts("C1=CC=CC=C1"),  # Simple aromatic core
-        Chem.MolFromSmarts("C1C[C@H]([C@@H]2C[C@H]1O)N2"),  # Beta-lactam structures
-        Chem.MolFromSmarts("O=C1C=CC(=O)C2=C1O3[C@@H](C=C2)CC=CC3"),  # Tetracyclic structures
+        Chem.MolFromSmarts("C1=CC=CC=C1"),  # Simple benzene ring
+        Chem.MolFromSmarts("C1CCC(CC1)C(=O)O"),  # Cyclohexane carboxylic acid
+        Chem.MolFromSmarts("O=C1CC[C@H](N)C2C=CC=CC12"),  # Indole-like
+        Chem.MolFromSmarts("C1NC2=C(O1)C=CC=C2"),  # Pyrrolopyridine
+        Chem.MolFromSmarts("[#6]1[#6][#6][#6][#6][#6][#6][#6]1"),  # Generic polycyclic structure
     ]
     
-    # Expanded synthetic modification patterns
+    # Broad synthetic modification patterns
     synthetic_patterns = [
-        Chem.MolFromSmarts("Cl"),  # Halogenation
-        Chem.MolFromSmarts("OC(C)=O"),  # Acetylation
-        Chem.MolFromSmarts("[C,c](F)"),  # Fluorine additions
-        Chem.MolFromSmarts("[N,n]C(=O)OC"),  # Carbamate esters
-        Chem.MolFromSmarts("C=N"),  # Nitrile groups
+        Chem.MolFromSmarts("Cl"),  # Chlorine substitution
+        Chem.MolFromSmarts("[C,c][C](=O)[O,N,c]"),  # Amide/ester
+        Chem.MolFromSmarts("[C,c]N=[N+]=[N-]"),  # Azide introduction
+        Chem.MolFromSmarts("[C,c]S(=O)(=O)[O,N]"),  # Sulfonamide/sulfone
+        Chem.MolFromSmarts("[C,c]F"),  # Fluorination
+        Chem.MolFromSmarts("[C,c][N+]([O-])=O"),  # Nitro group
+        Chem.MolFromSmarts("Br"),  # Bromination
     ]
     
     # Check for natural core patterns
@@ -45,16 +48,17 @@ def is_semisynthetic_derivative(smiles: str):
     # Check for synthetic modifications
     synthetic_matches = any(mol.HasSubstructMatch(pattern) for pattern in synthetic_patterns)
     
-    # Evaluate structural complexity with natural and synthetic patterns considered
+    # Estimate chemical complexity - an indicator of a synthetic modification
     num_rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
     num_rings = rdMolDescriptors.CalcNumRings(mol)
     
+    # Evaluate complexity and make a decision
     if core_matches and synthetic_matches:
         reason = "Molecule has natural product-like core with synthetic modifications"
         return True, reason
     
-    if core_matches and (num_rings >= 4 or num_rotatable_bonds >= 6):
+    if num_rings > 3 and num_rotatable_bonds > 5:
         reason = "Molecule shows structural complexity typical of semisynthetic derivatives"
         return True, reason
-
+    
     return False, "No characteristic semisynthetic derivative patterns detected"
