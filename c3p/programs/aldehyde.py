@@ -29,7 +29,7 @@ def is_aldehyde(smiles: str):
     
     # Check if the molecule contains the aldehyde pattern
     if mol.HasSubstructMatch(aldehyde_pattern):
-        # Additional check to ensure it's not part of a carboxylic acid or ester
+        # Additional check to ensure it's not part of a carboxylic acid, ester, or amide
         carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
         ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][CX4]")
         amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
@@ -46,6 +46,16 @@ def is_aldehyde(smiles: str):
                (mol.HasSubstructMatch(amide_pattern) and 
                 any(atom.GetIdx() == aldehyde_carbon for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)):
                 return False, "Contains carbonyl group but is part of a carboxylic acid, ester, or amide"
+        
+        # Ensure the aldehyde carbon is only bonded to a hydrogen and an R group
+        for match in aldehyde_matches:
+            aldehyde_carbon = match[0]
+            atom = mol.GetAtomWithIdx(aldehyde_carbon)
+            neighbors = atom.GetNeighbors()
+            if len(neighbors) != 2:
+                return False, "Aldehyde carbon must be bonded to exactly two atoms (one hydrogen and one R group)"
+            if not any(neighbor.GetAtomicNum() == 1 for neighbor in neighbors):
+                return False, "Aldehyde carbon must be bonded to a hydrogen"
         
         return True, "Contains the aldehyde functional group (RC(=O)H)"
     else:
