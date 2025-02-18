@@ -1,207 +1,42 @@
 """
 Classifies: CHEBI:61498 epoxy fatty acid
 """
- - (5S,6S)-epoxy-18-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (8R)-hepoxilin B3: SMILES: C(=C/[C@H](O)C)/C=C/[C@H]1[C@H](C/C=C\CCCCC)O1
- - (5S,6R)-epoxy-15(S)-hydroxy-(7E,9E,11Z,13E)-icosatetraenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@@H](/C=C/C=C\C/C=C/[C@@H](CC)O)O1
- - (5S,6S)-epoxy-15(S)-hydroxy-(7E,9E,11Z,13E)-icosatetraenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C\C/C=C/[C@@H](CC)O)O1
- - (14S,15R)-epoxy-(5Z,8Z,10E,12E)-icosatetraenoic acid: SMILES: C(CCC(O)=O)/C=C\C/C=C\C=C\C=C\[C@H]1[C@@H](CCCCC)O1
- - (14R,15S)-epoxy-(5Z,8Z,10E,12E)-icosatetraenoic acid: SMILES: C(CCC(O)=O)/C=C\C/C=C\C=C\C=C\[C@@H](C1)[C@H](CCCCC)O1
- - (5S,6S)-epoxy-18(R)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@@H](CC)O)O1
- - (8S,9S)-epoxy-(10R)-hydroxyicosa-(5Z,11Z,14Z)-trienoic acid: SMILES: CCCCC\C=C/C\C=C/[C@H](O)[C@H]1O[C@H]1C\C=C/CCCC(O)=O
- - 5(S),6(S)-epoxy-18(R)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@@H](CC)O)O1
- - 5(S),6(S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - 5(S),6(S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,14Z,16E)-icosapentaenoic acid: SMILES: [C@H]1(CCCC(O)=O)[C@H](/C=C/C=C/C=C\C/C=C/C=C/[C@H](CC)O)O1
- - (5S,6S)-epoxy-18(S)-hydroxy-(7E,9E,11Z,
+"""
+Classifies: CHEBI_90255 epoxy fatty acid
+"""
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+
+def is_epoxy_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is an epoxy fatty acid based on its SMILES string.
+    An epoxy fatty acid contains a carboxylic acid group and an epoxide ring.
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        bool: True if molecule is an epoxy fatty acid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Check for carboxylic acid group (COOH)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxylic acid group"
+    
+    # Check for epoxide ring (O-C-O in a 3-membered ring)
+    epoxide_pattern = Chem.MolFromSmarts("[O]1CCO1")
+    if not mol.HasSubstructMatch(epoxide_pattern):
+        return False, "No epoxide ring found"
+    
+    # Basic check for chain length: at least 12 carbons (typical for fatty acids)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 12:
+        return False, "Carbon chain too short for fatty acid"
+    
+    return True, "Contains carboxylic acid and epoxide ring"
