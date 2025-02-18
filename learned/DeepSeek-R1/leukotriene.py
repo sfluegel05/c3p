@@ -34,7 +34,8 @@ def is_leukotriene(smiles: str):
         return False, f"Found {len(double_bonds)} double bonds (need ≥4)"
     
     # Check for conjugated triene (three consecutive conjugated double bonds)
-    triene_pattern = Chem.MolFromSmarts('[CH2]=[CH]-[CH]=[CH]-[CH]=[CH2]')
+    # Updated pattern to match any three consecutive conjugated double bonds
+    triene_pattern = Chem.MolFromSmarts('C=CC=CC=C')
     if not mol.HasSubstructMatch(triene_pattern):
         return False, "No conjugated triene found"
     
@@ -48,10 +49,4 @@ def is_leukotriene(smiles: str):
     if not mol.HasSubstructMatch(carbonyl_group):
         return False, "No carbonyl group found"
     
-    # Verify polyunsaturated structure (at least 4 double bonds in main chain)
-    # Use a flexible pattern matching the core structure
-    core_pattern = Chem.MolFromSmarts('[CH2]-[CH]=[CH]-[CH]=[CH]-[CH]=[CH2](-[CH2]~[CH2])')
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Missing core polyunsaturated structure"
-    
-    return True, "C20 with ≥4 double bonds (three conjugated triene), oxygen content, and core structure"
+    return True, "C20 with ≥4 double bonds (three consecutive conjugated triene), oxygen content, and carbonyl group"
