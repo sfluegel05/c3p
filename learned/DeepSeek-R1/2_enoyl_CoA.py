@@ -36,45 +36,45 @@ def is_2_enoyl_CoA(smiles: str):
         return False, "No thioester group"
 
     # Check acyl chain for double bond between positions 2 and 3 (from carbonyl)
-    # SMARTS pattern: [CX3](=[OX1])[SX2][CX4H2][CX4H2][CX3]=[CX3]
-    # This matches C(=O)S-C-C-C=C (double bond at position 3-4 from sulfur)
-    acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2][CX4H2][CX4H2][CX3]=[CX3]")
+    # SMARTS pattern: [CX3](=[OX1])[SX2][CX4][CX3]=[CX3]
+    # This matches C(=O)S-C-C=C (double bond at positions 2-3 of acyl chain)
+    acyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2][CX4][CX3]=[CX3]")
     if mol.HasSubstructMatch(acyl_pattern):
         return True, "Double bond between positions 2 and 3 of acyl chain"
 
     # Alternative check using atom traversal for conjugated/branched systems
-    for (carbonyl_idx, sulfur_idx) in thioester_matches:
-        carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
-        # Get the acyl chain atom bonded to carbonyl (excluding sulfur)
+    for match in thioester_matches:
+        # match contains (carbonyl_c, O, S)
+        sulfur_idx = match[2]
+        sulfur_atom = mol.GetAtomWithIdx(sulfur_idx)
+        
+        # Find the acyl chain carbon attached to sulfur (excluding the carbonyl)
         acyl_start = None
-        for neighbor in carbonyl_atom.GetNeighbors():
-            if neighbor.GetIdx() != sulfur_idx and neighbor.GetSymbol() == 'C':
+        for neighbor in sulfur_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != match[0]:  # not the carbonyl carbon
                 acyl_start = neighbor
                 break
         if not acyl_start:
             continue
-
-        # Traverse two carbons along the acyl chain
+        
+        # Traverse two carbons along the acyl chain from sulfur
         current = acyl_start
         position = 1
-        next_carbon = None
-        while position < 2:  # Move to position 2 (third carbon from carbonyl)
-            next_carbons = [n for n in current.GetNeighbors() 
-                            if n.GetSymbol() == 'C' and n.GetIdx() != carbonyl_idx]
-            if not next_carbons:
+        found_double = False
+        
+        # Check next carbon (position 2) for double bond to position 3
+        next_c = None
+        for neighbor in current.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != sulfur_idx:
+                next_c = neighbor
                 break
-            next_carbon = next_carbons[0]
-            current = next_carbon
-            position += 1
-
-        if position < 2:
+        if not next_c:
             continue
-
-        # Check for double bond between position 2 and 3
-        for bond in current.GetBonds():
-            if bond.GetBondType() == Chem.BondType.DOUBLE:
-                other = bond.GetOtherAtom(current)
-                if other.GetSymbol() == 'C' and other.GetIdx() != acyl_start.GetIdx():
-                    return True, "Double bond between positions 2 and 3 of acyl chain"
+        
+        # Check bonds from next_c for double bond
+        for bond in next_c.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE and bond.GetOtherAtomIdx(next_c.GetIdx()) != current.GetIdx():
+                # Found double bond between positions 2 and 3
+                return True, "Double bond between positions 2 and 3 of acyl chain"
 
     return False, "No double bond between positions 2 and 3 of acyl chain"
