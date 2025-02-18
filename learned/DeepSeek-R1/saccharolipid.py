@@ -1,25 +1,84 @@
 """
 Classifies: CHEBI:166828 saccharolipid
 """
-</think>
+"""
+Classifies: CHEBI: saccharolipid
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
-Okay, let's figure out why the previous code failed. The error message says there was a problem with `Mol.HasSubstructMatch(Mol, NoneType)`, which suggests that one of the SMILES patterns didn't compile correctly. Looking at the code, the `sugar_core` and `lipid_linker` SMARTS might be the culprits. 
+def is_saccharolipid(smiles: str):
+    """
+    Determines if a molecule is a saccharolipid based on its SMILES string.
+    Saccharolipids contain both carbohydrate (sugar) and lipid components covalently linked.
 
-First, the `sugar_core` SMARTS pattern uses `@` which is for ring bonds, but maybe the way it's written isn't correct. The original code tried to use `r5` and `r6` for ring sizes, but perhaps the SMARTS wasn't properly formatted. Also, the `lipid_linker` SMARTS had comments in the pattern, which might have caused it to fail when parsed. The pipe `|` in SMARTS is for OR conditions, but the comments after it might have messed up the parsing, leading to `None` for the compiled pattern.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-So, to fix this, I need to correct the SMARTS patterns. For the sugar detection, maybe a simpler approach using common sugar moieties like multiple hydroxyl groups in a ring. For the lipid linker, remove the comments inside the SMARTS and ensure the pattern correctly matches ester or amide bonds connected to long chains. Also, check that the phosphate exclusion logic is accurate and doesn't interfere with valid saccharolipids that might have phosphates elsewhere.
+    Returns:
+        bool: True if molecule is a saccharolipid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-Another issue might be the lipid chain length check. The previous code's SMARTS for `lipid_linker` might not capture chains of sufficient length. Maybe using a more flexible approach with `[C][C][C][C][C][C][C,C]` isn't enough. Instead, using a recursive SMARTS to ensure at least 8 carbons in the chain would be better.
+    # Improved carbohydrate detection: look for sugar-like rings (5/6 membered with multiple oxygens)
+    # Pattern matches rings with >=2 oxygen atoms (either in ring or as hydroxyls)
+    carb_pattern = Chem.MolFromSmarts('[O;r5,r6]~[C;r5,r6]~[O;r5,r6]')
+    if not mol.HasSubstructMatch(carb_pattern):
+        carb_pattern2 = Chem.MolFromSmarts('[C;r5,r6][OH]')
+        carb_matches = mol.GetSubstructMatches(carb_pattern2)
+        if len(carb_matches) < 2:
+            return False, "No carbohydrate moiety detected (cyclic structure with multiple oxygens)"
 
-Let me adjust the SMARTS patterns. For the sugar part, use a pattern that matches rings with multiple hydroxyls. For the lipid, create separate patterns for ester and amide linkages with long chains. Also, ensure that the phosphate check doesn't mistakenly exclude valid structures where phosphate isn't part of the sugar-lipid linkage.
+    # Lipid component check: long aliphatic chain (>=8 carbons) connected via ester/amide
+    lipid_found = False
+    ester_amide_pattern = Chem.MolFromSmarts('[O,N][C]=O')
+    ester_amide_matches = mol.GetSubstructMatches(ester_amide_pattern)
+    
+    for match in ester_amide_matches:
+        # Start from carbonyl carbon (index 1 in match [O,N]-C=O)
+        carbonyl_carbon = mol.GetAtomWithIdx(match[1])
+        
+        # Traverse two directions from carbonyl carbon
+        for neighbor in carbonyl_carbon.GetNeighbors():
+            if neighbor.GetAtomicNum() != 6 or neighbor.GetIdx() == match[0]:
+                continue  # Skip non-carbon atoms and back to O/N
+                
+            # Track longest chain in this direction
+            chain_length = 0
+            visited = set()
+            stack = [(neighbor, 0)]
+            
+            while stack:
+                atom, depth = stack.pop()
+                if atom.GetIdx() in visited:
+                    continue
+                visited.add(atom.GetIdx())
+                
+                # Only follow aliphatic carbons not in rings
+                if (atom.GetAtomicNum() == 6 and
+                    not atom.IsInRing() and
+                    not any(bond.GetBondType() == Chem.BondType.AROMATIC 
+                            for bond in atom.GetBonds())):
+                    
+                    chain_length = max(chain_length, depth + 1)
+                    # Continue traversing non-ring, non-carbonyl carbons
+                    for next_atom in atom.GetNeighbors():
+                        bond = mol.GetBondBetweenAtoms(atom.GetIdx(), next_atom.GetIdx())
+                        if (bond.GetBondType() == Chem.BondType.SINGLE and
+                            next_atom.GetAtomicNum() == 6 and
+                            not next_atom.IsInRing()):
+                            stack.append((next_atom, depth + 1))
+            
+            if chain_length >= 7:  # 8 carbons including starting point
+                lipid_found = True
+                break
+        if lipid_found:
+            break
 
-Testing with the example SMILES provided, like the (KDO)4-lipid IVA, the code should detect the sugar part (KDO is a carbohydrate) and the lipid chains connected via ester/amide. The previous code might have failed because the SMARTS didn't properly match the carbohydrate core or the lipid chains.
+    if not lipid_found:
+        return False, "No lipid component (long chain >=8 carbons connected via ester/amide)"
 
-So, revising the code:
-
-1. Fix the sugar SMARTS to detect cyclic structures with multiple hydroxyls.
-2. Split the lipid check into ester and amide with proper chain length.
-3. Correct the SMARTS syntax by removing inline comments.
-4. Ensure phosphate checks don't interfere unless the phosphate is directly linking sugar and lipid.
-
-This should resolve the NoneType error and improve classification accuracy.
+    return True, "Contains carbohydrate and lipid components linked via ester/amide"
