@@ -23,7 +23,7 @@ def is_ceramide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the sphingoid base pattern (long-chain amino alcohol)
+    # Look for the sphingoid base pattern (long-chain amino alcohol with hydroxyl on carbon 2)
     sphingoid_base_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4][OX2H]")
     if not mol.HasSubstructMatch(sphingoid_base_pattern):
         return False, "No sphingoid base found"
@@ -34,19 +34,25 @@ def is_ceramide(smiles: str):
     if len(amide_matches) == 0:
         return False, "No amide-linked fatty acid found"
 
-    # Check the chain length of the fatty acid (14 to 26 carbon atoms)
-    fatty_acid_chain = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain)
-    if len(fatty_acid_matches) < 1:
+    # Identify the fatty acid chain and count its carbon atoms
+    fatty_acid_chain_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3H][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_chain_pattern)
+    if len(fatty_acid_matches) == 0:
         return False, "Fatty acid chain too short"
 
     # Count the number of carbon atoms in the fatty acid chain
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    fatty_acid_chain = fatty_acid_matches[0]
+    c_count = 0
+    for atom_idx in fatty_acid_chain:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetAtomicNum() == 6:
+            c_count += 1
+
     if c_count < 14 or c_count > 26:
         return False, f"Fatty acid chain length {c_count} is not within 14 to 26 carbon atoms"
 
-    # Check for the presence of a hydroxyl group on carbon 2
-    hydroxyl_pattern = Chem.MolFromSmarts("[CX4][CX4][OX2H]")
+    # Check for the presence of a hydroxyl group on carbon 2 of the sphingoid base
+    hydroxyl_pattern = Chem.MolFromSmarts("[NX3][CX4][CX4][OX2H]")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
         return False, "No hydroxyl group on carbon 2 found"
 
