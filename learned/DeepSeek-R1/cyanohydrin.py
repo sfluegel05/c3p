@@ -1,253 +1,37 @@
 """
 Classifies: CHEBI:23437 cyanohydrin
 """
- - (2S)-2-hydroxy-3-phenylpropanenitrile: SMILES: C1=CC=CC=C1C[C@H](O)C#N
- - (2S)-2-hydroxy-2-(4-chlorophenyl)acetonitrile: SMILES: C=1C=CC(=CC1Cl)[C@@H](O)C#N
- - (2S)-2-hydroxy-3-methylpentanenitrile: SMILES: C(C[C@H](O)C#N)(C)C
- - (2S)-2-hydroxy-2-(3,4-dimethoxyphenyl)acetonitrile: SMILES: C=1(C=C(C(=C(C1)OC)OC)[C@@H](O)C#N)OC
- - (2S)-2-hydroxy-2-(4-nitrophenyl)acetonitrile: SMILES: C=1(C=CC(=CC1[N+](=O)[O-])[C@@H](O)C#N)
- - (2S)-2-hydroxy-3-(4-methoxyphenyl)propanenitrile: SMILES: C1=CC=C(C=C1OC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-methoxyphenyl)propanenitrile: SMILES: C1=CC=CC=C1OC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-methoxyphenyl)propanenitrile: SMILES: C1=CC(=CC=C1OC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-chlorophenyl)propanenitrile: SMILES: C1=CC=C(C=C1Cl)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-chlorophenyl)propanenitrile: SMILES: C1=CC=CC=C1ClC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-chlorophenyl)propanenitrile: SMILES: C1=CC(=CC=C1Cl)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-fluorophenyl)propanenitrile: SMILES: C1=CC=C(C=C1F)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-fluorophenyl)propanenitrile: SMILES: C1=CC=CC=C1FC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-fluorophenyl)propanenitrile: SMILES: C1=CC(=CC=C1F)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-bromophenyl)propanenitrile: SMILES: C1=CC=C(C=C1Br)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-bromophenyl)propanenitrile: SMILES: C1=CC=CC=C1BrC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-bromophenyl)propanenitrile: SMILES: C1=CC(=CC=C1Br)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-iodophenyl)propanenitrile: SMILES: C1=CC=C(C=C1I)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-iodophenyl)propanenitrile: SMILES: C1=CC=CC=C1IC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-iodophenyl)propanenitrile: SMILES: C1=CC(=CC=C1I)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-methylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1C)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-methylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-methylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1C)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-ethylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-ethylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-ethylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-propylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-propylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-propylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-isopropylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1C(C)C)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-isopropylphenyl)propanenitrile: SMILES: C1=CC=CC=C1C(C)CC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-isopropylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1C(C)C)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tert-butylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1C(C)(C)C)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tert-butylphenyl)propanenitrile: SMILES: C1=CC=CC=C1C(C)(C)CC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tert-butylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1C(C)(C)C)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-pentylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-pentylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-pentylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hexylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hexylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hexylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-heptylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-heptylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-heptylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-octylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-octylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-octylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-nonylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-nonylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-nonylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-decylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-decylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-decylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-undecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-undecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-undecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-dodecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-dodecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-dodecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tridecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tridecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tridecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tetradecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tetradecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tetradecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-pentadecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-pentadecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-pentadecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hexadecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hexadecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hexadecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-heptadecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-heptadecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-heptadecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-octadecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-octadecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-octadecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-nonadecylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-nonadecylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-nonadecylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-icosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-icosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-icosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-henicosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-henicosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-henicosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-docosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-docosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-docosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tricosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tricosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tricosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tetracosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tetracosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tetracosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-pentacosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-pentacosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-pentacosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hexacosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hexacosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hexacosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-heptacosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-heptacosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-heptacosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-octacosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-octacosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-octacosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-nonacosylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-nonacosylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-nonacosylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-triacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-triacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-triacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hentriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hentriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hentriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-dotriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-dotriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-dotriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tritriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tritriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tritriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tetratriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tetratriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tetratriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-pentatriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-pentatriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-pentatriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hexatriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hexatriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hexatriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-heptatriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-heptatriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-heptatriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-octatriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-octatriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-octatriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-nonatriacontylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-nonatriacontylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-nonatriacontylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tetracontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tetracontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tetracontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-henpentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-henpentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-henpentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-dopentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-dopentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-dopentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tripentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tripentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tripentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tetrapentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tetrapentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tetrapentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-pentapentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-pentapentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-pentapentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hexapentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hexapentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hexapentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-heptapentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-heptapentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-heptapentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-octapentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-octapentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-octapentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-nonapentacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-nonapentacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-nonapentacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hexacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hexacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hexacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-heptacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-heptacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-heptacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-octacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-octacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-octacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-nonacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-nonacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-nonacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-enneacontanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-enneacontanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-enneacontanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hectohenylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hectohenylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hectohenylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-dohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-dohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-dohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tridohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tridohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tridohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tetradohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tetradohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tetradohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-pentadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-pentadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-pentadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hexadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hexadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hexadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-heptadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-heptadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-heptadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-octadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-octadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-octadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-nonadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-nonadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-nonadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-decadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-decadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-decadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-undecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-undecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-undecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-dodecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-dodecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-dodecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tridecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tridecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tridecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-tetradecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-tetradecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-tetradecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-pentadecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-pentadecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-pentadecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-hexadecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-hexadecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-hexadecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-heptadecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-heptadecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-heptadecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-octadecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-octadecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-octadecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-nonadecadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-nonadecadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-nonadecadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-icosadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-icosadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-icosadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-henicosadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-henicosadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C#N
- - (2S)-2-hydroxy-3-(3-henicosadohanylphenyl)propanenitrile: SMILES: C1=CC(=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(4-docosadohanylphenyl)propanenitrile: SMILES: C1=CC=C(C=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC)C[C@H](O)C#N
- - (2S)-2-hydroxy-3-(2-docosadohanylphenyl)propanenitrile: SMILES: C1=CC=CC=C1CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+"""
+Classifies: CHEBI:39142 cyanohydrin
+"""
+from rdkit import Chem
+
+def is_cyanohydrin(smiles: str):
+    """
+    Determines if a molecule is a cyanohydrin based on its SMILES string.
+    A cyanohydrin is an alpha-hydroxynitrile resulting from the addition of HCN to an aldehyde or ketone.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a cyanohydrin, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Pattern 1: Hydroxyl and nitrile on the same carbon
+    pattern1 = Chem.MolFromSmarts("[C]([OH])[C]#[N]")
+    # Pattern 2: Hydroxyl on adjacent carbon to nitrile
+    pattern2 = Chem.MolFromSmarts("[C][C]([OH])#[N]")
+    
+    # Check for either pattern
+    has_pattern1 = mol.HasSubstructMatch(pattern1)
+    has_pattern2 = mol.HasSubstructMatch(pattern2)
+    
+    if has_pattern1 or has_pattern2:
+        return True, "Contains hydroxyl and nitrile groups on adjacent carbons or the same carbon"
+    
+    return False, "No hydroxyl and nitrile groups in required positions"
