@@ -21,19 +21,19 @@ def is_11_12_saturated_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Long chain fatty acid pattern
-    fatty_acid_pattern = Chem.MolFromSmarts("CCCCCCCCCCCCCCCCCCCC")  # Simplified pattern for long hydrocarbon chain
+    # Long chain fatty acid pattern: allow variable lengths, with possible unsaturations
+    fatty_acid_pattern = Chem.MolFromSmarts("C(CCCCCCCCCCCCCCC)C")
     if not mol.HasSubstructMatch(fatty_acid_pattern):
         return False, "No long chain fatty acid detected"
 
-    # CoA moiety pattern (simplified)
-    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(=O)([O-])[O-])n1cnc2c(N)ncnc12")
+    # Improved CoA moiety pattern
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])O[C@H]1O[C@H](C)C(O)C1OP(=O)([O-])[O-]")
     if not mol.HasSubstructMatch(coa_pattern):
         return False, "No CoA moiety found"
 
-    # Check chirality and oxygen atoms at specific positions
-    hydroxyl_pattern = Chem.MolFromSmarts("[C@@H](O)CCC")  # Simplified pattern to include chiral hydroxyl close to chain
+    # Analyze stereochemistry and specific hydroxyl locations
+    hydroxyl_pattern = Chem.MolFromSmarts("[C@@H](O)CC(=O)S")
     if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "Chiral centers or specific hydroxyl placements not matching"
+        return False, "Chiral hydroxyl not in expected position"
 
     return True, "Molecule matches the structural patterns for 11,12-saturated fatty acyl-CoA(4-)"
