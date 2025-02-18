@@ -1,124 +1,77 @@
 """
 Classifies: CHEBI:39437 tocol
 """
-Okay, the code above is quite complex. Let's check for possible syntax errors.
-
-The function is_tocol is defined with proper indentation. The imports are correct. The code uses MolFromSmiles and GetRingInfo.
-
-Potential issues:
-
-- The line `ri = mol.GetRingInfo()` followed by `ri.Reset()` and `ri.Initialize(mol)` may not be necessary. In RDKit, GetRingInfo() returns the ring info, but sometimes the SSSR needs to be computed. So, calling GetSSSR(mol) first might be needed.
-
-- The code uses `GetSSSR` but it's not imported. The line `from rdkit.Chem import MolFromSmiles, GetSSSR` is missing. Wait, the code has `from rdkit.Chem import MolFromSmiles, GetSSSR`? Let me check.
-
-In the code draft, the imports are:
-
+"""
+Classifies: CHEBI:46649 tocol
+"""
 from rdkit import Chem
 from rdkit.Chem import MolFromSmiles, GetSSSR
 
-But GetSSSR is a function, so perhaps the code should call Chem.GetSSSR(mol) or similar.
-
-But in the current code, after parsing the molecule, the code calls `ri = mol.GetRingInfo()`, then `ri.Reset()` and `ri.Initialize(mol)`. This may not be the correct way to compute rings. Instead, the code should compute the SSSR first using `Chem.GetSSSR(mol)`.
-
-So, in the code, after parsing the molecule, add:
-
-Chem.GetSSSR(mol)
-
-This ensures that the ring info is computed.
-
-Without this, the ring info may not be properly initialized.
-
-This could lead to the code not finding any rings, hence failing to detect the chroman-6-ol core.
-
-So, the corrected code would include:
-
-mol = MolFromSmiles(smiles)
-if mol is None:
-    return False, "Invalid SMILES"
-Chem.GetSSSR(mol)  # Compute the smallest set of smallest rings
-
-This line was missing in the previous code, which could lead to the ring info not being computed, resulting in no rings being found.
-
-This could explain the previous syntax error if the code was missing this line, but the error message was about invalid syntax elsewhere.
-
-Another potential issue is the use of `ri.Reset()` and `ri.Initialize(mol)`. These lines may not be necessary if `Chem.GetSSSR(mol)` is called first.
-
-So, the corrected code would include:
-
-from rdkit.Chem import MolFromSmiles, GetSSSR
-
-...
-
+def is_tocol(smiles: str):
+    """
+    Determines if a molecule is a tocol based on its SMILES string.
+    Tocols have a chroman-6-ol skeleton with a 13-carbon substituent (saturated or triply unsaturated).
+    """
     mol = MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
-    Chem.GetSSSR(mol)
+
+    # Ensure ring info is computed
+    GetSSSR(mol)
     ri = mol.GetRingInfo()
     rings = ri.AtomRings()
 
-This ensures that the rings are properly computed.
+    # Find chroman-6-ol core (fused benzene + dihydropyran with OH)
+    chromanol_found = False
+    hydroxyl_pos = -1
+    for ring in rings:
+        if len(ring) == 6:  # Check for 6-membered rings
+            oxygen_count = sum(mol.GetAtomWithIdx(a).GetAtomicNum() == 8 for a in ring)
+            if oxygen_count == 1:  # Dihydropyran ring
+                # Check adjacent benzene ring
+                for other_ring in rings:
+                    if len(other_ring) == 6 and len(set(ring).intersection(other_ring)) >= 2:
+                        # Verify hydroxyl group on benzene
+                        for atom in other_ring:
+                            if (mol.GetAtomWithIdx(atom).GetAtomicNum() == 8 and
+                                mol.GetAtomWithIdx(atom).GetTotalNumHs() >= 1):
+                                hydroxyl_pos = atom
+                                chromanol_found = True
+                                break
+    if not chromanol_found:
+        return False, "No chroman-6-ol core"
 
-Another possible issue is in the SMARTS pattern or the way the rings are checked.
+    # Find substituent at position 2 (adjacent to oxygen in dihydropyran)
+    substituent = None
+    for atom in mol.GetAtomWithIdx(hydroxyl_pos).GetNeighbors():
+        if atom.GetAtomicNum() == 6:  # Carbon adjacent to hydroxyl
+            substituent = atom
+            break
+    if not substituent:
+        return False, "No substituent at position 2"
 
-But given the time, the code above should be checked for syntax errors.
+    # Traverse the substituent chain
+    chain = []
+    visited = set()
+    stack = [(substituent, 0)]  # (atom, bond count)
+    while stack:
+        atom, bonds = stack.pop()
+        if atom.GetIdx() in visited:
+            continue
+        visited.add(atom.GetIdx())
+        chain.append(atom)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in visited and neighbor.GetAtomicNum() == 6:
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                if bond.GetBondType() == Chem.BondType.SINGLE:
+                    stack.append((neighbor, bonds + 1))
 
-Another possible syntax error is the use of `Chem.BondType.SINGLE` without importing BondType. But since `from rdkit import Chem` is imported, this should be okay.
-
-Another possible issue is the comparison of bond types. For example, `bond.GetBondType() == Chem.BondType.SINGLE` is correct.
-
-The code also uses `atom.GetTotalNumHs()`, which should return the number of Hs.
-
-In the hydroxyl check, the code looks for an oxygen atom with at least one H and a single bond to a hydrogen. This may not be reliable, but it's an approximation.
-
-The code then traverses the substituent chain, counting carbons and double bonds.
-
-The final check is if carbon_count >=13 and double_bond_count is 0 or 3.
-
-This should capture the three isoprenoid units (13 carbons) with 0 or 3 double bonds.
-
-But in reality, three isoprenoid units would have three double bonds if triply unsaturated.
-
-However, the code may not capture branching, which is a feature of isoprenoid units.
-
-But given time constraints, this is a reasonable approximation.
-
-Now, the code should be checked for syntax errors.
-
-The code structure is as follows:
-
-- Import statements.
-
-- Function definition.
-
-- Parsing SMILES.
-
-- Checking for rings.
-
-- Iterating over rings to find benzene and fused ring.
-
-- Checking for hydroxyl.
-
-- Finding substituent.
-
-- Traversing chain.
-
-- Returning True/False.
-
-This should be syntactically correct.
-
-In the previous attempt, the user had a syntax error. Perhaps they forgot to import GetSSSR, or missed a colon, or had incorrect indentation.
-
-The code above should be syntactically correct.
-</think>
-
-To classify a molecule as a tocol, we need to verify its structure against the definition: a chromanol (chroman-6-ol) skeleton with a specific substituent. The substituent must be a hydrocarbon chain (saturated or triply unsaturated) composed of three isoprenoid units. Here's the approach:
-
-1. **Identify the Chroman-6-ol Core**:
-   - A benzene ring fused to a dihydropyran ring (6-membered oxygen-containing ring).
-   - A hydroxyl group (-OH) on the benzene ring.
-
-2. **Check the Substituent**:
-   - Located at position 2 of the dihydropyran ring (adjacent to the oxygen).
-   - Must be a hydrocarbon chain (only carbon and hydrogen).
-   - Chain length should be at least 13 carbons (approximating three isoprenoid units).
-   - Double bonds should be either 0 (saturated) or 3 (triply unsaturated).
+    # Check chain properties: length and unsaturation
+    carbon_count = len(chain)
+    double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE and
+                       bond.GetBeginAtom().GetIdx() in [a.GetIdx() for a in chain] and
+                       bond.GetEndAtom().GetIdx() in [a.GetIdx() for a in chain])
+    
+    if carbon_count >= 13 and (double_bonds == 0 or double_bonds == 3):
+        return True, "Chroman-6-ol core with 13+ carbon chain (0 or 3 double bonds)"
+    return False, f"Chain has {carbon_count} carbons and {double_bonds} double bonds (needs 13+ and 0/3)"
