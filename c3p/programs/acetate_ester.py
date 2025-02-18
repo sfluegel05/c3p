@@ -15,52 +15,47 @@ def is_acetate_ester(smiles: str):
         bool: True if molecule is an acetate ester, False otherwise
         str: Reason for classification
     """
-    from rdkit.Chem import rdchem
 
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for ester groups: carbonyl carbon connected to carbonyl oxygen (=O) and ester oxygen (-O)
-    ester_pattern = Chem.MolFromSmarts('C(=O)O[!$([O-])]')
+    # Define the SMARTS pattern for an ester group: carbonyl carbon single bonded to an oxygen
+    ester_pattern = Chem.MolFromSmarts("C(=O)[O][#0,#6,#7,#8,#9,#15,#16,#17,#35,#53]")
     if ester_pattern is None:
-        return False, "Invalid SMARTS pattern for ester group"
+        return False, "Invalid SMARTS pattern"
 
-    # Find all ester groups in the molecule
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if not ester_matches:
+    # Search for matches of the ester pattern in the molecule
+    matches = mol.GetSubstructMatches(ester_pattern)
+    if not matches:
         return False, "No ester groups found"
 
-    acetate_ester_count = 0
+    acetate_count = 0  # Counter for acetate ester groups
 
-    for match in ester_matches:
-        carbonyl_c_idx = match[0]  # Carbonyl carbon index
-        carbonyl_o_idx = match[1]  # Carbonyl oxygen index
-        ester_o_idx = match[2]     # Ester oxygen index
+    for match in matches:
+        carbonyl_c_idx = match[0]
+        ester_o_idx = match[2]
 
         carbonyl_c = mol.GetAtomWithIdx(carbonyl_c_idx)
+        ester_o = mol.GetAtomWithIdx(ester_o_idx)
 
-        # Get neighbors of carbonyl carbon excluding the oxygens
-        neighbor_atoms = [
-            nbr for nbr in carbonyl_c.GetNeighbors()
-            if nbr.GetIdx() not in (carbonyl_o_idx, ester_o_idx)
-        ]
+        # Get neighbors of the carbonyl carbon excluding oxygens
+        neighbors = [atom for atom in carbonyl_c.GetNeighbors() if atom.GetAtomicNum() != 8]
+        
+        # Exclude double-bonded oxygen (carbonyl oxygen)
+        neighbors = [atom for atom in neighbors if atom.GetIdx() != ester_o_idx]
 
-        # Check if the carbonyl carbon is connected to a methyl group
-        is_acetate = False
-        for neighbor_atom in neighbor_atoms:
-            # The neighbor should be a carbon with exactly three hydrogens (methyl group)
-            if (neighbor_atom.GetAtomicNum() == 6 and
-                neighbor_atom.GetTotalDegree() == 1 and
-                neighbor_atom.GetTotalNumHs(includeNeighbors=True) == 3):
-                is_acetate = True
-                break
+        if len(neighbors) != 1:
+            continue  # Not an acetate ester if more or fewer than one neighbor besides oxygens
 
-        if is_acetate:
-            acetate_ester_count += 1
+        alpha_c = neighbors[0]
 
-    if acetate_ester_count > 0:
-        return True, f"Contains {acetate_ester_count} acetate ester group(s)"
+        # Check if the alpha carbon is a methyl group (degree 1 carbon)
+        if alpha_c.GetAtomicNum() == 6 and alpha_c.GetDegree() == 1:
+            acetate_count += 1
+
+    if acetate_count > 0:
+        return True, f"Contains {acetate_count} acetate ester group(s)"
     else:
         return False, "No acetate ester groups found"
