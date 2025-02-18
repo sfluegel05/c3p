@@ -1,287 +1,41 @@
 """
 Classifies: CHEBI:23086 chalcones
 """
- - 4,2',4'-trihydroxychalcone: SMILES: O=C(\C=C\c1ccc(O)cc1)c1ccccc1O
- - 4,2',4',6'-tetrahydroxychalcone: SMILES: O=C(\C=C\c1ccc(O)cc1)c1cc(O)ccc1O
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxychalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)\C=C\c1ccc(O)cc1
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)dihydrochalcone: SMILES: CC(C)=CCOC1=C(C(=O)CCC2=CC=C(O)C=C2)C(=CC=C1O)O
- - 4,2',4',6'-tetrahydroxy-3'-oxydihydrochalcone: SMILES: O=C1C(=C(O)C(=CC=C1O)O)C(=O)CCC2=CC=C(O)C=C2
- - 4,2',4',6'-tetrahydroxy-3'-(3-methylbut-2-en-1-yl)chalcone: SMILES: CC(C)=CCOC1=C(C(=O)\C=C\c2ccc(O)cc2)C(=CC=C1O)O
- -
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_chalcones(smiles: str):
+    """
+    Determines if a molecule is a chalcone based on its SMILES string.
+    Chalcones are 1,3-diphenylpropenones (Ar-CH=CH-CO-Ar) and derivatives.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a chalcone, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Define the core chalcone pattern: two aromatic rings connected by propenone (C=C-C=O)
+    chalcone_pattern = Chem.MolFromSmarts("[c]C(=O)C=C[c]")
+    matches = mol.GetSubstructMatches(chalcone_pattern)
+    
+    if not matches:
+        return False, "No chalcone core (Ar-C(=O)-C=C-Ar) found"
+    
+    # Verify the carbonyl is a ketone (not part of ester/acid/amide)
+    for match in matches:
+        carbonyl_idx = match[1]  # Index of the carbonyl carbon in the SMARTS pattern
+        atom = mol.GetAtomWithIdx(carbonyl_idx)
+        # Check neighbors of carbonyl carbon
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 0:  # Oxygen without H (ester/acid)
+                return False, "Carbonyl group is part of an ester or acid"
+            if neighbor.GetAtomicNum() == 7:  # Nitrogen (amide)
+                return False, "Carbonyl group is part of an amide"
+    
+    return True, "Contains chalcone core (Ar-C(=O)-C=C-Ar) with ketone group"
