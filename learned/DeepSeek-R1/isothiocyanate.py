@@ -23,12 +23,17 @@ def is_isothiocyanate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for the isothiocyanate group: R-N=C=S
-    # Matches any carbon attached to N which is double bonded to C=S
-    isothiocyanate_pattern = Chem.MolFromSmarts("[C]-[N]=[C]=[S]")
-    
+    # Enhanced SMARTS pattern with valence checks:
+    # [c,C] = aromatic or aliphatic R group
+    # [N;D2] = nitrogen with exactly 2 bonds (R and C)
+    # [C;D2] = central carbon with exactly 2 bonds (N and S)
+    # [S;D1] = sulfur with exactly 1 bond (only to C)
+    pattern = Chem.MolFromSmarts(
+        "[c,C]-[N;D2]=[C;D2]=[S;D1]"
+    )
+
     # Check for presence of the pattern
-    if mol.HasSubstructMatch(isothiocyanate_pattern):
-        return True, "Contains R-N=C=S group"
+    if mol.HasSubstructMatch(pattern):
+        return True, "Contains R-N=C=S group with correct valence"
     else:
-        return False, "No R-N=C=S group detected"
+        return False, "No valid R-N=C=S group detected"
