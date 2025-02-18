@@ -1,250 +1,82 @@
 """
 Classifies: CHEBI:18133 hexose
 """
- - 2-deoxy-beta-D-ribo-hexopyranose: SMILES: OC[C@H]1OC(O)C[C@@H](O)[C@H]1O
- - 3-O-methyl-D-galactose: SMILES: CO[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](CO)O1
- - beta-D-galactofuranose: SMILES: O1[C@@H]([C@H](O)[C@@H](O)[C@H]1O)[C@H](O)CO
- - beta-D-mannopyranose: SMILES: OC[C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O
- - beta-D-galactopyranose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@@H]1O
- - 3-deoxy-D-lyxo-hexose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)C[C@H]1O
- - D-gulose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O
- - D-lyxose: SMILES: O[C@H]([C@H](O)CO)[C@H](O)C=O
- - 2-deoxy-D-ribo-hexose: SMILES: OC[C@H]1OC(O)C[C@@H](O)[C@H]1O
- - D-xylose: SMILES: O[C@H]([C@H](O)CO)[C@@H](O)C=O
- - D-ribose: SMILES: O[C@H]([C@H](O)CO)[C@H](O)C=O
- - D-arabinose: SMILES: O[C@H]([C@H](O)CO)[C@@H](O)C=O
- - D-mannose: SMILES: OC[C@H]1O[C@H](O)[C@@H](O)[C@@H](O)[C@@H]1O
- - L-fucose: SMILES: C[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO
- - D-galactose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@@H]1O
- - L-rhamnose: SMILES: C[C@H](O)[C@H](O)[C@H](O)[C@H](O)CO
- - D-fructose: SMILES: OC[C@H]1OC(O)(CO)[C@@H](O)[C@@H]1O
- - L-sorbose: SMILES: OC[C@H]1OC(O)(CO)[C@H](O)[C@H]1O
- - D-tagatose: SMILES: OC[C@H]1OC(O)(CO)[C@H](O)[C@H]1O
- - D-sorbose: SMILES: OC[C@H]1OC(O)(CO)[C@H](O)[C@H]1O
- - D-talose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@@H]1O
- - L-talose: SMILES: OC[C@@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O
- - D-altrose: SMILES: OC[C@H]1O[C@H](O)[C@@H](O)[C@H](O)[C@@H]1O
- - L-altrose: SMILES: OC[C@@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O
- - D-idose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-idose: SMILES: OC[C@@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O
- - D-gulose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gulose: SMILES: OC[C@@H]1O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O
- - D-allose: SMILES: OC[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@@H]1O
- - L-allose: SMILES: OC[C@@H]1O[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O
- - D-psicose: SMILES: OC[C@H]1OC(O)(CO)[C@@H](O)[C@@H]1O
- - L-psicose: SMILES: OC[C@@H]1OC(O)(CO)[C@H](O)[C@H]1O
- - D-turanose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-turanose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-cellobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-cellobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-lactose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-lactose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-trehalose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-trehalose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-sucrose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-sucrose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-raffinose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-raffinose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-melezitose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-melezitose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-melibiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-melibiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-mannobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-mannobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-cellotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-cellotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-mannotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-mannotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-raffinose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-raffinose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-erlose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-erlose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-isomaltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-isomaltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-nigerose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-nigerose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-kestose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-kestose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-inulobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-inulobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-secologanic acid: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-secologanic acid: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-erlose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-erlose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-isomaltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-isomaltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-nigerose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-nigerose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-kestose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-kestose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-inulobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-inulobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-secologanic acid: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-secologanic acid: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-erlose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-erlose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-isomaltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-isomaltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-nigerose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-nigerose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-kestose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-kestose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-inulobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-inulobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-secologanic acid: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-secologanic acid: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-erlose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-erlose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-isomaltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-isomaltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-nigerose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-nigerose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-kestose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-kestose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-inulobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-inulobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-secologanic acid: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-secologanic acid: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-erlose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-erlose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-isomaltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-isomaltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-nigerose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-nigerose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-kestose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-kestose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-inulobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-inulobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-secologanic acid: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-secologanic acid: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-erlose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-erlose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-isomaltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-isomaltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-nigerose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-nigerose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-kestose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-kestose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-inulobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-inulobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-secologanic acid: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-secologanic acid: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-erlose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-erlose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-isomaltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-isomaltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-nigerose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-nigerose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-kestose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-kestose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-inulobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-inulobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-secologanic acid: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-secologanic acid: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-erlose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-erlose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-maltotriose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-maltotriose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-isomaltose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-isomaltose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-nigerose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-nigerose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-kestose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-kestose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-inulobiose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-inulobiose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-secologanic acid: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-secologanic acid: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-gentianose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-gentianose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-umbelliferose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-umbelliferose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-stachyose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-stachyose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-verbascose: SMILES: OC[C@H]1O[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H]2O)[C@H](O)[C@@H](O)[C@@H]1O
- - L-verbascose: SMILES: OC[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](O)[C@H]2O)[C@@H](O)[C@H](O)[C@H]1O
- - D-
+"""
+Classifies: CHEBI:18133 hexose
+"""
+from rdkit import Chem
+from rdkit.Chem import Mol, MolFromSmiles
+from rdkit.Chem.rdchem import AtomValenceException, KekulizeException
+
+def is_hexose(smiles: str):
+    """
+    Determines if a molecule is a hexose based on its SMILES string.
+    A hexose is a six-carbon monosaccharide with either an aldehyde group (aldohexose)
+    or a ketone group (ketohexose) in its linear form.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a hexose, False otherwise
+        str: Reason for classification
+    """
+    try:
+        mol = Chem.MolFromSmiles(smiles)
+        if mol is None:
+            return False, "Invalid SMILES"
+
+        # Check for exactly six carbons
+        c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+        if c_count != 6:
+            return False, f"Expected 6 carbons, found {c_count}"
+
+        # Check for glycosidic bonds (ethers not in rings)
+        # Oxygen connected to two carbons and not in a ring
+        ether_pattern = Chem.MolFromSmarts('[OX2;!R]([#6])[#6]')
+        if mol.HasSubstructMatch(ether_pattern):
+            return False, "Glycosidic bond present"
+
+        # Check for aldehyde group (CH=O)
+        aldehyde_pattern = Chem.MolFromSmarts('[CH]=O')
+        if mol.HasSubstructMatch(aldehyde_pattern):
+            return True, "Aldehyde group detected"
+
+        # Check for ketone group (C=O not in acid/amide)
+        ketone_pattern = Chem.MolFromSmarts('[CX3](=O)[#6]')
+        ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+        # Exclude carboxylic acids and amides
+        valid_ketone = False
+        for match in ketone_matches:
+            atom = mol.GetAtomWithIdx(match[0])
+            neighbors = [n.GetAtomicNum() for n in atom.GetNeighbors()]
+            # Check if adjacent to O or N (possible acid/amide)
+            if 8 not in neighbors and 7 not in neighbors:
+                valid_ketone = True
+                break
+        if valid_ketone:
+            return True, "Ketone group detected"
+
+        # Check for cyclic structure with ring oxygen and hydroxyls
+        ring_info = mol.GetRingInfo()
+        rings = ring_info.AtomRings()
+        has_ring_with_oxygen = False
+        for ring in rings:
+            for atom_idx in ring:
+                if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 8:
+                    has_ring_with_oxygen = True
+                    break
+            if has_ring_with_oxygen:
+                break
+        if has_ring_with_oxygen:
+            # Count hydroxyl groups (O with at least one H)
+            oh_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() > 0)
+            if oh_count >= 4:  # Typical for hexoses
+                return True, "Cyclic form with ring oxygen and hydroxyls"
+            else:
+                return False, f"Cyclic but only {oh_count} hydroxyls"
+        else:
+            return False, "No aldehyde, ketone, or cyclic structure with ring oxygen"
+
+    except (AtomValenceException, KekulizeException, ValueError):
+        return False, "Invalid structure"
