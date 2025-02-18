@@ -1,4 +1,185 @@
 """
 Classifies: CHEBI:36836 3beta-hydroxy steroid
 """
-*@1*(*(*@2*(*@3*(*@4*))))) (not sure)
+ - 3beta,5alpha,6beta-trihydroxycholestane: SMILES: [H][C@@]12CC[C@H](O)[C@H](O)C[C@H](O)[C@@]1(C)CC[C@@H]1[C@@]2(C)CCCC([C@@H]1C)C(C)C
+ - (24S)-3beta,24-dihydroxycholesterol: SMILES: [H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CC[C@H](O)C(C)C
+ - (24xi)-3beta,24-dihydroxy-5alpha-cholest-7-en-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxycholesterol: SMILES: [H][C@@]1(CC[C@@]2([H])[C@]3([H])CC=C4C[C@@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CC[C@H](O)[C@@H](C)C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholest-7-en-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,5alpha-dihydroxy-6beta-methoxy-5alpha-cholestan-7-one: SMILES: CO[C@H]1[C@@H](O)C[C@H]2[C@]3([H])CC[C@]4([C@]([C@]3(C)CC[C@H]12)(CC[C@@]4([C@H](C)CCCC(C)C)[H])C)[H]
+ - (24S)-3beta,24-dihydroxy-5alpha-cholest-7-en-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H](CCC(=O)O)C[C@H]1C[C@H]2CC[C@H]3[C@H]([C@@H]2CC1=O)[C@H](O)C[C@H]1C[C@@H](O)CC[C@]31C
+ - (24R)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - (24S)-3beta,24-dihydroxy-5alpha-cholestan-6-one: SMILES: CC(C)C[C@H](O)CC[C@H](C)[C@H]1CC[C@H]2C3=C(CC[C@]12C)[C@]1(C)CC(=O)[C@H](O)C[C@]1(C)CC3
+ - 3beta,7alpha-dihydroxy-5beta-cholestan-24-oic acid: SMILES: C[C@H
