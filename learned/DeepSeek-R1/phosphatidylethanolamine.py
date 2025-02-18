@@ -20,62 +20,80 @@ def is_phosphatidylethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for phosphoethanolamine group: P connected to O-C-C-N (with possible N-methylation)
-    pe_pattern = Chem.MolFromSmarts("[PX4](=O)(-[OX2][CX4][CX4][NX3;H2,H1,H0])")
-    if not mol.HasSubstructMatch(pe_pattern):
+    # Improved phosphoethanolamine pattern: P connected to O-C-C-N (with possible substituents on N)
+    pe_pattern = Chem.MolFromSmarts("[PX4](=O)(O-[CX4][CX4][NX3;H2,H1,H0])")
+    pe_matches = mol.GetSubstructMatches(pe_pattern)
+    if not pe_matches:
         return False, "No phosphoethanolamine group detected"
 
-    # Check for two ester groups (O-C=O)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    esters = mol.GetSubstructMatches(ester_pattern)
-    if len(esters) < 2:
-        return False, f"Found {len(esters)} ester groups, need at least 2"
-
-    # Verify glycerol backbone connectivity
-    # Find phosphorus atoms in phosphoethanolamine groups
-    pe_matches = mol.GetSubstructMatches(pe_pattern)
-    for match in pe_matches:
-        p_atom = mol.GetAtomWithIdx(match[0])
+    # Check each phosphoethanolamine group's connection to glycerol
+    for pe_match in pe_matches:
+        p_idx = pe_match[0]
+        p_atom = mol.GetAtomWithIdx(p_idx)
         
-        # Find oxygen connecting to glycerol
+        # Find oxygen connecting to glycerol (should be single bond to C)
         glycerol_o = None
         for neighbor in p_atom.GetNeighbors():
-            if neighbor.GetSymbol() == 'O' and not neighbor.GetTotalNumHs():
-                glycerol_o = neighbor
-                break
+            if neighbor.GetSymbol() == 'O' and neighbor.GetTotalNumHs() == 0:
+                for bond in p_atom.GetBonds():
+                    if bond.GetBondType() == Chem.BondType.SINGLE and bond.GetOtherAtom(p_atom) == neighbor:
+                        glycerol_o = neighbor
+                        break
+                if glycerol_o:
+                    break
         if not glycerol_o:
             continue
         
-        # Find connected carbon (glycerol backbone)
-        glycerol_c = None
-        for neighbor in glycerol_o.GetNeighbors():
-            if neighbor.GetSymbol() == 'C':
-                glycerol_c = neighbor
-                break
-        if not glycerol_c:
+        # Get connected carbon (C3 of glycerol)
+        c3 = glycerol_o.GetNeighbors()[0]
+        if c3.GetSymbol() != 'C':
             continue
         
-        # Check for two ester-connected oxygens on adjacent carbons
+        # Trace glycerol backbone C1-C2-C3
+        # Find C2 connected to C3 (excluding the phosphate oxygen)
+        c2 = None
+        for neighbor in c3.GetNeighbors():
+            if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() != glycerol_o.GetIdx():
+                c2 = neighbor
+                break
+        if not c2:
+            continue
+        
+        # Find C1 connected to C2 (excluding C3)
+        c1 = None
+        for neighbor in c2.GetNeighbors():
+            if neighbor.GetSymbol() == 'C' and neighbor.GetIdx() != c3.GetIdx():
+                c1 = neighbor
+                break
+        if not c1:
+            continue
+        
+        # Check ester groups on C1 and C2
         ester_count = 0
-        for neighbor in glycerol_c.GetNeighbors():
-            if neighbor.GetSymbol() == 'O':
-                # Check if oxygen is part of an ester group
-                for o_neighbor in neighbor.GetNeighbors():
-                    if o_neighbor.GetSymbol() == 'C' and any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in o_neighbor.GetBonds()):
-                        ester_count += 1
-                        break
         
-        # Check adjacent carbons in glycerol chain
-        adjacent_ester_count = 0
-        for neighbor in glycerol_c.GetNeighbors():
-            if neighbor.GetSymbol() == 'C':
-                for c_neighbor in neighbor.GetNeighbors():
-                    if c_neighbor.GetSymbol() == 'O':
-                        for o_neighbor in c_neighbor.GetNeighbors():
-                            if o_neighbor.GetSymbol() == 'C' and any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in o_neighbor.GetBonds()):
-                                adjacent_ester_count += 1
+        # Check C1 for ester
+        for bond in c1.GetBonds():
+            if bond.GetBondType() == Chem.BondType.SINGLE:
+                neighbor = bond.GetOtherAtom(c1)
+                if neighbor.GetSymbol() == 'O':
+                    for o_bond in neighbor.GetBonds():
+                        o_neighbor = o_bond.GetOtherAtom(neighbor)
+                        if o_neighbor.GetSymbol() == 'C' and any(b.GetBondType() == Chem.BondType.DOUBLE for b in o_neighbor.GetBonds()):
+                            ester_count +=1
+                            break
         
-        if ester_count + adjacent_ester_count >= 2:
-            return True, "Contains glycerol backbone with two ester groups and phosphoethanolamine"
-
-    return False, "Phosphoethanolamine group not properly connected to glycerol with two esters"
+        # Check C2 for ester
+        for bond in c2.GetBonds():
+            if bond.GetBondType() == Chem.BondType.SINGLE:
+                neighbor = bond.GetOtherAtom(c2)
+                if neighbor.GetSymbol() == 'O':
+                    for o_bond in neighbor.GetBonds():
+                        o_neighbor = o_bond.GetOtherAtom(neighbor)
+                        if o_neighbor.GetSymbol() == 'C' and any(b.GetBondType() == Chem.BondType.DOUBLE for b in o_neighbor.GetBonds()):
+                            ester_count +=1
+                            break
+        
+        if ester_count >= 2:
+            return True, "Glycerol backbone with two esters and phosphoethanolamine group"
+    
+    return False, "Missing required glycerol-ester-phosphoethanolamine structure"
