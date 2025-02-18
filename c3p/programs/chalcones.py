@@ -27,8 +27,9 @@ def is_chalcones(smiles: str):
         return False, "Invalid SMILES string"
 
     # Look for the core chalcone structure: Ar-CH=CH-C(=O)-Ar or Ar-CH2-CH2-C(=O)-Ar (dihydrochalcone)
-    chalcone_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CH]=[CH]-[C](=O)-[c]2[c][c][c][c][c]2")
-    dihydrochalcone_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CH2]-[CH2]-[C](=O)-[c]2[c][c][c][c][c]2")
+    # More flexible patterns to account for substituted aromatic rings and heteroaromatic rings
+    chalcone_pattern = Chem.MolFromSmarts("[a]1[a][a][a][a][a]1-[CH]=[CH]-[C](=O)-[a]2[a][a][a][a][a]2")
+    dihydrochalcone_pattern = Chem.MolFromSmarts("[a]1[a][a][a][a][a]1-[CH2]-[CH2]-[C](=O)-[a]2[a][a][a][a][a]2")
     
     if not (mol.HasSubstructMatch(chalcone_pattern) or mol.HasSubstructMatch(dihydrochalcone_pattern)):
         return False, "No chalcone core structure found (Ar-CH=CH-C(=O)-Ar or Ar-CH2-CH2-C(=O)-Ar)"
@@ -65,5 +66,18 @@ def is_chalcones(smiles: str):
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count < 1:
         return False, "No oxygen found"
+
+    # Check for additional functional groups that might disqualify the molecule
+    # For example, chalcones should not have carboxylic acids, esters, or amides
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][#6]")
+    amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
+    
+    if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "Carboxylic acid group found, not a chalcone"
+    if mol.HasSubstructMatch(ester_pattern):
+        return False, "Ester group found, not a chalcone"
+    if mol.HasSubstructMatch(amide_pattern):
+        return False, "Amide group found, not a chalcone"
 
     return True, "Contains the core chalcone structure (Ar-CH=CH-C(=O)-Ar or Ar-CH2-CH2-C(=O)-Ar) with possible substitutions on the aromatic rings"
