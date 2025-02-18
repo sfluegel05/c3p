@@ -21,15 +21,27 @@ def is_beta_D_galactoside(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a SMARTS pattern for the D-galactose pyranose ring, without specifying anomeric configuration.
-    # This uses absolute stereochemistry markers (@ and @@) to correctly match D-galactose stereochemistry, except at the anomeric carbon
+    # Define a SMARTS pattern for the D-galactose pyranose ring (without specifying anomeric configuration)
     galactose_ring_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)[C@@H](O)[C@H](CO)O[C@@H]1*")
-    if not mol.HasSubstructMatch(galactose_ring_pattern):
-      return False, "No D-galactose ring found"
+    matches = mol.GetSubstructMatches(galactose_ring_pattern)
+    if not matches:
+        return False, "No D-galactose ring found"
+    
+    # Iterate over the matches and check for beta anomeric configuration
+    for match in matches:
+      # The first atom in the pattern is the ring oxygen.
+      ring_oxygen = match[0]
+      # The carbon attached to the ring oxygen is at index 1 in the pattern
+      anomeric_carbon = match[1]
+      
+      # Get the RDKit atom object from the index
+      anomeric_carbon_atom = mol.GetAtomWithIdx(anomeric_carbon)
 
-    # Define a SMARTS pattern for the beta-D-galactoside, now specifying the beta configuration at the anomeric carbon using [C@H]
-    beta_galactose_pattern = Chem.MolFromSmarts("[C@H]1([O])[C@@H](O)[C@@H](O)[C@H](CO)O[C@@H]1*")
-    if mol.HasSubstructMatch(beta_galactose_pattern):
-        return True, "Contains a beta-D-galactoside moiety"
+      #Get the chiral tag for the anomeric carbon atom. If the carbon is not chiral it returns a non-chiral tag.
+      chiral_tag = anomeric_carbon_atom.GetChiralTag()
 
+      if chiral_tag == Chem.ChiralType.CHI_TETRAHEDRAL_CW:
+          # It is beta
+          return True, "Contains a beta-D-galactoside moiety"
+          
     return False, "Not a beta-D-galactoside, based on anomeric carbon stereochemistry"
