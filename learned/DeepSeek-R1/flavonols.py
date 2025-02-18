@@ -26,7 +26,8 @@ def is_flavonols(smiles: str):
 
     # Define SMARTS pattern for flavonol core structure:
     # Benzopyran-4-one (flavone backbone) with hydroxyl at position 3 of the C ring
-    flavonol_pattern = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)c(O)cc2")
+    # The pattern matches the pyrone ring with oxygen at position 1, ketone at 4, hydroxyl at 3
+    flavonol_pattern = Chem.MolFromSmarts("[O;r1][C;r1][C;r1](O)[C;r1]=[O;r1]")
     
     # Check for the presence of the core structure
     if mol.HasSubstructMatch(flavonol_pattern):
