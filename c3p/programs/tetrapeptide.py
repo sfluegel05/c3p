@@ -20,27 +20,24 @@ def is_tetrapeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a peptide bond pattern: N-C(=O)
-    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)")
+    # Define patterns for detecting peptide linkages more accurately
+    peptide_bond_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[CX4][NX3]")  # Includes linkage to next residue
+    residue_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)[NX3]") # Updated to include linkage context
 
-    # Define amino acid residue patterns (generic backbone N-C-C)
-    residue_pattern = Chem.MolFromSmarts("[NX3][CX4][CX3](=O)")
-
-    # Find matches for peptide bonds and residues
+    # Match peptide bonds and residues
     peptide_bonds = mol.GetSubstructMatches(peptide_bond_pattern)
     residues = mol.GetSubstructMatches(residue_pattern)
 
     num_peptide_bonds = len(peptide_bonds)
     num_residues = len(residues)
 
-    # For a tetrapeptide, there must be 4 residues and 3 peptide bonds linking them
-    if num_residues == 4 and num_peptide_bonds == 3:
+    # For a tetrapeptide, expect 4 residues typically linked by 3 peptide bonds
+    if num_residues == 4 and num_peptide_bonds >= 3:
         return True, "Contains four amino-acid residues connected by peptide linkages"
-    
-    # If checks fail
+
     return False, f"Found {num_residues} residues and {num_peptide_bonds} peptide bonds, requires 4 residues and 3 peptide bonds"
 
-# Example usage in debug mode
+# Example usage for debug
 smiles = "C[C@H](N)C(=O)N[C@@H](Cc1ccccc1)C(=O)N[C@@H](CC(O)=O)C(=O)N[C@@H](CC(O)=O)C(O)=O"
 result = is_tetrapeptide(smiles)
 print(result)
