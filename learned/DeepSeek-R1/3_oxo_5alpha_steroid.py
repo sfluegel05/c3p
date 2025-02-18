@@ -7,7 +7,8 @@ from rdkit.Chem import AllChem
 def is_3_oxo_5alpha_steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-5alpha-steroid based on its SMILES string.
-    A 3-oxo-5alpha-steroid has a steroid nucleus, a ketone at position 3, and alpha configuration at position 5.
+    A 3-oxo-5alpha-steroid has a steroid nucleus (three 6-membered and one 5-membered rings),
+    a ketone at position 3, and alpha configuration (trans A/B ring fusion) at position 5.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,35 +21,44 @@ def is_3_oxo_5alpha_steroid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for presence of a ketone group (C=O)
-    ketone_pattern = Chem.MolFromSmarts("[CX3]=[OX1]")
-    if not mol.HasSubstructMatch(ketone_pattern):
-        return False, "No ketone group found"
-
-    # Check for steroid nucleus (three 6-membered rings and one 5-membered ring)
-    ring_info = mol.GetRingInfo()
-    ring_sizes = [len(ring) for ring in ring_info.AtomRings()]
-    sorted_ring_sizes = sorted(ring_sizes)
-    if sorted_ring_sizes.count(6) < 3 or 5 not in sorted_ring_sizes:
-        return False, "Incorrect ring structure for steroid nucleus"
-
-    # Check for 5alpha configuration (trans-decalin pattern in A/B rings)
-    # SMARTS pattern for trans-decalin (5alpha configuration)
-    trans_decalin_pattern = Chem.MolFromSmarts("[C@]1([C@@]2(CCCC[C@H]2C)C)[C@H]1C")
-    if not mol.HasSubstructMatch(trans_decalin_pattern):
-        return False, "A/B ring fusion not in 5alpha configuration"
+    # Check for presence of a ketone group (C=O) at position 3 in steroid skeleton
+    # Position 3 is in the A ring (six-membered), adjacent to two carbons in the ring
+    # SMARTS pattern for 3-oxo in steroid A ring: ketone connected to two adjacent carbons in a six-membered ring
+    ketone_pattern = Chem.MolFromSmarts("[CX3]=[OX1;R]")
+    ketone_matches = mol.GetSubstructMatches(ketone_pattern)
+    if not ketone_matches:
+        return False, "No ketone group found in ring system"
 
     # Verify ketone is in a six-membered ring (A ring)
-    ketone_in_A_ring = False
-    for atom_idx in mol.GetSubstructMatches(ketone_pattern):
+    ring_info = mol.GetRingInfo()
+    valid_ketone = False
+    for atom_idx in ketone_matches:
         atom = mol.GetAtomWithIdx(atom_idx[0])
         for ring in ring_info.AtomRings():
             if len(ring) == 6 and atom_idx[0] in ring:
-                ketone_in_A_ring = True
-                break
-        if ketone_in_A_ring:
+                # Check if ketone is at position 3 (adjacent to two adjacent carbons in the ring)
+                neighbors = [n.GetIdx() for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+                if len(neighbors) >= 2:
+                    # Check if neighbors are in the same ring and adjacent to each other
+                    if (neighbors[0] in ring) and (neighbors[1] in ring):
+                        valid_ketone = True
+                        break
+        if valid_ketone:
             break
-    if not ketone_in_A_ring:
-        return False, "Ketone not located in a six-membered ring (A ring)"
+    if not valid_ketone:
+        return False, "Ketone not in correct position (C3 of A ring)"
 
-    return True, "3-oxo group and 5alpha steroid configuration confirmed"
+    # Check steroid nucleus structure (three 6-membered rings and one 5-membered ring)
+    ring_sizes = sorted([len(r) for r in ring_info.AtomRings()])
+    if not (ring_sizes.count(6) >= 3 and 5 in ring_sizes):
+        return False, "Incorrect ring structure for steroid nucleus"
+
+    # Check 5alpha configuration (trans A/B ring fusion)
+    # SMARTS pattern for trans-decalin system (5alpha configuration)
+    trans_decalin_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]2CCCC[C@H]2CC1")
+    if not trans_decalin_pattern:
+        return None, None  # Pattern creation failed
+    if not mol.HasSubstructMatch(trans_decalin_pattern):
+        return False, "A/B ring fusion not in 5alpha configuration"
+
+    return True, "3-oxo group in A ring and 5alpha configuration confirmed"
