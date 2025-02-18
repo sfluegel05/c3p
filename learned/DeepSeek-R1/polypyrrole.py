@@ -5,12 +5,11 @@ Classifies: CHEBI:38077 polypyrrole
 Classifies: CHEBI:xxxxx polypyrrole
 """
 from rdkit import Chem
-from rdkit.Chem import Mol
 
 def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
-    A polypyrrole contains two or more pyrrole units (5-membered conjugated rings with one nitrogen).
+    A polypyrrole contains two or more pyrrole units (5-membered aromatic rings with one nitrogen).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,35 +22,19 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Ensure molecule is sanitized to perceive conjugation
-    Chem.SanitizeMol(mol, Chem.SanitizeFlags.SANITIZE_ALL)
-    
-    # SMARTS for 5-membered ring with exactly one nitrogen atom
-    pyrrole_smarts = '[n]1[c][c][c][c]1'
+    # Define SMARTS pattern for a pyrrole ring: 5-membered aromatic ring with exactly one nitrogen
+    pyrrole_smarts = '[n;ar]1[c;ar][c;ar][c;ar][c;ar]1'
     pyrrole_pattern = Chem.MolFromSmarts(pyrrole_smarts)
-    if not pyrrole_pattern:
-        return False, "Failed to initialize pattern"
     
-    # Find all matches for 5-membered rings with one nitrogen
+    if not pyrrole_pattern:
+        return False, "Failed to initialize pyrrole pattern"
+    
+    # Find all unique pyrrole rings (avoid overlapping matches)
     matches = mol.GetSubstructMatches(pyrrole_pattern)
     unique_rings = set()
-    conjugated_rings = 0
-    
     for match in matches:
-        # Check if all bonds in the ring are conjugated
-        ring_atoms = set(match)
-        conjugated = True
-        # Iterate through bonds in the ring
-        for i in range(len(match)):
-            a1 = match[i]
-            a2 = match[(i+1) % len(match)]
-            bond = mol.GetBondBetweenAtoms(a1, a2)
-            if not bond or not bond.GetIsConjugated():
-                conjugated = False
-                break
-        if conjugated:
-            # Ensure unique rings by sorted atom indices
-            unique_rings.add(tuple(sorted(match)))
+        # Sort atom indices to handle different atom orders in SMARTS matches
+        unique_rings.add(tuple(sorted(match)))
     
     pyrrole_count = len(unique_rings)
     
