@@ -1,59 +1,25 @@
 """
 Classifies: CHEBI:166828 saccharolipid
 """
-"""
-Classifies: CHEBI: saccharolipid
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+</think>
 
-def is_saccharolipid(smiles: str):
-    """
-    Determines if a molecule is a saccharolipid based on its SMILES string.
-    Saccharolipids contain carbohydrate (sugar) and lipid components covalently linked via ester/amide bonds.
+Okay, let's figure out why the previous code failed. The error message says there was a problem with `Mol.HasSubstructMatch(Mol, NoneType)`, which suggests that one of the SMILES patterns didn't compile correctly. Looking at the code, the `sugar_core` and `lipid_linker` SMARTS might be the culprits. 
 
-    Args:
-        smiles (str): SMILES string of the molecule
+First, the `sugar_core` SMARTS pattern uses `@` which is for ring bonds, but maybe the way it's written isn't correct. The original code tried to use `r5` and `r6` for ring sizes, but perhaps the SMARTS wasn't properly formatted. Also, the `lipid_linker` SMARTS had comments in the pattern, which might have caused it to fail when parsed. The pipe `|` in SMARTS is for OR conditions, but the comments after it might have messed up the parsing, leading to `None` for the compiled pattern.
 
-    Returns:
-        bool: True if molecule is a saccharolipid, False otherwise
-        str: Reason for classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
+So, to fix this, I need to correct the SMARTS patterns. For the sugar detection, maybe a simpler approach using common sugar moieties like multiple hydroxyl groups in a ring. For the lipid linker, remove the comments inside the SMARTS and ensure the pattern correctly matches ester or amide bonds connected to long chains. Also, check that the phosphate exclusion logic is accurate and doesn't interfere with valid saccharolipids that might have phosphates elsewhere.
 
-    # Enhanced carbohydrate detection: Match common pyranose/furanose structures with multiple hydroxyls
-    # Modified to include common sugar substitutions (e.g. amino sugars, deoxy)
-    sugar_core = Chem.MolFromSmarts("""
-        [C;r5,r6]1@[C;r5,r6]@[C;r5,r6]@[C;r5,r6]@[C;r5,r6][OH1,OH0,C(=O),O;r5,r6]1
-        """)
-    if not mol.HasSubstructMatch(sugar_core):
-        return False, "No carbohydrate core detected (pyranose/furanose structure)"
+Another issue might be the lipid chain length check. The previous code's SMARTS for `lipid_linker` might not capture chains of sufficient length. Maybe using a more flexible approach with `[C][C][C][C][C][C][C,C]` isn't enough. Instead, using a recursive SMARTS to ensure at least 8 carbons in the chain would be better.
 
-    # Lipid detection: Long chain (>=8 carbons) connected via ester/amide to sugar
-    # SMARTS pattern for ester/amide connected to both sugar oxygen and long chain
-    lipid_linker = Chem.MolFromSmarts("""
-        [O;R][C](=O)[C][C][C][C][C][C][C,C] 
-        |^1: ester/amide connected to sugar oxygen,
-        chain_start: [C]=O connected to at least 7 more carbons
-        """)
-    if not mol.HasSubstructMatch(lipid_linker):
-        # Check for amide linkages common in lipid A structures
-        lipid_amide = Chem.MolFromSmarts("""
-            [C](=O)[N][C][C][C][C][C][C][C,C][C,C] 
-            |^1: amide connected to long chain
-            """)
-        if not mol.HasSubstructMatch(lipid_amide):
-            return False, "No lipid chain (>=8 carbons) connected via ester/amide"
+Let me adjust the SMARTS patterns. For the sugar part, use a pattern that matches rings with multiple hydroxyls. For the lipid, create separate patterns for ester and amide linkages with long chains. Also, ensure that the phosphate check doesn't mistakenly exclude valid structures where phosphate isn't part of the sugar-lipid linkage.
 
-    # Exclude phosphate-linked structures (common in phospholipids)
-    phosphate = Chem.MolFromSmarts("[O]P(=O)([O])[O]")
-    if mol.HasSubstructMatch(phosphate):
-        # Allow phosphate only if not between sugar and lipid
-        # Check if phosphate is part of the linker between sugar and lipid
-        ester_amide_with_phos = Chem.MolFromSmarts("[O;R]-P(=O)([O])-[O]-C(=O)")
-        if mol.HasSubstructMatch(ester_amide_with_phos):
-            return False, "Phosphate bridge between sugar and lipid"
+Testing with the example SMILES provided, like the (KDO)4-lipid IVA, the code should detect the sugar part (KDO is a carbohydrate) and the lipid chains connected via ester/amide. The previous code might have failed because the SMARTS didn't properly match the carbohydrate core or the lipid chains.
 
-    return True, "Contains carbohydrate linked to lipid via ester/amide"
+So, revising the code:
+
+1. Fix the sugar SMARTS to detect cyclic structures with multiple hydroxyls.
+2. Split the lipid check into ester and amide with proper chain length.
+3. Correct the SMARTS syntax by removing inline comments.
+4. Ensure phosphate checks don't interfere unless the phosphate is directly linking sugar and lipid.
+
+This should resolve the NoneType error and improve classification accuracy.
