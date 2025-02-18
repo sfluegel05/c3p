@@ -5,7 +5,7 @@ Classifies: CHEBI:24043 flavones
 Classifies: CHEBI:72025 flavone
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_flavones(smiles: str):
     """
@@ -26,20 +26,29 @@ def is_flavones(smiles: str):
 
     # Define SMARTS pattern for the 2-arylchromen-4-one skeleton
     # Chromen-4-one core (benzopyran-4-one) with aryl group at position 2
-    flavone_pattern = Chem.MolFromSmarts("c1c2c(oc(=O)cc2)ccc1-[a]")
-    if not mol.HasSubstructMatch(flavone_pattern):
+    # Core: benzene fused to pyrone (O=C1C=CC2=C1C=CC=C2)
+    # Aryl group attached to C2 of pyrone (atom index 4 in SMARTS)
+    flavone_core = Chem.MolFromSmarts("c1ccc2c(c1)oc(=O)cc2-[a]")
+    matches = mol.GetSubstructMatches(flavone_core)
+    if not matches:
         return False, "No 2-arylchromen-4-one skeleton found"
 
-    # Additional check to ensure the aryl group is a benzene ring (optional)
-    # This can be adjusted based on specific requirements
-    # Get the matching atoms
-    matches = mol.GetSubstructMatches(flavone_pattern)
-    for match in matches:
-        # The last atom in the match is the aryl group's connecting atom
-        aryl_connector = match[-1]
-        # Check if it's part of an aromatic ring (benzene or substituted)
-        neighbor = mol.GetAtomWithIdx(aryl_connector)
-        if neighbor.GetIsAromatic():
-            return True, "Contains 2-arylchromen-4-one skeleton"
+    # Get ring information
+    ring_info = mol.GetRingInfo()
+    core_rings = set()
+    for ring in ring_info.AtomRings():
+        if any(atom_idx in matches[0][:6] for atom_idx in ring):  # Core atoms are first 6 in SMARTS pattern
+            core_rings.add(ring)
 
-    return False, "Aryl group not aromatic or not properly attached"
+    # Check aryl group is a separate aromatic ring
+    for match in matches:
+        aryl_connector = match[-1]  # Last atom in match is the aryl connector
+        # Check if aryl connector is part of a separate aromatic ring
+        for ring in ring_info.AtomRings():
+            if aryl_connector in ring and ring not in core_rings:
+                # Check if the ring is aromatic
+                is_aromatic = all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)
+                if is_aromatic and len(ring) >= 6:  # At least benzene-like
+                    return True, "Contains 2-arylchromen-4-one skeleton with aromatic substituent"
+
+    return False, "Aryl group not part of separate aromatic ring"
