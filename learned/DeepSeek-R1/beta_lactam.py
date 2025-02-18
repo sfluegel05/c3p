@@ -2,15 +2,14 @@
 Classifies: CHEBI:35627 beta-lactam
 """
 """
-Classifies: CHEBI:35627 beta-lactam
+Classifies: Beta-lactam (CHEBI:35627)
 """
 from rdkit import Chem
-from rdkit.Chem import Mol
 
 def is_beta_lactam(smiles: str):
     """
     Determines if a molecule is a beta-lactam based on its SMILES string.
-    A beta-lactam contains a four-membered ring with an amide bond (N-C=O).
+    A beta-lactam contains a four-membered ring with an amide bond (azetidin-2-one).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,20 +23,13 @@ def is_beta_lactam(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for four-membered ring with amide bond (N-C=O)
-    # [nH0] matches nitrogen in a ring with no hydrogen (common in fused rings)
-    # The pattern looks for a 4-membered ring where N is adjacent to C=O
-    beta_lactam_pattern = Chem.MolFromSmarts("[nH0]1C(=O)CC1")
-    if not mol.HasSubstructMatch(beta_lactam_pattern):
-        return False, "No four-membered lactam ring found"
+    # Define beta-lactam SMARTS pattern: four-membered ring with amide bond
+    beta_lactam_pattern = Chem.MolFromSmarts("[NH]1C(=O)CC1")  # Azetidin-2-one core
 
-    # Verify ring size - ensure matched atoms form exactly 4-membered ring
-    matches = mol.GetSubstructMatches(beta_lactam_pattern)
-    for match in matches:
-        ring_atoms = list(match)
-        ring = Chem.GetRingInfo(mol).AtomRings()
-        for r in ring:
-            if set(ring_atoms).issubset(r) and len(r) == 4:
-                return True, "Contains four-membered lactam ring with amide bond"
+    # Check for presence of the beta-lactam ring
+    has_lactam = mol.HasSubstructMatch(beta_lactam_pattern)
 
-    return False, "No valid four-membered lactam ring detected"
+    if has_lactam:
+        return True, "Contains a four-membered lactam ring (beta-lactam)"
+    else:
+        return False, "No four-membered lactam ring detected"
