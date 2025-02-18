@@ -30,28 +30,29 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if not mol.HasSubstructMatch(carboxylic_acid):
         return False, "No carboxylic acid group found"
 
-    # Get indices of carboxylic acid carbon and oxygen atoms
+    # Get indices of carboxylic acid carbonyl carbons
     cooh_matches = mol.GetSubstructMatches(carboxylic_acid)
-    cooh_carbons = {match[0] for match in cooh_matches}  # Carbonyl carbon indices
+    cooh_carbons = {match[0] for match in cooh_matches}
 
-    # Check all non-COOH carbons for non-methyl branches
+    # Check all non-COOH carbons for branches longer than methyl
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 6 and atom.GetIdx() not in cooh_carbons:
+            # Check all neighboring carbons not in COOH group
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in cooh_carbons:
-                    # Check if neighbor has other carbon connections besides current atom
-                    neighbor_carbon_count = 0
-                    for n in neighbor.GetNeighbors():
-                        if n.GetAtomicNum() == 6 and n != atom:
-                            neighbor_carbon_count += 1
-                    if neighbor_carbon_count > 0:
-                        return False, f"Non-methyl branch at carbon {neighbor.GetIdx()}"
+                    # Check if this branch carbon has any other carbon connections besides current atom
+                    branch_carbon = neighbor
+                    other_carbons = 0
+                    for n in branch_carbon.GetNeighbors():
+                        if n.GetAtomicNum() == 6 and n.GetIdx() != atom.GetIdx():
+                            other_carbons += 1
+                    if other_carbons > 0:
+                        return False, f"Branch at C{atom.GetIdx()+1} has non-methyl substituent"
 
-    # Verify there's at least one methyl branch (to exclude linear fatty acids)
+    # Verify presence of at least one methyl branch
     methyl_pattern = MolFromSmarts("[CH3]")
-    methyl_matches = mol.GetSubstructMatches(methyl_pattern)
     has_methyl_branch = False
-    for match in methyl_matches:
+    for match in mol.GetSubstructMatches(methyl_pattern):
         methyl_carbon = mol.GetAtomWithIdx(match[0])
         # Check if methyl is attached to a non-COOH carbon
         for neighbor in methyl_carbon.GetNeighbors():
@@ -63,4 +64,4 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if not has_methyl_branch:
         return False, "No methyl branches found"
 
-    return True, "Methyl-branched fatty acid with only methyl substituents"
+    return True, "Contains only methyl branches on fatty acid chain"
