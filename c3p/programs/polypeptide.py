@@ -21,14 +21,19 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # General amino acid residue pattern, including common side chains
-    amino_acid_pattern = Chem.MolFromSmarts('N[C@@H](C(=O))')
+    # Refined pattern to match a broader range of amino acid structures
+    # This pattern captures diverse amino acids, including standard and some modified residues
+    amino_acid_patterns = [
+        Chem.MolFromSmarts('[NX3][C@@H](C)C(=O)O'),  # Standard amino acid pattern
+        Chem.MolFromSmarts('[NX3][C@@H]([C@@H](C)O)C(=O)O'),  # Example for hydroxy-amino acids, etc.
+        # Further patterns can be added to capture other common modifications
+    ]
 
-    # Find all matches of the amino acid pattern
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
-
-    # Count number of amino acids based on the pattern
-    num_amino_acids = len(amino_acid_matches)
+    num_amino_acids = 0
+    
+    for pattern in amino_acid_patterns:
+        matches = mol.GetSubstructMatches(pattern)
+        num_amino_acids += len(matches)
 
     if num_amino_acids >= 10:
         return True, f"Contains {num_amino_acids} amino acid residues, classifying as polypeptide"
