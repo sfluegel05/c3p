@@ -1,170 +1,51 @@
 """
 Classifies: CHEBI:47788 3-oxo steroid
 """
- - 21-hydroxypregnenolone: SMILES: [H][C@@]1(CC[C@@]2([H])[C@]3([H])CCC4=CC(=O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](CO)O
- - 6alpha-Methyl-17alpha-hydroxyprogesterone: SMILES: C[C@H]1C[C@@]2(C)[C@@H](CC[C@H]3[C@@H]4CC[C@H](O)[C@@]4(C)CC[C@H]23)CC1=O
- - 17beta-hydroxy-5beta-androstan-3-one: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@H]4CC(=O)CC[C@]34C)[C@@H]1CC[C@@H]2O
- - 3-oxo-4,5alpha-dihydrotestosterone: SMILES: [C@]1([C@]2([C@@]([C@@]3([C@](CC(=O)CC3)(CC1)[H])C)(CC[C@]4(C)[C@H](CC[C@@]24[H])O)[H])[H])C=O
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 5alpha-androstane-3,17-dione: SMILES: CC(=O)[C@]12CC[C@H]3[C@@H](CC[C@H]4CC(=O)CC[C@]34C)[C@@H]1CC[C@@H]2C
- - 5alpha-dihydrotestosterone: SMILES: [C@]1([C@]2([C@@]([C@@]3([C@](CC(=O)CC3)(CC1)[H])C)(CC[C@]4(C)[C@H](CC[C@@]24[H])O)[H])[H])C
- - 21-hydroxypregnenolone 3-sulfate: SMILES: [H][C@@]1(CC[C@@]2([H])[C@]3([H])CCC4=CC(=O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](COS(=O)(=O)O)O
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](OS(=O)(=O)O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5beta-pregnan-20alpha-yl beta-D-glucuronide: SMILES: CC(=O)[C@H]1CC[C@H]2[C@@H]3CC[C@@H]4CC(=O)CC[C@]4(C)[C@@H]3C[C@H](O[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5O)[C@]12C
- - 3-oxo-5alpha-pregnan-20alpha-yl sulfate: SMILES: CC(=O)[C@H
+"""
+Classifies: 3-oxo steroid (CHEBI:37781)
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_3_oxo_steroid(smiles: str):
+    """
+    Determines if a molecule is a 3-oxo steroid based on its SMILES string.
+    A 3-oxo steroid has a steroid nucleus with an oxo group at position 3.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a 3-oxo steroid, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Define steroid nucleus pattern (four fused rings: three 6-membered, one 5-membered)
+    steroid_smarts = Chem.MolFromSmarts("[*]1@[*]@[*]2@[*]@[*]3@[*]@[*]4@[*]@[*]5@[*]@[*]1@[*]@[*]@[*]@[*]2@[*]@[*]@[*]3@[*]@[*]@[*]4@5")
+    if not mol.HasSubstructMatch(steroid_smarts):
+        return False, "No steroid nucleus detected"
+
+    # Check for oxo group at position 3 (specific position in the A-ring)
+    # Position 3 is typically part of the first 6-membered ring (A-ring)
+    oxo_pattern = Chem.MolFromSmarts("[C]=[O]")
+    oxo_matches = mol.GetSubstructMatches(oxo_pattern)
+    if not oxo_matches:
+        return False, "No oxo group found"
+
+    # Verify at least one oxo group is at position 3
+    # This requires knowing the steroid atom numbering, which is complex
+    # Alternative approach: Check if any carbonyl is in the A-ring vicinity
+    a_ring_smarts = Chem.MolFromSmarts("[*]1@[*]@[*]@[*]@[*]@[*]1")  # A-ring (6-membered)
+    a_ring_matches = mol.GetSubstructMatches(a_ring_smarts)
+    for oxo_atom in oxo_matches:
+        for a_ring in a_ring_matches:
+            if oxo_atom[0] in a_ring:
+                # Assuming position 3 is the third atom in the A-ring SMARTS match
+                if a_ring.index(oxo_atom[0]) == 2:
+                    return True, "3-oxo group found on steroid nucleus"
+
+    return False, "Oxo group not found at position 3"
