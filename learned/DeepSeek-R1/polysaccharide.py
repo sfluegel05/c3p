@@ -6,6 +6,7 @@ Classifies: CHEBI:18154 polysaccharide
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Mol
 
 def is_polysaccharide(smiles: str):
     """
@@ -22,31 +23,52 @@ def is_polysaccharide(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Basic sugar unit pattern: cyclic structure with multiple hydroxyls
-    # Matches a 5 or 6-membered ring with at least 2 hydroxyl groups
-    sugar_pattern = Chem.MolFromSmarts("[O][C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1")
-    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
     
-    # Check for at least 11 sugar units (definition specifies >10)
-    if len(sugar_matches) < 11:
-        return False, f"Only {len(sugar_matches)} sugar units found"
-
-    # Glycosidic bond: oxygen connecting two anomeric carbons (C-O-C between rings)
-    glycosidic_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@H](O)[C@H](O)[C@H](O)O1-O-[C@H]2[C@H](O)[C@H](O)[C@H](O)[C@H](O)O2")
-    glycosidic_bonds = mol.GetSubstructMatches(glycosidic_pattern)
-    if len(glycosidic_bonds) < 10:  # At least 10 linkages for 11 units
-        return False, f"Only {len(glycosidic_bonds)} glycosidic bonds detected"
-
-    # Check molecular weight (approximate for >10 units: glucose polymer would be ~162*11=1782)
+    # Find potential sugar units: 5/6-membered rings with oxygen and multiple hydroxyls
+    # More flexible pattern: any 5/6-membered ring with at least two oxygen atoms (including ring O)
+    sugar_units = 0
+    rings = mol.GetRingInfo().AtomRings()
+    for ring in rings:
+        if len(ring) not in (5,6):
+            continue
+        has_ring_o = any(mol.GetAtomWithIdx(a).GetAtomicNum() == 8 for a in ring)
+        if not has_ring_o:
+            continue
+        # Count oxygen-containing groups (OH, O-linked, etc.)
+        o_count = 0
+        for a in ring:
+            atom = mol.GetAtomWithIdx(a)
+            if atom.GetAtomicNum() == 8:  # Oxygen in ring
+                o_count +=1
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in ring:  # Exclude ring oxygen
+                    o_count +=1
+        if o_count >= 3:  # At least two oxygen-containing groups besides ring O
+            sugar_units +=1
+    
+    if sugar_units <= 10:
+        return False, f"Only {sugar_units} sugar units found (needs >10)"
+    
+    # Find glycosidic bonds (oxygen connecting two sugar rings)
+    glycosidic_bonds = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() != Chem.BondType.SINGLE:
+            continue
+        if bond.GetBeginAtom().GetAtomicNum() != 8 or bond.GetEndAtom().GetAtomicNum() != 8:
+            continue
+        # Check if oxygen is connecting two different rings
+        a1 = bond.GetBeginAtom().GetIdx()
+        a2 = bond.GetEndAtom().GetIdx()
+        in_rings = [any(a1 in r for r in rings), any(a2 in r for r in rings)]
+        if all(in_rings) and not any(a1 in r and a2 in r for r in rings):
+            glycosidic_bonds +=1
+    
+    if glycosidic_bonds < sugar_units -1:  # At least n-1 bonds for linear chain
+        return False, f"Insufficient glycosidic bonds ({glycosidic_bonds} for {sugar_units} units)"
+    
+    # Check molecular weight (approximate for >10 units)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 1800:
+    if mol_wt < 1500:  # Lowered threshold to account for different sugars
         return False, f"Molecular weight ({mol_wt:.1f} Da) too low for polysaccharide"
-
-    # Check oxygen count relative to number of units (each unit contributes multiple O)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    expected_o_min = 5 * len(sugar_matches)  # Approximate (each sugar has ~5 O)
-    if o_count < expected_o_min * 0.8:  # Allow some variation
-        return False, f"Oxygen count ({o_count}) inconsistent with polysaccharide structure"
-
-    return True, f"Contains {len(sugar_matches)} sugar units with {len(glycosidic_bonds)} glycosidic bonds"
+    
+    return True, f"Contains {sugar_units} sugar units with {glycosidic_bonds} glycosidic bonds"
