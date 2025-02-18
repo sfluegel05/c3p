@@ -19,86 +19,79 @@ def is_alpha_amino_acid_ester(smiles: str):
     """
     Determines if a molecule is an alpha–amino acid ester based on its SMILES string.
     
-    The function first tries to match a contiguous substructure motif defined as:
+    The function looks for a contiguous fragment defined as:
       [NX3;!$(N-C(=O))]-[C;H1,H2]-[C](=O)-[O]-[CX4]
-    That is, a free (unacylated) amino group attached to an α–carbon (which is CH or CH2)
-    attached to a carbonyl that is esterified (–O– connected to an sp³ carbon).
+    That is, a free (non-acylated) amino nitrogen attached to an α–carbon (which is CH or CH2)
+    attached to a carbonyl that is esterified (–O– attached to an sp³ carbon).
     
-    Post–processing is done to ensure the match is chemically plausible:
-      • The α–carbon (the second atom matched) must have at least 1 hydrogen.
-      • The oxygen (fourth atom in the fragment) must be bonded to a carbon (other than
-        the carbonyl carbon) that is sp³‐hybridized.
+    Additional checks are performed to verify:
+      • the α–carbon has at least one hydrogen,
+      • the ester oxygen (in the carbonyl ester group) is bound to an sp³ carbon (other than the carbonyl).
     
     Args:
         smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if at least one alpha–amino acid ester motif is found, False otherwise.
-        str: Explanation for the classification.
+        bool: True if a valid alpha–amino acid ester motif is found, False otherwise.
+        str: Explanation for the classification decision.
     """
-    # Try to parse the input SMILES.
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define a SMARTS pattern that requires the contiguous fragment:
-    #     [NX3;!$(N-C(=O))]   -> free (non acylated) amino nitrogen
-    #     -[C;H1,H2]         -> an α–carbon carrying one or two hydrogens
-    #     -[C](=O)           -> a carbonyl carbon
-    #     -[O]               -> the carbonyl oxygen (in an ester)
-    #     -[CX4]             -> an sp³ carbon (the ester alkyl group)
+    # Define the SMARTS pattern for the alpha-amino acid ester fragment.
     aa_ester_smarts = "[NX3;!$(N-C(=O))]-[C;H1,H2]-[C](=O)-[O]-[CX4]"
     aa_ester_pattern = Chem.MolFromSmarts(aa_ester_smarts)
     if aa_ester_pattern is None:
-        return False, "Error in SMARTS pattern construction"
+        return False, "Error constructing SMARTS pattern"
     
-    # Look for all substructure matches of the motif.
+    # Find all matches of the pattern.
     matches = mol.GetSubstructMatches(aa_ester_pattern)
     if not matches:
         return False, "No alpha–amino acid ester motif found"
     
-    # For each match, perform additional checks.
-    # The match tuple corresponds to atoms (in order): [amino N, α–C, carbonyl C, ester O, alkyl C]
+    # Check each match for additional chemical plausibility.
     valid_match_found = False
     for match in matches:
-        amino_idx, alpha_idx, carbonyl_idx, esterO_idx, ester_alkyl_idx = match
+        # In some cases the match tuple may have extra indices; we only require the first 5.
+        if len(match) < 5:
+            continue
+        amino_idx, alpha_idx, carbonyl_idx, esterO_idx, ester_alkyl_idx = match[:5]
         
+        # Check that the α–carbon has at least one hydrogen.
         alpha_atom = mol.GetAtomWithIdx(alpha_idx)
-        # Check that the alpha carbon has at least one hydrogen 
-        # (the SMARTS [C;H1,H2] should enforce this, but we double-check).
         if alpha_atom.GetTotalNumHs() < 1:
             continue
-
-        # Check that the ester oxygen (atom at esterO_idx) has a neighbor (besides the carbonyl)
-        # that is an sp³ carbon. (We already demanded it via SMARTS; but in case of conjugated systems,
-        # this extra check helps to avoid mis‐assignment in larger scaffolds.)
+        
+        # Verify that the ester oxygen (esterO_idx) is connected to an sp³ carbon other than the carbonyl.
         esterO_atom = mol.GetAtomWithIdx(esterO_idx)
         valid_neighbor = False
         for nbr in esterO_atom.GetNeighbors():
             if nbr.GetIdx() == carbonyl_idx:
-                continue  # skip the carbonyl carbon (which is already in the match)
-            # If the neighbor is an sp3 carbon, we count it as valid.
+                continue  # Skip the carbonyl carbon.
             if nbr.GetAtomicNum() == 6 and nbr.GetHybridization() == Chem.HybridizationType.SP3:
                 valid_neighbor = True
                 break
         if not valid_neighbor:
             continue
-
-        # If we pass all additional checks, then we confidently classify as an alpha–amino acid ester.
+        
+        # If all check are passed, we have a valid match.
         valid_match_found = True
         break
 
     if valid_match_found:
-        return True, "Contains an alpha–amino acid ester moiety"
+        return True, "Contains a valid alpha–amino acid ester moiety"
     else:
         return False, "No valid alpha–amino acid ester motif found after additional checks"
 
-# Example use (for testing purposes - uncomment as needed):
-# test_smiles = [
-#     "O(C(=O)C(N)C(OCC)=O)CC",           # Diethyl aminomalonate - should be True
-#     "OC(=O)CN",                        # methyl glycinate - should be True
-#     "CCCC",                            # Negative test - should be False
-# ]
-# for smi in test_smiles:
-#     result, reason = is_alpha_amino_acid_ester(smi)
-#     print(f"SMILES: {smi}\nResult: {result}\nReason: {reason}\n")
+# Example use (for testing):
+if __name__ == "__main__":
+    test_smiles = [
+        "O(C(=O)C(N)C(OCC)=O)",  # Diethyl aminomalonate, expected True
+        "OC(=O)CN",             # methyl glycinate, expected True
+        "CCCC",                 # Negative test, expected False
+    ]
+    for smi in test_smiles:
+        result, reason = is_alpha_amino_acid_ester(smi)
+        print(f"SMILES: {smi}\nResult: {result}\nReason: {reason}\n")
