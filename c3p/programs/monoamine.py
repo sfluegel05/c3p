@@ -21,10 +21,10 @@ def is_monoamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Pattern for amino group connected by a two-carbon chain to an aromatic ring
-    monoamine_pattern = Chem.MolFromSmarts("[$(cc)]CCN")  # Extended SMARTS might be needed for enriched specificity
-    
-    # Find substructure matches
+    # Enhanced SMARTS pattern for monoamine: Aromatic ring bonded through two carbons (aliphatic) to an amino group
+    monoamine_pattern = Chem.MolFromSmarts("a-!@[CH2]-[CH2]-[NH2]")
+
+    # Check for substructure matches
     if mol.HasSubstructMatch(monoamine_pattern):
         return True, "Contains amino group connected to an aromatic ring by a two-carbon chain"
     else:
