@@ -22,18 +22,17 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # SMARTS pattern for peptide bonds in backbone: CONH connected to alpha carbon
-    peptide_bond = Chem.MolFromSmarts('[CX3](=O)[NX3H1][CX4H2]')
-    matches = mol.GetSubstructMatches(peptide_bond)
-    backbone_amide_count = len(matches)
+    # Count all amide bonds using RDKit's built-in function
+    amide_bonds = rdMolDescriptors.CalcNumAmideBonds(mol)
     
-    # Calculate molecular weight
+    # Check molecular weight to filter small molecules
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
     
-    # Check criteria: at least 9 backbone amide bonds (linear: 10 residues) or 10 (cyclic: 10 residues)
-    # and molecular weight over 500 as heuristic filter
-    if backbone_amide_count >= 9 and mol_wt >= 500:
-        return True, f"Contains {backbone_amide_count} backbone amide bonds, indicating 10 or more residues"
+    # For linear peptides: residues = amide_bonds + 1
+    # For cyclic peptides: residues = amide_bonds
+    # Require at least 9 amide bonds (10 residues linear or 9 cyclic)
+    # Also check molecular weight > 500 Da as heuristic
+    if amide_bonds >= 9 and mol_wt >= 500:
+        return True, f"Contains {amide_bonds} amide bonds, indicating 10 or more residues"
     else:
-        return False, (f"Only {backbone_amide_count} backbone amide bonds and/or molecular weight too low "
-                      f"({mol_wt:.1f} Da)")
+        return False, f"Only {amide_bonds} amide bonds and/or molecular weight too low ({mol_wt:.1f} Da)"
