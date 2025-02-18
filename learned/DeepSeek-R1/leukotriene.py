@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_leukotriene(smiles: str):
     """
     Determines if a molecule is a leukotriene based on its SMILES string.
-    Leukotrienes are C20 icosanoids with four double bonds, three of which are conjugated.
+    Leukotrienes are C20 icosanoids with four double bonds (three conjugated in a triene structure).
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,24 +23,35 @@ def is_leukotriene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Check for exactly four double bonds
+    # Check C20 backbone (at least 20 carbons)
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 20:
+        return False, f"Only {carbon_count} carbons (need ≥20)"
+    
+    # Get all double bonds (including those in functional groups)
     double_bonds = [bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE]
-    if len(double_bonds) != 4:
-        return False, f"Found {len(double_bonds)} double bonds (need exactly 4)"
+    if len(double_bonds) < 4:
+        return False, f"Found {len(double_bonds)} double bonds (need ≥4)"
     
     # Check for conjugated triene (three consecutive conjugated double bonds)
-    triene_pattern = Chem.MolFromSmarts('[*]=[*]-[*]=[*]-[*]=[*]')
+    triene_pattern = Chem.MolFromSmarts('[CH2]=[CH]-[CH]=[CH]-[CH]=[CH2]')
     if not mol.HasSubstructMatch(triene_pattern):
         return False, "No conjugated triene found"
     
-    # Check carbon count (C20 backbone)
-    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if carbon_count < 20:
-        return False, f"Only {carbon_count} carbons (minimum 20 required)"
+    # Check oxygen content (leukotrienes typically have multiple oxygen atoms)
+    oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_count < 3:
+        return False, f"Only {oxygen_count} oxygens (common in leukotrienes)"
     
-    # Optional: Check for carboxylic acid group (common but not universal)
-    # carboxylic_acid = Chem.MolFromSmarts('[CX3](=O)[OX2H1]')
-    # if not mol.HasSubstructMatch(carboxylic_acid):
-    #     return False, "No carboxylic acid group"
+    # Check for characteristic carboxylic acid/derivative (ester/amide common)
+    carbonyl_group = Chem.MolFromSmarts('[CX3]=[OX1]')
+    if not mol.HasSubstructMatch(carbonyl_group):
+        return False, "No carbonyl group found"
     
-    return True, "C20 with four double bonds (three conjugated)"
+    # Verify polyunsaturated structure (at least 4 double bonds in main chain)
+    # Use a flexible pattern matching the core structure
+    core_pattern = Chem.MolFromSmarts('[CH2]-[CH]=[CH]-[CH]=[CH]-[CH]=[CH2](-[CH2]~[CH2])')
+    if not mol.HasSubstructMatch(core_pattern):
+        return False, "Missing core polyunsaturated structure"
+    
+    return True, "C20 with ≥4 double bonds (three conjugated triene), oxygen content, and core structure"
