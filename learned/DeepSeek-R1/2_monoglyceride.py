@@ -1,264 +1,40 @@
 """
 Classifies: CHEBI:17389 2-monoglyceride
 """
- - MG(0:0/20:4(5Z,8Z,11Z,14Z)/0:0): SMILES: O(C(CO)CO)C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CC
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - MG(0:0/24:0/0:0): SMILES: O(C(=O)CCCCCCCCCCCCCCCCCCCCCCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:3(8Z,11Z,14Z)/0:0): SMILES: O(C(CO)CO)C(=O)CCCC/C=C\C/C=C\C/C=C\CCCC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - 2-myristoleoylglycerol: SMILES: CCCCC\C=C/CCCCCCCC(=O)OC(CO)CO
- - MG(0:0/22:3(10Z,13Z,16Z)/0:0): SMILES: O(C(=O)CCCCCCCCCC/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-docosahexaenoylglycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(=O)OC(CO)CO
- - 2-[(5Z,8Z,11Z)-eicosatrienoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\CCCCCC(=O)OC(CO)CO
- - MG(0:0/20:2(11Z,14Z)/0:0): SMILES: O(C(CO)CO)C(=O)CCCCCC/C=C\C/C=C\CCCC
- - 2-[(9Z,12Z,15Z)-octadecatrienoyl]glycerol: SMILES: OCC(OC(=O)CCCCCCC/C=C/C/C=C/C/C=C/CC)CO
- - MG(0:0/20:1(11Z)/0:0): SMILES: O(C(=O)CCCCCCCCCC/C=C\CCCCCC)C(CO)CO
- - 2-eicosapentaenoylglycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - 2-[(9Z,12Z)-octadecadienoyl]glycerol: SMILES: OCC(OC(=O)CCCCCCC/C=C/C/C=C/CCCC)CO
- - 2-[(11Z,14Z)-eicosadienoyl]glycerol: SMILES: OCC(OC(=O)CCCCCCCC/C=C/C/C=C/CCCCC)CO
- - MG(0:0/18:2(9Z,12Z)/0:0): SMILES: O(C(=O)CCCCCCCC/C=C/C/C=C/CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/16:1(9Z)/0:0): SMILES: O(C(=O)CCCCCCCC/C=C\CCCC)C(CO)CO
- - MG(0:0/18:3(9Z,12Z,15Z)/0:0): SMILES: O(C(CO)CO)C(=O)CCCCCCC/C=C/C/C=C/C/C=C/CC
- - MG(0:0/20:0/0:0): SMILES: O(C(=O)CCCCCCCCCCCCCCCCCCCC)C(CO)CO
- - 2-[(9Z)-octadecenoyl]glycerol: SMILES: OCC(OC(=O)CCCCCCCC/C=C/CCCCCCCC)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/18:0/0:0): SMILES: O(C(=O)CCCCCCCCCCCCCCCCCC)C(CO)CO
- - MG(0:0/24:4(6Z,9Z,12Z,15Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCCC)C(CO)CO
- - 2-[(9Z,12Z)-octadecadienoyl]glycerol: SMILES: OCC(OC(=O)CCCCCCC/C=C/C/C=C/CCCC)CO
- - MG(0:0/16:0/0:0): SMILES: O(C(=O)CCCCCCCCCCCCCCCCCC)C(CO)CO
- - 2-[(9Z)-hexadecenoyl]glycerol: SMILES: CCCCCC\C=C/CCCCCCCC(=O)OC(CO)CO
- - 2-palmitoleoylglycerol: SMILES: CCCCC\C=C/CCCCCCCC(=O)OC(CO)CO
- - MG(0:0/14:0/0:0): SMILES: O(C(=O)CCCCCCCCCCCCCC)C(CO)CO
- - 2-[(9Z)-octadecenoyl]glycerol: SMILES: OCC(OC(=O)CCCCCCCC/C=C/CCCCCCCC)CO
- - MG(0:0/20:3(5Z,8Z,11Z)/0:0): SMILES: O(C(CO)CO)C(=O)CCCC/C=C\C/C=C\C/C=C\CCCC
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - MG(0:0/20:4(5Z,8Z,11Z,14Z)/0:0): SMILES: O(C(CO)CO)C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CC
- - MG(0:0/18:1(9Z)/0:0): SMILES: O(C(=O)CCCCCCCC/C=C/CCCCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - 2-eicosanoylglycerol: SMILES: CCCCCCCCCCCCCCCCCCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - MG(0:0/24:1(15Z)/0:0): SMILES: O(C(=O)CCCCCCCCCCCCC/C=C\CCCCCCCC)C(CO)CO
- - MG(0:0/22:1(13Z)/0:0): SMILES: O(C(=O)CCCCCCCCCCC/C=C\CCCCCCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/22:4(7Z,10Z,13Z,16Z)/0:0): SMILES: C([C@@](CO)(OC(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)=O)[H])O
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(9Z,12Z,15Z,18Z,21Z)-tetracosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC(=O)OC(CO)CO
- - MG(0:0/24:4(6Z,9Z,12Z,15Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - 2-[(9Z,12Z)-octadecadienoyl]glycerol: SMILES: OCC(OC(=O)CCCCCCC/C=C/C/C=C/CCCC)CO
- - MG(0:0/18:3(6Z,9Z,12Z)/0:0): SMILES: O(C(CO)CO)C(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCC
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/20:4(5Z,8Z,11Z,14Z)/0:0): SMILES: O(C(CO)CO)C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/22:4(7Z,10Z,13Z,16Z)/0:0): SMILES: C([C@@](CO)(OC(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)=O)[H])O
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:5(7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(=O)CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:5(6Z,9Z,12Z,15Z,18Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO)CO
- - MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0): SMILES: O(C(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC)C(CO)CO
- - 2-[(5Z,8Z,11Z,14Z)-eicosatetraenoyl]glycerol: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC(=O)OC(CO)CO
- - MG(0:0/20:5(5Z,8Z,11Z,14Z,17Z)/0:0): SMILES: O(C(CO)CO)C(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - 2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]glycerol: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC(CO
+"""
+Classifies: CHEBI:174752 2-monoglyceride
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_2_monoglyceride(smiles: str):
+    """
+    Determines if a molecule is a 2-monoglyceride based on its SMILES string.
+    A 2-monoglyceride has a single fatty acid esterified at the second position of the glycerol backbone.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a 2-monoglyceride, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for exactly one ester group (O-C=O)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, expected 1"
+    
+    # Check glycerol backbone with ester on C2 and hydroxyls on C1 and C3
+    # SMARTS pattern: [CH2]([OH])[CH](O-C=O)[CH2]([OH])
+    # More precise pattern to ensure ester is on central carbon with two hydroxyls
+    glycerol_pattern = Chem.MolFromSmarts("[CH2]([OH])[CH]([OX2][C](=[OX1])[!O])[CH2]([OH])")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "Glycerol backbone with ester on C2 and hydroxyls on C1/C3 not found"
+    
+    return True, "Single ester group on C2 of glycerol with hydroxyls on C1 and C3"
