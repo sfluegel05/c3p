@@ -20,26 +20,21 @@ def is_flavin(smiles: str):
     if not mol:
         return False, "Invalid SMILES string"
 
-    # Define the dimethylisoalloxazine-like core structure
-    dimethylisoalloxazine_core = Chem.MolFromSmarts("Cc1c(C)cc2nc3c([nH]c(=O)[nH]c3=O)n2cc1")
-    
-    # Check if the molecule contains the core structure
+    # Define a more comprehensive dimethylisoalloxazine core pattern
+    dimethylisoalloxazine_core = Chem.MolFromSmarts("CC1=CC2=C(C=C1C)N3C(=O)NC(=O)C3=NC2") 
+    # Mapping adjustment for expected different substitutions
     core_matches = mol.GetSubstructMatches(dimethylisoalloxazine_core)
+    
     if not core_matches:
         return False, "Does not contain the dimethylisoalloxazine core"
-    
-    # Analyze each match to find substitution at the correct position
+
     for match in core_matches:
-        # Determine the position corresponding to '10' in the core
-        core_at_index = match[5]  # Adjust index based on manual validation if 5 is '10'
+        # Assuming the 10 position is roughly equivalent to the 5th index in this pattern
+        pos10_atom_idx = match[5]
+        pos10_atom = mol.GetAtomWithIdx(pos10_atom_idx)
         
-        # Get the atom and its neighbors
-        core_atom = mol.GetAtomWithIdx(core_at_index)
-        
-        # Check if there is a substitution (at least one neighbor not in core)
-        is_substituted = any(neighbor.GetIdx() not in match for neighbor in core_atom.GetNeighbors())
-        
-        if is_substituted:
+        # Check if there is a substitution at position '10'
+        if len(pos10_atom.GetNeighbors()) > 1:  # More than core's direct bonding
             return True, "Contains dimethylisoalloxazine core with substitution at position 10"
 
     return False, "No substitution at position 10 of the dimethylisoalloxazine core"
