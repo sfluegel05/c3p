@@ -1,134 +1,59 @@
 """
 Classifies: CHEBI:17297 UDP-sugar
 """
- - UDP-2-acetamido-2-deoxy-alpha-D-galacturonic acid: SMILES: CC(=O)N[C@H]1[C@H](O[C@H](CO)[C@@H](O)[C@@H]1O)OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-4-dehydro-6-deoxy-alpha-D-galactose: SMILES: C[C@H]1O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@H](O)[C@@H](O)C1=O
- - UDP-alpha-D-xylose: SMILES: OC[C@H]1OC(OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@H](O)[C@H](O)C1O
- - UDP-2-acetamido-2-deoxy-alpha-D-galactopyranose: SMILES: CC(=O)N[C@H]1[C@@H](O)[C@@H](O)[C@H](CO)O[C@@H]1OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O
- - UDP-2-acetamido-2-deoxy-beta-D-glucopyranose: SMILES: CC(=O)N[C@H]1[C@H](O)[C@@H](O)[C@H](CO)O[C@H]1OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O
- - UDP-2-acetamido-2-deoxy-alpha-D-glucose: SMILES: CC(=O)N[C@@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@@H]1OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O
- - UDP-2-acetamido-2-deoxy-beta-D-galactose: SMILES: CC(=O)N[C@H]1[C@H](O)[C@@H](O)[C@H](CO)O[C@H]1OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O
- - UDP-2-acetamido-3-O-[(R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-2-deoxy-beta-D-mannose: SMILES: CC(=O)N[C@H]1[C@H](O)[C@@H](O)[C@H](CO)O[C@H]1OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(=O)[nH]c1=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3R)-3-hydroxytetradecanoyl]-2-deoxy-alpha-D-glucopyranose: SMILES: CCCCCCCCCCC[C@H](O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-(3-hydroxytetradecanoyl)-2-deoxy-beta-D-glucopyranose: SMILES: CCCCCCCCCCCC(O)CC(=O)O[C@H]1[C@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2ccc(=O)[nH]c2=O)[C@@H]1NC(C)=O
- - UDP-2-acetamido-3-O-[(3
+"""
+Classifies: CHEBI:15727 UDP-sugar
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_UDP_sugar(smiles: str):
+    """
+    Determines if a molecule is a UDP-sugar based on its SMILES string.
+    A UDP-sugar has a UDP nucleotide component attached to a sugar via an anomeric diphosphate linkage.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a UDP-sugar, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Check for uracil component (pyrimidine ring with two oxo groups)
+    uracil_pattern = Chem.MolFromSmarts("[nH]1ccc(=O)[nH]c1=O")
+    if not mol.HasSubstructMatch(uracil_pattern):
+        return False, "Missing uracil component"
+
+    # Check for diphosphate linkage (O-P-O-P-O)
+    diphosphate_pattern = Chem.MolFromSmarts("OP(=O)(O)OP(=O)(O)O")
+    diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
+    if not diphosphate_matches:
+        return False, "No diphosphate linkage found"
+
+    # Verify diphosphate connects two sugar components
+    # Find atoms between the two phosphate groups
+    try:
+        linker = diphosphate_matches[0]
+        # Get neighboring atoms of the diphosphate
+        phosphate_oxygens = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'O' and atom.GetDegree() == 2]
+        sugar_oxygen = None
+        for o_idx in phosphate_oxygens:
+            neighbor = mol.GetAtomWithIdx(o_idx).GetNeighbors()[0]
+            if neighbor.GetSymbol() == 'C' and mol.GetAtomWithIdx(neighbor.GetIdx()).IsInRing():
+                sugar_oxygen = o_idx
+                break
+        if not sugar_oxygen:
+            return False, "Diphosphate not connected to a sugar anomeric oxygen"
+    except IndexError:
+        return False, "Invalid diphosphate connectivity"
+
+    # Check for sugar ring (at least 5 or 6-membered ring with oxygen)
+    sugar_ring_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
+    if not mol.HasSubstructMatch(sugar_ring_pattern):
+        return False, "No sugar ring detected"
+
+    return True, "Contains UDP component connected to sugar via diphosphate linkage"
