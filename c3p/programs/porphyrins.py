@@ -2,103 +2,79 @@
 Classifies: CHEBI:26214 porphyrins
 """
 """
-Classifies: Porphyrins – natural pigments whose core structure is built from 
-four pyrrole-like rings united through four methine (carbon) bridges to form 
-a fused macrocyclic system.
+Classifies: Porphyrins – natural pigments that contain a macrocyclic core
+built from four pyrrole-like rings united by four methine bridges.
+This program uses two heuristics:
+  1. It checks for a large ring (15–18 atoms) that has exactly 4 nitrogen atoms.
+  2. It checks if the molecule contains a metal atom (e.g. Mg, Fe, Zn, Co, Pd, Pt)
+     that is coordinated to exactly 4 nitrogen atoms.
+If either criterion is met, the molecule is classified as a porphyrin.
 """
 
 from rdkit import Chem
-from itertools import combinations
 
 def is_porphyrins(smiles: str):
     """
     Determines if a molecule is a porphyrin based on its SMILES string.
-    A porphyrin is defined as a natural pigment whose core structure consists of
-    four pyrrole-like units (aromatic rings of size 5 or 6 with exactly one nitrogen)
-    united via four methine (carbon) bridges.
-    
-    This heuristic:
-      1. Uses GetSymmSSSR() to obtain all rings.
-      2. Selects candidate rings that are aromatic, of size 5 or 6, and contain exactly one nitrogen.
-      3. Constructs a connectivity graph among candidate rings: two rings are connected if they share
-         exactly one atom, and that atom is a carbon.
-      4. Searches for any 4 candidate rings that form a cycle (each ring connected to exactly two others 
-         within the set, forming the fused porphyrin core).
-    
+    Heuristic 1:
+      Searches the ring information for a large (approx. 15–18 atoms) ring that has exactly 4 nitrogen atoms.
+    Heuristic 2:
+      Checks if the molecule contains a metal that is bonded to exactly 4 nitrogen atoms.
+      
     Args:
         smiles (str): SMILES string of the molecule.
-
+        
     Returns:
-        bool: True if molecule is classified as a porphyrin, False otherwise.
-        str: Reason for the classification.
+        bool: True if the molecule is classified as a porphyrin, False otherwise.
+        str: Reason explaining the decision.
     """
-    # Parse the molecule from SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Get the smallest set of smallest rings (SSSR)
-    sssr = Chem.GetSymmSSSR(mol)
-    if not sssr:
-        return False, "No rings found in molecule"
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()
     
-    # Step 1: Gather candidate pyrrole-like rings.
-    candidate_rings = []  # each element is a set of atom indices representing a ring
-    for ring in sssr:
-        ring_atoms = set(ring)
-        ring_size = len(ring_atoms)
-        # Consider only rings of size 5 or 6.
-        if ring_size not in (5, 6):
-            continue
-        
-        # Check that the ring is aromatic.
-        if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring_atoms):
-            continue
-        
-        # Count nitrogen atoms in the ring.
-        n_count = sum(1 for idx in ring_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
-        if n_count != 1:
-            continue
-        
-        candidate_rings.append(ring_atoms)
-    
-    if len(candidate_rings) < 4:
-        return False, f"Found only {len(candidate_rings)} candidate pyrrole-like rings; need at least 4 for a porphyrin core."
-    
-    # Step 2: Build connectivity graph among candidate rings.
-    # Two candidate rings are considered connected if they share exactly one atom and that atom is a carbon.
-    graph = {i: set() for i in range(len(candidate_rings))}
-    for i, j in combinations(range(len(candidate_rings)), 2):
-        shared = candidate_rings[i].intersection(candidate_rings[j])
-        if len(shared) == 1:
-            common_atom = next(iter(shared))
-            if mol.GetAtomWithIdx(common_atom).GetAtomicNum() == 6:
-                graph[i].add(j)
-                graph[j].add(i)
-    
-    # Step 3: Look for a cycle of 4 candidate rings.
-    # In a valid cycle each of the 4 rings should connect to exactly 2 others within the selected set.
-    for nodes in combinations(range(len(candidate_rings)), 4):
-        valid_cycle = True
-        total_connections = 0
-        for node in nodes:
-            # Count how many connections this node has among the 4 nodes.
-            conn = graph[node].intersection(nodes)
-            deg = len(conn)
-            if deg != 2:
-                valid_cycle = False
+    # Heuristic 1: Look for a macrocycle (15–18 atoms) with exactly 4 nitrogens.
+    macrocycle_found = False
+    macrocycle_reason = ""
+    for ring in atom_rings:
+        ring_size = len(ring)
+        # Look for a ring in the range 15 to 18 atoms (porphyrin macrocycle is typically 16 atoms)
+        if 15 <= ring_size <= 18:
+            n_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
+            if n_count == 4:
+                macrocycle_found = True
+                macrocycle_reason = (f"Found a macrocyclic ring of {ring_size} atoms "
+                                     f"with exactly {n_count} nitrogen atoms, consistent with a porphyrin core.")
                 break
-            total_connections += deg
-        # In an undirected graph, total_connections should be 8 (each edge counts twice).
-        if valid_cycle and total_connections == 8:
-            return True, "Molecule contains a fused 4-ring porphyrin core with bridging methine carbons."
-            
-    return False, "No valid 4-ring cycle (porphyrin core) found in molecule."
+    if macrocycle_found:
+        return True, macrocycle_reason
+
+    # Heuristic 2: Look for a metal center coordinated to 4 nitrogen atoms.
+    # List of common metal atomic numbers found in porphyrins:
+    # Magnesium (12), Iron (26), Cobalt (27), Nickel (28), Copper (29), Zinc (30), Palladium (46), Platinum (78)
+    metal_atomic_nums = {12, 26, 27, 28, 29, 30, 46, 78}
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() in metal_atomic_nums:
+            # Count neighboring nitrogen atoms (atom must be directly bonded).
+            n_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 7]
+            if len(n_neighbors) == 4:
+                return True, (f"Metal atom {atom.GetSymbol()} (atomic num {atom.GetAtomicNum()}) "
+                              "is coordinated to 4 nitrogen atoms, consistent with a metalloporphyrin core.")
+    
+    # If neither heuristic triggers, we do not classify as a porphyrin.
+    reasons = []
+    if not macrocycle_found:
+        reasons.append("No macrocyclic ring (15–18 atoms with exactly 4 nitrogen atoms) found.")
+    reasons.append("No metal center coordinated to exactly 4 nitrogen atoms was detected.")
+    return False, " ".join(reasons)
 
 # Example usage:
 if __name__ == "__main__":
-    # Test with one example SMILES (a generic porphyrin fragment)
-    test_smiles = "c1cc2cc3ccc(cc4ccc(cc5ccc(cc1n2)[nH]5)n4)[nH]3"
+    # Example: using one of the provided SMILES, e.g. for chlorophyll a'
+    test_smiles = ("C1=2N3C(C=C4[N+]5=C(C=C6N7C8=C(C9=[N+](C(=C1)[C@H]([C@@H]9CCC(OC/C=C(/CCC[C@@H](CCC[C@@H](CCCC(C)C)C)C)\C)=O)C)"
+                   "[Mg-2]735)[C@@H](C(C8=C6C)=O)C(=O)OC)C(=C4C)C=C)=C(C2C)C=C")
     result, reason = is_porphyrins(test_smiles)
     print("Result:", result)
     print("Reason:", reason)
