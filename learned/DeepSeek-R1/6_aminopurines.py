@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_6_aminopurines(smiles: str):
     """
     Determines if a molecule is a 6-aminopurine derivative based on its SMILES string.
-    A 6-aminopurine contains the adenine substructure (purine core with amino group at position 6).
+    A 6-aminopurine contains the adenine substructure (6-aminopurine core).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,9 +23,8 @@ def is_6_aminopurines(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define adenine substructure pattern allowing substituted amino groups
-    # SMARTS for purine core with any nitrogen substituent at position 6
-    adenine_pattern = Chem.MolFromSmarts("n1c(N)nc2c1ncnc2")
+    # Define adenine (6-aminopurine) substructure pattern
+    adenine_pattern = Chem.MolFromSmarts("Nc1ncnc2ncnc12")
     if adenine_pattern is None:
         return False, "Invalid adenine pattern"
 
