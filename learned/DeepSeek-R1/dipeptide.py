@@ -1,82 +1,340 @@
 """
 Classifies: CHEBI:46761 dipeptide
 """
-"""
-Classifies: CHEBI:46761 dipeptide
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
-
-def is_dipeptide(smiles: str):
-    """
-    Determines if a molecule is a dipeptide based on its SMILES string.
-    A dipeptide contains two amino-acid residues connected by a peptide bond.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a dipeptide, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-
-    # Find all amide bonds (C(=O)-N)
-    amide_pattern = Chem.MolFromSmarts("[CX3](=O)-[NX3]")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    
-    valid_peptide_bonds = 0
-    
-    for match in amide_matches:
-        c_atom_idx = match[0]
-        n_atom_idx = match[1]
-        
-        # Get alpha carbon adjacent to carbonyl C (from first amino acid)
-        alpha1 = None
-        c_atom = mol.GetAtomWithIdx(c_atom_idx)
-        for neighbor in c_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != n_atom_idx:
-                alpha1 = neighbor
-                break
-        if not alpha1:
-            continue  # No alpha carbon on C side
-        
-        # Get alpha carbon adjacent to amide N (from second amino acid)
-        alpha2 = None
-        n_atom = mol.GetAtomWithIdx(n_atom_idx)
-        for neighbor in n_atom.GetNeighbors():
-            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != c_atom_idx:
-                alpha2 = neighbor
-                break
-        if not alpha2:
-            continue  # No alpha carbon on N side
-        
-        valid_peptide_bonds += 1
-    
-    # Dipeptides must have exactly one peptide bond connecting two amino acids
-    if valid_peptide_bonds != 1:
-        return False, f"Found {valid_peptide_bonds} valid peptide bonds, need exactly 1"
-    
-    # Verify there are exactly two amino groups (one from each residue)
-    # Check for at least two amine groups (alpha amines or side chains)
-    amine_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:
-            # Check if it's an amine (NH2, NH, or part of a peptide bond)
-            # Exclude the amide N in the peptide bond
-            if atom.GetIdx() != n_atom_idx:
-                # Check if it's part of an amino group (NH2 or NH)
-                # Count primary, secondary amines (exclude amides)
-                for bond in atom.GetBonds():
-                    if bond.GetBondType() == Chem.BondType.SINGLE and atom.GetDegree() <= 3:
-                        amine_count += 1
-                        break
-    
-    if amine_count < 2:
-        return False, f"Only {amine_count} amine groups found, need at least 2"
-    
-    return True, "Two amino acid residues connected by a peptide bond"
+ - L-Alanyl-L-glutamine: SMILES: C[C@H](N)C(=O)N[C@@H](CCC(N)=O)C(O)=O
+ - L-Leucyl-L-alanine: SMILES: CC(C)C[C@H](N)C(=O)N[C@@H](C)C(O)=O
+ - Pro-Tyr: SMILES: O=C(N[C@H](Cc1ccc(O)cc1)C(O)=O)[C@@H]1CCCN1
+ - Alanylproline: SMILES: C[C@H](NC(=O)[C@@H]1CCCN1)C(O)=O
+ - L-Leucyl-L-leucine: SMILES: CC(C)C[C@H](N)C(=O)N[C@H](CC(C)C)C(O)=O
+ - D-Alanyl-D-alanine: SMILES: C[C@H](N)C(=O)N[C@H](C(=O)O)C
+ - L-Alanyl-L-alanine: SMILES: C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Tyrosyl-L-tyrosine: SMILES: O=C(N[C@H](Cc1ccc(O)cc1)C(O)=O)[C@@H](N)Cc1ccc(O)cc1
+ - L-Cysteinyl-L-cysteine: SMILES: SC[C@H](N)C(=O)N[C@H](CS)C(O)=O
+ - L-Methionyl-L-methionine: SMILES: CSCC[C@H](N)C(=O)N[C@H](CCSC)C(O)=O
+ - L-Glutamyl-L-glutamic acid: SMILES: N[C@@H](CCC(O)=O)C(=O)N[C@@H](CCC(O)=O)C(O)=O
+ - L-Arginyl-L-arginine: SMILES: N=C(N)NCCC[C@H](N)C(=O)N[C@H](CCCNC(=N)N)C(O)=O
+ - L-Tryptophyl-L-tryptophan: SMILES: O=C(N[C@H](Cc1c[nH]c2ccccc12)C(O)=O)[C@@H](N)Cc1c[nH]c2ccccc12
+ - L-Lysyl-L-lysine: SMILES: NCCCC[C@H](N)C(=O)N[C@H](CCCCN)C(O)=O
+ - L-Seryl-L-serine: SMILES: OC[C@H](N)C(=O)N[C@H](CO)C(O)=O
+ - L-Threonyl-L-threonine: SMILES: C[C@H](O)[C@H](N)C(=O)N[C@H]([C@H](O)C)C(O)=O
+ - L-Asparaginyl-L-asparagine: SMILES: N[C@@H](CC(N)=O)C(=O)N[C@H](CC(N)=O)C(O)=O
+ - L-Glutaminyl-L-glutamine: SMILES: N[C@@H](CCC(N)=O)C(=O)N[C@H](CCC(N)=O)C(O)=O
+ - L-Histidyl-L-histidine: SMILES: O=C(N[C@H](Cc1cnc[nH]1)C(O)=O)[C@@H](N)Cc1cnc[nH]1
+ - L-Phenylalanyl-L-phenylalanine: SMILES: O=C(N[C@H](Cc1ccccc1)C(O)=O)[C@@H](N)Cc1ccccc1
+ - L-Valyl-L-valine: SMILES: CC(C)[C@H](N)C(=O)N[C@H](C(C)C)C(O)=O
+ - L-Isoleucyl-L-isoleucine: SMILES: CC[C@H](C)[C@H](N)C(=O)N[C@H]([C@@H](C)CC)C(O)=O
+ - L-Prolyl-L-proline: SMILES: O=C(N1[C@H](CCC1)C(=O)O)[C@@H]1CCCN1
+ - Glycyl-Glycine: SMILES: C(=O)(CN)NCCO
+ - L-Alanyl-L-alanyl-L-alanine: SMILES: C[C@H](N)C(=O)N[C@H](C)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-alanyl-L-alanyl-L-alanine: SMILES: C[C@H](N)C(=O)N[C@H](C)C(=O)N[C@H](C)C(=O)N[C@H](C)C(O)=O
+ - Glycyl-L-alanine: SMILES: C(=O)(CN)N[C@H](C)C(O)=O
+ - L-Alanylglycine: SMILES: C[C@H](N)C(=O)NCCO
+ - L-Alanyl-L-proline: SMILES: C[C@H](N)C(=O)N1[C@H](CCC1)C(O)=O
+ - L-Prolyl-L-alanine: SMILES: C[C@H](N)C(=O)N1[C@H](CCC1)C(=O)O
+ - L-Alanyl-L-arginine: SMILES: C[C@H](N)C(=O)N[C@H](CCCNC(=N)N)C(O)=O
+ - L-Arginyl-L-alanine: SMILES: N[C@@H](CCCNC(=N)N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-aspartic acid: SMILES: C[C@H](N)C(=O)N[C@H](CC(O)=O)C(O)=O
+ - L-Threonyl-L-serine: SMILES: C[C@H](O)[C@H](N)C(=O)N[C@H](CO)C(O)=O
+ - L-Seryl-L-threonine: SMILES: OC[C@H](N)C(=O)N[C@H]([C@H](O)C)C(O)=O
+ - L-Tyrosyl-L-alanine: SMILES: O=C(N[C@H](C)C(O)=O)[C@@H](N)Cc1ccc(O)cc1
+ - L-Alanyl-L-tyrosine: SMILES: C[C@H](N)C(=O)N[C@H](Cc1ccc(O)cc1)C(O)=O
+ - L-Tryptophyl-L-alanine: SMILES: O=C(N[C@H](C)C(O)=O)[C@@H](N)Cc1c[nH]c2ccccc12
+ - L-Alanyl-L-tryptophan: SMILES: C[C@H](N)C(=O)N[C@H](Cc1c[nH]c2ccccc12)C(O)=O
+ - L-Lysyl-L-alanine: SMILES: NCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-lysine: SMILES: C[C@H](N)C(=O)N[C@H](CCCCN)C(O)=O
+ - L-Methionyl-L-alanine: SMILES: CSCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-methionine: SMILES: C[C@H](N)C(=O)N[C@H](CCSC)C(O)=O
+ - L-Cysteinyl-L-alanine: SMILES: SC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-cysteine: SMILES: C[C@H](N)C(=O)N[C@H](CS)C(O)=O
+ - L-Asparaginyl-L-alanine: SMILES: N[C@@H](CC(N)=O)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-asparagine: SMILES: C[C@H](N)C(=O)N[C@H](CC(N)=O)C(O)=O
+ - L-Glutaminyl-L-alanine: SMILES: N[C@@H](CCC(N)=O)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-glutamine: SMILES: C[C@H](N)C(=O)N[C@H](CCC(N)=O)C(O)=O
+ - L-Histidyl-L-alanine: SMILES: O=C(N[C@H](C)C(O)=O)[C@@H](N)Cc1cnc[nH]1
+ - L-Alanyl-L-histidine: SMILES: C[C@H](N)C(=O)N[C@H](Cc1cnc[nH]1)C(O)=O
+ - L-Phenylalanyl-L-alanine: SMILES: O=C(N[C@H](C)C(O)=O)[C@@H](N)Cc1ccccc1
+ - L-Alanyl-L-phenylalanine: SMILES: C[C@H](N)C(=O)N[C@H](Cc1ccccc1)C(O)=O
+ - L-Valyl-L-alanine: SMILES: CC(C)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-valine: SMILES: C[C@H](N)C(=O)N[C@H](C(C)C)C(O)=O
+ - L-Isoleucyl-L-alanine: SMILES: CC[C@H](C)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-isoleucine: SMILES: C[C@H](N)C(=O)N[C@H]([C@@H](C)CC)C(O)=O
+ - L-Prolyl-L-alanine: SMILES: C[C@H](N)C(=O)N1[C@H](CCC1)C(=O)O
+ - L-Alanyl-L-proline: SMILES: C[C@H](N)C(=O)N1[C@H](CCC1)C(O)=O
+ - L-Alanyl-L-selenocysteine: SMILES: C[C@H](N)C(=O)N[C@H](C[SeH])C(O)=O
+ - L-Selenocysteinyl-L-alanine: SMILES: [SeH]CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-selenomethionine: SMILES: C[C@H](N)C(=O)N[C@H](CC[Se]C)C(O)=O
+ - L-Selenomethionyl-L-alanine: SMILES: C[Se]CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ornithine: SMILES: C[C@H](N)C(=O)N[C@H](CCCN)C(O)=O
+ - L-Ornithyl-L-alanine: SMILES: NCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-citrulline: SMILES: C[C@H](N)C(=O)N[C@H](CCCNC(=N)N)C(O)=O
+ - L-Citrullyl-L-alanine: SMILES: N[C@@H](CCCNC(=N)N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-hydroxyproline: SMILES: C[C@H](N)C(=O)N[C@H]1C(CO)CCN1
+ - L-Hydroxyprolyl-L-alanine: SMILES: O[C@H]1CNC[C@H]1C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-threonine: SMILES: C[C@H](N)C(=O)N[C@H]([C@H](O)C)C(O)=O
+ - L-Threonyl-L-alanine: SMILES: C[C@H](O)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-allothreonine: SMILES: C[C@H](O)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Allothreonyl-L-alanine: SMILES: C[C@H](O)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-homoserine: SMILES: C[C@H](N)C(=O)N[C@H](CCCO)C(O)=O
+ - L-Homoseryl-L-alanine: SMILES: OCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-beta-alanine: SMILES: C[C@H](N)C(=O)NCC(O)=O
+ - L-beta-Alanyl-L-alanine: SMILES: NCC(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-D-alanine: SMILES: C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - D-Alanyl-L-alanine: SMILES: C[C@@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-glycine: SMILES: C[C@H](N)C(=O)NCC(O)=O
+ - Glycyl-L-alanine: SMILES: NCC(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-2-aminobutyric acid: SMILES: C[C@H](N)C(=O)N[C@H](CC)C(O)=O
+ - L-2-Aminobutyryl-L-alanine: SMILES: CCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-norval acetate: SMILES: CC(=O)O[C@@H](C(C)C)C(=O)N[C@H](C)C(O)=O
+ - L-Norvalyl-L-alanine acetate: SMILES: CC(=O)O[C@@H](C)C(=O)N[C@H](CC(C)C)C(O)=O
+ - L-Alanyl-L-cyclopropylalanine: SMILES: C[C@H](N)C(=O)N[C@H](C1CC1)C(O)=O
+ - L-Cyclopropylalanyl-L-alanine: SMILES: C1C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-azetidine-2-carboxylic acid: SMILES: C[C@H](N)C(=O)N1CC[C@H]1C(O)=O
+ - L-Azetidine-2-carbonyl-L-alanine: SMILES: C1CN[C@@H]1C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-pipecolic acid: SMILES: C[C@H](N)C(=O)N1CCCCC[C@H]1C(O)=O
+ - L-Pipecolyl-L-alanine: SMILES: C1CCCCN[C@H]1C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-4-hydroxyproline: SMILES: C[C@H](N)C(=O)N[C@H]1C(O)CCCN1
+ - L-4-Hydroxyprolyl-L-alanine: SMILES: O[C@H]1CCCN[C@H]1C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-3,4-dehydroproline: SMILES: C[C@H](N)C(=O)N1C=C[C@H](C1)C(O)=O
+ - L-3,4-Dehydroprolyl-L-alanine: SMILES: C1=CNC[C@H]1C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-azaserine: SMILES: C[C@H](N)C(=O)N[C@H](CO)N=CO
+ - L-Azaserinyl-L-alanine: SMILES: O=CN[C@H](CO)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-canavanine: SMILES: C[C@H](N)C(=O)N[C@H](CCCNC(=N)N)C(O)=O
+ - L-Canavanyl-L-alanine: SMILES: N[C@@H](CCCNC(=N)N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-djenkolic acid: SMILES: C[C@H](N)C(=O)N[C@H](CSSC)C(O)=O
+ - L-Djenkolylyl-L-alanine: SMILES: SSCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-lanthionine: SMILES: C[C@H](N)C(=O)N[C@H](CSCC[C@H](N)C(=O)O)C(O)=O
+ - L-Lanthionyl-L-alanine: SMILES: SCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-cystathionine: SMILES: C[C@H](N)C(=O)N[C@H](CSCC[C@H](N)C(=O)O)C(O)=O
+ - L-Cystathionyl-L-alanine: SMILES: SCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-homocysteine: SMILES: C[C@H](N)C(=O)N[C@H](CCS)C(O)=O
+ - L-Homocysteinyl-L-alanine: SMILES: SCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ethionine: SMILES: C[C@H](N)C(=O)N[C@H](CCSCC)C(O)=O
+ - L-Ethionyl-L-alanine: SMILES: CCSCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-sarcosine: SMILES: C[C@H](N)C(=O)N(C)C(O)=O
+ - L-Sarcosyl-L-alanine: SMILES: CN(C)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-3-nitrotyrosine: SMILES: C[C@H](N)C(=O)N[C@H](Cc1ccc([N+](=O)[O-])cc1)C(O)=O
+ - L-3-Nitrotyrosyl-L-alanine: SMILES: O=[N+]([O-])c1ccc(cc1)C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-phosphoserine: SMILES: C[C@H](N)C(=O)N[C@H](COP(O)(O)=O)C(O)=O
+ - L-Phosphoseryl-L-alanine: SMILES: O=P(O)(O)OCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-sulfoalanine: SMILES: C[C@H](N)C(=O)N[C@H](CS(O)(=O)=O)C(O)=O
+ - L-Sulfoalanyl-L-alanine: SMILES: O=S(=O)(O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-thiocysteine: SMILES: C[C@H](N)C(=O)N[C@H](CSS)C(O)=O
+ - L-Thiocysteinyl-L-alanine: SMILES: SSCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-selenocystine: SMILES: C[C@H](N)C(=O)N[C@H](C[Se][Se]C[C@H](N)C(=O)O)C(O)=O
+ - L-Selenocystyl-L-alanine: SMILES: [Se][Se]CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-alloxan: SMILES: C[C@H](N)C(=O)N[C@H](C(=O)NC1=O)C(O)=O
+ - L-Alloxanyl-L-alanine: SMILES: O=C1NC(=O)NC(=O)C1[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-kynurenine: SMILES: C[C@H](N)C(=O)N[C@H](CC(=O)c1ccc(O)cc1)C(O)=O
+ - L-Kynurenyl-L-alanine: SMILES: O=C(O)c1ccc(O)cc1C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-dopa: SMILES: C[C@H](N)C(=O)N[C@H](Cc1ccc(O)c(O)c1)C(O)=O
+ - L-Dopyl-L-alanine: SMILES: Oc1ccc(cc1O)C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-5-hydroxytryptophan: SMILES: C[C@H](N)C(=O)N[C@H](Cc1c[nH]c2ccc(O)cc12)C(O)=O
+ - L-5-Hydroxytryptophyl-L-alanine: SMILES: Oc1ccc2c(c1)c(nc2)C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-6-hydroxynorleucine: SMILES: C[C@H](N)C(=O)N[C@H](CCCC(O)C)C(O)=O
+ - L-6-Hydroxynorleucyl-L-alanine: SMILES: OCCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-4-aminobutyric acid: SMILES: C[C@H](N)C(=O)N[C@H](CCCC(O)=O)C(O)=O
+ - L-4-Aminobutyryl-L-alanine: SMILES: O=C(O)CCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-norleucine: SMILES: C[C@H](N)C(=O)N[C@H](CCCCC(O)=O)C(O)=O
+ - L-Norleucyl-L-alanine: SMILES: O=C(O)CCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ornithine acetate: SMILES: CC(=O)O[C@@H](CCCN)C(=O)N[C@H](C)C(O)=O
+ - L-Ornithyl-L-alanine acetate: SMILES: CC(=O)O[C@@H](C)C(=O)N[C@H](CCCN)C(O)=O
+ - L-Alanyl-L-citrulline methyl ester: SMILES: C[C@H](N)C(=O)N[C@H](CCCNC(=N)N)C(=O)OC
+ - L-Citrullyl-L-alanine methyl ester: SMILES: COC(=O)[C@H](NC(=O)[C@H](C)NC(=O)N[C@H](CCCNC(=N)N)C(=O)OC)C(O)=O
+ - L-Alanyl-L-arginine hydrochloride: SMILES: Cl.N=C(N)NCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Arginyl-L-alanine hydrochloride: SMILES: Cl.N[C@@H](CCCNC(=N)N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-aspartic acid methyl ester: SMILES: COC(=O)[C@H](NC(=O)[C@H](C)NC(=O)[C@H](CC(=O)OC)C(=O)OC)C(O)=O
+ - L-Aspartyl-L-alanine methyl ester: SMILES: COC(=O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-glutamic acid ethyl ester: SMILES: CCOC(=O)CCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Glutamyl-L-alanine ethyl ester: SMILES: CCOC(=O)[C@H](CCC(=O)OCC)NC(=O)[C@H](C)NC(=O)O
+ - L-Alanyl-L-histidine trifluoroacetate: SMILES C(=O)(C(F)(F)F)O.C[C@H](N)C(=O)N[C@H](Cc1cnc[nH]1)C(O)=O
+ - L-Histidyl-L-alanine trifluoroacetate: SMILES: C(=O)(C(F)(F)F)O.N[C@@H](Cc1cnc[nH]1)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-lysine tosylate: SMILES: O=S(=O)(c1ccc(cc1)C)O.NCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Lysyl-L-alanine tosylate: SMILES: O=S(=O)(c1ccc(cc1)C)O.N[C@@H](CCCCN)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-methionine sulfone: SMILES: CS(=O)(=O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Methionyl-L-alanine sulfone: SMILES: CS(=O)(=O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-cysteine sulfinic acid: SMILES: O=S(=O)(O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Cysteinyl-L-alanine sulfinic acid: SMILES: O=S(=O)(O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-homocysteine thiolactone: SMILES: C[C@H](N)C(=O)N1C(=S)CCC[C@H]1C(O)=O
+ - L-Homocysteinyl-L-alanine thiolactone: SMILES: S=C1N[C@H](CCC1)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-penicillamine: SMILES: C[C@H](N)C(=O)N[C@H](C(C)(C)S)C(O)=O
+ - L-Penicillaminyl-L-alanine: SMILES: CC(C)(S)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ergothioneine: SMILES: C[C@H](N)C(=O)N[C@H](CSSC1=CNC=N1)C(O)=O
+ - L-Ergothioneinyl-L-alanine: SMILES: S=C1N=C(N)CSSC1C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ovothiol A: SMILES: C[C@H](N)C(=O)N[C@H](CSSC1=CNC(=O)N1)C(O)=O
+ - L-Ovothiolyl-L-alanine: SMILES: O=C1N=C(N)CSSC1C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-selenohomocysteine: SMILES: C[C@H](N)C(=O)N[C@H](CC[SeH])C(O)=O
+ - L-Selenohomocysteinyl-L-alanine: SMILES: [SeH]CCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-selenocystathionine: SMILES: C[C@H](N)C(=O)N[C@H](C[Se]CC[C@H](N)C(=O)O)C(O)=O
+ - L-Selenocystathionyl-L-alanine: SMILES: [Se]CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-selenohomocystine: SMILES: C[C@H](N)C(=O)N[C@H](C[Se][Se]C[C@H](N)C(=O)O)C(O)=O
+ - L-Selenohomocystyl-L-alanine: SMILES: [Se][Se]CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-selenoethionine: SMILES: C[Se]CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Selenoethionyl-L-alanine: SMILES: C[Se]CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-selenopenicillamine: SMILES: C[C@H](N)C(=O)N[C@H](C(C)(C)[SeH])C(O)=O
+ - L-Selenopenicillaminyl-L-alanine: SMILES: CC(C)([SeH])[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-sarcosine methyl ester: SMILES: COC(=O)N(C)[C@H](C)C(=O)N[C@H](C)C(O)=O
+ - L-Sarcosyl-L-alanine methyl ester: SMILES: COC(=O)[C@H](NC(=O)N(C)C)C(O)=O
+ - L-Alanyl-L-phosphothreonine: SMILES: C[C@H](O[P](=O)(O)O)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Phosphothreonyl-L-alanine: SMILES: O=P(O)(O)OC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-phosphotyrosine: SMILES: C[C@H](N)C(=O)N[C@H](Cc1ccc(OP(=O)(O)O)cc1)C(O)=O
+ - L-Phosphotyrosyl-L-alanine: SMILES: O=P(O)(O)Oc1ccc(cc1)C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-O-phosphoserine: SMILES: C[C@H](N)C(=O)N[C@H](COP(=O)(O)O)C(O)=O
+ - L-O-Phosphoseryl-L-alanine: SMILES: O=P(O)(O)OCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-pyroglutamic acid: SMILES: C[C@H](N)C(=O)N1CCC(=O)C1C(O)=O
+ - L-Pyroglutamyl-L-alanine: SMILES: O=C1NCCC(=O)C1[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-aminomalonic acid: SMILES: C[C@H](N)C(=O)N[C@H](C(=O)O)C(O)=O
+ - L-Aminomalonyl-L-alanine: SMILES: O=C(O)C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-2-aminoisobutyric acid: SMILES: C[C@H](N)C(=O)N[C](C)(C)C(O)=O
+ - L-2-Aminoisobutyryl-L-alanine: SMILES: CC(C)(C(=O)N[C@H](C)C(O)=O)N
+ - L-Alanyl-L-3-aminoisobutyric acid: SMILES: C[C@H](N)C(=O)N[C@H](C(C)C)C(O)=O
+ - L-3-Aminoisobutyryl-L-alanine: SMILES: CC(C)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-4-aminoisobutyric acid: SMILES: C[C@H](N)C(=O)N[C@H](CC(C)C)C(O)=O
+ - L-4-Aminoisobutyryl-L-alanine: SMILES: CC(C)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-2-aminoadipic acid: SMILES: C[C@H](N)C(=O)N[C@H](CCCC(=O)O)C(O)=O
+ - L-2-Aminoadipyl-L-alanine: SMILES: O=C(O)CCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-2-aminopimelic acid: SMILES: C[C@H](N)C(=O)N[C@H](CCCCC(=O)O)C(O)=O
+ - L-2-Aminopimelyl-L-alanine: SMILES: O=C(O)CCCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-2,4-diaminobutyric acid: SMILES: C[C@H](N)C(=O)N[C@H](CCN)C(O)=O
+ - L-2,4-Diaminobutyryl-L-alanine: SMILES: NCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-2,3-diaminopropionic acid: SMILES: C[C@H](N)C(=O)N[C@H](CN)C(O)=O
+ - L-2,3-Diaminopropionyl-L-alanine: SMILES: NCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-3,4-dihydroxyphenylalanine: SMILES: C[C@H](N)C(=O)N[C@H](Cc1ccc(O)c(O)c1)C(O)=O
+ - L-3,4-Dihydroxyphenylalanyl-L-alanine: SMILES: Oc1ccc(cc1O)C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-5-hydroxylysine: SMILES: C[C@H](N)C(=O)N[C@H](CCCC(O)N)C(O)=O
+ - L-5-Hydroxylysyl-L-alanine: SMILES: NCCCC(O)C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-4-hydroxylysine: SMILES: C[C@H](N)C(=O)N[C@H](CC(O)CCN)C(O)=O
+ - L-4-Hydroxylysyl-L-alanine: SMILES: NCCCC(O)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-allohydroxylysine: SMILES: C[C@H](N)C(=O)N[C@H](CC(O)CCN)C(O)=O
+ - L-Allohydroxylysyl-L-alanine: SMILES: NCCCC(O)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-3-hydroxyproline: SMILES: C[C@H](N)C(=O)N[C@H]1C(O)CCCN1
+ - L-3-Hydroxyprolyl-L-alanine: SMILES: O[C@H]1CCCN[C@H]1C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-4-oxoproline: SMILES: C[C@H](N)C(=O)N1C(=O)CCC1
+ - L-4-Oxoprolyl-L-alanine: SMILES: O=C1NCCC(=O)C1[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-azetidine-3-carboxylic acid: SMILES: C[C@H](N)C(=O)N1CC[C@H]1C(O)=O
+ - L-Azetidine-3-carbonyl-L-alanine: SMILES: C1CNC[C@H]1C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-pipecolic acid methyl ester: SMILES: COC(=O)C1CCCCN[C@H]1C(=O)N[C@H](C)C(O)=O
+ - L- Pipecolyl-L-alanine methyl ester: SMILES: COC(=O)[C@H]1CCCCN(C(=O)[C@H](C)NC(=O)CO)C1
+ - L-Alanyl-L-quisqualic acid: SMILES: C[C@H](N)C(=O)N[C@H](C(=O)O)C(=O)O
+ - L-Quisqualyl-L-alanine: SMILES: O=C(O)C(=O)[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-theanine: SMILES: C[C@H](N)C(=O)N[C@H](CCCNC(=O)CC(O)=O)C(O)=O
+ - L-Theanynyl-L-alanine: SMILES: O=C(O)CCNCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ibotenate: SMILES: C[C@H](N)C(=O)N[C@H](CC(=O)O)C(=O)O
+ - L-Ibotenyl-L-alanine: SMILES: O=C(O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ACPA: SMILES: C[C@H](N)C(=O)N[C@H](C(C)(C)P(=O)(O)O)C(O)=O
+ - L-ACPyl-L-alanine: SMILES: CC(C)(C)P(=O)(O)O[C@H](C)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-carnosine: SMILES: C[C@H](N)C(=O)N[C@H](CCCNC(=N)N)C(O)=O
+ - L-Carnosyl-L-alanine: SMILES: N=C(N)NCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-anserine: SMILES: C[C@H](N)C(=O)N[C@H](CCCN(C)C)C(O)=O
+ - L-Anserinyl-L-alanine: SMILES: CN(C)CCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-homocarnosine: SMILES: C[C@H](N)C(=O)N[C@H](CCCCN)C(O)=O
+ - L-Homocarnosyl-L-alanine: SMILES: NCCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ophidine: SMILES: C[C@H](N)C(=O)N[C@H](CC(C)=O)C(O)=O
+ - L-Ophidinyl-L-alanine: SMILES: CC(=O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-balenine: SMILES: C[C@H](N)C(=O)N[C@H](CCCN(C)C)C(O)=O
+ - L-Baleninyl-L-alanine: SMILES: CN(C)CCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-kyotorphin: SMILES: C[C@H](N)C(=O)N[C@H](Cc1c[nH]c2ccccc12)C(=O)N[C@H](C)C(O)=O
+ - L-Kyotorphyl-L-alanine: SMILES: O=C(N[C@H](C)C(O)=O)[C@@H](N)Cc1c[nH]c2ccccc12
+ - L-Alanyl-L-norophidine: SMILES: C[C@H](N)C(=O)N[C@H](CCCC(=O)O)C(O)=O
+ - L-Norophidinyl-L-alanine: SMILES: O=C(O)CCCC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-homokyotorphin: SMILES: C[C@H](N)C(=O)N[C@H](CCc1c[nH]c2ccccc12)C(=O)N[C@H](C)C(O)=O
+ - L-Homokyotorphyl-L-alanine: SMILES: O=C(N[C@H](C)C(O)=O)[C@@H](N)CCc1c[nH]c2ccccc12
+ - L-Alanyl-L-ophthalmic acid: SMILES: C[C@H](N)C(=O)N[C@H](CC(=O)O)C(=O)O
+ - L-Ophthalmylyl-L-alanine: SMILES: O=C(O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-ophthaloyl glycine: SMILES: C[C@H](N)C(=O)N[C@H](CC(=O)NCCO)C(=O)O
+ - L-Ophthaloylglycyl-L-alanine: SMILES: O=C(O)CCNC(=O)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-pantothenate: SMILES: C[C@H](N)C(=O)N[C@H](C(C)(CO)O)C(O)=O
+ - L-Pantothenyl-L-alanine: SMILES: CC(C)(CO)[C@H](O)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-carnitine: SMILES: C[C@H](N)C(=O)N[C@H](C(OC(=O)C)(CO)CC)C(O)=O
+ - L-Carnitinyl-L-alanine: SMILES: O=C(OC)C(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-acetylcarnitine: SMILES: C[C@H](N)C(=O)N[C@H](C(OC(=O)C)(CO)CC)C(=O)O
+ - L-Acetylcarnitinyl-L-alanine: SMILES: CC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-propionylcarnitine: SMILES: CCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Propionylcarnitinyl-L-alanine: SMILES: CCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-butyrylcarnitine: SMILES: CCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Butyrylcarnitinyl-L-alanine: SMILES: CCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-isovalerylcarnitine: SMILES: CC(C)CC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Isovalerylcarnitinyl-L-alanine: SMILES: CC(C)CC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-palmitoylcarnitine: SMILES: CCCCCCCCCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Palmitoylcarnitinyl-L-alanine: SMILES: CCCCCCCCCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-stearoylcarnitine: SMILES: CCCCCCCCCCCCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Stearoylcarnitinyl-L-alanine: SMILES: CCCCCCCCCCCCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-oleoylcarnitine: SMILES: CCCCCCCCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Oleoylcarnitinyl-L-alanine: SMILES: CCCCCCCCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-linoleoylcarnitine: SMILES: CCCCC=CCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Linoleoylcarnitinyl-L-alanine: SMILES: CCCCC=CCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-alpha-linolenoylcarnitine: SMILES: CCC=CCC=CCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alpha-linolenoylcarnitinyl-L-alanine: SMILES: CCC=CCC=CCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-gamma-linolenoylcarnitine: SMILES: CCCCC=CCC=CCCC=CCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Gamma-linolenoylcarnitinyl-L-alanine: SMILES: CCCCC=CCC=CCCC=CCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-arachidonoylcarnitine: SMILES: CCCCC=CCC=CCC=CCC=CCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Arachidonoylcarnitinyl-L-alanine: SMILES: CCCCC=CCC=CCC=CCC=CCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-eicosapentaenoylcarnitine: SMILES: CCC=CCC=CCC=CCC=CCC=CC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Eicosapentaenoylcarnitinyl-L-alanine: SMILES: CCC=CCC=CCC=CCC=CCC=CC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-docosahexaenoylcarnitine: SMILES: CCC=CCC=CCC=CCC=CCC=CCC=CC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Docosahexaenoylcarnitinyl-L-alanine: SMILES: CCC=CCC=CCC=CCC=CCC=CCC=CC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-carnitine O-acetyltransferase: SMILES: C[C@H](N)C(=O)N[C@H](C(OC(=O)C)(CO)CC)C(=O)O
+ - L-Carnitine O-acetyltransferasyl-L-alanine: SMILES: CC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-carnitine O-palmitoyltransferase: SMILES: CCCCCCCCCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Carnitine O-palmitoyltransferasyl-L-alanine: SMILES: CCCCCCCCCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-carnitine O-oleoyltransferase: SMILES: CCCCCCCCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Carnitine O-oleoyltransferasyl-L-alanine: SMILES: CCCCCCCCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-carnitine O-linoleoyltransferase: SMILES: CCCCCCC=CCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Carnitine O-linoleoyltransferasyl-L-alanine: SMILES: CCCCCCC=CCC=CCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-carnitine O-stearoyltransferase: SMILES: CCCCCCCCCCCCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Carnitine O-stearoyltransferasyl-L-alanine: SMILES: CCCCCCCCCCCCCCCCCCC(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-carnitine O-acyltransferase: SMILES: C[C@H](N)C(=O)N[C@H](C(OC(=O)R)(CO)CC)C(=O)O
+ - L-Carnitine O-acyltransferasyl-L-alanine: SMILES: R-C(=O)OC(C)(CO)CC[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-acetyl-CoA: SMILES: CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Acetyl-CoAlanyl-L-alanine: SMILES: CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-malonyl-CoA: SMILES: O=C(O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Malonyl-CoAlanyl-L-alanine: SMILES: O=C(O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-methylmalonyl-CoA: SMILES: CC(C)(C(=O)O)SC(=O)NCCC(=O)NCC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Methylmalonyl-CoAlanyl-L-alanine: SMILES: CC(C)(C(=O)O)SC(=O)NCCC(=O)NCC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-propionyl-CoA: SMILES: CCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Propionyl-CoAlanyl-L-alanine: SMILES: CCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-butyryl-CoA: SMILES: CCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Butyryl-CoAlanyl-L-alanine: SMILES: CCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-isobutyryl-CoA: SMILES: CC(C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Isobutyryl-CoAlanyl-L-alanine: SMILES: CC(C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-valeryl-CoA: SMILES: CCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Valeryl-CoAlanyl-L-alanine: SMILES: CCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-hexanoyl-CoA: SMILES: CCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Hexanoyl-CoAlanyl-L-alanine: SMILES: CCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-octanoyl-CoA: SMILES: CCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Octanoyl-CoAlanyl-L-alanine: SMILES: CCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-decanoyl-CoA: SMILES: CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Decanoyl-CoAlanyl-L-alanine: SMILES: CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-lauroyl-CoA: SMILES: CCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Lauroyl-CoAlanyl-L-alanine: SMILES: CCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-myristoyl-CoA: SMILES: CCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Myristoyl-CoAlanyl-L-alanine: SMILES: CCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-palmitoleoyl-CoA: SMILES: CCCCC=CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Palmitoleoyl-CoAlanyl-L-alanine: SMILES: CCCCC=CCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-stearoyl-CoA: SMILES: CCCCCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Stearoyl-CoAlanyl-L-alanine: SMILES: CCCCCCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-oleoyl-CoA: SMILES: CCCCCCCCC=CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Oleoyl-CoAlanyl-L-alanine: SMILES: CCCCCCCCC=CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-linoleoyl-CoA: SMILES: CCCCC=CCC=CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Linoleoyl-CoAlanyl-L-alanine: SMILES: CCCCC=CCC=CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-alpha-linolenoyl-CoA: SMILES: CCC=CCC=CCC=CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Alpha-linolenoyl-CoAlanyl-L-alanine: SMILES: CCC=CCC=CCC=CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-gamma-linolenoyl-CoA: SMILES: CCCCC=CCC=CCCC=CCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Gamma-linolenoyl-CoAlanyl-L-alanine: SMILES: CCCCC=CCC=CCCC=CCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-arachidonoyl-CoA: SMILES: CCCCC=CCC=CCC=CCC=CCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Arachidonoyl-CoAlanyl-L-alanine: SMILES: CCCCC=CCC=CCC=CCC=CCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-eicosapentaenoyl-CoA: SMILES: CCC=CCC=CCC=CCC=CCC=CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Eicosapentaenoyl-CoAlanyl-L-alanine: SMILES: CCC=CCC=CCC=CCC=CCC=CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-docosahexaenoyl-CoA: SMILES: CCC=CCC=CCC=CCC=CCC=CCC=CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N
+ - L-Docosahexaenoyl-CoAlanyl-L-alanine: SMILES: CCC=CCC=CCC=CCC=CCC=CCC=CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)(O)OP(=O)(O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1ncnc2N.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-acyl carrier protein: SMILES: [H]N[C@@H](CC(=O)O)C(=O)N[C@H](C)C(=O)O
+ - L-Acyl carrier proteinalanyl-L-alanine: SMILES: [H]N[C@@H](CC(=O)O)C(=O)N[C@H](C)C(=O)O.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-pantetheine: SMILES: C[C@H](N)C(=O)N[C@H](C(=O)NCCS)CO
+ - L-Pantetheinyl-L-alanine: SMILES: SCCNC(=O)C[C@H](O)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-4'-phosphopantetheine: SMILES: C[C@H](N)C(=O)N[C@H](C(=O)NCCSP(=O)(O)O)CO
+ - L-4'-Phosphopantetheinyl-L-alanine: SMILES: O=P(O)(O)SCCNC(=O)C[C@H](O)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-pantetheine-4'-phosphate: SMILES: C[C@H](N)C(=O)N[C@H](C(=O)NCCSP(=O)(O)O)CO
+ - L-Pantetheine-4'-phosphatyl-L-alanine: SMILES: O=P(O)(O)SCCNC(=O)C[C@H](O)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-acyl-carrier-protein: SMILES: [H]N[C@@H](CC(=O)O)C(=O)N[C@H](C)C(=O)O
+ - L-Acyl-carrier-proteinalanyl-L-alanine: SMILES: [H]N[C@@H](CC(=O)O)C(=O)N[C@H](C)C(=O)O.C[C@H](N)C(=O)N[C@H](C)C(O)=O
+ - L-Alanyl-L-holo-acyl carrier protein: SMILES: [H]N[C@@H](CC(=O)O)C(=O)N[C@H](C)C(=O)O
+ - L-Holo-acyl carrier proteinalanyl-L-alanine: SMILES: [H]N[C@@H](
