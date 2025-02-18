@@ -64,12 +64,4 @@ def is_tetraterpenoid(smiles: str):
     if o_count > 15:
         return False, "Too many oxygens for tetraterpenoid"
 
-    # Check for specific functional groups
-    func_group_pattern = Chem.MolFromSmarts("C=C/C=C/C(=O)/C=C")
-    if func_group_pattern is None:
-        return None, "Failed to parse functional group pattern"
-    func_group_matches = mol.GetSubstructMatches(func_group_pattern)
-    if len(func_group_matches) < 1:
-        return False, f"Found {len(func_group_matches)} functional groups, need at least 1"
-
-    return True, "Contains isoprene units, conjugated double bonds, methyl groups, and functional groups consistent with tetraterpenoid structure"
+    return True, "Contains isoprene units, conjugated double bonds, and methyl groups consistent with tetraterpenoid structure"
