@@ -10,7 +10,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_oligopeptide(smiles: str):
     """
     Determines if a molecule is an oligopeptide based on its SMILES string.
-    An oligopeptide contains 2-20 amino acids linked by peptide bonds.
+    An oligopeptide is a peptide containing a relatively small number of amino acids (typically 2-20).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,40 +24,26 @@ def is_oligopeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Find peptide bonds (amide between alpha carbons)
-    # Updated pattern: [CX3H1,CX4H2](=O)-[NX3H1] connected to alpha carbon (adjacent to CO and N)
-    peptide_bond = Chem.MolFromSmarts("[CX3H1,CX4H2](=O)-[NX3H1]-[CX4H][!$(C=O)]")
-    peptide_matches = mol.GetSubstructMatches(peptide_bond)
-    n_peptide_bonds = len(peptide_matches)
-    
-    # Calculate possible amino acid count (n_peptide_bonds +1 for linear, n_peptide_bonds for cyclic)
-    if n_peptide_bonds == 0:
+    # Check for peptide bonds (amide groups)
+    peptide_bond = Chem.MolFromSmarts("[CX3](=O)[NX3]")
+    matches = mol.GetSubstructMatches(peptide_bond)
+    if not matches:
         return False, "No peptide bonds found"
-    
-    min_aa = n_peptide_bonds  # Cyclic case
-    max_aa = n_peptide_bonds + 1  # Linear case
-    
-    if not (2 <= min_aa <= 20 or 2 <= max_aa <= 20):
-        return False, f"Peptide bonds suggest {min_aa}-{max_aa} amino acids (outside 2-20 range)"
 
-    # Check for at least two amino acid residues with proper backbone
-    # Pattern matches amino acid backbone: [NH]-CH(R)-CO (allowing proline)
-    aa_pattern = Chem.MolFromSmarts("[NX3H1,NH0]-[CH1,CH2;!$(C=O)]-[CX3](=O)")
-    aa_matches = len(mol.GetSubstructMatches(aa_pattern))
-    if aa_matches < 2:
-        return False, "Insufficient amino acid residues detected"
+    # Count peptide bonds to estimate amino acid count (n_bonds = n_amino_acids - 1)
+    n_amino_acids = len(matches) + 1
+    if not (2 <= n_amino_acids <= 20):
+        return False, f"Number of amino acids ({n_amino_acids}) outside oligopeptide range (2-20)"
 
-    # Check for non-peptide amides in main chain (exclude side chains)
-    # Non-peptide amide is any amide not part of the peptide backbone pattern
-    all_amides = mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=O)-[NX3]"))
-    if len(all_amides) > n_peptide_bonds:
-        return False, "Contains non-peptide amide groups"
+    # Check for amino acid residues (at least one amino and carboxyl group per residue)
+    # Using simplified check for alpha-amino acid pattern
+    amino_acid_pattern = Chem.MolFromSmarts("[NH2,NH1][CH][C](=O)")
+    if not mol.HasSubstructMatch(amino_acid_pattern):
+        return False, "Missing characteristic amino acid structure"
 
-    # Check molecular weight (typical oligopeptide <4000 Da)
+    # Check molecular weight consistency (optional but adds robustness)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt > 4000:
-        return False, f"Molecular weight ({mol_wt:.1f} Da) exceeds oligopeptide range"
+    if mol_wt > 2000:  # Arbitrary upper limit for oligopeptides
+        return False, f"Molecular weight ({mol_wt:.1f} Da) too high for oligopeptide"
 
-    # If passed all checks
-    aa_count = f"{min_aa}-{max_aa}" if min_aa != max_aa else str(min_aa)
-    return True, f"Contains {aa_count} amino acids linked by peptide bonds"
+    return True, f"Contains {n_amino_acids} amino acids linked by peptide bonds"
