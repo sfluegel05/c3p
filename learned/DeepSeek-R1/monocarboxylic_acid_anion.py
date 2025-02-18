@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_monocarboxylic_acid_anion(smiles: str):
     """
     Determines if a molecule is a monocarboxylic acid anion based on its SMILES string.
-    A monocarboxylic acid anion has a single deprotonated carboxy group (-COO-) and no other acidic protons.
+    A monocarboxylic acid anion has a single deprotonated carboxy group (-COO-).
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,26 +23,20 @@ def is_monocarboxylic_acid_anion(smiles: str):
         return False, "Invalid SMILES"
     
     # Check for exactly one carboxylate group (COO-)
-    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=O)[O-]")
-    carboxylate_matches = mol.GetSubstructMatches(carboxylate_pattern)
+    carboxylate_pattern = Chem.MolFromSmarts("[CX3](=O)[OX1-]")
+    matches = mol.GetSubstructMatches(carboxylate_pattern)
     
-    if len(carboxylate_matches) != 1:
-        return False, f"Found {len(carboxylate_matches)} carboxylate groups (expected 1)"
+    if len(matches) != 1:
+        return False, f"Found {len(matches)} carboxylate groups (expected 1)"
     
-    # Check for other acidic groups that could donate protons (carboxylic acids, phenols, sulfonic/phosphoric acids)
-    acidic_patterns = [
-        ("[CX3](=O)[OH]", "carboxylic acid (-COOH)"),
-        ("[c;!$(c-[OX2])][OH]", "phenolic -OH"),  # Phenol where O is not part of a carboxylate
-        ("[SX4](=O)(=O)([OH])", "sulfonic acid (-SO3H)"),
-        ("[PX4](=O)([OH])([OH])", "phosphoric acid (-PO(OH)2)"),
-        ("[NX3](=O)[OH]", "nitro group with -OH")
-    ]
+    # Ensure no other acidic groups (like -SO3H, -PO3H, etc.) are present
+    acidic_groups = Chem.MolFromSmarts("[S,P](=O)(O)[OH]")
+    if mol.HasSubstructMatch(acidic_groups):
+        return False, "Contains other acidic protons"
     
-    for smarts, desc in acidic_patterns:
-        pattern = Chem.MolFromSmarts(smarts)
-        if pattern is None:
-            continue  # Skip invalid patterns (unlikely if SMARTS is correct)
-        if mol.HasSubstructMatch(pattern):
-            return False, f"Contains acidic group: {desc}"
+    # Check if the molecule's charge is at least -1 (carboxylate contributes -1)
+    charge = Chem.GetFormalCharge(mol)
+    if charge > -1:
+        return False, f"Formal charge {charge} is not negative enough"
     
     return True, "Single carboxylate group with no other acidic protons"
