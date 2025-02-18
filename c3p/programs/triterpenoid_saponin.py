@@ -10,7 +10,6 @@ and several fused (non‐aromatic) rings.
 
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import rdmolops
 from rdkit.Chem import SanitizeFlags
 
 def is_triterpenoid_saponin(smiles: str):
@@ -18,41 +17,39 @@ def is_triterpenoid_saponin(smiles: str):
     Determines if a molecule is a triterpenoid saponin based on its SMILES string.
     
     Heuristic:
-      1. The SMILES must be valid.
+      1. The input SMILES must be valid.
       2. At least one sugar moiety is present. We identify sugar rings as 5- or 6-membered rings 
          that contain exactly one oxygen and the remaining atoms as carbons.
-      3. Remove all atoms belonging to a sugar ring. The largest remaining fragment is taken as the aglycone.
+      3. Remove the atoms belonging to sugar rings. The largest remaining fragment is considered the aglycone.
       4. The aglycone should have between 25 and 40 carbon atoms (typical for triterpenoids).
       5. The aglycone must contain at least 4 rings and none of these rings should be aromatic.
-      6. Overall, the molecule should be heavy (molecular weight > 500 Da).
-    
+      6. The overall molecular weight should be > 500 Da.
+      
     Args:
-        smiles (str): SMILES string of the molecule.
-    
+      smiles (str): SMILES string of the molecule.
+      
     Returns:
-        bool: True if the molecule is classified as a triterpenoid saponin, False otherwise.
-        str: Reason for classification.
+      bool: True if the molecule is classified as a triterpenoid saponin, False otherwise.
+      str: Explanation for the classification decision.
     """
-    # 1. Try parsing the SMILES.
+    # Step 1. Parse the SMILES without immediate sanitization.
     try:
-        # First, try with default sanitization.
-        mol = Chem.MolFromSmiles(smiles)
+        mol = Chem.MolFromSmiles(smiles, sanitize=False)
         if mol is None:
             return False, "Invalid SMILES string."
     except Exception as e:
         return False, f"Error parsing SMILES: {e}"
-    
-    # Sometimes molecules fail during sanitization because of kekulization.
+
+    # Try to sanitize while skipping kekulization
     try:
-        Chem.SanitizeMol(mol)
+        # Skip kekulization to avoid issues with problematic aromatic assignments.
+        Chem.SanitizeMol(mol, sanitizeOps=SanitizeFlags.SANITIZE_ALL ^ SanitizeFlags.SANITIZE_KEKULIZE)
+        # Now, try to kekulize in a controlled manner by clearing aromatic flags.
+        Chem.Kekulize(mol, clearAromaticFlags=True)
     except Exception as e:
-        try:
-            # Retry sanitization while skipping the kekulization step.
-            Chem.SanitizeMol(mol, sanitizeOps=SanitizeFlags.SANITIZE_ALL ^ SanitizeFlags.SANITIZE_KEKULIZE)
-        except Exception as ee:
-            return False, f"Sanitization error even with kekulization skipped: {ee}"
-    
-    # 2. Identify sugar rings: rings with 5 or 6 atoms containing exactly one oxygen and the rest carbons.
+        return False, f"Sanitization error (even with kekulization skipped): {e}"
+
+    # 2. Identify sugar rings.
     ring_info = mol.GetRingInfo()
     all_rings = ring_info.AtomRings()
     sugar_rings = []
@@ -60,7 +57,7 @@ def is_triterpenoid_saponin(smiles: str):
         if len(ring) in [5, 6]:
             oxy_count = 0
             carbon_count = 0
-            others = 0
+            other_count = 0
             for idx in ring:
                 atom = mol.GetAtomWithIdx(idx)
                 num = atom.GetAtomicNum()
@@ -69,43 +66,50 @@ def is_triterpenoid_saponin(smiles: str):
                 elif num == 6:
                     carbon_count += 1
                 else:
-                    others += 1  # any other hetero atoms
-            # A typical sugar (pyranose or furanose) has one oxygen and (ring size - 1) carbons.
-            if oxy_count == 1 and carbon_count == (len(ring) - 1) and others == 0:
+                    other_count += 1
+            # Typical sugar rings (furanose or pyranose) have exactly one oxygen and the rest carbons.
+            if oxy_count == 1 and carbon_count == (len(ring) - 1) and other_count == 0:
                 sugar_rings.append(set(ring))
     
     if not sugar_rings:
         return False, "No sugar (glycoside) moiety detected."
-    
-    # 3. Remove sugar ring atoms to calculate the aglycone.
+
+    # 3. Remove sugar ring atoms to get the aglycone.
     sugar_atom_indices = set()
     for sring in sugar_rings:
         sugar_atom_indices.update(sring)
-        
+    
+    # Use an editable mol to remove atoms from highest index to lowest.
     editable = Chem.EditableMol(mol)
     for idx in sorted(sugar_atom_indices, reverse=True):
-        editable.RemoveAtom(idx)
+        try:
+            # Removing an atom may change indices, so this is a heuristic removal.
+            editable.RemoveAtom(idx)
+        except Exception as e:
+            return False, f"Error removing sugar atom index {idx}: {e}"
+    
     aglycone_mol = editable.GetMol()
     
-    # Sometimes removal creates disconnected fragments; choose the largest fragment.
-    fragments = Chem.GetMolFrags(aglycone_mol, asMols=True, sanitizeFrags=True)
-    if not fragments:
+    # Some removals lead to disconnected fragments. Choose the largest fragment.
+    frags = Chem.GetMolFrags(aglycone_mol, asMols=True, sanitizeFrags=True)
+    if not frags:
         return False, "Sugar removal left no aglycone fragment."
-    aglycone = max(fragments, key=lambda m: m.GetNumAtoms())
-    
-    # 4. Count carbon atoms in the aglycone.
+    aglycone = max(frags, key=lambda m: m.GetNumAtoms())
+
+    # 4. Count carbon atoms in aglycone.
     aglycone_carbons = sum(1 for atom in aglycone.GetAtoms() if atom.GetAtomicNum() == 6)
     if not (25 <= aglycone_carbons <= 40):
         return False, f"Aglycone carbon count not in acceptable range (found {aglycone_carbons})."
     
-    # 5. Analyze the ring system of the aglycone.
-    ring_info_aglycone = aglycone.GetRingInfo()
-    aglycone_rings = ring_info_aglycone.AtomRings()
+    # 5. Examine the aglycone's ring system.
+    aglycone_ring_info = aglycone.GetRingInfo()
+    aglycone_rings = aglycone_ring_info.AtomRings()
     if len(aglycone_rings) < 4:
-        return False, f"Insufficient number of rings in aglycone (found {len(aglycone_rings)})."
+        return False, f"Insufficient rings in aglycone (found {len(aglycone_rings)})."
+    # Check that none of the rings are aromatic.
     for ring in aglycone_rings:
         if all(aglycone.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-            return False, "Aglycone contains an aromatic ring, which is not typical of triterpenoids."
+            return False, "Aglycone contains an aromatic ring, not typical of triterpenoids."
     
     # 6. Overall molecular weight check.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
@@ -115,14 +119,14 @@ def is_triterpenoid_saponin(smiles: str):
     return True, ("Molecule contains a sugar moiety plus a triterpenoid-like aglycone " +
                   f"(aglycone carbons: {aglycone_carbons}, rings: {len(aglycone_rings)}).")
 
-# For testing purposes (these can be removed in production):
+# For testing purposes (this block can be modified or removed in production):
 if __name__ == "__main__":
     test_smiles = [
-        # Known triterpenoid saponin examples
+        # known triterpenoid saponin examples:
         "OC1(C2C=3C(C4(C(C5(C(CC4)C(C(O)CC5)(C)C)C)CC3)C)(CCC2(CCC1C)C(OC6OC(C(O)C(O)C6O)CO)=O)C",
-        "CN(C)c1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](NC(=O)[C@@H]([NH3+])Cc2ccc(O)cc2)[C@H]1O",  # Causes kekulization issues normally
+        # A SMILES known to cause kekulization issues:
+        "CN(C)c1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](NC(=O)[C@@H]([NH3+])Cc2ccc(O)cc2)[C@H]1O",
     ]
-    
     for smi in test_smiles:
         verdict, reason = is_triterpenoid_saponin(smi)
         print("SMILES:", smi)
