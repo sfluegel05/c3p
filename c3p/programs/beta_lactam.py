@@ -5,13 +5,13 @@ Classifies: CHEBI:35627 beta-lactam
 Classifies: beta-lactam
 A beta-lactam is defined as a lactam (cyclic amide) in which the amide bond is contained within a four-membered ring,
 which includes the amide nitrogen and the carbonyl carbon.
-This implementation selects the largest fragment from the SMILES (to minimize interference from salts)
-and then iterates over all 4-membered rings. For each ring, it checks:
-  - the ring has exactly 4 atoms (by definition),
-  - the ring has exactly one nitrogen and three carbons,
-  - at least one of the carbons has a double bond to oxygen (with the oxygen not being in the ring),
-  - and that carbon (the carbonyl carbon) is directly bonded to the nitrogen.
-If all these conditions are met, the molecule is classified as a beta-lactam.
+This implementation first selects the largest fragment, adds explicit hydrogens, and then iterates over all 4-membered rings.
+For each 4-membered ring, it checks:
+  - The ring has exactly four atoms.
+  - The ring has exactly one nitrogen and three carbon atoms.
+  - Among the carbon atoms, one has a double bond to an oxygen atom that is not part of the ring.
+  - The nitrogen and that carbon (carbonyl carbon) are directly bonded by a single bond (the amide bond).
+If all these conditions are met for any ring, the molecule is classified as a beta-lactam.
 """
 
 from rdkit import Chem
@@ -22,8 +22,8 @@ def is_beta_lactam(smiles: str):
     
     The function first sanitizes the molecule, selects the largest fragment, adds explicit hydrogens,
     and then inspects each 4-membered ring. A valid beta-lactam ring must have exactly one nitrogen
-    and three carbons, one of which is carbonyl (i.e. double-bonded to an oxygen that is not part of the ring)
-    and is directly bonded to that nitrogen.
+    and three carbons, one of which is carbonyl (i.e. double-bonded to an oxygen outside the ring)
+    and that carbon must be directly bonded by a single bond to the nitrogen.
     
     Args:
         smiles (str): SMILES string representing the molecule.
@@ -37,77 +37,81 @@ def is_beta_lactam(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Remove salts/multiple fragments by selecting the largest fragment.
+    # Get all fragments; select the largest (to remove solvents/salts).
     frags = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=True)
     if not frags:
         return False, "No fragments could be parsed from the SMILES"
-    
-    # Choose the fragment with the most heavy atoms
     main_frag = max(frags, key=lambda m: m.GetNumHeavyAtoms())
     
-    # Add explicit hydrogens to help with bond perceptions.
+    # Add explicit hydrogens to improve bond perception and handle hydrogens in amide bonds.
     main_frag = Chem.AddHs(main_frag)
     
-    # Get ring information for the main fragment
+    # Obtain ring information from the main fragment.
     ring_info = main_frag.GetRingInfo()
-    atom_rings = ring_info.AtomRings()  # a tuple of tuples, each inner tuple is a set of atom indices for that ring.
+    atom_rings = ring_info.AtomRings()  # each ring is a tuple of atom indices
     
-    # Loop over all rings in the main fragment.
+    # Search over all rings looking for a valid beta-lactam ring.
     for ring in atom_rings:
+        # Only consider 4-membered rings.
         if len(ring) != 4:
-            continue  # We only care about 4-membered rings.
+            continue
         
-        # Get the atoms of this ring.
+        # Retrieve the atoms in the ring.
         ring_atoms = [main_frag.GetAtomWithIdx(idx) for idx in ring]
         
-        # Check composition: A true beta-lactam ring should have exactly 1 nitrogen and 3 carbons.
+        # Count nitrogen and carbon atoms in the ring.
         num_nitrogen = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 7)
         num_carbon = sum(1 for atom in ring_atoms if atom.GetAtomicNum() == 6)
         if num_nitrogen != 1 or num_carbon != 3:
-            continue  # This ring does not have the correct atom composition
+            continue
         
-        # Identify the nitrogen atom in the ring.
-        nitrogen_atom = [atom for atom in ring_atoms if atom.GetAtomicNum() == 7][0]
+        # Identify the nitrogen atom of the ring.
+        nitrogen_atom = next(atom for atom in ring_atoms if atom.GetAtomicNum() == 7)
         
-        # Look among the carbons for a carbonyl carbon.
-        # A carbonyl carbon is defined here as a carbon that is double-bonded to an oxygen atom,
-        # where the oxygen is not part of the 4-membered ring.
-        carbonyl_carbon = None
+        # Look among the carbons in the ring for a candidate carbonyl carbon.
+        candidate_carbonyl = None
         for atom in ring_atoms:
             if atom.GetAtomicNum() != 6:
-                continue  # We are only interested in carbons.
-            # Examine each bond from this carbon.
+                continue  # only interested in carbons
+            # Check neighbors of this carbon to find an oxygen making a double bond
+            # Note: ensure this oxygen is not in the ring.
+            oxygen_double_found = False
             for nbr in atom.GetNeighbors():
-                # Skip if the neighbor is within the ring.
                 if nbr.GetIdx() in ring:
                     continue
-                if nbr.GetAtomicNum() == 8:  # Oxygen candidate
+                if nbr.GetAtomicNum() == 8:
                     bond = main_frag.GetBondBetweenAtoms(atom.GetIdx(), nbr.GetIdx())
-                    # Check if the bond is a double bond.
-                    if bond and bond.GetBondType() == Chem.BondType.DOUBLE:
-                        carbonyl_carbon = atom
+                    if bond is not None and bond.GetBondType() == Chem.BondType.DOUBLE:
+                        oxygen_double_found = True
                         break
-            if carbonyl_carbon:
+            if oxygen_double_found:
+                candidate_carbonyl = atom
                 break
         
-        if not carbonyl_carbon:
-            continue  # No carbonyl carbon found in this ring
+        if candidate_carbonyl is None:
+            continue  # no carbonyl group in this ring
         
-        # Ensure the carbonyl carbon and the nitrogen are directly bonded (i.e. form the amide linkage within the ring).
-        bond = main_frag.GetBondBetweenAtoms(nitrogen_atom.GetIdx(), carbonyl_carbon.GetIdx())
-        if bond is not None:
-            return True, ("Beta-lactam ring detected: found a 4-membered ring with one nitrogen, three carbons "
-                          "(where one carbon is carbonyl via a double bond to oxygen outside the ring) and a direct "
-                          "C-N bond representing the amide bond")
+        # Check that the candidate carbonyl carbon and the nitrogen are directly bonded.
+        bond = main_frag.GetBondBetweenAtoms(nitrogen_atom.GetIdx(), candidate_carbonyl.GetIdx())
+        if bond is None:
+            continue
+        # The bond representing the amide linkage should be a single bond.
+        if bond.GetBondType() != Chem.BondType.SINGLE:
+            continue
+        
+        # We found a ring fulfilling all criteria.
+        return True, ("Beta-lactam ring detected: found a 4-membered ring with one nitrogen and three carbons, "
+                      "where one carbon bears a double-bonded oxygen (outside the ring) and is directly bonded "
+                      "to the nitrogen via a single bond representing the amide linkage")
     
-    # If no ring met our criteria, return False.
     return False, "No beta-lactam ring found (4-membered ring with the required amide bond was not detected)"
+
 
 # Example usage:
 if __name__ == "__main__":
-    # A few example SMILES (including azetidin-2-one as the simplest beta-lactam)
+    # A small set of example SMILES including the simplest beta-lactam.
     test_smiles = [
-        "O=C1CCN1",   # azetidin-2-one
+        "O=C1CCN1",   # azetidin-2-one, simplest beta-lactam
         "[H][C@]12SCC(C)=C(N1C(=O)[C@H]2N)C(O)=O",  # 7beta-aminodeacetoxycephalosporanic acid
         "C[C@H]1[C@@H](C(=O)N1S(=O)(=O)O)NC(=O)C(=NOC(C)(C)C(=O)O)C2=CSC(=N2)N"  # complex beta-lactam derivative
     ]
