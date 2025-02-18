@@ -32,19 +32,25 @@ def is_tetraterpenoid(smiles: str):
         return False, "Molecular weight too low for tetraterpenoid"
 
     # Check for isoprene units
-    isoprene_pattern = Chem.MolFromSmarts("C=C(C)C=C(C)|C=C(C)C=C(C)C=C(C)")
+    isoprene_pattern = Chem.MolFromSmarts("C=C(C)C=C(C)")
+    if isoprene_pattern is None:
+        return None, "Failed to parse isoprene pattern"
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 4:
         return False, f"Found {len(isoprene_matches)} isoprene units, need at least 4"
 
     # Check for conjugated double bonds
     conjugated_pattern = Chem.MolFromSmarts("C=C/C=C")
+    if conjugated_pattern is None:
+        return None, "Failed to parse conjugated pattern"
     conjugated_matches = mol.GetSubstructMatches(conjugated_pattern)
     if len(conjugated_matches) < 3:
         return False, f"Found {len(conjugated_matches)} conjugated double bonds, need at least 3"
 
     # Check for methyl groups
     methyl_pattern = Chem.MolFromSmarts("[CX4H3]")
+    if methyl_pattern is None:
+        return None, "Failed to parse methyl pattern"
     methyl_matches = mol.GetSubstructMatches(methyl_pattern)
     if len(methyl_matches) < 5:
         return False, f"Found {len(methyl_matches)} methyl groups, need at least 5"
