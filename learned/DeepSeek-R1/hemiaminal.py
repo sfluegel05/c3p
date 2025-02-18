@@ -23,40 +23,38 @@ def is_hemiaminal(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Improved SMARTS pattern:
+    # SMARTS pattern to find carbons with both hydroxyl and amine groups
     # [C] must have:
-    # - At least one hydroxyl (-OH) group
-    # - At least one amine group (NH2, NHR where R is not carbonyl)
-    # - Explicitly exclude nitrogens in amides/nitriles
-    # The * allows for other substituents on the carbon
-    hemiaminal_pattern = Chem.MolFromSmarts("[C]([OH])([N;H2,H1;!$(N=*);!$(N#*)])*")
+    # - At least one hydroxyl (-O-H)
+    # - At least one amine (NH2, NHR where R is not part of amide/nitrile)
+    # Excludes amides (N-C=O), aromatic nitrogens, and nitriles
+    hemiaminal_pattern = Chem.MolFromSmarts("[C][OH]-&@[C](-[N;H2,H1;!$(N-C=[O,S,N]);!$(N#*)])")
     
-    # Find all matching atoms
+    # Alternative approach: Check for any carbon with both OH and NH groups attached
+    # This pattern matches a carbon connected to both OH and NH (primary/secondary amine)
+    hemiaminal_pattern = Chem.MolFromSmarts("[C]([OH])([N;H2,H1;!$(N-C=[O,S,N]);!$(N#*)])")
+    
     matches = mol.GetSubstructMatches(hemiaminal_pattern)
     
-    if matches:
-        # Verify at least one valid amine-hydroxyl pair
-        for match in matches:
-            # Get the central carbon atom
-            carbon_idx = match[0]
-            atom = mol.GetAtomWithIdx(carbon_idx)
-            
-            # Check for exactly one hydroxyl and one amine attached
-            # Allow other substituents as long as both groups are present
-            has_oh = False
-            has_amine = False
-            
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() >= 1:  # -OH group
-                    has_oh = True
-                elif neighbor.GetAtomicNum() == 7:
-                    # Check for primary/secondary amine (not amide)
-                    if neighbor.GetTotalNumHs() >= 1 and not neighbor.GetIsAromatic():
-                        has_amine = True
-                        
-            if has_oh and has_amine:
-                return True, "Contains a carbon with both hydroxyl and amine groups"
-        
-        return False, "No carbon with both hydroxyl and amine groups found"
-    else:
+    if not matches:
         return False, "No carbon with hydroxyl and amine groups found"
+    
+    # Verify each matched carbon has at least one OH and one amine
+    for match in matches:
+        carbon_idx = match[0]
+        atom = mol.GetAtomWithIdx(carbon_idx)
+        has_oh = False
+        has_amine = False
+        
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() >= 1:
+                has_oh = True
+            elif neighbor.GetAtomicNum() == 7:
+                # Check if it's a non-amide, non-nitrile amine
+                if neighbor.GetTotalNumHs() >= 1 and not any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in neighbor.GetBonds()):
+                    has_amine = True
+        
+        if has_oh and has_amine:
+            return True, "Contains a carbon with both hydroxyl and amine groups"
+    
+    return False, "No carbon with both hydroxyl and amine groups found"
