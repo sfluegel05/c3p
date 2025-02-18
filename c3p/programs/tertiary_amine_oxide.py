@@ -6,6 +6,7 @@ from rdkit import Chem
 def is_tertiary_amine_oxide(smiles: str):
     """
     Determines if a molecule is a tertiary amine oxide based on its SMILES string.
+    
     A tertiary amine oxide consists of an N-oxide where there are three organic groups bonded to the nitrogen atom.
 
     Args:
@@ -20,10 +21,9 @@ def is_tertiary_amine_oxide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Extended pattern to match an N+ bonded to any three organic groups (considering a variety of substitutions),
-    # and a single negatively charged oxygen (N-O) ensuring flexibility.
-    tertiary_amine_oxide_pattern = Chem.MolFromSmarts("[NX4+]([#6,#1,#7,#8,#9,#17,#35,#53])([#6,#1,#7,#8,#9,#17,#35,#53])([#6,#1,#7,#8,#9,#17,#35,#53])[O-]")
-
+    # Refined pattern to match a nitrogen with a positive charge bonded to three carbons and one oxygen with negatively charged oxygen (N+ with C and O-)
+    tertiary_amine_oxide_pattern = Chem.MolFromSmarts("[N+X4]([CX4,a])([CX4,a])([CX4,a])[OX1-]")
+    
     if mol.HasSubstructMatch(tertiary_amine_oxide_pattern):
         return True, "Molecule contains a tertiary amine oxide group"
 
