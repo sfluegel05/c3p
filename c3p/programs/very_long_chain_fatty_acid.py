@@ -26,35 +26,54 @@ def is_very_long_chain_fatty_acid(smiles: str):
     acid_matches = mol.GetSubstructMatches(acid_pattern)
     if not acid_matches:
         return False, "No carboxylic acid group found"
-
+    
 
     max_chain_length = 0
     for acid_match in acid_matches:
-      carbonyl_carbon_idx = acid_match[0]
-      
-      def get_chain_length(current_atom_idx, visited_atoms):
-          """Recursively calculates the longest chain length."""
-          
-          max_len = 0
-          
-          for neighbor in mol.GetAtomWithIdx(current_atom_idx).GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor.GetSymbol() == "C" and neighbor_idx not in visited_atoms:
-                
-                new_visited = set(visited_atoms)
-                new_visited.add(neighbor_idx)
-                max_len = max(max_len, 1 + get_chain_length(neighbor_idx, new_visited))
-
-          return max_len
-
-      # Find neighboring carbons and start recursion
-      carbonyl_carbon_neighbors = mol.GetAtomWithIdx(carbonyl_carbon_idx).GetNeighbors()
-      current_chain_length = 0
-      for neighbor in carbonyl_carbon_neighbors:
-        if neighbor.GetSymbol() == "C":
-             current_chain_length = max(current_chain_length, get_chain_length(neighbor.GetIdx(), {neighbor.GetIdx()}))
+        carbonyl_carbon_idx = acid_match[0]
+        
+        # Get the carbon adjacent to the carbonyl carbon
+        neighbors = mol.GetAtomWithIdx(carbonyl_carbon_idx).GetNeighbors()
+        chain_start_carbons = [neighbor for neighbor in neighbors if neighbor.GetSymbol() == 'C']
+        
+        current_max_len = 0
+        for start_carbon in chain_start_carbons:
+            visited_atoms = {carbonyl_carbon_idx, start_carbon.GetIdx()} # keep track of visited atoms including carbonyl
+            current_chain_length = 1
             
-      max_chain_length = max(max_chain_length, current_chain_length + 1) # +1 to account for the carbon in the COOH
+            
+            queue = [(start_carbon.GetIdx(), 1, visited_atoms)] # start from the neighboring C, keeping track of visited atoms, and current length
+           
+            
+            while queue:
+              current_idx, current_len, current_visited = queue.pop(0)
+              
+              max_len_from_here = current_len
+              
+              
+              neighbors = mol.GetAtomWithIdx(current_idx).GetNeighbors()
+              
+              next_carbons = []
+              for neighbor in neighbors:
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor.GetSymbol() == "C" and neighbor_idx not in current_visited:
+                      
+                  ring_info = mol.GetRingInfo()
+                  if not ring_info.IsAtomInRingOfSize(neighbor_idx, 3) and not ring_info.IsAtomInRingOfSize(neighbor_idx, 4) and not ring_info.IsAtomInRingOfSize(neighbor_idx, 5) and not ring_info.IsAtomInRingOfSize(neighbor_idx, 6):
+                      next_carbons.append( (neighbor_idx, current_len + 1, set(current_visited) | {neighbor_idx}) )
+              
+              
+              
+              if not next_carbons: #we reached the end of the chain
+                
+                current_max_len = max(current_max_len, current_len)
+              else:
+                  queue.extend(next_carbons)
+            
+            current_max_len += 1 # account for carbonyl C
+            max_chain_length = max(max_chain_length, current_max_len)
+
+
 
     if max_chain_length > 27:
         return True, f"Ultra-long-chain fatty acid (C={max_chain_length})"
