@@ -1,197 +1,31 @@
 """
 Classifies: CHEBI:35915 sterol ester
 """
- - CE(18:3(9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(18:1(9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCCC/C=C\CCCCCCCC)=O
- - CE(16:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCC
- - CE(24:1(15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCC/C=C\CCCC
- - CE(18:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCC
- - CE(18:2(9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\CCCCCC)=O
- - CE(24:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCCCCC
- - CE(20:3(8Z,11Z,14Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(22:5(7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(20:4(5Z,8Z,11Z,14Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(22:4(7Z,10Z,13Z,16Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(22:3(10Z,13Z,16Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCCCCC/C=C\C/C=C\C/C=C\CCCCC)=O
- - CE(24:6): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC
- - CE(20:2(11Z,14Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCCCC/C=C\C/C=C\CCCCCC)=O
- - CE(16:1(9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCCC/C=C\CCCCCC)=O
- - CE(24:5): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\CC
- - CE(24:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCCC/C=C\C/C=C\C/C=C\CC
- - CE(24:3): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCCC/C=C\C/C=C\CC
- - CE(24:2): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCCC/C=C\CC
- - CE(24:1): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCCC/C=C\C
- - CE(22:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCCCCC
- - CE(20:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCCCCC
- - CE(18:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCCC
- - CE(16:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCCCCC
- - CE(14:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCCCC
- - CE(12:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCCCC
- - CE(10:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCCCC
- - CE(8:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCCCC
- - CE(6:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCCC
- - CE(4:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)CCC
- - CE(2:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)C
- - CE(0:0): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)
- - CE(22:5(4Z,7Z,10Z,13Z,16Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(22:5(7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:3(5Z,8Z,11Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\CCCCC)=O
- - CE(20:4(5Z,8Z,11Z,14Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(18:3(6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\CCCCC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:1(7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\CCCCCC)=O
- - CE(16:2(4Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\CCCCCC)=O
- - CE(14:1(5Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\CCCC)=O
- - CE(12:1(3Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\CC)=O
- - CE(10:1(3Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C)=O
- - CE(8:1(3Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CC/C=C\C)=O
- - CE(6:1(3Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(C/C=C\C)=O
- - CE(4:1(3Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C
- - CE(2:1(3Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C
- - CE(0:1): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(0:4): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C
- - CE(22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(18:4(6Z,9Z,12Z,15Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(16:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(14:4(4Z,7Z,10Z,13Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)=O
- - CE(12:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCCC/C=C\C/C=C\C/C=C\C/C=C\CC)=O
- - CE(10:4(3Z,6Z,9Z,12Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(CCC/C=C\C/C=C\C/C=C\C/C=C\C)=O
- - CE(8:4(3Z,5Z,7Z,9Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C=C/C
- - CE(6:4(2Z,4Z,6Z,8Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C/C
- - CE(4:4(1Z,3Z,5Z,7Z)): SMILES: O([C@@H]1CC=2[C@@](C3C(C4[C@@](C(CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)C(=O)/C=C/C=C/C=C
- - CE(2:
+</think>
+
+Okay, let's try to figure out why the previous code didn't work. The error mentioned was "Error: unexpected indent (<string>, line 1)", which usually means there's a problem with the code's indentation. Looking at the previous code, I notice that the code block starts with a list of SMILES examples instead of valid Python code. That's a mistake! The user provided examples of sterol esters, but the code was pasted incorrectly, leading to syntax errors.
+
+So, the main issue was that the code wasn't properly structured. The examples were included in the code block, making it invalid Python. The actual code should start with imports and the function definition. Let's correct that.
+
+Now, focusing on the task: the function is_sterol_ester needs to check if a molecule is a sterol ester. According to the definition, a sterol ester is formed by condensing a carboxylic acid's carboxy group with the 3-hydroxy group of a sterol.
+
+Steps to identify a sterol ester:
+1. **Identify the sterol backbone**: Sterols have a characteristic structure, typically a tetracyclic ring system (like cholesterol). We can use a SMARTS pattern to match the sterol nucleus.
+2. **Check for the ester group at position 3**: The hydroxyl group at C3 of the sterol should be esterified. So, look for an ester group (O-C=O) attached to the sterol's third carbon.
+3. **Ensure there's a carboxylic acid-derived chain**: The ester should link to a fatty acid or another carboxylic acid. This could be checked by ensuring the ester's oxygen is connected to a carbonyl group (C=O) which is part of a chain.
+
+Potential issues in previous attempts might include incorrect SMARTS patterns for the sterol or ester, not checking the specific position of the ester, or missing the carboxylic acid part.
+
+Let's design the function step by step:
+- Parse the SMILES into a molecule.
+- Check for the sterol structure using a SMARTS pattern that matches the four fused rings (three six-membered and one five-membered ring) typical of sterols.
+- Verify that there's an ester group attached to the sterol's C3 position.
+- Ensure the ester is part of a carboxylic acid (i.e., the ester oxygen is connected to a carbonyl group followed by a carbon chain).
+
+Testing with the provided examples (like cholesteryl oleate) should pass these checks. Also, molecules without the ester or with the ester in the wrong position should be rejected.
+
+I'll use RDKit's SMARTS matching for the sterol core and the ester group. Need to make sure the ester is correctly positioned on the sterol. Also, considering stereochemistry might be important, but maybe the SMARTS can be general enough to capture variations.
+
+Another consideration: the sterol's hydroxy group is replaced by an ester. So, in the molecule, the oxygen at C3 should be connected via an ester linkage. The SMARTS for the ester could be something like "[O;X2]-C(=O)".
+
+Putting this together into code with proper indentation and structure should resolve the previous error and correctly classify sterol esters.
