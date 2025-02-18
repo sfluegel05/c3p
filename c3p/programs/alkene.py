@@ -5,7 +5,6 @@ Classifies: CHEBI:32878 alkene
 Classifies: CHEBI:32878 alkene
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_alkene(smiles: str):
     """
@@ -19,79 +18,32 @@ def is_alkene(smiles: str):
         bool: True if molecule is an alkene, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Add hydrogens to the molecule
-    mol = Chem.AddHs(mol)
+    # Check for hydrocarbon (only C and H atoms)
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in {1, 6}:
+            return False, "Contains non-carbon/hydrogen atoms"
 
-    # Check if the molecule is acyclic
-    if not rdMolDescriptors.CalcNumRings(mol) == 0:
+    # Count double bonds and check for triple bonds
+    double_bonds = 0
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.DOUBLE:
+            double_bonds += 1
+        elif bond.GetBondType() == Chem.BondType.TRIPLE:
+            return False, "Contains triple bonds"
+
+    if double_bonds != 1:
+        return False, f"Found {double_bonds} double bonds, need exactly 1"
+
+    # Check for acyclic structure (no rings)
+    if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains rings"
 
-    # Count the number of carbon-carbon double bonds
-    double_bond_count = 0
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.DOUBLE and \
-           bond.GetBeginAtom().GetAtomicNum() == 6 and \
-           bond.GetEndAtom().GetAtomicNum() == 6:
-            double_bond_count += 1
-
-    if double_bond_count != 1:
-        return False, f"Found {double_bond_count} carbon-carbon double bonds, need exactly 1"
-
-    # Check if the molecule is a hydrocarbon (only contains C and H)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in [1, 6]:
-            return False, "Molecule contains non-carbon and non-hydrogen atoms"
-
-    # Check the general formula CnH2n
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    if h_count != 2 * c_count:
-        return False, f"Hydrogen count ({h_count}) does not match 2 * carbon count ({2 * c_count})"
-
     return True, "Acyclic hydrocarbon with exactly one carbon-carbon double bond"
-
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:32878',
-                          'name': 'alkene',
-                          'definition': 'An acyclic branched or unbranched '
-                                        'hydrocarbon having one carbon-carbon '
-                                        'double bond and the general formula '
-                                        'CnH2n. Acyclic branched or unbranched '
-                                        'hydrocarbons having more than one '
-                                        'double bond are alkadienes, '
-                                        'alkatrienes, etc.',
-                          'parents': ['CHEBI:32877', 'CHEBI:33281']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:32878',
@@ -107,100 +59,223 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:32878',
                           'xrefs': ['KEGG:C01372'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 30,
+                           'log_lines_of_code': 3.4011973816621555,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 3,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'GetBondType',
+                                                 'NumRings',
+                                                 'MolFromSmiles',
+                                                 'GetAtoms',
+                                                 'GetBonds',
+                                                 'GetAtomicNum',
+                                                 'GetRingInfo'],
+                           'methods_called_count': 7,
+                           'smarts_strings': [],
+                           'smarts_strings_count': 0,
+                           'defs': ['is_alkene(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Contains '
+                                          'non-carbon/hydrogen atoms"',
+                                          'False, "Contains triple bonds"',
+                                          'False, f"Found {double_bonds} '
+                                          'double bonds, need exactly 1"',
+                                          'False, "Molecule contains rings"',
+                                          'True, "Acyclic hydrocarbon with '
+                                          'exactly one carbon-carbon double '
+                                          'bond"'],
+                           'returns_count': 6,
+                           'complexity': 4.080239476332431},
     'message': '\n'
+               'Error: unexpected indent (<string>, line 1)\n'
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: NONE\n'
                'False positives: NONE\n'
-               'False negatives: SMILES: CCCCCCCCC=C NAME: 1-decene REASON: '
-               'MISSED Hydrogen count (0) does not match 2 * carbon count '
-               '(20)\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCC=C NAME: nonadec-1-ene REASON: '
-               'MISSED Hydrogen count (0) does not match 2 * carbon count '
-               '(38)\n'
-               ' * SMILES: CCCCCCCCCCCCCCC=C NAME: 1-hexadecene REASON: MISSED '
-               'Hydrogen count (0) does not match 2 * carbon count (32)\n'
-               ' * SMILES: CCCCC\\C=C/C NAME: (Z)-2-octene REASON: MISSED '
-               'Hydrogen count (0) does not match 2 * carbon count (16)\n'
-               ' * SMILES: CCCCCC(C)CCC=C NAME: 5-methyldec-1-ene REASON: '
-               'MISSED Hydrogen count (0) does not match 2 * carbon count '
-               '(22)\n'
-               ' * SMILES: CCCCCCCCCCC=C NAME: 1-dodecene REASON: MISSED '
-               'Hydrogen count (0) does not match 2 * carbon count (24)\n'
-               ' * SMILES: C=C NAME: ethene REASON: MISSED Hydrogen count (0) '
-               'does not match 2 * carbon count (4)\n'
-               ' * SMILES: [H]C(C)=C([H])CCCCC NAME: 2-octene REASON: MISSED '
-               'Hydrogen count (0) does not match 2 * carbon count (16)\n'
-               ' * SMILES: CC\\C=C/CC NAME: cis-3-hexene REASON: MISSED '
-               'Hydrogen count (0) does not match 2 * carbon count (12)\n'
-               ' * SMILES: CCCCCCCCCC\\C=C\\C NAME: (2E)-2-tridecene REASON: '
-               'MISSED Hydrogen count (0) does not match 2 * carbon count '
-               '(26)\n'
+               'False negatives: NONE\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'OC[C@H]1O[C@H](C[C@@H]1O)N1C=NC2=C1N=CNC[C@H]2O',
-                                     'name': 'pentostatin',
-                                     'reason': 'Molecule contains rings'},
-                                 {   'smiles': 'O1C(CCC=2C1=CC(OC3OC(C(O)C(O)C3O)C(O)=O)=C(C2OC)C=4C(=O)C=5C(OC4)=CC(O)=C(O)C5)(C)C',
-                                     'name': '6-{[6-(6,7-dihydroxy-4-oxo-4H-chromen-3-yl)-5-methoxy-2,2-dimethyl-3,4-dihydro-2H-1-benzopyran-7-yl]oxy}-3,4,5-trihydroxyoxane-2-carboxylic '
-                                             'acid',
-                                     'reason': 'Molecule contains rings'},
-                                 {   'smiles': 'O=C1O[C@@H]([C@@H](OC)C=CC=C(C[C@@H](C)[C@@H]([C@@H]([C@@H]([C@@H](C=C(C=C1OC)C)C)O)C)O)C)[C@H]([C@@H](O)[C@@H]([C@@]2(O[C@H](/C=C/C)[C@@H](C)[C@@H](C2)OC3OC(C(O)C(C3)O)C)O)C)C',
-                                     'name': 'Concanamycin D',
-                                     'reason': 'Molecule contains rings'},
-                                 {   'smiles': 'O1[C@@H](O[C@@H]2[C@@H](O)[C@@H](O[C@@H]([C@@H]2O)CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO)O)[C@H](NC(=O)C)[C@@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H](O[C@@H]5O[C@H]([C@@H](O)[C@@H](O)[C@@H]5O)C)[C@H]1CO',
-                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3R,4S,5S,6R)-4-[(2S,3R,4R,5S,6R)-3-Acetamido-6-(hydroxymethyl)-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-5-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
-                                     'reason': 'Molecule contains rings'},
-                                 {   'smiles': 'O=C(O)[C@]1([C@H]2[C@@](OC=3C=C4C5=C(C=CC=C5)NC4=CC3CC2)(CC[C@@H]1O)C)C',
-                                     'name': 'Oxiamycin',
-                                     'reason': 'Molecule contains rings'},
-                                 {   'smiles': 'C1CCC(C1)CC#CC2=CC=C(C=C2)[C@@H]3[C@@H]4CN(CC(=O)N4[C@@H]3CO)C(=O)C5=CC=C(C=C5)F',
-                                     'name': '(6R,7R,8S)-7-[4-(3-cyclopentylprop-1-ynyl)phenyl]-4-[(4-fluorophenyl)-oxomethyl]-8-(hydroxymethyl)-1,4-diazabicyclo[4.2.0]octan-2-one',
-                                     'reason': 'Molecule contains rings'},
-                                 {   'smiles': 'S(=O)(C(SSCCC)CC)CCC',
-                                     'name': 'Propyl 1-(propylsulfinyl)propyl '
-                                             'disulfide',
-                                     'reason': 'Found 0 carbon-carbon double '
-                                               'bonds, need exactly 1'},
-                                 {   'smiles': 'ClC=1C(=O)[C@@H]([C@@](O)(C/C=C\\CCCCC)C1)C[C@H](OC(=O)C)[C@@H](OC(=O)C)CCCC(OC)=O',
-                                     'name': 'punaglandin 6',
-                                     'reason': 'Molecule contains rings'},
-                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C(=O)N[C@@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O)[C@H](O)[C@@H](O)CCCCCCCCCCCCCC',
-                                     'name': 'Ins-1-P-Cer(t18:0/2-OH-26:0)',
-                                     'reason': 'Molecule contains rings'},
-                                 {   'smiles': 'CCC(C)(C)C(=O)OC1CC(C=C2C1[C@H]([C@H](C=C2)C)CC[C@@H]3CC(CC(=O)O3)O)C',
-                                     'name': '2,2-dimethylbutanoic acid '
-                                             '[(7S,8S)-8-[2-[(2R)-4-hydroxy-6-oxo-2-oxanyl]ethyl]-3,7-dimethyl-1,2,3,7,8,8a-hexahydronaphthalen-1-yl] '
-                                             'ester',
-                                     'reason': 'Molecule contains rings'}],
+    'sample_true_negatives': [   {   'smiles': 'O1[C@@]2([C@@H]([C@H]([C@@](C2)(C1)[H])/C=C/[C@@H](O)CCCCC)C/C=C\\CCCC(O)=O)[H]',
+                                     'name': 'U-44069',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': 'CO[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1n1cc(C)c(=O)[nH]c1=O',
+                                     'name': "2'-O-methyl-5-methyluridine",
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': 'O(C1O[C@@H]([C@@H](O)[C@H](O)[C@H]1NC(=O)C)CO)[C@H]2[C@@H](O)[C@H](O)[C@H](O[C@@H]2O)CO',
+                                     'name': 'N-[(3R,4R,5S,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-2-[(2S,3S,4S,5S,6R)-2,4,5-trihydroxy-6-(hydroxymethyl)oxan-3-yl]oxyoxan-3-yl]acetamide',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': 'O[C@@H](C1=CC(=CC=C1)C=C)CO',
+                                     'name': '(1S)-(3-Ethenylphenyl)-1,2-ethanediol',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': 'ClCCCCCCCC/C=C/CC(=O)O[C@H](C(=O)OCCC(=O)N1O[C@@H](CC(=N1)CCCCC)CCCCC)C',
+                                     'name': 'Nocuolactylate A',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCOC[C@@H](O)CO',
+                                     'name': '1-O-octadecyl-sn-glycerol',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': 'O([C@H]1O[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]3O)CO)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O)[C@@H]1O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]6O)CO)[C@H](O)[C@@H]5NC(=O)C)CO)CO)[C@H]8[C@H](O)[C@H](O[C@@H](O[C@H]9[C@H](O)[C@H](NC(=O)C)[C@@H](O[C@@H]9CO)O[C@H]%10[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]%10CO[C@@H]%11O[C@H]([C@@H](O)[C@@H](O)[C@@H]%11O)C)O)[C@H]8O)CO[C@H]%12O[C@@H]([C@@H](O)[C@H](O)[C@@H]%12O[C@@H]%13O[C@@H]([C@@H](O[C@@H]%14O[C@@H]([C@H](O)[C@H](O[C@@H]%15O[C@@H]([C@@H](O[C@@H]%16O[C@@H]([C@H](O)[C@H](O)[C@H]%16O)CO)[C@H](O)[C@H]%15NC(=O)C)CO)[C@H]%14O)CO)[C@H](O)[C@H]%13NC(=O)C)CO)CO[C@@H]%17O[C@@H]([C@@H](O[C@@H]%18O[C@@H]([C@H](O)[C@H](O[C@@H]%19O[C@@H]([C@@H](O[C@@H]%20O[C@@H]([C@H](O)[C@H](O[C@]%21(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%21)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%20O)CO)[C@H](O)[C@H]%19NC(=O)C)CO)[C@H]%18O)CO)[C@H](O)[C@H]%17NC(=O)C)CO',
+                                     'name': 'CID 146015963',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': 'O1OC(CC1C(OO)/C=C/C(OO)CCCCC)/C=C/C=C/CCCC(OC)=O',
+                                     'name': 'Methyl '
+                                             '9,11-epidioxy-12,15-dihydroperoxy-5,7,13-eicosatrienoate',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': '[C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\\OS(O)(=O)=O)/CCCCSC',
+                                     'name': 'glucoerucin',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'},
+                                 {   'smiles': 'O1C(=O)C([C@H](CC(=O)C)C2=CC=CC=C2)=C(O)C3=C1C(O)=CC=C3',
+                                     'name': 'R-8-Hydroxywarfarin',
+                                     'reason': 'Contains non-carbon/hydrogen '
+                                               'atoms'}],
     'sample_false_negatives': [   {   'smiles': 'C(CCCC(CCCC(C=C)=C)C)(CCCC(C)C)C',
                                       'name': 'neophytadiene',
-                                      'reason': 'Found 2 carbon-carbon double '
-                                                'bonds, need exactly 1'},
+                                      'reason': 'Found 2 double bonds, need '
+                                                'exactly 1'},
                                   {   'smiles': 'C=CCCCCCCC1OC1',
                                       'name': '1,2-epoxy-9-decene',
-                                      'reason': 'Molecule contains rings'}],
+                                      'reason': 'Contains non-carbon/hydrogen '
+                                                'atoms'}],
     'attempt': 1,
-    'reasoning': 'The previous program failed because it incorrectly '
-                 'calculated the hydrogen count in the SMILES strings. The '
-                 "issue arises because RDKit's `MolFromSmiles` function does "
-                 'not explicitly include hydrogens in the molecular graph '
-                 'unless they are explicitly specified in the SMILES string. '
-                 'This leads to an incorrect hydrogen count, which in turn '
-                 'causes the program to fail the `CnH2n` check.\n'
+    'reasoning': '</think>\n'
                  '\n'
-                 'To fix this, we need to add hydrogens to the molecule '
-                 'explicitly before counting the atoms. This can be done using '
-                 'the `AddHs` function from RDKit. Additionally, we should '
-                 'ensure that the molecule is acyclic and contains exactly one '
-                 'carbon-carbon double bond, as before.\n'
+                 "Okay, let's try to figure out why the previous code didn't "
+                 'work. The user mentioned an "unexpected indent" error, which '
+                 "usually means there's a problem with the code's formatting. "
+                 'Looking at the previous code, I notice that the examples '
+                 "list is written as part of the code block, which isn't valid "
+                 'Python. The user probably included the examples in the code '
+                 'by mistake, causing syntax errors.\n'
                  '\n'
-                 'Here is the corrected code:',
+                 'Now, focusing on the actual task: create a function '
+                 '`is_alkene` that checks if a SMILES string represents an '
+                 'alkene. The definition says alkenes have exactly one '
+                 'carbon-carbon double bond, are acyclic, and are hydrocarbons '
+                 '(only C and H).\n'
+                 '\n'
+                 'First, I need to parse the SMILES into a molecule. Then, '
+                 'check for exactly one double bond. Also, ensure there are no '
+                 'rings (acyclic) and no heteroatoms.\n'
+                 '\n'
+                 'Steps:\n'
+                 '1. Parse the SMILES. If invalid, return False.\n'
+                 '2. Check that all atoms are C or H.\n'
+                 '3. Count the number of double bonds. Must be exactly one.\n'
+                 '4. Ensure the molecule is acyclic (no rings).\n'
+                 '5. Exclude molecules with more than one double bond or any '
+                 'triple bonds.\n'
+                 '\n'
+                 'Wait, but the problem statement says "acyclic branched or '
+                 'unbranched hydrocarbon having one carbon-carbon double '
+                 'bond". So the molecule must be acyclic, only C and H, '
+                 'exactly one double bond (not triple), and no rings.\n'
+                 '\n'
+                 'So in code:\n'
+                 '- Use RDKit to get the molecule.\n'
+                 '- Check for Hydrocarbon: all atoms are C or H.\n'
+                 "- Count double bonds: use GetSubstructMatches for 'C=C' "
+                 'pattern, but need to count actual double bonds in the '
+                 'molecule.\n'
+                 "- Check for rings: if the molecule has any rings, it's not "
+                 'an alkene.\n'
+                 '- Also, ensure there are no triple bonds.\n'
+                 '\n'
+                 'Let me think about possible edge cases. For example, allenes '
+                 '(consecutive double bonds like C=C=C) should be excluded. '
+                 'The function should only allow one double bond.\n'
+                 '\n'
+                 'So, the plan is:\n'
+                 '1. Parse SMILES.\n'
+                 '2. Check for valid molecule.\n'
+                 '3. Check all atoms are C or H.\n'
+                 "4. Check that there's exactly one double bond (and no triple "
+                 'bonds).\n'
+                 '5. Check the molecule is acyclic (no rings).\n'
+                 '\n'
+                 'Implementing this in RDKit:\n'
+                 '\n'
+                 '- To count double bonds: iterate through all bonds and count '
+                 'those with bond type DOUBLE.\n'
+                 '- Check that the count is exactly 1.\n'
+                 '- Check that there are no rings using '
+                 'Mol.GetRingInfo().NumRings() > 0.\n'
+                 "- Check all atoms' atomic numbers are 6 (C) or 1 (H).\n"
+                 '\n'
+                 'Putting this together into the function.\n'
+                 '\n'
+                 'Testing examples: ethene (C=C) should return True. '
+                 '1,3-butadiene (C=CC=C) has two double bonds, should return '
+                 'False. Cyclohexene (with a ring) should return False. Any '
+                 'molecule with O or N should be rejected.\n'
+                 '\n'
+                 "Potential issues: stereochemistry (like cis/trans) shouldn't "
+                 'matter. Also, branched structures are allowed as long as '
+                 'they meet the criteria.\n'
+                 '\n'
+                 'So the code should:\n'
+                 '\n'
+                 '- Use Chem.MolFromSmiles to parse.\n'
+                 '- Check for validity.\n'
+                 "- Check each atom's atomic number.\n"
+                 '- Count double bonds.\n'
+                 '- Check rings.\n'
+                 '- Return True only if all conditions are met.\n'
+                 '\n'
+                 'Now, writing the code with these steps.\n'
+                 '\n'
+                 '</reasoning>',
     'success': True,
     'best': True,
     'error': '',

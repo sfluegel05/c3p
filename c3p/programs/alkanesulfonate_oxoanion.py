@@ -86,6 +86,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:134249',
                           'xrefs': ['MetaCyc:Alkanesulfonates'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Attempt failed: F1 score of 0.3975903614457831 is too low.\n'
                'Outcomes:\n'

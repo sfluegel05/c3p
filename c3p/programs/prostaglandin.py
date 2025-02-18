@@ -1,9 +1,6 @@
 """
 Classifies: CHEBI:26333 prostaglandin
 """
-"""
-Classifies: prostaglandin compounds
-"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
@@ -11,7 +8,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_prostaglandin(smiles: str):
     """
     Determines if a molecule is a prostaglandin based on its SMILES string.
-    Prostaglandins are naturally occurring C20 compounds derived from prostanoic acid.
+    Prostaglandins are derived from prostanoic acid, a C20 fatty acid with a cyclopentane ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -20,87 +17,37 @@ def is_prostaglandin(smiles: str):
         bool: True if molecule is a prostaglandin, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count carbons - should be approximately 20 (allow variation for derivatives)
+    # 1. Check for cyclopentane ring with attached chains
+    cyclopentane_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1")  #Basic 5 member ring
+    if not mol.HasSubstructMatch(cyclopentane_pattern):
+        return False, "No cyclopentane ring found"
+
+    #2. Check for a carboxyl acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    if not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "No carboxyl group found"
+
+    #3. Check for 20 carbons
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 15 or c_count > 35:
-        return False, f"Carbon count ({c_count}) outside typical range for prostaglandins"
-
-    # More flexible cyclopentane core pattern that includes various oxidation states
-    # and possible peroxide bridges (as in PGH series)
-    core_patterns = [
-        "[#6]1~[#6]~[#6]~[#6]~[#6]1",  # Basic 5-membered ring
-        "[#6]1~[#6]~[#6](~[#8,#6])~[#6]~[#6]1",  # With substituents
-        "[#6]1~[#6]2~[#6]~[#8]~[#8]~[#6]2~[#6]~[#6]~[#6]1"  # Peroxide bridge pattern
-    ]
+    if c_count != 20:
+        return False, f"Not 20 carbons, found {c_count}"
     
-    ring_found = False
-    for pattern in core_patterns:
-        core_pat = Chem.MolFromSmarts(pattern)
-        if core_pat and mol.HasSubstructMatch(core_pat):
-            ring_found = True
-            break
-    
-    if not ring_found:
-        return False, "Missing characteristic cyclopentane ring structure"
+    #4. Check for at least one double bond
+    double_bond_pattern = Chem.MolFromSmarts("[C]=[C]")
+    if not mol.HasSubstructMatch(double_bond_pattern):
+        return False, "No double bond found"
 
-    # Check for characteristic chains with double bonds
-    # More flexible pattern that captures both cis and trans configurations
-    chain_pattern = Chem.MolFromSmarts("[#6]~[#6]=[#6]~[#6]")
-    if not mol.HasSubstructMatch(chain_pattern):
-        return False, "Missing characteristic alkenyl chains"
-
-    # Check for carboxylic acid or derivatives (including esters and amides)
-    acid_patterns = [
-        "[CX3](=[OX1])[OX2H]",  # Carboxylic acid
-        "[CX3](=[OX1])[OX2][#6]",  # Ester
-        "[CX3](=[OX1])[NX3]",  # Amide
-        "[CX3](=[OX1])[O-]"  # Carboxylate
-    ]
-    
-    acid_found = False
-    for pattern in acid_patterns:
-        acid_pat = Chem.MolFromSmarts(pattern)
-        if acid_pat and mol.HasSubstructMatch(acid_pat):
-            acid_found = True
-            break
-            
-    if not acid_found:
-        return False, "Missing carboxylic acid or derivative group"
-
-    # Count oxygen atoms (allow wider range for derivatives)
+    # 5. Check for 4-6 oxygens
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 2:
-        return False, f"Insufficient oxygen atoms ({o_count}) for prostaglandin"
+    if o_count < 4 or o_count > 6:
+        return False, f"Oxygen count is not between 4 and 6, found {o_count}"
 
-    # Look for oxygen substituents (more flexible pattern)
-    oxygen_patterns = [
-        "[#6]~[#8H1]",  # Hydroxyl
-        "[#6]=[#8]",    # Ketone
-        "[#8]~[#8]"     # Peroxide
-    ]
-    
-    oxygen_found = False
-    for pattern in oxygen_patterns:
-        o_pat = Chem.MolFromSmarts(pattern)
-        if o_pat and mol.HasSubstructMatch(o_pat):
-            oxygen_found = True
-            break
-            
-    if not oxygen_found:
-        return False, "Missing characteristic oxygen substituents"
-
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 600:  # Widened range for derivatives
-        return False, f"Molecular weight ({mol_wt:.1f}) outside typical range"
-
-    return True, "Matches prostaglandin structural features: cyclopentane ring, oxygen substituents, characteristic chains"
+    return True, "Meets basic prostaglandin criteria"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26333',
@@ -113,157 +60,193 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26333',
                                        'LIPID_MAPS_class:LMFA0301'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'C1[C@H]2[C@@H]([C@H]([C@@H]1OO2)/C=C/[C@H](CCCC(C)O)O)CCCCCCC(O)=O '
-               'NAME: 19-hydroxyprostaglandin H1 REASON: MISSED Error in '
-               'oxygen SMARTS pattern\n'
-               ' * SMILES: '
-               'C(O)CCCCCC[C@@H]1[C@H]([C@@H](C[C@@H]1O)O)/C=C/[C@H](CCCCC)O '
-               'NAME: prostaglandin F1alpha alcohol REASON: MISSED No '
-               'carboxylic acid or derivative found\n'
-               ' * SMILES: '
-               'CCCCC[C@H](O)\\C=C\\C1=CCC(=O)[C@@H]1C\\C=C/CCCC(O)=O NAME: '
-               'prostaglandin C2 REASON: MISSED No cyclopentane ring found\n'
-               ' * SMILES: '
-               'CCCCC[C@H](O)\\C=C\\[C@H]1[C@H](O)C[C@H](O)[C@@H]1CC(=O)CCCCC(O)=O '
-               'NAME: 6-oxoprostaglandin F1alpha REASON: MISSED Error in '
-               'oxygen SMARTS pattern\n'
-               ' * SMILES: '
-               'CCCCCC(=O)\\C=C\\[C@H]1[C@H](O)CC(=O)[C@@H]1C\\C=C/CCCC(O)=O '
-               'NAME: 15-dehydro-prostaglandin E2 REASON: MISSED No '
-               'cyclopentane ring found\n'
-               ' * SMILES: '
-               'CCCCCCCC(=O)CC[C@H]1[C@H](O)C[C@H](O)[C@@H]1C\\C=C/CCCC(O)=O '
-               'NAME: unoprostone REASON: MISSED Error in oxygen SMARTS '
-               'pattern\n'
-               ' * SMILES: '
-               'CC(C)OC(=O)CCC\\C=C/C[C@H]1[C@@H](O)C[C@@H](O)[C@@H]1\\C=C\\C(F)(F)COc1ccccc1 '
-               'NAME: tafluprost REASON: MISSED No carboxylic acid or '
-               'derivative found\n'
-               ' * SMILES: '
-               'C(\\C[C@H]1[C@H](CC([C@@H]1/C=C/[C@H](CCCCC)O)=O)O)=C\\CCCC(=O)OC(CO)CO '
-               'NAME: prostaglandin D2 2-glyceryl ester REASON: MISSED No '
-               'cyclopentane ring found\n'
-               ' * SMILES: '
-               'CCCCC[C@H](O)\\C=C\\[C@H]1[C@H](O)CC(=O)[C@@H]1C\\C=C/CCCC(O)=O '
-               'NAME: prostaglandin E2 REASON: MISSED No cyclopentane ring '
-               'found\n'
-               ' * SMILES: '
-               'C(\\[C@H]1[C@@H](CC([C@@H]1C/C=C\\CCCC(O)=O)=O)O)=C/[C@H](CCCCCO)O '
-               'NAME: 20-hydroxyprostaglandin E2 REASON: MISSED No '
-               'cyclopentane ring found\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'Cc1cc(C)c2Cc3c(C)cc(C)c(Cc4c(C)cc(C)c(Cc5c(C)cc(C)c(Cc1c2C)c5C)c4C)c3C',
-                                     'name': '4,6,10,12,16,18,22,24,25,26,27,28-dodecamethylcalix[4]arene',
-                                     'reason': 'Carbon count (40) outside '
-                                               'typical range for '
-                                               'prostaglandins'},
-                                 {   'smiles': 'O[C@@H]([C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)N[C@@H](CC(C)C)C(O)=O)C',
-                                     'name': 'Glu-Thr-Leu',
-                                     'reason': 'Missing characteristic '
-                                               'cyclopentane ring structure'},
-                                 {   'smiles': 'CCOc1ccc(NC(=O)C(C)O)cc1',
-                                     'name': 'p-Lactophenetide',
-                                     'reason': 'Carbon count (11) outside '
-                                               'typical range for '
-                                               'prostaglandins'},
-                                 {   'smiles': 'O=C1NCC=2C1=C3C(N([C@@H]4O[C@H]([C@@H](O)[C@H]([C@H]4OC)O)C)C5=C3C=CC=C5)=C6NC7=C(C26)C=CC=C7',
-                                     'name': "3'-epi-5'-methoxy-K252d",
-                                     'reason': 'Missing characteristic '
-                                               'cyclopentane ring structure'},
-                                 {   'smiles': 'O=C(OC1C(O)C(OC(C1O)CO)OCC2OC(OCC(OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)C(O)C(C2O)O)CCCCCCCCCCCCCCC',
-                                     'name': '[(2S)-2-hexadecanoyloxy-3-[(2S,3R,4S,5S,6R)-6-[[(2S,3R,4S,5S,6R)-4-hexadecanoyloxy-3,5-dihydroxy-6-(hydroxymethyl)tetrahydropyran-2-yl]oxymethyl]-3,4,5-trihydroxy-tetrahydropyran-2-yl]oxy-propyl] '
-                                             '(9E,12E,15E)-octadeca-9,12,15-trienoate',
-                                     'reason': 'Carbon count (65) outside '
-                                               'typical range for '
-                                               'prostaglandins'},
-                                 {   'smiles': 'O=C1C2=C(O)C=C(OC)C=C2C(=O)C3=C1[C@@H]([C@@H](O)[C@]([C@@H]3O)(O)C)C',
-                                     'name': 'Altersolanol G',
-                                     'reason': 'Missing characteristic '
-                                               'cyclopentane ring structure'},
-                                 {   'smiles': '[H][C@]1(O[C@](O)(C[C@H](O)[C@H]1NC(=O)CO)C([O-])=O)[C@H](O)[C@H](O)CO',
-                                     'name': 'N-glycoloyl-alpha-neuraminate',
-                                     'reason': 'Carbon count (11) outside '
-                                               'typical range for '
-                                               'prostaglandins'},
-                                 {   'smiles': 'OC(C(O)C/C=C\\C/C=C\\C/C=C\\CC)C/C=C\\C/C=C\\CCC(O)=O',
-                                     'name': '10,11-DiHDPE',
-                                     'reason': 'Missing characteristic '
-                                               'cyclopentane ring structure'},
-                                 {   'smiles': '[Na+].[H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](N)c1ccccc1)C([O-])=O',
-                                     'name': 'cephalexin sodium',
-                                     'reason': 'Missing characteristic '
-                                               'cyclopentane ring structure'},
-                                 {   'smiles': 'C1=CC=C(C=C1)COC2=CC=CC=C2C=NN3C(=NN=N3)N',
-                                     'name': '1-[(2-phenylmethoxyphenyl)methylideneamino]-5-tetrazolamine',
-                                     'reason': 'Missing characteristic '
-                                               'cyclopentane ring structure'}],
-    'sample_false_negatives': [   {   'smiles': 'C(O)CCCCCC[C@@H]1[C@H]([C@@H](C[C@@H]1O)O)/C=C/[C@H](CCCCC)O',
-                                      'name': 'prostaglandin F1alpha alcohol',
-                                      'reason': 'Missing carboxylic acid or '
-                                                'derivative group'},
-                                  {   'smiles': 'CCCCC[C@H](O)\\C=C\\[C@H]1[C@H](O)C[C@H](O)[C@@H]1C\\C=C/CCCCN(C)C',
-                                      'name': 'prostaglandin F2alpha '
-                                              'dimethylamine',
-                                      'reason': 'Missing carboxylic acid or '
-                                                'derivative group'},
+    'code_statistics': {   'lines_of_code': 34,
+                           'log_lines_of_code': 3.5263605246161616,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 3,
+                           'methods_called': [   'MolFromSmarts',
+                                                 'GetAtomicNum',
+                                                 'GetAtoms',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmiles'],
+                           'methods_called_count': 5,
+                           'smarts_strings': [   'C(=O)O',
+                                                 '[C]1[C][C][C][C]1',
+                                                 '[C]=[C]'],
+                           'smarts_strings_count': 3,
+                           'defs': ['is_prostaglandin(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No cyclopentane ring found"',
+                                          'False, "No carboxyl group found"',
+                                          'False, f"Not 20 carbons, found '
+                                          '{c_count}"',
+                                          'False, "No double bond found"',
+                                          'False, f"Oxygen count is not '
+                                          'between 4 and 6, found {o_count}"',
+                                          'True, "Meets basic prostaglandin '
+                                          'criteria"'],
+                           'returns_count': 7,
+                           'complexity': 3.7052721049232327},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'CCN1N=C(N=N1)C2=CC=CC=C2NC(=O)C3=CC=C(C=C3)N4C=NN=N4',
+                                     'name': 'N-[2-(2-ethyl-5-tetrazolyl)phenyl]-4-(1-tetrazolyl)benzamide',
+                                     'reason': 'No cyclopentane ring found'},
+                                 {   'smiles': 'CCS(=O)(=O)N1CC2(C1)[C@@H]([C@@H](N2C(=O)C3CCCC3)CO)C4=CC=C(C=C4)C=CC',
+                                     'name': 'LSM-38092',
+                                     'reason': 'No carboxyl group found'},
+                                 {   'smiles': 'O=C/1N/C(/C(=O)N\\C1=C\\C2=CC=CC=C2)=C\\C=3N=CNC3C(C=C)(C)C',
+                                     'name': 'DeltaPLH',
+                                     'reason': 'No cyclopentane ring found'},
+                                 {   'smiles': 'C1CCN(CC1)C(=O)C[C@H]2C[C@@H]3[C@H]([C@@H](O2)CO)OC4=C3C=C(C=C4)NC(=O)CC5CC5',
+                                     'name': 'N-[(1S,3R,4aS,9aR)-1-(hydroxymethyl)-3-[2-oxo-2-(1-piperidinyl)ethyl]-3,4,4a,9a-tetrahydro-1H-pyrano[3,4-b]benzofuran-6-yl]-2-cyclopropylacetamide',
+                                     'reason': 'No cyclopentane ring found'},
+                                 {   'smiles': 'C[C@H]1C[C@@]2(OC(=O)c3ccccc3)[C@H]([C@H]1OC(C)=O)[C@@H](O)\\C(C)=C/C[C@H]1[C@@H](\\C=C(C)\\C2=O)C1(C)C',
+                                     'name': '(-)-(6Z,12E,2S,3S,4R,5R,9S,11S,15R)-3-acetoxy-15-benzoyloxylathyra-6,12-dien-5-ol-14-one',
+                                     'reason': 'Not 20 carbons, found 29'},
+                                 {   'smiles': 'O=C1C(O)=CC=2O[C@]3([C@H](O)C[C@@H]4[C@](OC=5C=C(O)C(C=C(C5C4)C)=O)(CC=CC(C[C@H]3CC2C(=C1)C)(C)C)C)C',
+                                     'name': 'Eupenifeldin',
+                                     'reason': 'No cyclopentane ring found'},
+                                 {   'smiles': 'O1[C@@H](O[C@@H]2[C@@H](OC[C@H]3O[C@@H](O[C@H]4[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]4CO)O[C@H]5[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]5CO[C@@H]6O[C@H]([C@@H](O)[C@@H](O)[C@@H]6O)C)O)[C@@H](O)[C@@H](O[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9NC(=O)C)CO)[C@H](O)[C@H]8NC(=O)C)CO)CO)[C@@H]3O)O[C@@H]([C@@H](O)[C@@H]2O)CO)[C@H](NC(=O)C)[C@@H](O[C@@H]%10O[C@H]([C@@H](O)[C@@H](O)[C@@H]%10O)C)[C@H](O[C@@H]%11O[C@@H]([C@H](O)[C@H](O)[C@H]%11NC(=O)C)CO)[C@H]1CO',
+                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5R,6R)-4-[(2R,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4R,5R,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4R,5R,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-(hydroxymethyl)-4-[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-[[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxymethyl]oxan-3-yl]acetamide',
+                                     'reason': 'No cyclopentane ring found'},
+                                 {   'smiles': 'CN1C[C@@H]2C[C@H](Cn3c2cccc3=O)[C@H]1CC=C',
+                                     'name': 'Tinctorine',
+                                     'reason': 'No cyclopentane ring found'},
+                                 {   'smiles': 'CCC1=C2COC(CC2=C3C(=C(OC3=N1)C(=O)C4=CC=CC=C4)N)(C)C',
+                                     'name': 'LSM-4563',
+                                     'reason': 'No cyclopentane ring found'},
+                                 {   'smiles': 'CN1CCN(CC1)C(=O)C[C@@H]2CC[C@H]3[C@H](O2)COC[C@@H](CN3C(=O)NC4=CC5=C(C=C4)OCO5)O',
+                                     'name': '(3R,6aS,8S,10aS)-N-(1,3-benzodioxol-5-yl)-3-hydroxy-8-[2-(4-methyl-1-piperazinyl)-2-oxoethyl]-3,4,6,6a,8,9,10,10a-octahydro-2H-pyrano[2,3-c][1,5]oxazocine-1-carboxamide',
+                                     'reason': 'No cyclopentane ring found'}],
+    'sample_false_negatives': [   {   'smiles': 'OCC(CO)OC(CCC/C=C/1\\O[C@]2(C[C@H]([C@@H]([C@]2(C1)[H])/C=C/[C@H](CCCCC)O)O)[H])=O',
+                                      'name': 'prostaglandin I2 2-glyceryl '
+                                              'ester',
+                                      'reason': 'Not 20 carbons, found 23'},
+                                  {   'smiles': 'C(\\[C@H]1[C@@H](CC([C@@H]1C/C=C\\CCCC(OC(CO)CO)=O)=O)O)=C/[C@H](CCCCC)O',
+                                      'name': 'prostaglandin E2 2-glyceryl '
+                                              'ester',
+                                      'reason': 'Not 20 carbons, found 23'},
+                                  {   'smiles': 'CC(C)OC(=O)CCC\\C=C/C[C@H]1[C@@H](O)C[C@@H](O)[C@@H]1\\C=C\\C(F)(F)COc1ccccc1',
+                                      'name': 'tafluprost',
+                                      'reason': 'Not 20 carbons, found 25'},
+                                  {   'smiles': 'O[C@@H]1C[C@H](O)[C@H](C\\C=C/CCCC(O)=O)[C@H]1CCC(=O)CCCCC(O)=O',
+                                      'name': '13,14-dihydro-15-oxo-20-carboxy-PGF2alpha',
+                                      'reason': 'Oxygen count is not between 4 '
+                                                'and 6, found 7'},
+                                  {   'smiles': 'C(CCC(O)=O)/C=C\\C[C@@H]1\\C(\\C(C=C1)=O)=C/C=C/C/C=C\\CC',
+                                      'name': '15-deoxy-Delta(12,14)-prostaglandin '
+                                              'J3',
+                                      'reason': 'No cyclopentane ring found'},
+                                  {   'smiles': '[C@@H]1(C(C=C[C@@H]1/C=C/[C@H](C/C=C\\CC)O)=O)C/C=C\\CCCC(=O)O',
+                                      'name': 'prostaglandin A3',
+                                      'reason': 'No cyclopentane ring found'},
+                                  {   'smiles': 'C(CCC(O)=O)/C=C\\C[C@@H]1/C(/C(C=C1)=O)=C\\C[C@H](C/C=C\\CC)O',
+                                      'name': 'Delta(12)-prostaglandin J3',
+                                      'reason': 'No cyclopentane ring found'},
                                   {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O',
                                       'name': 'nonacosanoic acid',
-                                      'reason': 'Missing characteristic '
-                                                'cyclopentane ring structure'}],
-    'attempt': 3,
-    'reasoning': 'Let me analyze the issues with the previous code and propose '
-                 'improvements:\n'
+                                      'reason': 'No cyclopentane ring found'},
+                                  {   'smiles': 'C(O)CCCCCC[C@@H]1[C@H]([C@@H](C[C@@H]1O)O)/C=C/[C@H](CCCCC)O',
+                                      'name': 'prostaglandin F1alpha alcohol',
+                                      'reason': 'No carboxyl group found'},
+                                  {   'smiles': 'CCCCC\\C=C\\C=C1\\C=CC(=O)[C@@H]1C\\C=C/CCCC(O)=O',
+                                      'name': '15-deoxy-Delta(12,14)-prostaglandin '
+                                              'A2',
+                                      'reason': 'No cyclopentane ring found'}],
+    'attempt': 0,
+    'reasoning': "Okay, let's analyze the characteristics of prostaglandins "
+                 'and devise a strategy for identifying them from SMILES '
+                 'strings.\n'
                  '\n'
-                 '1. Core Structure Recognition:\n'
-                 '- The previous code was too strict about the cyclopentane '
-                 'ring pattern. Prostaglandins can have various substituents '
-                 'and oxidation states on the ring.\n'
-                 '- Some prostaglandins (like PGH series) have peroxide '
-                 'bridges in the ring.\n'
-                 '- Need to make the ring pattern more flexible to account for '
-                 'these variations.\n'
+                 '**Prostaglandin Characteristics:**\n'
                  '\n'
-                 '2. Chain Recognition:\n'
-                 '- The chain pattern "CC=CC" was too simple and missed many '
-                 'valid structures.\n'
-                 '- Need to better capture the characteristic α and ω chains '
-                 'with their various modifications.\n'
-                 '- Should account for both cis and trans double bonds.\n'
+                 '1.  **Prostanoic Acid Core:** They are all derived from '
+                 'prostanoic acid, a C20 fatty acid with a cyclopentane ring.\n'
+                 '2.  **Cyclopentane Ring:** They all possess a central '
+                 'five-membered ring (cyclopentane), often with substituents.\n'
+                 '3.  **Carboxylic Acid Group:** They have a carboxylic acid '
+                 'group (COOH) at the end of a fatty acid chain.\n'
+                 '4.  **Variations in Substituents:**  The variations between '
+                 'prostaglandins arise from different substituents on the '
+                 'cyclopentane ring (e.g., hydroxyl groups -OH, keto groups '
+                 '=O) and the presence of double bonds.\n'
+                 '5.  **C=C double bonds.** Most prostaglandins have at least '
+                 'one double bond in either chain or the ring.\n'
+                 '6.  **Carbon count.** Prostaglandins have 20 carbons.\n'
+                 '7.  **Oxygen count.** Prostaglandins usually contain 4-6 '
+                 'oxygens.\n'
                  '\n'
-                 '3. Oxygen Substituents:\n'
-                 '- The oxygen pattern was too specific and caused false '
-                 'negatives.\n'
-                 '- Need to handle various oxidation states (hydroxy, keto, '
-                 'peroxy) more flexibly.\n'
+                 '**Strategy:**\n'
                  '\n'
-                 '4. Carboxylic Acid Recognition:\n'
-                 '- The acid pattern was good but should also consider various '
-                 'derivatives like esters and amides.\n'
-                 '\n'
-                 "Here's my improved code:",
+                 "1.  **Basic Skeleton Check:** We'll look for the core "
+                 'cyclopentane ring with a chain and a carboxylic acid group.\n'
+                 '2.  **Carbon Count:** Check for 20 carbons.\n'
+                 '3.  **Double Bond Count:** Check for at least one double '
+                 'bond.\n'
+                 '4.  **Oxygen Count:** Check for 4-6 oxygens.\n'
+                 '5.  **Substituent Analysis:** Checking for specific '
+                 'substituents can refine the classification but is not '
+                 'required for the basic classification. This would need '
+                 "substructure matching, which is expensive. We'll not enforce "
+                 'this in the first go.',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 64,
-    'num_false_positives': 100,
-    'num_true_negatives': 4100,
-    'num_false_negatives': 3,
+    'num_true_positives': 30,
+    'num_false_positives': 189,
+    'num_true_negatives': 142044,
+    'num_false_negatives': 37,
     'num_negatives': None,
-    'precision': 0.3902439024390244,
-    'recall': 0.9552238805970149,
-    'f1': 0.5541125541125541,
-    'accuracy': 0.9758612608389969,
-    'negative_predictive_value': 0.9992688276870583}
+    'precision': 0.136986301369863,
+    'recall': 0.44776119402985076,
+    'f1': 0.20979020979020976,
+    'accuracy': 0.9984118060435699,
+    'negative_predictive_value': 0.999739585166208}

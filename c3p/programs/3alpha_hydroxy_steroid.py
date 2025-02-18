@@ -2,12 +2,12 @@
 Classifies: CHEBI:36835 3alpha-hydroxy steroid
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_3alpha_hydroxy_steroid(smiles: str):
     """
     Determines if a molecule is a 3alpha-hydroxy steroid based on its SMILES string.
-    A 3alpha-hydroxy steroid is defined as a steroid with a hydroxyl group at the 3-position
-    in an alpha orientation.
+    A 3alpha-hydroxy steroid is a 3-hydroxy steroid where the 3-hydroxy substituent is in the alpha-position.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,24 +21,23 @@ def is_3alpha_hydroxy_steroid(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Flexible steroid backbone pattern, allowing for various stereocenters and saturation.
-    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C(C)CC2)C1")  # Simplified representation of the steroid nucleus
-    if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No steroid backbone detected"
-    
-    # Pattern specifically for 3alpha-hydroxy group.
-    # The hydroxyl needs to be in the alpha position at the 3-carbon.
-    three_alpha_hydroxy_pattern = Chem.MolFromSmarts("[C@@H](O)C(C)C")  # Indicates alpha OH on C3
-    if not mol.HasSubstructMatch(three_alpha_hydroxy_pattern):
-        return False, "No 3alpha-hydroxy group detected"
-    
-    return True, "3alpha-hydroxy steroid structure identified"
+
+    # Define a pattern for the steroid backbone (adjust as needed for specificity)
+    steroid_backbone_pattern = Chem.MolFromSmarts("C1CCC2C3CCC4CC[C@H](O)C[C@]4(C)C3CC[C@]12C")
+    if not mol.HasSubstructMatch(steroid_backbone_pattern):
+        return False, "No steroid backbone found"
+        
+    # Define a SMARTS pattern for 3alpha-hydroxy group
+    # Note: This simplification assumes specific positions and stereochemistry, may need adjustment
+    hydroxy_pattern = Chem.MolFromSmarts("C[C@H](O)C")  # Hydroxyl at position 3 in alpha
+    if not mol.HasSubstructMatch(hydroxy_pattern):
+        return False, "No 3alpha-hydroxy group found"
+
+    return True, "Contains steroid backbone with 3alpha-hydroxy group"
 
 # Example usage
-smiles_example = "[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(CO)CO"
-result, reason = is_3alpha_hydroxy_steroid(smiles_example)
-print(f"Is 3alpha-hydroxy steroid: {result}, Reason: {reason}")
+smiles_example = "C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@]2(C[C@@H]([C@@H]1O)O)[H])[H])(CC[C@@]4([C@@H]([C@H]([C@@H](CC(C)C)O)O)C)[H])[H])C)[H])C"
+print(is_3alpha_hydroxy_steroid(smiles_example))  # Output should be True with reason
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:36835',
@@ -51,171 +50,114 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:36835',
                                        'PMID:11514561'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(CO)CO '
-               'NAME: 5beta-cyprinol REASON: MISSED No steroid backbone '
-               'detected\n'
-               ' * SMILES: '
-               '[H][C@@]1(CCC2C3=CC(=O)[C@@]4([H])C[C@H](O)CC[C@]4(C)C3CC[C@]12C)[C@H](C)CCCC(C)COS(O)(=O)=O '
-               'NAME: asterasterol B REASON: MISSED No steroid backbone '
-               'detected\n'
-               ' * SMILES: '
-               '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])CC[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(C)C(O)=O '
-               'NAME: 3alpha,7alpha-dihydroxy-5beta-cholestan-26-oic acid '
-               'REASON: MISSED No steroid backbone detected\n'
-               ' * SMILES: '
-               'C1[C@H](C[C@@]2([C@](C1)([C@@]3([C@@]([C@H]([C@H]2O)O)([C@@]4([H])[C@@](CC3)(C)[C@](CC4)([C@@H](CCC(O)=O)C)[H])[H])[H])C)[H])O '
-               'NAME: beta-muricholic acid REASON: MISSED No steroid backbone '
-               'detected\n'
-               ' * SMILES: '
-               '[H][C@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCO '
-               'NAME: 5alpha-cholane-3alpha,7alpha,12alpha,24-tetrol REASON: '
-               'MISSED No steroid backbone detected\n'
-               ' * SMILES: '
-               '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CC[C@H](O)C(C)C '
-               'NAME: (24S)-5beta-cholestane-3alpha,7alpha,12alpha,24-tetrol '
-               'REASON: MISSED No steroid backbone detected\n'
-               ' * SMILES: '
-               'S(O)(=O)(=O)CCNC(=O)CC[C@H]([C@@]1([C@@]2([C@]([C@]3([C@@]([C@@]4([C@]([C@H](O)[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC1)[H])C)[H])C '
-               'NAME: tauro-alpha-muricholic acid REASON: MISSED No steroid '
-               'backbone detected\n'
-               ' * SMILES: '
-               '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(CO)COS(O)(=O)=O '
-               'NAME: 5beta-cyprinol sulfate REASON: MISSED No steroid '
-               'backbone detected\n'
-               ' * SMILES: '
-               '[H][C@@]1(CC[C@@]2([H])[C@]3([H])COC(=O)[C@@]4([H])C[C@H](O)[C@H](O)C[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)[C@@H](O)[C@H](O)[C@@H](C)C(C)C '
-               'NAME: brassinolide REASON: MISSED No steroid backbone '
-               'detected\n'
-               ' * SMILES: '
-               'C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3([C@H]([C@H]([C@@]2(C[C@@H](C1)O)[H])O)O)[H])(CC[C@@]4([C@@H](CCC(NCCS(O)(=O)=O)=O)C)[H])[H])C)[H])C '
-               'NAME: tauro-beta-muricholic acid REASON: MISSED No steroid '
-               'backbone detected\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)CO)[C@H]3[C@@H](O)[C@H](OC(O)[C@@H]3O)CO',
-                                     'name': 'beta-D-Glcp-(1->2)-beta-D-Glcp-(1->3)-D-Galp',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': 'CCS(=O)(=O)NCC[C@@H]1CC[C@@H]([C@H](O1)CO)NC(=O)NC2=CC(=CC(=C2)Cl)Cl',
-                                     'name': '1-(3,5-dichlorophenyl)-3-[(2S,3S,6S)-6-[2-(ethylsulfonylamino)ethyl]-2-(hydroxymethyl)-3-oxanyl]urea',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': 'C(C(O)=O)C/C=C\\C/C=C\\C\\C=C/C=C/C=C/[C@H]1[C@H](C/C=C\\CC)O1',
-                                     'name': '(16S,17S)-epoxy-(4Z,7Z,10Z,12E,14E,19Z)-docosahexaenoic '
-                                             'acid',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': 'OC[C@H]1O[C@H](O[C@H]2[C@@H](CO)O[C@@H](O[C@@H]3[C@@H](CO)O[C@@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
-                                     'name': 'alpha-D-Galp-(1->4)-beta-D-Galp-(1->4)-beta-D-Glcp',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': '[Li+].[Br-]',
-                                     'name': 'lithium bromide',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': 'C=1(OC)C2=C(C=C3C[C@H]([C@](CC=4C=C(OC)C(OC)=C(C4C13)OC)(C)O)C)OCO2',
-                                     'name': 'Besigomsin',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': 'C1=CC=C(C(=C1)C=CC(=O)C2=CC=CN2)Cl',
-                                     'name': '3-(2-chlorophenyl)-1-(1H-pyrrol-2-yl)-2-propen-1-one',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': 'O=C1OC(O)C(=C1C(O)C(C)C)C',
-                                     'name': '5-Hydroxy-3-(1-hydroxy-2-methylpropyl)-4-methyl-2(5H)-furanone',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': '[H][C@@]1(COC(C)(C)[C@@]1([H])OC(=O)\\C=C\\c1ccccc1)c1c(O)ccc2C(=O)C[C@H](Oc12)c1ccccc1',
-                                     'name': '(+)-tephrorin B',
-                                     'reason': 'No steroid backbone detected'},
-                                 {   'smiles': 'C[C@@H]1CN(C(=O)C2=C(C3=CC=CC=C3CO[C@@H]1CN(C)CC4=CC=CC(=C4)C(=O)O)C5=CC=CC=C5N2C)[C@@H](C)CO',
-                                     'name': 'LSM-9341',
-                                     'reason': 'No steroid backbone detected'}],
-    'sample_false_negatives': [   {   'smiles': '[H][C@@]1(CCC2C3=CC(=O)[C@@]4([H])C[C@H](O)CC[C@]4(C)C3CC[C@]12C)[C@H](C)CCCC(C)COS(O)(=O)=O',
-                                      'name': 'asterasterol B',
-                                      'reason': 'No 3alpha-hydroxy group '
-                                                'detected'},
-                                  {   'smiles': '[H][C@@]12CC[C@]3([H])[C@]([H])(CC[C@]4(C)[C@@H](OC(C)=O)[C@H](C[C@@]34[H])[N+]3(CCCC3)CC=C)[C@@]1(C)C[C@@H]([C@@H](O)C2)N1CCOCC1',
-                                      'name': 'rocuronium',
-                                      'reason': 'No steroid backbone detected'},
-                                  {   'smiles': '[H][C@@]1(CC[C@@]2([H])[C@]3([H])CC[C@]4([H])C[C@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)C(C)=O',
-                                      'name': '3alpha-hydroxy-5beta-pregnan-20-one',
-                                      'reason': 'No 3alpha-hydroxy group '
-                                                'detected'},
-                                  {   'smiles': 'O1[C@@H]([C@H]([C@@H]([C@H]([C@@H]1O[C@@H]2[C@@]3([C@]([C@]4([C@](CC3)([C@@]5([C@](C[C@@H](CC5)O)(CC4)[H])C)[H])[H])(CC2)[H])C)O)O)O)C(O)=O',
-                                      'name': '5alpha-androstane-3alpha,17beta-diol '
-                                              '17-glucosiduronic acid',
-                                      'reason': 'No steroid backbone detected'},
-                                  {   'smiles': '[H][C@@]1(CCC2C3=CC(=O)[C@@]4([H])C[C@H](O)CC[C@]4(C)C3CC[C@]12C)[C@H](C)\\C=C\\CC(C)COS(O)(=O)=O',
-                                      'name': 'asterasterol C',
-                                      'reason': 'No 3alpha-hydroxy group '
-                                                'detected'},
-                                  {   'smiles': 'C1[C@@]2([C@@]([C@@]3([C@](C[C@H](O)CC3)(C1)[H])C)(CC[C@@]4([C@H](CC[C@@]24[H])OS(O)(=O)=O)C)[H])[H]',
+    'code_statistics': None,
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'O=C1C2=C(OC(=C1)C)C3=C(OC)C=C(OC)C=C3C(=C2O)C4=C5OC(=CC(C5=C(O)C=6C4=CC(OC)=CC6OC)=O)C',
+                                     'name': 'Isonigerone',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@@H](O)CO)OC(=O)CCCCCCC\\C=C/CCCCCCCC',
+                                     'name': '1-myristoyl-2-oleoyl-sn-glycero-3-phosphatidylglycerol(1-)',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'C(=C\\C/C=C\\CCCC(NC)=O)\\C/C=C\\C/C=C\\CCCCC',
+                                     'name': 'N-methyl arachidonoyl amine',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'OC1(O)[C@]23N(CC1)C(N(O)[C@H]([C@@]3(N=C(N2)N)[H])CO)=N',
+                                     'name': 'Decarbamoylneosaxitoxin',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'S([C@H]1N(C(=O)/C(=C\\C2=CC=C(OCC=C(C)C)C=C2)/N(C1=O)C)C)C',
+                                     'name': 'Fusaperazine F',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'Oc1ccccc1I',
+                                     'name': '2-iodophenol',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'O=C1N(CC(=O)N[C@H](C(=O)O[C@H]([C@@H](C(NC(C=C1)=C)=O)C)C(CCCCCCCCCCCCCC)C)C(O)C(=O)N)C',
+                                     'name': 'Rakicidin H',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=CC=C3)C=C2OC)C=C1)C/C=C(/CO)\\C',
+                                     'name': 'Prenylterphenyllin F',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@@H](O)[C@@H]1OC[C@H]3O[C@@H](OC[C@H]4O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]4O)[C@H](O)[C@@H](O)[C@@H]3O)CO[C@@H]5O[C@@H]([C@@H](O)[C@H](O[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO)[C@H]5O)CO[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7O)CO',
+                                     'name': '(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5R,6R)-6-[[(2R,3R,4S,5R,6R)-3,5-Dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxymethyl]oxane-2,3,4,5-tetrol',
+                                     'reason': 'No steroid backbone found'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)O)[C@@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H](O)[C@@H]6NC(=O)C)CO)CO)[C@@H]4O)CO[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)CO',
+                                     'name': 'Gal2GlcNAc2Man3GlcNAcFucGlcNAc',
+                                     'reason': 'No steroid backbone found'}],
+    'sample_false_negatives': [   {   'smiles': 'C1[C@@]2([C@@]([C@@]3([C@](C[C@H](O)CC3)(C1)[H])C)(CC[C@@]4([C@H](CC[C@@]24[H])OS(O)(=O)=O)C)[H])[H]',
                                       'name': '(3alpha,5alpha,17beta)-3-hydroxyandrostan-17-yl '
                                               'sulfate',
-                                      'reason': 'No steroid backbone detected'},
-                                  {   'smiles': 'C[C@H](CCC(O)=O)[C@H]1CC[C@H]2[C@H]3[C@H](CC[C@]12C)[C@@]1(C)CC[C@@H](O)C[C@H]1CC3=O',
-                                      'name': '7-oxolithocholic acid',
-                                      'reason': 'No 3alpha-hydroxy group '
-                                                'detected'},
-                                  {   'smiles': 'C[C@H](CCC[C@H](C)C(O)=O)[C@H]1CC[C@H]2C3=CC[C@H]4C[C@H](O)CC[C@]4(C)[C@H]3CC[C@]12C',
-                                      'name': '(25S)-3alpha-hydroxy-5alpha-cholest-7-en-26-oic '
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': 'CC(C)[C@H](C)[C@@H](O)[C@H](O)[C@@H](C)[C@H]1CC[C@H]2[C@@H]3CC(=O)[C@H]4C[C@H](O)CC[C@]4(C)[C@H]3CC[C@]12C',
+                                      'name': 'typhasterol',
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC[C@H](C)C(O)=O',
+                                      'name': '(25S)-3alpha,7alpha,12alpha-trihydroxy-5beta-cholestan-26-oic '
                                               'acid',
-                                      'reason': 'No 3alpha-hydroxy group '
-                                                'detected'},
-                                  {   'smiles': 'O[C@H]1C[C@@]2([C@@]([C@@]3([C@]([C@]4([C@@]([C@](CC4)([C@@H](CCCC(O)=O)C)[H])(CC3)C)[H])(CC2)[H])[H])(CC1)C)[H]',
-                                      'name': 'Homolithocholic acid',
-                                      'reason': 'No 3alpha-hydroxy group '
-                                                'detected'},
-                                  {   'smiles': 'C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(C(C[C@@]2(C[C@@H](C1)O)[H])=O)[H])(CC[C@@]4([C@@H](CCC(NCCS(O)(=O)=O)=O)C)[H])[H])C)[H])C',
-                                      'name': '7-oxotaurolithocholic acid',
-                                      'reason': 'No 3alpha-hydroxy group '
-                                                'detected'}],
-    'attempt': 4,
-    'reasoning': 'The previous attempt to classify 3alpha-hydroxy steroids '
-                 'failed because it did not adequately capture the structural '
-                 'features that define this class of compounds. Specifically, '
-                 'the steroid backbone pattern was too rigid and not broadly '
-                 'defined enough to account for the diversity in steroid '
-                 'structures. Moreover, the stereo-specific requirement for '
-                 'the hydroxyl group at the 3-position was potentially too '
-                 'simplistic, neglecting variant ring junctions and '
-                 'substitutions naturally occurring in steroids.\n'
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': '[H][C@@]1(CC[C@@]2([H])[C@]3([H])C[C@@H](O)[C@]4([H])C[C@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)CCC(O)=O',
+                                      'name': 'murideoxycholic acid',
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': '[H][C@]1([C@H](C)CCCC(O)=O)[C@H](O)C[C@@]2([H])[C@]3([H])[C@H](O)C[C@]4([H])C[C@H](O)CC[C@]4(C)[C@@]3([H])CC[C@]12C',
+                                      'name': 'homoavicholic acid',
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': '[H][C@@]1(CCC2C3=CC(=O)[C@@]4([H])C[C@H](O)CC[C@]4(C)C3CC[C@]12C)[C@H](C)CCCC(C)COS(O)(=O)=O',
+                                      'name': 'asterasterol B',
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(CO)COS(O)(=O)=O',
+                                      'name': '5beta-cyprinol sulfate',
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': '[C@]12([C@]([C@]3([C@](CC1)([C@@]4([C@@](C[C@@H](CC4)O)(C[C@H]3O)[H])C)[H])[H])(CC[C@@]2([C@@H](CCCC(C)(C)O)C)[H])[H])C',
+                                      'name': '5beta-cholestane-3alpha,7alpha,25-triol',
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])CC[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCCC(C)C(O)=O',
+                                      'name': '3alpha,7alpha-dihydroxy-5beta-cholestan-26-oic '
+                                              'acid',
+                                      'reason': 'No steroid backbone found'},
+                                  {   'smiles': '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CC[C@H](O)C(C)CO',
+                                      'name': '(24S)-5beta-cholestane-3alpha,7alpha,12alpha,24,26-pentol',
+                                      'reason': 'No steroid backbone found'}],
+    'attempt': 0,
+    'reasoning': 'To classify chemical entities as 3alpha-hydroxy steroids '
+                 'based on their SMILES string, we can take the following '
+                 'approach:\n'
                  '\n'
-                 "Here's what we can do to improve the classification:\n"
+                 '1. **Understand the Structure Key Features**:\n'
+                 '   - A 3alpha-hydroxy steroid is characterized by having a '
+                 'hydroxyl group (-OH) at the 3rd position in the '
+                 'alpha-configuration on a steroid backbone.\n'
+                 '   - Steroids typically have a structure composed of four '
+                 'fused carbon rings.\n'
                  '\n'
-                 '1. **Broadening the Steroid Backbone Definition**: Instead '
-                 'of using a single, rigid SMARTS pattern to identify the '
-                 'steroidal nucleus, we should use a more flexible pattern '
-                 'that accounts for typical variations in steroid structures, '
-                 'such as substitutions and ring junctions.\n'
+                 '2. **Identify Relevant Substructures**:\n'
+                 '   - We need to identify a hydroxyl group in the alpha '
+                 'position on the steroid framework, which consists of a '
+                 'cyclopentanoperhydrophenanthrene ring system.\n'
+                 '   - For alpha configurations, this often means the hydroxyl '
+                 'group is facing downward in 3D space, often represented by '
+                 '[C@ or C@@ in SMILES depending on the orientation.\n'
                  '\n'
-                 '2. **Improving Hydroxy Group Recognition**: We need to '
-                 'ensure that we identify the 3alpha-hydroxy group by '
-                 'explicitly anchoring the alcohol at the 3-position while '
-                 'considering common ring-indexing in steroids.\n'
+                 '3. **SMILES and SMARTS Pattern**:\n'
+                 '   - SMILES encode 3D stereochemistry information which is '
+                 'essential in distinguishing alpha vs. beta configurations.\n'
+                 '   - We should create a SMARTS pattern to identify the '
+                 'steroid backbone and then verify the presence of the '
+                 '3alpha-hydroxy group.\n'
                  '\n'
-                 "3. **Adding Stereocenter Verification**: Ensure that we're "
-                 'correctly determining the alpha positioning of the hydroxy '
-                 'group by checking the specific 3-position stereochemical '
-                 'orientation.\n'
+                 '4. **Programming with RDKit**:\n'
+                 '   - We will use RDKit, a cheminformatics library, to parse '
+                 'and analyze the SMILES structure.\n'
                  '\n'
-                 "Here's a refined version of the program using these "
-                 'improvements:',
+                 "Here's the implementation of such a classifier:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 72,
-    'num_false_positives': 100,
-    'num_true_negatives': 4776,
-    'num_false_negatives': 19,
+    'num_true_positives': 6,
+    'num_false_positives': 60,
+    'num_true_negatives': 142149,
+    'num_false_negatives': 85,
     'num_negatives': None,
-    'precision': 0.4186046511627907,
-    'recall': 0.7912087912087912,
-    'f1': 0.5475285171102662,
-    'accuracy': 0.9760418763841353,
-    'negative_predictive_value': 0.9960375391032326}
+    'precision': 0.09090909090909091,
+    'recall': 0.06593406593406594,
+    'f1': 0.07643312101910828,
+    'accuracy': 0.9989810260014055,
+    'negative_predictive_value': 0.9994023932393099}

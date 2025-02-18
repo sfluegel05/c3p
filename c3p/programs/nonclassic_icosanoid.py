@@ -1,53 +1,58 @@
 """
 Classifies: CHEBI:61703 nonclassic icosanoid
 """
+"""
+Classifies: Nonclassic Icosanoid
+"""
 from rdkit import Chem
 
 def is_nonclassic_icosanoid(smiles: str):
     """
     Determines if a molecule is a nonclassic icosanoid based on its SMILES string.
-    A nonclassic icosanoid is a biologically active signaling molecule derived from 
-    the oxygenation of C20 fatty acids, excluding classic leukotrienes and prostanoids.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a nonclassic icosanoid, False otherwise
+        bool: True if molecule is a nonclassic icosanoid, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Ensure 20 carbon count (specific count for C20 fatty acid backbone)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20:
-        return False, "Does not have at least 20 carbons, which is required for C20 fatty acids"
-
-    # Check for at least three double bonds, enforced for icosatrienoid backbones
-    dbl_bond_count = len([bond for bond in mol.GetBonds() if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE])
-    if dbl_bond_count < 3:
-        return False, "Insufficient double bonds (at least three required for icosatrienes)"
-
-    # Presence and count of essential functional groups (e.g., OH, epoxy, COOH)
-    hydroxyl_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX4][OX2H]")))
-    epoxy_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2R]1[CX3][CX3]1")))
-    carboxylic_acid_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts("C(=O)O")))
     
-    if hydroxyl_count < 1 and epoxy_count < 1 and carboxylic_acid_count < 1:
-        return False, "Lacking essential functional groups (need at least one OH, epoxy, or COOH group)"
+    # Check for presence of a central C20 backbone
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if carbon_count < 20:
+        return False, f"Contains {carbon_count} carbons; requires at least 20 carbons for backbone"
+    
+    # Check for presence of key functional groups: epoxide, multiple hydroxyls, and carboxylic acid
+    # Epoxide pattern with allowance for asymmetric structures if needed
+    epoxide_pattern = Chem.MolFromSmarts("[C;R1]1[O;R1][C;R1]1")  
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")  # Hydroxyl groups
+    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)[OX2H1]")  # Carboxylic acid group
+    
+    has_epoxide = mol.HasSubstructMatch(epoxide_pattern)
+    hydroxyl_count = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    has_carboxylic_acid = mol.HasSubstructMatch(carboxylic_acid_pattern)
 
-    # Exclude classic leukotrienes or prostanoids
-    leukotriene_exclusion = Chem.MolFromSmarts("[CH2X4]=[CHX3][CH2X4][CHX4]=[CHX3][CHX4]C") 
-    prostanoid_exclusion = Chem.MolFromSmarts("C1=CCCCC1[C](=O)O")
+    # Ensure it has at least one epoxide, at least two hydroxyls, and one carboxylic acid
+    if not has_epoxide or hydroxyl_count < 2 or not has_carboxylic_acid:
+        return False, "Must contain epoxide group, multiple hydroxyls, and a carboxylic acid group"
+    
+    # Avoid classic icosanoid motifs
+    prostanoid_pattern = Chem.MolFromSmarts("C1=CCCCC1C(=O)O")  # Generalized prostanoids ring
+    leukotriene_pattern = Chem.MolFromSmarts("CC(C)(C)C[CX4]")  # Branching pattern specific
 
-    if mol.HasSubstructMatch(leukotriene_exclusion) or mol.HasSubstructMatch(prostanoid_exclusion):
-        return False, "Matches exclusion patterns for classic icosanoids (leukotriene or prostanoid)"
+    if mol.HasSubstructMatch(prostanoid_pattern) or mol.HasSubstructMatch(leukotriene_pattern):
+        return False, "Substructure resembles classic icosanoids (prostanoid or leukotriene patterns detected)"
+    
+    # If all criteria are met, classify as nonclassic icosanoid
+    return True, "Classified as nonclassic icosanoid with adequate C20 backbone and functionalization"
 
-    return True, "Molecule is a nonclassic icosanoid"
+# Note: This classification is based on identifying structural elements typically 
+# found in nonclassic icosanoids and may not capture all derivatives.
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:61703',
@@ -61,318 +66,284 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:61703',
                           'xrefs': ['PMID:10477044'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 34,
+                           'log_lines_of_code': 3.5263605246161616,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0],
+                           'max_indent': 2,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'GetAtoms',
+                                                 'GetSubstructMatches',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmiles',
+                                                 'MolFromSmarts',
+                                                 'GetAtomicNum'],
+                           'methods_called_count': 6,
+                           'smarts_strings': [   '[C;R1]1[O;R1][C;R1]1',
+                                                 'C(=O)[OX2H1]',
+                                                 'CC(C)(C)C[CX4]',
+                                                 '[OX2H]',
+                                                 'C1=CCCCC1C(=O)O'],
+                           'smarts_strings_count': 5,
+                           'defs': ['is_nonclassic_icosanoid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Contains {carbon_count} '
+                                          'carbons; requires at least 20 '
+                                          'carbons for backbone"',
+                                          'False, "Must contain epoxide group, '
+                                          'multiple hydroxyls, and a '
+                                          'carboxylic acid group"',
+                                          'False, "Substructure resembles '
+                                          'classic icosanoids (prostanoid or '
+                                          'leukotriene patterns detected)"',
+                                          'True, "Classified as nonclassic '
+                                          'icosanoid with adequate C20 '
+                                          'backbone and functionalization"'],
+                           'returns_count': 5,
+                           'complexity': 3.5052721049232325},
     'message': '\n'
-               'Attempt failed: F1 score of 0.3178807947019867 is too low.\n'
+               'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: '
-               'CCCCC[C@@H](O)[C@H](O)\\C=C\\C=C\\C=C/C=C/[C@@H](O)CCCC(O)=O '
-               'NAME: 15-epi-lipoxin B4 REASON: CORRECT Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: O=C(CCC/C=C\\C/C=C\\CC(/C=C/C(C(CCCCC)O)O)O)O NAME: '
-               '11,14,15-trihydroxy-(5Z,8Z,12E)-icosatrienoic acid REASON: '
-               'CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: C(CCCO)CC1C(C/C=C\\C/C=C\\C/C=C\\CCCC(O)=O)O1 NAME: '
-               '14,15-epoxy-20-hydroxy-(5Z,8Z,11Z)-icosatrienoic acid REASON: '
-               'CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(/C=C\\C=C\\[C@H](CCCCCO)O)=C\\C=C\\[C@H]([C@H](CCCC(=O)O)O)O '
-               'NAME: 20-hydroxylipoxin A4 REASON: CORRECT Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(\\[C@H](CCCC(O)=O)O)=C\\C=C\\C=C\\[C@@H](C\\C=C/C=C/[C@@H](CC)O)O '
-               'NAME: resolvin E1 REASON: CORRECT Molecule is a nonclassic '
-               'icosanoid\n'
-               ' * SMILES: O=C(CCC/C=C\\C/C=C\\C/C=C\\C(C1C(CCCCC)O1)O)O NAME: '
-               '13-hydroxy-14,15-epoxy-(5Z,8Z,11Z)-icosatrienoic acid REASON: '
-               'CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C[C@H]1O[C@@H]1\\C=C\\[C@H](O)C\\C=C/CCCC(O)=O '
-               'NAME: (8R)-hydroxy-(11R,12R)-epoxyicosa-(5Z,9E,14Z)-trienoic '
-               'acid REASON: CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'O=C(CCC/C=C\\C/C=C\\C/C=C\\[C@@H]([C@H]1[C@H](CCCCC)O1)O)O '
-               'NAME: (13S)-hydroxy-(14S,15S)-epoxy-(5Z,8Z,11Z)-icosatrienoic '
-               'acid REASON: CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: O=C(CCC/C=C\\C/C=C\\CC(C(/C=C/C(CCCCC)O)O)O)O NAME: '
-               '11,12,15-trihydroxy-(5Z,8Z,13E)-icosatrienoic acid REASON: '
-               'CORRECT Molecule is a nonclassic icosanoid\n'
+               'True positives: NONE\n'
+               'False positives: NONE\n'
+               'False negatives: SMILES: '
+               'CCCCC\\C=C/C\\C=C/[C@H](O)[C@H]1O[C@H]1C\\C=C/CCCC(O)=O NAME: '
+               '(8S,9S)-epoxy-(10R)-hydroxyicosa-(5Z,11Z,14Z)-trienoic acid '
+               'REASON: MISSED Must contain epoxide group, multiple hydroxyls, '
+               'and a carboxylic acid group\n'
                ' * SMILES: '
                'O=C(CCC/C=C\\C/C=C\\CC(/C=C/[C@@H]1[C@H](CCCCC)O1)O)O NAME: 11 '
                'hydroxy-(14R,15S)-epoxy-(5Z,8Z,12E)-icosatrienoic acid REASON: '
-               'CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/[C@H](O)[C@H]1O[C@H]1C\\C=C/CCCC(O)=O NAME: '
-               '(8S,9S)-epoxy-(10R)-hydroxyicosa-(5Z,11Z,14Z)-trienoic acid '
-               'REASON: CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'CCCCC[C@H](O)\\C=C\\C=C/C=C/C=C/[C@H](O)[C@@H](O)CCCC(O)=O '
-               'NAME: 6-epi-lipoxin A4 REASON: CORRECT Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(\\C=C/C=C/[C@@H](C/C=C\\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O NAME: '
-               '(7E,9E,11Z,13E,15R,17Z)-5,6,15-trihydroxyicosapentaenoic acid '
-               'REASON: CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(\\C=C/C=C/C=C/[C@H]([C@H](CCCCCO)O)O)=C/[C@H](CCCC(O)=O)O '
-               'NAME: 20-hydroxylipoxin B4 REASON: CORRECT Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: C(CCCO)C/C=C\\C/C=C\\C/C=C\\CC1C(CCCC(O)=O)O1 NAME: '
-               '5,6-epoxy-20-hydroxy-(8Z,11Z,14Z)-icosatrienoic acid REASON: '
-               'CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: C(CCCO)C/C=C\\CC1C(C/C=C\\C/C=C\\CCCC(O)=O)O1 NAME: '
-               '11,12-epoxy-20-hydroxy-(5Z,8Z,14Z)-icosatrienoic acid REASON: '
-               'CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'CCCCC[C@@H]1O[C@H]1[C@H](O)\\C=C/C\\C=C/C\\C=C/CCCC(O)=O NAME: '
-               '(13R)-hydroxy-(14S,15S)-epoxyicosa-(5Z,8Z,11Z)-trienoic acid '
-               'REASON: CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(\\[C@H](CCCC(O)=O)O)=C\\C=C\\C=C\\[C@@H](C/C=C\\C=C\\C(CC)=O)O '
-               'NAME: 18-oxoresolvin E1 REASON: CORRECT Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: '
-               'O=C(CCC/C=C\\C/C=C\\C/C=C\\C([C@@H]1[C@H](CCCCC)O1)O)O NAME: '
-               '13-hydroxy-(14R,15S)-epoxy-(5Z,8Z,11Z)-icosatrienoic acid '
-               'REASON: CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: C(CCCO)C/C=C\\C/C=C\\CC1C(C/C=C\\CCCC(O)=O)O1 NAME: '
-               '8,9-epoxy-20-hydroxy-(5Z,11Z,14Z)-icosatrienoic acid REASON: '
-               'CORRECT Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'CCCCC[C@H](O)[C@H](O)\\C=C\\C=C\\C=C/C=C/[C@@H](O)CCCC(O)=O '
-               'NAME: lipoxin B4 REASON: CORRECT Molecule is a nonclassic '
-               'icosanoid\n'
-               ' * SMILES: O=C(CCC/C=C\\C/C=C\\C/C=C\\C(C(C(CCCCC)O)O)O)O '
-               'NAME: 13,14,15-trihydroxy-(5Z,8Z,11Z)-icosatrienoic acid '
-               'REASON: CORRECT Molecule is a nonclassic icosanoid\n'
+               'MISSED Must contain epoxide group, multiple hydroxyls, and a '
+               'carboxylic acid group\n'
                ' * SMILES: '
                'CCCCC\\C=C/C[C@@H]1O[C@H]1\\C=C\\[C@H](O)C\\C=C/CCCC(O)=O '
                'NAME: (8R)-hydroxy-(11S,12S)-epoxyicosa-(5Z,9E,14Z)-trienoic '
-               'acid REASON: CORRECT Molecule is a nonclassic icosanoid\n'
+               'acid REASON: MISSED Must contain epoxide group, multiple '
+               'hydroxyls, and a carboxylic acid group\n'
+               ' * SMILES: C(CCCO)C/C=C\\C/C=C\\CC1C(C/C=C\\CCCC(O)=O)O1 NAME: '
+               '8,9-epoxy-20-hydroxy-(5Z,11Z,14Z)-icosatrienoic acid REASON: '
+               'MISSED Must contain epoxide group, multiple hydroxyls, and a '
+               'carboxylic acid group\n'
                ' * SMILES: '
-               'CCCCCC(=O)\\C=C\\C=C/C=C/C=C/[C@@H](O)[C@@H](O)CCCC(O)=O NAME: '
-               '15-oxolipoxin A4 REASON: CORRECT Molecule is a nonclassic '
-               'icosanoid\n'
-               'False positives: SMILES: '
-               'C(\\CCCC(O)=O)=C\\C/C=C\\C/C=C\\C/C=C\\C=C\\[C@H](CC)O NAME: '
-               '18(S)-HEPE REASON: WRONGLY CLASSIFIED Molecule is a nonclassic '
-               'icosanoid\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/C=C/C(O)C\\C=C/CCCC(O)=O NAME: '
-               '8-HETE REASON: WRONGLY CLASSIFIED Molecule is a nonclassic '
-               'icosanoid\n'
-               ' * SMILES: '
-               'O(O)[C@@H](CCCC([O-])=O)/C=C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC '
-               'NAME: 5(S)-HpEPE(1-) REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: C(CCC)(C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC([O-])=O)O '
-               'NAME: 17-HETE(1-) REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(CCC)C/C=C\\C/C=C\\C[C@@H]1[C@H](C/C=C\\CCCC([O-])=O)O1 NAME: '
-               '(8S,9R)-EET(1-) REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: C([C@@H](CC)O)C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(O)=O '
-               'NAME: 18(R)-HETE REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: CCC(O)CC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O NAME: '
-               '18-HETE REASON: WRONGLY CLASSIFIED Molecule is a nonclassic '
-               'icosanoid\n'
-               ' * SMILES: '
-               'C([C@H](/C=C/C=C/C=C/[C@H](CCCC(O)=O)O)O)/C=C\\CCCCCO NAME: '
-               '20-hydroxy-6-trans-leukotriene B4 REASON: WRONGLY CLASSIFIED '
-               'Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(\\C([C@H]1[C@H](C/C=C\\CCCCC)O1)O)=C\\C/C=C\\CCCC(=O)O NAME: '
-               'hepoxilin B3 REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(\\CC)=C\\C/C=C\\C[C@@H](/C=C/C=C\\C/C=C\\CCCC(=O)O)O NAME: '
-               '12(S)-HEPE REASON: WRONGLY CLASSIFIED Molecule is a nonclassic '
-               'icosanoid\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/CC(OO)\\C=C\\C=C/CCCC(O)=O NAME: '
-               '9-HPETE REASON: WRONGLY CLASSIFIED Molecule is a nonclassic '
-               'icosanoid\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C[C@@H](O)C(O)\\C=C\\C(O)C\\C=C/CCCC(O)=O NAME: '
-               '(5Z,9E,12S,14Z)-8,11,12-trihydroxyicosa-5,9,14-trienoic acid '
-               'REASON: WRONGLY CLASSIFIED Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               '[H][C@]12C[C@]3([H])C(=C)C(=O)O[C@@]3([H])[C@@H](O)\\C(C)=C\\CC\\C(C)=C\\CC[C@@]1(CO)O2 '
-               'NAME: sinularolide C REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C(O)=O '
-               'NAME: (2Z,5Z,8Z,11Z,14Z,17Z)-icosa-2,5,8,11,14,17-hexaenoic '
-               'acid REASON: WRONGLY CLASSIFIED Molecule is a nonclassic '
-               'icosanoid\n'
-               ' * SMILES: O=C(CCC/C=C\\C/C=C\\CC(C(/C=C/C(CCCCC)O)O)O)[O-] '
-               'NAME: 11,12,15-trihydroxy-(5Z,8Z,13E)-icosatrienoate REASON: '
-               'WRONGLY CLASSIFIED Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'OCCCCC\\C=C/C[C@@H](O)\\C=C\\C=C\\C=C/[C@@H](O)CCCC([O-])=O '
-               'NAME: 20-hydroxy-leukotriene B4(1-) REASON: WRONGLY CLASSIFIED '
-               'Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(CCC[C@@H](/C=C/C=C\\C/C=C\\C=C\\[C@H](CCCCC)OO)OO)([O-])=O '
-               'NAME: (5S,15S)-dihydroperoxy-(6E,8Z,11Z,13E)-icosatetraenoate '
-               'REASON: WRONGLY CLASSIFIED Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'O=C1NC[C@H](C=CC=C[C@H]2[C@@H]3[C@@H](C=C1)C=C[C@H]4C[C@H]([C@H]([C@@H]34)O2)O)C '
-               'NAME: Cyclamenol B REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC([O-])=O NAME: '
-               'arachidonate REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: '
-               'S([C@@]12N(C(=O)[C@]3(SC)CC=4[C@H](N3C1=O)[C@@H](O)C=CC4)[C@@H]5[C@@H](O)C=CC=C5C2)C '
-               'NAME: Boydine A REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: '
-               'O=C(CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\[C@@H](CCCC)O)[O-] NAME: '
-               '16(R)-HETE(1-) REASON: WRONGLY CLASSIFIED Molecule is a '
-               'nonclassic icosanoid\n'
-               ' * SMILES: O[C@H](C/C=C\\CCCCC)/C=C/C=C/C=C/C(=O)CCCC(O)=O '
-               'NAME: 5-Oxo-6-trans-leukotriene B4 REASON: WRONGLY CLASSIFIED '
-               'Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C1(C)(CO)CCC(C(=C1\\C=C\\C(=C\\C=C\\C(=C\\C(=O)[O-])\\C)\\C)C)=O '
-               'NAME: all-trans-4-oxo-16-hydroxyretinoate REASON: WRONGLY '
-               'CLASSIFIED Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: '
-               'C(CCC)C/C=C\\C[C@H]([C@@H](C/C=C\\C/C=C\\CCCC([O-])=O)O)O '
-               'NAME: (5Z,8Z,11R,12R,14Z)-11,12-dihydroxyicosatrienoate '
-               'REASON: WRONGLY CLASSIFIED Molecule is a nonclassic icosanoid\n'
-               ' * SMILES: OC(=O)/C(/CCC=C(C)C)=C\\CC/C(=C/CC/C(/C)=C/CO)/C '
-               'NAME: Isonerylgeraniol-18-oic acid REASON: WRONGLY CLASSIFIED '
-               'Molecule is a nonclassic icosanoid\n'
-               'False negatives: SMILES: '
-               'CCCCC[C@H](O)\\C=C\\C=C/C=C/C=C/[C@@H](SC[C@H](N)C(=O)NCC(O)=O)[C@@H](O)CCCC(O)=O '
-               'NAME: lipoxin D4 REASON: MISSED Does not have 20 carbons, '
-               'which is required for C20 fatty acids\n'
-               ' * SMILES: '
-               'CCCCC[C@H](O)\\C=C\\C=C/C=C/C=C/[C@@H](SC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(O)=O)[C@@H](O)CCCC(O)=O '
-               'NAME: lipoxin C4 REASON: MISSED Does not have 20 carbons, '
-               'which is required for C20 fatty acids\n'
+               'CCCCC[C@H](O)\\C=C\\C=C/C=C/C=C/[C@H](O)[C@@H](O)CCCC(O)=O '
+               'NAME: 6-epi-lipoxin A4 REASON: MISSED Must contain epoxide '
+               'group, multiple hydroxyls, and a carboxylic acid group\n'
+               ' * SMILES: C(CCCO)CC1C(C/C=C\\C/C=C\\C/C=C\\CCCC(O)=O)O1 NAME: '
+               '14,15-epoxy-20-hydroxy-(5Z,8Z,11Z)-icosatrienoic acid REASON: '
+               'MISSED Must contain epoxide group, multiple hydroxyls, and a '
+               'carboxylic acid group\n'
                ' * SMILES: '
                'O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\\C=C\\[C@@H](O)CCCCC '
-               'NAME: 5(S),6(R)-Lipoxin A4 methyl ester REASON: MISSED Does '
-               'not have 20 carbons, which is required for C20 fatty acids\n'
+               'NAME: 5(S),6(R)-Lipoxin A4 methyl ester REASON: MISSED Must '
+               'contain epoxide group, multiple hydroxyls, and a carboxylic '
+               'acid group\n'
+               ' * SMILES: '
+               'O=C(CCC/C=C\\C/C=C\\C/C=C\\[C@@H]([C@H]1[C@H](CCCCC)O1)O)O '
+               'NAME: (13S)-hydroxy-(14S,15S)-epoxy-(5Z,8Z,11Z)-icosatrienoic '
+               'acid REASON: MISSED Must contain epoxide group, multiple '
+               'hydroxyls, and a carboxylic acid group\n'
+               ' * SMILES: '
+               'CCCCCC(=O)\\C=C\\C=C/C=C/C=C/[C@@H](O)[C@@H](O)CCCC(O)=O NAME: '
+               '15-oxolipoxin A4 REASON: MISSED Must contain epoxide group, '
+               'multiple hydroxyls, and a carboxylic acid group\n'
+               ' * SMILES: '
+               'CCCCC[C@@H](O)[C@H](O)\\C=C\\C=C\\C=C/C=C/[C@@H](O)CCCC(O)=O '
+               'NAME: 15-epi-lipoxin B4 REASON: MISSED Must contain epoxide '
+               'group, multiple hydroxyls, and a carboxylic acid group\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O=C1C2=C(OC(=C1)C)C3=C(OC)C=C(OC)C=C3C(=C2O)C4=C5OC(=CC(C5=C(O)C=6C4=CC(OC)=CC6OC)=O)C',
-                                     'name': 'Isonigerone',
-                                     'reason': 'Insufficient double bonds (at '
-                                               'least three required for '
-                                               'icosatrienes)'},
-                                 {   'smiles': 'C(=C\\C/C=C\\CCCC(NC)=O)\\C/C=C\\C/C=C\\CCCCC',
-                                     'name': 'N-methyl arachidonoyl amine',
-                                     'reason': 'Lacking essential functional '
-                                               'groups (need at least one OH, '
-                                               'epoxy, or COOH group)'},
-                                 {   'smiles': 'OC1(O)[C@]23N(CC1)C(N(O)[C@H]([C@@]3(N=C(N2)N)[H])CO)=N',
-                                     'name': 'Decarbamoylneosaxitoxin',
-                                     'reason': 'Does not have at least 20 '
-                                               'carbons, which is required for '
-                                               'C20 fatty acids'},
-                                 {   'smiles': 'S([C@H]1N(C(=O)/C(=C\\C2=CC=C(OCC=C(C)C)C=C2)/N(C1=O)C)C)C',
-                                     'name': 'Fusaperazine F',
-                                     'reason': 'Does not have at least 20 '
-                                               'carbons, which is required for '
-                                               'C20 fatty acids'},
-                                 {   'smiles': 'Oc1ccccc1I',
-                                     'name': '2-iodophenol',
-                                     'reason': 'Does not have at least 20 '
-                                               'carbons, which is required for '
-                                               'C20 fatty acids'},
-                                 {   'smiles': 'O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=CC=C3)C=C2OC)C=C1)C/C=C(/CO)\\C',
-                                     'name': 'Prenylterphenyllin F',
-                                     'reason': 'Insufficient double bonds (at '
-                                               'least three required for '
-                                               'icosatrienes)'},
-                                 {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@@H](O)[C@@H]1OC[C@H]3O[C@@H](OC[C@H]4O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]4O)[C@H](O)[C@@H](O)[C@@H]3O)CO[C@@H]5O[C@@H]([C@@H](O)[C@H](O[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO)[C@H]5O)CO[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7O)CO',
-                                     'name': '(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5R,6R)-6-[[(2R,3R,4S,5R,6R)-3,5-Dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxymethyl]oxane-2,3,4,5-tetrol',
-                                     'reason': 'Insufficient double bonds (at '
-                                               'least three required for '
-                                               'icosatrienes)'},
-                                 {   'smiles': 'CN1CC2(CCN(CC2)S(=O)(=O)C3=CN(C=N3)C)C4=C([C@@H]1CO)NC5=C4C=CC(=C5)OC',
-                                     'name': "[(1R)-7-methoxy-2-methyl-1'-[(1-methyl-4-imidazolyl)sulfonyl]-1-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,4'-piperidine]yl]methanol",
-                                     'reason': 'Insufficient double bonds (at '
-                                               'least three required for '
-                                               'icosatrienes)'},
-                                 {   'smiles': 'O=C(N(CCO)CCO)CN1C(=NC=C1)[N+]([O-])=O',
-                                     'name': '1H-Imidazole-1-acetamide, '
-                                             'N,N-bis(2-hydroxyethyl)-2-nitro-',
-                                     'reason': 'Does not have at least 20 '
-                                               'carbons, which is required for '
-                                               'C20 fatty acids'},
-                                 {   'smiles': 'CC1=NN(C(C1)(C2=CN=CC=C2)O)C(=O)CC3=CC=C(C=C3)C',
-                                     'name': '1-[5-hydroxy-3-methyl-5-(3-pyridinyl)-4H-pyrazol-1-yl]-2-(4-methylphenyl)ethanone',
-                                     'reason': 'Does not have at least 20 '
-                                               'carbons, which is required for '
-                                               'C20 fatty acids'}],
-    'sample_false_negatives': [],
-    'attempt': 3,
-    'reasoning': 'To classify a chemical as a nonclassic icosanoid, I would '
-                 'approach this problem by focusing on some key structural '
-                 'characteristics:\n'
+    'sample_true_negatives': [   {   'smiles': '[H][C@@]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)O[C@@H]1[C@@H](O)[C@@H](O)[C@@H](CO)O[C@H]1OC[C@H]1O[C@@H](OC[C@H]2O[C@@H](OC[C@H](NC(=O)[C@H](O)CCCCCCCCCCCCCCCCCCCCCC)[C@H](O)[C@H](O)CCCCCCCCCCCCCC)[C@H](O)[C@@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
+                                     'name': 'Neurosporaside',
+                                     'reason': 'Must contain epoxide group, '
+                                               'multiple hydroxyls, and a '
+                                               'carboxylic acid group'},
+                                 {   'smiles': '[O-]C(=O)C1=CN(C2CC2)C2=CC(N3CC[NH2+]CC3)=C(F)C=C2C1=O',
+                                     'name': 'ciprofloxacin zwitterion',
+                                     'reason': 'Contains 17 carbons; requires '
+                                               'at least 20 carbons for '
+                                               'backbone'},
+                                 {   'smiles': 'O=C1NC(=CC2=C1O[C@H]([C@@H](O)CC(C)C)O2)C',
+                                     'name': 'Dihydroisoflavipucine',
+                                     'reason': 'Contains 12 carbons; requires '
+                                               'at least 20 carbons for '
+                                               'backbone'},
+                                 {   'smiles': 'O=C1N2C(C(=O)N([C@@]2(OC)C)C[C@@H](O)C3=CC=CC=C3)=CC4=C1N(C=5C=CC=CC45)C',
+                                     'name': 'Marinacarboline K',
+                                     'reason': 'Must contain epoxide group, '
+                                               'multiple hydroxyls, and a '
+                                               'carboxylic acid group'},
+                                 {   'smiles': 'O1[C@@H](O[C@H]2[C@@H](O)[C@H](O)[C@H](O[C@@H]2OC[C@H]3OC(O)[C@@H](O)[C@@H](O)[C@@H]3O)CO)[C@H](NC(=O)C)[C@@H](O)[C@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO[C@]5(O[C@H]([C@H](NC(=O)C)[C@@H](O)C5)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]1CO',
+                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[[(2R,3R,4S,5R,6S)-6-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2S,3S,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-2-[[(2R,3S,4S,5S)-3,4,5,6-tetrahydroxyoxan-2-yl]methoxy]oxan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
+                                             'acid',
+                                     'reason': 'Must contain epoxide group, '
+                                               'multiple hydroxyls, and a '
+                                               'carboxylic acid group'},
+                                 {   'smiles': 'O(C(=O)CCCCCCC)CCC1=CC=CC=C1',
+                                     'name': '2-Phenylethyl octanoate',
+                                     'reason': 'Contains 16 carbons; requires '
+                                               'at least 20 carbons for '
+                                               'backbone'},
+                                 {   'smiles': 'P(OCC(OC(=O)CCCCCCC/C=C\\CCCCCCCC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)(OCCNC)(O)=O',
+                                     'name': 'PE-NMe(20:3(5Z,8Z,11Z)/18:1(9Z))',
+                                     'reason': 'Must contain epoxide group, '
+                                               'multiple hydroxyls, and a '
+                                               'carboxylic acid group'},
+                                 {   'smiles': 'O=C1C2=C(OC=3C1=CC=CN3)C(Cl)=CC(=C2)C=4NN=NN4',
+                                     'name': 'traxanox',
+                                     'reason': 'Contains 13 carbons; requires '
+                                               'at least 20 carbons for '
+                                               'backbone'},
+                                 {   'smiles': 'CCCCC(C)CCCCCC(C)CCCCCCCCCC(C)CC(O)=O',
+                                     'name': '3,13,19-trimethyltricosanoic '
+                                             'acid',
+                                     'reason': 'Must contain epoxide group, '
+                                               'multiple hydroxyls, and a '
+                                               'carboxylic acid group'},
+                                 {   'smiles': 'COC(CC1=CC[C@]2(C)[C@@H](C)CCC[C@]2(C)C1=O)OC',
+                                     'name': 'aignopsane ketal',
+                                     'reason': 'Contains 17 carbons; requires '
+                                               'at least 20 carbons for '
+                                               'backbone'}],
+    'sample_false_negatives': [   {   'smiles': 'CCCCC[C@H](O)\\C=C\\C=C/C=C/C=C/[C@H](O)[C@@H](O)CCCC(O)=O',
+                                      'name': '6-epi-lipoxin A4',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\\C=C\\[C@@H](O)CCCCC',
+                                      'name': '5(S),6(R)-Lipoxin A4 methyl '
+                                              'ester',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'CCCCCC(=O)\\C=C\\C=C/C=C/C=C/[C@@H](O)[C@@H](O)CCCC(O)=O',
+                                      'name': '15-oxolipoxin A4',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'CCCCC[C@@H](O)[C@H](O)\\C=C\\C=C\\C=C/C=C/[C@@H](O)CCCC(O)=O',
+                                      'name': '15-epi-lipoxin B4',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'C(\\[C@H](CCCC(O)=O)O)=C\\C=C\\C=C\\[C@@H](C\\C=C/C=C/[C@@H](CC)O)O',
+                                      'name': 'resolvin E1',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'O=C(CCC/C=C\\C/C=C\\C/C=C\\C(C(C(CCCCC)O)O)O)O',
+                                      'name': '13,14,15-trihydroxy-(5Z,8Z,11Z)-icosatrienoic '
+                                              'acid',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'O=C(CCC/C=C\\C/C=C\\CC(C(/C=C/C(CCCCC)O)O)O)O',
+                                      'name': '11,12,15-trihydroxy-(5Z,8Z,13E)-icosatrienoic '
+                                              'acid',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'CCCCC[C@H](O)[C@H](O)\\C=C\\C=C\\C=C/C=C/[C@@H](O)CCCC(O)=O',
+                                      'name': 'lipoxin B4',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'C(\\C=C/C=C/[C@@H](C/C=C\\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O',
+                                      'name': '(7E,9E,11Z,13E,15R,17Z)-5,6,15-trihydroxyicosapentaenoic '
+                                              'acid',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'},
+                                  {   'smiles': 'C(/C=C\\C=C\\[C@H](CCCCCO)O)=C\\C=C\\[C@H]([C@H](CCCC(=O)O)O)O',
+                                      'name': '20-hydroxylipoxin A4',
+                                      'reason': 'Must contain epoxide group, '
+                                                'multiple hydroxyls, and a '
+                                                'carboxylic acid group'}],
+    'attempt': 2,
+    'reasoning': 'After analyzing the previous program and the errors '
+                 'mentioned, we need to ensure the classification criteria are '
+                 'met correctly for nonclassic icosanoids. From the outcomes, '
+                 'it seems that the presence of specific functional groups '
+                 'such as epoxides, hydroxyl groups, and carboxylic acids were '
+                 'not adequately captured.\n'
                  '\n'
-                 '1. **C20 Fatty Acid Backbone**: The molecule should consist '
-                 'of 20 carbon atoms, typically forming a long carbon chain '
-                 'indicative of a fatty acid.\n'
+                 "Here's how we can improve the approach:\n"
                  '\n'
-                 '2. **Double Bonds**: Nonclassic icosanoids usually contain '
-                 'multiple double bonds, specifically searching for trends '
-                 'like at least three double bonds which characterizes an '
-                 'icosatrienoid backbone.\n'
+                 '1. **Correct Functional Groups Identification:**\n'
+                 '   - Ensure the SMARTS patterns for identifying key '
+                 'functional groups are accurate and improve them if necessary '
+                 'based on typical structures in nonclassic icosanoids.\n'
                  '\n'
-                 '3. **Functional Groups**: Ensure the presence of essential '
-                 'functional groups such as hydroxyl groups (OH), epoxide '
-                 'groups, and carboxylic acid groups (COOH) which are '
-                 'characteristic of these molecules.\n'
+                 '2. **Avoiding Classic Icosanoids:**\n'
+                 '   - The logic to avoid classic structures (prostanoids and '
+                 'leukotrienes) should be re-evaluated and improved.\n'
                  '\n'
-                 '4. **Exclusion of Classic Derivatives**: The function must '
-                 'exclude molecules that match known substructures for classic '
-                 'leukotrienes and prostanoids, which are not considered '
-                 'nonclassic icosanoids.\n'
+                 '3. **Coverage and Flexibility:**\n'
+                 '   - Account for variations among nonclassic icosanoids in '
+                 'terms of exact number and arrangement of functional groups '
+                 'while ensuring specificity.\n'
                  '\n'
-                 'By examining the previous outcomes, the following '
-                 'improvements can be made:\n'
-                 '\n'
-                 '- **Ensure Distinction of C20 Chains**: In cases of false '
-                 'negatives, like Lipoxins, the function misunderstood carbon '
-                 'counting due to their diversity in branching or cyclic '
-                 "forms. It's essential to correctly identify C20 chains even "
-                 'if they are embedded in a complex molecular structure.\n'
-                 '\n'
-                 '- **Enhance Double Bond Detection**: Previous logic filters '
-                 'out molecules based on their double bond count, but it needs '
-                 'refinement to tolerate different positions and cis-trans '
-                 'isomerism in the backbone.\n'
-                 '\n'
-                 '- **Functional Group Identification**: Better identification '
-                 'logic for crucial functional groups, ensuring all spatial '
-                 'isomers are accounted.\n'
-                 '\n'
-                 '- **Classic icosanoid Exclusion**: Ensure excluded patterns '
-                 'are specific and distinguish correctly versus the structural '
-                 'diversity in nonclassic icosanoids.\n'
-                 '\n'
-                 "Now, let's write the improved definition of "
-                 '`is_nonclassic_icosanoid`:',
+                 "Let's implement these improvements in the code:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 27,
-    'num_false_positives': 100,
-    'num_true_negatives': 230,
-    'num_false_negatives': 0,
+    'num_true_positives': 12,
+    'num_false_positives': 57,
+    'num_true_negatives': 142216,
+    'num_false_negatives': 15,
     'num_negatives': None,
-    'precision': 0.2125984251968504,
-    'recall': 1.0,
-    'f1': 0.35064935064935066,
-    'accuracy': 0.7198879551820728,
-    'negative_predictive_value': 1.0}
+    'precision': 0.17391304347826086,
+    'recall': 0.4444444444444444,
+    'f1': 0.25,
+    'accuracy': 0.9994940267041462,
+    'negative_predictive_value': 0.9998945377589977}

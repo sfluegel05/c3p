@@ -2,128 +2,79 @@
 Classifies: CHEBI:46662 mineral
 """
 """
-Classifies: CHEBI:33686 mineral
+Classifies: Mineral
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdMolDescriptors, Descriptors
 
 def is_mineral(smiles: str):
     """
     Determines if a molecule is a mineral based on its SMILES string.
-    
+
+    Minerals are typically inorganic compounds consisting of metal cations
+    and inorganic anions, and are naturally occurring. This function uses
+    heuristics to classify minerals based on the absence of organic carbon
+    structures and the presence of metal elements.
+
     Args:
-        smiles (str): SMILES string of the molecule
-        
+        smiles (str): SMILES string of the molecule.
+
     Returns:
-        bool: True if molecule is a mineral, False otherwise
-        str: Reason for classification
+        bool: True if molecule is likely a mineral, False otherwise.
+        str: Reason for classification.
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Get all atoms
-    atoms = mol.GetAtoms()
-    if len(atoms) == 0:
-        return False, "No atoms found"
-    
-    # Count different types of atoms
-    metal_ions = set()
-    has_metal = False
-    organic_atoms = 0
-    inorganic_atoms = 0
-    charged_atoms = 0
-    
-    # Define common metal atoms in minerals
-    metals = {11: 'Na', 12: 'Mg', 13: 'Al', 19: 'K', 20: 'Ca', 24: 'Cr',
-              25: 'Mn', 26: 'Fe', 27: 'Co', 28: 'Ni', 29: 'Cu', 30: 'Zn',
-              38: 'Sr', 47: 'Ag', 48: 'Cd', 56: 'Ba', 57: 'La', 78: 'Pt',
-              79: 'Au', 80: 'Hg', 82: 'Pb', 83: 'Bi', 55: 'Cs', 51: 'Sb',
-              46: 'Pd', 33: 'As', 3: 'Li', 4: 'Be', 37: 'Rb', 81: 'Tl'}
-    
-    # Common anions/inorganic elements
-    inorganic_elements = {8: 'O', 9: 'F', 15: 'P', 16: 'S', 17: 'Cl', 
-                         35: 'Br', 53: 'I', 7: 'N', 5: 'B', 14: 'Si'}
-    
-    # Track heteroatoms and their charges
-    heteroatom_charges = []
-    aromatic_atoms = 0
-    
-    for atom in atoms:
-        atomic_num = atom.GetAtomicNum()
-        formal_charge = atom.GetFormalCharge()
-        
-        if atom.GetIsAromatic():
-            aromatic_atoms += 1
-            
-        # Check for metal ions
-        if atomic_num in metals:
-            has_metal = True
-            metal_ions.add(metals[atomic_num])
-            if formal_charge != 0:
-                charged_atoms += 1
-                heteroatom_charges.append(formal_charge)
-                
-        # Count organic vs inorganic atoms
-        elif atomic_num == 6:  # Carbon
-            if len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) > 1:
-                organic_atoms += 1
-        elif atomic_num in inorganic_elements:
-            inorganic_atoms += 1
-            if formal_charge != 0:
-                charged_atoms += 1
-                heteroatom_charges.append(formal_charge)
-                
-    # Check for water molecules
-    water_pattern = Chem.MolFromSmiles("O")
-    water_count = len(mol.GetSubstructMatches(water_pattern))
-    
-    # Check for complex organic groups
-    ring_info = mol.GetRingInfo()
-    ring_count = ring_info.NumRings()
-    
-    # Exclusion rules
-    if aromatic_atoms > 0:
-        return False, "Contains aromatic rings - likely organic"
-    
-    if ring_count > 2:
-        return False, "Too many rings for a mineral"
-        
-    if organic_atoms > 4 and not any(x in ["Mg", "Ca", "Ba", "Sr"] for x in metal_ions):
-        return False, "Too many C-C bonds for a mineral"
-        
-    # Must have either a metal or metalloid (As, Sb)
-    if not has_metal and not any(x in metal_ions for x in ['As', 'Sb']):
-        return False, "No metal or metalloid atoms found"
-    
-    # Simple metal halides and oxides
-    simple_inorganic_pattern = all(a.GetAtomicNum() in list(metals.keys()) + [9, 17, 35, 53, 8] for a in atoms)
-    if simple_inorganic_pattern:
-        return True, f"Simple inorganic mineral containing {', '.join(metal_ions)}"
-    
-    # Check charge balance for ionic compounds
-    if charged_atoms > 0:
-        if sum(heteroatom_charges) != 0 and water_count == 0:
-            return False, "Unbalanced charges in structure"
-    
-    # Classification logic
-    if water_count > 0:
-        if organic_atoms > 2 and not any(x in ["Mg", "Ca", "Ba", "Sr"] for x in metal_ions):
-            return False, "Hydrated organic compound"
-        return True, f"Hydrated mineral containing {', '.join(metal_ions)}"
-    
-    elif charged_atoms >= 2:
-        if organic_atoms > 2 and not any(x in ["Mg", "Ca", "Ba", "Sr"] for x in metal_ions):
-            return False, "Organic salt"
-        return True, f"Ionic mineral containing {', '.join(metal_ions)}"
-    
-    elif simple_inorganic_pattern:
-        return True, f"Covalent mineral containing {', '.join(metal_ions)}"
-        
-    return False, "Structure not consistent with mineral characteristics"
+
+    # List of metal elements (atomic numbers)
+    metals = {3,4,11,12,13,19,20,21,22,23,24,25,26,27,28,29,30,31,37,38,39,
+              40,41,42,43,44,45,46,47,48,49,55,56,57,72,73,74,75,76,77,78,
+              79,80,81,82,83,84,87,88,89,104,105,106,107,108,109,110,111,112}
+
+    # Check for presence of metal elements
+    has_metal = any(atom.GetAtomicNum() in metals for atom in mol.GetAtoms())
+    if not has_metal:
+        return False, "No metal elements detected"
+
+    # Check for absence of organic carbon
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            # If carbon is bonded to hydrogen or carbon, it's likely organic
+            neighbors = [nbr.GetAtomicNum() for nbr in atom.GetNeighbors()]
+            if 1 in neighbors or 6 in neighbors:
+                return False, "Contains organic carbon structures"
+
+    # Check for absence of complex organic functional groups
+    organic_functional_groups = ['[CX3]=[OX1]', '[#6]#[#7]', '[#6]=[#7]']
+    for fg in organic_functional_groups:
+        fg_pattern = Chem.MolFromSmarts(fg)
+        if mol.HasSubstructMatch(fg_pattern):
+            return False, "Contains organic functional groups"
+
+    # Check for presence of common inorganic anions
+    inorganic_anions = ['[O-]S(=O)(=O)[O-]',  # Sulfate
+                        'P(=O)([O-])([O-])[O-]',  # Phosphate
+                        '[C-]#N',  # Cyanide (to exclude)
+                        'C(=O)([O-])[O-]',  # Carbonate
+                        '[O-][N+](=O)[O-]',  # Nitrate
+                        '[F-]', '[Cl-]', '[Br-]', '[I-]',  # Halides
+                        '[O-]',  # Oxide
+                        '[S-2]',  # Sulfide
+                        '[OH-]',  # Hydroxide
+                        '[O-]C(=O)[O-]'  # Oxalate (to exclude)
+                        ]
+    has_inorganic_anion = False
+    for anion in inorganic_anions:
+        anion_pattern = Chem.MolFromSmarts(anion)
+        if mol.HasSubstructMatch(anion_pattern):
+            has_inorganic_anion = True
+            break
+    if not has_inorganic_anion:
+        return False, "No common inorganic anions detected"
+
+    return True, "Likely a mineral (inorganic compound with metal elements and inorganic anions)"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:46662',
@@ -149,244 +100,244 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:46662',
                           'xrefs': ['Wikipedia:Mineral'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 58,
+                           'log_lines_of_code': 4.060443010546419,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 4,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors, Descriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'MolFromSmiles',
+                                                 'HasSubstructMatch',
+                                                 'GetAtoms',
+                                                 'GetAtomicNum',
+                                                 'GetNeighbors',
+                                                 'MolFromSmarts'],
+                           'methods_called_count': 6,
+                           'smarts_strings': ['anion', 'fg'],
+                           'smarts_strings_count': 2,
+                           'defs': ['is_mineral(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No metal elements detected"',
+                                          'False, "Contains organic carbon '
+                                          'structures"',
+                                          'False, "Contains organic functional '
+                                          'groups"',
+                                          'False, "No common inorganic anions '
+                                          'detected"',
+                                          'True, "Likely a mineral (inorganic '
+                                          'compound with metal elements and '
+                                          'inorganic anions)"'],
+                           'returns_count': 6,
+                           'complexity': 4.212088602109284},
     'message': '\n'
-               'Attempt failed: F1 score of 0.45502645502645495 is too low.\n'
+               'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: [Ca++].[O-]S([O-])(=O)=O NAME: calcium '
-               'sulfate REASON: CORRECT Hydrated mineral containing Ca\n'
-               ' * SMILES: [Mg++].CCC([O-])=O.CCC([O-])=O NAME: magnesium '
-               'dipropionate REASON: CORRECT Hydrated mineral containing Mg\n'
-               ' * SMILES: [Ca++].[Ca++].[O-][Si]([O-])([O-])[O-] NAME: '
-               'calcium silicate REASON: CORRECT Hydrated mineral containing '
-               'Ca\n'
-               ' * SMILES: [Ca++].[H]OP([O-])([O-])=O NAME: calcium '
-               'hydrogenphosphate REASON: CORRECT Hydrated mineral containing '
-               'Ca\n'
-               ' * SMILES: [Ba++].[O-]C([O-])=O NAME: barium carbonate REASON: '
-               'CORRECT Hydrated mineral containing Ba\n'
-               ' * SMILES: O.O.Cl[Cu]Cl NAME: copper(II) chloride dihydrate '
-               'REASON: CORRECT Hydrated mineral containing Cu\n'
-               ' * SMILES: [Fe+3].[O-]P([O-])(=O)[O-] NAME: iron(3+) phosphate '
-               'REASON: CORRECT Hydrated mineral containing Fe\n'
-               ' * SMILES: [OH-].[OH-].[Ca++] NAME: calcium dihydroxide '
-               'REASON: CORRECT Hydrated mineral containing Ca\n'
-               ' * SMILES: [S--].[Fe+3].[As-] NAME: arsenopyrite REASON: '
-               'CORRECT Ionic mineral containing As, Fe\n'
-               ' * SMILES: [Cl-].[Cs+] NAME: caesium chloride REASON: CORRECT '
-               'Ionic mineral containing Cs\n'
-               ' * SMILES: [Fe++].[S-][S-] NAME: pyrite REASON: CORRECT Ionic '
-               'mineral containing Fe\n'
-               ' * SMILES: [Pd-2](Cl)(Cl)(Cl)(Cl)(Cl)Cl.[K+].[K+] NAME: '
-               'Potassium hexachloropalladate(IV) REASON: CORRECT Ionic '
-               'mineral containing Pd, K\n'
-               ' * SMILES: [Ca+2].C(=O)([O-])[O-] NAME: calcium carbonate '
-               'REASON: CORRECT Hydrated mineral containing Ca\n'
-               ' * SMILES: [Cl-].[K+] NAME: potassium chloride REASON: CORRECT '
-               'Ionic mineral containing K\n'
-               ' * SMILES: Cl[Cu]Cl.O.O.O.O.O NAME: copper(II) chloride '
-               'pentahydrate REASON: CORRECT Hydrated mineral containing Cu\n'
-               ' * SMILES: [Ba++].CC([O-])=O.CC([O-])=O NAME: barium acetate '
-               'REASON: CORRECT Hydrated mineral containing Ba\n'
+               'True positives: NONE\n'
+               'False positives: NONE\n'
+               'False negatives: SMILES: [Ca+2].C(=O)([O-])[O-] NAME: calcium '
+               'carbonate REASON: MISSED None\n'
                ' * SMILES: [Ba++].[O-][N+]([O-])=O.[O-][N+]([O-])=O NAME: '
-               'barium nitrate REASON: CORRECT Hydrated mineral containing Ba\n'
+               'barium nitrate REASON: MISSED None\n'
                ' * SMILES: '
-               'O.O.O.O.O.O.O.O.O.O.O.O.O.O.O.O.O.O.[Al+3].[Al+3].[O-]S([O-])(=O)=O.[O-]S([O-])(=O)=O.[O-]S([O-])(=O)=O '
-               'NAME: aluminium sulfate octadecahydrate REASON: CORRECT '
-               'Hydrated mineral containing Al\n'
-               ' * SMILES: [S--].[S--].[Fe++].[Cu++] NAME: chalcopyrite '
-               'REASON: CORRECT Ionic mineral containing Cu, Fe\n'
-               ' * SMILES: [Mg++].[O-]S([O-])(=O)=O NAME: magnesium sulfate '
-               'REASON: CORRECT Hydrated mineral containing Mg\n'
+               '[Ca++].[Ca++].[Ca++].[O-]P([O-])([O-])=O.[O-]P([O-])([O-])=O '
+               'NAME: tricalcium bis(phosphate) REASON: MISSED None\n'
                ' * SMILES: P(=O)([O-])([O-])[O-].[Mg+2].[NH4+].O.O.O.O.O.O '
-               'NAME: ammonium magnesium phosphate hexahydrate REASON: CORRECT '
-               'Hydrated mineral containing Mg\n'
-               ' * SMILES: [Cs+].[H]C([O-])=O NAME: caesium formate REASON: '
-               'CORRECT Hydrated mineral containing Cs\n'
-               ' * SMILES: '
-               '[Na+].[Na+].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]OB1O[B-]2(O[H])OB(O[H])O[B-](O[H])(O1)O2 '
-               'NAME: disodium tetraborate octahydrate REASON: CORRECT '
-               'Hydrated mineral containing Na\n'
+               'NAME: ammonium magnesium phosphate hexahydrate REASON: MISSED '
+               'None\n'
+               ' * SMILES: Cl[O-].[Ca+2].Cl[O-] NAME: Calcium hypochlorite '
+               'REASON: MISSED None\n'
                ' * SMILES: '
                '[Na+].[Na+].[H]OB1O[B-]2(O[H])OB(O[H])O[B-](O[H])(O1)O2 NAME: '
-               'disodium tetraborate REASON: CORRECT Hydrated mineral '
-               'containing Na\n'
-               ' * SMILES: [O-]S([O-])(=O)=O.[Ba+2] NAME: barium sulfate '
-               'REASON: CORRECT Hydrated mineral containing Ba\n'
-               'False positives: SMILES: [Na+].[Na+].Cl[Pt--](Cl)(Cl)Cl NAME: '
-               'sodium tetrachloroplatinate REASON: WRONGLY CLASSIFIED Ionic '
-               'mineral containing Na, Pt\n'
+               'disodium tetraborate REASON: MISSED None\n'
+               ' * SMILES: [Fe++].[S-][S-] NAME: pyrite REASON: MISSED None\n'
+               ' * SMILES: [Mg++].CCC([O-])=O.CCC([O-])=O NAME: magnesium '
+               'dipropionate REASON: MISSED None\n'
+               ' * SMILES: [Cl-].[Cs+] NAME: caesium chloride REASON: MISSED '
+               'None\n'
                ' * SMILES: '
-               '[Na+].[H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)c1c(OCC)ccc2ccccc12)C([O-])=O '
-               'NAME: nafcillin sodium REASON: WRONGLY CLASSIFIED Metal '
-               'organic salt containing Na\n'
-               ' * SMILES: '
-               '[K+].[H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)C(C)Oc1ccccc1)C([O-])=O '
-               'NAME: phenethicillin potassium REASON: WRONGLY CLASSIFIED '
-               'Metal organic salt containing K\n'
-               ' * SMILES: [Na+].CC(O)C([O-])=O NAME: sodium lactate REASON: '
-               'WRONGLY CLASSIFIED Hydrated mineral containing Na\n'
-               ' * SMILES: '
-               '[Na+].[H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)[C@]([H])(NC(=O)c1cnc2cccnc2c1O)c1ccccc1)C([O-])=O '
-               'NAME: apalcillin sodium REASON: WRONGLY CLASSIFIED Metal '
-               'organic salt containing Na\n'
-               ' * SMILES: '
-               'O.O.C/C=N/C(C(=O)[O-])C(C)O.[Fe+2].C/C=N/C(C(=O)[O-])C(C)O '
-               'NAME: Ferrotrenine REASON: WRONGLY CLASSIFIED Metal organic '
-               'salt containing Fe\n'
-               ' * SMILES: '
-               'P(=O)([O-])(OC[C@@H](O)C(=O)O[As](=O)([O-])[O-])[O-] NAME: '
-               '1-arsono-3-phospho-D-glycerate(4-) REASON: WRONGLY CLASSIFIED '
-               'Hydrated mineral containing As\n'
-               ' * SMILES: O=N[Cr](N=O)(N=O)N=O NAME: tetranitrosylchromium '
-               'REASON: WRONGLY CLASSIFIED Hydrated mineral containing Cr\n'
-               ' * SMILES: '
-               'CC1=C2N3[C@H]([C@H](CC([O-])=O)[C@@]2(C)CCC([O-])=O)[C@]2(C)[N+]4=C([C@@H](CCC([O-])=O)[C@]2(C)CC(N)=O)C(C)=C2[N+]5=C(C=C6[N+](=C1[C@@H](CCC([O-])=O)C6(C)C)[Co-3]345)[C@@H](CCC([O-])=O)[C@]2(C)CC(N)=O '
-               'NAME: cob(I)yrinate a,c diamide(5-) REASON: WRONGLY CLASSIFIED '
-               'Metal organic salt containing Co\n'
-               ' * SMILES: [H][As]([O-])([O-])=O NAME: arsonate(2-) REASON: '
-               'WRONGLY CLASSIFIED Hydrated mineral containing As\n'
-               ' * SMILES: '
-               '[Na+].[Na+].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[O-]S([O-])(=O)=O '
-               'NAME: sodium sulfate decahydrate REASON: WRONGLY CLASSIFIED '
-               'Hydrated mineral containing Na\n'
-               ' * SMILES: '
-               'C1=2N3C(C=C4[N+]5=C(C=C6N7C(=CC8=[N+](C(=C1)C(=C8CCC([O-])=O)CO)[Fe-2]735)C(=C6C)CCC([O-])=O)C(=C4C)C=C)=C(C2C)[C@H](CC/C=C(\\C)/CC/C=C(/CCC=C(C)C)\\C)O '
-               'NAME: Fe(II)-heme i(2-) REASON: WRONGLY CLASSIFIED Metal '
-               'organic salt containing Fe\n'
-               ' * SMILES: '
-               '[Na+].[H]O[H].[H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)c1c(OC)cccc1OC)C([O-])=O '
-               'NAME: methicillin sodium monohydrate REASON: WRONGLY '
-               'CLASSIFIED Metal organic salt containing Na\n'
-               ' * SMILES: [Na+].OCCN1CCN(CC1)CCS([O-])(=O)=O NAME: sodium '
-               '2-[4-(2-hydroxyethyl)piperazin-1-yl]ethanesulfonate REASON: '
-               'WRONGLY CLASSIFIED Hydrated mineral containing Na\n'
-               ' * SMILES: Br[Ag--](Br)Br NAME: tribromoargentate(2-) REASON: '
-               'WRONGLY CLASSIFIED Mineral containing Ag\n'
-               ' * SMILES: [S]12[Fe]3[S]4[Fe]1[S]1[Fe+]2[S]3[Fe+]41 NAME: '
-               'tetra-mu3-sulfido-tetrairon(2+) REASON: WRONGLY CLASSIFIED '
-               'Ionic mineral containing Fe\n'
-               ' * SMILES: [Cs+].[Cs+].Br[Cr--](Br)(Br)Br NAME: dicaesium '
-               'tetrabromochromate REASON: WRONGLY CLASSIFIED Ionic mineral '
-               'containing Cs, Cr\n'
-               ' * SMILES: [O-][Mn](=O)(=O)=O NAME: permanganate REASON: '
-               'WRONGLY CLASSIFIED Hydrated mineral containing Mn\n'
-               ' * SMILES: [H][N]([H])([H])[Hg++][N]([H])([H])[H] NAME: '
-               'diamminemercury(2+) REASON: WRONGLY CLASSIFIED Mineral '
-               'containing Hg\n'
-               ' * SMILES: [K+].OCCN(CCO)C([S-])=S NAME: Potassium '
-               'bis(2-hydroxyethyl)dithiocarbamate REASON: WRONGLY CLASSIFIED '
-               'Hydrated mineral containing K\n'
-               ' * SMILES: N#C[Ni-4](C#N)(C#N)C#N NAME: '
-               'tetracyanonickelate(4-) REASON: WRONGLY CLASSIFIED Mineral '
-               'containing Ni\n'
-               ' * SMILES: I[Hg--](I)(I)I NAME: tetraiodomercurate(2-) REASON: '
-               'WRONGLY CLASSIFIED Mineral containing Hg\n'
-               ' * SMILES: '
-               '[NH4+].[NH4+].[NH4+].N#C[Fe-3](C#N)(C#N)(C#N)(C#N)C#N NAME: '
-               'ammonium hexacyanoferrate(3-) REASON: WRONGLY CLASSIFIED Ionic '
-               'mineral containing Fe\n'
-               ' * SMILES: F[Cr-](F)(F)(F)(F)F NAME: hexafluorochromate(1-) '
-               'REASON: WRONGLY CLASSIFIED Mineral containing Cr\n'
-               ' * SMILES: [NH2-].[Na+] NAME: sodium amide REASON: WRONGLY '
-               'CLASSIFIED Ionic mineral containing Na\n'
-               'False negatives: SMILES: Cl[La](Cl)Cl NAME: lanthanum '
-               'trichloride REASON: MISSED No ionic character or coordination '
-               'bonds found\n'
-               ' * SMILES: [Sb](F)(F)(F)(F)F NAME: antimony pentafluoride '
-               'REASON: MISSED No ionic character or coordination bonds found\n'
-               ' * SMILES: [Ni]=S=[Ni]=S=[Ni] NAME: heazlewoodite REASON: '
-               'MISSED No ionic character or coordination bonds found\n'
+               '[OH-].[OH-].[OH-].[OH-].O=[Si]([O-])O[Si](=O)[O-].[Al+3].[Al+3] '
+               'NAME: kaolinite REASON: MISSED None\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'C1C=C(N=C2N1NN=N2)C3=CC=CC=C3',
-                                     'name': '5-phenyl-1,7-dihydrotetrazolo[1,5-a]pyrimidine',
-                                     'reason': 'Contains aromatic rings - '
-                                               'likely organic'},
-                                 {   'smiles': 'O(C(=O)CCCCCCCCCCC/C=C\\CCCCCCCC)[C@H](COC(=O)CCCCCCCCC/C=C\\CCCCCC)COC(=O)CCCCCCC/C=C\\CCCC',
-                                     'name': 'TG(14:1(9Z)/22:1(13Z)/18:1(11Z))',
-                                     'reason': 'Too many C-C bonds for a '
-                                               'mineral'},
-                                 {   'smiles': 'CC(=O)N[C@H]1[C@H](O)O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO[C@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]5O)[C@@H](O)[C@H](O[C@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]5O)[C@@H]4O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H]1O',
-                                     'name': 'beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->3)-{alpha-D-Manp-(1->3)-[alpha-D-Manp-(1->6)]-alpha-D-Manp-(1->6)}-beta-D-Manp-(1->4)-beta-GlcpNAc-(1->4)-beta-D-GlcpNAc',
-                                     'reason': 'Too many rings for a mineral'},
-                                 {   'smiles': '[C@@]12([C@@]([C@]([C@@H](CC1)C)(CCC(CC)C)C)(CCC[C@@H]2C)[H])C',
-                                     'name': 'clerodane',
-                                     'reason': 'Too many C-C bonds for a '
-                                               'mineral'},
-                                 {   'smiles': 'S(O[C@@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]([C@@H](O)[C@H](O)CO[C@]2(O[C@H]([C@H](NC(=O)C)[C@@H](O)C2)[C@H](O)[C@H](O)CO)C(O)=O)[C@@H](NC(=O)C)CO)O[C@@H]1CO)(O)(=O)=O',
-                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[(2R,3S,4R,5S)-5-acetamido-4-[(2R,3R,4R,5R,6R)-3,4-dihydroxy-6-(hydroxymethyl)-5-sulfooxyoxan-2-yl]oxy-2,3,6-trihydroxyhexoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
-                                             'acid',
-                                     'reason': 'Too many C-C bonds for a '
-                                               'mineral'},
-                                 {   'smiles': 'O=C(NC(CC(C)C)C(=O)N[C@@H](CCCN=C(N)N)C=O)C(NC(=O)CC)CC(C)C',
-                                     'name': 'Leupeptin Pr-LL',
-                                     'reason': 'Too many C-C bonds for a '
-                                               'mineral'},
-                                 {   'smiles': 'COC1=CC=C(C=C1)CCNC(=O)C(=C2C3=CC=CC=C3C(=N2)NC(=O)C4=CC=CS4)C#N',
-                                     'name': 'N-[3-[1-cyano-2-[2-(4-methoxyphenyl)ethylamino]-2-oxoethylidene]-1-isoindolyl]-2-thiophenecarboxamide',
-                                     'reason': 'Contains aromatic rings - '
-                                               'likely organic'},
-                                 {   'smiles': 'O=C1O[C@@H](CC=2C1=C(OC)C(O)=CC2)CCC[C@@H](O)C',
-                                     'name': 'Penicimarin C',
-                                     'reason': 'Contains aromatic rings - '
-                                               'likely organic'},
-                                 {   'smiles': 'CO[C@@H]1[C@@H]2[C@@H](C[C@@H]3[C@@](O2)([C@H]([C@@H]([C@H](O3)C(=O)OC)O)O)O)OC1N4C=NC5=C4N=CN=C5N',
-                                     'name': 'LSM-4497',
-                                     'reason': 'Contains aromatic rings - '
-                                               'likely organic'},
-                                 {   'smiles': 'C[C@@H]1[C@H](O)CCC2=CC[C@H](C[C@]12C)C(C)=C',
-                                     'name': '1-deoxycapsidiol',
-                                     'reason': 'Too many C-C bonds for a '
-                                               'mineral'}],
-    'sample_false_negatives': [   {   'smiles': '[Ni]=S=[Ni]=S=[Ni]',
+    'sample_true_negatives': [   {   'smiles': 'CCOC(=O)CC(C1=CC=CC=C1Cl)NC2=NC(=NC(=N2)N3CCOCC3)N4CCOCC4',
+                                     'name': '3-[[4,6-bis(4-morpholinyl)-1,3,5-triazin-2-yl]amino]-3-(2-chlorophenyl)propanoic '
+                                             'acid ethyl ester',
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': 'O([C@@H]1[C@@H](O)[C@H](O)[C@H](O[C@]1(C=2C=3OC(=CC(=O)C3C(O)=CC2O)C4=CC(O)=C(O)C=C4)[H])CO)[C@@H]5O[C@H]([C@@H](O)[C@@H](O)[C@@H]5O)CO',
+                                     'name': "2''-O-beta-L-Galactopyranosylorientin",
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](O[C@@H]2[C@@H](NC(C)=O)[C@@H](O[C@H](CO)[C@H]2O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O)[C@H]2NC(C)=O)O[C@@H]2[C@@H](O)[C@@H](O)O[C@H](CO)[C@@H]2O)[C@@H](O)[C@H](O)[C@@H]1O',
+                                     'name': 'beta-D-GalpNAc-(1->4)-[alpha-L-Fucp-(1->3)]-beta-D-GlcpNAc-(1->3)-alpha-D-Galp',
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': 'C[C@H]1CN(C(=O)CC2=C(C=CC(=C2)NC(=O)CCC(F)(F)F)O[C@H]1CN(C)CC3=CC4=C(C=C3)OCO4)[C@@H](C)CO',
+                                     'name': 'N-[(2R,3S)-2-[[1,3-benzodioxol-5-ylmethyl(methyl)amino]methyl]-5-[(2S)-1-hydroxypropan-2-yl]-3-methyl-6-oxo-2,3,4,7-tetrahydro-1,5-benzoxazonin-9-yl]-4,4,4-trifluorobutanamide',
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': 'C1CC(C1)C(=O)N[C@@H]2C=C[C@H](O[C@H]2CO)CC(=O)NCCCN3CCOCC3',
+                                     'name': 'N-[(2R,3R,6R)-2-(hydroxymethyl)-6-[2-[3-(4-morpholinyl)propylamino]-2-oxoethyl]-3,6-dihydro-2H-pyran-3-yl]cyclobutanecarboxamide',
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': 'O=C1O[C@@H](CC[C@H](O)C=C[C@H](C1)O)C',
+                                     'name': 'Decarestrictine C1',
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': '[H]P(O)(=O)OP([H])(O)=O',
+                                     'name': 'diphosphonic acid',
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': 'C[C@H]1CN(C(=O)CCCN2C(=CN=N2)CO[C@@H]1CN(C)C(=O)C3=NOC(=C3)C4=CC=CC=C4)[C@H](C)CO',
+                                     'name': 'N-[[(8S,9S)-6-[(2R)-1-hydroxypropan-2-yl]-8-methyl-5-oxo-10-oxa-1,6,14,15-tetrazabicyclo[10.3.0]pentadeca-12,14-dien-9-yl]methyl]-N-methyl-5-phenyl-3-isoxazolecarboxamide',
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': 'OCCCCCCC[C@@H](O)CC(O)=O',
+                                     'name': '(3R)-3,10-dihydroxydecanoic acid',
+                                     'reason': 'No metal elements detected'},
+                                 {   'smiles': 'S(=O)(=O)(CC[C@@H]1NC(=O)[C@H](NC(=O)C(N(C(=O)CC[C@@H](NC([C@H]([C@@H](NC([C@@H](NC(C[C@@H](NC1=O)C(=O)O)=O)CCCN=C(N)N)=O)/C=C/C(=C/[C@@H]([C@@H](OC)CC2=CC=CC=C2)C)/C)C)=O)C(=O)O)C)=C)C)C',
+                                     'name': '[D-Asp3]MC-M(O2)R',
+                                     'reason': 'No metal elements detected'}],
+    'sample_false_negatives': [   {   'smiles': '[Ca+2].C(=O)([O-])[O-]',
+                                      'name': 'calcium carbonate',
+                                      'reason': 'Contains organic functional '
+                                                'groups'},
+                                  {   'smiles': '[Na+].[Na+].[H]OB1O[B-]2(O[H])OB(O[H])O[B-](O[H])(O1)O2',
+                                      'name': 'disodium tetraborate',
+                                      'reason': 'No common inorganic anions '
+                                                'detected'},
+                                  {   'smiles': '[Fe++].[S-][S-]',
+                                      'name': 'pyrite',
+                                      'reason': 'No common inorganic anions '
+                                                'detected'},
+                                  {   'smiles': '[Mg++].CCC([O-])=O.CCC([O-])=O',
+                                      'name': 'magnesium dipropionate',
+                                      'reason': 'Contains organic carbon '
+                                                'structures'},
+                                  {   'smiles': 'O.O.Cl[Cu]Cl',
+                                      'name': 'copper(II) chloride dihydrate',
+                                      'reason': 'No common inorganic anions '
+                                                'detected'},
+                                  {   'smiles': '[Ni]=S=[Ni]=S=[Ni]',
                                       'name': 'heazlewoodite',
-                                      'reason': 'Structure not consistent with '
-                                                'mineral characteristics'}],
-    'attempt': 1,
-    'reasoning': 'Let me analyze the previous outcomes and suggest '
-                 'improvements:\n'
+                                      'reason': 'No common inorganic anions '
+                                                'detected'},
+                                  {   'smiles': '[Na+].[Na+].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]O[H].[H]OB1O[B-]2(O[H])OB(O[H])O[B-](O[H])(O1)O2',
+                                      'name': 'disodium tetraborate '
+                                              'octahydrate',
+                                      'reason': 'No common inorganic anions '
+                                                'detected'},
+                                  {   'smiles': 'O1B(O[B-]2(OB(O[B-]1(O[H])O2)O[H])O[H])O[H].[Na+].[Na+].O.O.O.O.O.O.O.O.O.O',
+                                      'name': 'disodium tetraborate '
+                                              'decahydrate',
+                                      'reason': 'No common inorganic anions '
+                                                'detected'},
+                                  {   'smiles': 'Cl[Cu]Cl.O.O.O.O.O',
+                                      'name': 'copper(II) chloride '
+                                              'pentahydrate',
+                                      'reason': 'No common inorganic anions '
+                                                'detected'},
+                                  {   'smiles': 'Cl[La](Cl)Cl',
+                                      'name': 'lanthanum trichloride',
+                                      'reason': 'No common inorganic anions '
+                                                'detected'}],
+    'attempt': 2,
+    'reasoning': 'After analyzing the previous program, it appears that the '
+                 'function `is_mineral` did not attempt any classification and '
+                 'returned `(None, None)` for all inputs. This led to all true '
+                 'positive cases being missed, resulting in a zero F1 score. '
+                 'To improve, we can implement a heuristic approach to '
+                 'classify minerals based on their SMILES strings.\n'
                  '\n'
-                 '1. False Positives Analysis:\n'
-                 '- Many organic metal salts (like nafcillin sodium) were '
-                 'incorrectly classified as minerals\n'
-                 '- Metal-organic complexes (like Fe-heme) were wrongly '
-                 'classified\n'
-                 '- Simple metal coordination compounds were incorrectly '
-                 'included\n'
-                 '- The program was too lenient with organic content\n'
+                 'Minerals are typically inorganic compounds that are '
+                 'naturally occurring and often consist of metal cations '
+                 'combined with inorganic anions (like sulfates, phosphates, '
+                 'carbonates, etc.). They usually lack organic carbon-hydrogen '
+                 'bonds. We can use these characteristics to create a function '
+                 'that checks for:\n'
                  '\n'
-                 '2. False Negatives Analysis:\n'
-                 '- Simple metal halides (like LaCl3) were missed due to lack '
-                 'of explicit charges\n'
-                 '- Binary compounds (like SbF5) were missed due to lack of '
-                 'ionic character\n'
-                 '- Some mineral structures with covalent bonds (like '
-                 'heazlewoodite) were missed\n'
+                 '- Presence of metal elements.\n'
+                 '- Absence of organic carbon structures.\n'
+                 '- Presence of inorganic anions commonly found in minerals.\n'
                  '\n'
-                 '3. Key Issues to Address:\n'
-                 '- Need stricter rules for organic content\n'
-                 '- Need to handle both ionic and covalent mineral structures\n'
-                 '- Need better handling of coordination compounds\n'
-                 '- Need to exclude biological metal complexes\n'
-                 '- Need to better detect simple metal halides and oxides\n'
-                 '\n'
-                 "Here's my improved approach:",
+                 'Here is the improved code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 45,
-    'num_false_positives': 100,
-    'num_true_negatives': 20508,
-    'num_false_negatives': 1,
+    'num_true_positives': 28,
+    'num_false_positives': 192,
+    'num_true_negatives': 142062,
+    'num_false_negatives': 18,
     'num_negatives': None,
-    'precision': 0.3103448275862069,
-    'recall': 0.9782608695652174,
-    'f1': 0.4712041884816754,
-    'accuracy': 0.9951099060714631,
-    'negative_predictive_value': 0.9999512409186211}
+    'precision': 0.12727272727272726,
+    'recall': 0.6086956521739131,
+    'f1': 0.21052631578947367,
+    'accuracy': 0.9985242445537597,
+    'negative_predictive_value': 0.9998733108108108}

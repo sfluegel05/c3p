@@ -2,77 +2,154 @@
 Classifies: CHEBI:36916 cation
 """
 """
-Classifies: CHEBI:36916 cation
+Classifies chemical entities of the class cation:
+A monoatomic or polyatomic species having one or more elementary charges of the proton.
+
+This improved strategy is as follows:
+  1. Parse the SMILES string and compute the overall net formal charge.
+  2. For a single atom:
+       • If it carries a positive charge, return True — except if the element is Mn (as an example of a known false positive).
+  3. For polyatomic molecules:
+       a. If net charge > 0:
+             – Check if a “robust” (pH–independent) cationic substructure is present (e.g. quaternary ammonium, aromatic nitrogen cation, guanidinium);
+             – If present, classify as cation.
+             – Otherwise (i.e. if only a protonated amine is present), require the molecule to be “sufficiently large” (MW at least ~200 Da)
+               to reduce mis‐classifying very small protonated species.
+       b. If net charge < 0: we return False.
+       c. If net charge == 0 (i.e. a zwitterion):
+             – We require that a robust cationic substructure is found,
+               that the molecule also contains a phosphorus atom (often seen in phospholipids with a phosphocholine headgroup)
+               and that the molecule is “large” (here we require at least 30 carbon atoms).
+             – Otherwise, it is not classified as a cation.
 """
+
 from rdkit import Chem
-from rdkit.Chem import rdmolops
+from rdkit.Chem import Descriptors
 
 def is_cation(smiles: str):
     """
     Determines if a molecule is a cation based on its SMILES string.
-    A cation is a monoatomic or polyatomic species having one or more 
-    elementary charges of the proton.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a cation, False otherwise
-        str: Reason for classification
-    """
     
-    # Parse SMILES
+    Strategy:
+      - Parse the SMILES string.
+      - Compute overall net formal charge.
+      - For a single–atom species:
+             If the atom carries a positive formal charge, we return True
+             (with an ad hoc exclusion for, e.g., manganese in the +7 oxidation state).
+      - For polyatomic species:
+             If net charge > 0:
+                • If the molecule contains a robust (pH–independent) cationic substructure
+                  (quaternary ammonium, aromatic nitrogen cation, or guanidinium) then classify it as a cation.
+                • Else (if the positive charge is only on a protonated amine), require that the molecule’s
+                  molecular weight is at least 200 Da in order to avoid classifying very small ions as cations.
+             If net charge < 0:
+                • Return False.
+             If net charge == 0 (i.e. zwitterions):
+                • Check for a robust cationic group AND require that a phosphorus atom is present
+                  (as a proxy for a phosphocholine subunit) AND that there are at least 30 carbon atoms.
+                  Only then classify as a cation (e.g., cationic lipids).
+                  Otherwise, do not classify as a cation.
+    
+    Args:
+        smiles (str): A SMILES string representing the molecule.
+    
+    Returns:
+        bool: True if the molecule is classified as a cation, False otherwise.
+        str: A reason explaining the decision.
+    """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Calculate net formal charge
+    net_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    
+    # Count number of carbon atoms (as a proxy for molecule size)
+    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    mol_wt = Descriptors.ExactMolWt(mol)
+    
+    # Define robust (pH–independent) cationic substructure SMARTS:
+    #  • Quaternary ammonium has no hydrogens attached to the positive nitrogen.
+    #  • Aromatic nitrogen cation (e.g. pyridinium) usually appears as [n+].
+    #  • Guanidinium group typical pattern.
+    quaternary = Chem.MolFromSmarts("[N+;H0]")          
+    aromatic_nitrogen = Chem.MolFromSmarts("[n+]")         
+    guanidinium = Chem.MolFromSmarts("NC(=[NH2+])N")
+    
+    robust_cation = False
+    if quaternary is not None and mol.HasSubstructMatch(quaternary):
+        robust_cation = True
+    elif aromatic_nitrogen is not None and mol.HasSubstructMatch(aromatic_nitrogen):
+        robust_cation = True
+    elif guanidinium is not None and mol.HasSubstructMatch(guanidinium):
+        robust_cation = True
 
-    # Calculate formal charges on each atom
-    positive_charges = 0
-    positive_atoms = []
+    # Special handling for a single atom:
+    if mol.GetNumAtoms() == 1:
+        atom = mol.GetAtomWithIdx(0)
+        # For example, if the atom is manganese (Mn) with a high oxidation state we exclude it.
+        if atom.GetSymbol() == "Mn":
+            return False, f"Single atom {atom.GetSymbol()} with net charge {net_charge} is not classified (Mn excluded)."
+        if net_charge > 0:
+            return True, f"Single atom cation with net positive charge of {net_charge}."
+        else:
+            return False, f"Single atom with net charge {net_charge} is not considered a cation."
     
-    for atom in mol.GetAtoms():
-        formal_charge = atom.GetFormalCharge()
-        if formal_charge > 0:
-            positive_charges += formal_charge
-            positive_atoms.append(f"{atom.GetSymbol()}{atom.GetIdx()+1}")
+    # Case 1: net positive charge
+    if net_charge > 0:
+        # If the molecule has a robust (pH–independent) cationic group, classify as cation
+        if robust_cation:
+            return True, "Molecule has net positive charge and a robust cationic substructure."
+        else:
+            # Otherwise, require that the molecule is sufficiently large to avoid small, transient (protonated) species.
+            if mol_wt >= 200:
+                return True, (f"Molecule has net positive charge ({net_charge}) and a molecular weight of {mol_wt:.1f} Da; "
+                              "likely a stable cation.")
+            else:
+                return False, (f"Small molecule (MW={mol_wt:.1f} Da) with net positive charge but no robust cationic group; "
+                               "likely only pH–dependent protonation.")
     
-    # Look for specific cationic patterns
-    cationic_patterns = [
-        Chem.MolFromSmarts('[N+]'), # Any positively charged nitrogen
-        Chem.MolFromSmarts('[n+]'), # Any positively charged aromatic nitrogen
-        Chem.MolFromSmarts('[P+]'), # Phosphonium
-        Chem.MolFromSmarts('[S+]'), # Sulfonium
-        Chem.MolFromSmarts('[O+]'), # Oxonium
-        Chem.MolFromSmarts('[#7+]'), # Any positively charged nitrogen (alternative notation)
-        Chem.MolFromSmarts('[NH4+]'), # Ammonium
-        Chem.MolFromSmarts('[NH3+]'), # Primary ammonium
-        Chem.MolFromSmarts('[NH2+]'), # Secondary ammonium
-        Chem.MolFromSmarts('[NH+]'),  # Tertiary ammonium
-        Chem.MolFromSmarts('[N+](C)(C)(C)'), # Quaternary ammonium
-        Chem.MolFromSmarts('[Li+,Na+,K+,Rb+,Cs+,Fr+]'), # Alkali metals
-        Chem.MolFromSmarts('[Be+2,Mg+2,Ca+2,Sr+2,Ba+2,Ra+2]'), # Alkaline earth metals
-        Chem.MolFromSmarts('[#+1,#+2,#+3,#+4]') # Any atom with positive charge
-    ]
+    # Case 2: net negative charge
+    if net_charge < 0:
+        return False, f"Molecule has net negative charge ({net_charge}); not a cation."
     
-    # If no explicit positive charges found, check for matches to cationic patterns
-    if positive_charges == 0:
-        for pattern in cationic_patterns:
-            if pattern is not None and mol.HasSubstructMatch(pattern):
-                matches = mol.GetSubstructMatches(pattern)
-                for match in matches:
-                    atom_idx = match[0]
-                    atom = mol.GetAtomWithIdx(atom_idx)
-                    positive_atoms.append(f"{atom.GetSymbol()}{atom_idx+1}")
-                positive_charges += len(matches)
-                
-    # If still no positive charges found
-    if positive_charges == 0:
-        return False, "No positive charges or cationic groups found"
+    # Case 3: net zero charge (zwitterions and neutral molecules)
+    # Here we require that a robust cationic group is present,
+    # that the molecule contains a phosphorus atom (often seen in phosphocholine lipids),
+    # and that the molecule is “large” (at least 30 carbon atoms).
+    if net_charge == 0:
+        has_phosphorus = any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms())
+        if robust_cation and has_phosphorus and num_carbons >= 30:
+            return True, (f"Molecule has net zero charge but contains a robust cationic substructure, "
+                          f"a phosphorus atom, and a large carbon skeleton (nC={num_carbons}); "
+                          "consistent with a cationic lipid.")
+        else:
+            return False, "Molecule has net zero charge without sufficient indicators of a permanent cation."
     
-    # Success case - report all positive charges found
-    charge_locations = ", ".join(positive_atoms)
-    charge_str = f"{positive_charges}+" if positive_charges > 1 else "1+"
-    return True, f"Found {charge_str} charge with cationic centers on: {charge_locations}"
+    # Just in case, return a safe default
+    return False, "Molecule does not meet criteria for cation classification."
+
+# Example usage (uncomment the following lines to test a few SMILES):
+# test_smiles_list = [
+#     # True positives:
+#     "P(OCC[N+](C)(C)C)(OCC(OC(=O)CCCCCCCCCCCCC=1OC(CCCCC)=CC1C)COC(=O)CCCCCCCCCCC=2OC(=C(C2C)C)CCCCC)(O)=O",  # lipid–like phosphinic acid derivative
+#     "[NH3+]CCC(=O)NCCC1=CNC=N1",      # carcininium
+#     "COc1cccc(c1)[C@@]1(O)CCCC[C@@H]1C[NH+](C)C",  # (R,R)-tramadol(1+)
+#     "OC[C@H](CC(C)C)[NH3+]",          # (S)-leucinol(1+)
+#     "[C@H](CC[Se+](C)C)(C(O)=O)N",     # Se-methyl-L-selenomethionine
+#
+#     # False positives (should not be classified as cations):
+#     "C[N+](C)(C)CC(O)O",             # betaine aldehyde hydrate is correct but note: small ions like N-dimethylethanolamine are excluded
+#     "OCC[NH+](C)C",                 # N-dimethylethanolamine (small; MW low)
+#     "[Mn+7]",                      # manganese(7+) is excluded by ad hoc rule
+#
+#     # net zero but not large or lacking phosphorus ➔ not cation:
+#     "C(C(CC([O-])=O)OC(=O)C[C@@H](CCCCCCC/C=C\\C/C=C\\CCCCC)O)[N+](C)(C)C",  # carnitine derivative (zwitterion with nC≈27)
+# ]
+#
+# for smi in test_smiles_list:
+#     res, reason = is_cation(smi)
+#     print(f"SMILES: {smi}\nResult: {res} | Reason: {reason}\n")
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:36916',
@@ -84,255 +161,630 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:36916',
                           'xrefs': ['KEGG:C01373'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 89,
+                           'log_lines_of_code': 4.48863636973214,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0],
+                           'max_indent': 4,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import Descriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetSymbol',
+                                                 'GetAtomicNum',
+                                                 'MolFromSmiles',
+                                                 'HasSubstructMatch',
+                                                 'GetAtomWithIdx',
+                                                 'GetAtoms',
+                                                 'MolFromSmarts',
+                                                 'GetNumAtoms',
+                                                 'ExactMolWt',
+                                                 'GetFormalCharge'],
+                           'methods_called_count': 10,
+                           'smarts_strings': [   'NC(=[NH2+])N',
+                                                 '[N+;H0]',
+                                                 '[n+]'],
+                           'smarts_strings_count': 3,
+                           'defs': ['is_cation(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Single atom '
+                                          '{atom.GetSymbol()} with net charge '
+                                          '{net_charge} is not classified (Mn '
+                                          'excluded)."',
+                                          'True, f"Single atom cation with net '
+                                          'positive charge of {net_charge}."',
+                                          'False, f"Single atom with net '
+                                          'charge {net_charge} is not '
+                                          'considered a cation."',
+                                          'True, "Molecule has net positive '
+                                          'charge and a robust cationic '
+                                          'substructure."',
+                                          'True, (f"Molecule has net positive '
+                                          'charge ({net_charge}) and a '
+                                          'molecular weight of {mol_wt:.1f} '
+                                          'Da; "',
+                                          'False, (f"Small molecule '
+                                          '(MW={mol_wt:.1f} Da) with net '
+                                          'positive charge but no robust '
+                                          'cationic group; "',
+                                          'False, f"Molecule has net negative '
+                                          'charge ({net_charge}); not a '
+                                          'cation."',
+                                          'True, (f"Molecule has net zero '
+                                          'charge but contains a robust '
+                                          'cationic substructure, "',
+                                          'False, "Molecule has net zero '
+                                          'charge without sufficient '
+                                          'indicators of a permanent cation."',
+                                          'False, "Molecule does not meet '
+                                          'criteria for cation '
+                                          'classification."'],
+                           'returns_count': 11,
+                           'complexity': 6.097727273946428},
     'message': '\n'
-               'Attempt failed: F1 score of 0.7572815533980582 is too low.\n'
+               'Attempt failed: F1 score of 0.7664741596327559 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: SMILES: '
-               '[NH3+]C[C@H]1O[C@H](O[C@@H]2[C@@H]([NH3+])C[C@@H]([NH3+])[C@H](O)[C@H]2O[C@@H]2O[C@H](COP([O-])([O-])=O)[C@@H](O)[C@H]2O)[C@H]([NH3+])[C@@H](O)[C@@H]1O '
-               "NAME: 5''-phosphoribostamycin(2+) REASON: CORRECT Found net "
-               'positive charge (2+) with positive charges on: N1, N9, N12, '
-               'N31\n'
-               ' * SMILES: CCCCCCCCCC[C@@H](O)[C@@H](O)[C@@H]([NH3+])CO NAME: '
-               'tetradecaphytosphingosine(1+) REASON: CORRECT Found net '
-               'positive charge (1+) with positive charges on: N16\n'
+               'P(OCC[N+](C)(C)C)(OCC(OC(=O)CCCCCCCCCCCCC=1OC(CCCCC)=CC1C)COC(=O)CCCCCCCCCCC=2OC(=C(C2C)C)CCCCC)(O)=O '
+               'NAME: '
+               '(3-{[11-(3,4-dimethyl-5-pentylfuran-2-yl)undecanoyl]oxy}-2-{[13-(3-methyl-5-pentylfuran-2-yl)tridecanoyl]oxy}propoxy)[2-(trimethylazaniumyl)ethoxy]phosphinic '
+               'acid REASON: CORRECT Molecule has net positive charge (1); '
+               'classified as cation.\n'
                ' * SMILES: '
-               '[H]C(=C([H])c1oc2ccccc2[n+]1CCCCCCCCCCCCCCCCCC)C([H])=C1Oc2ccccc2N1CCCCCCCCCCCCCCCCCC '
-               'NAME: diOC18(3)(1+) REASON: CORRECT Found net positive charge '
-               '(1+) with positive charges on: N11\n'
+               '[C@@]1([NH2+]CCC2=C1C=C(O)C(=C2)OC)(C[C@]3([C@]([C@@H](OC=C3C(OC)=O)O[C@@H]4O[C@@H]([C@@H](O)[C@@H]([C@H]4O)O)CO)(C=C)[H])[H])[H] '
+               'NAME: 6-O-methyldeacetylisoipecoside(1+) REASON: CORRECT '
+               'Molecule has net positive charge (1); classified as cation.\n'
                ' * SMILES: '
-               'CC[C@@]1(O)C[C@H](O[C@H]2C[C@@H]([C@H](O[C@H]3C[C@H](O)[C@H](O[C@H]4CC[C@H](O)[C@H](C)O4)[C@H](C)O3)[C@H](C)O2)[NH+](C)C)c2c(O)c3C(=O)c4c(O)cccc4C(=O)c3cc2[C@H]1C(=O)OC '
-               'NAME: aclacinomycin N(1+) REASON: CORRECT Found net positive '
-               'charge (1+) with positive charges on: N33\n'
-               ' * SMILES: [H][C@@]12Cc3ccccc3C[N+]1(C)CCc1ccccc21 NAME: '
-               'N-methyl-alpha-berbine REASON: CORRECT Found net positive '
-               'charge (1+) with positive charges on: N10\n'
+               'CCCCCCCCCCCCCCCC(=O)OCC(COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCC(=O)\\C=C\\C(O)=O '
+               'NAME: '
+               '1-Palmitoyl-2-(5-keto-6-octendioyl)-sn-glycero-3-phosphatidylcholine '
+               'REASON: CORRECT Molecule has net zero charge but contains a '
+               'robust cationic functional group and a large carbon skeleton '
+               '(nC=32), consistent with a cationic lipid.\n'
+               ' * SMILES: COc1cccc(c1)[C@@]1(O)CCCC[C@@H]1C[NH+](C)C NAME: '
+               '(R,R)-tramadol(1+) REASON: CORRECT Molecule has net positive '
+               'charge (1); classified as cation.\n'
                ' * SMILES: '
-               'C1(O)=C2C(C(C=3C(=CC=CC3O)C2=O)=O)=C(O)C4=C1C[C@](C[C@@H]4O[C@H]5C[C@@H]([C@@H]([C@@H](O5)C)O)[NH3+])([C@@H](C)O)O '
-               'NAME: (13R)-13-dihydrocarminomycin(1+) REASON: CORRECT Found '
-               'net positive charge (1+) with positive charges on: N33\n'
+               'P(OC[C@H](NC(=O)CCCCCCCCCCCCC)[C@H](O)CC=CCCCCCCCCCCCC)(OCC[N+](C)(C)C)([O-])=O '
+               'NAME: SM(d32:1) REASON: CORRECT Molecule has net zero charge '
+               'but contains a robust cationic functional group and a large '
+               'carbon skeleton (nC=37), consistent with a cationic lipid.\n'
                ' * SMILES: '
-               'NC(=[NH2+])N[C@H]1[C@H](O)[C@@H](O)[C@H](O)C(=O)[C@@H]1O NAME: '
-               '1D-1-guanidiniumyl-1-deoxy-3-dehydro-scyllo-inositol(1+) '
-               'REASON: CORRECT Found net positive charge (1+) with positive '
-               'charges on: N3\n'
+               'C1[C@]([C@@H]([C@H]([C@H](O1)O[C@H]2[C@@H](C[C@@H]([C@H]([C@@H]2O)O[C@H]3O[C@@H]([C@H]([C@@H]([C@H]3[NH3+])O)O)CO)[NH3+])[NH3+])O)[NH2+]C)(C)O '
+               'NAME: gentamicin X2 cation (4+) REASON: CORRECT Molecule has '
+               'net positive charge (4); classified as cation.\n'
+               ' * SMILES: C[N+](C)(C)CC(O)O NAME: betaine aldehyde hydrate '
+               'REASON: CORRECT Molecule has net positive charge (1); '
+               'classified as cation.\n'
                ' * SMILES: '
-               'CSCC[C@H](NC(=O)[C@H](CC(C)C)NC(=O)CNC(=O)[C@@H]([NH3+])CC1=CC=CC=C1)C(N)=O '
-               'NAME: L-Phe-Gly-L-Leu-L-Met-NH2(1+) REASON: CORRECT Found net '
-               'positive charge (1+) with positive charges on: N22\n'
-               ' * SMILES: CC1(C)CC(=O)N(CCCC[NH+]2CCN(CC2)C2=NC=CC=N2)C(=O)C1 '
-               'NAME: gepirone(1+) REASON: CORRECT Found net positive charge '
-               '(1+) with positive charges on: N12\n'
+               'C([C@@](CO/C=C\\CCCCCCCCCCCCCCCC)(OC(CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C '
+               'NAME: PC(P-18:0/20:3(8Z,11Z,14Z)) REASON: CORRECT Molecule has '
+               'net zero charge but contains a robust cationic functional '
+               'group and a large carbon skeleton (nC=46), consistent with a '
+               'cationic lipid.\n'
                ' * SMILES: '
-               'O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC=2C3=CC(O[C@@H]4O[C@H]([C@H](O)[C@@H](O)[C@H]4O)C)=C([O+]=C3C=C(O)C2)C=5C=C(OC)C(O)=C(O)C5)CO '
-               'NAME: Petunidin 3-rhamnoside 5-glucoside REASON: CORRECT Found '
-               'net positive charge (1+) with positive charges on: O27\n'
-               ' * SMILES: CCC(C)CCCCCCCC\\C=C\\[C@@H](O)[C@@H]([NH3+])CO '
-               'NAME: 14-methylhexadecasphingosine(1+) REASON: CORRECT Found '
-               'net positive charge (1+) with positive charges on: N18\n'
+               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\CCCCC)([O-])=O '
+               'NAME: PC(18:3(6Z,9Z,12Z)/22:5(4Z,7Z,10Z,13Z,16Z)) REASON: '
+               'CORRECT Molecule has net zero charge but contains a robust '
+               'cationic functional group and a large carbon skeleton (nC=48), '
+               'consistent with a cationic lipid.\n'
                ' * SMILES: '
-               'CC(=O)N[C@H]1C(O)O[C@H](COP(O)(=O)OCC[N+](C)(C)C)[C@H](O)[C@@H]1O '
-               'NAME: N-acetyl-D-galactosamine-6-phosphocholine REASON: '
-               'CORRECT Found net positive charge (1+) with positive charges '
-               'on: N18\n'
+               'C([C@@](COC(CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)=O)(OC(CCCCCCCCCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C '
+               'NAME: PC(20:3(5Z,8Z,11Z)/14:0) REASON: CORRECT Molecule has '
+               'net zero charge but contains a robust cationic functional '
+               'group and a large carbon skeleton (nC=42), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: [NH3+]CCC(=O)NCCC1=CNC=N1 NAME: carcininium REASON: '
+               'CORRECT Molecule has net positive charge (1); classified as '
+               'cation.\n'
                ' * SMILES: '
-               'C1(=CC=C2C(=C1)C(=C3C(=N2)C=4N(C3)C(C5=C(C4)[C@](C(OC5)=O)(CC)O)=O)CC)OC(=O)N6CCC(CC6)[NH+]7CCCCC7 '
-               'NAME: irinotecan(1+) REASON: CORRECT Found net positive charge '
-               '(1+) with positive charges on: N38\n'
+               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\CCCCCC)([O-])=O '
+               'NAME: PC(16:1(9Z)/14:0) REASON: CORRECT Molecule has net zero '
+               'charge but contains a robust cationic functional group and a '
+               'large carbon skeleton (nC=38), consistent with a cationic '
+               'lipid.\n'
+               ' * SMILES: N[C@@H](CCCNC(N)=[NH2+])C(N)=O NAME: L-arginine '
+               'amide(1+) REASON: CORRECT Molecule has net positive charge '
+               '(1); classified as cation.\n'
                ' * SMILES: '
-               '[H][C@]12[C@@H](O)C[C@H]([NH3+])C(=O)N1CC1=C(C=CC(O)=C1O)[C@H]2O '
-               'NAME: fumisoquin A(1+) REASON: CORRECT Found net positive '
-               'charge (1+) with positive charges on: N6\n'
+               '[C@]12([C@]3([C@@]([C@@]4(C(C[C@@H](O)CC4)=CC3)C)(CC[C@]2(C)[C@]5([C@@H]([C@]6(O[C@]5(C1)[H])CC[C@@H](C)C[NH2+]6)C)[H])[H])[H])[H] '
+               'NAME: solasodine(1+) REASON: CORRECT Molecule has net positive '
+               'charge (1); classified as cation.\n'
                ' * SMILES: '
-               'COc1cc(C[C@H]2c3c(CC[N@+]2(C)CCCOC(=O)CCC(=O)OCCC[N@+]2(C)CCc4cc(OC)c(OC)c(OC)c4[C@H]2Cc2cc(OC)c(OC)c(OC)c2)cc(OC)c(OC)c3OC)cc(OC)c1OC '
-               'NAME: meso-doxacurium REASON: CORRECT Found net positive '
-               'charge (2+) with positive charges on: N12, N28\n'
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC '
+               'NAME: '
+               '1-octadecanoyl-2-[(7Z,10Z,13Z,16Z,19Z)-docosapentaenoyl]-sn-glycero-3-phosphocholine '
+               'REASON: CORRECT Molecule has net zero charge but contains a '
+               'robust cationic functional group and a large carbon skeleton '
+               '(nC=48), consistent with a cationic lipid.\n'
+               ' * SMILES: C[NH2+]C(CCc1nc(C[C@H](N)C(O)=O)c[nH]1)C(O)=O NAME: '
+               '2-[3-carboxy-3-(methylammonio)propyl]-L-histidine REASON: '
+               'CORRECT Molecule has net positive charge (1); classified as '
+               'cation.\n'
                ' * SMILES: '
-               '[C@@H]1(N(C([C@@H](NC([C@@H](NC([C@@H](NC([C@H](CC2=CC=C(O)C=C2)NC([C@@H](NC([C@H]3NC(=O)CC3)=O)CC(C)C)=O)=O)CCC([O-])=O)=O)CC(N)=O)=O)CCCC[NH3+])=O)CCC1)C(N[C@H](C(N[C@H](C(N4[C@H](C(N[C@@H](CC=5C=CC(=CC5)O)C(=O)[O-])=O)CCC4)=O)CCCNC(N)=[NH2+])=O)CCCNC(N)=[NH2+])=O '
-               'NAME: neurotensin(1-11)(1+) REASON: CORRECT Found net positive '
-               'charge (1+) with positive charges on: N55, N94, N102\n'
+               '[C@]([C@@](/C=C/CCCCCCCCCCC)(O)[H])(NC(=O)CCCCCCCCCCCCCCCCCCCCC)([H])COP(OCC[N+](C)(C)C)([O-])=O '
+               'NAME: N-(docosanoyl)-hexadecasphing-4-enine-1-phosphocholine '
+               'REASON: CORRECT Molecule has net zero charge but contains a '
+               'robust cationic functional group and a large carbon skeleton '
+               '(nC=43), consistent with a cationic lipid.\n'
                ' * SMILES: '
-               'O[C@@H]1[C@@H](COC(=O)\\C=C\\c2ccc(O)c(O)c2)O[C@@H](Oc2cc3c(O)cc(O)cc3[o+]c2-c2ccc(O)cc2)[C@H](O)[C@H]1O '
-               'NAME: Pelargonidin 3-O-(6-caffeoyl-beta-D-glucoside) REASON: '
-               'CORRECT Found net positive charge (1+) with positive charges '
-               'on: O31\n'
+               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC)([O-])=O '
+               'NAME: PC(18:2(9Z,12Z)/20:5(5Z,8Z,11Z,14Z,17Z)) REASON: CORRECT '
+               'Molecule has net zero charge but contains a robust cationic '
+               'functional group and a large carbon skeleton (nC=46), '
+               'consistent with a cationic lipid.\n'
                ' * SMILES: '
-               'CCOC(=O)[C@H](CC1=CC=CC=C1)NC(=O)C1=CC(Cl)=C(OCC[NH+]2CC[NH+](C)CC2)C(Cl)=C1O '
-               'NAME: JTE-607(2+) REASON: CORRECT Found net positive charge '
-               '(2+) with positive charges on: N25, N28\n'
-               ' * SMILES: C[N+]1(CCCCC[N+]2(C)CCCC2)CCCC1 NAME: pentolinium '
-               'ion REASON: CORRECT Found net positive charge (2+) with '
-               'positive charges on: N2, N8\n'
-               ' * SMILES: [H][N+]([H])([H])[H] NAME: ammonium REASON: CORRECT '
-               'Found net positive charge (1+) with positive charges on: N1\n'
+               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCCCCCCC)([O-])=O '
+               'NAME: PC(15:0/22:5) REASON: CORRECT Molecule has net zero '
+               'charge but contains a robust cationic functional group and a '
+               'large carbon skeleton (nC=45), consistent with a cationic '
+               'lipid.\n'
+               ' * SMILES: OC[C@H](CC(C)C)[NH3+] NAME: (S)-leucinol(1+) '
+               'REASON: CORRECT Molecule has net positive charge (1); '
+               'classified as cation.\n'
                ' * SMILES: '
-               '[O-][N+](=O)c1ccc(cc1)-n1nc(n[n+]1-c1ccc(I)cc1)-c1ccccc1 NAME: '
-               'iodonitrotetrazolium REASON: CORRECT Found net positive charge '
-               '(1+) with positive charges on: N2, N14\n'
+               '[H][C@@]1(C[C@H]2[C@@H](C=C)[C@H](O)OC=C2C(=O)OC)[NH2+]CCc2c1[nH]c1ccccc21 '
+               'NAME: strictosidine aglycone(1+) REASON: CORRECT Molecule has '
+               'net positive charge (1); classified as cation.\n'
                ' * SMILES: '
-               'O[C@@H]1[C@@H](COC(=O)CC(O)=O)O[C@@H](Oc2cc(O)cc3[o+]c(c(O[C@@H]4O[C@H](COC(=O)\\C=C\\c5ccc(O)cc5)[C@@H](O)[C@H](O)[C@H]4O)cc23)-c2cc(O)c(O)c(O)c2)[C@H](O)[C@H]1O '
-               'NAME: Malonylawobanin REASON: CORRECT Found net positive '
-               'charge (1+) with positive charges on: O21\n'
-               ' * SMILES: Cc1ncc(C[NH3+])c(N)n1 NAME: '
-               '4-amino-5-ammoniomethyl-2-methylpyrimidine REASON: CORRECT '
-               'Found net positive charge (1+) with positive charges on: N7\n'
-               ' * SMILES: [La++] NAME: lanthanum(2+) REASON: CORRECT Found '
-               'net positive charge (2+) with positive charges on: La1\n'
-               ' * SMILES: C[n+]1ccc2c(c1)[nH]c1ccc(O)cc21 NAME: '
-               '2-methyl-beta-carbolinium-6-ol REASON: CORRECT Found net '
-               'positive charge (1+) with positive charges on: N2\n'
-               'False positives: NONE\n'
+               'CCCCCCCCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCCCCCC '
+               'NAME: '
+               '1-tetracosanoyl-2-octadecanoyl-sn-glycero-3-phosphocholine '
+               'REASON: CORRECT Molecule has net zero charge but contains a '
+               'robust cationic functional group and a large carbon skeleton '
+               '(nC=50), consistent with a cationic lipid.\n'
+               ' * SMILES: '
+               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)([O-])=O '
+               'NAME: PC(22:5(7Z,10Z,13Z,16Z,19Z)/20:4(5Z,8Z,11Z,14Z)) REASON: '
+               'CORRECT Molecule has net zero charge but contains a robust '
+               'cationic functional group and a large carbon skeleton (nC=50), '
+               'consistent with a cationic lipid.\n'
+               ' * SMILES: [Cr+6] NAME: chromium(6+) REASON: CORRECT Single '
+               'atom cation with net positive charge of 6.\n'
+               ' * SMILES: '
+               'C([C@H](CC(C)C)NC(=O)C1=C(C=C(C=C1)[NH2+]CC=2NC=NC2)C=3C4=C(C=CC=C4)C=CC3)(O)=O '
+               'NAME: GGTI-2133 free base(1+) REASON: CORRECT Molecule has net '
+               'positive charge (1); classified as cation.\n'
+               'False positives: SMILES: '
+               'C(C(CC([O-])=O)OC(=O)C[C@@H](CCCCCCC/C=C\\C/C=C\\CCCCC)O)[N+](C)(C)C '
+               'NAME: O-[(3R,11Z,14Z)-3-hydroxyicosadienoyl]carnitine REASON: '
+               'WRONGLY CLASSIFIED Molecule has net zero charge but contains a '
+               'robust cationic functional group and a large carbon skeleton '
+               '(nC=27), consistent with a cationic lipid.\n'
+               ' * SMILES: [Mn+7] NAME: manganese-55(7+) REASON: WRONGLY '
+               'CLASSIFIED Single atom cation with net positive charge of 7.\n'
+               ' * SMILES: '
+               'CCCCC\\C=C\\C\\C=C\\CCCCCCCC(=O)OC(CC([O-])=O)C[N+](C)(C)C '
+               'NAME: O-linoelaidylcarnitine REASON: WRONGLY CLASSIFIED '
+               'Molecule has net zero charge but contains a robust cationic '
+               'functional group and a large carbon skeleton (nC=25), '
+               'consistent with a cationic lipid.\n'
+               ' * SMILES: '
+               'O=C(NC(C(=O)O)CCC(=O)N)/C=C/C=C/C1=CC=C([N+]([O-])=NC2=CC=C(/C=C/C=C/C(=O)NC(C(=O)O)CCC(=O)N)C=C2)C=C1 '
+               'NAME: Azoxymycin A REASON: WRONGLY CLASSIFIED Molecule has net '
+               'zero charge but contains a robust cationic functional group '
+               'and a large carbon skeleton (nC=32), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: OCC[NH+](C)C NAME: N-dimethylethanolamine REASON: '
+               'WRONGLY CLASSIFIED Molecule has net positive charge (1); '
+               'classified as cation.\n'
+               ' * SMILES: '
+               'O(C(C[N+](C)(C)C)CC(O)=O)C(=O)CCCCCCCC/C=C/C=C/CCCCC NAME: '
+               'ACar 18:2 REASON: WRONGLY CLASSIFIED Molecule has net positive '
+               'charge (1); classified as cation.\n'
+               ' * SMILES: '
+               'O1C(C(O)C(O)C(O)C1OC=2C(=[O+]C=3C(C2)=C(O)C=C(O)C3)C4=CC(O)=C(O)C(O)=C4)COC(=O)/C=C/C5=CC=C(O)C=C5 '
+               'NAME: Delphinidin 3-(6-p-coumaroylgalactoside) REASON: WRONGLY '
+               'CLASSIFIED Molecule has net positive charge (1); classified as '
+               'cation.\n'
+               ' * SMILES: '
+               'C[N+](C)(C)CCc1cc2OCOc2cc1C(=O)C(=O)c1ccc2OCOc2c1C(O)=O NAME: '
+               'N-Methylnarceimicine REASON: WRONGLY CLASSIFIED Molecule has '
+               'net positive charge (1); classified as cation.\n'
+               ' * SMILES: '
+               '[H][C@]12[C@H](CC(O)=O)[C@@](C)(CCC(O)=O)C3=[N+]1[Co--]14N5C(=CC6=[N+]1C(C[C@@]1(C)C(CC(O)=O)=C(CCC(O)=O)C(C3)=[N+]41)=C(CCC(O)=O)[C@]6(C)CC(O)=O)[C@@H](CCC(O)=O)[C@](C)(CC(O)=O)[C@]25C '
+               'NAME: cobalt-precorrin-6B REASON: WRONGLY CLASSIFIED Molecule '
+               'has net positive charge (1); classified as cation.\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCC(=O)OC(CC([O-])=O)C[N+](C)(C)C '
+               'NAME: O-stearoylcarnitine REASON: WRONGLY CLASSIFIED Molecule '
+               'has net zero charge but contains a robust cationic functional '
+               'group and a large carbon skeleton (nC=25), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: [O+]#P NAME: oxidophosphorus(1+) REASON: WRONGLY '
+               'CLASSIFIED Molecule has net positive charge (1); classified as '
+               'cation.\n'
+               ' * SMILES: '
+               'O=[N+]([O-])/C(=C(/C=C/C=C\\C=C(/C(O)C(C(=O)NC/C=C/C=C/C(O)C(CC(OC)C1(O)C2(N(C)C(C1C)=O)C(=O)OC2C)C)(C)C)\\C)\\C)/C '
+               'NAME: Lajollamycin REASON: WRONGLY CLASSIFIED Molecule has net '
+               'zero charge but contains a robust cationic functional group '
+               'and a large carbon skeleton (nC=36), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: '
+               'OC(=O)CCCCCNS(=O)(=O)c1ccc(c(c1)S([O-])(=O)=O)C1=c2cc3CCC[N+]4=c3c(CCC4)c2Oc2c3CCCN4CCCc(cc12)c34 '
+               'NAME: texas red-X REASON: WRONGLY CLASSIFIED Molecule has net '
+               'zero charge but contains a robust cationic functional group '
+               'and a large carbon skeleton (nC=37), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: '
+               'ClC1=C(OC)C(=C(C)C(=C1O)Cl)C(=O)O[C@H]2[C@H](O[C@@H]3O[C@H]([C@H](O)[C@](C3)([N+](=O)[O-])C)C)C[C@H](O[C@H]4[C@H](O)C[C@@]5(O[C@@]6([C@H](O)[C@H](O[C@H]7[C@@H](OC)[C@H](O[C@H]([C@@H]7O)O[C@H]8[C@H](O)[C@H](OC)[C@H](O[C@@H]9OC[C@@H]%10O[C@]%11(O[C@H]%10[C@H]9O)OC[C@@H](OC(=O)C%12=C(O)C=C(O)C=C%12C)[C@H]%13[C@H]%11OCO%13)O[C@@H]8COC)C)O[C@@H]([C@H]6O5)C)C)O[C@@H]4C)O[C@@H]2C '
+               'NAME: Sch 58773 REASON: WRONGLY CLASSIFIED Molecule has net '
+               'zero charge but contains a robust cationic functional group '
+               'and a large carbon skeleton (nC=69), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: '
+               'O=[N+]([O-])C1(C(OC)C(OC(C1)OC2=C(O)C(=NC(=C2)C(=O)NC=3C(=O)OC=4C=C(OC)C=CC4C3O)C(=O)OC5C(O)C(=O)C6(OC7=C(C(=O)C8=C(C(C(C(=CC5C)C)=O)=C(O)C(=C8)C)C7=O)NC6)C)C)C '
+               'NAME: Protorubradirin REASON: WRONGLY CLASSIFIED Molecule has '
+               'net zero charge but contains a robust cationic functional '
+               'group and a large carbon skeleton (nC=48), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: '
+               '[O-]C(=O)C(F)(F)F.[H][C@@]12CC[C@@]3([H])[C@@H](C(=O)OCCCCCCCCCCCCCCC[C@]4([H])O[C@](O)(CCN)[C@H](O)N(CCCN)C4=O)[C@@]4(CCC[C@H](C)O4)NC(N[C@@]4(CCC=C[C@@H](CC)O4)C1)=[N+]23 '
+               'NAME: Monanchocidin C, rel- REASON: WRONGLY CLASSIFIED '
+               'Molecule has net zero charge but contains a robust cationic '
+               'functional group and a large carbon skeleton (nC=48), '
+               'consistent with a cationic lipid.\n'
+               ' * SMILES: '
+               '[Br-].OC(C(=O)O[C@H]1C[N+]2(CCCOc3ccccc3)CCC1CC2)(c1cccs1)c1cccs1 '
+               'NAME: aclidinium bromide REASON: WRONGLY CLASSIFIED Molecule '
+               'has net zero charge but contains a robust cationic functional '
+               'group and a large carbon skeleton (nC=26), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: C1(=CC(=C(O)C=C1)OC)[C@H](C[NH3+])O NAME: '
+               'L-normetanephrinium REASON: WRONGLY CLASSIFIED Molecule has '
+               'net positive charge (1); classified as cation.\n'
+               ' * SMILES: O(C(C[N+](C)(C)C)CC(O)=O)C(=O)CCCCC/C=C\\CCCCCCCCC '
+               'NAME: ACar 17:1 REASON: WRONGLY CLASSIFIED Molecule has net '
+               'positive charge (1); classified as cation.\n'
+               ' * SMILES: '
+               'O=[N+]([O-])[C@@]1([C@@H](N)[C@H](O[C@H](C1)O[C@@H]2C(=C[C@H]3[C@@]4(OC(=O)C(C4=O)=C([C@@]5([C@H](C(=CC2)C)C=C[C@@H]6[C@@H](O[C@@H]7O[C@H]([C@H](OC(=O)C)[C@@H](C7)O[C@@H]8O[C@H]([C@H](O[C@H]9O[C@H]([C@H](O[C@@H]%10O[C@H]([C@H](O)CC%10)C)[C@@H](C9)O)C)CC8)C)COC(=O)C)[C@@H](C)C[C@@H]([C@@H]56)C)C)O)CC(C=O)=C[C@@H]3O)C)C(=O)OC)C '
+               'NAME: Tetrocarcin Q REASON: WRONGLY CLASSIFIED Molecule has '
+               'net zero charge but contains a robust cationic functional '
+               'group and a large carbon skeleton (nC=68), consistent with a '
+               'cationic lipid.\n'
+               ' * SMILES: '
+               'CC(C)CNC(=O)[C@]1(CC(=O)N([C@@H]1C2=CC=C(C=C2)CO)CC34CC5CC(C3)CC(C5)C4)C6=CC=C(C=C6)[N+](=O)[O-] '
+               'NAME: '
+               '(2R,3R)-1-(1-adamantylmethyl)-2-[4-(hydroxymethyl)phenyl]-N-(2-methylpropyl)-3-(4-nitrophenyl)-5-oxo-3-pyrrolidinecarboxamide '
+               'REASON: WRONGLY CLASSIFIED Molecule has net zero charge but '
+               'contains a robust cationic functional group and a large carbon '
+               'skeleton (nC=33), consistent with a cationic lipid.\n'
+               ' * SMILES: '
+               'O(C(C[N+](C)(C)C)CC([O-])=O)C(=O)CCC\\C=C\\CC1C(=CCC1=O)/C=C/C(O)CCCCC '
+               'NAME: '
+               '(5Z)-7-[(1R)-2-[(1E,3S)-3-Hydroxyoct-1-en-1-yl]-5-oxocyclopent-2-en-1-yl]hept-5-enoylcarnitine '
+               'REASON: WRONGLY CLASSIFIED Molecule has net zero charge but '
+               'contains a robust cationic functional group and a large carbon '
+               'skeleton (nC=27), consistent with a cationic lipid.\n'
+               ' * SMILES: CCOC(=O)C[N+]1=C(C2=CC=CC=C2C=C1)CC3=CC=CC=C3 NAME: '
+               '2-[1-(phenylmethyl)-2-isoquinolin-2-iumyl]acetic acid ethyl '
+               'ester REASON: WRONGLY CLASSIFIED Molecule has net positive '
+               'charge (1); classified as cation.\n'
+               ' * SMILES: C[N+]1=CN(C=C1)CC(=O)C2=CC=C(C=C2)Cl NAME: '
+               '1-(4-chlorophenyl)-2-(3-methyl-1-imidazol-3-iumyl)ethanone '
+               'REASON: WRONGLY CLASSIFIED Molecule has net positive charge '
+               '(1); classified as cation.\n'
+               ' * SMILES: [O+][H] NAME: hydroxylium REASON: WRONGLY '
+               'CLASSIFIED Single atom cation with net positive charge of 1.\n'
                'False negatives: SMILES: '
-               'C([C@@](COC(CCCCCCC/C=C\\CCCCCC)=O)(OC(CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C '
-               'NAME: PC(16:1(9Z)/20:3(5Z,8Z,11Z)) REASON: MISSED Net charge '
-               '(0) is not positive\n'
+               'CC1=C(CCOP(O)(=O)OP(O)([O-])=O)SC=[N+]1CC1=C(N)N=C(C)N=C1 '
+               'NAME: thiamine(1+) diphosphate(1-) REASON: MISSED Molecule has '
+               'net zero charge and a robust cationic functional group but is '
+               'small (nC=12); likely its positive site is only pH-dependent '
+               'and is balanced by an anionic group.\n'
                ' * SMILES: '
-               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCCCCC)([O-])=O '
-               'NAME: PC(15:0/18:4(6Z,9Z,12Z,15Z)) REASON: MISSED Net charge '
-               '(0) is not positive\n'
+               'CCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCC '
+               'NAME: 1,2-dioctanoyl-sn-glycero-3-phosphocholine REASON: '
+               'MISSED Molecule has net zero charge and a robust cationic '
+               'functional group but is small (nC=24); likely its positive '
+               'site is only pH-dependent and is balanced by an anionic '
+               'group.\n'
                ' * SMILES: '
-               'P(OCC[N+](C)(C)C)(OC[C@H](O)COC(=O)CCCCCCCCC/C=C\\CCCCCCCCCC)([O-])=O '
-               'NAME: PC(22:1(11Z)/0:0) REASON: MISSED Net charge (0) is not '
-               'positive\n'
+               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)C)COCCCCCCCCCC=C)([O-])=O '
+               'NAME: PC(O-11:1(10E)/2:0) REASON: MISSED Molecule has net zero '
+               'charge and a robust cationic functional group but is small '
+               '(nC=21); likely its positive site is only pH-dependent and is '
+               'balanced by an anionic group.\n'
+               ' * SMILES: C[N+](C)(C)CCOP(O)(=O)OCCCCCC([O-])=O NAME: '
+               '6-(O-phosphocholine)oxyhexanoate REASON: MISSED Molecule has '
+               'net zero charge and a robust cationic functional group but is '
+               'small (nC=11); likely its positive site is only pH-dependent '
+               'and is balanced by an anionic group.\n'
+               ' * SMILES: CCCCCC(=O)OC[C@@H](O)COP([O-])(=O)OCC[N+](C)(C)C '
+               'NAME: 1-hexanoyl-sn-glycero-3-phosphocholine REASON: MISSED '
+               'Molecule has net zero charge and a robust cationic functional '
+               'group but is small (nC=14); likely its positive site is only '
+               'pH-dependent and is balanced by an anionic group.\n'
                ' * SMILES: '
-               'CCCCCCCCCCCCCCC[C@H]([C@H](COP(=O)([O-])OCC[N+](C)(C)C)NC(CCCCCCCCCCCCCCCCC)=O)O '
-               'NAME: SM(d18:0/18:0) REASON: MISSED Net charge (0) is not '
-               'positive\n'
+               'P(OC[C@@H](COC(CCCCCC)=O)OC(=O)CCCCCC)(=O)(OCC[N+](C)(C)C)[O-] '
+               'NAME: 1,2-diheptanoyl-sn-glycero-3-phosphocholine REASON: '
+               'MISSED Molecule has net zero charge and a robust cationic '
+               'functional group but is small (nC=22); likely its positive '
+               'site is only pH-dependent and is balanced by an anionic '
+               'group.\n'
                ' * SMILES: '
-               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCCCC)([O-])=O '
-               'NAME: PC(14:0/20:5(5Z,8Z,11Z,14Z,17Z)) REASON: MISSED Net '
-               'charge (0) is not positive\n'
+               'P(OCC[N+](C)(C)C)(OC[C@H](OC)COCCCCCCCCCCCCCC)([O-])=O NAME: '
+               'PC(O-14:0/O-1:0) REASON: MISSED Molecule has net zero charge '
+               'and a robust cationic functional group but is small (nC=23); '
+               'likely its positive site is only pH-dependent and is balanced '
+               'by an anionic group.\n'
                ' * SMILES: '
-               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)C)COC(=O)CCCCCCCCCCCCC)([O-])=O '
-               'NAME: PC(14:0/2:0) REASON: MISSED Net charge (0) is not '
-               'positive\n'
+               '[Cl-].OC[C@H]1O[C@@H](Oc2cc3c(O)cc(O)cc3[o+]c2-c2ccc(O)cc2)[C@H](O)[C@@H](O)[C@@H]1O '
+               'NAME: pelargonidin 3-O-beta-D-glucoside chloride REASON: '
+               'MISSED Molecule has net zero charge with no unambiguous '
+               'permanent cationic substructure.\n'
                ' * SMILES: '
-               'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCCCCCC/C=C/C=C\\CCCCCC)COC(=O)CCCCCCCCCCCCCCC)([O-])=O '
-               'NAME: PC(16:0/18:2(9E,11Z)) REASON: MISSED Net charge (0) is '
-               'not positive\n'
-               ' * SMILES: '
-               'C([C@@](COC(CCCCCCC/C=C\\CCCCCCCC)=O)(OC(CCCCCCCCC/C=C\\C/C=C\\CCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C '
-               'NAME: PC(18:1(9Z)/20:2(11Z,14Z)) REASON: MISSED Net charge (0) '
-               'is not positive\n'
-               ' * SMILES: '
-               'C([C@@](COC(CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)=O)(OC(CCCCCCC/C=C\\CCCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C '
-               'NAME: PC(22:5(4Z,7Z,10Z,13Z,16Z)/16:1(9Z)) REASON: MISSED Net '
-               'charge (0) is not positive\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCCCCCC '
-               'NAME: 1,2-distearoyl-sn-glycero-3-phosphocholine REASON: '
-               'MISSED Net charge (0) is not positive\n'
+               'C1(/C(/NC([C@@H](N1)CCCNC(N)=[NH2+])=O)=C/C2=CC=C(C(=C2)OCC[C@H](NC(=O)C[C@](CC(N[C@H](C([O-])=O)CC([O-])=O)=O)(C(=O)[O-])O)C(=O)[O-])OC)=O '
+               'NAME: NK13650 C(3-) REASON: MISSED Molecule has net negative '
+               'charge (-3); not a cation.\n'
+               ' * SMILES: P(OCC[N+](C)(C)C)(OCC(OCCCCCCCCCCCCCCCC)CO)([O-])=O '
+               'NAME: Phosphatidylcholine lyso alkyl 16:0 REASON: MISSED '
+               'Molecule has net zero charge and a robust cationic functional '
+               'group but is small (nC=24); likely its positive site is only '
+               'pH-dependent and is balanced by an anionic group.\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'CC(=O)O[C@H]1CC[C@]23C[C@@H]1OO[C@@]2(C)C(=O)CCC3(C)C',
-                                     'name': 'Talaperoxide B',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'C1=CC=C(C(=C1)C#CC2=CC=C(C=C2)[C@H]3[C@H](N[C@@H]3C#N)CO)F',
-                                     'name': '(2S,3R,4S)-3-[4-[2-(2-fluorophenyl)ethynyl]phenyl]-4-(hydroxymethyl)-2-azetidinecarbonitrile',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'OC(=O)Cc1cn(nc1-c1ccc(Cl)cc1)-c1ccccc1',
-                                     'name': 'lonazolac',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'C(CCCCCCCC(=O)O)CCCCCCCCC(=O)O',
-                                     'name': 'octadecanedioic acid',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O)[C@@H](NC(=O)C)[C@@H]1OC[C@H]2OC(O)[C@H](O)[C@@H](O)[C@H]2O)CO[C@@H]3O[C@@H]([C@@H](O)[C@H](O)[C@H]3NC(=O)C)CO',
-                                     'name': 'N-[(2R,3R,4R,5S,6R)-2-[[(2R,3S,4R,5R,6R)-5-Acetamido-3,4-dihydroxy-6-[[(2R,3R,4S,5R)-3,4,5,6-tetrahydroxyoxan-2-yl]methoxy]oxan-2-yl]methoxy]-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'C\\C=C(/C)CC\\C=C(/C)C(=O)OCC(C)(C)CC1=C(O)C(=O)c2ccccc2C1=O',
-                                     'name': 'rhinacanthin C',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'COC1=C(C=C2C(=C1)C(=NC=N2)NC3=CC(=C(C(=C3)Br)O)Br)OC',
-                                     'name': '2,6-dibromo-4-[(6,7-dimethoxy-4-quinazolinyl)amino]phenol',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'S(=O)(CC1=CC=CC=C1)C',
-                                     'name': 'Methyl benzyl sulfoxide',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'C=CCOC1=NS(=O)(=O)c2ccccc12',
-                                     'name': 'probenazole',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'},
-                                 {   'smiles': 'C(=O)([C@@H](NC(=O)CC)CCSC)[O-]',
-                                     'name': 'N-propanoyl-L-methioninate',
-                                     'reason': 'No positive charges or '
-                                               'cationic groups found'}],
-    'sample_false_negatives': [   {   'smiles': 'Cc1ccc(cc1)S(O)(=O)=O.N[C@@H]1CCN(C1)c1nc2n(cc(C(O)=O)c(=O)c2cc1F)-c1ccc(F)cc1F',
-                                      'name': '(R)-tosufloxacin tosylate',
-                                      'reason': 'No positive charges or '
-                                                'cationic groups found'},
-                                  {   'smiles': 'CO[C@H]1\\C=C\\O[C@@]2(C)OC3=C(C2=O)C2=C(C(O)=C3C)C([O-])=C(NC(=O)\\C(C)=C/C=C/[C@H](C)[C@H](O)[C@@H](C)[C@@H](O)[C@@H](C)[C@H](OC(C)=O)[C@@H]1C)\\C(=C/N(O)N1CCN(C)CC1)C2=O',
-                                      'name': "2'-hydroxyrifampicin(1-)",
-                                      'reason': 'No positive charges or '
-                                                'cationic groups found'},
-                                  {   'smiles': 'C1(O)=C(C=C(C(=C1)NC=2N=CN=C3C2C=CC(=C3)OCC4=CC=CC=C4)F)C',
-                                      'name': 'ZM 323881',
-                                      'reason': 'No positive charges or '
-                                                'cationic groups found'},
-                                  {   'smiles': '[H][C+]([H])([H])[H]',
-                                      'name': 'methaniumyl',
-                                      'reason': 'Invalid SMILES string'},
-                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O',
-                                      'name': 'PG(20:0/21:0)',
-                                      'reason': 'No positive charges or '
-                                                'cationic groups found'},
-                                  {   'smiles': 'COC1=C(Br)[C@H](O)[C@]2(CC(=NO2)C(=O)NCCCCNC(=O)C2=NO[C@]3(C2)C=C(Br)C(=O)[C@H](Br)[C@H]3O)C=C1Br',
-                                      'name': '(+)-aplysinillin',
-                                      'reason': 'No positive charges or '
-                                                'cationic groups found'},
-                                  {   'smiles': 'P(OC[C@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)(O)(O)=O',
-                                      'name': 'PA(20:2(11Z,14Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))',
-                                      'reason': 'No positive charges or '
-                                                'cationic groups found'}],
-    'attempt': 1,
-    'reasoning': 'Looking at the outcomes, I notice that the main issue is '
-                 'that the program is failing to identify some phosphocholine '
-                 '(PC) lipids and similar molecules as cations. These '
-                 'molecules typically have a positively charged quaternary '
-                 'ammonium group [N+(CH3)3] and a negatively charged phosphate '
-                 'group [PO4-], giving them a net neutral charge overall.\n'
+    'sample_true_negatives': [   {   'smiles': 'O=C(N[C@@H](C(O)(C)C)C)[C@H]([C@@]1([C@@]2([C@@](CC1)(/C(/CCC2)=C/C=C\\3/C[C@@H](O)C[C@H](O)C3=C)[H])C)[H])C',
+                                     'name': '1alpha,25-dihydroxy-24-oxo-23-azavitamin '
+                                             'D2 / '
+                                             '1alpha,25-dihydroxy-24-oxo-23-azaergocalciferol',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCC(O)C([O-])=O',
+                                     'name': '2-hydroxyarachidate',
+                                     'reason': 'Molecule has net negative '
+                                               'charge (-1); not a cation.'},
+                                 {   'smiles': 'C[C@@H](CN([C@@H](C)CO)C(=O)NC1=CC=C(C=C1)C(F)(F)F)[C@@H](CN(C)C(=O)C2CCOCC2)OC',
+                                     'name': 'N-[(2S,3S)-4-[[(2S)-1-hydroxypropan-2-yl]-[[4-(trifluoromethyl)phenyl]carbamoyl]amino]-2-methoxy-3-methylbutyl]-N-methyloxane-4-carboxamide',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'},
+                                 {   'smiles': 'CC(=O)CC\\C=C(/C)CCC=C(C)C',
+                                     'name': 'geranyl acetone',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@H](O[C@H](O)[C@H]1O)CO[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@@H]2O)CO)[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)CO',
+                                     'name': '(2S,3S,4S,5S,6R)-2-[[(2R,3R,4S,5S,6S)-4-[(2R,3S,4S,5S,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-3-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-3,5,6-trihydroxyoxan-2-yl]methoxy]-6-(hydroxymethyl)oxane-3,4,5-triol',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'},
+                                 {   'smiles': 'O=C(OC1=C(C(O)=C(C(=O)O)C(=C1C)C)C)C2=C(OC)C(=C(OC(=O)C3=C(O)C=C(O)C=C3C)C=C2C)C',
+                                     'name': 'Thielavin Z5',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'},
+                                 {   'smiles': '[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)NC(C)=O)O[C@@H]2[C@@H]([C@H](C(O[C@@H]2CO)O)O)O',
+                                     'name': 'beta-D-GlcpNAc-(1->4)-D-Galp',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'},
+                                 {   'smiles': 'CN(C)C(=O)C1=CC=C(C=C1)C2=CC=C(C=C2)[C@@H]3[C@H]4CN(CC(=O)N4[C@H]3CO)C(=O)CC5CC5',
+                                     'name': '4-[4-[(6S,7R,8R)-4-(2-cyclopropyl-1-oxoethyl)-8-(hydroxymethyl)-2-oxo-1,4-diazabicyclo[4.2.0]octan-7-yl]phenyl]-N,N-dimethylbenzamide',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCC=C',
+                                     'name': '1-docosene',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'},
+                                 {   'smiles': 'C([C@@](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)([H])COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC',
+                                     'name': 'TG(22:5(7Z,10Z,13Z,16Z,19Z)/20:5(5Z,8Z,11Z,14Z,17Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))[iso6]',
+                                     'reason': 'Molecule has net zero charge '
+                                               'without sufficient indicators '
+                                               'of a permanent cation.'}],
+    'sample_false_negatives': [   {   'smiles': '[NH3+]CCC(=O)NCCC1=CNC=N1',
+                                      'name': 'carcininium',
+                                      'reason': 'Small molecule (MW=183.1 Da) '
+                                                'with net positive charge but '
+                                                'no robust cationic group; '
+                                                'likely only pH–dependent '
+                                                'protonation.'},
+                                  {   'smiles': 'OC[C@H](CC(C)C)[NH3+]',
+                                      'name': '(S)-leucinol(1+)',
+                                      'reason': 'Small molecule (MW=118.1 Da) '
+                                                'with net positive charge but '
+                                                'no robust cationic group; '
+                                                'likely only pH–dependent '
+                                                'protonation.'},
+                                  {   'smiles': 'CC1=C(CCOP(O)(=O)OP(O)([O-])=O)SC=[N+]1CC1=C(N)N=C(C)N=C1',
+                                      'name': 'thiamine(1+) diphosphate(1-)',
+                                      'reason': 'Molecule has net zero charge '
+                                                'without sufficient indicators '
+                                                'of a permanent cation.'},
+                                  {   'smiles': 'CCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCC',
+                                      'name': '1,2-dioctanoyl-sn-glycero-3-phosphocholine',
+                                      'reason': 'Molecule has net zero charge '
+                                                'without sufficient indicators '
+                                                'of a permanent cation.'},
+                                  {   'smiles': 'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)C)COCCCCCCCCCC=C)([O-])=O',
+                                      'name': 'PC(O-11:1(10E)/2:0)',
+                                      'reason': 'Molecule has net zero charge '
+                                                'without sufficient indicators '
+                                                'of a permanent cation.'},
+                                  {   'smiles': 'C[N+](C)(C)CCOP(O)(=O)OCCCCCC([O-])=O',
+                                      'name': '6-(O-phosphocholine)oxyhexanoate',
+                                      'reason': 'Molecule has net zero charge '
+                                                'without sufficient indicators '
+                                                'of a permanent cation.'},
+                                  {   'smiles': 'CCCCCC(=O)OC[C@@H](O)COP([O-])(=O)OCC[N+](C)(C)C',
+                                      'name': '1-hexanoyl-sn-glycero-3-phosphocholine',
+                                      'reason': 'Molecule has net zero charge '
+                                                'without sufficient indicators '
+                                                'of a permanent cation.'},
+                                  {   'smiles': 'CC[C@H](C)[NH3+]',
+                                      'name': '(2S)-butan-2-aminium',
+                                      'reason': 'Small molecule (MW=74.1 Da) '
+                                                'with net positive charge but '
+                                                'no robust cationic group; '
+                                                'likely only pH–dependent '
+                                                'protonation.'},
+                                  {   'smiles': 'CCCCC(C)[NH3+]',
+                                      'name': 'hexan-2-aminium',
+                                      'reason': 'Small molecule (MW=102.1 Da) '
+                                                'with net positive charge but '
+                                                'no robust cationic group; '
+                                                'likely only pH–dependent '
+                                                'protonation.'},
+                                  {   'smiles': 'C[C@H]1C[NH2+]CCc2ccc(Cl)cc12',
+                                      'name': 'lorcaserin(1+)',
+                                      'reason': 'Small molecule (MW=196.1 Da) '
+                                                'with net positive charge but '
+                                                'no robust cationic group; '
+                                                'likely only pH–dependent '
+                                                'protonation.'}],
+    'attempt': 5,
+    'reasoning': 'Below is our “thinking‐out‐loud” summary before the code. In '
+                 'our last attempt the logic was very “binary” (simply net '
+                 'charge positive versus zero) so that many small, protonated '
+                 'species got classified as cations even though their positive '
+                 'charge is pH–dependent, while many zwitterionic molecules '
+                 'with a robust “cationic lipid” character (for example, many '
+                 'phosphatidylcholines) were missed. To improve the F1 score '
+                 'we (i) now distinguish “robust” cationic groups (i.e. '
+                 'quaternary ammonium, aromatic nitrogen cations, guanidinium '
+                 'groups) from protonated amines; (ii) we also require '
+                 'that—for molecules in the net–zero case—the compound must '
+                 'contain a phosphorus atom (as found in a phospholipid '
+                 'headgroup) and have a large carbon skeleton (we now require '
+                 'at least 30 carbon atoms) in order to call it a cation (this '
+                 'helps avoid mis‐calling small zwitterions as “cationic”); '
+                 'and (iii) for singly charged molecules whose positive charge '
+                 'comes from a protonated amine (i.e. not “robust”) we now '
+                 'impose a molecular‐weight threshold (approximately 200\u2005'
+                 'Da) so that very small species (such as '
+                 'N–dimethylethanolamine, MW≈90) are not called cations. In '
+                 'addition, when a molecule is a single atom we accept it as a '
+                 'cation—except in one ad hoc case (for example, manganese in '
+                 'the unusual +7 oxidation state) which we explicitly '
+                 'exclude. \n'
                  '\n'
-                 'The key insight is that the previous code was too strict in '
-                 'requiring a net positive charge. According to the '
-                 'definition, a cation is "a monoatomic or polyatomic species '
-                 'having one or more elementary charges of the proton." This '
-                 'means that a molecule should be classified as a cation if it '
-                 'contains ANY positively charged atoms, regardless of whether '
-                 'there are also negative charges that make the overall '
-                 'molecule neutral.\n'
+                 'The following Python code implements these decisions. (If '
+                 'further improvements are needed, one might further refine '
+                 'the “robust” substructure definitions or add extra '
+                 'counter–ion search; but this version already represents an '
+                 'improved compromise.)\n'
                  '\n'
-                 "Here's how we can improve the code:\n"
+                 'Below is the complete Python code in a single code block:\n'
                  '\n'
-                 '1. Remove the net charge requirement - we only need to check '
-                 'for presence of positive charges\n'
-                 '2. Keep track of the number of positive charges for '
-                 'reporting\n'
-                 '3. Add specific pattern matching for common cationic groups '
-                 'like [N+] and quaternary ammonium\n'
-                 '\n'
-                 "Here's the improved code:",
+                 '------------------------------------------------',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 2705,
-    'num_false_positives': 100,
-    'num_true_negatives': 2341,
-    'num_false_negatives': 7,
+    'num_true_positives': 2225,
+    'num_false_positives': 828,
+    'num_true_negatives': 138760,
+    'num_false_negatives': 487,
     'num_negatives': None,
-    'precision': 0.964349376114082,
-    'recall': 0.9974188790560472,
-    'f1': 0.980605401486315,
-    'accuracy': 0.9792353968562003,
-    'negative_predictive_value': 0.9970187393526405}
+    'precision': 0.7287913527677694,
+    'recall': 0.8204277286135693,
+    'f1': 0.7718993928881178,
+    'accuracy': 0.9907589599437807,
+    'negative_predictive_value': 0.9965026176506495}

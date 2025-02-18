@@ -143,6 +143,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:10036',
                                        'Wikipedia:Wax_ester'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                "Error: module 'rdkit.Chem.rdMolDescriptors' has no attribute "
                "'CalcNumFunctionalGroups'\n"

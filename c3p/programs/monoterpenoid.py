@@ -1,143 +1,56 @@
 """
 Classifies: CHEBI:25409 monoterpenoid
 """
-"""
-Classifies: CHEBI:35189 monoterpenoid
-"""
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_monoterpenoid(smiles: str):
     """
     Determines if a molecule is a monoterpenoid based on its SMILES string.
-    Monoterpenoids are derived from monoterpenes (C10 skeleton) but may have some
-    carbons removed or rearranged, and often contain oxygen-containing functional groups.
+    Monoterpenoids are derivatives of monoterpenes, containing a 10-carbon skeleton with potential rearrangements.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a monoterpenoid, False otherwise
+        bool: True if the molecule is a monoterpenoid, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get basic molecular properties
+    # Monoterpenoid is characterized by having a 10-carbon backbone
+    # including cyclic or acyclic structures derived from isoprene units
+    monoterpenoid_patterns = [
+        Chem.MolFromSmarts("C1CCCCC1"),     # Monocyclic terpenes (like menthane derivatives)
+        Chem.MolFromSmarts("C1CCC(C)CC1"),  # Cyclohexane modified by isoprene units
+        Chem.MolFromSmarts("C1=CC=CC=C1"),  # Aromatic rings as part of rearrangement
+        Chem.MolFromSmarts("C1CCC(C)C1"),   # Simple cyclopentane
+        Chem.MolFromSmarts("C2(CC=CC1C2)C1"),  # Bicyclic structures like pinanes
+        Chem.MolFromSmarts("C=C(C)C"),      # Acyclic monoterpenes
+    ]
+
+    # Functional groups frequently found in monoterpenoids
+    functional_group_patterns = [
+        Chem.MolFromSmarts("[OX2H]"),       # Hydroxyl group
+        Chem.MolFromSmarts("[CX3]=[OX1]"),  # Carbonyl group
+        Chem.MolFromSmarts("[CX3](=O)[OX2H1]"),  # Carboxylic acids
+        Chem.MolFromSmarts("O=C(O)C"),      # Esters
+        Chem.MolFromSmarts("C=CC"),         # Double bonds typical for monoterpenoids
+    ]
+    
+    # Check if the molecule has a monoterpenoid structure and some common functional group modifications
+    terpene_match = any(mol.HasSubstructMatch(pattern) for pattern in monoterpenoid_patterns)
+    functional_match = any(mol.HasSubstructMatch(pattern) for pattern in functional_group_patterns)
+
+    # Check for carbon count (should closely align with 10 carbons, slight deviations acceptable)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    
-    # Core structural patterns for monoterpenoid skeleton
-    core_patterns = {
-        "isopropyl": "[CH3][CH1]([CH3])[CH1,CH2]",
-        "gem_dimethyl": "[CH3][C]([CH3])",
-        "isoprene_unit": "[CH3,CH2][C]([CH3,CH2])=[C,c]",
-        "menthane_skeleton": "CC1CCC(C(C)C)CC1",
-        "pinane_skeleton": "C12CCC(C1(C)C)C2",
-        "carane_skeleton": "C12CC1C(CC2)",
-        "thujane_skeleton": "CC(C)C12CC1CC2",
-        "fenchane_skeleton": "CC1(C)C2CCC1(C)C2",
-        "bornane_skeleton": "CC1(C)C2CCC1(C)CC2",
-    }
-    
-    # Additional patterns for common modifications
-    mod_patterns = {
-        "cyclohexane": "C1CCCCC1",
-        "cyclopentane": "C1CCCC1",
-        "bridged_bicycle": "C12CCC1CC2",
-        "aromatic_ring": "c1ccccc1",
-        "conjugated_system": "C=CC=C",
-    }
-    
-    # Functional group patterns
-    func_patterns = {
-        "alcohol": "[OH1]",
-        "ether": "[OR0]",
-        "ketone": "[CX3](=[OX1])[#6]",
-        "ester": "[#6][CX3](=[OX1])[OX2][#6]",
-        "aldehyde": "[CX3H1](=O)[#6]",
-        "epoxide": "C1OC1",
-        "carboxylic_acid": "[CX3](=O)[OX2H1]",
-        "enol": "[OX2H1][#6X3]=[#6X3]",
-        "hemiacetal": "[OX2H1][CX4]([OX2])",
-        "amino": "[NX3;H2,H1;!$(NC=O)]",
-        "amide": "[NX3][CX3](=[OX1])[#6]",
-    }
-    
-    # Check for core patterns
-    core_features = []
-    for name, smarts in core_patterns.items():
-        pattern = Chem.MolFromSmarts(smarts)
-        if pattern and mol.HasSubstructMatch(pattern):
-            core_features.append(name.replace("_", " "))
 
-    # Check for modification patterns
-    mod_features = []
-    for name, smarts in mod_patterns.items():
-        pattern = Chem.MolFromSmarts(smarts)
-        if pattern and mol.HasSubstructMatch(pattern):
-            mod_features.append(name.replace("_", " "))
-
-    # Check for functional groups
-    func_features = []
-    for name, smarts in func_patterns.items():
-        pattern = Chem.MolFromSmarts(smarts)
-        if pattern and mol.HasSubstructMatch(pattern):
-            func_features.append(name)
-
-    # Ring analysis
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
-    ring_info = mol.GetRingInfo()
-    ring_sizes = [len(r) for r in ring_info.AtomRings()]
+    if terpene_match and functional_match and (9 <= c_count <= 11):
+        return True, f"Structure compatible with monoterpenoids: {c_count} carbons, matches patterns."
     
-    # Score calculation
-    score = 0
-    
-    # Core features are most important
-    score += len(core_features) * 2
-    
-    # Modification patterns add support
-    score += len(mod_features)
-    
-    # Functional groups are common in monoterpenoids
-    if func_features:
-        score += min(len(func_features), 3)  # Cap at 3 to avoid over-counting
-    
-    # Ring count consideration
-    if 1 <= ring_count <= 4:
-        score += 1
-    
-    # Common ring sizes (5,6) are typical
-    if any(rs in [5,6] for rs in ring_sizes):
-        score += 1
-    
-    # Molecular weight consideration (more flexible range)
-    if 100 <= mol_wt <= 500:
-        score += 1
-
-    # Combine all features for reporting
-    all_features = []
-    if core_features:
-        all_features.extend(core_features)
-    if mod_features:
-        all_features.extend(mod_features)
-    if func_features:
-        all_features.append("oxygen/nitrogen-containing groups")
-    if ring_count > 0:
-        all_features.append(f"{ring_count} ring(s)")
-
-    # Classification
-    # Require either strong core features or combination of features with functional groups
-    if (len(core_features) >= 2) or (score >= 4 and len(all_features) >= 2):
-        features_str = ", ".join(all_features)
-        return True, f"Monoterpenoid features found: {features_str}"
-    else:
-        return False, "Insufficient characteristic features for monoterpenoid classification"
+    return False, "Structure is not compatible with typical monoterpenoid patterns."
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25409',
@@ -153,306 +66,436 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:25409',
                           'xrefs': ['LIPID_MAPS_class:LMPR0102'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 39,
+                           'log_lines_of_code': 3.6635616461296463,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'MolFromSmiles',
+                                                 'GetAtomicNum',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmarts',
+                                                 'GetAtoms'],
+                           'methods_called_count': 5,
+                           'smarts_strings': [   'O=C(O)C',
+                                                 '[OX2H]',
+                                                 '"C1CCCCC1"),     # '
+                                                 'Monocyclic terpenes (like '
+                                                 'menthane derivatives',
+                                                 'C1CCC(C)CC1',
+                                                 'C=C(C)C',
+                                                 'C=CC',
+                                                 'C1CCC(C)C1',
+                                                 '[CX3]=[OX1]',
+                                                 '[CX3](=O)[OX2H1]',
+                                                 'C2(CC=CC1C2)C1',
+                                                 'C1=CC=CC=C1'],
+                           'smarts_strings_count': 11,
+                           'defs': ['is_monoterpenoid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'True, f"Structure compatible with '
+                                          'monoterpenoids: {c_count} carbons, '
+                                          'matches patterns."',
+                                          'False, "Structure is not compatible '
+                                          'with typical monoterpenoid '
+                                          'patterns."'],
+                           'returns_count': 3,
+                           'complexity': 2.9327123292259296},
     'message': '\n'
-               'Attempt failed: F1 score of 0.7499999999999999 is too low.\n'
+               'Attempt failed: F1 score of 0.1846278975193168 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: SMILES: '
-               'C[C@]12[C@@H]3CC[C@@H](O3)[C@@]1(C)C(=O)OC2=O NAME: '
-               'cantharidin REASON: CORRECT Monoterpenoid features found: '
-               'cyclohexane, oxygen-containing groups, 3 ring(s)\n'
-               ' * SMILES: C1CO[C@@](C[C@@H]1C)(C=C(C)C)[H] NAME: (2S,4R)-rose '
-               'oxide REASON: CORRECT Monoterpenoid features found: gem '
-               'dimethyl, isoprene unit, 1 ring(s)\n'
-               ' * SMILES: CC(C)c1ccc(C)cc1O NAME: thymol REASON: CORRECT '
-               'Monoterpenoid features found: gem dimethyl, oxygen-containing '
-               'groups, 1 ring(s)\n'
-               ' * SMILES: CC(C)C1(O)CCC(C)=CC1 NAME: 4-terpineol REASON: '
-               'CORRECT Monoterpenoid features found: gem dimethyl, isoprene '
-               'unit, oxygen-containing groups, 1 ring(s)\n'
+               'O[C@@]([C@H]1C[C@@H](O)[C@H](C)CC1)(CO)C NAME: '
+               '(1R,2R,4R,8S)-(-)-p-menthane-2,8,9-triol REASON: CORRECT '
+               'Structure compatible with monoterpenoids: 10 carbons, matches '
+               'patterns.\n'
+               ' * SMILES: C12CC(C1(C)C)CC=C2C(O)=O NAME: myrtenic acid '
+               'REASON: CORRECT Structure compatible with monoterpenoids: 10 '
+               'carbons, matches patterns.\n'
+               ' * SMILES: C[C@H]1CC[C@@H](C[C@H]1O)C(C)=C NAME: '
+               '(-)-neodihydrocarveol REASON: CORRECT Structure compatible '
+               'with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: C[C@H]1CC[C@@H]([C@H](O)C1)C(C)(C)O NAME: '
+               '1alpha,3beta,4beta-p-menthane-3,8-diol REASON: CORRECT '
+               'Structure compatible with monoterpenoids: 10 carbons, matches '
+               'patterns.\n'
+               ' * SMILES: OC1CC(CCC1C)C(O)(CO)C NAME: '
+               '(1R,2R,4R,8R)-p-Menthane-2,8,9-triol REASON: CORRECT Structure '
+               'compatible with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: CC(C)[C@H]1CC[C@H](C)C[C@@H]1O NAME: (+)-menthol '
+               'REASON: CORRECT Structure compatible with monoterpenoids: 10 '
+               'carbons, matches patterns.\n'
+               ' * SMILES: OC(C1CCC(CC1)=C)(C)C NAME: delta-Terpineol REASON: '
+               'CORRECT Structure compatible with monoterpenoids: 10 carbons, '
+               'matches patterns.\n'
+               ' * SMILES: C[C@@H]1CC[C@@H](C[C@H]1O)C(C)=C NAME: '
+               '(-)-isodihydrocarveol REASON: CORRECT Structure compatible '
+               'with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: O[C@@H]1[C@@]2(C[C@@](C(C2=O)(C)C)(C1)[H])C NAME: '
+               '6-exo-Hydroxyfenchone REASON: CORRECT Structure compatible '
+               'with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: C[C@H]1CCC(=C(C)C)C(=O)C1 NAME: (-)-Pulegone '
+               'REASON: CORRECT Structure compatible with monoterpenoids: 10 '
+               'carbons, matches patterns.\n'
+               ' * SMILES: C[C@]12[C@@H]3CC[C@@H](O3)[C@@]1(C)C(=O)OC2=O NAME: '
+               'cantharidin REASON: CORRECT Structure compatible with '
+               'monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: O(C(C1CCC(=CC1)C)(C)C)C=O NAME: alpha-Terpineol '
+               'formate REASON: CORRECT Structure compatible with '
+               'monoterpenoids: 11 carbons, matches patterns.\n'
+               ' * SMILES: O[C@@]1([C@@]2(C(C)(C)[C@@H](C1)CC2)C)C NAME: '
+               '2-exo-Hydroxy-2-methyl-bornane REASON: CORRECT Structure '
+               'compatible with monoterpenoids: 11 carbons, matches patterns.\n'
+               ' * SMILES: O=C1CC(CCC1C)C(C)C NAME: Tetrahydrocarvone REASON: '
+               'CORRECT Structure compatible with monoterpenoids: 10 carbons, '
+               'matches patterns.\n'
+               ' * SMILES: [H][C@@]1(CCC(C)=CC1)C(C)(C)O NAME: '
+               '(S)-(-)-alpha-terpineol REASON: CORRECT Structure compatible '
+               'with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: CC1(C)[C@H]2C[C@@H]1C(=C)[C@H](O)C2 NAME: '
+               '(-)-trans-pinocarveol REASON: CORRECT Structure compatible '
+               'with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: CC(CCO)CCC=C(C)C NAME: citronellol REASON: CORRECT '
+               'Structure compatible with monoterpenoids: 10 carbons, matches '
+               'patterns.\n'
+               ' * SMILES: [H][C@]1(CCC(C)=CC1=O)C(C)=C NAME: '
+               '(+)-isopiperitenone REASON: CORRECT Structure compatible with '
+               'monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: CC(=C)[C@@H]1CC=C(C)[C@@H](O)C1 NAME: '
+               '(-)-trans-carveol REASON: CORRECT Structure compatible with '
+               'monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: CC(CCCC(C)(C)O)C=C NAME: dihydromyrcenol REASON: '
+               'CORRECT Structure compatible with monoterpenoids: 10 carbons, '
+               'matches patterns.\n'
+               ' * SMILES: O=CCC1(C2CC(CC2)C1=C)C NAME: Norbicycloekasantalal '
+               'REASON: CORRECT Structure compatible with monoterpenoids: 11 '
+               'carbons, matches patterns.\n'
+               ' * SMILES: CC(=C)[C@@H]1CCC(=CC1)C(=O)O NAME: '
+               '(4R)-4-(1-methylethenyl)-1-cyclohexenecarboxylic acid REASON: '
+               'CORRECT Structure compatible with monoterpenoids: 10 carbons, '
+               'matches patterns.\n'
+               ' * SMILES: O=CCC1(C2(C3C2CC1C3)C)C NAME: Norecasantalal '
+               'REASON: CORRECT Structure compatible with monoterpenoids: 11 '
+               'carbons, matches patterns.\n'
+               ' * SMILES: CC(=C)[C@H]1CC=C(C)[C@H](O)C1 NAME: '
+               '(+)-trans-carveol REASON: CORRECT Structure compatible with '
+               'monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: C[C@H](CCO)CCC=C(C)C NAME: (S)-(-)-citronellol '
+               'REASON: CORRECT Structure compatible with monoterpenoids: 10 '
+               'carbons, matches patterns.\n'
+               'False positives: SMILES: OC(=O)C(CCC=C(C)C)C NAME: '
+               '2,6-Dimethyl-5-heptenoic acid REASON: WRONGLY CLASSIFIED '
+               'Structure compatible with monoterpenoids: 9 carbons, matches '
+               'patterns.\n'
+               ' * SMILES: C(C(CC([O-])=O)OC(C(C(=O)O)C)=O)[N+](C)(C)C NAME: '
+               'O-methylmalonylcarnitine REASON: WRONGLY CLASSIFIED Structure '
+               'compatible with monoterpenoids: 11 carbons, matches patterns.\n'
+               ' * SMILES: O=C1C=CO[C@]23[C@]1(O2)C(O)CC(C3O)CC NAME: '
+               'Epoxynemanione A REASON: WRONGLY CLASSIFIED Structure '
+               'compatible with monoterpenoids: 11 carbons, matches patterns.\n'
+               ' * SMILES: O=C1C(CC2=C1NCCC2)C NAME: '
+               '1,2,3,4,5,6-Hexahydro-6-methyl-7H-cyclopenta[b]pyridin-7-one '
+               'REASON: WRONGLY CLASSIFIED Structure compatible with '
+               'monoterpenoids: 9 carbons, matches patterns.\n'
+               ' * SMILES: O=C(NCC(=O)N[C@@H](C)C(O)=O)[C@@H](N)C(C)C NAME: '
+               'Val-Gly-Ala REASON: WRONGLY CLASSIFIED Structure compatible '
+               'with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: O(C(C)C)C(=O)CC(C)C NAME: Isopropyl '
+               '3-methylbutanoate REASON: WRONGLY CLASSIFIED Structure '
+               'compatible with monoterpenoids: 8 carbons, matches patterns.\n'
+               ' * SMILES: O=C(NC(CC(=O)N)C(O)=O)C(N)CC(C)C NAME: '
+               'Leucyl-Asparagine REASON: WRONGLY CLASSIFIED Structure '
+               'compatible with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: CSCCCC(C(O)C(O)=O)C(O)=O NAME: '
+               "3-(3'-Methylthio)propylmalic acid REASON: WRONGLY CLASSIFIED "
+               'Structure compatible with monoterpenoids: 8 carbons, matches '
+               'patterns.\n'
+               ' * SMILES: O([C@@H]1C(O)[C@H](OC)[C@@H](O)C(O)[C@H]1O)C NAME: '
+               'Dambonitol REASON: WRONGLY CLASSIFIED Structure compatible '
+               'with monoterpenoids: 8 carbons, matches patterns.\n'
+               ' * SMILES: [H]C(CCC)=C([H])COC(=O)CC(C)C NAME: 2-hexenyl '
+               'isovalerate REASON: WRONGLY CLASSIFIED Structure compatible '
+               'with monoterpenoids: 11 carbons, matches patterns.\n'
+               ' * SMILES: O=C1OC2CC3CC(C2)CC1C3 NAME: '
+               '4-oxahomoadamantan-5-one REASON: WRONGLY CLASSIFIED Structure '
+               'compatible with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: S([O-])(=O)(=O)CCNC1CCCCC1.[Na+] NAME: '
+               'Ethanesulfonic acid, 2-(cyclohexylamino)-, monosodium salt '
+               'REASON: WRONGLY CLASSIFIED Structure compatible with '
+               'monoterpenoids: 8 carbons, matches patterns.\n'
+               ' * SMILES: Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@H]1CO NAME: '
+               'oxetanocin A REASON: WRONGLY CLASSIFIED Structure compatible '
+               'with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: OC(=O)C1(C(C(CC1)C(O)=O)(C)C)C NAME: '
+               '(+/-)-Camphoric acid REASON: WRONGLY CLASSIFIED Structure '
+               'compatible with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: C1(CC(C(C(C1)=O)C(=O)CC)=O)C(=O)O NAME: '
+               'prohexadione REASON: WRONGLY CLASSIFIED Structure compatible '
+               'with monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: O=C1O[C@@H](C[C@H]2C1=C(O)C[C@@H](O)[C@H]2C)C NAME: '
+               '(3R,4aR,5S,6R)-6-hydroxy-5-methylramulosin REASON: WRONGLY '
+               'CLASSIFIED Structure compatible with monoterpenoids: 11 '
+               'carbons, matches patterns.\n'
+               ' * SMILES: O=C(NC)C(C(C)C)(C(C)C)C NAME: '
+               'N,2,3-Trimethyl-2-(1-methylethyl)butanamide REASON: WRONGLY '
+               'CLASSIFIED Structure compatible with monoterpenoids: 10 '
+               'carbons, matches patterns.\n'
+               ' * SMILES: [H]C(=O)CC(C)CCCC(C)(C)O NAME: hydroxycitronellal '
+               'REASON: WRONGLY CLASSIFIED Structure compatible with '
+               'monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: OC(=O)C1CCC(CC1)C(O)=O NAME: '
+               '1,4-cyclohexanedicarboxylic acid REASON: WRONGLY CLASSIFIED '
+               'Structure compatible with monoterpenoids: 8 carbons, matches '
+               'patterns.\n'
+               ' * SMILES: OC(=O)C(CC\\C=C\\C(CC)C)C NAME: '
+               '2,7-dimethyl-6-nonenoic acid REASON: WRONGLY CLASSIFIED '
+               'Structure compatible with monoterpenoids: 11 carbons, matches '
+               'patterns.\n'
+               ' * SMILES: C1C2CC3CC1CC(C3=NNC(=S)N)C2 NAME: '
+               '(2-adamantylideneamino)thiourea REASON: WRONGLY CLASSIFIED '
+               'Structure compatible with monoterpenoids: 11 carbons, matches '
+               'patterns.\n'
+               " * SMILES: O=C(NCC(C)C)NCC(C)C NAME: N,N'-diisobutylurea "
+               'REASON: WRONGLY CLASSIFIED Structure compatible with '
+               'monoterpenoids: 9 carbons, matches patterns.\n'
+               ' * SMILES: SC[C@H](NC(=O)[C@@H](N)[C@H](CC)C)C(O)=O NAME: '
+               'Ile-Cys REASON: WRONGLY CLASSIFIED Structure compatible with '
+               'monoterpenoids: 9 carbons, matches patterns.\n'
+               ' * SMILES: O=C(NC(C(=N)N)C(C)C)C(N)CCCN NAME: '
+               '2,5-diamino-N-(1-amino-1-imino-3-methylbutan-2-yl)pentanamide '
+               'REASON: WRONGLY CLASSIFIED Structure compatible with '
+               'monoterpenoids: 10 carbons, matches patterns.\n'
+               ' * SMILES: CCOC(=O)CC(C)(C)C(C)C NAME: ethyl '
+               '3,3,4-trimethylpentanoate REASON: WRONGLY CLASSIFIED Structure '
+               'compatible with monoterpenoids: 10 carbons, matches patterns.\n'
+               'False negatives: SMILES: C1CO[C@H](C[C@@H]1C)C=C(C)C NAME: '
+               '(2R,4R)-rose oxide REASON: MISSED Structure is not compatible '
+               'with typical monoterpenoid patterns.\n'
+               ' * SMILES: O=C1C(OC)=C(C(=CN)C([C@@]1(CC)C)=O)[C@H](CC)C NAME: '
+               'Mycosphine A REASON: MISSED Structure is not compatible with '
+               'typical monoterpenoid patterns.\n'
                ' * SMILES: '
-               'O=C1C=C(C)[C@]2([C@]1(O)[C@@]3(C(C)(C)C[C@@]2(O)C3)C)O NAME: '
-               'Hitoyol A REASON: CORRECT Monoterpenoid features found: gem '
-               'dimethyl, cyclohexane, cyclopentane, isoprene unit, '
-               'oxygen-containing groups, 3 ring(s)\n'
-               ' * SMILES: O[C@]12[C@]([C@H](C(=C)CC1)C2)(C(O)/C=C/C(O)(C)C)C '
-               'NAME: E-beta-trans-5,8,11-trihydroxybergamot-9-ene REASON: '
-               'CORRECT Monoterpenoid features found: gem dimethyl, '
-               'cyclohexane, isoprene unit, oxygen-containing groups, 3 '
-               'ring(s)\n'
+               '[N+]([C@@H]1[C@@](CC[C@H]([C@@]1(C=2C=3C(NC2)=CC=CC3)[H])C(C)=C)(C)C=C)#[C-] '
+               'NAME: 12-Epi-hapalindole C isoniltrile REASON: MISSED '
+               'Structure is not compatible with typical monoterpenoid '
+               'patterns.\n'
                ' * SMILES: '
-               'O=C1[C@H]2[C@H]3[C@@](C)(CC1)C[C@@H]2[C@@H](C(O)(C)C)C3 NAME: '
-               'Norpupukeanane A REASON: CORRECT Monoterpenoid features found: '
-               'gem dimethyl, cyclohexane, cyclopentane, menthane skeleton, '
-               'oxygen-containing groups, 3 ring(s)\n'
-               ' * SMILES: CC(O)\\C=C\\[C@]1(O)C(C)=CC(=O)CC1(C)C NAME: '
-               '(6R)-vomifoliol REASON: CORRECT Monoterpenoid features found: '
-               'gem dimethyl, isoprene unit, oxygen-containing groups, 1 '
-               'ring(s)\n'
-               ' * SMILES: CC(C)C12CC1C(C)C(=O)C2 NAME: thujone REASON: '
-               'CORRECT Monoterpenoid features found: gem dimethyl, '
-               'cyclohexane, cyclopentane, menthane skeleton, carane skeleton, '
-               'oxygen-containing groups, 2 ring(s)\n'
-               ' * SMILES: O=C1C(OC)=C(C(=CO)C([C@@]1(CC)C)=O)[C@H](CC)C NAME: '
-               'Mycosphine C REASON: CORRECT Monoterpenoid features found: '
-               'isoprene unit, oxygen-containing groups, 1 ring(s)\n'
-               ' * SMILES: C1(C(CC(CC1C(C)=C)C(C)=C)C)C NAME: '
-               '1,2-Dimethyl-3,5-bis(1-methylethenyl)cyclohexane REASON: '
-               'CORRECT Monoterpenoid features found: cyclohexane, isoprene '
-               'unit, 1 ring(s)\n'
-               ' * SMILES: O=C1C[C@H]([C@@](CC1)(C)C=C)C(C)=C NAME: Geijerone '
-               'REASON: CORRECT Monoterpenoid features found: cyclohexane, '
-               'isoprene unit, oxygen-containing groups, 1 ring(s)\n'
-               ' * SMILES: OC1=C(CCC(C1=O)C)C(C)C NAME: Gamma-Diosphenol '
-               'REASON: CORRECT Monoterpenoid features found: gem dimethyl, '
-               'isoprene unit, oxygen-containing groups, 1 ring(s)\n'
-               ' * SMILES: O[C@H]1[C@@]2(C[C@@](C(C2=O)(C)C)(C1)[H])C NAME: '
-               '6-endo-Hydroxyfenchone REASON: CORRECT Monoterpenoid features '
-               'found: gem dimethyl, cyclohexane, cyclopentane, '
-               'oxygen-containing groups, 2 ring(s)\n'
-               ' * SMILES: OC(=O)C[C@@H](CC/C=C(\\C)/C(O)=O)C NAME: '
-               '2,6R-Dimethyl-2E-octen-1,8-dioic acid REASON: CORRECT '
-               'Monoterpenoid features found: isoprene unit, oxygen-containing '
-               'groups\n'
-               ' * SMILES: C1CC2CC1C3C2SC4=C(C3C5=CC=CO5)SC(=O)N4 NAME: '
-               'LSM-18934 REASON: CORRECT Monoterpenoid features found: '
-               'cyclohexane, cyclopentane, oxygen-containing groups, 5 '
-               'ring(s)\n'
-               ' * SMILES: O/N=C/C1=CC[C@@H](C(=C)C)CC1 NAME: Perillartine '
-               'REASON: CORRECT Monoterpenoid features found: isoprene unit, '
-               'oxygen-containing groups, 1 ring(s)\n'
-               ' * SMILES: O=C([C@H](C1=C(C(O)=C(C)C(=C1C)O)C=O)C)C NAME: '
-               'Redoxcitrinin REASON: CORRECT Monoterpenoid features found: '
-               'oxygen-containing groups, 1 ring(s)\n'
-               ' * SMILES: C[C@@H]1CC[C@@H]([C@@H](O)C1)C(C)(C)O NAME: '
-               '1beta,3alpha,4beta-p-menthane-3,8-diol REASON: CORRECT '
-               'Monoterpenoid features found: gem dimethyl, cyclohexane, '
-               'menthane skeleton, oxygen-containing groups, 1 ring(s)\n'
-               ' * SMILES: O[C@]1([C@H]([C@H]([C@](O)(CCCO)C)CC1)C)C NAME: '
-               '11,12,15-trinorcycloneran-3,7,10-triol REASON: CORRECT '
-               'Monoterpenoid features found: cyclopentane, oxygen-containing '
-               'groups, 1 ring(s)\n'
-               ' * SMILES: O(C1C(C(C)C)C(O)C=C(C1=O)CO)C(=O)CC(C)C NAME: '
-               '[5-Hydroxy-3-(hydroxymethyl)-2-oxo-6-propan-2-ylcyclohex-3-en-1-yl] '
-               '3-methylbutanoate REASON: CORRECT Monoterpenoid features '
-               'found: isopropyl, gem dimethyl, isoprene unit, '
-               'oxygen-containing groups, 1 ring(s)\n'
-               ' * SMILES: O(C(CCC=C(C)C)(C)C=C)C(=O)C(C)C NAME: Linalyl '
-               'isobutyrate REASON: CORRECT Monoterpenoid features found: gem '
-               'dimethyl, isoprene unit, oxygen-containing groups\n'
-               ' * SMILES: [H][C@@]12C[C@@]1(C[C@@H](O)C2=C)C(C)C NAME: '
-               '(-)-cis-sabinol REASON: CORRECT Monoterpenoid features found: '
-               'gem dimethyl, cyclohexane, cyclopentane, isoprene unit, carane '
-               'skeleton, oxygen-containing groups, 2 ring(s)\n'
-               ' * SMILES: O=CC1=C(O)C(=C(O)C=C1[C@H](CCCC)C)CC NAME: '
-               'Anguillosporal REASON: CORRECT Monoterpenoid features found: '
-               'oxygen-containing groups, 1 ring(s)\n'
-               ' * SMILES: CC1(C)O[C@]2(C)CC[C@H]1C[C@@H]2O NAME: '
-               '2-exo-hydroxy-1,8-cineole REASON: CORRECT Monoterpenoid '
-               'features found: gem dimethyl, cyclohexane, menthane skeleton, '
-               'oxygen-containing groups, 3 ring(s)\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'O=C(OC)/C=C(/OC)\\C(\\OC)=C/C(=C\\C=C(\\[C@H](C[C@@]1(O[C@H]1C=C)C)C)/C)/C '
-               'NAME: Haliangicin C REASON: MISSED Carbon count (22) outside '
-               'typical range for monoterpenoids (7-15)\n'
-               ' * SMILES: '
-               'O=C1NCC2=C1C=C(O)C3=C2O[C@]([C@@H](O)C3)(CC/C=C(/CO)\\CCC=C(C)C)C '
-               'NAME: Stachybotrin A REASON: MISSED Carbon count (23) outside '
-               'typical range for monoterpenoids (7-15)\n'
-               ' * SMILES: '
-               'C1([C@@]2(C[C@@]3([C@](C1)(O[C@@](O3)([C@@H]2COC(C=4C=CC=CC4)=O)[H])C)O)[H])=O '
-               'NAME: paeoniflorigenone REASON: MISSED Carbon count (17) '
-               'outside typical range for monoterpenoids (7-15)\n'
-               ' * SMILES: '
-               'O=C1NCC2=C1C=C(O)C3=C2O[C@](C=C3)(CC/C=C(\\CCC=C(C)C)/C)C '
-               'NAME: Chartarutine H REASON: MISSED Carbon count (23) outside '
-               'typical range for monoterpenoids (7-15)\n'
-               ' * SMILES: COC1=CC(=O)C(CC=C)=CC1(OC)C(\\C)=C\\c1ccc2OCOc2c1 '
-               'NAME: Futoquinol REASON: MISSED Carbon count (21) outside '
-               'typical range for monoterpenoids (7-15)\n'
-               ' * SMILES: '
-               'O(C(=O)CCCCCCCCCCCCCCCCC)CC=1C(=C(O)C(=C(OC)C1)C/C=C(/CC(=O)C=C(C)C)\\C)C=O '
-               'NAME: Hericenone D REASON: MISSED Carbon count (37) outside '
-               'typical range for monoterpenoids (7-15)\n'
-               ' * SMILES: CC1=CC=CC(=C1)C=C2C(=O)N=C(S2)NN=C3CC4CCC3(C4(C)C)C '
-               'NAME: '
-               '5-[(3-methylphenyl)methylidene]-2-[2-(4,7,7-trimethyl-3-bicyclo[2.2.1]heptanylidene)hydrazinyl]-4-thiazolone '
-               'REASON: MISSED Carbon count (21) outside typical range for '
-               'monoterpenoids (7-15)\n'
-               ' * SMILES: '
-               'O[C@@]1([C@@]2([C@]([C@H](O)C1)(C(=CO[C@H]2O[C@@H]3O[C@@H]([C@@H](O)[C@H](O)[C@H]3O)CO)C(OC)=O)[H])[H])C '
-               'NAME: Shanzhiside methyl ester REASON: MISSED Carbon count '
-               '(17) outside typical range for monoterpenoids (7-15)\n'
-               ' * SMILES: C1C2(C(CC(C(C)C)(C1)O2)OCC3=C(C=CC=C3)C)C NAME: '
-               '1-methyl-2-[(2-methylbenzyl)oxy]-4-(propan-2-yl)-7-oxabicyclo[2.2.1]heptane '
-               'REASON: MISSED Carbon count (18) outside typical range for '
-               'monoterpenoids (7-15)\n'
+               'CC1(C2CCC1(C(=NNC3=NC(=O)C(=CC4=CC(=CC=C4)Br)S3)C2)C)C NAME: '
+               '5-[(3-bromophenyl)methylidene]-2-[2-(4,7,7-trimethyl-3-bicyclo[2.2.1]heptanylidene)hydrazinyl]-4-thiazolone '
+               'REASON: MISSED Structure is not compatible with typical '
+               'monoterpenoid patterns.\n'
+               ' * SMILES: O=C(O)[C@@H](C1=C(CC[C@@H](C(=C1)C)C)C)CCC(=O)O '
+               'NAME: Ochracene C REASON: MISSED Structure is not compatible '
+               'with typical monoterpenoid patterns.\n'
                ' * SMILES: '
                'OC1(C2C(CC1O)C(=COC2OC3OC(C(O)C(O)C3O)COC(=O)/C=C/C4=CC=C(O)C=C4)C(O)=O)C '
-               'NAME: Lippioside I REASON: MISSED Carbon count (25) outside '
-               'typical range for monoterpenoids (7-15)\n'
+               'NAME: Lippioside I REASON: MISSED Structure is not compatible '
+               'with typical monoterpenoid patterns.\n'
+               ' * SMILES: OC=1C(C(C)C)=C(C=CC1C(C)C)C NAME: '
+               '2,6-Diisopropyl-3-methylphenol REASON: MISSED Structure is not '
+               'compatible with typical monoterpenoid patterns.\n'
+               ' * SMILES: '
+               '[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O)O[C@@]23[C@]4([C@@](C2)([C@@]5(O[C@]4(O[C@]3(C5)C)[H])OS(O)(=O)=O)[H])COC(C6=CC=CC=C6)=O '
+               'NAME: paeoniflorin sulfonate REASON: MISSED Structure is not '
+               'compatible with typical monoterpenoid patterns.\n'
+               ' * SMILES: O=C(O)/C=C(/CC/C=C(/CCC(=O)OC)\\C)\\C NAME: '
+               '(2E,6E)-10-methoxy-3,7-dimethyl-10-oxodeca-2,6-dienoic acid '
+               'REASON: MISSED Structure is not compatible with typical '
+               'monoterpenoid patterns.\n'
+               ' * SMILES: O(C(CCC=C(C)C)(C)C=C)C(=O)CC1=CC=CC=C1 NAME: '
+               'Linalyl phenylacetate REASON: MISSED Structure is not '
+               'compatible with typical monoterpenoid patterns.\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'c1c[nH+]c[nH]1',
-                                     'name': 'imidazolium cation',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'S(C(S)CC)CCC',
-                                     'name': 'xi-1-(Propylthio)-1-propanethiol',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'C[C@@H]([NH3+])C(=O)N[C@H](CO)C([O-])=O',
-                                     'name': 'D-alanyl-D-serine zwitterion',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'CCN1C=CN(CC)C1=C2C=3C=CC(=C(C=4C=CC(=C(C5=CC=C(C(=C6C=CC2=N6)C7=[N+](CC)C=CN7CC)[N-]5)C8=[N+](CC)C=CN8CC)N4)C9=[N+](CC)C=CN9CC)N3.[Cl-].[Cl-].[Cl-].[Cl-].[Cl-].[Mn+3]',
-                                     'name': 'Aeol 10150',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'OC(=O)\\C=C/C(=O)CC(=O)C(O)=O',
-                                     'name': '3-maleylpyruvic acid',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'N=1C(C)=CN=CC1C=C',
-                                     'name': '2-Ethenyl-6-methylpyrazine',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'OC(CCCCCCCCCCCCCC)C(N)CO',
-                                     'name': 'C17-sphinganine',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCC)(O)(O)=O',
-                                     'name': 'PA(22:0/20:2(11Z,14Z))',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'O[C@@H](CCCCCCCCCCC(O)=O)CCCC#C',
-                                     'name': '12S-Hydroxy-16-heptadecynoic '
+    'sample_true_negatives': [   {   'smiles': 'O1[C@H]([C@@H](O)CC=2C1=CC=CC2)C3=CC=CC=C3',
+                                     'name': 'cis-(+)-3-Flavanol',
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'O1C2C34C(C(N(CC3)C)CC5=C4C1=C(OC)C=C5)C=CC2OC',
+                                     'name': '6-O-Methylcodeine',
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'CN1C2=C(C=CC(=C2)OC)C3=C1[C@H](N(CC34CCN(CC4)S(=O)(=O)C5=CC=CS5)CC6CC6)CO',
+                                     'name': "[(1S)-2-(cyclopropylmethyl)-7-methoxy-9-methyl-1'-thiophen-2-ylsulfonyl-1-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]yl]methanol",
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'O(C(=O)CCCCCCCCCCCCCCC)[C@@H](COC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC',
+                                     'name': 'TG(20:0/16:0/8:0)',
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'O[C@@H]1CC2[C@](C3=C(C4=NCCC([C@@]4(C)CC3)[C@@H](CCC(C(C)C)C)C)CC2)(C)CC1',
+                                     'name': 'UCA-1064-B',
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'C1=CC=C(C=C1)N2C(=NN=C2SCC#N)COC3=CC=CC=C3',
+                                     'name': '2-[[5-(phenoxymethyl)-4-phenyl-1,2,4-triazol-3-yl]thio]acetonitrile',
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'O=C1C=2OC([C@H]3C[C@H](O)C(=C[C@H]3C2C(=O)C=4C1=C(O)C(=C(O)C4)C)C)(C)C',
+                                     'name': 'Unnamed naphterpin 1',
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'O([C@@H]1[C@]2(C([C@@](C1)(CC2)[H])(C)C)C)C(=O)/C=C/C3=CC=C(O)C=C3',
+                                     'name': '(1R,4R)-1,7,7-Trimethylbicyclo[2.2.1]heptane-2beta-ol '
+                                             '3-(4-hydroxyphenyl)acrylate',
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C([O-])=O',
+                                     'name': 'oleanolate',
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'},
+                                 {   'smiles': 'C[C@@H]1CN(C(=O)C2=C(N=CC(=C2)C3=CCCCC3)O[C@@H]1CN(C)CC4=CC=C(C=C4)C(=O)O)[C@H](C)CO',
+                                     'name': '4-[[[(2S,3R)-8-(1-cyclohexenyl)-5-[(2R)-1-hydroxypropan-2-yl]-3-methyl-6-oxo-3,4-dihydro-2H-pyrido[2,3-b][1,5]oxazocin-2-yl]methyl-methylamino]methyl]benzoic '
                                              'acid',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'},
-                                 {   'smiles': 'S=P(OCC)(OCC)[O-]',
-                                     'name': 'O,O-diethyl thiophosphate',
-                                     'reason': 'Insufficient characteristic '
-                                               'features for monoterpenoid '
-                                               'classification'}],
-    'sample_false_negatives': [   {   'smiles': 'OC(=O)C[C@@H](CC/C=C(\\C)/C(O)=O)C',
-                                      'name': '2,6R-Dimethyl-2E-octen-1,8-dioic '
+                                     'reason': 'Structure is not compatible '
+                                               'with typical monoterpenoid '
+                                               'patterns.'}],
+    'sample_false_negatives': [   {   'smiles': 'O=C1C(OC)=C(C(=CN)C([C@@]1(CC)C)=O)[C@H](CC)C',
+                                      'name': 'Mycosphine A',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': '[N+]([C@@H]1[C@@](CC[C@H]([C@@]1(C=2C=3C(NC2)=CC=CC3)[H])C(C)=C)(C)C=C)#[C-]',
+                                      'name': '12-Epi-hapalindole C '
+                                              'isoniltrile',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': 'CC1(C2CCC1(C(=NNC3=NC(=O)C(=CC4=CC(=CC=C4)Br)S3)C2)C)C',
+                                      'name': '5-[(3-bromophenyl)methylidene]-2-[2-(4,7,7-trimethyl-3-bicyclo[2.2.1]heptanylidene)hydrazinyl]-4-thiazolone',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': 'O=C(O)[C@@H](C1=C(CC[C@@H](C(=C1)C)C)C)CCC(=O)O',
+                                      'name': 'Ochracene C',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': 'OC1(C2C(CC1O)C(=COC2OC3OC(C(O)C(O)C3O)COC(=O)/C=C/C4=CC=C(O)C=C4)C(O)=O)C',
+                                      'name': 'Lippioside I',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': 'OC=1C(C(C)C)=C(C=CC1C(C)C)C',
+                                      'name': '2,6-Diisopropyl-3-methylphenol',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': '[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O)O[C@@]23[C@]4([C@@](C2)([C@@]5(O[C@]4(O[C@]3(C5)C)[H])OS(O)(=O)=O)[H])COC(C6=CC=CC=C6)=O',
+                                      'name': 'paeoniflorin sulfonate',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': 'O=C(O)/C=C(/CC/C=C(/CCC(=O)OC)\\C)\\C',
+                                      'name': '(2E,6E)-10-methoxy-3,7-dimethyl-10-oxodeca-2,6-dienoic '
                                               'acid',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'CCC(C)(CCCC(C)C=O)OC',
-                                      'name': '6-methoxy-2,6-dimethyloctanal',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'O([C@]12[C@]([C@@H](OC=C1)O[C@@H]3O[C@@H]([C@@H](O)[C@H](O)[C@H]3O)CO)(C(=C[C@H]2O)CO)[H])[C@@H]4O[C@@H]([C@@H](O)[C@H](O)[C@H]4O[C@@H]5O[C@@H]([C@@H](O)[C@H](O)[C@H]5O)CO)CO',
-                                      'name': 'Rehmannioside D',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'O=C(/C(=C/[C@@H]([C@H](O)[C@H](C[C@H](CC)C)C)C)/C)CC',
-                                      'name': 'Pestalotiotone B',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'C[C@@H]1CCc2c(C)coc2C1',
-                                      'name': '(+)-menthofuran',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'C(=C/C(/C)=C/C)(\\C=C(/C)\\C=C\\C)/C',
-                                      'name': '3,5,7-Trimethyl-2E,4E,6E,8E-decatetraene',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'C(/C=C(/C=C/CC)\\C)(=C\\C(\\C)=C\\C)\\C',
-                                      'name': '3,5,7-Trimethyl-2E,4E,6E,8E-undecatetraene',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'CC(C)(Cl)[C@H](Br)CC[C@@](Cl)(CBr)C(Cl)=C',
-                                      'name': '(+)-halomon',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'CC1CCc2c(C)coc2C1',
-                                      'name': 'menthofuran',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'},
-                                  {   'smiles': 'O=C(O)/C(=C/C(CC(CC)C)C)/C',
-                                      'name': 'Xylarinic acid B',
-                                      'reason': 'Insufficient characteristic '
-                                                'features for monoterpenoid '
-                                                'classification'}],
-    'attempt': 2,
-    'reasoning': 'Let me analyze the previous outcomes and suggest '
-                 'improvements:\n'
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': 'O(C(CCC=C(C)C)(C)C=C)C(=O)CC1=CC=CC=C1',
+                                      'name': 'Linalyl phenylacetate',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'},
+                                  {   'smiles': 'C(C/C=C/CCC1=CC=C(C(C)C)C=C1)(C)C',
+                                      'name': '1-Isopropyl-4-[(3E)-6-methyl-3-hepten-1-yl]benzene',
+                                      'reason': 'Structure is not compatible '
+                                                'with typical monoterpenoid '
+                                                'patterns.'}],
+    'attempt': 5,
+    'reasoning': 'To improve the classification of monoterpenoids, we need to '
+                 'address several issues highlighted by the outcomes:\n'
                  '\n'
-                 '1. Main Issue - False Negatives:\n'
-                 'The program missed several valid monoterpenoids mainly '
-                 'because of the carbon count restriction (7-15). Looking at '
-                 'the false negatives, many are complex monoterpenoid '
-                 'derivatives with additional functional groups or conjugated '
-                 'systems, pushing their carbon count higher.\n'
+                 '1. **Carbons Count Refinement**: Monoterpenoids are expected '
+                 'to have a C10 backbone, but rearrangements might lead to '
+                 'fewer (due to methyl removal) or slightly more carbons if '
+                 'the functional groups are considered. The carbon count '
+                 'checks should be stricter to avoid false positives.\n'
                  '\n'
-                 '2. Pattern Analysis:\n'
-                 '- Most false negatives have the basic monoterpenoid skeleton '
-                 'but with additional decorations (glycosylation, aromatic '
-                 'rings, extended chains)\n'
-                 '- The core C10 skeleton is present but modified in these '
-                 'structures\n'
-                 '- Some compounds have nitrogen-containing groups which '
-                 "weren't considered in the original code\n"
+                 '2. **Pattern Matching Improvement**: The initial patterns '
+                 'might be too simplistic. We need more specific patterns that '
+                 'represent common cyclic and acyclic monoterpenoid structures '
+                 'and their modifications.\n'
                  '\n'
-                 '3. Suggested Improvements:\n'
+                 '3. **Addition of Explicit Checks for Certain Functional '
+                 'Groups and Rearrangements**: Many false negatives suggest '
+                 'that beyond the generic patterns, specific rearrangements or '
+                 "functional modifications weren't properly captured.\n"
                  '\n'
-                 'a) Modify carbon count restriction:\n'
-                 '- Instead of using total carbon count, we should try to '
-                 'identify the core C10 skeleton\n'
-                 '- Could use a more flexible carbon range (7-25) to '
-                 'accommodate derivatives\n'
-                 '- Or remove the strict carbon count restriction entirely and '
-                 'rely more on structural features\n'
-                 '\n'
-                 'b) Add new structural patterns:\n'
-                 '- Include nitrogen-containing functional groups\n'
-                 '- Add patterns for common modifications (glycosylation, '
-                 'aromatic substitutions)\n'
-                 '- Include more complex ring systems\n'
-                 '\n'
-                 'c) Improve scoring system:\n'
-                 '- Make it more flexible for derivatives\n'
-                 '- Give more weight to core monoterpenoid features\n'
-                 '- Consider relative proportions rather than absolute counts\n'
-                 '\n'
-                 "Here's my improved version:",
+                 "Let's implement a refined version considering these points:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 915,
-    'num_false_positives': 100,
-    'num_true_negatives': 16,
-    'num_false_negatives': 15,
+    'num_true_positives': 273,
+    'num_false_positives': 917,
+    'num_true_negatives': 140453,
+    'num_false_negatives': 657,
     'num_negatives': None,
-    'precision': 0.9014778325123153,
-    'recall': 0.9838709677419355,
-    'f1': 0.9408740359897171,
-    'accuracy': 0.890057361376673,
-    'negative_predictive_value': 0.5161290322580645}
+    'precision': 0.22941176470588234,
+    'recall': 0.29354838709677417,
+    'f1': 0.25754716981132075,
+    'accuracy': 0.9889388615600844,
+    'negative_predictive_value': 0.995344057827227}

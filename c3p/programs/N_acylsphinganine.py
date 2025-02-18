@@ -109,6 +109,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:31488',
                           'xrefs': ['KEGG:C12126', 'LIPID_MAPS_class:LMSP0202'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Attempt failed: F1 score of 0.40476190476190477 is too low.\n'
                'Outcomes:\n'

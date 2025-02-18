@@ -2,60 +2,82 @@
 Classifies: CHEBI:39434 limonoid
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_limonoid(smiles: str):
     """
     Determines if a molecule is a limonoid based on its SMILES string.
-    A limonoid is a highly oxygenated triterpenoid with a structure commonly
-    derived from a 4,4,8-trimethyl-17-furanylsteroid skeleton.
+    A limonoid is a triterpenoid that is highly oxygenated and has a prototypical structure
+    containing or derived from a 4,4,8-trimethyl-17-furanylsteroid skeleton.
     
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
         bool: True if molecule is a limonoid, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
+
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for a reasonable range of carbon atoms typical in limonoids
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 20 or c_count > 40:
-        return False, f"Number of carbon atoms {c_count} outside expected range for limonoid"
+    # Step 1: Check for at least four rings
+    ri = mol.GetRingInfo()
+    num_rings = ri.NumRings()
+    if num_rings < 4:
+        return False, f"Only {num_rings} rings found, need at least 4 rings"
 
-    # Ensure a high range of oxygen atoms
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 4:
-        return False, f"Insufficient oxygen content for a highly oxygenated limonoid: {o_count}"
+    # Step 2: Check for furan ring
+    furan_pattern = Chem.MolFromSmarts('c1ccoc1')
+    furan_matches = mol.GetSubstructMatches(furan_pattern)
+    if not furan_matches:
+        return False, "No furan ring found in molecule"
 
-    # Identify oxygen functional groups: ketones, esters, hydroxyl, and potential lactone
-    important_oxy_patterns = [
-        Chem.MolFromSmarts("C=O"),
-        Chem.MolFromSmarts("C(=O)O"),
-        Chem.MolFromSmarts("[OX2H]"),  # Alcohol
-        Chem.MolFromSmarts("O1CCO1"),  # Broader to catch different heterocycles
-        Chem.MolFromSmarts("C1(O)CC1"),  # Another form of closed-ring oxygen groups
-    ]
-    for oxy_pattern in important_oxy_patterns:
-        if mol.HasSubstructMatch(oxy_pattern):
+    # Step 3: Check if furan ring is connected to the ring system
+    ring_atom_indices = set()
+    for ring in ri.AtomRings():
+        ring_atom_indices.update(ring)
+    furan_atom_indices = set()
+    for match in furan_matches:
+        furan_atom_indices.update(match)
+    # Find if any atom in the furan ring is connected to any atom in the other rings
+    connected = False
+    for idx in furan_atom_indices:
+        atom = mol.GetAtomWithIdx(idx)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() in ring_atom_indices and neighbor.GetIdx() not in furan_atom_indices:
+                connected = True
+                break
+        if connected:
             break
-    else:
-        return False, "Missing characteristic oxygenated functionalities"
+    if not connected:
+        return False, "Furan ring is not connected to the core ring system"
 
-    # Check if there is any form of methyl groups, allowing for variations
-    methyl_patterns = [
-        Chem.MolFromSmarts("C(C)(C)C"),  # Standard trimethyl
-        Chem.MolFromSmarts("C(C)(C)(C)"),  # Various methylated forms
-        Chem.MolFromSmarts("C(C)([OX2])")  # Methyl ether or alcohol derivatives
-    ]
-    if not any(mol.HasSubstructMatch(pat) for pat in methyl_patterns):
-        return False, "Lack of characteristic methylation"
+    # Step 4: Check for high oxygenation (e.g., at least 6 oxygen atoms)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 6:
+        return False, f"Not highly oxygenated, only {o_count} oxygen atoms found"
 
-    return True, "SMILES string corresponds to a limonoid structure"
+    # Step 5: Check for multiple methyl groups attached to ring carbons
+    # Count methyl groups attached to ring carbons
+    methyl_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1:
+            neighbor = atom.GetNeighbors()[0]
+            if neighbor.IsInRing():
+                methyl_count += 1
+    if methyl_count < 3:
+        return False, f"Only {methyl_count} methyl groups attached to ring carbons, need at least 3"
+
+    # Step 6: Check for triterpenoid skeleton by counting carbon atoms
+    # Triterpenoids typically have around 30 carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 25:
+        return False, f"Only {c_count} carbon atoms found, likely not a triterpenoid"
+
+    return True, "Molecule is classified as a limonoid"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:39434',
@@ -73,6 +95,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:39434',
                           'xrefs': ['PMID:16462017', 'Wikipedia:Limonoid'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
@@ -81,157 +104,188 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:39434',
                'True positives: NONE\n'
                'False positives: NONE\n'
                'False negatives: SMILES: '
+               'COC(=O)\\C=C/[C@]1(C)[C@H]2CC[C@@]3(C)[C@@H](OC(=O)[C@H]4O[C@@]34[C@]2(C)[C@]2(O)OC(C)(C)C(=O)[C@]12O)c1ccoc1 '
+               'NAME: Harrisonin REASON: MISSED Does not contain fused 6-6-6-5 '
+               'ring system\n'
+               ' * SMILES: '
+               'COC(=O)C[C@H]1[C@@]2(C)C[C@@]3(OC(C)=O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](O)C4=C1[C@H](OC(C)=O)[C@@]3(OC(C)=O)[C@H]2OC(=O)C(\\C)=C\\C)c1ccoc1 '
+               'NAME: trichagmalin E REASON: MISSED Rings are not properly '
+               'fused like steroid nucleus\n'
+               ' * SMILES: '
                'CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@]3(C)OC(=O)C=C3[C@]12C '
-               'NAME: beta-nimolactone REASON: MISSED Lack of furan ring '
-               'structure which is common in limonoids\n'
+               'NAME: beta-nimolactone REASON: MISSED Rings are not properly '
+               'fused like steroid nucleus\n'
                ' * SMILES: '
-               '[H][C@]1(O)OC[C@@]23[C@H](C[C@@H](OC(C)=O)[C@]4(CO[C@@H]([C@@H](O)[C@](C)([C@]12[H])[C@]12O[C@@]1(C)[C@H]1C[C@@H]2O[C@]2([H])OC=C[C@]12O)[C@]34[H])C(=O)OC)OC(=O)C(\\C)=C\\C '
-               'NAME: azadirachtin H REASON: MISSED Lack of furan ring '
-               'structure which is common in limonoids\n'
+               'CC(=O)O[C@H]1[C@@H]2CC3=C4CC(=O)O[C@H]([C@@]4(CCC3[C@@](C2=O)([C@H](C1(C)C)CC(=O)OC)C)C)C5=COC=C5 '
+               'NAME: LSM-4386 REASON: MISSED Rings are not properly fused '
+               'like steroid nucleus\n'
                ' * SMILES: '
-               'CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@@]3(C)[C@@H](CC=C3[C@]12C)C1COC(=O)C1 '
-               'NAME: 20,21,22,23-tetrahydro-23-oxoazadirone REASON: MISSED '
-               'Lack of furan ring structure which is common in limonoids\n'
+               'O1[C@@]23[C@]([C@@H](C[C@@]12[H])C=4C=COC4)(CC[C@]5([C@]3(C(=O)C(O)=C6[C@]5(C)C=CC(=O)C6(C)C)C)[H])C '
+               'NAME: CEDRELONE REASON: MISSED Rings are not properly fused '
+               'like steroid nucleus\n'
                ' * SMILES: '
-               'COC(=O)C[C@H]1[C@]2(C)C[C@@]3(O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(C)=O)C4=C1[C@H](OC(=O)C(C)C)[C@@]3(O)[C@H]2OC(=O)C(\\C)=C\\C)c1ccoc1 '
-               'NAME: 15-acetyltrichagmalin C REASON: MISSED Lack of furan '
-               'ring structure which is common in limonoids\n'
+               'CCC(C)C(=O)O[C@H]1C[C@@H](OC(C)=O)[C@@]2(C)CO[C@H]3[C@H]4O[C@@H]5C[C@@H](c6ccoc6)C(C)=C5[C@@]4(C)[C@H](CC(=O)OC)[C@]1(C)[C@H]23 '
+               "NAME: 2',3'-dihydrosalannin REASON: MISSED Does not contain "
+               'fused 6-6-6-5 ring system\n'
                ' * SMILES: '
-               'CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@@]3(C)[C@@H](CC=C3[C@]12C)c1ccoc1 '
-               'NAME: azadirone REASON: MISSED Insufficient oxygen content for '
-               'a highly oxygenated limonoid: 4\n'
-               ' * SMILES: '
-               '[H][C@@]1(C[C@]([H])(C(O)O1)[C@]1([H])CC[C@]23C[C@]12CC[C@]1([H])[C@@]2(C)CC[C@@H](OC(=O)CC(C)C)C(C)(C)[C@]2([H])C[C@@H](O)[C@@]31C)[C@]1([H])OC1(C)C '
-               'NAME: skimmiarepin A REASON: MISSED Lack of furan ring '
-               'structure which is common in limonoids\n'
+               'CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@@]3(C)[C@@H](C(=O)[C@H]4O[C@@]34[C@]12C)c1ccoc1 '
+               'NAME: epoxyazadiradione REASON: MISSED Rings are not properly '
+               'fused like steroid nucleus\n'
                ' * SMILES: '
                'CO[C@H]1C[C@@]2(O)[C@@H](O1)O[C@H]1C[C@@H]2[C@]2(C)O[C@]12[C@@]1(C)[C@@H]2[C@](O)(OC[C@]22[C@H]3[C@@H](OC[C@@]3([C@@H](C[C@@H]2OC(=O)C(\\C)=C\\C)OC(C)=O)C(=O)OC)[C@H]1O)C(=O)OC '
-               'NAME: 23-epivepaol REASON: MISSED Lack of furan ring structure '
-               'which is common in limonoids\n'
+               'NAME: 23-epivepaol REASON: MISSED Rings are not properly fused '
+               'like steroid nucleus\n'
                ' * SMILES: '
-               'COC(=O)C[C@H]1[C@]2(C)C[C@@]3(O)[C@]1(C)[C@H]1CC[C@@]4(C)[C@@H](OC(=O)[C@H](OC(=O)C(C)(C)O)C4=C1[C@H](OC(C)=O)[C@@]3(O)[C@H]2OC(=O)C(\\C)=C\\C)c1ccoc1 '
-               'NAME: 30-acetyltrichagmalin F REASON: MISSED Lack of furan '
-               'ring structure which is common in limonoids\n'
+               '[H][C@@]12C[C@@H](c3ccoc3)[C@]3(C)[C@@H](O)C(=O)[C@@]4([H])[C@@](C)([C@H](O)C[C@@]5([H])[C@@]6(C)[C@@H](OC[C@@]45[C@@H](O)[C@@H](OC(C)=O)[C@H]6OC(C)=O)OC(=O)C(C)C)[C@@]13O2 '
+               'NAME: 12-O-deacetyltrichilin H REASON: MISSED Rings are not '
+               'properly fused like steroid nucleus\n'
                ' * SMILES: '
-               '[C@]123[C@](C(=O)[C@]([C@@]1(CC[C@@]4([C@]5(C=CC(C([C@@]5(C[C@H]([C@@]24C)OC(=O)C6=CC=CC=C6)[H])(C)C)=O)C)[H])C)(C7=COC=C7)[H])([H])O3 '
-               'NAME: 7-deacetyl-7-benzoylepoxyazadiradione REASON: MISSED '
-               'Lack of furan ring structure which is common in limonoids\n'
-               ' * SMILES: '
-               'CO[C@@H]1C[C@@]2(O)[C@@H](O1)O[C@H]1C[C@@H]2[C@]2(C)O[C@]12[C@@]1(C)[C@@H]2[C@](O)(OC[C@]22[C@H]3[C@@H](OC[C@@]3([C@@H](C[C@@H]2OC(=O)C(\\C)=C\\C)OC(C)=O)C(=O)OC)[C@H]1O)C(=O)OC '
-               'NAME: vepaol REASON: MISSED Lack of furan ring structure which '
-               'is common in limonoids\n'
+               '[H][C@@]12OC=C[C@]1(O)[C@@H]1C[C@H](O2)[C@]2(O[C@@]12C)[C@]1(C)[C@H](O)[C@@H]2OC[C@@]3([C@@H](C[C@@H](OC(=O)C(\\C)=C\\C)[C@@]4(CO[C@](O)(C(=O)OC)[C@@]14[H])[C@@]23[H])OC(C)=O)C(=O)OC '
+               'NAME: azadirachtin B REASON: MISSED Rings are not properly '
+               'fused like steroid nucleus\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O=C1C2=C(OC(=C1)C)C3=C(OC)C=C(OC)C=C3C(=C2O)C4=C5OC(=CC(C5=C(O)C=6C4=CC(OC)=CC6OC)=O)C',
-                                     'name': 'Isonigerone',
-                                     'reason': 'Lack of characteristic '
-                                               'methylation'},
-                                 {   'smiles': 'C(=C\\C/C=C\\CCCC(NC)=O)\\C/C=C\\C/C=C\\CCCCC',
-                                     'name': 'N-methyl arachidonoyl amine',
-                                     'reason': 'Insufficient oxygen content '
-                                               'for a highly oxygenated '
-                                               'limonoid: 1'},
-                                 {   'smiles': 'OC1(O)[C@]23N(CC1)C(N(O)[C@H]([C@@]3(N=C(N2)N)[H])CO)=N',
-                                     'name': 'Decarbamoylneosaxitoxin',
-                                     'reason': 'Number of carbon atoms 9 '
-                                               'outside expected range for '
-                                               'limonoid'},
-                                 {   'smiles': 'S([C@H]1N(C(=O)/C(=C\\C2=CC=C(OCC=C(C)C)C=C2)/N(C1=O)C)C)C',
-                                     'name': 'Fusaperazine F',
-                                     'reason': 'Number of carbon atoms 19 '
-                                               'outside expected range for '
-                                               'limonoid'},
-                                 {   'smiles': 'Oc1ccccc1I',
-                                     'name': '2-iodophenol',
-                                     'reason': 'Number of carbon atoms 6 '
-                                               'outside expected range for '
-                                               'limonoid'},
-                                 {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@@H](O)[C@@H]1OC[C@H]3O[C@@H](OC[C@H]4O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]4O)[C@H](O)[C@@H](O)[C@@H]3O)CO[C@@H]5O[C@@H]([C@@H](O)[C@H](O[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO)[C@H]5O)CO[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7O)CO',
-                                     'name': '(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5R,6R)-6-[[(2R,3R,4S,5R,6R)-3,5-Dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxymethyl]oxane-2,3,4,5-tetrol',
-                                     'reason': 'Number of carbon atoms 42 '
-                                               'outside expected range for '
-                                               'limonoid'},
-                                 {   'smiles': 'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)O)[C@@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H](O)[C@@H]6NC(=O)C)CO)CO)[C@@H]4O)CO[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)CO',
-                                     'name': 'Gal2GlcNAc2Man3GlcNAcFucGlcNAc',
-                                     'reason': 'Number of carbon atoms 68 '
-                                               'outside expected range for '
-                                               'limonoid'},
-                                 {   'smiles': 'O=C(N(CCO)CCO)CN1C(=NC=C1)[N+]([O-])=O',
-                                     'name': '1H-Imidazole-1-acetamide, '
-                                             'N,N-bis(2-hydroxyethyl)-2-nitro-',
-                                     'reason': 'Number of carbon atoms 9 '
-                                               'outside expected range for '
-                                               'limonoid'},
-                                 {   'smiles': 'CC1=NN(C(C1)(C2=CN=CC=C2)O)C(=O)CC3=CC=C(C=C3)C',
-                                     'name': '1-[5-hydroxy-3-methyl-5-(3-pyridinyl)-4H-pyrazol-1-yl]-2-(4-methylphenyl)ethanone',
-                                     'reason': 'Number of carbon atoms 18 '
-                                               'outside expected range for '
-                                               'limonoid'},
-                                 {   'smiles': 'COC(=O)C[C@@H]1CC[C@H]([C@H](O1)CO)NC(=O)C2=CC=CC=C2',
-                                     'name': '2-[(2S,5R,6S)-5-benzamido-6-(hydroxymethyl)-2-oxanyl]acetic '
-                                             'acid methyl ester',
-                                     'reason': 'Number of carbon atoms 16 '
-                                               'outside expected range for '
-                                               'limonoid'}],
-    'sample_false_negatives': [],
+    'sample_true_negatives': [   {   'smiles': 'CNC(=O)CC[C@H](N)C(O)=O',
+                                     'name': 'N(5)-methyl-L-glutamine',
+                                     'reason': 'Only 0 rings found, need at '
+                                               'least 4 rings'},
+                                 {   'smiles': 'C[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1nc(N)[nH]c2=O)C(O)=O',
+                                     'name': "L-lactyl-2-diphospho-5'-guanosine",
+                                     'reason': 'Only 3 rings found, need at '
+                                               'least 4 rings'},
+                                 {   'smiles': '[H][C@@]1(CC[C@]2(C)[C@]1([H])CC[C@]1([H])[C@@]3(C)CCCC(C)(C)[C@]3([H])CC[C@@]21C)C(=C)CCC=C(C)C',
+                                     'name': 'dammara-20,24-diene',
+                                     'reason': 'No furan ring found in '
+                                               'molecule'},
+                                 {   'smiles': 'O=C1C2=C(O)C3=C(O)C=CC=C3C(=C2C(C(=O)C)C(C1)(O)C)C=4C=5C(C(O)=C6C4C(C(=O)C)C(O)(C)CC6=O)=C(O)C=CC5',
+                                     'name': 'A 39183A',
+                                     'reason': 'No furan ring found in '
+                                               'molecule'},
+                                 {   'smiles': 'C[C@H](O)[C@@H](O)C1=Nc2c(NC1)[nH]c(N)nc2=O',
+                                     'name': 'L-threo-7,8-dihydrobiopterin',
+                                     'reason': 'Only 2 rings found, need at '
+                                               'least 4 rings'},
+                                 {   'smiles': 'C[C@@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)C)C(=O)N(C[C@H]1OC)C)C)CC3=CC=C(C=C3)F',
+                                     'name': 'N-[(4S,7R,8S)-5-[(4-fluorophenyl)methyl]-8-methoxy-4,7,10-trimethyl-11-oxo-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]acetamide',
+                                     'reason': 'Only 3 rings found, need at '
+                                               'least 4 rings'},
+                                 {   'smiles': 'C(CCN1CCCCC1)(CCN(C(C)C)C(C)=O)(C(N)=O)C2=C(Cl)C=CC=C2',
+                                     'name': 'bidisomide',
+                                     'reason': 'Only 2 rings found, need at '
+                                               'least 4 rings'},
+                                 {   'smiles': 'OCCCCCCCCCCC#CC=C',
+                                     'name': '13-Tetradece-11-yn-1-ol',
+                                     'reason': 'Only 0 rings found, need at '
+                                               'least 4 rings'},
+                                 {   'smiles': 'C[C@@H]1CCCCO[C@@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)N(C)C)[C@@H](C)CO)C)CN(C)CC3=CC=C(C=C3)OC',
+                                     'name': '(3R,9S,10R)-16-(dimethylamino)-12-[(2S)-1-hydroxypropan-2-yl]-9-[[(4-methoxyphenyl)methyl-methylamino]methyl]-3,10-dimethyl-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-13-one',
+                                     'reason': 'Only 3 rings found, need at '
+                                               'least 4 rings'},
+                                 {   'smiles': 'O(CCC12CC3CC(C1)CC(C2)C3)C(=O)CC4=CC=C(OCC(O)CNC(C)C)C=C4',
+                                     'name': 'Adaprolol',
+                                     'reason': 'No furan ring found in '
+                                               'molecule'}],
+    'sample_false_negatives': [   {   'smiles': 'CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@]3(C)OC(=O)C=C3[C@]12C',
+                                      'name': 'beta-nimolactone',
+                                      'reason': 'No furan ring found in '
+                                                'molecule'},
+                                  {   'smiles': 'O1[C@@]23[C@]([C@@H](C[C@@]12[H])C=4C=COC4)(CC[C@]5([C@]3(C(=O)C(O)=C6[C@]5(C)C=CC(=O)C6(C)C)C)[H])C',
+                                      'name': 'CEDRELONE',
+                                      'reason': 'Not highly oxygenated, only 5 '
+                                                'oxygen atoms found'},
+                                  {   'smiles': 'CO[C@H]1C[C@@]2(O)[C@@H](O1)O[C@H]1C[C@@H]2[C@]2(C)O[C@]12[C@@]1(C)[C@@H]2[C@](O)(OC[C@]22[C@H]3[C@@H](OC[C@@]3([C@@H](C[C@@H]2OC(=O)C(\\C)=C\\C)OC(C)=O)C(=O)OC)[C@H]1O)C(=O)OC',
+                                      'name': '23-epivepaol',
+                                      'reason': 'No furan ring found in '
+                                                'molecule'},
+                                  {   'smiles': '[H][C@@]12OC=C[C@]1(O)[C@@H]1C[C@H](O2)[C@]2(O[C@@]12C)[C@]1(C)[C@H](O)[C@@H]2OC[C@@]3([C@@H](C[C@@H](OC(=O)C(\\C)=C\\C)[C@@]4(CO[C@](O)(C(=O)OC)[C@@]14[H])[C@@]23[H])OC(C)=O)C(=O)OC',
+                                      'name': 'azadirachtin B',
+                                      'reason': 'No furan ring found in '
+                                                'molecule'},
+                                  {   'smiles': 'CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@@]3(C)OC(=O)C=C3[C@]12C',
+                                      'name': 'alpha-nimolactone',
+                                      'reason': 'No furan ring found in '
+                                                'molecule'},
+                                  {   'smiles': '[H][C@@]12OC=C[C@]1(O)[C@@H]1C[C@H](O2)[C@]2(O[C@@]12C)[C@]1(C)[C@H](O)[C@@H]2OC[C@@]3([C@@H](C[C@H](OC(=O)C(\\C)=C\\C)[C@@]4(CO[C@](O)(C(=O)OC)[C@@]14[H])[C@@]23[H])OC(C)=O)C(=O)OC',
+                                      'name': 'azadirachtin A',
+                                      'reason': 'No furan ring found in '
+                                                'molecule'},
+                                  {   'smiles': '[H][C@@]1(CC(O)=O)OC(C)(C)[C@]2([H])CC(=O)[C@]3(C)[C@]([H])(CC[C@@](C)([C@@H](O)c4ccoc4)[C@@]33O[C@@H]3C(O)=O)[C@@]12CO',
+                                      'name': 'limonoic acid',
+                                      'reason': 'Furan ring is not connected '
+                                                'to the core ring system'},
+                                  {   'smiles': 'CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@]3(C)[C@@H](C(=O)C=C3[C@]12C)C1=CCOC1=O',
+                                      'name': 'azadiradionolide',
+                                      'reason': 'No furan ring found in '
+                                                'molecule'},
+                                  {   'smiles': 'CC(=O)O[C@@H]1C[C@H]2C(C)(C)C(=O)C=C[C@]2(C)[C@H]2CC[C@@]3(C)[C@@H](C(=O)C=C3[C@]12C)c1ccoc1',
+                                      'name': 'azadiradione',
+                                      'reason': 'Not highly oxygenated, only 5 '
+                                                'oxygen atoms found'},
+                                  {   'smiles': 'COC(=O)C[C@H]1[C@@]2(C)[C@H](O[C@@H]3CC(=O)C(C)=C23)[C@@H]2OC[C@@]3(C)[C@H]2[C@]1(C)[C@H](C[C@H]3OC(C)=O)OC(=O)C(\\C)=C\\C',
+                                      'name': '17-defurano-17-oxosalannin',
+                                      'reason': 'No furan ring found in '
+                                                'molecule'}],
     'attempt': 3,
-    'reasoning': 'The initial implementation of the `is_limonoid` function '
-                 'failed because it was too broad and rigid. The outcomes '
-                 'indicated the following issues:\n'
+    'reasoning': 'Upon reviewing the previous program and the outcomes, it '
+                 'appears that the function is failing to correctly identify '
+                 'limonoids due to overly strict or incorrect assumptions '
+                 'about their structural features.\n'
                  '\n'
-                 '1. **Furan Ring Requirement**: The classification required a '
-                 'furan ring, expressed as `o1ccc1`, which is common but not '
-                 'universal among limonoids. Some examples probably lacked an '
-                 'explicit furan ring yet still met the criteria through other '
-                 'defining features.\n'
+                 '**Issues noted:**\n'
                  '\n'
-                 '2. **Trimethyl Group**: The pattern `[C(C)(C)C]` was '
-                 'required for classifying a limonoid, though limonoids may '
-                 'have diverse modifications to this structural pattern due to '
-                 'various substituent rearrangements or oxidation states.\n'
+                 '1. **Detection of the fused ring system**: The code checks '
+                 'specifically for a fused 6-6-6-5 ring system similar to a '
+                 'steroid nucleus. However, limonoids can have variations in '
+                 'their ring systems, and some may not strictly adhere to this '
+                 'pattern. This may cause valid limonoids to be missed.\n'
                  '\n'
-                 '3. **Oxygen Content and Functionalities**: The high '
-                 'oxygenation characteristic needs a nuanced check, ensuring '
-                 'not only quantity but variety of oxygen-based '
-                 'functionalities were detected which were oversimplified in '
-                 'the initial code.\n'
+                 '2. **Ring Fusion Checks**: The method used to determine if '
+                 'rings are properly fused may not accurately capture the '
+                 'complex ring fusions present in limonoids. Simply counting '
+                 'shared atoms between rings may not be sufficient.\n'
                  '\n'
-                 'To improve the classification, the following modifications '
-                 'are proposed:\n'
+                 '3. **Methyl Substitutions**: The code counts methyl groups '
+                 'attached to quaternary carbons (degree 4) in the ring '
+                 'system. However, methyl groups in limonoids can be attached '
+                 'to tertiary carbons or in different arrangements, leading to '
+                 'undercounting.\n'
                  '\n'
-                 '1. **Remove strict dependency on the explicit furan ring '
-                 'presence**, allowing for a broader variety of oxygenated '
-                 'heterocyclic rings or highly oxygenated functional '
-                 'characteristics.\n'
+                 '4. **Furan Ring Connectivity**: The way the code checks for '
+                 'the furan ring being connected to the ring system may not '
+                 'account for all possible connectivity patterns present in '
+                 'limonoids.\n'
                  '\n'
-                 '2. **Extend the detection of high oxygenation to capture a '
-                 'broader range of structural motifs** relevant to limonoids. '
-                 'This could include additional SMARTS patterns for esters, '
-                 'lactones, and epoxides.\n'
+                 'To improve the program, we can:\n'
                  '\n'
-                 '3. **Use a more flexible requirement for trimethyl groups**, '
-                 'acknowledging various potential rearrangements and '
-                 'extensions of the carbon framework inherent to limonoids.\n'
+                 '- **Relax strict structural checks** to account for the '
+                 'variability in limonoid structures.\n'
+                 '- **Use SMARTS patterns** to more accurately identify key '
+                 'substructures like the furan ring and triterpenoid '
+                 'skeleton.\n'
+                 '- **Adjust the methyl group counting** to include methyl '
+                 'groups attached to ring carbons regardless of their degree.\n'
+                 '- **Ensure that the furan ring connectivity** is checked in '
+                 'a way that captures more possible linkages to the core ring '
+                 'system.\n'
+                 '- **Check for high oxygenation** by setting a reasonable '
+                 'threshold for the number of oxygen atoms.\n'
                  '\n'
-                 '4. **Refine context of carbon and oxygen count ranges**, '
-                 'based on limonoid structure paradigms, accommodating '
-                 'empirical diversity in these compounds.\n'
-                 '\n'
-                 "Here's the redesigned function:",
+                 'By making these changes, the function should better identify '
+                 'limonoids, including the provided examples.',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 87,
-    'num_false_positives': 100,
-    'num_true_negatives': 230,
-    'num_false_negatives': 0,
+    'num_true_positives': 58,
+    'num_false_positives': 51,
+    'num_true_negatives': 142162,
+    'num_false_negatives': 29,
     'num_negatives': None,
-    'precision': 0.46524064171123,
-    'recall': 1.0,
-    'f1': 0.635036496350365,
-    'accuracy': 0.7601918465227818,
-    'negative_predictive_value': 1.0}
+    'precision': 0.5321100917431193,
+    'recall': 0.6666666666666666,
+    'f1': 0.5918367346938775,
+    'accuracy': 0.9994378074490513,
+    'negative_predictive_value': 0.9997960489763769}

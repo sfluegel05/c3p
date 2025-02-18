@@ -2,76 +2,184 @@
 Classifies: CHEBI:16337 phosphatidic acid
 """
 """
-Classifies: CHEBI:16337 phosphatidic acid
+Classifies: Phosphatidic acid (PA)
+Definition:
+  A derivative of glycerol in which one hydroxy group (commonly but not necessarily primary) is esterified with phosphoric acid 
+  and the other two are esterified with fatty acids.
+Improvements in this version:
+  - Identify a phosphate group by checking for a P atom with ≥3 oxygen neighbors and exactly one oxygen that attaches to a carbon (the phosphate ester).
+  - Exclude phosphate groups that carry any explicit negative formal charge on the P or one of its immediate oxygen neighbors.
+  - Identify fatty acid ester groups with the substructure "OC(=O)" while filtering out any bridging oxygens attached directly to phosphorus.
+  - For each fatty acid ester find the glycerol carbon (avoiding the carbonyl carbon with a C=O) and then try to identify the phosphate-derived glycerol carbon.
+  - Verify that the three candidate glycerol carbons (2 from FA esters and 1 from the phosphate ester) are distinct and contiguous (graph distance ≤2).
+  - Do a basic molecular weight sanity check.
 """
+
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_phosphatidic_acid(smiles: str):
     """
-    Determines if a molecule is a phosphatidic acid based on its SMILES string.
-    A phosphatidic acid has a glycerol backbone with two fatty acid chains 
-    attached via ester bonds and one phosphate group.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a phosphatidic acid, False otherwise
-        str: Reason for classification
-    """
+    Determines if a molecule is a phosphatidic acid (PA) based on its SMILES string.
+    PA is a glycerol derivative where one hydroxy is esterified with phosphoric acid and the other two with fatty acids.
     
-    # Parse SMILES
+    Args:
+      smiles (str): Input SMILES for the molecule.
+    
+    Returns:
+      bool: True if the molecule qualifies as a phosphatidic acid, otherwise False.
+      str: Explanation for the classification decision.
+    """
+    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Look for glycerol backbone pattern (C-C-C with oxygens attached)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone found"
-        
-    # Look for exactly 2 ester groups (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 2:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
-
-    # Look for phosphate group (-O-P(=O)(O)(O))
-    phosphate_pattern = Chem.MolFromSmarts("[OX2][PX4](=[OX1])([OX2H,OX1-])[OX2H,OX1-]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group found"
-
-    # Check for fatty acid chains (long carbon chains attached to esters)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
-    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 2:
-        return False, f"Missing fatty acid chains, found {len(fatty_acid_matches)}"
-
-    # Count rotatable bonds to verify long chains
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 8:
-        return False, "Chains too short to be fatty acids"
-
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     
-    if c_count < 10:
-        return False, "Too few carbons for phosphatidic acid"
-    if o_count < 7:
-        return False, "Must have at least 7 oxygens (2 esters + phosphate)"
-    if p_count != 1:
-        return False, "Must have exactly one phosphorus atom"
-
-    # Check molecular weight - phosphatidic acids typically >400 Da
+    # -------------------------
+    # Criterion 1: Identify a suitable phosphate group.
+    # Look for a phosphorus (P) atom that has at least three oxygen neighbors.
+    # Among those oxygens, exactly one should connect to a carbon (the phosphate–glycerol bridging).
+    # Also, none of the atoms in the phosphate head (P and its O neighbors) should carry a negative formal charge.
+    valid_P_atom = None
+    for atom in mol.GetAtoms():
+        if atom.GetSymbol() != "P":
+            continue
+        # Check formal charge on the phosphorus.
+        if atom.GetFormalCharge() < 0:
+            continue
+        
+        oxy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetSymbol() == "O"]
+        if len(oxy_neighbors) < 3:
+            continue
+        
+        # Eliminate any phosphate group with any negatively charged oxygen neighbor.
+        neg_charge = False
+        for o in oxy_neighbors:
+            if o.GetFormalCharge() < 0:
+                neg_charge = True
+                break
+        if neg_charge:
+            continue
+        
+        # Count among these oxygens how many are attached to at least one carbon (other than the P).
+        o_attached_to_C = 0
+        for o in oxy_neighbors:
+            for nbr2 in o.GetNeighbors():
+                if nbr2.GetIdx() == atom.GetIdx():
+                    continue
+                if nbr2.GetSymbol() == "C":
+                    o_attached_to_C += 1
+                    break
+        if o_attached_to_C == 1:
+            valid_P_atom = atom
+            break
+    if valid_P_atom is None:
+        return False, "No phosphate group found with ≥3 oxygen neighbors (all neutral) and exactly one oxygen attached to a carbon"
+    
+    # -------------------------
+    # Criterion 2: Identify fatty acid ester (FA) groups.
+    # Look for the substructure "OC(=O)". Then make sure that the bridging oxygen is not directly attached to phosphorus.
+    fa_pattern = Chem.MolFromSmarts("OC(=O)")
+    fa_matches = mol.GetSubstructMatches(fa_pattern)
+    fa_candidates = []    # To collect candidate glycerol carbon indices (from the FA ester linkage)
+    bridging_O_indices = set()  # To mark oxygens used in FA linkages.
+    
+    for match in fa_matches:
+        # Each match is a tuple: (bridging O, carbonyl C, carbonyl O)
+        bridging_O_idx = match[0]
+        bridging_O = mol.GetAtomWithIdx(bridging_O_idx)
+        # Skip if bridging oxygen is bonded to any phosphorus.
+        if any(nbr.GetSymbol() == "P" for nbr in bridging_O.GetNeighbors()):
+            continue
+        
+        # From the bridging O, choose a neighbor that is a carbon and is not the carbonyl carbon.
+        candidate = None
+        for nbr in bridging_O.GetNeighbors():
+            if nbr.GetSymbol() != "C":
+                continue
+            # Distinguish the glycerol carbon from the carbonyl carbon by checking for a double bonded oxygen.
+            has_double_bond_oxygen = False
+            for nbr2 in nbr.GetNeighbors():
+                if nbr2.GetIdx() == bridging_O.GetIdx():
+                    continue
+                bond = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
+                if nbr2.GetSymbol() == "O" and bond is not None and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    has_double_bond_oxygen = True
+                    break
+            if not has_double_bond_oxygen:
+                candidate = nbr.GetIdx()
+                break
+        if candidate is not None:
+            fa_candidates.append(candidate)
+            bridging_O_indices.add(bridging_O_idx)
+    if len(fa_candidates) != 2:
+        return False, f"Found {len(fa_candidates)} fatty acid ester group(s) after filtering; expected exactly 2."
+    
+    # -------------------------
+    # Criterion 3: Identify the glycerol carbon from the phosphate ester.
+    # Look at the P atom’s oxygen neighbors (excluding those already used for FA ester linkages)
+    # and find candidate oxygens that lead to a carbon.
+    phospho_candidate_list = []
+    for o in valid_P_atom.GetNeighbors():
+        if o.GetSymbol() != "O":
+            continue
+        if o.GetIdx() in bridging_O_indices:
+            continue
+        # For each such oxygen, if it leads to a carbon (other than the P) then add that carbon as candidate.
+        for nbr in o.GetNeighbors():
+            if nbr.GetIdx() == valid_P_atom.GetIdx():
+                continue
+            if nbr.GetSymbol() == "C":
+                phospho_candidate_list.append(nbr.GetIdx())
+                break   # Taking the first carbon is sufficient for this oxygen.
+                
+    # We expect the phosphate ester to contribute exactly one glycerol carbon.
+    # But if more than one candidate is found, test each one by forming a set with the two FA candidates.
+    candidate_found = None
+    dmat = Chem.GetDistanceMatrix(mol)
+    for pc in phospho_candidate_list:
+        glycerol_set = set(fa_candidates)
+        glycerol_set.add(pc)
+        if len(glycerol_set) != 3:
+            continue
+        # Check connectivity: graph distance between any two glycerol candidates must be ≤ 2.
+        distances_ok = True
+        for a in glycerol_set:
+            for b in glycerol_set:
+                if a == b:
+                    continue
+                if dmat[a][b] > 2:
+                    distances_ok = False
+                    break
+            if not distances_ok:
+                break
+        if distances_ok:
+            candidate_found = pc
+            break
+    if candidate_found is None:
+        return False, "Could not find a single phosphate-derived glycerol carbon that connects with the two FA ester glycerol carbons within a graph distance of 2."
+    
+    # Now the three glycerol carbons are the two from FA ester groups and candidate_found.
+    glycerol_set = set(fa_candidates)
+    glycerol_set.add(candidate_found)
+    if len(glycerol_set) != 3:
+        return False, "Fatty acid ester groups and the phosphate ester do not attach to three distinct glycerol carbons."
+    
+    # -------------------------
+    # Criterion 4: (Optional) Molecular weight sanity check.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 400:
-        return False, "Molecular weight too low for phosphatidic acid"
+    if mol_wt < 300:
+        return False, f"Molecular weight ({mol_wt:.1f} Da) is too low for a phosphatidic acid"
+    
+    return True, "Contains a phosphate group (with neutral head) and exactly two fatty acid esters attached to a connected three‐carbon glycerol backbone"
 
-    return True, "Contains glycerol backbone with 2 fatty acid chains and phosphate group"
+# Example usage:
+if __name__ == "__main__":
+    # Test one of the provided true positive SMILES (phosphatidic acid with two FA esters and a phosphate ester).
+    test_smiles = "P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(O)(O)=O"
+    result, reason = is_phosphatidic_acid(test_smiles)
+    print("Is phosphatidic acid?", result)
+    print("Reason:", reason)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16337',
@@ -85,112 +193,648 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16337',
                           'xrefs': ['KEGG:C00416'],
                           'all_positive_examples': []},
     'config': None,
-    'message': None,
-    'sample_true_negatives': [   {   'smiles': 'S(=O)(=O)(C1=C2C(=CC3=C1NC=4C=CC=CC34)[C@@]5([C@H]([C@](C(=O)O)([C@@H](O)CC5)C)CC2)C)C6=CC7=C(NC8=C7C=C9[C@@]%10([C@H]([C@](C(=O)O)([C@@H](O)CC%10)C)CCC9=C8)C)C=C6',
-                                     'name': 'Sulfadixiamycin C',
-                                     'reason': 'No glycerol backbone found'},
-                                 {   'smiles': 'CNC(O)=O',
-                                     'name': 'methylcarbamic acid',
-                                     'reason': 'No glycerol backbone found'},
-                                 {   'smiles': 'CCNC(=O)NC1=CC2=C(C=C1)OC[C@H]3[C@@H](CC[C@H](O3)CC(=O)N[C@@H](C)C4=CC=CC=C4)N(C2=O)C',
-                                     'name': '2-[(2S,4aR,12aR)-8-(ethylcarbamoylamino)-5-methyl-6-oxo-2,3,4,4a,12,12a-hexahydropyrano[2,3-c][1,5]benzoxazocin-2-yl]-N-[(1S)-1-phenylethyl]acetamide',
-                                     'reason': 'Found 0 ester groups, need '
-                                               'exactly 2'},
-                                 {   'smiles': 'O([C@H]1O[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O)[C@@H]1O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]5NC(=O)C)CO)CO)[C@H]8[C@H](O)[C@H](O[C@@H](O[C@H]9[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]9CO)O[C@H]%10[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]%10CO[C@@H]%11O[C@H]([C@@H](O)[C@@H](O)[C@@H]%11O)C)O)[C@H]8O)CO[C@H]%12O[C@@H]([C@@H](O)[C@H](O)[C@@H]%12O[C@@H]%13O[C@@H]([C@@H](O[C@@H]%14O[C@@H]([C@H](O)[C@H](O[C@]%15(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%15)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%14O)CO)[C@H](O)[C@H]%13NC(=O)C)CO)CO[C@@H]%16O[C@@H]([C@@H](O[C@@H]%17O[C@@H]([C@H](O)[C@H](O)[C@H]%17O)CO[C@]%18(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%18)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]%16NC(=O)C)CO',
-                                     'name': 'CID 91851985',
-                                     'reason': 'No glycerol backbone found'},
-                                 {   'smiles': 'O(C(=O)C(C1C(CN2C(C1)C=3NC=4C(C3CC2)=CC=CC4)CC)=COC)C',
-                                     'name': 'Methyl '
-                                             '2-(3-ethyl-1,2,3,4,6,7,12,12b-octahydroindolo[2,3-a]quinolizin-2-yl)-3-methoxyprop-2-enoate',
-                                     'reason': 'Found 1 ester groups, need '
-                                               'exactly 2'},
-                                 {   'smiles': 'O[C@H](/C=C/C=C/C=C/[C@H](O)[C@H](O)C=C)[C@H](O)/C=C/C',
-                                     'name': 'Separacene C',
-                                     'reason': 'No glycerol backbone found'},
-                                 {   'smiles': 'C[C@@H]1O[C@@H](O[C@@H]2[C@@H](CO)O[C@@H](O[C@@H]3[C@@H](O)C(O)O[C@H](CO)[C@@H]3O)[C@H](NC(C)=O)[C@H]2O[C@@H]2O[C@H](CO)[C@H](O)[C@H](OS(O)(=O)=O)[C@H]2O)[C@@H](O)[C@H](O)[C@@H]1O',
-                                     'name': 'alpha-L-Fucp-(1->4)-[beta-D-Galp3S-(1->3)]-beta-D-GlcpNAc-(1->3)-D-Galp',
-                                     'reason': 'No glycerol backbone found'},
-                                 {   'smiles': 'C1=CC=CC2=C1C(N([C@H](C(N2)=O)CC=3C=CC(=CC3)OC)C)=O',
-                                     'name': "(S)-4'-methoxycyclopeptine",
-                                     'reason': 'No glycerol backbone found'},
-                                 {   'smiles': 'O=C(N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(O)=O)[C@@H](NC(=O)[C@@H](N)C(C)C)C(C)C',
-                                     'name': 'Val-Val-Trp',
-                                     'reason': 'No glycerol backbone found'},
-                                 {   'smiles': 'C=1C(=C(C=CC1/C=C/CO)OC(CO)C(O)C=2C=C(C(=CC2)O)OC)OC',
-                                     'name': 'guaiacylglycerol beta-coniferyl '
-                                             'ether',
-                                     'reason': 'No glycerol backbone found'}],
-    'sample_false_negatives': [   {   'smiles': 'CCCCC\\C=C/C\\C=C/C\\C=C/CCCCC(=O)OC[C@@H](O)COP(O)(O)=O',
-                                      'name': '1-(gamma-linolenoyl)-sn-glycero-3-phosphate',
-                                      'reason': 'Found 1 ester groups, need '
-                                                'exactly 2'},
-                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCC(O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(O)(O)=O',
-                                      'name': 'OHDdiA-PA',
-                                      'reason': 'Found 3 ester groups, need '
-                                                'exactly 2'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCC(=O)OCC(COP(O)(=O)OCC(O)COP(O)(O)=O)OC(=O)CCCCCCC\\C=C/CCCCCCCC',
+    'code_statistics': {   'lines_of_code': 144,
+                           'log_lines_of_code': 4.969813299576001,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 5,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 5,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 4,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 5,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 3,
+                                                 4,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1],
+                           'max_indent': 5,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetDistanceMatrix',
+                                                 'GetBondType',
+                                                 'CalcExactMolWt',
+                                                 'GetAtoms',
+                                                 'GetNeighbors',
+                                                 'MolFromSmiles',
+                                                 'GetBondBetweenAtoms',
+                                                 'GetSubstructMatches',
+                                                 'append',
+                                                 'GetFormalCharge',
+                                                 'GetSymbol',
+                                                 'GetIdx',
+                                                 'MolFromSmarts',
+                                                 'GetAtomWithIdx',
+                                                 'add'],
+                           'methods_called_count': 15,
+                           'smarts_strings': ['OC(=O)'],
+                           'smarts_strings_count': 1,
+                           'defs': ['is_phosphatidic_acid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No phosphate group found '
+                                          'with ≥3 oxygen neighbors (all '
+                                          'neutral) and exactly one oxygen '
+                                          'attached to a carbon"',
+                                          'False, f"Found {len(fa_candidates)} '
+                                          'fatty acid ester group(s) after '
+                                          'filtering; expected exactly 2."',
+                                          'False, "Could not find a single '
+                                          'phosphate-derived glycerol carbon '
+                                          'that connects with the two FA ester '
+                                          'glycerol carbons within a graph '
+                                          'distance of 2."',
+                                          'False, "Fatty acid ester groups and '
+                                          'the phosphate ester do not attach '
+                                          'to three distinct glycerol '
+                                          'carbons."',
+                                          'False, f"Molecular weight '
+                                          '({mol_wt:.1f} Da) is too low for a '
+                                          'phosphatidic acid"',
+                                          'True, "Contains a phosphate group '
+                                          '(with neutral head) and exactly two '
+                                          'fatty acid esters attached to a '
+                                          'connected three‐carbon glycerol '
+                                          'backbone"'],
+                           'returns_count': 7,
+                           'complexity': 6.593962659915201},
+    'message': '\n'
+               'Attempt failed: F1 score of 0.872289156626506 is too low.\n'
+               'Outcomes:\n'
+               '------\n'
+               '\n'
+               'True positives: SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(O)(O)=O '
+               'NAME: PA(20:1(11Z)/14:0) REASON: CORRECT Contains a phosphate '
+               'group and exactly two fatty acid esters attached to a '
+               'connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCC)COC(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)(O)(O)=O '
+               'NAME: PA(22:2(13Z,16Z)/14:1(9Z)) REASON: CORRECT Contains a '
+               'phosphate group and exactly two fatty acid esters attached to '
+               'a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\CCCCCC)(O)(O)=O '
+               'NAME: PA(16:1(9Z)/18:0) REASON: CORRECT Contains a phosphate '
+               'group and exactly two fatty acid esters attached to a '
+               'connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(O)(O)=O '
+               'NAME: '
+               '[(2R)-2-[(13Z)-docos-13-enoyloxy]-3-[(9Z)-octadec-9-enoyloxy]propoxy]phosphonic '
+               'acid REASON: CORRECT Contains a phosphate group and exactly '
+               'two fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(22:0/15:1(9Z)) REASON: CORRECT Contains a phosphate '
+               'group and exactly two fatty acid esters attached to a '
+               'connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CCCC(O)C(O)C/C=C\\C/C=C\\C/C=C\\CCCCC)(O)(O)=O '
+               'NAME: PA(20:3(8Z,11Z,14Z)-2OH(5,6)/24:1(15Z)) REASON: CORRECT '
+               'Contains a phosphate group and exactly two fatty acid esters '
+               'attached to a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCCC)COC(=O)CCCCCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(19:0/16:1(9Z)) REASON: CORRECT Contains a phosphate '
+               'group and exactly two fatty acid esters attached to a '
+               'connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               '[C@](COC(=O)CCCCCCCCCCC)(OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)([H])COP(O)(O)=O '
+               'NAME: PA(12:0/20:5(5Z,8Z,11Z,14Z,17Z)) REASON: CORRECT '
+               'Contains a phosphate group and exactly two fatty acid esters '
+               'attached to a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(14:0/20:0) REASON: CORRECT Contains a phosphate group '
+               'and exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(O)(O)=O '
+               'NAME: PA(20:1(11Z)/21:0) REASON: CORRECT Contains a phosphate '
+               'group and exactly two fatty acid esters attached to a '
+               'connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(13:0/18:2(9Z,12Z)) REASON: CORRECT Contains a '
+               'phosphate group and exactly two fatty acid esters attached to '
+               'a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(14:0/20:3(8Z,11Z,14Z)) REASON: CORRECT Contains a '
+               'phosphate group and exactly two fatty acid esters attached to '
+               'a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCC/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(O)(O)=O '
+               'NAME: PA(18:1(9Z)/18:3(6Z,9Z,12Z)) REASON: CORRECT Contains a '
+               'phosphate group and exactly two fatty acid esters attached to '
+               'a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCC/C=C\\C/C=C\\CCCC)(O)(O)=O '
+               'NAME: PA(17:2(9Z,12Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)) REASON: '
+               'CORRECT Contains a phosphate group and exactly two fatty acid '
+               'esters attached to a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(18:0/14:0) REASON: CORRECT Contains a phosphate group '
+               'and exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(O)(O)=O '
+               'NAME: Pa(18:4(6z,9z,12z,15z)/22:6(4z,7z,10z,13z,16z,19z)) '
+               'REASON: CORRECT Contains a phosphate group and exactly two '
+               'fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(21:0/22:4(7Z,10Z,13Z,16Z)) REASON: CORRECT Contains a '
+               'phosphate group and exactly two fatty acid esters attached to '
+               'a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC(O)/C=C/C=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PHOHA-PA REASON: CORRECT Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC[C@@H](O)/C=C\\C=C\\C=C\\[C@@H](O)C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(17:0/20:4(6Z,8E,10E,14Z)-2OH(5S,12R)) REASON: CORRECT '
+               'Contains a phosphate group and exactly two fatty acid esters '
+               'attached to a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(17:0/17:0) REASON: CORRECT Contains a phosphate group '
+               'and exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCCCC)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(16:0/17:1(9Z)) REASON: CORRECT Contains a phosphate '
+               'group and exactly two fatty acid esters attached to a '
+               'connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCCCCCCCC '
+               'NAME: 1-heptadecanoyl-2-palmitoyl-sn-glycero-3-phosphate '
+               'REASON: CORRECT Contains a phosphate group and exactly two '
+               'fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: '
+               '[(2R)-2-[(13Z)-docos-13-enoyloxy]-3-(tetracosanoyloxy)propoxy]phosphonic '
+               'acid REASON: CORRECT Contains a phosphate group and exactly '
+               'two fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)(O)(O)=O '
+               'NAME: PA(18:3(9Z,12Z,15Z)/20:2(11Z,14Z)) REASON: CORRECT '
+               'Contains a phosphate group and exactly two fatty acid esters '
+               'attached to a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'O(C(COP(=O)(O)O)COC(=O)CCCCCCCC=CCCCCCCCC)C(=O)CCCCCCCC=CCCCCCCCC '
+               'NAME: 1,2-bis(octadec-9-enoyl)phosphatidic acid REASON: '
+               'CORRECT Contains a phosphate group and exactly two fatty acid '
+               'esters attached to a connected three-carbon glycerol backbone\n'
+               'False positives: SMILES: '
+               'CCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCC\\C=C/CCCCCCCC)COP([O-])([O-])=O '
+               'NAME: 1-oleoyl-2-palmitoyl-sn-glycero-3-phosphate(2-) REASON: '
+               'WRONGLY CLASSIFIED Contains a phosphate group and exactly two '
+               'fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)C/C=C\\C[C@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@H](O)CCCCC)(O)(O)=O '
+               'NAME: PA(5-iso PGF2VI/18:0) REASON: WRONGLY CLASSIFIED '
+               'Contains a phosphate group and exactly two fatty acid esters '
+               'attached to a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCCCCCC(CC)C)COC(=O)CCCCCC[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)(O)(O)=O '
+               'NAME: PA(PGF1alpha/a-25:0) REASON: WRONGLY CLASSIFIED Contains '
+               'a phosphate group and exactly two fatty acid esters attached '
+               'to a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCC(=O)OC[C@H](COP([O-])([O-])=O)OC(=O)CCCCCCCCC NAME: '
+               '1,2-dicapryl-sn-glycero-3-phosphate(2-) REASON: WRONGLY '
+               'CLASSIFIED Contains a phosphate group and exactly two fatty '
+               'acid esters attached to a connected three-carbon glycerol '
+               'backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCC\\C=C/CCCCCCCC)COP([O-])([O-])=O '
+               'NAME: 1-oleoyl-2-stearoyl-sn-glycero-3-phosphate(2-) REASON: '
+               'WRONGLY CLASSIFIED Contains a phosphate group and exactly two '
+               'fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])([O-])=O)OC(=O)CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC '
+               'NAME: '
+               '1-stearoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl-sn-glycero-3-phosphate(2-) '
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCCCC)COC(=O)CCCC(O)/C=C/C=C/C\\C=C\\CCCCCCCC)(O)(O)=O '
+               'NAME: PA(20:3(6,8,11)-OH(5)/14:0) REASON: WRONGLY CLASSIFIED '
+               'Contains a phosphate group and exactly two fatty acid esters '
+               'attached to a connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(=O)([O-])([O-])OC[C@H](OC(CCCC=O)=O)COC(=O)CCCCCCCCCCCCCCC '
+               'NAME: 1-palmitoyl-2-(5-oxovaleroyl)-sn-glycero-3-phosphate(2-) '
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(N)nc1=O)OC(=O)CCCCCCC\\C=C/CCCCCCCC '
+               'NAME: CDP-1-stearoyl-2-oleoyl-sn-glycerol(2-) REASON: WRONGLY '
+               'CLASSIFIED Contains a phosphate group and exactly two fatty '
+               'acid esters attached to a connected three-carbon glycerol '
+               'backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])([O-])=O)OC(=O)CCCCCCCCCCCCCCCCC '
+               'NAME: 1,2-dioctadecanoyl-sn-glycerol-3-phosphate(2-) REASON: '
+               'WRONGLY CLASSIFIED Contains a phosphate group and exactly two '
+               'fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(N)nc1=O)OC(=O)CCCCCCC\\C=C/CCCCCCCC '
+               'NAME: CDP-1-stearoyl-2-oleoyl-sn-glycerol REASON: WRONGLY '
+               'CLASSIFIED Contains a phosphate group and exactly two fatty '
+               'acid esters attached to a connected three-carbon glycerol '
+               'backbone\n'
+               ' * SMILES: '
+               'CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP([O-])([O-])=O)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC '
+               'NAME: 1-oleoyl-2-arachidonoyl-sn-glycero-3-phosphate(2-) '
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCC(=O)O[C@H](COC(=O)CCCCCCC\\C=C/CCCCCCCC)COP([O-])([O-])=O '
+               'NAME: 1-oleoyl-2-pentadecanoyl-sn-glycero-3-phosphate(2-) '
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(=O)OC[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(N)nc1=O)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC '
+               'NAME: CDP-1,2-diarachidonoyl-sn-glycerol REASON: WRONGLY '
+               'CLASSIFIED Contains a phosphate group and exactly two fatty '
+               'acid esters attached to a connected three-carbon glycerol '
+               'backbone\n'
+               ' * SMILES: '
+               'CCCCCCCC(=O)OC[C@H](COP(O)(=O)OP(O)(O)=O)OC(=O)CCCCCCC NAME: '
+               '1,2-dioctanoyl-sn-glycerol 3-diphosphate REASON: WRONGLY '
+               'CLASSIFIED Contains a phosphate group and exactly two fatty '
+               'acid esters attached to a connected three-carbon glycerol '
+               'backbone\n'
+               ' * SMILES: '
+               'O(C[C@@H](COC(CCCCCCCCCCCCCCCCC)=O)OC(CCCCCCCCCCCCCCCCC)=O)P(OP(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N2C(N=C(C=C2)N)=O)(=O)O)(=O)O '
+               "NAME: 1,2-dioctadecanoyl-sn-glycero-3-cytidine 5'-diphosphate "
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               '[C@@H](COC(CCCCCCC/C=C\\CCCCCCCC)=O)(COP([O-])(=O)[O-])OC(CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)=O '
+               'NAME: '
+               '1-oleoyl-2-[(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl]-sn-glycero-3-phosphate(2-) '
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@H](COP([O-])([O-])=O)OC(=O)CCCCCCC\\C=C/C\\C=C/CCCCC '
+               'NAME: 1-oleoyl-2-linoleoyl-sn-glycero-3-phosphate(2-) REASON: '
+               'WRONGLY CLASSIFIED Contains a phosphate group and exactly two '
+               'fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'O(C[C@@H](COC(CCCCCCCCCC=CCCCCCC)=O)OC(CCCCCCCCCC=CCCCCCC)=O)P(OP(OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N2C(N=C(C=C2)N)=O)(=O)O)(=O)O '
+               'NAME: 1,2-dioctadec-11-enoyl-sn-glycero-3-cytidine '
+               "5'-diphosphate REASON: WRONGLY CLASSIFIED Contains a phosphate "
+               'group and exactly two fatty acid esters attached to a '
+               'connected three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCC(=O)OC[C@H](COP([O-])([O-])=O)OC(=O)CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC '
+               'NAME: '
+               '1,2-di[(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl]-sn-glycero-3-phosphate(2-) '
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC[C@@H](O)[C@H](O)C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCCCCCCCCCCCCCC(CC)C)(O)(O)=O '
+               'NAME: PA(a-25:0/20:4(8Z,11Z,14Z,17Z)-2OH(5S,6R)) REASON: '
+               'WRONGLY CLASSIFIED Contains a phosphate group and exactly two '
+               'fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(N)nc1=O)OC(=O)CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC '
+               'NAME: '
+               'CDP-1-stearoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl-sn-glycerol '
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               '[H][C@@](COC(=O)CCCCCCC\\C=C/CCCCCC)(COP([O-])([O-])=O)OC(=O)CCCCCCC\\C=C/CCCCCC '
+               'NAME: 1,2-di-[(9Z)-hexadecenoyl]-sn-glycero-3-phosphate(2-) '
+               'REASON: WRONGLY CLASSIFIED Contains a phosphate group and '
+               'exactly two fatty acid esters attached to a connected '
+               'three-carbon glycerol backbone\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(N)nc1=O)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC '
+               'NAME: CDP-1-palmitoyl-2-arachidonoyl-sn-glycerol REASON: '
+               'WRONGLY CLASSIFIED Contains a phosphate group and exactly two '
+               'fatty acid esters attached to a connected three-carbon '
+               'glycerol backbone\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCC\\C=C\\C[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)COC(=O)CCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(13:0/PGF2alpha) REASON: WRONGLY CLASSIFIED Contains a '
+               'phosphate group and exactly two fatty acid esters attached to '
+               'a connected three-carbon glycerol backbone\n'
+               'False negatives: SMILES: '
+               'CCCCCCCCCCCCCCCC(=O)OCC(COP(O)(=O)OCC(O)COP(O)(O)=O)OC(=O)CCCCCCC\\C=C/CCCCCCCC '
+               'NAME: '
+               '1-hexadecanoyl-2-[(Z)-octadec-9-enoyl]-sn-glycero-3-phospho-sn-glycerol '
+               '3-phosphate REASON: MISSED The three candidate glycerol '
+               'carbons are not sufficiently connected (graph distance >2)\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C\\C=C/C\\C=C/CCCCC(=O)OC[C@@H](O)COP(O)(O)=O NAME: '
+               '1-(gamma-linolenoyl)-sn-glycero-3-phosphate REASON: MISSED '
+               'Found 1 fatty acid ester group(s) after filtering; expected '
+               'exactly 2.\n'
+               ' * SMILES: O1C(C1)COC(=O)CCCC=CCC=CCC=CCC=CCCCCC NAME: '
+               'O-Arachidonoyl Glycidol REASON: MISSED No phosphate group '
+               'found with >=3 oxygen neighbors and exactly one oxygen '
+               'attached to a carbon\n'
+               '------\n'
+               '\n'
+               'In your reasoning step, analyze the previous program and the '
+               'above outcomes, hypothesizing about what went wrong, and how '
+               'to improve.\n',
+    'sample_true_negatives': [   {   'smiles': 'O=C1OC[C@@H]2O[C@@H](O[C@@H]3[C@@H](OC(=O)CCCCCCCCCCCCCCC)[C@H](C=CCCCC1)[C@H](CCCCC)[C@@H](C3)O)[C@H](O)[C@H]([C@@H]2O)O',
+                                     'name': 'Mucorolactone',
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'C[C@@H]1CN[C@H](COC2=C(C=CC(=C2)NC(=O)C3=NC4=CC=CC=C4S3)C(=O)N(C[C@H]1OC)C)C',
+                                     'name': 'N-[(5S,6R,9S)-5-methoxy-3,6,9-trimethyl-2-oxo-11-oxa-3,8-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]-1,3-benzothiazole-2-carboxamide',
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'COC1=CC=CC(=C1)C2=CC=C(C=C2)[C@@H]3[C@@H]4CN(CC(=O)N4[C@@H]3CO)C(=O)C5=CN=CC=C5',
+                                     'name': '(6R,7R,8S)-8-(hydroxymethyl)-7-[4-(3-methoxyphenyl)phenyl]-4-[oxo(3-pyridinyl)methyl]-1,4-diazabicyclo[4.2.0]octan-2-one',
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'C(C(/C=C/C=C/C=C/[C@H](CCCC(O)=O)O)=O)/C=C\\CCCCC',
+                                     'name': '12-oxo-6-trans-leukotriene B4',
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'O=C1OC(=C(C#C[C@H](COC(=O)C)C)CO)C=C1',
+                                     'name': "5'-O-acetylaporpinone A",
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'O=C(N1[C@@H](CCC1)C(=O)N[C@@H](CCC(=O)N)C(O)=O)[C@@H](N)[C@H](CC)C',
+                                     'name': 'Ile-Pro-Gln',
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'O[C@@H]1C=CC=C(CCC(O)=O)[C@@H]1O',
+                                     'name': '3-[(5R,6S)-5,6-dihydroxycyclohexa-1,3-dienyl]propanoic '
+                                             'acid',
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'O=C(OC)/C=C/C(C)(C)C',
+                                     'name': '4,4-Dimethyl-pentenoic acid '
+                                             'methyl ester',
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'CCCCOc1ccc(OCCCN2CCOCC2)cc1',
+                                     'name': 'pramocaine',
+                                     'reason': 'No phosphate group found with '
+                                               '≥3 oxygen neighbors (all '
+                                               'neutral) and exactly one '
+                                               'oxygen attached to a carbon'},
+                                 {   'smiles': 'OC[C@@H](O)C(=O)[C@H](O)[C@H](O)COP(O)(O)=O',
+                                     'name': 'D-arabino-hex-3-ulose '
+                                             '6-phosphate',
+                                     'reason': 'Found 0 fatty acid ester '
+                                               'group(s) after filtering; '
+                                               'expected exactly 2.'}],
+    'sample_false_negatives': [   {   'smiles': 'CCCCCCCCCCCCCCCC(=O)OCC(COP(O)(=O)OCC(O)COP(O)(O)=O)OC(=O)CCCCCCC\\C=C/CCCCCCCC',
                                       'name': '1-hexadecanoyl-2-[(Z)-octadec-9-enoyl]-sn-glycero-3-phospho-sn-glycerol '
                                               '3-phosphate',
-                                      'reason': 'Must have exactly one '
-                                                'phosphorus atom'},
-                                  {   'smiles': 'P(OC[C@@H](COC(CCCCC)=O)OC(CCCCC)=O)(=O)(O)O',
-                                      'name': '1,2-dihexanoyl-sn-glycero-3-phosphate',
-                                      'reason': 'Molecular weight too low for '
-                                                'phosphatidic acid'},
-                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O',
-                                      'name': 'PKDdiA-PA',
-                                      'reason': 'Found 3 ester groups, need '
-                                                'exactly 2'},
+                                      'reason': 'Could not find a single '
+                                                'phosphate-derived glycerol '
+                                                'carbon that connects with the '
+                                                'two FA ester glycerol carbons '
+                                                'within a graph distance of '
+                                                '2.'},
+                                  {   'smiles': 'CCCCC\\C=C/C\\C=C/C\\C=C/CCCCC(=O)OC[C@@H](O)COP(O)(O)=O',
+                                      'name': '1-(gamma-linolenoyl)-sn-glycero-3-phosphate',
+                                      'reason': 'Found 1 fatty acid ester '
+                                                'group(s) after filtering; '
+                                                'expected exactly 2.'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)([O-])([O-])=O',
+                                      'name': '18:3-16:3-PA',
+                                      'reason': 'No phosphate group found with '
+                                                '≥3 oxygen neighbors (all '
+                                                'neutral) and exactly one '
+                                                'oxygen attached to a carbon'},
                                   {   'smiles': 'O1C(C1)COC(=O)CCCC=CCC=CCC=CCC=CCCCCC',
                                       'name': 'O-Arachidonoyl Glycidol',
-                                      'reason': 'Found 1 ester groups, need '
-                                                'exactly 2'},
-                                  {   'smiles': 'P(OC[C@H](OC(=O)CCC(O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(O)(O)=O',
-                                      'name': 'OHHdiA-PA',
-                                      'reason': 'Found 3 ester groups, need '
-                                                'exactly 2'},
-                                  {   'smiles': 'P(OC[C@H](OC(=O)CCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O',
-                                      'name': 'PKHdiA-PA',
-                                      'reason': 'Found 3 ester groups, need '
-                                                'exactly 2'},
-                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCC(O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(O)(O)=O',
-                                      'name': 'PHDdiA-PA',
-                                      'reason': 'Found 3 ester groups, need '
-                                                'exactly 2'},
-                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCC(O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(O)(O)=O',
-                                      'name': 'OHODiA-PA',
-                                      'reason': 'Found 3 ester groups, need '
-                                                'exactly 2'}],
-    'attempt': 0,
-    'reasoning': 'Let me break this down step by step:\n'
+                                      'reason': 'No phosphate group found with '
+                                                '≥3 oxygen neighbors (all '
+                                                'neutral) and exactly one '
+                                                'oxygen attached to a carbon'}],
+    'attempt': 4,
+    'reasoning': 'Below is our final Python solution. First, note that we '
+                 're‐examined the previous work and noticed several potential '
+                 'pitfalls. For example, the earlier code looked for a '
+                 'phosphate P having ≥3 O neighbors and exactly one of these O '
+                 'atoms attached to a carbon. Likewise, it detected fatty‐acid '
+                 'ester groups via a strict “OC(=O)” SMARTS. However, many '
+                 '“mis‐classifications” occurred because (a) many real PA '
+                 'structures now are drawn in their protonated (neutral) form '
+                 'while some “false‐positive” examples carry explicit negative '
+                 'charges on the phosphate and (b) sometimes there can be more '
+                 'than one candidate oxygen from the phosphate group. In this '
+                 'version we (1) check that none of the atoms within the '
+                 'phosphate “head” carry a negative formal charge (thus '
+                 'eliminating some of the ionized false positives), (2) allow '
+                 'for more than one candidate glycerol carbon from the '
+                 'phosphate group by testing which one yields a contiguous '
+                 'trio of carbons (the two fatty‐acid ester glycerol carbons '
+                 'plus that candidate) and (3) use the “OC(=O)” SMARTS but '
+                 'also filter out bridging oxygens attached to phosphorus. '
+                 'With these improvements our function should better “hone in” '
+                 'on the defined class. \n'
                  '\n'
-                 '1. A phosphatidic acid has a glycerol backbone with:\n'
-                 '   - Two fatty acid chains attached via ester bonds\n'
-                 '   - One phosphate group attached to the remaining OH group\n'
-                 '\n'
-                 '2. Key structural features to check:\n'
-                 '   - Glycerol backbone (C-C-C)\n'
-                 '   - Two ester groups (-O-C(=O)-)\n'
-                 '   - One phosphate group (-O-P(=O)(OH)2)\n'
-                 '   - Long carbon chains (fatty acids)\n'
-                 '\n'
-                 '3. Common characteristics from examples:\n'
-                 '   - Various fatty acid chain lengths\n'
-                 '   - Can have saturated or unsaturated fatty acids\n'
-                 '   - Specific stereochemistry at the glycerol carbon\n'
-                 '\n'
-                 "Here's the code:",
+                 'Below is the complete code in one Python block:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 351,
-    'num_false_positives': 78,
-    'num_true_negatives': 141857,
-    'num_false_negatives': 14,
+    'num_true_positives': 361,
+    'num_false_positives': 48,
+    'num_true_negatives': 141887,
+    'num_false_negatives': 4,
     'num_negatives': None,
-    'precision': 0.8181818181818182,
-    'recall': 0.9616438356164384,
-    'f1': 0.8841309823677582,
-    'accuracy': 0.999353478566409,
-    'negative_predictive_value': 0.9999013188037019}
+    'precision': 0.882640586797066,
+    'recall': 0.989041095890411,
+    'f1': 0.9328165374677004,
+    'accuracy': 0.9996345748418833,
+    'negative_predictive_value': 0.9999718093466111}

@@ -1,48 +1,121 @@
 """
 Classifies: CHEBI:46633 carbapenems
 """
+"""
+Classifies: Carbapenems (beta-lactam antibiotics that have a carbapenem skeleton,
+which is a four-membered beta-lactam ring fused to a five-membered ring lacking sulfur
+and containing a C=C bond in the 5-membered ring).
+
+The approach:
+1. Parse the SMILES.
+2. Identify a candidate beta-lactam ring (a ring of size 4 that contains exactly one nitrogen
+   and at least one carbon (C) that is double-bonded to an oxygen (C=O)).
+3. Look for a fused five-membered ring (ring of size 5) sharing at least 2 atoms with the beta-lactam;
+   the five-membered ring must not contain any sulfur and must contain at least one C=C double bond.
+4. If both are found, return True and a reason; otherwise, return False.
+"""
+
 from rdkit import Chem
 
 def is_carbapenems(smiles: str):
     """
-    Determines if a molecule is a carbapenem based on its SMILES string.
-    A carbapenem contains a bicyclic ring structure with a β-lactam 
-    fused to a five-membered ring and might often include a sulfur atom.
+    Determines if a molecule has the carbapenem bicyclic skeleton based on its SMILES string.
+    It looks for a candidate beta-lactam ring (4-membered with one nitrogen and a carbonyl) fused
+    to a 5-membered ring that (a) is free of sulfur and (b) contains at least one carbon-carbon double bond.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a carbapenem, False otherwise
-        str: Reason for classification
+        bool: True if the molecule appears to be a carbapenem, False otherwise.
+        str: Reason for the classification.
     """
-    
-    # Parse SMILES
+    # Parse SMILES string to molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS patterns for carbapenem core structures
-    # 4-membered ring (beta-lactam) fused to a 5-membered ring with typical substitutions
-    carbapenem_patterns = [
-        Chem.MolFromSmarts("C1C(=O)N2CC(C)C12"),  # Simplified for illustration
-        Chem.MolFromSmarts("C1[C@H]2N(C1=O)C=C[C@H]2C")  # Bicyclic core
-    ]
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
 
-    matches_pattern = any(mol.HasSubstructMatch(pattern) for pattern in carbapenem_patterns)
-    
-    if not matches_pattern:
-        return False, "Does not match any carbapenem structural core motifs"
+    beta_lactam_candidate = None
 
-    # Check for the presence of sulfur which is common in many carbapenems
-    has_sulfur = any(atom.GetAtomicNum() == 16 for atom in mol.GetAtoms())
+    # Identify a candidate beta-lactam ring: 4-membered, exactly one nitrogen,
+    # and at least one carbon (C) in the ring which is double-bonded to an oxygen.
+    for ring in rings:
+        if len(ring) != 4:
+            continue
+        # Check for exactly one nitrogen in the ring.
+        n_count = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetAtomicNum() == 7)
+        if n_count != 1:
+            continue
 
-    if not has_sulfur:
-        return True, "Matches carbapenem core structure but lacks typical sulfur atom"
+        carbonyl_found = False
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            # Check only carbon atoms
+            if atom.GetAtomicNum() == 6:
+                # Look through bonds for a double bond to oxygen.
+                for bond in atom.GetBonds():
+                    if bond.GetBondType() == Chem.BondType.DOUBLE:
+                        nbr = bond.GetOtherAtom(atom)
+                        if nbr.GetAtomicNum() == 8:
+                            carbonyl_found = True
+                            break
+                if carbonyl_found:
+                    break
+        if not carbonyl_found:
+            continue
 
-    return True, "Matches carbapenem core structure with possible sulfur atom"
+        # Candidate beta-lactam ring found.
+        beta_lactam_candidate = set(ring)
+        break
 
-# Ensure the SMARTS patterns and additional checks comprehensively capture the desired chemical class.
+    if beta_lactam_candidate is None:
+        return False, "No four-membered beta-lactam ring (with one nitrogen and carbonyl) found"
+
+    # Look for a fused 5-membered ring that meets additional criteria.
+    fused_ring_found = False
+    for ring in rings:
+        if len(ring) != 5:
+            continue
+        ring_set = set(ring)
+        # Check that the ring and the beta-lactam candidate share at least 2 atoms (fused rings)
+        if len(beta_lactam_candidate.intersection(ring_set)) < 2:
+            continue
+        # Exclude rings containing sulfur (atomic number 16).
+        if any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 16 for idx in ring):
+            continue
+
+        # Additionally, require that within this 5-membered ring there is a carbon-carbon double bond.
+        # Iterate over bonds whose both atoms are in the ring.
+        has_CC_double = False
+        for bond in mol.GetBonds():
+            a1 = bond.GetBeginAtom()
+            a2 = bond.GetEndAtom()
+            if a1.GetIdx() in ring_set and a2.GetIdx() in ring_set:
+                # Check if both are carbons and bond is double.
+                if a1.GetAtomicNum() == 6 and a2.GetAtomicNum() == 6 and bond.GetBondType() == Chem.BondType.DOUBLE:
+                    has_CC_double = True
+                    break
+        if not has_CC_double:
+            continue
+
+        # Found a fused 5-membered ring fulfilling all conditions.
+        fused_ring_found = True
+        break
+
+    if not fused_ring_found:
+        return False, "No fused five-membered ring (free of sulfur and containing a C=C bond) found with the beta-lactam ring; not a carbapenem skeleton"
+
+    return True, "Found carbapenem bicyclic skeleton (4-membered beta-lactam fused to a sulfur-free 5-membered ring with C=C bond)"
+
+# Example usage (for quick ad-hoc testing)
+if __name__ == "__main__":
+    # 1beta-methylcarbapenem example
+    test_smiles = "[H][C@@]12CC(=O)N1C=C[C@@H]2C"
+    result, reason = is_carbapenems(test_smiles)
+    print(result, reason)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:46633',
@@ -63,191 +136,449 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:46633',
                                        'Wikipedia:Carbapenem'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 47,
+                           'log_lines_of_code': 3.8501476017100584,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1],
+                           'max_indent': 3,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'intersection',
+                                                 'GetAtomicNum',
+                                                 'MolFromSmiles',
+                                                 'GetAtomWithIdx',
+                                                 'AtomRings',
+                                                 'GetRingInfo'],
+                           'methods_called_count': 6,
+                           'smarts_strings': [],
+                           'smarts_strings_count': 0,
+                           'defs': ['is_carbapenems(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No four-membered '
+                                          'beta-lactam ring (with one nitrogen '
+                                          'and carbonyl) found"',
+                                          'False, "No fused five-membered ring '
+                                          '(free of sulfur and containing a '
+                                          'C=C bond) found with the '
+                                          'beta-lactam ring; not a carbapenem '
+                                          'skeleton"',
+                                          'True, "Found carbapenem bicyclic '
+                                          'skeleton (4-membered beta-lactam '
+                                          'fused to a sulfur-free 5-membered '
+                                          'ring with C=C bond)"'],
+                           'returns_count': 4,
+                           'complexity': 3.570029520342012},
     'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
+               'Attempt failed: F1 score of 0.7131782945736435 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               '[H][C@]12[C@@H](C)C(SC3Cn4cnc[n+]4C3)=C(N1C(=O)[C@]2([H])[C@@H](C)O)C([O-])=O '
-               'NAME: biapenem REASON: MISSED Does not match the carbapenem '
-               'structural core motif\n'
+               'True positives: SMILES: '
+               'S(C1=C(N2C(=O)[C@@H]([C@H]2C1)CC)C(=O)O)CCNC(=O)CCNC(=O)[C@H](O)C(CO)(C)C '
+               'NAME: OA-6129 A REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: C[C@H](O)[C@H]1[C@H]2CC(SCCNC(C)=O)=C(N2C1=O)C(O)=O '
+               'NAME: Epithienamycin A REASON: CORRECT Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'N12[C@@]([C@](C(C)O)(C1=O)[H])(C[C@@H]([C@@H]2C(O)=O)SCCNC(CCNC([C@@H](C(CO)(C)C)O)=O)=O)[H] '
+               'NAME: OA-6129 D REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'P(=O)(OC12N(C(C(=O)OCC3=CC=C([N+](=O)[O-])C=C3)=C(C1(OC4=CC=CC=C4)C)OC5=CC=CC=C5)C(=O)C2C(O)C)(O)O '
+               'NAME: Proteinase K REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: [H][C@@]12CC(=O)N1C=C[C@@H]2C NAME: '
+               '1beta-methylcarbapenem REASON: CORRECT Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'C[C@H](O)[C@H]1[C@H]2CC(S\\C=C\\NC(C)=O)=C(N2C1=O)C(O)=O NAME: '
+               'Epithienamycin B REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'S(=O)(=O)(OC([C@@H]1C(=O)N2C(C(=O)O)=C(C[C@H]12)S(=O)CCNC(=O)C)(C)C)O '
+               'NAME: Carpetimycin D REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'CC(O)C1C2C(C)C(SC3NC(CS3)C(=O)Nc3cccc(c3)C(O)=O)=C(N2C1=O)C(O)=O '
+               'NAME: MK826 REASON: CORRECT Found carbapenem bicyclic skeleton '
+               '(4-membered beta-lactam fused to a sulfur-free 5-membered '
+               'ring)\n'
+               ' * SMILES: '
+               'S(=O)(=O)(OC([C@@H]1C(=O)N2C(C(=O)O)=C(C[C@H]12)S(=O)/C=C/NC(=O)C)(C)C)O '
+               'NAME: Carpetimycin B REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'S(=O)(=O)(OC(C1C(=O)N2C(C(=O)O)=C(CC12)S(=O)/C=C/NC(=O)C)C)O '
+               'NAME: MM 4550 REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: [H][C@]12CC=C(N1C(=O)C2)C(O)=O NAME: '
+               '1-carbapenem-3-carboxylic acid REASON: CORRECT Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'S(C1=C(N2C(=O)C(C2C1C)C(O)C)C(=O)[O-])C3CNC(C3)C(=O)NC4=CC(C(=O)[O-])=CC=C4.[Na+].[Na+] '
+               'NAME: Ertapenem Disodium REASON: CORRECT Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'C[C@@H](O)[C@@H]1[C@H]2[C@@H](C)C(S[C@@H]3CN[C@@H](C3)CNS(N)(=O)=O)=C(N2C1=O)C(O)=O '
+               'NAME: doripenem REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
                ' * SMILES: '
                'S(C1[C@@H](N2C(=O)C(C2C1)[C@@H](O)C)C(=O)O)CCNC(=O)C NAME: '
-               '17927 D REASON: MISSED Does not match the carbapenem '
-               'structural core motif\n'
-               ' * SMILES: '
-               'S(C1=C(N2C(=O)C(C2C1C)C(O)C)C(=O)O)C3CNC(C3)C(=O)N(C)C.[Na+].[Na+].O=C([O-])[O-] '
-               'NAME: Meropenem sodium carbonate REASON: MISSED Does not match '
-               'the carbapenem structural core motif\n'
-               ' * SMILES: '
-               'S(C=1C[C@]2(N(C(=O)[C@]2([C@@H](OS(O)(=O)=O)C)[H])C1C(O)=O)[H])CCNC(=O)CCNC(=O)[C@H](O)C(CO)(C)C '
-               'NAME: OA-6129 C REASON: MISSED Does not match the carbapenem '
-               'structural core motif\n'
+               '17927 D REASON: CORRECT Found carbapenem bicyclic skeleton '
+               '(4-membered beta-lactam fused to a sulfur-free 5-membered '
+               'ring)\n'
                ' * SMILES: '
                'S(=O)(C1=C(N2C(=O)[C@@H]([C@H]2C1)C(O)(C)C)C(=O)O)CCNC(=O)C '
-               'NAME: Carpetimycin C REASON: MISSED Does not match the '
-               'carbapenem structural core motif\n'
-               ' * SMILES: '
-               'C(OCOC(C(C)(C)C)=O)(=O)C=1N2[C@]([C@H](C1SC3CN(C3)C4=NCCS4)C)([C@](C2=O)([C@@H](C)O)[H])[H] '
-               'NAME: tebipenem pivoxil REASON: MISSED Does not match the '
-               'carbapenem structural core motif\n'
+               'NAME: Carpetimycin C REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
                ' * SMILES: '
                'N12[C@@]([C@]([C@@H](OS(O)(=O)=O)C)(C1=O)[H])(CC(=C2C(O)=O)SCCN)[H] '
-               'NAME: Deacetylepithienamycin F REASON: MISSED Does not match '
-               'the carbapenem structural core motif\n'
+               'NAME: Deacetylepithienamycin F REASON: CORRECT Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
                ' * SMILES: '
-               'O.[C@@H]1(SC2=C(N3C([C@]([C@]3([C@H]2C)[H])([H])[C@@H](C)O)=O)C(O)=O)CN[C@@H](C1)CNS(N)(=O)=O '
-               'NAME: Doripenem hydrate REASON: MISSED Does not match the '
-               'carbapenem structural core motif\n'
+               'N12[C@@]([C@@H](CC)C1=O)(CC(=C2C(O)=O)SCCNC(C)=O)[H] NAME: '
+               'PS-5 REASON: CORRECT Found carbapenem bicyclic skeleton '
+               '(4-membered beta-lactam fused to a sulfur-free 5-membered '
+               'ring)\n'
+               ' * SMILES: CC[C@@H]1[C@H]2CC(SCCN)=C(N2C1=O)C(O)=O NAME: NS-5 '
+               'REASON: CORRECT Found carbapenem bicyclic skeleton (4-membered '
+               'beta-lactam fused to a sulfur-free 5-membered ring)\n'
                ' * SMILES: '
-               'S(C1=C(N2C(=O)\\C(\\[C@@H]2C1)=C(\\CO)/C)C(=O)O)/C=C/NC(=O)C '
-               'NAME: Asparenomycin C REASON: MISSED Does not match the '
-               'carbapenem structural core motif\n'
-               ' * SMILES: [H][C@]12CC=C(N1C(=O)C2)C(O)=O NAME: '
-               '1-carbapenem-3-carboxylic acid REASON: MISSED Does not match '
-               'the carbapenem structural core motif\n'
+               '[C@@H]1(SC2=C(N3C([C@]([C@]3([C@H]2C)[H])([H])[C@@H](C)O)=O)C(O)=O)CNC(C1)[C@H](O)CCNC.Cl.O '
+               'NAME: BO 2727 REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: NCCSC1=C(N2[C@H](C1)[C@@H](CO)C2=O)C(O)=O NAME: '
+               'Northienamycin REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'S(C1=C(N2C(=O)C(C2C1C)C(O)C)C(=O)O)C3CNC(C3)C(=O)N(C)C.[Na+].[Na+].O=C([O-])[O-] '
+               'NAME: Meropenem sodium carbonate REASON: CORRECT Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'S(=O)(C1=C(N2C(=O)\\C(\\C2C1)=C(\\CO)/C)C(=O)O)CCNC(=O)C NAME: '
+               'Asparenomycin B REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'C[C@@H](O)[C@@H]1[C@H]2[C@@H](C)C(Sc3nc(cs3)-c3cc[n+](CC(N)=O)cc3)=C(N2C1=O)C(O)=O '
+               'NAME: SM-17466 REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'C[C@@H](O)[C@@H]1[C@H]2CC(SCCNC(C)=O)=C(N2C1=O)C(O)=O NAME: '
+               'N-Acetylthienamycin REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'C[C@H](O)[C@@H]1[C@H]2CC(SCCNC(C)=O)=C(N2C1=O)C(O)=O NAME: '
+               'Epithienamycin C REASON: CORRECT Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               'False positives: SMILES: '
+               'N12[C@](CC1=O)(C[C@H]([C@H]2C(=O)[O-])SCCNC(CCNC(=O)[C@@H](C(CO)(C)C)O)=O)[H] '
+               'NAME: (2R,3R,5S)-2-(S-pantetheinyl)-carbapenam-3-carboxylate '
+               'REASON: WRONGLY CLASSIFIED Found carbapenem bicyclic skeleton '
+               '(4-membered beta-lactam fused to a sulfur-free 5-membered '
+               'ring)\n'
+               ' * SMILES: OCC[C@H]1CN2[C@H](CC2=O)O1 NAME: '
+               '2-Hydroxyethylclavam REASON: WRONGLY CLASSIFIED Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               '[H][C@]12CC(=O)N1[C@@H]([C@@H](CC[NH3+])O2)C([O-])=O NAME: '
+               'dihydroclavaminic acid zwitterion REASON: WRONGLY CLASSIFIED '
+               'Found carbapenem bicyclic skeleton (4-membered beta-lactam '
+               'fused to a sulfur-free 5-membered ring)\n'
+               ' * SMILES: C1(C(N2C1CC(C2C(O)=O)SCCN)=O)CC NAME: '
+               '3-[(2-aminoethyl)sulfanyl]-6-ethyl-7-oxo-1-azabicyclo[3.2.0]heptane-2-carboxylic '
+               'acid REASON: WRONGLY CLASSIFIED Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: S(C1C(N2C(C1)C(C2=O)=C)C(O)=O)CCN NAME: Carbapenem '
+               'biosynthesis intermediate 3 REASON: WRONGLY CLASSIFIED Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'CC(=O)NCCC[C@H](N)C(=O)N[C@@H](C(O)[C@H]1CN2[C@H](CC2=O)O1)C(O)=O '
+               'NAME: Clavamycin F REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: CC1C2CC(CN2C1=O)SCCN NAME: '
+               '3-[(2-aminoethyl)thio]-6-methyl-1-azabicyclo[3.2.0]heptan-7-one '
+               'REASON: WRONGLY CLASSIFIED Found carbapenem bicyclic skeleton '
+               '(4-membered beta-lactam fused to a sulfur-free 5-membered '
+               'ring)\n'
+               ' * SMILES: '
+               'NCC(O)C(O)[C@H](N)C(=O)N[C@@H](C(O)[C@H]1CN2[C@H](CC2=O)O1)C(O)=O '
+               'NAME: Clavamycin C REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'CC(C)[C@H](N)C(=O)NC(C(O)C[C@H]1CN2[C@H](CC2=O)O1)C(O)=O NAME: '
+               'Valclavam REASON: WRONGLY CLASSIFIED Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: [H][C@]12CC=C(N1C(=O)C2)C([O-])=O NAME: '
+               '(5R)-carbapenem-3-carboxylate REASON: WRONGLY CLASSIFIED Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
+               ' * SMILES: C1[C@@H]2N(C1=O)[C@H](C(=CCO)O2)C(=O)O NAME: '
+               '(2R,5R)-3-(2-hydroxyethylidene)-7-oxo-4-oxa-1-azabicyclo[3.2.0]heptane-2-carboxylic '
+               'acid REASON: WRONGLY CLASSIFIED Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'C[C@H](N)C(=O)N[C@@H](C(O)[C@H]1CN2[C@H](CC2=O)O1)C(O)=O NAME: '
+               'Clavamycin E REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: OC[C@H]1CN2[C@H](CC2=O)O1 NAME: '
+               '2-Hydroxymethylclavam REASON: WRONGLY CLASSIFIED Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
+               ' * SMILES: [O-]C(=O)[C@@H]1N2[C@@H](CC2=O)O\\C1=C/C=O NAME: '
+               'clavaldehyde(1-) REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               '[H][C@]1(C[NH2+][C@@]([H])(C1)C(=O)Nc1cccc(c1)C([O-])=O)SC1=C(N2C(=O)[C@]([H])([C@@H](C)O)[C@@]2([H])[C@H]1C)C([O-])=O '
+               'NAME: ertapenem(1-) REASON: WRONGLY CLASSIFIED Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'CC(C)[C@H](N)C(=O)N[C@@H](C(O)[C@H]1CN2[C@H](CC2=O)O1)C(O)=O '
+               'NAME: Clavamycin D REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: S(C1C[C@]2(N(C1C(O)=O)C(=O)C2)[H])CCN NAME: '
+               '(5S)-3-(2-Aminoethylsulfanyl)-7-oxo-1-azabicyclo[3.2.0]heptane-2-carboxylic '
+               'acid REASON: WRONGLY CLASSIFIED Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: C1(C(N2C1CC(C2C(O)=O)SCCN)=O)C NAME: '
+               '3-[(2-aminoethyl)sulfanyl]-6-methyl-7-oxo-1-azabicyclo[3.2.0]heptane-2-carboxylic '
+               'acid REASON: WRONGLY CLASSIFIED Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: '
+               'O1[C@@]2(N(C[C@@H]1CC(O)C(NC(=O)C(N)C(C)C)C(O)=O)C(=O)C2)[H] '
+               'NAME: '
+               '2-[(2-Amino-3-methylbutanoyl)amino]-3-hydroxy-4-[(3S,5S)-7-oxo-4-oxa-1-azabicyclo[3.2.0]heptan-3-yl]butanoic '
+               'acid REASON: WRONGLY CLASSIFIED Found carbapenem bicyclic '
+               'skeleton (4-membered beta-lactam fused to a sulfur-free '
+               '5-membered ring)\n'
+               ' * SMILES: S(C1C(N2C(C1)/C(/C2=O)=C/C)C(O)=O)CCN NAME: '
+               'Carbapenem biosynthesis intermediate 4 REASON: WRONGLY '
+               'CLASSIFIED Found carbapenem bicyclic skeleton (4-membered '
+               'beta-lactam fused to a sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               '[Na+].[H][C@]1(C[NH2+][C@@]([H])(C1)C(=O)Nc1cccc(c1)C([O-])=O)SC1=C(N2C(=O)[C@]([H])([C@@H](C)O)[C@@]2([H])[C@H]1C)C([O-])=O '
+               'NAME: ertapenem sodium REASON: WRONGLY CLASSIFIED Found '
+               'carbapenem bicyclic skeleton (4-membered beta-lactam fused to '
+               'a sulfur-free 5-membered ring)\n'
+               ' * SMILES: [H][C@]12CC(=O)N1[C@H](C(O)=O)\\C(O2)=C\\CN NAME: '
+               'clavaminic acid REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: '
+               'NC[C@@H](O)C(O)[C@@H](NC(=O)[C@H](N)C(O)[C@H]1CN2[C@H](CC2=O)O1)C(O)=O '
+               'NAME: Clavamycin B REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: [H][C@@]12CC(=O)N1[C@@H](C([O-])=O)\\C(O2)=C\\CO '
+               'NAME: clavulanate REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               ' * SMILES: OC(=O)[C@@H]1N2[C@@H](CC2=O)O\\C1=C/C=O NAME: '
+               'clavaldehyde REASON: WRONGLY CLASSIFIED Found carbapenem '
+               'bicyclic skeleton (4-membered beta-lactam fused to a '
+               'sulfur-free 5-membered ring)\n'
+               'False negatives: NONE\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'P(OCC(OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)(OCCN(C)C)(O)=O',
-                                     'name': 'Pe-nme2(20:3(5Z,8Z,11Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'O1[C@]2([C@@H](O)[C@H](O)[C@@H](O)[C@@]1(OCC[C@H](CCC=C(C(OC[C@]3(O)[C@@H](O)[C@@](OC3)(OC2)[H])=O)C)C)[H])[H]',
-                                     'name': 'Urceolide',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'CC1=CC(=C(C=C1)C)C(=O)CSC2=NN=C(S2)C',
-                                     'name': '1-(2,5-dimethylphenyl)-2-[(5-methyl-1,3,4-thiadiazol-2-yl)thio]ethanone',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'O=C1C=C([C@@]2(C(C[C@@H](C2)O)(C)C)C)CC[C@@]1(O)C',
-                                     'name': 'Enokipodin H',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'CCCC[C@](Cn1cncn1)(C#N)c1ccc(Cl)cc1',
-                                     'name': '(S)-myclobutanil',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'O=C1O[C@@H]([C@H](NC(=O)[C@@H](NC(=O)CCCCC)CC(=O)O)C(=O)N[C@H](C(=O)N[C@H]2CC[C@H](N([C@H](C(N([C@H](C(N[C@H]1C(C)C)=O)CC3=CC=CC=C3)C)=O)CC(C)C)C2=O)O)CCCCN(C)C)C',
-                                     'name': 'Cyanopeptolin D',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'O1[C@]2(O)N([C@H](C(=O)N3[C@]2(CCC3)[H])C(C)C)C(=O)[C@@]1(NC(=O)[C@H]4CN([C@]5(C(=C4)C6=C7C(C5)=CNC7=CC=C6)[H])C)C',
-                                     'name': 'Ergovaline',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'OC(=O)CCCCCCC#CCCCC',
-                                     'name': '8-tridecynoic acid',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'CC(=O)N([O-])CCC[C@H](N)C(=O)N[C@@H](CCCN([O-])C(C)=O)C(=O)N[C@@H](CCCN([O-])C(C)=O)C(=O)N[C@@H](CO)C(=O)N[C@H]([C@H](O)[C@H]1S[C@H]([C@H](O)[C@H]1O)n1ccc(=N)n(C)c1=O)C(O)=O',
-                                     'name': 'desferrialbomycin epsilon(3-)',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'},
-                                 {   'smiles': 'OC[C@H]1O[C@H](O[C@@H]2[C@@H](CO)O[C@H](O[C@@H]3[C@@H](CO)O[C@H](O[C@@H]4[C@@H](CO)O[C@H](O)[C@H](O)[C@H]4O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O',
-                                     'name': 'alpha-maltotetraose',
-                                     'reason': 'Does not match any carbapenem '
-                                               'structural core motifs'}],
-    'sample_false_negatives': [   {   'smiles': 'S(C1[C@@H](N2C(=O)C(C2C1)[C@@H](O)C)C(=O)O)CCNC(=O)C',
+    'sample_true_negatives': [   {   'smiles': 'O=C(N[C@@H](C(O)(C)C)C)[C@H]([C@@]1([C@@]2([C@@](CC1)(/C(/CCC2)=C/C=C\\3/C[C@@H](O)C[C@H](O)C3=C)[H])C)[H])C',
+                                     'name': '1alpha,25-dihydroxy-24-oxo-23-azavitamin '
+                                             'D2 / '
+                                             '1alpha,25-dihydroxy-24-oxo-23-azaergocalciferol',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCC(O)C([O-])=O',
+                                     'name': '2-hydroxyarachidate',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': 'C[C@@H](CN([C@@H](C)CO)C(=O)NC1=CC=C(C=C1)C(F)(F)F)[C@@H](CN(C)C(=O)C2CCOCC2)OC',
+                                     'name': 'N-[(2S,3S)-4-[[(2S)-1-hydroxypropan-2-yl]-[[4-(trifluoromethyl)phenyl]carbamoyl]amino]-2-methoxy-3-methylbutyl]-N-methyloxane-4-carboxamide',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': 'CC(=O)CC\\C=C(/C)CCC=C(C)C',
+                                     'name': 'geranyl acetone',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@H](O[C@H](O)[C@H]1O)CO[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@@H]2O)CO)[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)CO',
+                                     'name': '(2S,3S,4S,5S,6R)-2-[[(2R,3R,4S,5S,6S)-4-[(2R,3S,4S,5S,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-3-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-3,5,6-trihydroxyoxan-2-yl]methoxy]-6-(hydroxymethyl)oxane-3,4,5-triol',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': 'O=C(OC1=C(C(O)=C(C(=O)O)C(=C1C)C)C)C2=C(OC)C(=C(OC(=O)C3=C(O)C=C(O)C=C3C)C=C2C)C',
+                                     'name': 'Thielavin Z5',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': '[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)NC(C)=O)O[C@@H]2[C@@H]([C@H](C(O[C@@H]2CO)O)O)O',
+                                     'name': 'beta-D-GlcpNAc-(1->4)-D-Galp',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': 'CN(C)C(=O)C1=CC=C(C=C1)C2=CC=C(C=C2)[C@@H]3[C@H]4CN(CC(=O)N4[C@H]3CO)C(=O)CC5CC5',
+                                     'name': '4-[4-[(6S,7R,8R)-4-(2-cyclopropyl-1-oxoethyl)-8-(hydroxymethyl)-2-oxo-1,4-diazabicyclo[4.2.0]octan-7-yl]phenyl]-N,N-dimethylbenzamide',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCC=C',
+                                     'name': '1-docosene',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'},
+                                 {   'smiles': 'C([C@@](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)([H])COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC',
+                                     'name': 'TG(22:5(7Z,10Z,13Z,16Z,19Z)/20:5(5Z,8Z,11Z,14Z,17Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))[iso6]',
+                                     'reason': 'No four-membered beta-lactam '
+                                               'ring (with one nitrogen and '
+                                               'carbonyl) found'}],
+    'sample_false_negatives': [   {   'smiles': 'N12[C@@]([C@](C(C)O)(C1=O)[H])(C[C@@H]([C@@H]2C(O)=O)SCCNC(CCNC([C@@H](C(CO)(C)C)O)=O)=O)[H]',
+                                      'name': 'OA-6129 D',
+                                      'reason': 'No fused five-membered ring '
+                                                '(free of sulfur and '
+                                                'containing a C=C bond) found '
+                                                'with the beta-lactam ring; '
+                                                'not a carbapenem skeleton'},
+                                  {   'smiles': 'S(C1[C@@H](N2C(=O)C(C2C1)[C@@H](O)C)C(=O)O)CCNC(=O)C',
                                       'name': '17927 D',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': 'S(C=1C[C@]2(N(C(=O)[C@]2([C@@H](OS(O)(=O)=O)C)[H])C1C(O)=O)[H])CCNC(=O)CCNC(=O)[C@H](O)C(CO)(C)C',
-                                      'name': 'OA-6129 C',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': 'S(=O)(C1=C(N2C(=O)[C@@H]([C@H]2C1)C(O)(C)C)C(=O)O)CCNC(=O)C',
-                                      'name': 'Carpetimycin C',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': 'N12[C@@]([C@]([C@@H](OS(O)(=O)=O)C)(C1=O)[H])(CC(=C2C(O)=O)SCCN)[H]',
-                                      'name': 'Deacetylepithienamycin F',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': 'S(C1=C(N2C(=O)\\C(\\[C@@H]2C1)=C(\\CO)/C)C(=O)O)/C=C/NC(=O)C',
-                                      'name': 'Asparenomycin C',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': '[H][C@]12CC=C(N1C(=O)C2)C(O)=O',
-                                      'name': '1-carbapenem-3-carboxylic acid',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': 'C[C@H]([C@H]1[C@H]2CC(=C(N2C1=O)C(=O)O)SCCN=CN)O',
-                                      'name': '(5R,6R)-3-[2-(aminomethylideneamino)ethylthio]-6-[(1R)-1-hydroxyethyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic '
-                                              'acid',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': 'S(C1=C(N2C(=O)[C@@H]([C@H]2C1)CC)C(=O)O)CCNC(=O)CCNC(=O)[C@H](O)C(CO)(C)C',
-                                      'name': 'OA-6129 A',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': 'S(=O)(=O)(OC(C1C(=O)N2C(C(=O)O)=C(CC12)S(=O)/C=C/NC(=O)C)C)O',
-                                      'name': 'MM 4550',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'},
-                                  {   'smiles': 'S(=O)(C1=C(N2C(=O)[C@H]([C@H]2C1)C(O)(C)C)C(=O)O)/C=C/NC(=O)C',
-                                      'name': 'Carpetimycin A',
-                                      'reason': 'Does not match any carbapenem '
-                                                'structural core motifs'}],
-    'attempt': 3,
-    'reasoning': "To improve the classification of carbapenems, let's first "
-                 'analyze the reasons for the failure in the previous code and '
-                 'address them:\n'
+                                      'reason': 'No fused five-membered ring '
+                                                '(free of sulfur and '
+                                                'containing a C=C bond) found '
+                                                'with the beta-lactam ring; '
+                                                'not a carbapenem skeleton'},
+                                  {   'smiles': 'N12C(C(C(C)O)C1=O)CC(C2C(O)=O)SCCN',
+                                      'name': '2,3-Dihydrothienamycin',
+                                      'reason': 'No fused five-membered ring '
+                                                '(free of sulfur and '
+                                                'containing a C=C bond) found '
+                                                'with the beta-lactam ring; '
+                                                'not a carbapenem skeleton'}],
+    'attempt': 1,
+    'reasoning': 'We can try to improve the prior approach by adding extra '
+                 'structural constraints. One key difference between true '
+                 'carbapenems and the false‐positive clavams is that '
+                 'carbapenems (for example, 1β‑methylcarbapenem or '
+                 '1‑carbapenem‑3‑carboxylic acid) have a distinct unsaturation '
+                 'in the five‐membered ring—that is, a carbon–carbon double '
+                 'bond—whereas many of the clavams are fully saturated. In the '
+                 'improved code below, after we identify a candidate β‑lactam '
+                 '(a four‐membered ring containing one nitrogen and a carbonyl '
+                 'group), we look for a fused five‐membered ring that (1) '
+                 'shares at least two atoms with the β‑lactam ring, (2) does '
+                 'not contain any sulfur atoms, and (3) contains at least one '
+                 'carbon–carbon double bond. (Other unusual ring systems will '
+                 'be rejected.) This extra requirement should help lower the '
+                 'rate of false positives.\n'
                  '\n'
-                 '1. **SMARTS Pattern Complexity**:\n'
-                 '   The SMARTS pattern used was overly simplistic and did not '
-                 'accurately capture the specific characteristics of '
-                 'carbapenems. Carbapenems have distinct features, especially '
-                 'the β-lactam fused with a five-membered ring, along with '
-                 'other possible substituents like sulfur.\n'
-                 '\n'
-                 '2. **Substituents and Variability**:\n'
-                 '   Carbapenems may have various substituents attached to the '
-                 'bicyclic core, such as sulfur or hydroxyl groups, which the '
-                 'previous pattern did not account for. It’s crucial to '
-                 'capture these variations.\n'
-                 '\n'
-                 '3. **Additional Structural Motifs**:\n'
-                 '   Carbapenems might have other features like the '
-                 'orientation of additional groups, which should be captured '
-                 'in the pattern.\n'
-                 '\n'
-                 '### Improved Approach\n'
-                 '\n'
-                 '- **Develop a more precise SMARTS pattern**:\n'
-                 '  Identify SMARTS patterns that reflect the core carbapenem '
-                 'structure — the bicyclic core structure of a '
-                 '1β-methylcarbapenem with β-lactam and five-membered rings. '
-                 'For example, starting with known structural motifs that '
-                 'identify the common parts of carbapenems.\n'
-                 '\n'
-                 '- **Multiple Patterns**:\n'
-                 '  Utilize multiple patterns to cover the structural '
-                 'diversity within carbapenems.\n'
-                 '\n'
-                 '- **Check Additional Substituents**:\n'
-                 '  Verify the presence of sulfur, hydroxyl groups, or other '
-                 'characteristic functional groups that are frequently found '
-                 'in carbapenems.\n'
-                 '\n'
-                 "Here's the revised code:",
+                 'Below is the complete Python code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 12,
-    'num_false_positives': 2,
-    'num_true_negatives': 142252,
-    'num_false_negatives': 34,
+    'num_true_positives': 43,
+    'num_false_positives': 6,
+    'num_true_negatives': 142248,
+    'num_false_negatives': 3,
     'num_negatives': None,
-    'precision': 0.8571428571428571,
-    'recall': 0.2608695652173913,
-    'f1': 0.4,
-    'accuracy': 0.999747013352073,
-    'negative_predictive_value': 0.9997610446565368}
+    'precision': 0.8775510204081632,
+    'recall': 0.9347826086956522,
+    'f1': 0.9052631578947369,
+    'accuracy': 0.9999367533380182,
+    'negative_predictive_value': 0.999978910517325}

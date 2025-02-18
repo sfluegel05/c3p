@@ -83,6 +83,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:76579',
                           'xrefs': ['LIPID_MAPS_class:LMGL0301'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': None,
     'sample_true_negatives': [   {   'smiles': 'C1=CC=C2C(=C1)C3=C(C4=C(C=CC=N4)C=C3)NS2(=O)=O',
                                      'name': '5H-quinolino[8,7-c][1,2]benzothiazine '

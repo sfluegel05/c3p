@@ -1,105 +1,34 @@
 """
 Classifies: CHEBI:18085 glycosaminoglycan
 """
-"""
-Classifies: glycosaminoglycan
-"""
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
+    A GAG is characterized by having repeating aminomonosaccharide units.
     
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a glycosaminoglycan, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count key atoms
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    # Defining a pattern for an amino sugar, common in GAGs
+    aminomonosaccharide_pattern = Chem.MolFromSmarts("[OX2][CX4][NX3]")
     
-    if o_count < 3:  # Relaxed oxygen requirement
-        return False, "Too few oxygen atoms for aminomonosaccharide structure"
+    # Check if pattern exists in the molecule
+    if mol.HasSubstructMatch(aminomonosaccharide_pattern):
+        return True, "Contains aminomonosaccharide units characteristic of GAGs"
     
-    if n_count == 0:  # Still need nitrogen for amino groups
-        return False, "No nitrogen atoms found - required for aminosugar"
-
-    # Look for various sugar-like ring patterns
-    patterns = [
-        "[CR1]1[CR1][CR1][CR1][CR1]O1",  # pyranose
-        "[CR1]1[CR1][CR1][CR1]O1",       # furanose
-        "[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1][CR0,CR1]O1",  # modified pyranose
-        "[CR0,CR1]1[CR0,CR1][CR0,CR1][CR0,CR1]O1"            # modified furanose
-    ]
-    
-    total_sugar_matches = 0
-    for pattern in patterns:
-        sugar_pattern = Chem.MolFromSmarts(pattern)
-        if sugar_pattern:
-            matches = len(mol.GetSubstructMatches(sugar_pattern))
-            total_sugar_matches += matches
-
-    # Look for amino groups in various contexts
-    amino_patterns = [
-        "[NX3H,NX3H2][CH1,CH2][OH1,OR]",  # classic amino sugar
-        "[NX3H,NX3H2][CR0,CR1][OR0,OR1]",  # modified amino sugar
-        "[NX3H,NX3H2]C(=O)",               # N-acetyl group
-        "[NX3]C[CR1]1O[CR1][CR1][CR1][CR1]1"  # N-substituted sugar
-    ]
-    
-    total_amino_matches = 0
-    for pattern in amino_patterns:
-        amino_pattern = Chem.MolFromSmarts(pattern)
-        if amino_pattern:
-            matches = len(mol.GetSubstructMatches(amino_pattern))
-            total_amino_matches += matches
-
-    # Look for characteristic modifications
-    sulfate = Chem.MolFromSmarts("OS(=O)(=O)[OH1,O-]")
-    carboxyl = Chem.MolFromSmarts("C(=O)[OH1,O-]")
-    acetyl = Chem.MolFromSmarts("NC(=O)C")
-    
-    has_sulfate = mol.HasSubstructMatch(sulfate) if sulfate else False
-    has_carboxyl = mol.HasSubstructMatch(carboxyl) if carboxyl else False
-    has_acetyl = mol.HasSubstructMatch(acetyl) if acetyl else False
-
-    # Build features list
-    features = []
-    if total_sugar_matches > 0:
-        features.append(f"Contains {total_sugar_matches} sugar-like rings")
-    if total_amino_matches > 0:
-        features.append(f"{total_amino_matches} amino groups")
-    if has_sulfate:
-        features.append("sulfate groups")
-    if has_carboxyl:
-        features.append("carboxyl groups")
-    if has_acetyl:
-        features.append("acetyl groups")
-
-    # Classification criteria
-    is_gag = (
-        (total_sugar_matches > 0 or (o_count >= 4 and n_count >= 1)) and  # Either has sugar rings or enough O/N atoms
-        total_amino_matches > 0 and                                        # Must have amino groups
-        (has_sulfate or has_carboxyl or has_acetyl)                       # Must have at least one characteristic modification
-    )
-
-    if not features:
-        return False, "No characteristic glycosaminoglycan features found"
-    
-    reason = ("Classified as glycosaminoglycan: " + ", ".join(features)) if is_gag else \
-             ("Not classified as glycosaminoglycan: " + ", ".join(features))
-
-    return is_gag, reason
+    return False, "Does not contain recognizable glycosaminoglycan features"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:18085',
@@ -112,207 +41,164 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:18085',
                                        'Wikipedia:Glycosaminoglycan'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0.038461538461538464 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: SMILES: '
-               'CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO[C@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]5O)[C@@H](O)[C@H](O[C@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]5O)[C@@H]4O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H](CO)O[C@H]1NC(=O)C[C@H](N)C(O)=O '
-               'NAME: '
-               'N(4)-{alpha-D-Manp-(1->3)-[alpha-D-Manp-(1->3)-[alpha-D-Manp-(1->6)]-alpha-D-Manp-(1->6)]-beta-D-Manp-(1->4)-beta-D-GlcpNAc-(1->4)-beta-D-GlcpNAc} '
-               'REASON: CORRECT Classified as glycosaminoglycan: Contains 7 '
-               'sugar rings, 1 amino sugar residues, 11 glycosidic linkages, '
-               'carboxyl groups\n'
-               ' * SMILES: '
-               'CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H](CO)O[C@H]1NC(=O)C[C@H](N)C(O)=O '
-               'NAME: '
-               'N(4)-{beta-D-GlcNAc-(1->2)-alpha-D-Man-(1->3)-[beta-D-GlcNAc-(1->2)-alpha-D-Man-(1->6)]-beta-D-Man-(1->4)-beta-D-GlcNAc-(1->4)-beta-D-GlcNAc}-Asn '
-               'REASON: CORRECT Classified as glycosaminoglycan: Contains 7 '
-               'sugar rings, 1 amino sugar residues, 12 glycosidic linkages, '
-               'carboxyl groups\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'ClC1=C2NC(=O)C=CC=CC=C[C@@H]([C@@H](O)CC(=O)C(C)=CC[C@@H](C=C[C@@H]([C@@H]([C@H](C=C(C(C=3C(C1=O)=C(C2=O)C=C(C)C3O)=O)C)C)O)C)O)C '
-               'NAME: Naphthomycin B REASON: MISSED No sugar rings detected\n'
-               ' * SMILES: '
-               'S1S[C@@]23N4[C@@H]5[C@@H](OC(=O)C=6C=CC(=C(OC=7C=C([C@@H]([C@]1(N(C)C2=O)C4=O)O)C=CC7O)C6)OC)C=COC=C5[C@H]3O '
-               'NAME: Emestrin REASON: MISSED No sugar rings detected\n'
-               ' * SMILES: '
-               'S1C2=NC(=C1)C(=O)N[C@@H](C=3SC=C(N3)C(=O)N[C@@H](C4=NC(C(N[C@@H]2C(C)C)=O)=C(O4)C)C)C '
-               'NAME: Dendroamide A REASON: MISSED Molecular weight too low '
-               'for glycosaminoglycan\n'
-               ' * SMILES: '
-               'S1C2=NC(=C1)C(=O)N[C@@H](C=3OC(C)=C(N3)C(=O)N[C@@H](C4=NC(C(N[C@@H]2CCSC)=O)=CS4)C)C '
-               'NAME: Dendroamide B REASON: MISSED Too few oxygen atoms for '
-               'polysaccharide structure\n'
-               ' * SMILES: '
-               'S([C@@]12N(C(=O)[C@@](SC)(CC=3C4=C(C=CC=C4)N(C3)[C@]56[C@H](N(COC1)C7=C5C=CC=C7)N8C(=O)[C@](SC)(N(C)C([C@@]8(SC)C6)=O)CO)N(C2=O)C)C)C '
-               'NAME: Chaetocochin A REASON: MISSED No sugar rings detected\n'
-               ' * SMILES: '
-               'O=C1NCCC[C@@H]2NC(=O)C(C2=O)=C(O)C=CC=C[C@H]3[C@@H](C=CC=C1)C=C[C@H]4[C@H](C(=O)C)[C@@H](C[C@H]34)C '
-               'NAME: Clifednamide F REASON: MISSED Molecular weight too low '
-               'for glycosaminoglycan\n'
-               ' * SMILES: '
-               'O=C1C(=C[C@H](CC=C[C@@H]2[C@]3(C=4NC1=CC4)C(=O)N[C@H]([C@@H]3[C@H](C)C([C@H]2O)=C)CC=5C6=C(C=CC=C6)NC5)C)C '
-               'NAME: Penochalasin C REASON: MISSED Too few oxygen atoms for '
-               'polysaccharide structure\n'
-               ' * SMILES: '
-               'ClC1=C2NC(=O)C[C@H](O)C(=C[C@@H]([C@@H](O)CC(=O)[C@H](OC)C=CC=C(CC(=C2)C=C1O)C)C)C '
-               'NAME: 19-Chloroproansamitocin REASON: MISSED Molecular weight '
-               'too low for glycosaminoglycan\n'
-               ' * SMILES: '
-               'O1C2=C3C4=C5NC6(N=C5C(=NC(=O)C(=CC=C[C@H]([C@H](O)[C@@H]([C@H](O)[C@H]([C@@H](OC(=O)C)[C@@H]([C@H](O)C=CO[C@@]1(C3=O)C)C)C)C)C)C)C(O)=C4C(O)=C2C)CCN(CC6)CC(C)C '
-               'NAME: 27-O-demethylrifabutin REASON: MISSED No sugar rings '
-               'detected\n'
-               ' * SMILES: '
-               'O=C1O[C@H](C=CC(CCC(C=2C=3C(C=4[C@@]1(C=CC(=O)NC4C(=O)C3C=C(C)C2O)C)=O)=O)CC)C(O)C '
-               'NAME: Hygrocin G REASON: MISSED No sugar rings detected\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O(C1=CC=2[C@]3([C@](N(CC3)C)(N(C2C=C1)C)[H])C)C(=O)N4CCC=5C(C4)=CC=CC5',
-                                     'name': 'quilostigmine',
-                                     'reason': 'Too few oxygen atoms for '
-                                               'aminomonosaccharide structure'},
-                                 {   'smiles': 'O[C@@H]1[C@]23[C@@]4(N(C[C@@]([C@]2(C[C@@]4([C@]56[C@]3(CC(=O)[C@](C5)(C([C@H]6O)=C)[H])[H])[H])[H])(CC1)C)CC)[H]',
-                                     'name': 'Bullatine G',
-                                     'reason': 'No characteristic '
-                                               'glycosaminoglycan features '
-                                               'found'},
-                                 {   'smiles': 'NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(=O)(O)O)[C@@H](OC(=O)[C@@H](N)CCC(O)=O)[C@H]3O',
-                                     'name': "3'-L-glutamyl-AMP",
-                                     'reason': 'Not classified as '
-                                               'glycosaminoglycan: Contains 2 '
-                                               'sugar-like rings, carboxyl '
-                                               'groups'},
-                                 {   'smiles': 'O1C2(C(C3(C(C4(C(CC3OC(=O)C)C(OC(=O)CC4)(C)C)C)CC2)C)CC15C6N(C=7C5=CC=CC7)C(=O)C(N6)C)C',
-                                     'name': 'Teraspiridole C_130091',
-                                     'reason': 'Not classified as '
-                                               'glycosaminoglycan: acetyl '
-                                               'groups'},
-                                 {   'smiles': 'O(C1[C@@H](OC(=O)C)C(O[C@@H](OC2=C(OC3=C(C2=O)C(O)=CC(O[C@@H]4OC([C@@H](O)[C@H](O)C4O)CO)=C3CC=C(C)C)C5=CC=C(OC)C=C5)[C@H]1O)C)[C@@H]6OC[C@@H](O)[C@H](OC(=O)C)C6O',
-                                     'name': 'Sempervirenoside A',
-                                     'reason': 'No nitrogen atoms found - '
-                                               'required for aminosugar'},
-                                 {   'smiles': 'COC[C@]1(C(=O)C2CCN1CC2)CO',
-                                     'name': '(2S)-2-(hydroxymethyl)-2-(methoxymethyl)-1-azabicyclo[2.2.2]octan-3-one',
-                                     'reason': 'No characteristic '
-                                               'glycosaminoglycan features '
-                                               'found'},
-                                 {   'smiles': 'Oc1c(C2CC(Cc3ccccc23)c2ccc(OCc3ccc(cc3)C(F)(F)F)cc2)c(=O)oc2ccccc12',
-                                     'name': 'Flocoumafen',
-                                     'reason': 'No nitrogen atoms found - '
-                                               'required for aminosugar'},
-                                 {   'smiles': 'O[C@H]1CC=2C(N(C=3C1=CC=CC3)C(=O)N)=CC=CC2',
-                                     'name': '(S)-MHD',
-                                     'reason': 'Too few oxygen atoms for '
-                                               'aminomonosaccharide structure'},
-                                 {   'smiles': 'S(OC=1C(O)=C(\\C=C\\C2=CC(O)=C(CC=C(C)C)C(O)=C2)C=CC1O)(O)(=O)=O',
-                                     'name': '3-{(e)-2-[3,5-dihydroxy-4-(3-methyl-2-buten-1-yl)phenyl]vinyl}-2,6-dihydroxyphenyl '
-                                             'hydrogen sulfate',
-                                     'reason': 'No nitrogen atoms found - '
-                                               'required for aminosugar'},
-                                 {   'smiles': 'O1[C@@]2(O)[C@]3([C@](CC(=C[C@]3(C4=C1C=C5OC=6C(C5=C4C)=C(O)C=C(C6)CO)[H])C)(C7=C(OC=8C7=C(O)C=C(C8)CO)C2=O)C)[H]',
-                                     'name': 'Asticolorin C',
-                                     'reason': 'No nitrogen atoms found - '
-                                               'required for aminosugar'}],
-    'sample_false_negatives': [   {   'smiles': 'S1S[C@@]23N4[C@@H]5[C@@H](OC(=O)C=6C=CC(=C(OC=7C=C([C@@H]([C@]1(N(C)C2=O)C4=O)O)C=CC7O)C6)OC)C=COC=C5[C@H]3O',
-                                      'name': 'Emestrin',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: acetyl '
-                                                'groups'},
-                                  {   'smiles': 'S1C2=NC(=C1)C(=O)N[C@@H](C=3SC=C(N3)C(=O)N[C@@H](C4=NC(C(N[C@@H]2C(C)C)=O)=C(O4)C)C)C',
-                                      'name': 'Dendroamide A',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: 3 amino '
-                                                'groups'},
-                                  {   'smiles': 'S1C2=NC(=C1)C(=O)N[C@@H](C=3OC(C)=C(N3)C(=O)N[C@@H](C4=NC(C(N[C@@H]2CCSC)=O)=CS4)C)C',
-                                      'name': 'Dendroamide B',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: 3 amino '
-                                                'groups'},
-                                  {   'smiles': 'S([C@@]12N(C(=O)[C@@](SC)(CC=3C4=C(C=CC=C4)N(C3)[C@]56[C@H](N(COC1)C7=C5C=CC=C7)N8C(=O)[C@](SC)(N(C)C([C@@]8(SC)C6)=O)CO)N(C2=O)C)C)C',
-                                      'name': 'Chaetocochin A',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: acetyl '
-                                                'groups'},
-                                  {   'smiles': 'O=C1C(=C[C@H](CC=C[C@@H]2[C@]3(C=4NC1=CC4)C(=O)N[C@H]([C@@H]3[C@H](C)C([C@H]2O)=C)CC=5C6=C(C=CC=C6)NC5)C)C',
-                                      'name': 'Penochalasin C',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: 1 amino '
-                                                'groups, acetyl groups'},
-                                  {   'smiles': 'O1C2=C3C4=C5NC6(N=C5C(=NC(=O)C(=CC=C[C@H]([C@H](O)[C@@H]([C@H](O)[C@H]([C@@H](OC(=O)C)[C@@H]([C@H](O)C=CO[C@@]1(C3=O)C)C)C)C)C)C)C(O)=C4C(O)=C2C)CCN(CC6)CC(C)C',
-                                      'name': '27-O-demethylrifabutin',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: acetyl '
-                                                'groups'},
-                                  {   'smiles': 'S1C2=NC(=C1)C(=O)N[C@H](C=3OC(C)=C(N3)C(=O)NCC4=NC(C(N[C@@H]2CCSC)=O)=CS4)C',
-                                      'name': 'Nostocyclamide M',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: 3 amino '
-                                                'groups'},
-                                  {   'smiles': 'S1[C@H](CC(=O)N[C@H](C=2SC[C@H](C(N[C@@H](C1)CO)=O)N2)CC3=CC=CC=C3)CCC(C)C',
-                                      'name': 'Thioamycolamide D',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: 2 amino '
-                                                'groups, acetyl groups'},
-                                  {   'smiles': 'S1S[C@@]23N4[C@@H]5[C@@H](OC(=O)C=6C=CC(=C(OC=7C=C(C[C@]1(N(C)C2=O)C4=O)C=CC7O)C6)OC)C=COC=C5[C@H]3O',
-                                      'name': 'Emestrin F',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: acetyl '
-                                                'groups'},
-                                  {   'smiles': 'S1SS[C@@]23N4[C@@H]5[C@@H](OC(=O)C=6C=CC(=C(OC=7C=C([C@@H](C(S1)(N(C)C2=O)C4=O)O)C=CC7OC)C6)OC)C=COC=C5[C@H]3O',
-                                      'name': 'Emestrin E',
-                                      'reason': 'Not classified as '
-                                                'glycosaminoglycan: acetyl '
-                                                'groups'}],
-    'attempt': 1,
-    'reasoning': 'Let me analyze the previous outcomes and suggest '
-                 'improvements:\n'
+    'code_statistics': {   'lines_of_code': 19,
+                           'log_lines_of_code': 2.9444389791664403,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'HasSubstructMatch',
+                                                 'MolFromSmarts',
+                                                 'MolFromSmiles'],
+                           'methods_called_count': 3,
+                           'smarts_strings': ['[OX2][CX4][NX3]'],
+                           'smarts_strings_count': 1,
+                           'defs': ['is_glycosaminoglycan(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'True, "Contains aminomonosaccharide '
+                                          'units characteristic of GAGs"',
+                                          'False, "Does not contain '
+                                          'recognizable glycosaminoglycan '
+                                          'features"'],
+                           'returns_count': 3,
+                           'complexity': 2.388887795833288},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'O1[C@H]([C@@H](O)CC=2C1=CC=CC2)C3=CC=CC=C3',
+                                     'name': 'cis-(+)-3-Flavanol',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'O1C2C34C(C(N(CC3)C)CC5=C4C1=C(OC)C=C5)C=CC2OC',
+                                     'name': '6-O-Methylcodeine',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'CN1C2=C(C=CC(=C2)OC)C3=C1[C@H](N(CC34CCN(CC4)S(=O)(=O)C5=CC=CS5)CC6CC6)CO',
+                                     'name': "[(1S)-2-(cyclopropylmethyl)-7-methoxy-9-methyl-1'-thiophen-2-ylsulfonyl-1-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]yl]methanol",
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'O(C(=O)CCCCCCCCCCCCCCC)[C@@H](COC(=O)CCCCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC',
+                                     'name': 'TG(20:0/16:0/8:0)',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'O[C@@H]1CC2[C@](C3=C(C4=NCCC([C@@]4(C)CC3)[C@@H](CCC(C(C)C)C)C)CC2)(C)CC1',
+                                     'name': 'UCA-1064-B',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'C1=CC=C(C=C1)N2C(=NN=C2SCC#N)COC3=CC=CC=C3',
+                                     'name': '2-[[5-(phenoxymethyl)-4-phenyl-1,2,4-triazol-3-yl]thio]acetonitrile',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'O=C1C=2OC([C@H]3C[C@H](O)C(=C[C@H]3C2C(=O)C=4C1=C(O)C(=C(O)C4)C)C)(C)C',
+                                     'name': 'Unnamed naphterpin 1',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'O([C@@H]1[C@]2(C([C@@](C1)(CC2)[H])(C)C)C)C(=O)/C=C/C3=CC=C(O)C=C3',
+                                     'name': '(1R,4R)-1,7,7-Trimethylbicyclo[2.2.1]heptane-2beta-ol '
+                                             '3-(4-hydroxyphenyl)acrylate',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'CC1(C)CC[C@@]2(CC[C@]3(C)C(=CC[C@@H]4[C@@]5(C)CC[C@H](O)C(C)(C)[C@@H]5CC[C@@]34C)[C@@H]2C1)C([O-])=O',
+                                     'name': 'oleanolate',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'},
+                                 {   'smiles': 'C[C@@H]1CN(C(=O)C2=C(N=CC(=C2)C3=CCCCC3)O[C@@H]1CN(C)CC4=CC=C(C=C4)C(=O)O)[C@H](C)CO',
+                                     'name': '4-[[[(2S,3R)-8-(1-cyclohexenyl)-5-[(2R)-1-hydroxypropan-2-yl]-3-methyl-6-oxo-3,4-dihydro-2H-pyrido[2,3-b][1,5]oxazocin-2-yl]methyl-methylamino]methyl]benzoic '
+                                             'acid',
+                                     'reason': 'Does not contain recognizable '
+                                               'glycosaminoglycan features'}],
+    'sample_false_negatives': [   {   'smiles': 'S1C2=C3NC(=O)CC(OC)C=CC=CC=CCC(C(C(C(=CCCC(=C3O)C=C2NC(C1)=O)C)O)C)OC(=O)C(NC(=O)C4CCCCC4)C',
+                                      'name': 'Thiazinotrienomycin B',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'O=C1O[C@H]([C@@H](O)C=CC(CCC(C=2C=3C(C=4[C@@]1(C=CC(=O)NC4C(=O)C3C=C(C)C2O)C)=O)=O)CC)C',
+                                      'name': 'Hygrocin B',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'O=C1N([C@H](C(=O)NCCC[C@@H](C(N([C@H]1C(C)C)C)=O)NC(=O)/C=C/C=C/C(O)C(O)C)C)C',
+                                      'name': 'Sclerotiotide H/I/J/K',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'S1C2=C3C(O)=C(NC(=O)CC(OC)C=CC=CC=CCC(C(C(C(=CCC3)C)O)C)OC(=O)C(NC(=O)C4=CCCCC4)C)C=C2N=C1',
+                                      'name': 'Thiazinotrienomycin F',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'ClC1=C2NC(=O)C(=CC=CC=C[C@@H]([C@@H](O)CC(=O)C(C)=CC[C@@H](C=C[C@@H]([C@@H]([C@H](C=C(C(C=3C(C1=O)=C(C2=O)C=C(C)C3O)=O)C)C)O)C)O)C)C',
+                                      'name': 'Naphthomycin A',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'S1C2=NC(=C1COC)C(=O)NCC(=O)NC(C=3SC=C(N3)C=4SC=C(N4)C5=C(C6=NC(C(NC(C7=NC(C(NC2C(C)C)=O)=C(S7)C)CC(=O)N)=O)=CS6)C=CC(=N5)C=8SC=C(N8)C=9OCC(N9)C(=O)N%10C(C(=O)N)CCC%10)C(O)C%11=CC=CC=C%11',
+                                      'name': 'GE2270 B1',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'O=C1NC2=C(O)C(=CC(=C2)O)CCC=C(C(O)C(C)C(CC=CC=CC=CC(C1)OC)OC(=O)C3(NC(=O)C4CCCCC4)CC3)C',
+                                      'name': 'Cytotrienin B',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'O=C1N(O)CCCCCNC(=O)CCC(=O)N(O)CCCCCCNC(CCC(N(CCCCCNC(CC1)=O)O)=O)=O',
+                                      'name': 'Desferrioxamine X3',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'S1C2=C3C(O)=C(NC(=O)CC(OC)C=CC=CC=CCC(C(C(C(=CCC3)C)O)C)OC(=O)C(NC(=O)C4CCCCC4)C)C=C2N=C1',
+                                      'name': 'Thiazinotrienomycin G',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'},
+                                  {   'smiles': 'O=C1NC(CC=CC=C(C=CC=CC(CC(C(C=CC=CC=C1)O)O)O)C)C/C=C/CCC',
+                                      'name': 'Aureoverticillactam',
+                                      'reason': 'Does not contain recognizable '
+                                                'glycosaminoglycan features'}],
+    'attempt': 0,
+    'reasoning': 'To classify whether a molecule is a glycosaminoglycan (GAG) '
+                 "based on its SMILES string, it's essential to identify "
+                 'structural features typically found in GAGs. '
+                 'Glycosaminoglycans are polysaccharides made of repeating '
+                 'disaccharide units containing an amino sugar. Common amino '
+                 'sugars in GAGs include glucosamine or galactosamine. '
+                 'However, detecting GAGs purely from SMILES can be '
+                 'challenging because SMILES might not easily display the '
+                 'repeating structure or the specific polysaccharide context.\n'
                  '\n'
-                 '1. Problem Analysis:\n'
-                 '- The code correctly identified the complex polysaccharide '
-                 'structures with multiple sugar rings and amino groups\n'
-                 '- However, it failed to identify many valid '
-                 'glycosaminoglycans that have different structural patterns\n'
-                 '- The main issues appear to be:\n'
-                 '  a) Too strict requirements for sugar rings (pyranose '
-                 'pattern only)\n'
-                 '  b) Too rigid amino sugar pattern matching\n'
-                 '  c) Molecular weight and atom count thresholds may be too '
-                 'restrictive\n'
+                 'To solve this problem, the function can check for the '
+                 'presence of an amino sugar motif, such as an oxygen and '
+                 'nitrogen attached to adjacent carbon atoms, which is a '
+                 'hallmark feature of amino-monosaccharides. In GAGs, these '
+                 'motifs are part of larger repeating units.\n'
                  '\n'
-                 '2. Key Observations from False Negatives:\n'
-                 '- Many compounds were missed due to "No sugar rings '
-                 'detected" even though they contain sugar-like structures\n'
-                 '- Some compounds were rejected due to molecular weight being '
-                 'too low\n'
-                 '- The pattern matching for amino sugars seems too specific\n'
-                 '\n'
-                 '3. Proposed Improvements:\n'
-                 '- Broaden sugar ring detection to include more patterns '
-                 '(furanose, modified rings)\n'
-                 '- Relax the molecular weight threshold\n'
-                 '- Add more flexible patterns for amino sugar detection\n'
-                 '- Consider alternative indicators of glycosaminoglycan '
-                 'structure\n'
-                 '- Add detection of characteristic functional groups\n'
-                 '\n'
-                 "Here's the improved code:",
+                 "Here's how we might implement such a function:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 203,
-    'num_false_positives': 100,
-    'num_true_negatives': 287,
-    'num_false_negatives': 43,
+    'num_true_positives': 16,
+    'num_false_positives': 1495,
+    'num_true_negatives': 140559,
+    'num_false_negatives': 230,
     'num_negatives': None,
-    'precision': 0.66996699669967,
-    'recall': 0.8252032520325203,
-    'f1': 0.7395264116575592,
-    'accuracy': 0.7740916271721959,
-    'negative_predictive_value': 0.8696969696969697}
+    'precision': 0.010589013898080741,
+    'recall': 0.06504065040650407,
+    'f1': 0.01821286283437678,
+    'accuracy': 0.9878777231201686,
+    'negative_predictive_value': 0.9983663496437932}

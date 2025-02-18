@@ -2,88 +2,132 @@
 Classifies: CHEBI:3098 bile acid
 """
 """
-Classifies: bile acid
+Classifies: Hydroxy-5β-cholanic acids (bile acids)
+Definition: Bile acids are members of the hydroxy-5β-cholanic acid family (or their glycine/taurine conjugates). 
+They typically show a fused steroid nucleus built from one 5-membered ring and three 6-membered rings (roughly 17 carbon atoms total in the core), 
+a carboxyl (or conjugated amide) group on a side chain (the acid carbon is not part of the core and is 3–7 bonds away), and at least three hydroxyl groups on the scaffold.
+Note: This heuristic approach may need further refinement (for example, stereochemical tests to rule out 5α-configuration).
 """
 from rdkit import Chem
-from rdkit.Chem import rdDepictor
-from rdkit.Chem.rdchem import ChiralType
+from rdkit.Chem import rdMolDescriptors
 
 def is_bile_acid(smiles: str):
     """
-    Determines if a molecule is a bile acid based on its SMILES string.
-    Bile acids are hydroxy-5beta-cholanic acids occurring in bile.
-    This function checks for the presence of a steroid nucleus with
-    specific ring sizes and fusion, hydroxyl groups at specific positions,
-    and a carboxylic acid side chain.
+    Determines if a molecule is a (hydroxy-5β-cholanic) bile acid or its glycine/taurine conjugate.
 
+    Heuristic tests:
+      1. The SMILES string must parse properly.
+      2. Contains exactly one acid-like moiety – either a free carboxylic acid or a glycine/taurine-conjugated acyl group
+         (using SMARTS patterns, ensuring the acid group is not part of any ring).
+      3. Must have at least three hydroxyl groups ([OX2H] groups).
+      4. The molecular weight should be within the bile acid range (roughly 350–700 Da).
+      5. Contains a fused steroid nucleus. Typically, this means one 5-membered ring and three 6-membered rings. 
+         When only considering carbon atoms from these rings, a total count of roughly 16–18 is expected.
+      6. The acid (or conjugate) group must be on a side chain – that is, its nearest distance (in number of bonds) to any nucleus carbon should be 3–7.
+         
     Args:
-        smiles (str): SMILES string of the molecule
-
+       smiles (str): SMILES string for the molecule.
+       
     Returns:
-        bool: True if molecule is a bile acid, False otherwise
-        str: Reason for classification
+       (bool, str): Tuple with True and a positive reason if the molecule is classified as a bile acid,
+                    or False and a reason for rejection.
     """
-
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Ensure molecule has 4 rings
-    ring_info = mol.GetRingInfo()
-    ring_counts = ring_info.NumRings()
-    if ring_counts < 4:
-        return False, f"Molecule has {ring_counts} rings, expected at least 4 for steroid nucleus"
-
-    # Get ring systems and check ring sizes
-    rings = ring_info.AtomRings()
-    ring_sizes = [len(ring) for ring in rings]
-    ring_sizes.sort()
-    # Steroid nucleus has three 6-membered rings and one 5-membered ring
-    if ring_sizes[:4] != [5, 6, 6, 6]:
-        return False, f"Ring sizes are {ring_sizes[:4]}, expected [5, 6, 6, 6]"
-
-    # Check for fused ring system
-    fused = Chem.GetSymmSSSR(mol)
-    if len(fused) < 4:
-        return False, "Rings are not fused into a steroid nucleus"
-
-    # Check for carboxylic acid group (-C(=O)OH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts('C(=O)[O;H]')
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "Carboxylic acid group not found"
-
-    # Check for hydroxyl groups (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts('[OX2H]')
+    
+    # --- Acid / Conjugate Group Checks ---
+    # Free carboxylic acid group (not in a ring)
+    acid_pattern = Chem.MolFromSmarts("[$([CX3](=O)[O;H,-]);!R]")
+    # Glycine conjugate: acyl carbon bonded to -NCC(=O)[O;H,-]
+    glycine_pattern = Chem.MolFromSmarts("[$([CX3](=O)NCC(=O)[O;H,-]);!R]")
+    # Taurine conjugate: acyl carbon bonded to -NCCS(=O)(=O)[O;H,-]
+    taurine_pattern = Chem.MolFromSmarts("[$([CX3](=O)NCCS(=O)(=O)[O;H,-]);!R]")
+    
+    acid_matches = mol.GetSubstructMatches(acid_pattern)
+    glycine_matches = mol.GetSubstructMatches(glycine_pattern)
+    taurine_matches = mol.GetSubstructMatches(taurine_pattern)
+    total_acid_matches = len(acid_matches) + len(glycine_matches) + len(taurine_matches)
+    
+    if total_acid_matches == 0:
+        return False, "Missing a free acid or recognized conjugated acid group essential for cholanic acids"
+    if total_acid_matches > 1:
+        return False, f"Found {total_acid_matches} acid-like groups; expected exactly one."
+    
+    # --- Hydroxyl Group Count ---
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) == 0:
-        return False, "No hydroxyl groups found"
+    if len(hydroxyl_matches) < 3:
+        return False, f"Too few hydroxyl substituents (found {len(hydroxyl_matches)}; expected at least 3)"
+    
+    # --- Molecular Weight Check ---
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if not (350 <= mol_wt <= 700):
+        return False, f"Molecular weight {mol_wt:.1f} is out of the expected bile acid range (350–700 Da)"
+    
+    # --- Fused Steroid Nucleus Detection ---
+    # Gather ring information.
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
+    if not rings:
+        return False, "No rings found; a steroid nucleus is expected"
 
-    # Optional: Check for specific stereochemistry at position 5 (5β-configuration)
-    # Get atom at position 5 (assuming numbering starting from ring A)
-    try:
-        # Generate 3D coordinates for stereochemistry
-        rdDepictor.Compute2DCoords(mol)
-        Chem.AssignStereochemistry(mol, force=True, cleanIt=True)
-        atom5 = mol.GetAtomWithIdx(4)  # Zero-based indexing
-        if atom5.GetChiralTag() != ChiralType.CHI_TETRAHEDRAL_CCW:
-            return False, "5β-configuration not found"
-    except:
-        return False, "Error checking stereochemistry at position 5"
+    # Filter rings for common steroid sizes (5- and 6-membered rings)
+    rings_5 = [ring for ring in rings if len(ring) == 5]
+    rings_6 = [ring for ring in rings if len(ring) == 6]
+    if len(rings_5) != 1 or len(rings_6) < 3:
+        return False, f"Ring system does not meet steroid criteria (found {len(rings_5)} 5-membered and {len(rings_6)} 6-membered rings)"
+    
+    # Construct the set of atoms in our steroid nucleus (5- and 6-membered rings)
+    steroid_core_atoms = set()
+    for ring in rings:
+        if len(ring) in (5, 6):
+            steroid_core_atoms.update(ring)
+    # Count only carbon atoms from the steroid core
+    core_carbons = [atom for idx, atom in enumerate(mol.GetAtoms()) if idx in steroid_core_atoms and atom.GetAtomicNum() == 6]
+    if not (16 <= len(core_carbons) <= 18):
+        return False, f"Fused steroid core carbon count ({len(core_carbons)}) is not in the expected range (16–18)"
+    
+    # --- Side Chain Check for the Acid Group ---
+    # Verify that the acid (or conjugate) group is on a side chain.
+    # We take the acyl carbon (the first atom in any match) and verify that:
+    #   (a) It is not part of the steroid nucleus.
+    #   (b) Its shortest path (in bonds) to any nucleus carbon is between 3 and 7.
+    acid_on_side_chain = False
+    all_matches = list(acid_matches) + list(glycine_matches) + list(taurine_matches)
+    for match in all_matches:
+        acid_carbon_idx = match[0]
+        if acid_carbon_idx in steroid_core_atoms:
+            continue  # Acid carbon is part of the core, which is not acceptable.
+        min_dist = float("inf")
+        for core_idx in steroid_core_atoms:
+            sp = Chem.GetShortestPath(mol, acid_carbon_idx, core_idx)
+            if sp:
+                dist = len(sp) - 1  # number of bonds in the path
+                if dist < min_dist:
+                    min_dist = dist
+        if 3 <= min_dist <= 7:
+            acid_on_side_chain = True
+            break
+    if not acid_on_side_chain:
+        return False, "Acid/conjugate group is not situated on a side chain (expected separation of 3–7 bonds from the steroid core)"
+    
+    # If all tests pass, classify the molecule as a bile acid.
+    return True, "Molecule displays a fused steroid nucleus (1 five-membered and at least 3 six-membered rings with ~17 carbons), " \
+                  "a single, properly placed acid/conjugate group, and sufficient hydroxyl substituents typical for bile acids"
 
-    # Additional check: Verify presence of hydroxyl groups at specific positions
-    # This requires mapping atom indices to positions, which can be complex
-    # For simplicity, we'll skip this detailed check
-
-    return True, "Molecule contains steroid nucleus with correct ring fusion, carboxylic acid, hydroxyl groups, and 5β-configuration"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'name': 'bile acid',
-        'definition': "Any member of a group of hydroxy-5beta-cholanic acids occurring in bile, where they are present as the sodium salts of their amides with glycine or taurine. In mammals bile acids almost invariably have 5beta-configuration."
-    }
-}
+# --- Optional Testing Block ---
+if __name__ == "__main__":
+    # Testing with sample SMILES (true positives from provided examples)
+    examples = [
+        # (2S,3S,6R)-3-Hydroxy-2-methyl-6-((...)-heptanoic acid:
+        "O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CC[C@H](O)[C@H](C)C(O)=O)C)[H])[H])C",
+        # 3alpha,11beta,12alpha-Trihydroxy-5beta-cholan-24-oic Acid:
+        "O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@](CC3)(C[C@H](O)CC4)[H])C)([C@H]1O)[H])[H])(CC[C@@]2([C@@H](CCC(O)=O)C)[H])[H])C"
+    ]
+    for smi in examples:
+        res, reason = is_bile_acid(smi)
+        print(res, reason)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:3098',
@@ -99,172 +143,339 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:3098',
                           'xrefs': ['KEGG:C01558'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 100,
+                           'log_lines_of_code': 4.605170185988092,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2],
+                           'max_indent': 5,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'CalcExactMolWt',
+                                                 'GetAtomicNum',
+                                                 'MolFromSmiles',
+                                                 'AtomRings',
+                                                 'GetAtoms',
+                                                 'MolFromSmarts',
+                                                 'GetShortestPath',
+                                                 'update',
+                                                 'GetRingInfo',
+                                                 'GetSubstructMatches'],
+                           'methods_called_count': 10,
+                           'smarts_strings': [   '[$([CX3](=O)NCC(=O)[O;H,-]);!R]',
+                                                 '[OX2H]',
+                                                 '[$([CX3](=O)[O;H,-]);!R]',
+                                                 '[$([CX3](=O)NCCS(=O)(=O)[O;H,-]);!R]'],
+                           'smarts_strings_count': 4,
+                           'defs': ['is_bile_acid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Missing a free acid or '
+                                          'recognized conjugated acid group '
+                                          'essential for cholanic acids"',
+                                          'False, f"Found {total_acid_matches} '
+                                          'acid-like groups; expected exactly '
+                                          'one."',
+                                          'False, f"Too few hydroxyl '
+                                          'substituents (found '
+                                          '{len(hydroxyl_matches)}; expected '
+                                          'at least 3)"',
+                                          'False, f"Molecular weight '
+                                          '{mol_wt:.1f} is out of the expected '
+                                          'bile acid range (350–700 Da)"',
+                                          'False, "No rings found; a steroid '
+                                          'nucleus is expected"',
+                                          'False, f"Ring system does not meet '
+                                          'steroid criteria (found '
+                                          '{len(rings_5)} 5-membered and '
+                                          '{len(rings_6)} 6-membered rings)"',
+                                          'False, f"Fused steroid core carbon '
+                                          'count ({len(core_carbons)}) is not '
+                                          'in the expected range (16–18)"',
+                                          'False, "Acid/conjugate group is not '
+                                          'situated on a side chain (expected '
+                                          'separation of 3–7 bonds from the '
+                                          'steroid core)"',
+                                          'True, "Molecule displays a fused '
+                                          'steroid nucleus (1 five-membered '
+                                          'and at least 3 six-membered rings '
+                                          'with ~17 carbons), " \\'],
+                           'returns_count': 10,
+                           'complexity': 6.121034037197619},
     'message': '\n'
+               'Error: Error executing '
+               "is_bile_acid('O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CC[C@H](O)[C@H](C)C(O)=O)C)[H])[H])C'):\n"
+               " 'RingInfo' object has no attribute 'IsInitialized'\n"
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: NONE\n'
                'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'C1C[C@H](C[C@]2(CC[C@@]3([C@](CC([C@]4([C@]3(CC[C@@]4([C@@](CCC(=O)O)(C)[H])[H])[H])C)=O)([C@@]12C)[H])[H])[H])O '
-               'NAME: 12-ketolithocholic acid REASON: MISSED Steroid nucleus '
-               'not found\n'
-               ' * SMILES: '
-               'O[C@H]1[C@]2([C@]3([C@@]([C@](CC3)([C@@H](CCC[C@@H](C)C(O)=O)C)[H])(CC[C@@]2([C@@]4([C@](C1)(C[C@H](O)C[C@H]4O)[H])C)[H])C)[H])[H] '
-               'NAME: '
-               '(25R)-1beta,3alpha,7alpha-trihydroxy-5beta-cholestan-26-oic '
-               'acid REASON: MISSED Steroid nucleus not found\n'
-               ' * SMILES: '
-               'C1C[C@@H](C[C@@]2(CC([C@@]3([C@](CC[C@]4([C@]3(CC[C@@]4([C@@](CCC(=O)O)(C)[H])[H])[H])C)([C@@]12C)[H])[H])=O)[H])O '
-               'NAME: 3beta-hydroxy-7-oxo-5alpha-cholan-24-oic acid REASON: '
-               'MISSED Steroid nucleus not found\n'
-               ' * SMILES: '
-               'O[C@@H]1[C@@]2([C@@]([C@](C1)([C@@H](CCC(OC)=O)C)[H])(CC[C@]3([C@]2([C@H](O)C[C@]4([C@@]3(CC[C@@H](O)C4)C)[H])[H])[H])C)[H] '
-               'NAME: 3alpha,7alpha,15alpha-Trihydroxy-5beta-cholane-24-oic '
-               'acid methyl ester REASON: MISSED Steroid nucleus not found\n'
-               ' * SMILES: '
-               'O=C(O)CC[C@H](C1[C@]2([C@@H](O)CC3[C@@]4(C(CC(OC)(OC)CC4)CCC3C2CC1)C)C)C '
-               'NAME: 3-Dimethoxy-12alpha-hydroxycholanic acid REASON: MISSED '
-               'Steroid nucleus not found\n'
-               ' * SMILES: '
-               'O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@](C[C@H]3O)(C[C@H](O)C[C@H]4O)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CCCC(C)C(O)=O)C)[H])[H])C '
-               'NAME: '
-               '1beta,3alpha,7alpha,12alpha-Tetrahydroxy-5beta-cholestan-26-oic '
-               'acid REASON: MISSED Steroid nucleus not found\n'
-               ' * SMILES: '
-               'C[C@H](CCC(=O)O)[C@H]1CC[C@@H]2[C@@]1(C(=O)C[C@@H]3[C@@H]2C(=O)C[C@H]4[C@@]3(CCC(=O)C4)C)C '
-               'NAME: '
-               '(4R)-4-[(5S,8S,9R,10S,13R,14S,17R)-10,13-dimethyl-3,7,12-trioxo-1,2,4,5,6,8,9,11,14,15,16,17-dodecahydrocyclopenta[a]phenanthren-17-yl]pentanoic '
-               'acid REASON: MISSED Steroid nucleus not found\n'
-               ' * SMILES: '
-               'O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@]([C@@H](O)[C@H]3O)(C[C@H](O)CC4)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CC/C=C(\\C)/C(O)=O)C)[H])[H])C '
-               'NAME: '
-               '3alpha,6alpha,7alpha,12alpha-Tetrahydroxy-5beta-cholest-24-en-26-oic '
-               'acid REASON: MISSED Steroid nucleus not found\n'
-               ' * SMILES: '
-               'O[C@]12[C@@]([C@](CC1)([C@@H](CCC(OC)=O)C)[H])(CC[C@]3([C@]2([C@H](O)C[C@]4([C@@]3(CC[C@@H](O)C4)C)[H])[H])[H])C '
-               'NAME: Methyl '
-               '(R)-4-((3R,5S,7R,8S,9S,10S,13R,14R,17R)-3,7,14-trihydroxy-10,13-dimethylhexadecahydro-1H-cyclopenta[a]phenanthren-17-yl)pentanoate '
-               'REASON: MISSED Steroid nucleus not found\n'
-               ' * SMILES: '
-               'O=C1[C@]2([C@@](CC[C@@]2([C@@H](CCC(O)=O)C)[H])(C=3C([C@@]4([C@](CC3)(C[C@H](O)CC4)[H])C)=C1)[H])C '
-               'NAME: 3alpha-Hydroxy-12-oxo-5beta-chola-7,9(11)-dien-24-oic '
-               'Acid REASON: MISSED Steroid nucleus not found\n'
+               'False negatives: NONE\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [],
-    'sample_false_negatives': [   {   'smiles': 'C1C[C@H](C[C@]2(CC[C@@]3([C@](CC([C@]4([C@]3(CC[C@@]4([C@@](CCC(=O)O)(C)[H])[H])[H])C)=O)([C@@]12C)[H])[H])[H])O',
-                                      'name': '12-ketolithocholic acid',
-                                      'reason': '5β-configuration not found'},
-                                  {   'smiles': 'O[C@H]1[C@]2([C@]3([C@@]([C@](CC3)([C@@H](CCC[C@@H](C)C(O)=O)C)[H])(CC[C@@]2([C@@]4([C@](C1)(C[C@H](O)C[C@H]4O)[H])C)[H])C)[H])[H]',
-                                      'name': '(25R)-1beta,3alpha,7alpha-trihydroxy-5beta-cholestan-26-oic '
-                                              'acid',
-                                      'reason': '5β-configuration not found'},
-                                  {   'smiles': 'O[C@@H]1[C@@]2([C@@]([C@](C1)([C@@H](CCC(OC)=O)C)[H])(CC[C@]3([C@]2([C@H](O)C[C@]4([C@@]3(CC[C@@H](O)C4)C)[H])[H])[H])C)[H]',
-                                      'name': '3alpha,7alpha,15alpha-Trihydroxy-5beta-cholane-24-oic '
-                                              'acid methyl ester',
-                                      'reason': 'Carboxylic acid group not '
-                                                'found'},
-                                  {   'smiles': 'O=C(O)CC[C@H](C1[C@]2([C@@H](O)CC3[C@@]4(C(CC(OC)(OC)CC4)CCC3C2CC1)C)C)C',
-                                      'name': '3-Dimethoxy-12alpha-hydroxycholanic '
-                                              'acid',
-                                      'reason': '5β-configuration not found'},
-                                  {   'smiles': 'O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@](C[C@H]3O)(C[C@H](O)C[C@H]4O)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CCCC(C)C(O)=O)C)[H])[H])C',
-                                      'name': '1beta,3alpha,7alpha,12alpha-Tetrahydroxy-5beta-cholestan-26-oic '
-                                              'acid',
-                                      'reason': '5β-configuration not found'},
-                                  {   'smiles': 'C[C@H](CCC(=O)O)[C@H]1CC[C@@H]2[C@@]1(C(=O)C[C@@H]3[C@@H]2C(=O)C[C@H]4[C@@]3(CCC(=O)C4)C)C',
-                                      'name': '(4R)-4-[(5S,8S,9R,10S,13R,14S,17R)-10,13-dimethyl-3,7,12-trioxo-1,2,4,5,6,8,9,11,14,15,16,17-dodecahydrocyclopenta[a]phenanthren-17-yl]pentanoic '
-                                              'acid',
-                                      'reason': '5β-configuration not found'},
-                                  {   'smiles': 'O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@]([C@@H](O)[C@H]3O)(C[C@H](O)CC4)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CC/C=C(\\C)/C(O)=O)C)[H])[H])C',
-                                      'name': '3alpha,6alpha,7alpha,12alpha-Tetrahydroxy-5beta-cholest-24-en-26-oic '
-                                              'acid',
-                                      'reason': '5β-configuration not found'},
-                                  {   'smiles': 'O[C@]12[C@@]([C@](CC1)([C@@H](CCC(OC)=O)C)[H])(CC[C@]3([C@]2([C@H](O)C[C@]4([C@@]3(CC[C@@H](O)C4)C)[H])[H])[H])C',
-                                      'name': 'Methyl '
-                                              '(R)-4-((3R,5S,7R,8S,9S,10S,13R,14R,17R)-3,7,14-trihydroxy-10,13-dimethylhexadecahydro-1H-cyclopenta[a]phenanthren-17-yl)pentanoate',
-                                      'reason': 'Carboxylic acid group not '
-                                                'found'},
-                                  {   'smiles': 'O=C1[C@]2([C@@](CC[C@@]2([C@@H](CCC(O)=O)C)[H])(C=3C([C@@]4([C@](CC3)(C[C@H](O)CC4)[H])C)=C1)[H])C',
-                                      'name': '3alpha-Hydroxy-12-oxo-5beta-chola-7,9(11)-dien-24-oic '
+    'sample_true_negatives': [   {   'smiles': 'O=C(N[C@@H](C(O)(C)C)C)[C@H]([C@@]1([C@@]2([C@@](CC1)(/C(/CCC2)=C/C=C\\3/C[C@@H](O)C[C@H](O)C3=C)[H])C)[H])C',
+                                     'name': '1alpha,25-dihydroxy-24-oxo-23-azavitamin '
+                                             'D2 / '
+                                             '1alpha,25-dihydroxy-24-oxo-23-azaergocalciferol',
+                                     'reason': 'Missing a free acid or '
+                                               'recognized conjugated acid '
+                                               'group essential for cholanic '
+                                               'acids'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCC(O)C([O-])=O',
+                                     'name': '2-hydroxyarachidate',
+                                     'reason': 'Too few hydroxyl substituents '
+                                               '(found 1; expected at least '
+                                               '3)'},
+                                 {   'smiles': 'C[C@@H](CN([C@@H](C)CO)C(=O)NC1=CC=C(C=C1)C(F)(F)F)[C@@H](CN(C)C(=O)C2CCOCC2)OC',
+                                     'name': 'N-[(2S,3S)-4-[[(2S)-1-hydroxypropan-2-yl]-[[4-(trifluoromethyl)phenyl]carbamoyl]amino]-2-methoxy-3-methylbutyl]-N-methyloxane-4-carboxamide',
+                                     'reason': 'Missing a free acid or '
+                                               'recognized conjugated acid '
+                                               'group essential for cholanic '
+                                               'acids'},
+                                 {   'smiles': 'CC(=O)CC\\C=C(/C)CCC=C(C)C',
+                                     'name': 'geranyl acetone',
+                                     'reason': 'Missing a free acid or '
+                                               'recognized conjugated acid '
+                                               'group essential for cholanic '
+                                               'acids'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@H](O[C@H](O)[C@H]1O)CO[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@@H]2O)CO)[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)CO',
+                                     'name': '(2S,3S,4S,5S,6R)-2-[[(2R,3R,4S,5S,6S)-4-[(2R,3S,4S,5S,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-3-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-3,5,6-trihydroxyoxan-2-yl]methoxy]-6-(hydroxymethyl)oxane-3,4,5-triol',
+                                     'reason': 'Missing a free acid or '
+                                               'recognized conjugated acid '
+                                               'group essential for cholanic '
+                                               'acids'},
+                                 {   'smiles': 'O=C(OC1=C(C(O)=C(C(=O)O)C(=C1C)C)C)C2=C(OC)C(=C(OC(=O)C3=C(O)C=C(O)C=C3C)C=C2C)C',
+                                     'name': 'Thielavin Z5',
+                                     'reason': 'Ring system does not meet '
+                                               'steroid criteria (found 0 '
+                                               '5-membered and 3 6-membered '
+                                               'rings)'},
+                                 {   'smiles': '[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)NC(C)=O)O[C@@H]2[C@@H]([C@H](C(O[C@@H]2CO)O)O)O',
+                                     'name': 'beta-D-GlcpNAc-(1->4)-D-Galp',
+                                     'reason': 'Missing a free acid or '
+                                               'recognized conjugated acid '
+                                               'group essential for cholanic '
+                                               'acids'},
+                                 {   'smiles': 'CN(C)C(=O)C1=CC=C(C=C1)C2=CC=C(C=C2)[C@@H]3[C@H]4CN(CC(=O)N4[C@H]3CO)C(=O)CC5CC5',
+                                     'name': '4-[4-[(6S,7R,8R)-4-(2-cyclopropyl-1-oxoethyl)-8-(hydroxymethyl)-2-oxo-1,4-diazabicyclo[4.2.0]octan-7-yl]phenyl]-N,N-dimethylbenzamide',
+                                     'reason': 'Missing a free acid or '
+                                               'recognized conjugated acid '
+                                               'group essential for cholanic '
+                                               'acids'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCC=C',
+                                     'name': '1-docosene',
+                                     'reason': 'Missing a free acid or '
+                                               'recognized conjugated acid '
+                                               'group essential for cholanic '
+                                               'acids'},
+                                 {   'smiles': 'C([C@@](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)([H])COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC',
+                                     'name': 'TG(22:5(7Z,10Z,13Z,16Z,19Z)/20:5(5Z,8Z,11Z,14Z,17Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))[iso6]',
+                                     'reason': 'Missing a free acid or '
+                                               'recognized conjugated acid '
+                                               'group essential for cholanic '
+                                               'acids'}],
+    'sample_false_negatives': [   {   'smiles': 'O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CCCC(CO)C)C)[H])[H])C',
+                                      'name': '5alpha-Cholestane-3alpha,7alpha,12alpha,26-tetrol',
+                                      'reason': 'Missing a free acid or '
+                                                'recognized conjugated acid '
+                                                'group essential for cholanic '
+                                                'acids'},
+                                  {   'smiles': 'O[C@H]([C@H]([C@@]1([C@@]2(C([C@]3([C@@]([C@@]4([C@@](CC3)(CC(=O)CC4)[H])C)(CC2)[H])[H])CC1)C)[H])C)C[C@H](C(C)C)C',
+                                      'name': '(5S,8R,9S,10S,13S,17R)-17-[(2S,3S,5R)-3-Hydroxy-5,6-dimethylheptan-2-yl]-10,13-dimethyl-1,2,4,5,6,7,8,9,11,12,14,15,16,17-tetradecahydrocyclopenta[a]phenanthren-3-one',
+                                      'reason': 'Missing a free acid or '
+                                                'recognized conjugated acid '
+                                                'group essential for cholanic '
+                                                'acids'},
+                                  {   'smiles': 'O=C1[C@]2([C@]([C@]3([C@@]([C@@]4([C@](CC3)(C[C@@H](O)CC4)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CCC(O)=O)C)[H])[H])C',
+                                      'name': '3beta-Hydroxy-12-oxo-5beta-cholan-24-oic '
                                               'Acid',
-                                      'reason': '5β-configuration not found'},
-                                  {   'smiles': 'O=C1[C@]2([C@]([C@]3(C([C@@]4([C@](CC3)(C[C@@H](O)CC4)[H])C)=C1)[H])(CC[C@@]2([C@@H](CCC(O)=O)C)[H])[H])C',
-                                      'name': '3beta-Hydroxy-12-oxo-5beta-chol-9(11)-en-24-oic '
+                                      'reason': 'Too few hydroxyl substituents '
+                                                '(found 2; expected at least '
+                                                '3)'},
+                                  {   'smiles': 'O[C@H]1C[C@@]2([C@@]([C@@]3([C@]([C@]4([C@@]([C@](CC4)([C@@H](CC/C=C(\\C)/C(O)=O)C)[H])(CC3)C)[H])(CC2)[H])[H])(CC1)C)[H]',
+                                      'name': '3alpha-Hydroxy-5beta-cholest-24-en-26-oic '
+                                              'acid',
+                                      'reason': 'Too few hydroxyl substituents '
+                                                '(found 2; expected at least '
+                                                '3)'},
+                                  {   'smiles': 'O=C1C2C(C3C(C4C(C(CC4)C(C(O)C(O)C(C(C)(C)C)=C)C)(CC3)C)C1)(CC(O)C(O)C2)C',
+                                      'name': '(2alpha,3alpha,5alpha,22R,23R)-2,3,22,23-Tetrahydroxy-25-methylergost-24(28)en-6-one',
+                                      'reason': 'Missing a free acid or '
+                                                'recognized conjugated acid '
+                                                'group essential for cholanic '
+                                                'acids'},
+                                  {   'smiles': 'O=C(O)[C@@H]([C@@H]1[C@@]2([C@@](C=3C([C@@]4(C([C@](OC(=O)C)([C@@H](O)CC4)C)CC3)C)=CC2)(C)[C@H](C1)OC(=O)C)C)CCC(=C)C(C)C',
+                                      'name': '15alpha-Acetyl-dehydrosulphurenic '
+                                              'acid',
+                                      'reason': 'Too few hydroxyl substituents '
+                                                '(found 2; expected at least '
+                                                '3)'},
+                                  {   'smiles': 'O=C1[C@]2([C@]([C@]3([C@@]([C@@]4([C@](CC3)(C[C@H](O)CC4)[H])C)(C1=O)[H])[H])(CC[C@@]2([C@@H](CCC(O)=O)C)[H])[H])C',
+                                      'name': '3alpha-Hydroxy-11,12-dioxo-5beta-cholan-24-oic '
                                               'Acid',
-                                      'reason': '5β-configuration not found'}],
-    'attempt': 1,
-    'reasoning': "Firstly, let's analyze the previous program and the outcomes "
-                 'to understand what went wrong and how to improve it.\n'
+                                      'reason': 'Too few hydroxyl substituents '
+                                                '(found 2; expected at least '
+                                                '3)'},
+                                  {   'smiles': 'O[C@H]1CC2[C@@]([C@@]3([C@]([C@]4([C@@]([C@](CC4)([C@@H](CCC(O)=O)C)[H])(CC3)C)[H])(CC2)[H])[H])(CC1)C',
+                                      'name': '3a-Hydroxycholanoic acid',
+                                      'reason': 'Too few hydroxyl substituents '
+                                                '(found 2; expected at least '
+                                                '3)'},
+                                  {   'smiles': 'O=C1C[C@@]2([C@@](C=3C([C@]4([C@@]([C@](CC4)([C@@H](CCC(O)=O)C)[H])(CC3)C)[H])=CC2)(CC1)C)[H]',
+                                      'name': '3-Oxo-5beta-chola-7,9(11)-dien-24-oic '
+                                              'Acid',
+                                      'reason': 'Too few hydroxyl substituents '
+                                                '(found 1; expected at least '
+                                                '3)'},
+                                  {   'smiles': 'O=C(O[C@@H]1C([C@H]2[C@](C3=C([C@]4([C@]([C@@H]([C@@H](CC/C=C(/CO)\\C)C)C[C@@H]4O)(C)CC3)C)[C@@H](C2)O)(C)CC1)(C)C)C',
+                                      'name': '(24E)-3beta-acetoxy-7alpha,15alpha,26-trihydroxylanosta-8,24-diene',
+                                      'reason': 'Missing a free acid or '
+                                                'recognized conjugated acid '
+                                                'group essential for cholanic '
+                                                'acids'}],
+    'attempt': 5,
+    'reasoning': 'Below is one way to fix our approach. In our previous '
+                 'attempt we called the method IsInitialized() on the RingInfo '
+                 'object. However, in current versions of RDKit the RingInfo '
+                 'object does not support IsInitialized(). We can instead '
+                 'check whether any rings were detected (i.e. whether '
+                 'AtomRings() returns any rings) to determine if ring '
+                 'information is available. In addition, we may slightly '
+                 'refine the SMARTS queries and comments. The following Python '
+                 'code is a single code block implementing our heuristic '
+                 'classification for a hydroxy-5β-cholanic bile acid (or its '
+                 'glycine/taurine conjugates):\n'
                  '\n'
-                 '**Analysis:**\n'
-                 '\n'
-                 '1. **Inadequate Steroid Nucleus Detection:**\n'
-                 '   - The SMARTS pattern used to detect the steroid nucleus '
-                 "was too simplistic and didn't accurately represent the "
-                 'complex fused ring system of steroids.\n'
-                 '   - Steroids have a characteristic tetracyclic ring system '
-                 'consisting of three six-membered rings (rings A, B, and C) '
-                 'and one five-membered ring (ring D) fused together.\n'
-                 '   - The previous pattern likely failed to match this '
-                 'structure in the provided bile acid examples, leading to '
-                 'false negatives.\n'
-                 '\n'
-                 '2. **Lack of Stereochemistry Consideration:**\n'
-                 '   - Bile acids have specific stereochemistry, particularly '
-                 'the 5β-configuration, which refers to the orientation of '
-                 'certain hydrogen atoms.\n'
-                 '   - The previous code did not account for stereochemistry, '
-                 'causing it to miss valid bile acids.\n'
-                 '\n'
-                 '3. **Generic Substituent Checks:**\n'
-                 '   - The checks for hydroxyl groups and carboxylic acid '
-                 'groups were not specific to their positions on the steroid '
-                 'nucleus.\n'
-                 '   - Bile acids have hydroxyl groups at specific positions '
-                 '(e.g., 3α, 7α, 12α) and a carboxylic acid side chain at '
-                 'position 17 (C-17).\n'
-                 '\n'
-                 '**Improvements:**\n'
-                 '\n'
-                 '- **Use a More Accurate SMARTS Pattern for Steroid '
-                 'Nucleus:**\n'
-                 '  - Implement a SMARTS pattern that accurately represents '
-                 'the tetracyclic ring system of steroids with correct ring '
-                 'sizes and fusion.\n'
-                 '  - Ensure that the ring fusion and sizes (6-6-6-5) are '
-                 'correctly specified.\n'
-                 '\n'
-                 '- **Include Stereochemistry in the SMARTS Pattern:**\n'
-                 '  - Incorporate stereochemical specifications to detect the '
-                 '5β-configuration.\n'
-                 '  - While accounting for full stereochemistry might be '
-                 'complex, focusing on key stereocenters can improve '
-                 'accuracy.\n'
-                 '\n'
-                 '- **Check for Specific Substituents at Correct Positions:**\n'
-                 '  - Verify the presence of hydroxyl groups at specific '
-                 'positions on the steroid nucleus.\n'
-                 '  - Confirm the presence of a carboxylic acid side chain '
-                 'attached at the correct position.\n'
-                 '\n'
-                 "Now, let's implement the improved function.",
+                 '------------------------------------------------------------',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 9,
-    'num_false_positives': 0,
-    'num_true_negatives': 0,
-    'num_false_negatives': 100,
+    'num_true_positives': 109,
+    'num_false_positives': 296,
+    'num_true_negatives': 141669,
+    'num_false_negatives': 226,
     'num_negatives': None,
-    'precision': 1.0,
-    'recall': 0.08256880733944955,
-    'f1': 0.15254237288135594,
-    'accuracy': 0.08256880733944955,
-    'negative_predictive_value': 0.0}
+    'precision': 0.2691358024691358,
+    'recall': 0.3253731343283582,
+    'f1': 0.2945945945945946,
+    'accuracy': 0.9963316936050597,
+    'negative_predictive_value': 0.9984072729835441}

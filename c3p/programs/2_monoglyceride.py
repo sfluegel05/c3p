@@ -2,17 +2,15 @@
 Classifies: CHEBI:17389 2-monoglyceride
 """
 """
-Classifies: 2-monoglyceride
+Classifies: CHEBI:174752 2-monoglyceride
 """
-
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_2_monoglyceride(smiles: str):
     """
     Determines if a molecule is a 2-monoglyceride based on its SMILES string.
-    A 2-monoglyceride has a glycerol backbone where the middle carbon (position 2)
-    is esterified with a fatty acid, and the other two carbons (positions 1 and 3)
-    have hydroxyl groups and no other substituents.
+    A 2-monoglyceride has a single fatty acid esterified at the second position of the glycerol backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,92 +19,25 @@ def is_2_monoglyceride(smiles: str):
         bool: True if molecule is a 2-monoglyceride, False otherwise
         str: Reason for classification
     """
-
-    # Parse the molecule
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define the glycerol backbone pattern: three connected carbons
-    glycerol_pattern = Chem.MolFromSmarts("C-C-C")
-    matches = mol.GetSubstructMatches(glycerol_pattern)
-
-    if not matches:
-        return False, "No glycerol backbone found"
-
-    # Iterate over glycerol backbone matches
-    for match in matches:
-        c1_idx, c2_idx, c3_idx = match
-        c1 = mol.GetAtomWithIdx(c1_idx)
-        c2 = mol.GetAtomWithIdx(c2_idx)
-        c3 = mol.GetAtomWithIdx(c3_idx)
-
-        # Check that c1 and c3 have hydroxyl groups and no other substituents
-        def is_terminal_carbon_ok(carbon_atom, connected_idx):
-            oh_found = False
-            for neighbor in carbon_atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx == connected_idx:
-                    continue  # Skip the bond to the central carbon
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetDegree() == 1:
-                    # Oxygen with only one bond (hydroxyl group)
-                    oh_found = True
-                else:
-                    return False  # Other substituent found
-            return oh_found
-
-        c1_ok = is_terminal_carbon_ok(c1, c2_idx)
-        c3_ok = is_terminal_carbon_ok(c3, c2_idx)
-
-        if not (c1_ok and c3_ok):
-            continue  # Positions 1 and 3 must have only hydroxyl groups
-
-        # Check that c2 is connected to an ester group and no other substituents
-        ester_found = False
-        for neighbor in c2.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            if neighbor_idx in [c1_idx, c3_idx]:
-                continue  # Skip bonds to the glycerol backbone carbons
-            if neighbor.GetAtomicNum() == 8:
-                # Check if this oxygen is part of an ester linkage
-                for neighbor2 in neighbor.GetNeighbors():
-                    if neighbor2.GetIdx() == c2_idx:
-                        continue  # Skip the bond back to c2
-                    if neighbor2.GetAtomicNum() == 6:
-                        # Check for carbonyl (C=O)
-                        for bond in neighbor2.GetBonds():
-                            other_atom = bond.GetOtherAtom(neighbor2)
-                            if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE and other_atom.GetAtomicNum() == 8:
-                                ester_found = True
-                                break
-                        if ester_found:
-                            break
-                if ester_found:
-                    continue
-                else:
-                    return False, "Position 2 oxygen is not part of ester linkage"
-            else:
-                return False, "Position 2 has unexpected substituents"
-
-        if not ester_found:
-            continue  # Ester linkage at position 2 is required
-
-        # Check that there is only one ester group in the molecule
-        ester_pattern = Chem.MolFromSmarts("C(=O)O")
-        ester_matches = mol.GetSubstructMatches(ester_pattern)
-        if len(ester_matches) != 1:
-            return False, f"Found {len(ester_matches)} ester groups, expected 1"
-
-        # Ensure there are exactly two hydroxyl groups
-        hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-        hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-        if len(hydroxyl_matches) != 2:
-            return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, expected 2"
-
-        # Passed all checks
-        return True, "Molecule is a 2-monoglyceride with acyl group at position 2"
-
-    return False, "Molecule does not match the 2-monoglyceride structure"
+    
+    # Check for exactly one ester group (O-C=O)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 1:
+        return False, f"Found {len(ester_matches)} ester groups, expected 1"
+    
+    # Check glycerol backbone with ester on C2 and hydroxyls on C1 and C3
+    # SMARTS pattern: [CH2]([OH])[CH](O-C=O)[CH2]([OH])
+    # More precise pattern to ensure ester is on central carbon with two hydroxyls
+    glycerol_pattern = Chem.MolFromSmarts("[CH2]([OH])[CH]([OX2][C](=[OX1])[!O])[CH2]([OH])")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "Glycerol backbone with ester on C2 and hydroxyls on C1/C3 not found"
+    
+    return True, "Single ester group on C2 of glycerol with hydroxyls on C1 and C3"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17389',
@@ -117,319 +48,413 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:17389',
                           'xrefs': ['KEGG:C02112'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 25,
+                           'log_lines_of_code': 3.2188758248682006,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetSubstructMatches',
+                                                 'MolFromSmiles',
+                                                 'MolFromSmarts',
+                                                 'HasSubstructMatch'],
+                           'methods_called_count': 4,
+                           'smarts_strings': [   '[OX2][CX3](=[OX1])',
+                                                 '[CH2]([OH])[CH]([OX2][C](=[OX1])[!O])[CH2]([OH])'],
+                           'smarts_strings_count': 2,
+                           'defs': ['is_2_monoglyceride(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Found {len(ester_matches)} '
+                                          'ester groups, expected 1"',
+                                          'False, "Glycerol backbone with '
+                                          'ester on C2 and hydroxyls on C1/C3 '
+                                          'not found"',
+                                          'True, "Single ester group on C2 of '
+                                          'glycerol with hydroxyls on C1 and '
+                                          'C3"'],
+                           'returns_count': 4,
+                           'complexity': 2.84377516497364},
     'message': '\n'
-               'Attempt failed: F1 score of 0.544 is too low.\n'
+               'Error: unexpected indent (<string>, line 1)\n'
+               'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: CCCCCCCCCCCC(=O)OC(CO)CO NAME: '
-               '2-lauroylglycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: CC\\C=C/C\\C=C/C\\C=C/CCCCCCCC(=O)OC(CO)CO NAME: '
-               '2-alpha-linolenoylglycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O(C(CO)CO)C(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC '
-               'NAME: MG(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0) REASON: CORRECT '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O=C(CCC/C=C\\C/C=C\\C\\C=C/C=C/[C@H](CCCCC)OO)OC(CO)CO NAME: '
-               '15(S)-HPETE 2-glyceryl ester REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCCCC/C=C\\CCCCCCCC)C(CO)CO NAME: '
-               'MG(0:0/22:1(13Z)/0:0) REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCC=CCC=CCCCCC)C(CO)CO NAME: '
-               '2-Linoleoyl glycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: CCCCCCCC\\C=C/CCCCCCCC(=O)OC(CO)CO NAME: '
-               '2-oleoylglycerol REASON: CORRECT Molecule is a 2-monoglyceride '
-               'with acyl group at position 2\n'
-               ' * SMILES: CCCCCCCCCCCCCC(=O)OC(CO)CO NAME: '
-               '2-tetradecanoylglycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O(C(CO)CO)C(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC NAME: '
-               'MG(0:0/22:5(4Z,7Z,10Z,13Z,16Z)/0:0) REASON: CORRECT Molecule '
-               'is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'C(\\[C@H]1[C@@H](CC([C@@H]1C/C=C\\CCCC(OC(CO)CO)=O)=O)O)=C/[C@H](CCCCC)O '
-               'NAME: prostaglandin E2 2-glyceryl ester REASON: CORRECT '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCCCCCCC)C(CO)CO NAME: '
-               'MG(0:0/15:0/0:0) REASON: CORRECT Molecule is a 2-monoglyceride '
-               'with acyl group at position 2\n'
-               ' * SMILES: '
-               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(=O)OC(CO)CO NAME: '
-               '2-[(5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl]-sn-glycerol REASON: '
-               'CORRECT Molecule is a 2-monoglyceride with acyl group at '
-               'position 2\n'
-               ' * SMILES: CCCCCCCCCCCCCCCC(=O)OC(CO)CO NAME: '
-               '2-palmitoylglycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)C(CO)CO NAME: '
-               'MG(0:0/22:2(13Z,16Z)/0:0) REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'CCCCC[C@H](OO)\\C=C\\[C@H]1[C@H]2C[C@H](OO2)[C@@H]1C\\C=C/CCCC(=O)OC(CO)CO '
-               'NAME: prostaglandin G2 2-glyceryl ester REASON: CORRECT '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCCCCCC/C=C\\CCCCCCCC)C(CO)CO NAME: '
-               'MG(0:0/24:1(15Z)/0:0) REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O(C(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCC)C(CO)CO '
-               'NAME: MG(0:0/24:6(6Z,9Z,12Z,15Z,18Z,21Z)/0:0) REASON: CORRECT '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/CCCCCCCC(=O)OC(CO)CO NAME: '
-               '2-linoleoylglycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: OCC(OC(=O)CCCCCCC/C=C/CCCCCCCC)CO NAME: '
-               '2-[(9E)-9-octadecenoyl]glycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'OCC(CO)OC(CCC/C=C/1\\O[C@]2(C[C@H]([C@@H]([C@]2(C1)[H])/C=C/[C@H](CCCCC)O)O)[H])=O '
-               'NAME: prostaglandin I2 2-glyceryl ester REASON: CORRECT '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O=C(CCC/C=C\\C\\C=C/C=C/C(C/C=C\\CCCCC)OO)OC(CO)CO '
-               'NAME: 12-HPETE 2-glyceryl ester REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: CCCCCC\\C=C/CCCCCCCC(=O)OC(CO)CO NAME: '
-               '2-[(9Z)-hexadecenoyl]glycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCC/C=C\\CCCCCC)C(CO)CO NAME: '
-               'MG(0:0/18:1(11Z)/0:0) REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               '[H]C(CO)(CO)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC NAME: '
-               '2-arachidonoylglycerol REASON: CORRECT Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCCCCCCCCCCCCCC)C(CO)CO NAME: '
-               'MG(0:0/22:0/0:0) REASON: CORRECT Molecule is a 2-monoglyceride '
-               'with acyl group at position 2\n'
-               'False positives: SMILES: '
-               'O[C@@H]1[C@H]([C@@H](C(=O)C1)C/C=C\\CCCC(OC(CO)CO)=O)/C=C/[C@@H](O)CCCCC '
-               'NAME: Prostaglandin PGE2 glyceryl ester REASON: WRONGLY '
-               'CLASSIFIED Molecule is a 2-monoglyceride with acyl group at '
-               'position 2\n'
-               ' * SMILES: '
-               'COc1cc(cc(OC)c1O)\\C=C\\C(=O)O[C@H]([C@@H](O)[C@H](O)[C@H](O)C([O-])=O)C([O-])=O '
-               'NAME: 2-O-sinapoyl-D-glucarate(2-) REASON: WRONGLY CLASSIFIED '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O[C@@H]([C@H](O)[C@@H](OC(=O)\\C=C\\c1ccc(O)c(O)c1)C(O)=O)[C@H](O)C(O)=O '
-               'NAME: 2-O-caffeoylglucaric acid REASON: WRONGLY CLASSIFIED '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'C(=O)([C@H](OC(C=1C=C(C(=C(C1)O)O)O)=O)[C@@H](O)[C@H](O)[C@H](O)CO)[H] '
-               'NAME: 2-galloyl-D-glucose REASON: WRONGLY CLASSIFIED Molecule '
-               'is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O[C@H]([C@H](OC(=O)\\C=C\\c1ccc(O)c(O)c1)C(O)=O)C(O)=O NAME: '
-               '(2S,3R)-trans-caftaric acid REASON: WRONGLY CLASSIFIED '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: CCCCCC=CCC=CCC=CCC=CCCCC(=O)OC(CO)CO NAME: '
-               'eicosa-5,8,11,14-tetraenoic acid 1,3-dihydroxypropan-2-yl '
-               'ester REASON: WRONGLY CLASSIFIED Molecule is a 2-monoglyceride '
-               'with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)C(CO)CO '
-               'NAME: MG(0:0/20:4(8Z,11Z,14Z,17Z)/0:0) REASON: WRONGLY '
-               'CLASSIFIED Molecule is a 2-monoglyceride with acyl group at '
-               'position 2\n'
-               ' * SMILES: '
-               'O([C@]([C@@H](O)CO)(C)C(O)=O)C(=O)/C=C/C1=CC(O)=C(O)C=C1 NAME: '
-               '(2s,3s)-2-{[(2e)-3-(3,4-Dihydroxyphenyl)-2-propenoyl]oxy}-3,4-dihydroxy-2-methylbutanoic '
-               'acid REASON: WRONGLY CLASSIFIED Molecule is a 2-monoglyceride '
-               'with acyl group at position 2\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]([C@@H](O)[C@H](O)CO)CO)C(=CC(C(O)C(=CC(C(O)C(=CC(C(O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@@H]1O)O)CO)C(=CC(CC(CC)C)C)C)C)C)C)C)C)C '
-               'NAME: Roselipin 3E REASON: WRONGLY CLASSIFIED Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: COc1ccc(CC(O)C(OC(C)=O)C(O)CO)cc1 NAME: karalicin '
-               'REASON: WRONGLY CLASSIFIED Molecule is a 2-monoglyceride with '
-               'acyl group at position 2\n'
-               ' * SMILES: '
-               'O[C@@H]1[C@@H]([C@H]([C@H](O)C1)/C=C/[C@@H](O)CCCCC)CC(=O)CCCCC(OC(CO)CO)=O '
-               'NAME: 2-glyceryl-6-keto-PGF1alpha REASON: WRONGLY CLASSIFIED '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O=C(OC(CO)CO)C1=C(O)C=C(O)C=C1C NAME: '
-               '2-(2,4-dihydroxy-6-methylbenzoyl)-glycerol REASON: WRONGLY '
-               'CLASSIFIED Molecule is a 2-monoglyceride with acyl group at '
-               'position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCC/C=C\\CCCCCCCC)C(CO)CO NAME: '
-               'MG(0:0/20:1(11Z)/0:0) REASON: WRONGLY CLASSIFIED Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: OC(C(OC(=O)C=Cc1ccc(O)cc1)C(O)=O)C(O)=O NAME: '
-               'p-coutaric acid REASON: WRONGLY CLASSIFIED Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O[C@](CC1=CC(O)=C(O)C=C1)([C@H](OC(=O)/C=C/C2=CC(O)=C(O)C=C2)C(O)=O)C(O)=O '
-               'NAME: Fukinolic acid REASON: WRONGLY CLASSIFIED Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O(C(C(O)(C)C)C(O)C1=C(OC)C=C2OC(=O)C=CC2=C1)C(=O)C=C(C)C NAME: '
-               '[1,3-Dihydroxy-1-(7-methoxy-2-oxochromen-6-yl)-3-methylbutan-2-yl] '
-               '3-methylbut-2-enoate REASON: WRONGLY CLASSIFIED Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'OC(CCCCCC/C=C/[C@H](O)[C@@H](OC(=O)C)[C@H](O)[C@H](N)C(O)=O)CCCCCC '
-               'NAME: '
-               '(E,2S,3R,4R,5S)-4-Acetyloxy-2-amino-3,5,14-trihydroxyicos-6-enoic '
-               'acid REASON: WRONGLY CLASSIFIED Molecule is a 2-monoglyceride '
-               'with acyl group at position 2\n'
-               ' * SMILES: COc1cc(cc(OC)c1O)\\C=C\\C(=O)OC(C(O)=O)C(O)=O NAME: '
-               'sinapoyltartronic acid REASON: WRONGLY CLASSIFIED Molecule is '
-               'a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O[C@H]([C@H](OC(=O)\\C=C/c1ccc(O)c(O)c1)C(O)=O)C(O)=O NAME: '
-               '(2S,3R)-cis-caftaric acid REASON: WRONGLY CLASSIFIED Molecule '
-               'is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'C1=CC(=C(C=C1/C=C/C(OC(C(C(C)C)(C(=O)O)O)C(O)=O)=O)O)O NAME: '
-               '3-O-caffeoyl-2-(2-propyl)-2-hydroxybutanedioic acid REASON: '
-               'WRONGLY CLASSIFIED Molecule is a 2-monoglyceride with acyl '
-               'group at position 2\n'
-               ' * SMILES: '
-               'O[C@@H](CCCCC)/C=C/C=C\\C/C=C\\C/C=C\\CCCC(OC(CO)CO)=O NAME: '
-               '15-HETE-G REASON: WRONGLY CLASSIFIED Molecule is a '
-               '2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O[C@H]([C@H](OC(=O)\\C=C\\c1ccc(O)cc1)C(O)=O)C(O)=O '
-               'NAME: (2R,3S)-trans-coutaric acid REASON: WRONGLY CLASSIFIED '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)C(CO)CO NAME: '
-               'MG(0:0/20:2(11Z,14Z)/0:0) REASON: WRONGLY CLASSIFIED Molecule '
-               'is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: O(C(=O)CCCCCCCCC/C=C\\C/C=C\\C/C=C\\CC)C(CO)CO '
-               'NAME: MG(0:0/20:3(11Z,14Z,17Z)/0:0) REASON: WRONGLY CLASSIFIED '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
-               ' * SMILES: '
-               'O[C@@H]([C@H](O)[C@@H](OC(=O)\\C=C\\c1ccc(O)c(O)c1)C([O-])=O)[C@H](O)C([O-])=O '
-               'NAME: 2-O-caffeoylglucarate(2-) REASON: WRONGLY CLASSIFIED '
-               'Molecule is a 2-monoglyceride with acyl group at position 2\n'
+               'True positives: NONE\n'
+               'False positives: NONE\n'
                'False negatives: NONE\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'C[C@@H]1CN(S(=O)(=O)C2=C(C=C(C=C2)C3=CC=C(C=C3)C(=O)N(C)C)O[C@@H]1CN(C)C(=O)NC4=CC=CC=C4F)[C@H](C)CO',
-                                     'name': '4-[(4R,5S)-5-[[[(2-fluoroanilino)-oxomethyl]-methylamino]methyl]-2-[(2R)-1-hydroxypropan-2-yl]-4-methyl-1,1-dioxo-4,5-dihydro-3H-6,1$l^{6},2-benzoxathiazocin-8-yl]-N,N-dimethylbenzamide',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': 'C[C@H]1[C@H](CN(C(=O)C2=C(C=CC(=C2)C#N)OC[C@H]3[C@H](CC[C@@H](O3)CCN(C1=O)C)OC)C)OC',
-                                     'name': 'LSM-10564',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': 'CCC(C(=O)NC1=NN=C(S1)SCC)(C(F)(F)F)C(F)(F)F',
-                                     'name': 'N-[5-(ethylthio)-1,3,4-thiadiazol-2-yl]-2,2-bis(trifluoromethyl)butanamide',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': 'O=C(N[C@@H](CCC(=O)N)C(O)=O)[C@@H](NC(=O)[C@@H](N)CC1=CC=C(O)C=C1)CC(=O)N',
-                                     'name': 'Tyr-Asn-Gln',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': 'OC[C@H]1OC(O)[C@@H](O)[C@@H]1O',
-                                     'name': 'D-arabinofuranose',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': 'O[C@@H]([C@H]([C@@]1([C@@]2([C@@](CC1)(/C(/CCC2)=C/C=C\\3/C[C@@H](O)CCC3=C)[H])C)[H])C)C',
-                                     'name': '(5Z,7E)-(3S,22R)- '
-                                             '24-nor-9,10-seco-5,7,10(19)-cholatriene-3,22-diol',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': 'O1C(C(CC1=O)C)CCCCCC',
-                                     'name': '5-Hexyldihydro-4-methyl-2(3H)-furanone',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': 'O=C1O[C@]23C(=O)N[C@H]([C@@H]2[C@H](C)C(=C[C@@H]3C=CC[C@@H]([C@H]([C@H](C=C1)C)O)C)C)CC4=CC=CC=C4',
-                                     'name': '7-deoxy-cytochalasin Z7',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': '[C@]123[C@H](O1)[C@](C(C=C2[C@]4([C@](CC3)(C([C@@H](C(C4)=O)O)(C)C)[H])C)=O)(C=C)C',
-                                     'name': 'yucalexin P8',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'},
-                                 {   'smiles': '[H][C@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)CCC(O)=O)[C@@]4(C)[C@@H](O)C[C@]3([H])[C@@]1(C)CC[C@@H](O)C2',
-                                     'name': 'deoxycholic acid',
-                                     'reason': 'Molecule does not match the '
-                                               '2-monoglyceride structure'}],
-    'sample_false_negatives': [   {   'smiles': 'O=C(CCC/C=C\\C/C=C\\C\\C=C/C=C/[C@H](CCCCC)OO)OC(CO)CO',
-                                      'name': '15(S)-HPETE 2-glyceryl ester',
-                                      'reason': 'Found 3 hydroxyl groups, '
-                                                'expected 2'},
-                                  {   'smiles': 'C(\\[C@H]1[C@@H](CC([C@@H]1C/C=C\\CCCC(OC(CO)CO)=O)=O)O)=C/[C@H](CCCCC)O',
-                                      'name': 'prostaglandin E2 2-glyceryl '
-                                              'ester',
-                                      'reason': 'Found 4 hydroxyl groups, '
-                                                'expected 2'},
-                                  {   'smiles': 'CCCCC[C@H](OO)\\C=C\\[C@H]1[C@H]2C[C@H](OO2)[C@@H]1C\\C=C/CCCC(=O)OC(CO)CO',
-                                      'name': 'prostaglandin G2 2-glyceryl '
-                                              'ester',
-                                      'reason': 'Found 3 hydroxyl groups, '
-                                                'expected 2'},
-                                  {   'smiles': 'OCC(CO)OC(CCC/C=C/1\\O[C@]2(C[C@H]([C@@H]([C@]2(C1)[H])/C=C/[C@H](CCCCC)O)O)[H])=O',
-                                      'name': 'prostaglandin I2 2-glyceryl '
-                                              'ester',
-                                      'reason': 'Found 4 hydroxyl groups, '
-                                                'expected 2'},
-                                  {   'smiles': 'O=C(CCC/C=C\\C\\C=C/C=C/C(C/C=C\\CCCCC)OO)OC(CO)CO',
-                                      'name': '12-HPETE 2-glyceryl ester',
-                                      'reason': 'Found 3 hydroxyl groups, '
-                                                'expected 2'},
-                                  {   'smiles': 'C(\\C[C@H]1[C@H](CC([C@@H]1/C=C/[C@H](CCCCC)O)=O)O)=C\\CCCC(=O)OC(CO)CO',
-                                      'name': 'prostaglandin D2 2-glyceryl '
-                                              'ester',
-                                      'reason': 'Found 4 hydroxyl groups, '
-                                                'expected 2'}],
+    'sample_true_negatives': [   {   'smiles': 'CC1CCN(CC1)CCCOC2=C(C=C(C=C2)Cl)Br',
+                                     'name': '1-[3-(2-bromo-4-chlorophenoxy)propyl]-4-methylpiperidine',
+                                     'reason': 'Found 0 ester groups, expected '
+                                               '1'},
+                                 {   'smiles': 'O([C@H]1[C@H](O[C@H](C)C(=O)N[C@@H](C)C(=O)N[C@H](CCC(=O)N)C(O)=O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O)[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2N)CO',
+                                     'name': 'Glucosaminylmuramyl-2-alanine-D-isoglutamine',
+                                     'reason': 'Glycerol backbone with ester '
+                                               'on C2 and hydroxyls on C1/C3 '
+                                               'not found'},
+                                 {   'smiles': 'O([C@H]1[C@@H](O[C@@H]2[C@@H](O)[C@H](O)[C@H](O[C@@H]2O[C@@H]3[C@@H](O)[C@H](O)[C@H](OC3O)CO)CO)O[C@@H]([C@@H](O)[C@@H]1O)CO)[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@H]4O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@H]5O[C@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO)CO)CO',
+                                     'name': '(3R,4S,5S,6R)-3-[(2R,3R,4S,5S,6R)-3-[(2R,3R,4S,5S,6R)-3-[(2R,3R,4S,5S,6R)-3-[(2R,3R,4S,5S,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-3-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-(hydroxymethyl)oxane-2,4,5-triol',
+                                     'reason': 'Found 0 ester groups, expected '
+                                               '1'},
+                                 {   'smiles': 'O=C1C=C([C@@H](O)[C@@H]2[C@]1(O2)C[C@H]3C(=C)CC[C@@H]4[C@@]3(CCC[C@]4(CO)C)C)CO',
+                                     'name': '13-hydroxylmacrophorin A',
+                                     'reason': 'Found 0 ester groups, expected '
+                                               '1'},
+                                 {   'smiles': '[H][C@@]12CCC(=O)[C@@]1(C)CC[C@@]1([H])[C@@]2([H])[C@@H](O)C=C2C[C@@H](O)CC[C@]12C',
+                                     'name': '7beta-hydroxydehydroepiandrosterone',
+                                     'reason': 'Found 0 ester groups, expected '
+                                               '1'},
+                                 {   'smiles': 'O(C=1C(=CC(=CC1Br)Br)Br)C=2C=CC(=CC2Br)Br',
+                                     'name': '2,4-dibromophenyl '
+                                             '2,4,6-tribromophenyl ether',
+                                     'reason': 'Found 0 ester groups, expected '
+                                               '1'},
+                                 {   'smiles': 'C1C[C@H]([C@H](O[C@H]1CC(=O)NCC2=CC3=C(C=C2)OCO3)CO)NS(=O)(=O)C4=CC=CC(=C4)F',
+                                     'name': 'N-(1,3-benzodioxol-5-ylmethyl)-2-[(2R,5R,6S)-5-[(3-fluorophenyl)sulfonylamino]-6-(hydroxymethyl)-2-oxanyl]acetamide',
+                                     'reason': 'Found 0 ester groups, expected '
+                                               '1'},
+                                 {   'smiles': 'C=1(C(=CC=CC1Cl)Cl)C=2C(=C(C=CC2)O)O',
+                                     'name': "2',6'-dichlorobiphenyl-2,3-diol",
+                                     'reason': 'Found 0 ester groups, expected '
+                                               '1'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@H](O[C@@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]2CO)O)[C@H]1O)CO[C@H]3O[C@@H]([C@@H](O)[C@H](O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)[C@@H]3O)CO[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@H]6O[C@@H]([C@@H](O)[C@H](O)[C@@H]6O)CO)CO)[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@H]9O[C@@H]([C@@H](O)[C@H](O[C@H]%10O[C@@H]([C@@H](O)[C@H](O)[C@H]%10O)CO)[C@@H]9O)CO)CO)CO',
+                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3S,4S,5R,6R)-4-[(2R,3S,4S,5S,6R)-3-[(2R,3S,4S,5S,6R)-3-[(2R,3S,4S,5R,6R)-3,5-Dihydroxy-6-(hydroxymethyl)-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2S,3S,4S,5R,6R)-6-[[(2S,3S,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'Found 0 ester groups, expected '
+                                               '1'},
+                                 {   'smiles': '[H][C@@]12CC(C)(C)CC[C@@]1(CC[C@]1(C)C2=CC[C@]2([H])[C@@]3(C)CC[C@H](O)C(C)(C)[C@]3([H])CC[C@@]12C)C(O)=O',
+                                     'name': 'oleanolic acid',
+                                     'reason': 'Glycerol backbone with ester '
+                                               'on C2 and hydroxyls on C1/C3 '
+                                               'not found'}],
+    'sample_false_negatives': [],
     'attempt': 1,
-    'reasoning': 'Upon analyzing the previous program and the outcomes, it '
-                 'appears that the code incorrectly classified certain '
-                 'molecules as 2-monoglycerides. The main issues seem to be:\n'
+    'reasoning': '</think>\n'
                  '\n'
-                 '1. **Overly Broad SMARTS Patterns**: The SMARTS patterns '
-                 'used were not specific enough, leading to false positives. '
-                 'Molecules with similar substructures or additional '
-                 'functional groups were incorrectly matched.\n'
+                 'Okay, I need to create a function called is_2_monoglyceride '
+                 'that checks if a given SMILES string is a 2-monoglyceride. '
+                 'Let me think about the structure of a 2-monoglyceride. From '
+                 "the definition, it's a monoglyceride where the acyl group is "
+                 'attached to the second carbon of the glycerol backbone.\n'
                  '\n'
-                 '2. **Insufficient Checks for Additional Functional Groups**: '
-                 'The code did not adequately check for other ester or acyl '
-                 'groups elsewhere in the molecule, resulting in '
-                 'misclassification of molecules that are not true '
-                 '2-monoglycerides.\n'
+                 'So, the glycerol backbone has three carbons. In a '
+                 'monoglyceride, only one of the three hydroxyl groups is '
+                 'esterified with a fatty acid. For the 2-monoglyceride '
+                 'specifically, that ester must be on the central carbon '
+                 '(position 2) of the glycerol.\n'
                  '\n'
-                 '3. **Inaccurate Identification of Positions**: The code may '
-                 'not have correctly identified the ester linkage at position '
-                 '2 and hydroxyl groups at positions 1 and 3.\n'
+                 'First, I need to identify the glycerol structure in the '
+                 'molecule. Glycerol is HOCH2-CHOH-CH2OH. When esterified at '
+                 'position 2, the structure becomes HOCH2-C(OOCR)-CH2OH, where '
+                 'R is the fatty acid chain.\n'
                  '\n'
-                 'To improve the classification, we can:\n'
+                 'So, the key features to check are:\n'
+                 '1. Presence of a glycerol backbone (three carbons with two '
+                 'hydroxyl groups and one ester group).\n'
+                 '2. Exactly one ester group attached to the central carbon of '
+                 'the glycerol.\n'
+                 '3. The other two hydroxyl groups on the terminal carbons '
+                 'should be free (not esterified).\n'
                  '\n'
-                 '- **Use Specific SMARTS Patterns**: Define more precise '
-                 'SMARTS patterns that accurately represent the structure of '
-                 '2-monoglycerides, ensuring that the glycerol backbone and '
-                 'functional groups are correctly identified.\n'
+                 'Let me break this down step by step.\n'
                  '\n'
-                 '- **Check for Additional Functional Groups**: Include checks '
-                 'to ensure there are no extra ester or acyl groups in the '
-                 'molecule that would disqualify it from being a '
-                 '2-monoglyceride.\n'
+                 '1. **Parsing the SMILES**: Convert the SMILES string to an '
+                 "RDKit molecule. If it's invalid, return False.\n"
                  '\n'
-                 '- **Verify Connectivity and Substituents**: Ensure that '
-                 'positions 1 and 3 of the glycerol backbone have hydroxyl '
-                 'groups and no other substituents, and that position 2 has an '
-                 'ester linkage to a fatty acid chain.\n'
+                 '2. **Identify the glycerol backbone**: Look for a '
+                 'three-carbon chain where the middle carbon is connected to '
+                 'an ester group. The terminal carbons should have hydroxyl '
+                 'groups (or other substituents, but in monoglycerides, they '
+                 'should be -OH).\n'
                  '\n'
-                 'Here is the improved code incorporating these changes:',
+                 '3. **Check ester count**: There should be exactly one ester '
+                 'group in the molecule. Monoglycerides have only one fatty '
+                 'acid chain.\n'
+                 '\n'
+                 '4. **Position of the ester**: The ester must be on the '
+                 "central carbon of the glycerol. So, the ester's oxygen "
+                 'should be connected to the middle carbon.\n'
+                 '\n'
+                 '5. **Fatty acid chain**: The ester should be part of a '
+                 'carboxylic acid (like RCO-O-...). The chain should be a '
+                 'certain length, but maybe just checking for the presence of '
+                 'the ester is enough here.\n'
+                 '\n'
+                 'Potential issues:\n'
+                 '- How to accurately determine the position of the ester. '
+                 'Using SMARTS patterns might help here.\n'
+                 '- Ensuring that the other two hydroxyls are present and not '
+                 'esterified.\n'
+                 '\n'
+                 'Let me try to construct a SMARTS pattern for the glycerol '
+                 'backbone with an ester on the central carbon. The glycerol '
+                 'part would be C-O-C(CO)CO, but maybe more precisely:\n'
+                 '\n'
+                 'The central carbon (position 2) has an ester group. The '
+                 'ester is O-R-C(=O)-O-C. Wait, the ester group is O-C(=O)-R. '
+                 'So the structure around the central carbon would be: '
+                 'C-O-C(=O)-R, and the other two carbons (positions 1 and 3) '
+                 'have hydroxyl groups.\n'
+                 '\n'
+                 'So the SMARTS pattern could be something like '
+                 '[CH2]([OH])-[C](=[O])-[OX2]-[CH2]([OH]). Wait, no. Let me '
+                 'think again. The central carbon (C2) is connected to the '
+                 'ester group. The ester is O-C(=O)-R. So the central carbon '
+                 'would have an oxygen connected to the carbonyl group.\n'
+                 '\n'
+                 'Wait, the correct structure for the ester on C2 would be: '
+                 "the central carbon (C2) is connected to an oxygen that's "
+                 'part of an ester. The ester group is O-C(=O)-R. So the '
+                 "central carbon's connectivity would be: C-O-C(=O)-R. But the "
+                 "glycerol's C2 is connected to two other carbons (C1 and C3) "
+                 'and the ester oxygen.\n'
+                 '\n'
+                 'So the SMARTS pattern for the central part would be:\n'
+                 '\n'
+                 '[CH2]-[C](-[OX2]-C(=O)-*)-[CH2]\n'
+                 '\n'
+                 'But the hydroxyl groups on C1 and C3 need to be present. '
+                 "Wait, no—since it's a monoglyceride, the other two hydroxyls "
+                 '(on C1 and C3) should be free. So the terminal carbons (C1 '
+                 'and C3) should each have at least one hydroxyl group.\n'
+                 '\n'
+                 'So the SMARTS pattern for the glycerol backbone with ester '
+                 'on C2 could be:\n'
+                 '\n'
+                 '[CH2]([OH])-[C]([OX2]C(=O)*)-[CH2]([OH])\n'
+                 '\n'
+                 "But RDKit's SMARTS might need to be adjusted. Let me try to "
+                 'write this correctly.\n'
+                 '\n'
+                 'Alternatively, perhaps match the glycerol backbone where the '
+                 'central carbon has an ester group, and the other two carbons '
+                 'have hydroxyls.\n'
+                 '\n'
+                 'So:\n'
+                 '\n'
+                 'C1: CH2OH\n'
+                 'C2: COOR (ester)\n'
+                 'C3: CH2OH\n'
+                 '\n'
+                 'But in the actual structure, the ester is attached via an '
+                 'oxygen. So the structure would be:\n'
+                 '\n'
+                 'C1: CH2OH\n'
+                 'C2: O-C(=O)-R connected to the central carbon\n'
+                 'C3: CH2OH\n'
+                 '\n'
+                 'So the SMARTS pattern could be:\n'
+                 '\n'
+                 '[CH2]([OH])[CH]([OX2][C](=O)[!O])[CH2]([OH])\n'
+                 '\n'
+                 'Wait, the central carbon (C2) is connected to C1 and C3 '
+                 '(each CH2OH), and also to an oxygen that is part of an ester '
+                 'group. The ester group is O-C(=O)-R. So the oxygen attached '
+                 'to C2 is connected to a carbonyl group.\n'
+                 '\n'
+                 'So maybe:\n'
+                 '\n'
+                 '[CH2]([OH])[CH]([OX2][C](=[OX1])[CX4,CX3])[CH2]([OH])\n'
+                 '\n'
+                 'This would match the central carbon (CH) connected to two '
+                 "CH2OH groups and an oxygen that's part of an ester "
+                 '(O-C(=O)-R). The [CX4,CX3] is to match the next atom in the '
+                 'chain (could be a carbon with single or double bonds).\n'
+                 '\n'
+                 'Additionally, there should be only one ester group in the '
+                 "molecule. So we can check that there's exactly one ester "
+                 'group.\n'
+                 '\n'
+                 'Putting this together:\n'
+                 '\n'
+                 '1. Check that the molecule has the glycerol backbone with '
+                 'ester on C2 using the SMARTS pattern.\n'
+                 "2. Ensure there's exactly one ester group in the molecule.\n"
+                 '3. Check that the other two hydroxyl groups are present '
+                 '(maybe via substructure matching for -OH groups on the '
+                 'terminal carbons).\n'
+                 '\n'
+                 'Potential edge cases:\n'
+                 '- The hydroxyl groups might be in different protonation '
+                 'states (e.g., O- vs OH), but SMILES usually represents them '
+                 'as -OH.\n'
+                 '- The fatty acid chain could vary in length and '
+                 "unsaturation, but the function shouldn't depend on that as "
+                 "long as it's an ester.\n"
+                 '\n'
+                 "Another approach: Find all ester groups. If there's exactly "
+                 "one, check that it's attached to the central carbon of the "
+                 'glycerol.\n'
+                 '\n'
+                 'So steps:\n'
+                 '\n'
+                 '1. Parse the SMILES into a molecule.\n'
+                 '2. Check for validity.\n'
+                 '3. Find all ester groups (O-C=O). If count != 1, return '
+                 'False.\n'
+                 '4. Check that the ester is attached to the central carbon of '
+                 'a glycerol backbone.\n'
+                 '   - The glycerol backbone is three carbons in a row: '
+                 'C-C-C.\n'
+                 '   - The ester oxygen is on the middle carbon.\n'
+                 '   - The other two carbons have hydroxyl groups.\n'
+                 '\n'
+                 'So, the SMARTS pattern for the glycerol with ester on C2 '
+                 'could be:\n'
+                 '\n'
+                 '[CH2]([OH])[CH]([OX2][C](=O)*)[CH2]([OH])\n'
+                 '\n'
+                 'But I need to make sure that the ester oxygen is attached to '
+                 "the middle carbon. Let's test this.\n"
+                 '\n'
+                 'Alternatively, use a SMARTS pattern that matches the entire '
+                 'structure. For example:\n'
+                 '\n'
+                 '*C-O-C(=O)-R where the C is the middle carbon of the '
+                 'glycerol.\n'
+                 '\n'
+                 'But putting it all together:\n'
+                 '\n'
+                 'The SMARTS pattern for the glycerol part would be:\n'
+                 '\n'
+                 '[CH2]([OH])-[CH](-[OX2]-C(=O)-[!O])-[CH2]([OH])\n'
+                 '\n'
+                 'This would match the three-carbon chain where the middle '
+                 'carbon is connected to an ester oxygen, and the terminal '
+                 'carbons have hydroxyls.\n'
+                 '\n'
+                 'So, the code steps:\n'
+                 '\n'
+                 '- Check if the molecule has exactly one ester group.\n'
+                 '- Check if the ester is attached to the middle carbon of the '
+                 'glycerol backbone.\n'
+                 '- Ensure the other two carbons have hydroxyl groups.\n'
+                 '\n'
+                 'Another way: Use SMARTS to find the specific substructure.\n'
+                 '\n'
+                 'The complete SMARTS pattern for the 2-monoglyceride would '
+                 'be:\n'
+                 '\n'
+                 '[CH2]([OH])[CH]([OX2][C](=[OX1])[CX4,CX3])[CH2]([OH])\n'
+                 '\n'
+                 'This pattern matches the glycerol backbone where the middle '
+                 'carbon is attached to an ester group, and the two ends have '
+                 'hydroxyls.\n'
+                 '\n'
+                 'Additionally, the molecule should have only one ester '
+                 'group.\n'
+                 '\n'
+                 'So, in code:\n'
+                 '\n'
+                 'mol = Chem.MolFromSmiles(smiles)\n'
+                 'if not mol:\n'
+                 '    return False, "Invalid SMILES"\n'
+                 '\n'
+                 '# Check for exactly one ester group\n'
+                 'ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")\n'
+                 'esters = mol.GetSubstructMatches(ester_pattern)\n'
+                 'if len(esters) != 1:\n'
+                 '    return False, f"Expected 1 ester group, found '
+                 '{len(esters)}"\n'
+                 '\n'
+                 '# Check the glycerol structure with ester on C2\n'
+                 'glycerol_pattern = '
+                 'Chem.MolFromSmarts("[CH2]([OH])[CH]([OX2][C](=[OX1])[!O])[CH2]([OH])")\n'
+                 'if not mol.HasSubstructMatch(glycerol_pattern):\n'
+                 '    return False, "Glycerol backbone with ester on C2 not '
+                 'found"\n'
+                 '\n'
+                 '# Also check that the ester is the only one and attached '
+                 'correctly\n'
+                 '# Maybe check the rest of the molecule for other esters? But '
+                 'already checked len(esters) ==1\n'
+                 '\n'
+                 'But wait, the ester_pattern might match more than once if '
+                 'there are other carbonyl groups. Wait, the ester_pattern is '
+                 "looking for O-C(=O), which is the ester group. So if there's "
+                 "exactly one, and the glycerol pattern is present, then it's "
+                 'a 2-monoglyceride.\n'
+                 '\n'
+                 'Potential issues: The hydroxyl groups might not be explicit '
+                 'in the SMILES. For example, if the SMILES uses implicit '
+                 "hydrogens, but RDKit's substructure matching should handle "
+                 'that.\n'
+                 '\n'
+                 'Testing with example SMILES:\n'
+                 '\n'
+                 'Take "CCCCCCCCCC(=O)OC(CO)CO" (2-decanoylglycerol). The '
+                 'glycerol part is OC(CO)CO, with the ester on the central C.\n'
+                 '\n'
+                 'In the SMARTS pattern, the central C is connected to '
+                 'O-C(=O), and the two CH2 groups have OH.\n'
+                 '\n'
+                 'Another example: '
+                 '"O=C(CCC/C=C\\C\\C=C/C=C/C(C/C=C\\CCCCC)OO)OC(CO)CO" '
+                 '(12-HPETE 2-glyceryl ester). The ester is on the central C '
+                 'of OC(CO)CO.\n'
+                 '\n'
+                 'So the SMARTS pattern should match these.\n'
+                 '\n'
+                 'But what about if there are other oxygen atoms not part of '
+                 'the ester? The code checks for exactly one ester group, so '
+                 "that's okay.\n"
+                 '\n'
+                 'So putting it all together:\n'
+                 '\n'
+                 'The function will:\n'
+                 '\n'
+                 '1. Check for valid SMILES.\n'
+                 '2. Check for exactly one ester group.\n'
+                 '3. Check that the ester is on the central carbon of the '
+                 'glycerol backbone with two hydroxyls on the terminals.\n'
+                 '\n'
+                 'Now, code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 28,
-    'num_false_positives': 6,
-    'num_true_negatives': 142260,
-    'num_false_negatives': 6,
+    'num_true_positives': 34,
+    'num_false_positives': 13,
+    'num_true_negatives': 142253,
+    'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.8235294117647058,
-    'recall': 0.8235294117647058,
-    'f1': 0.8235294117647058,
-    'accuracy': 0.9999156711173577,
-    'negative_predictive_value': 0.9999578254818439}
+    'precision': 0.723404255319149,
+    'recall': 1.0,
+    'f1': 0.8395061728395062,
+    'accuracy': 0.9999086437104708,
+    'negative_predictive_value': 1.0}

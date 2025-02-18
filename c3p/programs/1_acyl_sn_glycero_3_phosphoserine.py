@@ -6,8 +6,7 @@ from rdkit import Chem
 def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
     """
     Determines if a molecule is a 1-acyl-sn-glycero-3-phosphoserine based on its SMILES string.
-    References structures for this class typically include glycerophosphoserine backbone and
-    an acyl substituent at the 1-hydroxy position.
+    This includes a glycerol backbone with an acyl chain at the 1-hydroxy position and a phosphoserine group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -17,23 +16,28 @@ def is_1_acyl_sn_glycero_3_phosphoserine(smiles: str):
         str: Reason for classification
     """
     
-    # Parse the SMILES string into a molecule
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the SMARTS pattern for the glycerophosphoserine backbone
-    glycerophosphoserine_pattern = Chem.MolFromSmarts("P(OC[C@H](O)CO)(OC[C@H](N)C(=O)O)O")
-    if not mol.HasSubstructMatch(glycerophosphoserine_pattern):
-        return False, "No glycerophosphoserine backbone found"
-
-    # Define the SMARTS pattern for an acyl group linked through an ester at the primary position
-    acyl_hydroxy_pattern = Chem.MolFromSmarts("C(=O)OC[C@H](O)C")
-    if not mol.HasSubstructMatch(acyl_hydroxy_pattern):
-        return False, "No acyl group found at the 1-hydroxy position"
+    # Look for a glycerol backbone with a defined structure linked by stereochemistry
+    glycerol_pattern = Chem.MolFromSmarts("O[C@@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)CO")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone with correct stereochemistry found"
     
-    # If both patterns are found, this is a positive match
-    return True, "Contains 1-acyl-sn-glycero-3-phosphoserine structure"
+    # Check for the presence and correct placement of the phosphoserine group
+    phosphoserine_pattern = Chem.MolFromSmarts("P(=O)(O)OC[C@H](N)C(=O)O")
+    if not mol.HasSubstructMatch(phosphoserine_pattern):
+        return False, "No phosphoserine group found"
+
+    # Look for acyl chain pattern with ester linkage
+    acyl_pattern = Chem.MolFromSmarts("C(=O)OC[C@H](O)")  # Focus on ester linkage, possibly allowing different chain orientations
+    acyl_match = mol.GetSubstructMatch(acyl_pattern)
+    if not acyl_match:
+        return False, "No acyl chain linked to the glycerol 1-hydroxy position"
+
+    return True, "Contains glycerol backbone with acyl chain and attached phosphoserine group"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:52603',
@@ -45,6 +49,69 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:52603',
                           'xrefs': ['PMID:16341241'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 27,
+                           'log_lines_of_code': 3.295836866004329,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'GetSubstructMatch',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmiles',
+                                                 'MolFromSmarts'],
+                           'methods_called_count': 4,
+                           'smarts_strings': [   'P(=O)(O)OC[C@H](N)C(=O)O',
+                                                 'O[C@@H](CO[P](=O)(O)OC[C@H](N)C(=O)O)CO',
+                                                 'C(=O)OC[C@H](O)'],
+                           'smarts_strings_count': 3,
+                           'defs': [   'is_1_acyl_sn_glycero_3_phosphoserine(smiles: '
+                                       'str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No glycerol backbone with '
+                                          'correct stereochemistry found"',
+                                          'False, "No phosphoserine group '
+                                          'found"',
+                                          'False, "No acyl chain linked to the '
+                                          'glycerol 1-hydroxy position"',
+                                          'True, "Contains glycerol backbone '
+                                          'with acyl chain and attached '
+                                          'phosphoserine group"'],
+                           'returns_count': 5,
+                           'complexity': 3.0591673732008657},
     'message': '\n'
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
@@ -54,137 +121,137 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:52603',
                'False positives: NONE\n'
                'False negatives: SMILES: '
                'P(OC[C@H](O)COC(=O)CCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
-               'NAME: PS(16:0/0:0) REASON: MISSED No glycerophosphoserine '
-               'backbone found\n'
+               'NAME: PS(16:0/0:0) REASON: MISSED No acyl chain linked to the '
+               'glycerol 1-hydroxy position\n'
                ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OC[C@H](N)C(O)=O '
-               'NAME: 1-stearoyl-sn-glycero-3-phosphoserine REASON: MISSED No '
-               'glycerophosphoserine backbone found\n'
+               'P(OC[C@H](O)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(20:5(5Z,8Z,11Z,14Z,17Z)/0:0) REASON: MISSED No acyl '
+               'chain linked to the glycerol 1-hydroxy position\n'
                ' * SMILES: '
-               'P(OC[C@H](O)COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
-               'NAME: PS(22:6(4Z,7Z,10Z,13Z,16Z,19Z)/0:0) REASON: MISSED No '
-               'glycerophosphoserine backbone found\n'
+               'P(OC[C@H](O)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(18:4(6Z,9Z,12Z,15Z)/0:0) REASON: MISSED No acyl chain '
+               'linked to the glycerol 1-hydroxy position\n'
                ' * SMILES: '
-               'P(OC[C@H](O)COC(=O)CCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
-               'NAME: PS(15:0/0:0) REASON: MISSED No glycerophosphoserine '
-               'backbone found\n'
+               'P(OC[C@H](O)COC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(22:4(7Z,10Z,13Z,16Z)/0:0) REASON: MISSED No acyl '
+               'chain linked to the glycerol 1-hydroxy position\n'
                ' * SMILES: '
-               'P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\CCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
-               'NAME: PS(16:1(9Z)/0:0) REASON: MISSED No glycerophosphoserine '
-               'backbone found\n'
+               'CCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OC[C@H](N)C(O)=O '
+               'NAME: 1-heptadecanoyl-sn-glycero-3-phosphoserine REASON: '
+               'MISSED No acyl chain linked to the glycerol 1-hydroxy '
+               'position\n'
                ' * SMILES: '
-               'P(OCC(O)COC(=O)CCCCCCC/C=C/CCCCCCCC)(OCC(N)C(O)=O)(O)=O NAME: '
-               '1-Oleoylglycerophosphoserine REASON: MISSED No '
-               'glycerophosphoserine backbone found\n'
-               ' * SMILES: '
-               'P(OC[C@H](O)COC(=O)CCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
-               'NAME: PS(22:0/0:0) REASON: MISSED No glycerophosphoserine '
-               'backbone found\n'
-               ' * SMILES: '
-               'P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\CCCC)(OC[C@H](N)C(O)=O)(O)=O '
-               'NAME: PS(14:1(9Z)/0:0) REASON: MISSED No glycerophosphoserine '
-               'backbone found\n'
+               'P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\CCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(15:1(9Z)/0:0) REASON: MISSED No acyl chain linked to '
+               'the glycerol 1-hydroxy position\n'
                ' * SMILES: '
                'CCCCCCCC\\C=C/CCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OC[C@H](N)C(O)=O '
                'NAME: 1-O-oleoyl-sn-glycero-3-phosphoserine REASON: MISSED No '
-               'glycerophosphoserine backbone found\n'
+               'acyl chain linked to the glycerol 1-hydroxy position\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(=O)OC[C@H](N)C(O)=O '
+               'NAME: 1-stearoyl-sn-glycero-3-phosphoserine REASON: MISSED No '
+               'acyl chain linked to the glycerol 1-hydroxy position\n'
                ' * SMILES: '
                'P(OC[C@H](O)COC(=O)CCCCCCCCC/C=C\\CCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
-               'NAME: PS(22:1(11Z)/0:0) REASON: MISSED No glycerophosphoserine '
-               'backbone found\n'
+               'NAME: PS(22:1(11Z)/0:0) REASON: MISSED No acyl chain linked to '
+               'the glycerol 1-hydroxy position\n'
+               ' * SMILES: '
+               'P(OC[C@H](O)COC(=O)CCCCCCC/C=C\\CCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:1(9Z)/0:0) REASON: MISSED No acyl chain linked to '
+               'the glycerol 1-hydroxy position\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)CO)[C@H]3[C@@H](O)[C@H](OC(O)[C@@H]3O)CO',
-                                     'name': 'beta-D-Glcp-(1->2)-beta-D-Glcp-(1->3)-D-Galp',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': 'CCS(=O)(=O)NCC[C@@H]1CC[C@@H]([C@H](O1)CO)NC(=O)NC2=CC(=CC(=C2)Cl)Cl',
-                                     'name': '1-(3,5-dichlorophenyl)-3-[(2S,3S,6S)-6-[2-(ethylsulfonylamino)ethyl]-2-(hydroxymethyl)-3-oxanyl]urea',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': 'C(C(O)=O)C/C=C\\C/C=C\\C\\C=C/C=C/C=C/[C@H]1[C@H](C/C=C\\CC)O1',
-                                     'name': '(16S,17S)-epoxy-(4Z,7Z,10Z,12E,14E,19Z)-docosahexaenoic '
+    'sample_true_negatives': [   {   'smiles': '[H][C@@]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)O[C@@H]1[C@@H](O)[C@@H](O)[C@@H](CO)O[C@H]1OC[C@H]1O[C@@H](OC[C@H]2O[C@@H](OC[C@H](NC(=O)[C@H](O)CCCCCCCCCCCCCCCCCCCCCC)[C@H](O)[C@H](O)CCCCCCCCCCCCCC)[C@H](O)[C@@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
+                                     'name': 'Neurosporaside',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': '[O-]C(=O)C1=CN(C2CC2)C2=CC(N3CC[NH2+]CC3)=C(F)C=C2C1=O',
+                                     'name': 'ciprofloxacin zwitterion',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'O=C1NC(=CC2=C1O[C@H]([C@@H](O)CC(C)C)O2)C',
+                                     'name': 'Dihydroisoflavipucine',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'O=C1N2C(C(=O)N([C@@]2(OC)C)C[C@@H](O)C3=CC=CC=C3)=CC4=C1N(C=5C=CC=CC45)C',
+                                     'name': 'Marinacarboline K',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'O1[C@@H](O[C@H]2[C@@H](O)[C@H](O)[C@H](O[C@@H]2OC[C@H]3OC(O)[C@@H](O)[C@@H](O)[C@@H]3O)CO)[C@H](NC(=O)C)[C@@H](O)[C@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO[C@]5(O[C@H]([C@H](NC(=O)C)[C@@H](O)C5)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]1CO',
+                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[[(2R,3R,4S,5R,6S)-6-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2S,3S,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-2-[[(2R,3S,4S,5S)-3,4,5,6-tetrahydroxyoxan-2-yl]methoxy]oxan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
                                              'acid',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': 'OC[C@H]1O[C@H](O[C@H]2[C@@H](CO)O[C@@H](O[C@@H]3[C@@H](CO)O[C@@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
-                                     'name': 'alpha-D-Galp-(1->4)-beta-D-Galp-(1->4)-beta-D-Glcp',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': '[Li+].[Br-]',
-                                     'name': 'lithium bromide',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': 'C=1(OC)C2=C(C=C3C[C@H]([C@](CC=4C=C(OC)C(OC)=C(C4C13)OC)(C)O)C)OCO2',
-                                     'name': 'Besigomsin',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': 'C1=CC=C(C(=C1)C=CC(=O)C2=CC=CN2)Cl',
-                                     'name': '3-(2-chlorophenyl)-1-(1H-pyrrol-2-yl)-2-propen-1-one',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': 'O=C1OC(O)C(=C1C(O)C(C)C)C',
-                                     'name': '5-Hydroxy-3-(1-hydroxy-2-methylpropyl)-4-methyl-2(5H)-furanone',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': '[H][C@@]1(COC(C)(C)[C@@]1([H])OC(=O)\\C=C\\c1ccccc1)c1c(O)ccc2C(=O)C[C@H](Oc12)c1ccccc1',
-                                     'name': '(+)-tephrorin B',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'},
-                                 {   'smiles': 'C[C@@H]1CN(C(=O)C2=C(C3=CC=CC=C3CO[C@@H]1CN(C)CC4=CC=CC(=C4)C(=O)O)C5=CC=CC=C5N2C)[C@@H](C)CO',
-                                     'name': 'LSM-9341',
-                                     'reason': 'No glycerophosphoserine '
-                                               'backbone found'}],
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'O(C(=O)CCCCCCC)CCC1=CC=CC=C1',
+                                     'name': '2-Phenylethyl octanoate',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'P(OCC(OC(=O)CCCCCCC/C=C\\CCCCCCCC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)(OCCNC)(O)=O',
+                                     'name': 'PE-NMe(20:3(5Z,8Z,11Z)/18:1(9Z))',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'O=C1C2=C(OC=3C1=CC=CN3)C(Cl)=CC(=C2)C=4NN=NN4',
+                                     'name': 'traxanox',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'CCCCC(C)CCCCCC(C)CCCCCCCCCC(C)CC(O)=O',
+                                     'name': '3,13,19-trimethyltricosanoic '
+                                             'acid',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry found'},
+                                 {   'smiles': 'COC(CC1=CC[C@]2(C)[C@@H](C)CCC[C@]2(C)C1=O)OC',
+                                     'name': 'aignopsane ketal',
+                                     'reason': 'No glycerol backbone with '
+                                               'correct stereochemistry '
+                                               'found'}],
     'sample_false_negatives': [],
-    'attempt': 3,
-    'reasoning': 'The previous code attempts to classify a chemical entity as '
-                 'a 1-acyl-sn-glycero-3-phosphoserine based on its SMILES '
-                 'string. It does so by looking for a specific '
-                 'glycerophosphoserine backbone and an acyl group attached at '
-                 'the primary hydroxy position. However, it failed to classify '
-                 "the example structures correctly. Here's what might have "
-                 'gone wrong and how we can improve the code:\n'
+    'attempt': 2,
+    'reasoning': "To diagnose the failure, let's review the previous code and "
+                 'analyze the outcomes. The task is to identify whether a '
+                 'given SMILES represents a 1-acyl-sn-glycero-3-phosphoserine. '
+                 'The previous code implemented substructure searches for '
+                 'stereochemistry-aware glycerol backbones, phosphoserine '
+                 'groups, and acyl linkages.\n'
                  '\n'
-                 '1. **Pattern Matching for Backbone**: The SMARTS pattern '
-                 'used for detecting the glycerophosphoserine backbone may be '
-                 'too specific or incorrect, missing structures that do have '
-                 'this backbone. The pattern should be revised to accurately '
-                 'encompass variations in orientation or slight structural '
-                 'differences common in this class.\n'
+                 '### Observations on Failure:\n'
+                 '- **No acyl chain linked to the glycerol 1-hydroxy '
+                 'position**: The main error suggests that the program is not '
+                 'correctly identifying the acyl linkage.\n'
+                 '- The acyl linkage pattern using `C(=O)O[C@H](O)` might not '
+                 'match all configurations due to potential variations in acyl '
+                 'chains (e.g., chiral centers, chain branching) or '
+                 'differences between explicit and implicit hydrogen handling '
+                 'in RDKit.\n'
                  '\n'
-                 '2. **Matching Acyl Group at the Correct Position**: The way '
-                 'the code checks for the acyl group at the 1-hydroxy position '
-                 'might be flawed. It might not be correctly associating the '
-                 'ester linkage to the right oxygen. We should ensure the '
-                 'pattern unambiguously identifies the acyl linkage.\n'
+                 '### Improvement Steps:\n'
+                 '1. **Refine the Acyl Group Detection**:\n'
+                 '   - Enhance the acyl detection by being more inclusive of '
+                 'orientation or configuration, such as considering both '
+                 'stereochemistry and chain length variation.\n'
+                 '   - Consider a more general pattern for the acyl linkage, '
+                 'checking only for the ester bond to the glycerol hydroxyl '
+                 'group without the chiral constraint.\n'
+                 '2. **Ensure Complete Structure Coverage**:\n'
+                 '   - Double-check the entire glycerol backbone and '
+                 'phosphoserine substructure pattern, potentially increasing '
+                 'specificity around the hydroxy and acyl connecting groups.\n'
                  '\n'
-                 '3. **Stereo Centers**: Stereo configurations (indicated by @ '
-                 'in SMILES strings) might be present and need consideration '
-                 'for correct matching.\n'
-                 '\n'
-                 '4. **Validation Among Examples**: Ensure the created '
-                 'patterns match all example structures to validate correct '
-                 'detection, using intermediates to visualize and debug.\n'
-                 '\n'
-                 '5. **Improved Pattern Definitions**: The existing patterns '
-                 'should be corrected and thoroughly checked by '
-                 'cross-referencing with known successful matches.\n'
-                 '\n'
-                 "Now, let's revise the code to address these issues:",
+                 'Here is the revised code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
     'num_true_positives': 26,
-    'num_false_positives': 100,
-    'num_true_negatives': 36512,
+    'num_false_positives': 353,
+    'num_true_negatives': 141921,
     'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.20634920634920634,
+    'precision': 0.06860158311345646,
     'recall': 1.0,
-    'f1': 0.34210526315789475,
-    'accuracy': 0.9972705933730007,
+    'f1': 0.12839506172839504,
+    'accuracy': 0.9975193253689388,
     'negative_predictive_value': 1.0}

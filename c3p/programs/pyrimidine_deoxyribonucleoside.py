@@ -92,6 +92,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:68472',
                           'xrefs': ['MetaCyc:Pyrimidine-Deoxyribonucleosides'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Error: Python argument types in\n'
                '    Mol.HasSubstructMatch(Mol, NoneType)\n'

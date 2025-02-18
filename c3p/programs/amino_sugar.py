@@ -1,71 +1,38 @@
 """
 Classifies: CHEBI:28963 amino sugar
 """
-"""
-Classifies: CHEBI:37671 amino sugar
-"""
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_amino_sugar(smiles: str):
     """
     Determines if a molecule is an amino sugar based on its SMILES string.
-    An amino sugar is a sugar with one or more hydroxyl groups replaced by amino groups.
+    An amino sugar is defined as any sugar having one or more alcoholic hydroxy groups
+    replaced by substituted or unsubstituted amino groups.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an amino sugar, False otherwise
+        bool: True if the molecule is an amino sugar, False otherwise
         str: Reason for classification
     """
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    if not mol:
         return False, "Invalid SMILES string"
 
-    # Check for ring structure
-    ring_info = mol.GetRingInfo()
-    if not ring_info.NumRings():
-        return False, "No ring structure found"
-    
-    # Look for at least 2 hydroxyl groups (sugar-like)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
-    if len(hydroxyl_matches) < 2:
-        return False, "Not enough hydroxyl groups for a sugar"
-
-    # Check for amino groups (including N-acetyl and other substitutions)
-    amino_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(N=O)]")
-    amino_matches = mol.GetSubstructMatches(amino_pattern)
-    
-    # Check for N-acetyl groups specifically
-    n_acetyl_pattern = Chem.MolFromSmarts("[NX3;H0]([C&R])(C=O)")
-    n_acetyl_matches = mol.GetSubstructMatches(n_acetyl_pattern)
-    
-    # Count total amino groups (including N-acetyl)
-    total_amino = len(amino_matches) + len(n_acetyl_matches)
-    if total_amino < 1:
-        return False, "No amino groups found"
-
-    # Check if amino groups are attached to ring carbons
-    amino_sugar_pattern = Chem.MolFromSmarts("[C&R]-[NX3;H2,H1,H0;!$(N=O)]")
-    if not mol.HasSubstructMatch(amino_sugar_pattern):
-        return False, "Amino group not attached to ring carbon"
-
-    # More flexible sugar pattern matching
-    # Look for at least 3 contiguous carbons with hydroxyl or amino groups
-    sugar_pattern = Chem.MolFromSmarts("[C&R][C&R][C&R]")
+    # Look for sugar-like ring structures typical of pyranoses (6-membered rings)
+    sugar_pattern = Chem.MolFromSmarts("C1[C@H]([O])[C@@H]([O])[C@H]([O])[C@H](O)O1")  # Pyranose ring
     if not mol.HasSubstructMatch(sugar_pattern):
-        return False, "No sugar-like carbon chain found"
+        return False, "No typical sugar-like ring structure found"
 
-    # Additional check for common sugar functional groups
-    sugar_functional_groups = Chem.MolFromSmarts("[C&R][OH]")
-    if not mol.HasSubstructMatch(sugar_functional_groups):
-        return False, "No sugar-like functional groups found"
+    # Look for amino groups, possibly replacing -OH groups in these structures
+    amino_pattern = Chem.MolFromSmarts("[CX4;R][NX3;H2,H1,H0]")  # Carbon attached to an NHx in a ring
+    if not mol.HasSubstructMatch(amino_pattern):
+        return False, "No amino group replacing a hydroxy group found"
 
-    return True, f"Contains a sugar structure with {total_amino} amino group(s) attached"
+    return True, "Contains a sugar-like ring structure with one or more hydroxyl groups replaced by amino groups"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:28963',
@@ -80,181 +47,198 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:28963',
                                        'PMID:9056391'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 23,
+                           'log_lines_of_code': 3.1354942159291497,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'MolFromSmarts',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmiles'],
+                           'methods_called_count': 3,
+                           'smarts_strings': [   '[CX4;R][NX3;H2,H1,H0]',
+                                                 'C1[C@H]([O])[C@@H]([O])[C@H]([O])[C@H](O)O1'],
+                           'smarts_strings_count': 2,
+                           'defs': ['is_amino_sugar(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No typical sugar-like ring '
+                                          'structure found"',
+                                          'False, "No amino group replacing a '
+                                          'hydroxy group found"',
+                                          'True, "Contains a sugar-like ring '
+                                          'structure with one or more hydroxyl '
+                                          'groups replaced by amino groups"'],
+                           'returns_count': 4,
+                           'complexity': 2.6270988431858298},
     'message': '\n'
-               'Attempt failed: F1 score of 0.038461538461538464 is too low.\n'
+               'Error: exceptions must derive from BaseException\n'
+               'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: '
-               'CN[C@H]1[C@H](O)[C@@H](O)[C@H](CO)O[C@H]1O[C@H]1[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](OC(N)=O)[C@@H](O)[C@@H]2NC(N)=N)O[C@@H](C)[C@]1(O)CO '
-               'NAME: Bluensomycin REASON: CORRECT Contains a sugar structure '
-               'with 4 amino group(s) attached\n'
-               ' * SMILES: '
-               'O=C(N[C@H]1[C@H](O[C@H](CO)[C@H]([C@@H]1O)O)O[C@@]2(C=C[C@@H]([C@H](CCC=C(C)C)C)CC2)C)C '
-               'NAME: Trichaspside A REASON: CORRECT Contains a sugar '
-               'structure with 1 amino group(s) attached\n'
+               'True positives: NONE\n'
                'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'O([C@H]1[C@@H](O[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O[C@@H](O[C@@H]3[C@@H](NC(=O)C)[C@@H](O[C@@H]([C@H]3O)CO)O[C@@H]4[C@@H](O)[C@@H](O[C@@H]([C@@H]4O)CO)O[C@H]5[C@H](O)[C@@H](O)[C@@H](O[C@@H]5CO)O)[C@@H]1O)CO)[C@]6(O[C@H]([C@H](NC(=O)C)[C@@H](O)C6)[C@H](O)[C@H](O)CO)C(O)=O '
-               'NAME: '
-               '(2S,4S,5R,6R)-5-Acetamido-2-[(2R,3R,4R,5S,6R)-5-[(2S,3R,4R,5R,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2-[(2S,3R,4R,5S,6R)-3-acetamido-2-[(2R,3S,4S,5R,6S)-3,5-dihydroxy-2-(hydroxymethyl)-6-[(2R,3S,4R,5R,6R)-4,5,6-trihydroxy-2-(hydroxymethyl)oxan-3-yl]oxyoxan-4-yl]oxy-5-hydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-3-hydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
-               'acid REASON: MISSED No sugar-like carbon chain found\n'
-               ' * SMILES: '
-               'S(O[C@@H]1[C@@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@H](O[C@H]3[C@H](O)[C@H](O[C@@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](O[C@]6(O[C@H]([C@H](NC(=O)C)[C@@H](O)C6)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]5O)CO)[C@H](O)[C@H]4NC(=O)C)CO)[C@@H](O[C@H]7[C@H](O)[C@H](O[C@@H](O[C@H]8[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]8CO)O[C@H]9[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]9CO[C@@H]%10O[C@H]([C@@H](O)[C@@H](O)[C@@H]%10O)C)O)[C@H]7O)CO[C@H]%11O[C@@H]([C@@H](O)[C@H](O)[C@@H]%11O[C@@H]%12O[C@@H]([C@@H](O[C@@H]%13O[C@@H]([C@H](O)[C@H](O[C@]%14(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%14)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%13O)CO)[C@H](O)[C@H]%12NC(=O)C)CO)CO[C@@H]%15O[C@@H]([C@@H](O[C@@H]%16O[C@@H]([C@H](O)[C@H](O[C@]%17(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%17)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%16O)CO)[C@H](O)[C@H]%15NC(=O)C)CO)O[C@@H]3CO)O[C@@H]2CO)O[C@@H]([C@@H]1O)CO)(O)(=O)=O '
-               'NAME: PubChem CID 91849816 REASON: MISSED No sugar-like carbon '
-               'chain found\n'
-               ' * SMILES: '
-               'O1[C@@H](O[C@@H]2[C@@H](O)[C@@H](O[C@@H]([C@@H]2O)CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO)O)[C@H](NC(=O)C)[C@@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H](O[C@@H]5O[C@H]([C@@H](O)[C@@H](O)[C@@H]5O)C)[C@H]1CO '
-               'NAME: '
-               'N-[(3R,4R,5S,6R)-5-[(2S,3R,4S,5S,6R)-4-[(2S,3R,4R,5S,6R)-3-Acetamido-6-(hydroxymethyl)-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-5-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide '
-               'REASON: MISSED No sugar-like carbon chain found\n'
-               ' * SMILES: '
-               'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)O)[C@@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O)CO)[C@@H]4O)CO[C@H]6O[C@@H]([C@@H](O)[C@H](O)[C@@H]6O[C@@H]7O[C@@H]([C@@H](O)[C@H](O[C@@H]8O[C@H]([C@@H](O)[C@@H](O)[C@@H]8O)C)[C@H]7NC(=O)C)CO)CO '
-               'NAME: '
-               'N-[(2R,3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5R,6R)-6-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-hydroxy-6-(hydroxymethyl)-4-[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-[[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxymethyl]oxan-3-yl]acetamide '
-               'REASON: MISSED No sugar-like carbon chain found\n'
-               ' * SMILES: '
-               'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O)[C@@H]3O[C@@H]([C@@H](O[C@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O)CO)[C@H](O)[C@@H]4O)CO)[C@H](O)[C@@H]3O)CO '
-               'NAME: '
-               'N-[(2R,3R,4R,5S,6R)-5-[(2R,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4R,5S,6R)-5-[(2R,3S,4R,5S,6R)-3,4-dihydroxy-6-(hydroxymethyl)-5-[(2S,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-3,4-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide '
-               'REASON: MISSED No sugar-like carbon chain found\n'
-               ' * SMILES: '
-               'O([C@@H]1[C@@H](O)[C@@H](O[C@H]2[C@H](O[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)[C@H](O[C@@H](O)[C@@H]2NC(=O)C)CO)O[C@@H]([C@@H]1O)CO)[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](O)[C@H](O)CO)C(O)=O '
-               'NAME: '
-               '(2S,4S,5R,6R)-5-Acetamido-2-[(2S,3R,4S,5S,6R)-2-[(2R,3R,4R,5S,6R)-3-acetamido-2-hydroxy-6-(hydroxymethyl)-5-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-4-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
-               'acid REASON: MISSED No sugar-like carbon chain found\n'
-               ' * SMILES: '
-               'CC(=O)N[C@H]1C(O)O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO[C@@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@H]5NC(C)=O)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H]1O '
-               'NAME: '
-               'beta-D-GlcpNAc-(1->2)-[beta-D-GlcpNAc-(1->6)]-alpha-D-Manp-(1->6)-[beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->3)]-beta-D-Manp-(1->4)-beta-D-GlcpNAc-(1->4)-D-GlcpNAc '
-               'REASON: MISSED No sugar-like carbon chain found\n'
-               ' * SMILES: '
-               'O([C@]1(O[C@H]([C@H](NC(=O)C)[C@@H](O)C1)[C@H](O)[C@H](O)CO)C(=O)NC)[C@@H]2[C@@H](O)[C@@H](O[C@@H]([C@@H]2O)CO)O[C@H]3[C@H](O)[C@@H](O)[C@@H](O[C@@H]3CO)O '
-               'NAME: '
-               '(2S,4S,5R,6R)-5-Acetamido-2-[(2R,3S,4S,5R,6S)-3,5-dihydroxy-2-(hydroxymethyl)-6-[(2R,3S,4R,5R,6R)-4,5,6-trihydroxy-2-(hydroxymethyl)oxan-3-yl]oxyoxan-4-yl]oxy-4-hydroxy-N-methyl-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxamide '
-               'REASON: MISSED No sugar-like carbon chain found\n'
-               ' * SMILES: '
-               'C[C@@H]1O[C@@H](OC[C@H]2O[C@@H](O)[C@H](NC(C)=O)[C@@H](O[C@@H]3O[C@@H](C)[C@@H](O)[C@@H](O)[C@@H]3O)[C@@H]2O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H](O)[C@H](O)[C@@H]1O '
-               'NAME: '
-               'alpha-L-Fucp-(1->3)-[alpha-L-Fucp-(1->6)]-{beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->3)-[beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->6)]-beta-D-Manp-(1->4)-beta-GlcpNAc-(1->4)}-beta-D-GlcpNAc '
-               'REASON: MISSED No sugar-like carbon chain found\n'
-               ' * SMILES: O1C(C(O)C(OC(C)C(O)=O)C(NC(=O)C)C1O)CO NAME: '
-               '(+)-N-Acetylmuramic acid REASON: MISSED No sugar-like carbon '
-               'chain found\n'
+               'False negatives: NONE\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O1C(CCC=2C1=CC(OC3OC(C(O)C(O)C3O)C(O)=O)=C(C2OC)C=4C(=O)C=5C(OC4)=CC(O)=C(O)C5)(C)C',
-                                     'name': '6-{[6-(6,7-dihydroxy-4-oxo-4H-chromen-3-yl)-5-methoxy-2,2-dimethyl-3,4-dihydro-2H-1-benzopyran-7-yl]oxy}-3,4,5-trihydroxyoxane-2-carboxylic '
-                                             'acid',
-                                     'reason': 'No amino groups found'},
-                                 {   'smiles': 'O=C1O[C@@H]([C@@H](OC)C=CC=C(C[C@@H](C)[C@@H]([C@@H]([C@@H]([C@@H](C=C(C=C1OC)C)C)O)C)O)C)[C@H]([C@@H](O)[C@@H]([C@@]2(O[C@H](/C=C/C)[C@@H](C)[C@@H](C2)OC3OC(C(O)C(C3)O)C)O)C)C',
-                                     'name': 'Concanamycin D',
-                                     'reason': 'No amino groups found'},
-                                 {   'smiles': 'O=C(O)[C@]1([C@H]2[C@@](OC=3C=C4C5=C(C=CC=C5)NC4=CC3CC2)(CC[C@@H]1O)C)C',
-                                     'name': 'Oxiamycin',
-                                     'reason': 'No amino groups found'},
-                                 {   'smiles': 'C1CCC(C1)CC#CC2=CC=C(C=C2)[C@@H]3[C@@H]4CN(CC(=O)N4[C@@H]3CO)C(=O)C5=CC=C(C=C5)F',
-                                     'name': '(6R,7R,8S)-7-[4-(3-cyclopentylprop-1-ynyl)phenyl]-4-[(4-fluorophenyl)-oxomethyl]-8-(hydroxymethyl)-1,4-diazabicyclo[4.2.0]octan-2-one',
-                                     'reason': 'Not enough hydroxyl groups for '
-                                               'a sugar'},
-                                 {   'smiles': 'S(=O)(C(SSCCC)CC)CCC',
-                                     'name': 'Propyl 1-(propylsulfinyl)propyl '
-                                             'disulfide',
-                                     'reason': 'No ring structure found'},
-                                 {   'smiles': 'ClC=1C(=O)[C@@H]([C@@](O)(C/C=C\\CCCCC)C1)C[C@H](OC(=O)C)[C@@H](OC(=O)C)CCCC(OC)=O',
-                                     'name': 'punaglandin 6',
-                                     'reason': 'Not enough hydroxyl groups for '
-                                               'a sugar'},
-                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C(=O)N[C@@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O)[C@H](O)[C@@H](O)CCCCCCCCCCCCCC',
-                                     'name': 'Ins-1-P-Cer(t18:0/2-OH-26:0)',
-                                     'reason': 'Amino group not attached to '
-                                               'ring carbon'},
-                                 {   'smiles': 'CCC(C)(C)C(=O)OC1CC(C=C2C1[C@H]([C@H](C=C2)C)CC[C@@H]3CC(CC(=O)O3)O)C',
-                                     'name': '2,2-dimethylbutanoic acid '
-                                             '[(7S,8S)-8-[2-[(2R)-4-hydroxy-6-oxo-2-oxanyl]ethyl]-3,7-dimethyl-1,2,3,7,8,8a-hexahydronaphthalen-1-yl] '
-                                             'ester',
-                                     'reason': 'Not enough hydroxyl groups for '
-                                               'a sugar'},
-                                 {   'smiles': '[C@@H]1(C2=CC=CC=C2)[C@@H](N)C1',
-                                     'name': '(1S,2R)-tranylcypromine',
-                                     'reason': 'Not enough hydroxyl groups for '
-                                               'a sugar'},
-                                 {   'smiles': 'OC(=O)/C=C/C#CC#CC#N',
-                                     'name': '(2E)-7-Cyanohept-2-en-4,6-diynoic '
-                                             'acid',
-                                     'reason': 'No ring structure found'}],
-    'sample_false_negatives': [   {   'smiles': 'CN[C@H]1[C@@H](C[C@H](N)[C@@H](O[C@H]2O[C@H](CN)CC[C@H]2N)[C@@H]1O)OC',
-                                      'name': 'Istamycin Y0',
-                                      'reason': 'Not enough hydroxyl groups '
-                                                'for a sugar'},
-                                  {   'smiles': '[H]C([H])(C([H])([H])[C@]([H])(O)CN)[C@@]([H])(N)C=O',
-                                      'name': 'purpurosamine C',
-                                      'reason': 'No ring structure found'},
-                                  {   'smiles': '[H]C(=O)[C@@H](N)[C@@H](O)[C@H](O)[C@H](O)CO',
-                                      'name': 'aldehydo-D-mannosamine',
-                                      'reason': 'No ring structure found'},
-                                  {   'smiles': 'CNC[C@@H]1CC[C@@H](N)[C@@H](O[C@@H]2[C@@H](N)C[C@H](OC)[C@@H](NC)[C@H]2O)O1',
-                                      'name': 'Sannamycin B',
-                                      'reason': 'Not enough hydroxyl groups '
-                                                'for a sugar'},
-                                  {   'smiles': 'CCNC[C@@H]1CC[C@@H](N)[C@@H](O[C@@H]2[C@@H](N)C[C@H](OC)[C@H]([C@H]2O)N(C)C(=O)CN)O1',
-                                      'name': 'Istamycin C',
-                                      'reason': 'Not enough hydroxyl groups '
-                                                'for a sugar'},
-                                  {   'smiles': 'N[C@H]([C@@H](O)CC(=O)C(O)=O)[C@@H](O)[C@H](O)[C@H](O)CO',
-                                      'name': 'keto-neuraminic acid',
-                                      'reason': 'No ring structure found'},
-                                  {   'smiles': 'CC(=O)N[C@H]([C@@H](O)CC(=O)C(O)=O)[C@@H](O)[C@H](O)[C@H](O)CO',
-                                      'name': 'aceneuramic acid',
-                                      'reason': 'No ring structure found'},
+    'sample_true_negatives': [   {   'smiles': 'CN(C)C1=CC2=C(C=C1)O[C@@H]3[C@H]2C[C@@H](O[C@H]3CO)CC(=O)NCCN4CCCCC4',
+                                     'name': '2-[(1S,3R,4aS,9aR)-6-(dimethylamino)-1-(hydroxymethyl)-3,4,4a,9a-tetrahydro-1H-pyrano[3,4-b]benzofuran-3-yl]-N-[2-(1-piperidinyl)ethyl]acetamide',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'},
+                                 {   'smiles': 'C[C@@H](C(=O)O)NC(=O)OC(C)(C)C',
+                                     'name': 'N-Boc-L-alanine',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'},
+                                 {   'smiles': 'O=C1C2=C(O)C(=C(O)C=C2C(=O)C=3C1=C(O)C=C(O)C3)/C=C/CCCC',
+                                     'name': 'Averythrin',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'},
+                                 {   'smiles': 'O=C(N[C@@H](CC=1NC=NC1)C(O)=O)[C@@H](NC(=O)[C@@H](N)CCC(=O)N)[C@H](CC)C',
+                                     'name': 'Gln-Ile-His',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'},
+                                 {   'smiles': 'O1C2C3C(CCC3=C)C(CCC2C(C1=O)=C)=C',
+                                     'name': '3,6,9-Trimethylidene-3a,4,5,6a,7,8,9a,9b-octahydroazuleno[4,5-b]furan-2-one',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'},
+                                 {   'smiles': 'C1CN(CC2=CC=CC=C21)CCCNC(=O)CN3C(=O)COC4=CC=CC=C43',
+                                     'name': 'N-[3-(3,4-dihydro-1H-isoquinolin-2-yl)propyl]-2-(3-oxo-1,4-benzoxazin-4-yl)acetamide',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'},
+                                 {   'smiles': 'Cc1c(c[nH]c1C(=O)Nc1c(O)c2ccc(O)c(C)c2oc1=O)C(O)=O',
+                                     'name': 'Coumeroic acid',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'},
+                                 {   'smiles': 'O=C1OC(=CC(=C1CCCCCC)O)CC(C)C',
+                                     'name': 'Photopyrone A',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'},
+                                 {   'smiles': '[C@H]1(O)[C@@H](O)O[C@H](CS(O)(=O)=O)[C@H]([C@@H]1O)O',
+                                     'name': '6-sulfo-alpha-D-quinovose',
+                                     'reason': 'No amino group replacing a '
+                                               'hydroxy group found'},
+                                 {   'smiles': 'SC[C@H](NC(=O)CNC(=O)[C@@H](N)CC(O)=O)C(O)=O',
+                                     'name': 'Asp-Gly-Cys',
+                                     'reason': 'No typical sugar-like ring '
+                                               'structure found'}],
+    'sample_false_negatives': [   {   'smiles': 'OC[C@H]1O[C@@H](O)[C@H](NC(=O)CCCCCNc2c(cc(cc2[N+]([O-])=O)[N+]([O-])=O)C(O)=O)[C@@H](O)[C@@H]1O',
+                                      'name': 'N-[6-(DNCP-amino)hexanoyl]-beta-D-glucosamine',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
                                   {   'smiles': '[H]C([H])(C=O)[C@@]([H])(N)[C@]([H])(O)[C@]([H])(C)O',
                                       'name': 'acosamine',
-                                      'reason': 'No ring structure found'},
-                                  {   'smiles': '[H][C@](C)(O)[C@@]([H])(N)[C@]([H])(O)[C@@]([H])(N)C=O',
-                                      'name': 'bacillosamine',
-                                      'reason': 'No ring structure found'},
-                                  {   'smiles': 'C[C@H](\\C=C(C)\\C=C\\C(=O)NO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)C(=O)c1ccc(cc1)N(C)C',
-                                      'name': 'trichostatin C',
-                                      'reason': 'Amino group not attached to '
-                                                'ring carbon'}],
-    'attempt': 2,
-    'reasoning': 'The previous code had several issues that led to a low F1 '
-                 'score:\n'
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
+                                  {   'smiles': 'O1C2C(O)(C(O)C13OCC(C(OC(=O)C4=CC=C(O)C=C4)C3)C)C(O)CC(C2)C(OC5C(OC6OC(C(O)C(O)C6NC(=O)C)CO)C(O)C(O)C(O)C5)=O',
+                                      'name': 'Phyllanthusol A',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
+                                  {   'smiles': '[H][C@]1(O[C@](O)(C[C@H](O)[C@H]1NC(C)=O)C(O)=O)[C@H](O)[C@H](O)CO',
+                                      'name': 'N-acetyl-alpha-neuraminic acid',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
+                                  {   'smiles': 'O1[C@@H]([C@H](O)[C@@H](O)[C@@H](NC(=O)C)C1O)CO',
+                                      'name': 'N-Acetyl-D-Gulosamine',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
+                                  {   'smiles': 'CN[C@@H]1[C@@H](O)[C@H](O[C@H]2O[C@@H](CC[C@H]2N)[C@H](C)N)[C@@H](N)[C@H](O)[C@@H]1OC',
+                                      'name': 'Fortimicin KR',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
+                                  {   'smiles': 'N[C@H]1C(O)O[C@H](COP(O)(O)=O)[C@@H](O)[C@@H]1O',
+                                      'name': '2-amino-2-deoxy-D-glucopyranose '
+                                              '6-phosphate',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
+                                  {   'smiles': 'CC(=O)N[C@@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@@H]1OP(O)(=O)OCCCN',
+                                      'name': '3-aminopropyl '
+                                              'N-acetyl-alpha-D-glucosamine-1-phosphate',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
+                                  {   'smiles': 'N[C@H]1CO[C@H](O)[C@H](O)[C@H]1O',
+                                      'name': '4-amino-4-deoxy-beta-L-arabinopyranose',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'},
+                                  {   'smiles': 'CC(=O)N[C@@H]1[C@H](O)O[C@H](CO)[C@@H](O)[C@@H]1O',
+                                      'name': 'N-acetyl-beta-D-mannosamine',
+                                      'reason': 'No typical sugar-like ring '
+                                                'structure found'}],
+    'attempt': 1,
+    'reasoning': 'To classify molecules as amino sugars based on their SMILES '
+                 'strings, we need to accurately identify the structural '
+                 'features indicative of this chemical class. An amino sugar '
+                 'is characterized by having one or more hydroxyl (-OH) groups '
+                 'replaced by amino (-NH2, -NHR, -NR2) groups.\n'
                  '\n'
-                 '1. **Overly Strict Sugar Pattern Matching**: The sugar '
-                 'pattern `[C&R][C&R][C&R][C&R][C&R][C&R]` was too strict and '
-                 'missed many valid amino sugars, especially those with '
-                 'shorter carbon chains or different ring sizes.\n'
+                 'From the initial attempt, the program failed to properly '
+                 'identify amino sugars, likely due to an inadequate or overly '
+                 "simplified pattern definition. Here's a step-by-step plan to "
+                 'improve the detection of amino sugars:\n'
                  '\n'
-                 '2. **Insufficient Handling of Complex Structures**: The code '
-                 'failed to recognize complex amino sugars with multiple rings '
-                 'or branched structures, which are common in the examples '
-                 'provided.\n'
+                 '1. **Validate Input SMILES**: Ensure the input SMILES can be '
+                 'correctly parsed into a molecular object.\n'
+                 '2. **Identify Sugar Backbone**: Look for typical sugar-like '
+                 'structures, which can be complex. Consider cyclic structures '
+                 'like pyranoses or furanoses, common in simple sugars.\n'
+                 '3. **Identify Amino Substituents**: Specifically check for '
+                 'nitrogen atoms attached in positions where hydroxyl groups '
+                 'typically exist in sugars.\n'
+                 '4. **Substructure Search**: Use SMARTS patterns to identify '
+                 'relevant substructures associated with sugars and amino '
+                 'substitutions, ensuring these patterns reflect the '
+                 'complexity and variability found in amino sugars.\n'
                  '\n'
-                 '3. **Incorrect Handling of N-Acetyl Groups**: The code '
-                 "counted N-acetyl groups separately but didn't properly "
-                 'integrate them into the amino group count, leading to missed '
-                 'classifications.\n'
+                 'Using SMARTS queries, we should look for:\n'
+                 '- A sugar-like cyclic backbone, commonly depicted as a '
+                 'pyranose ring: `C[C@H](O)[C@@H](O)[C@H](O)[C@H](O)CO`\n'
+                 '- An amino group replacing a hydroxyl group, particularly '
+                 'checking for nitrogen attached to a sugar ring carbon.\n'
                  '\n'
-                 '4. **Lack of Flexibility in Hydroxyl Group Count**: The '
-                 'requirement of at least 3 hydroxyl groups might be too '
-                 'strict for some amino sugars.\n'
-                 '\n'
-                 "Here's an improved version of the code:",
+                 'Implement this improved approach in the following code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 2968,
-    'num_false_positives': 100,
-    'num_true_negatives': 1092,
-    'num_false_negatives': 37,
+    'num_true_positives': 2672,
+    'num_false_positives': 5453,
+    'num_true_negatives': 133842,
+    'num_false_negatives': 333,
     'num_negatives': None,
-    'precision': 0.9674054758800521,
-    'recall': 0.9876871880199667,
-    'f1': 0.9774411328832537,
-    'accuracy': 0.9673576364069574,
-    'negative_predictive_value': 0.9672276350752879}
+    'precision': 0.3288615384615385,
+    'recall': 0.8891846921797005,
+    'f1': 0.48014375561545375,
+    'accuracy': 0.9593394237526353,
+    'negative_predictive_value': 0.9975181665735048}

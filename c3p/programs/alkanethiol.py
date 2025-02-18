@@ -106,6 +106,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:47908',
                           'xrefs': ['KEGG:C00812'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Attempt failed: F1 score of 0.4150943396226415 is too low.\n'
                'Outcomes:\n'

@@ -2,15 +2,16 @@
 Classifies: CHEBI:38077 polypyrrole
 """
 """
-Classifies: polypyrrole
+Classifies: CHEBI:52236 polypyrrole
+A compound composed of two or more pyrrole units.
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polypyrrole(smiles: str):
     """
     Determines if a molecule is a polypyrrole based on its SMILES string.
-    A polypyrrole is defined as a compound composed of two or more pyrrole units.
-    Pyrrole units are five-membered rings containing exactly one nitrogen atom.
+    A polypyrrole is a compound composed of two or more pyrrole units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,47 +20,44 @@ def is_polypyrrole(smiles: str):
         bool: True if molecule is a polypyrrole, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Get ring information
+    # Look for pyrrole substructure
+    pyrrole_pattern = Chem.MolFromSmarts("c1ccnc1")
+    pyrrole_matches = mol.GetSubstructMatches(pyrrole_pattern)
+    
+    # Require at least two pyrrole units
+    if len(pyrrole_matches) < 2:
+        return False, "Less than two pyrrole units found"
+    
+    # Count number of nitrogen atoms
+    n_nitrogens = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
+    
+    # Require at least two nitrogen atoms (from pyrrole units)
+    if n_nitrogens < 2:
+        return False, "Less than two nitrogen atoms found"
+    
+    # Check for conjugated ring system
+    conjugated_rings = []
     ring_info = mol.GetRingInfo()
-
-    # Initialize count of pyrrole units
-    pyrrole_units = 0
-
-    # Iterate over rings
-    for ring_atoms in ring_info.AtomRings():
-        # Check if ring is size 5
-        if len(ring_atoms) != 5:
-            continue
-
-        # Count nitrogen atoms in the ring
-        num_nitrogen = 0
-        for idx in ring_atoms:
-            atom = mol.GetAtomWithIdx(idx)
-            if atom.GetAtomicNum() == 7:
-                num_nitrogen += 1
-
-        # If ring has exactly one nitrogen, count it as a pyrrole unit
-        if num_nitrogen == 1:
-            pyrrole_units += 1
-
-    # Check if molecule is a polypyrrole
-    if pyrrole_units >= 2:
-        return True, f"Contains {pyrrole_units} pyrrole units"
-    else:
-        return False, f"Contains only {pyrrole_units} pyrrole unit(s). A polypyrrole requires two or more pyrrole units"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'name': 'polypyrrole',
-        'definition': 'A compound composed of two or more pyrrole units.'
-    }
-}
+    for ring in ring_info.AtomRings():
+        bond_orders = [mol.GetBondBetweenAtoms(ring[i], ring[i-1]).GetBondTypeAsDouble() for i in range(len(ring))]
+        if sum(bond_orders) % 2 == 0 and any(order == 2 for order in bond_orders):
+            conjugated_rings.append(ring)
+    
+    if not conjugated_rings:
+        return False, "No conjugated ring system found"
+    
+    # Check molecular weight - polypyrroles typically >100 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 100:
+        return False, "Molecular weight too low for polypyrrole"
+    
+    return True, "Contains two or more pyrrole units in a conjugated ring system"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:38077',
@@ -70,235 +68,238 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:38077',
                           'xrefs': ['Beilstein:8538310'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 38,
+                           'log_lines_of_code': 3.6375861597263857,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1],
+                           'max_indent': 3,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetBondTypeAsDouble',
+                                                 'MolFromSmarts',
+                                                 'AtomRings',
+                                                 'CalcExactMolWt',
+                                                 'GetAtoms',
+                                                 'GetAtomicNum',
+                                                 'GetBondBetweenAtoms',
+                                                 'append',
+                                                 'GetRingInfo',
+                                                 'MolFromSmiles',
+                                                 'GetSubstructMatches'],
+                           'methods_called_count': 11,
+                           'smarts_strings': ['c1ccnc1'],
+                           'smarts_strings_count': 1,
+                           'defs': ['is_polypyrrole(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Less than two pyrrole units '
+                                          'found"',
+                                          'False, "Less than two nitrogen '
+                                          'atoms found"',
+                                          'False, "No conjugated ring system '
+                                          'found"',
+                                          'False, "Molecular weight too low '
+                                          'for polypyrrole"',
+                                          'True, "Contains two or more pyrrole '
+                                          'units in a conjugated ring system"'],
+                           'returns_count': 6,
+                           'complexity': 4.927517231945277},
     'message': '\n'
-               'Attempt failed: F1 score of 0.7807017543859649 is too low.\n'
+               'Error: Error executing '
+               "is_polypyrrole('[Zn+2].O=C(O)CCC=1C=2N=C(C1C)C=C3NC(=CC=4NC(C=C5N=C(C2)C(=C5CCC(=O)O)C)=C(C4CCC(=O)O)C)C(=C3CCC(=O)O)C'):\n"
+               " 'RingInfo' object has no attribute 'IsCycleConjugated'\n"
+               'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: '
-               'Cc1c(CCC(O)=O)c2cc3[nH]c(cc4nc(cc5[nH]c(cc1n2)c(C)c5C=C)c(C)c4C=C)c(C)c3CCC(O)=O '
-               'NAME: protoporphyrin REASON: CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               'CC1=C(CCC(O)=O)C2=[N+]3C1=Cc1c(C)c(C=C)c4C=C5C(C)=C(C=C)C6=[N+]5[Mg--]3(n14)n1c(=C6)c(C)c(CCC(O)=O)c1=C2 '
-               'NAME: magnesium protoporphyrin REASON: CORRECT Contains 2 '
-               'pyrrole units\n'
-               ' * SMILES: '
-               'CC1=C2CC3=C(C(=C(N3)C=C4C5=CC=C(C([C@]5(C(=CC6=NC(=CC(=C1CCC(=O)O)N2)C(=C6C)CCC(=O)O)N4)C)C(=O)OC)C(=O)OC)C)C=C '
-               'NAME: LSM-4252 REASON: CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               '[H]C(C)=C1C(C)C2=CC3=C(C(C)=O)C(C)=C4C=C5[C@@H](C)[C@H](CCC(=O)OC\\C=C(/C)CCC[C@H](C)CCC[C@H](C)CCCC(C)C)C6=[N+]5[Mg--]5(N34)N3C(=CC1=[N+]25)C(C)=C1C(=O)[C@H](C(=O)OC)C6=C31 '
-               'NAME: bacteriochlorophyll b REASON: CORRECT Contains 2 pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'C1=2N3C(C=C4N5=C(C=C6N7C(=CC8=N(C(=C1)C(=C8CCC(O)=O)C([H])=O)[Fe]735)C(=C6C)CCC(O)=O)C(=C4C)C=C)=C(C2C)[C@H](CC/C=C(\\C)/CC/C=C(/CCC=C(C)C)\\C)O '
-               'NAME: ferroheme a REASON: CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               'CC1(C)c2ccc([nH]2)C(C)(C)c2ccc([nH]2)C(C)(C)c2ccc([nH]2)C(C)(C)c2ccc1[nH]2 '
-               'NAME: meso-octamethylporphyrinogen REASON: CORRECT Contains 4 '
-               'pyrrole units\n'
-               ' * SMILES: '
-               'O=C1C=2N=C(C1(C3OC(C(O)CC3O)C)C)C=C4NC(=CC5=NC(=CC=6NC(C2)=C(C6)C)C(C5=O)(C7OC(C(O)CC7OC(=O)C)C)C)C=C4C '
-               'NAME: Tolyporphin C REASON: CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               'c1ccc2c3nc(nc4[nH]c(nc5[nH]c(n3)c3ccccc53)c3ccccc43)c2c1 NAME: '
-               'subphthalocyanine REASON: CORRECT Contains 3 pyrrole units\n'
-               ' * SMILES: '
-               'Bc1c2ccc(n2)c(B)c2ccc([nH]2)c(B)c2ccc(n2)c(B)c2ccc1[nH]2 NAME: '
-               '5,10,15,20-tetraborylporphyrin REASON: CORRECT Contains 2 '
-               'pyrrole units\n'
-               ' * SMILES: '
-               'O(C=1C(N=C(C1)C=2NC=CC2)=CC=3NC=4CCCCCCCC[C@@H](C3C4)CC(C)C)C '
-               'NAME: Prodigiosin R1 REASON: CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               '[H]C(=C([H])C1=[N+]2C(C=C1)=Cc1ccc(-c3ccc[nH]3)n1[B-]2(F)F)c1ccc(OCC(=O)NCCCCCC(=O)ON2C(=O)CCC2=O)cc1 '
-               'NAME: BODIPY 650/665-X REASON: CORRECT Contains 2 pyrrole '
-               'units\n'
-               ' * SMILES: '
-               '[H]C(=O)c1c(CC)c2cc3[nH]c4c([C@@H](C(=O)OC)C(=O)c4c3C)c3nc(cc4[nH]c(cc1n2)c(C=C)c4C)[C@@H](C)[C@@H]3CCC(O)=O '
-               'NAME: pheophorbide b REASON: CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               'OC(=O)CCC=1C=2NC(C1C)=CC3=NC(C(=C3CCC(O)=O)C)=CC=4NC(=C(C4C=C)C)C=C5N=C(C(=C5C)CCC(O)=O)C2 '
-               'NAME: Harderoporphyrin REASON: CORRECT Contains 2 pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'COC(=O)CCc1c(C)c2=CC3=[N]4C(=Cc5c(C=C)c(C)c6C=C7C(C)=C(CCC(O)=O)C8=[N]7[Mg]4(n56)n2c1=C8)C(C)=C3C=C '
-               'NAME: magnesium protoporphyrin 13-monomethyl ester REASON: '
-               'CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               'CCc1c(C)c2[nH]c1cc1nc(cc3[nH]c(cc4nc(cc5[nH]c2c(C)c5CC)c(C)c4CCCOC(=O)N(CCOCCOCCOC)CCOCCOCCOC)c(CC)c3CC)c(CCCOC(=O)N(CCOCCOCCOC)CCOCCOCCOC)c1C '
-               'NAME: sapphyrin PCI-2050 REASON: CORRECT Contains 3 pyrrole '
-               'units\n'
-               ' * SMILES: Bc1c2ccc(cc3ccc(cc4ccc(cc5ccc1[nH]5)n4)[nH]3)n2 '
-               'NAME: 5-borylporphyrin REASON: CORRECT Contains 2 pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'CCC1=C(CC)C2=[N]3C1=Cc1c(CC)c(CC)c4C=C5[N]6=C(C=c7c(CC)c(CC)c(=C2)n7[Pt]36n14)C(=O)C5(CC)CC '
-               'NAME: platinum(II) octaethylporphyrin ketone REASON: CORRECT '
-               'Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               '[H]C(=O)c1c(C)c2\\C=C3/N=C([C@@H](CCC(=O)OC\\C=C(/C)CCC[C@H](C)CCC[C@H](C)CCCC(C)C)[C@@H]3C)C3=c4c(C(=O)[C@@H]3C(=O)OC)c(C)c3=CC5=N\\C(=C/c1n2[Mg]n43)\\C(C)=C5CC '
-               'NAME: chlorophyll d REASON: CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: Brc1c2ccc(cc3ccc(cc4ccc(cc5ccc1[nH]5)n4)[nH]3)n2 '
-               'NAME: 10-bromoporphyrin REASON: CORRECT Contains 2 pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'C=1(\\C=C/2\\NC(=O)C(=C2C=C)C)NC(=C(C1C)CCC(=O)O)CC=3NC(\\C=C/4\\NC(C(=C4C)C=C)=O)=C(C3CCC(=O)O)C '
-               'NAME: (E,E)-bilirubin REASON: CORRECT Contains 2 pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'CCC1=C(CO)C2=Cc3c(C=C)c(C)c4C=C5[C@@H](C)[C@H](CCC(=O)OC\\C=C(/C)CCC[C@H](C)CCC[C@H](C)CCCC(C)C)C6=[N+]5[Mg--]5(n34)n3c(=CC1=[N+]25)c(C)c1C(=O)[C@H](C(=O)OC)C6=c31 '
-               'NAME: 7(1)-hydroxychlorophyll a REASON: CORRECT Contains 2 '
-               'pyrrole units\n'
-               ' * SMILES: '
-               'CCC1=C(C)C2=Cc3c(C=C)c(C)c4C=C5[C@@H](C)[C@H](CCC(O)=O)C6=[N+]5[Mg--]5(n34)n3c(=CC1=[N+]25)c(C)c1C(=O)[C@H](C(=O)OC)C6=c31 '
-               'NAME: chlorophyllide a REASON: CORRECT Contains 2 pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'CCC1=C(C)C(=O)NC1Cc1[nH]c(Cc2[nH]c(CC3NC(=O)C(C=C)=C3C)c(C)c2CCC(O)=O)c(CCC(O)=O)c1C '
-               'NAME: D-Urobilinogen REASON: CORRECT Contains 2 pyrrole units\n'
-               ' * SMILES: '
-               'CC[C@@H]1[C@@H](C)C2=Cc3c(C=C)c(C)c4C=C5[C@@H](C)[C@H](CCC(O)=O)C6=[N+]5[Mg--]5(n34)n3c(=CC1=[N+]25)c(C)c1C(=O)[C@H](C(=O)OC)C6=c31 '
-               'NAME: 3-vinylbacteriochlorophyllide a REASON: CORRECT Contains '
-               '2 pyrrole units\n'
-               ' * SMILES: '
-               'CCC1=C(C=O)C2=Cc3c(C=C)c(C)c4C=C5[C@@H](C)[C@H](CCC(=O)OC\\C=C(/C)CCC[C@H](C)CCC[C@H](C)CCCC(C)C)C6=[N+]5[Mg--]5(n34)n3c(=CC1=[N+]25)c(C)c1C(=O)[C@H](C(=O)OC)C6=c31 '
-               'NAME: chlorophyll b REASON: CORRECT Contains 2 pyrrole units\n'
+               'True positives: NONE\n'
                'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'C1=CC(=CC2=NC(C=C2)=CC2=NC(C=C2)=Cc2ccc[nH]2)N=C1 NAME: '
-               '21H-bilin REASON: MISSED Contains only 1 pyrrole unit(s). A '
-               'polypyrrole requires two or more pyrrole units\n'
-               ' * SMILES: '
-               'OC(=O)CCC1C(C=2NC1=C(C3=NC(C(=C3C(O)=O)C)=CC=4N=C(C=C5N=C(C2)C(=C5C=C)C)/C(/C4CC)=C\\O)CC(O)=O)C '
-               'NAME: Rhodin G7 REASON: MISSED Contains only 0 pyrrole '
-               'unit(s). A polypyrrole requires two or more pyrrole units\n'
-               ' * SMILES: '
-               'C[C@@]1(CCC(O)=O)[C@@H](CC(O)=O)C2=C3N4C(=CC5=[N+]6C(C[C@]7(C)N8C(=CC1=[N+]2[Co--]468)C(CCC(O)=O)=C7CC(O)=O)=C(CCC(O)=O)[C@]5(C)CC(O)=O)[C@@H](CCC(O)=O)[C@]3(C)CC(O)=O '
-               'NAME: cobalt-precorrin-5B REASON: MISSED Contains only 0 '
-               'pyrrole unit(s). A polypyrrole requires two or more pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'C[C@]1(CC(O)=O)[C@H](CCC(O)=O)C2=CC3=[N+]4C(=Cc5c(CCC(O)=O)c(CC(O)=O)c6C=C7[N+]8=C(C=C1N2[Co--]48n56)[C@@H](CCC(O)=O)[C@]7(C)CC(O)=O)C(CCC(O)=O)=C3CC(O)=O '
-               'NAME: cobalt-sirohydrochlorin REASON: MISSED Contains only 1 '
-               'pyrrole unit(s). A polypyrrole requires two or more pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'Cc1ccc2C=C3C=CC(CCCCCCCCCCCC(O)=O)=[N+]3[B-](F)(F)n12 NAME: '
-               'BODIPY-3823 REASON: MISSED Contains only 1 pyrrole unit(s). A '
-               'polypyrrole requires two or more pyrrole units\n'
-               ' * SMILES: '
-               '[H][C@]12N=C(C(C)C3=N[C@@](C)(CC4=C(CCC(O)=O)[C@](C)(CC(O)=O)C(/C=C5\\N[C@]1(C)[C@@](C)(CC(O)=O)[C@@H]5CCC(O)=O)=N4)C(C)=C3CCC(O)=O)[C@](C)(CCC(O)=O)[C@H]2CC(O)=O '
-               'NAME: precorrin-7 REASON: MISSED Contains only 0 pyrrole '
-               'unit(s). A polypyrrole requires two or more pyrrole units\n'
-               ' * SMILES: '
-               'CC1OC(=O)C[C@@]2(C)[C@H](CCC(O)=O)C3=CC4=[N+]5C(=CC6=[N+]7C(=CC8=[N+]9C(=C(CC(O)=O)[C@@]8(C)CCC(O)=O)C12N3[Co--]579)C(CCC(O)=O)=C6CC(O)=O)[C@@H](CCC(O)=O)[C@]4(C)CC(O)=O '
-               'NAME: cobalt(II)-factor IV REASON: MISSED Contains only 0 '
-               'pyrrole unit(s). A polypyrrole requires two or more pyrrole '
-               'units\n'
-               ' * SMILES: '
-               'C1(NC(/C=C/2\\N=C(/C=C/3\\N\\C(=C/C4=NC(C(=C4CCC(O)=O)C)=O)\\C(=C3C)CCC(O)=O)C(=C2C)C=C)=C(C1C)C=C)=O '
-               'NAME: biliverdin delta REASON: MISSED Contains only 1 pyrrole '
-               'unit(s). A polypyrrole requires two or more pyrrole units\n'
-               ' * SMILES: '
-               '[H][C@]12N=C(\\C(C)=C3/N=C(/C=C4\\N=C(\\C(C)=C5/N[C@]1(C)[C@@](C)(CC(O)=O)[C@@H]5CCC(O)=O)[C@@](C)(CC(O)=O)[C@@H]4CCC(O)=O)C(C)(C)[C@@H]3CCC(O)=O)[C@](C)(CCC(O)=O)[C@H]2CC(O)=O '
-               'NAME: hydrogenobyrinic acid REASON: MISSED Contains only 0 '
-               'pyrrole unit(s). A polypyrrole requires two or more pyrrole '
-               'units\n'
-               ' * SMILES: '
-               '[H][C@]12N=C(C(C)C3=N[C@@](C)(CC4=N\\C(=C(C)/C5=N[C@]1(C)[C@@](C)(CC(O)=O)[C@@H]5CCC(O)=O)[C@@](C)(CC(O)=O)[C@@H]4CCC(O)=O)C(C)=C3CCC(O)=O)[C@](C)(CCC(O)=O)[C@H]2CC(O)=O '
-               'NAME: precorrin-8X REASON: MISSED Contains only 0 pyrrole '
-               'unit(s). A polypyrrole requires two or more pyrrole units\n'
+               'False negatives: NONE\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'CNC(=O)CC[C@H](N)C(O)=O',
-                                     'name': 'N(5)-methyl-L-glutamine',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': 'C[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1nc(N)[nH]c2=O)C(O)=O',
-                                     'name': "L-lactyl-2-diphospho-5'-guanosine",
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': '[H][C@@]1(CC[C@]2(C)[C@]1([H])CC[C@]1([H])[C@@]3(C)CCCC(C)(C)[C@]3([H])CC[C@@]21C)C(=C)CCC=C(C)C',
-                                     'name': 'dammara-20,24-diene',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': 'O=C1C2=C(O)C3=C(O)C=CC=C3C(=C2C(C(=O)C)C(C1)(O)C)C=4C=5C(C(O)=C6C4C(C(=O)C)C(O)(C)CC6=O)=C(O)C=CC5',
-                                     'name': 'A 39183A',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': 'C[C@H](O)[C@@H](O)C1=Nc2c(NC1)[nH]c(N)nc2=O',
-                                     'name': 'L-threo-7,8-dihydrobiopterin',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': 'C[C@@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)C)C(=O)N(C[C@H]1OC)C)C)CC3=CC=C(C=C3)F',
-                                     'name': 'N-[(4S,7R,8S)-5-[(4-fluorophenyl)methyl]-8-methoxy-4,7,10-trimethyl-11-oxo-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]acetamide',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': 'C(CCN1CCCCC1)(CCN(C(C)C)C(C)=O)(C(N)=O)C2=C(Cl)C=CC=C2',
-                                     'name': 'bidisomide',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': 'OCCCCCCCCCCC#CC=C',
-                                     'name': '13-Tetradece-11-yn-1-ol',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': 'C[C@@H]1CCCCO[C@@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)N(C)C)[C@@H](C)CO)C)CN(C)CC3=CC=C(C=C3)OC',
-                                     'name': '(3R,9S,10R)-16-(dimethylamino)-12-[(2S)-1-hydroxypropan-2-yl]-9-[[(4-methoxyphenyl)methyl-methylamino]methyl]-3,10-dimethyl-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-13-one',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'},
-                                 {   'smiles': 'O(CCC12CC3CC(C1)CC(C2)C3)C(=O)CC4=CC=C(OCC(O)CNC(C)C)C=C4',
-                                     'name': 'Adaprolol',
-                                     'reason': 'Contains only 0 pyrrole '
-                                               'unit(s). A polypyrrole '
-                                               'requires two or more pyrrole '
-                                               'units'}],
-    'sample_false_negatives': [],
+               'to improve.\n'
+               'IMPORTANT NOTE: I do not have 100% confidence in the benchmark '
+               'I am using. There may be occasional and systematic mistakes. '
+               'Use your best judgment, and if you think the classifications '
+               'your program are consistent with your understanding if the '
+               'meaning of the chemical class, then you can ignore outliers, '
+               'but explain your reasoning in doing so. I have great '
+               'confidence in your broad understanding of chemistry and your '
+               'ability to translate this into code.',
+    'sample_true_negatives': [   {   'smiles': '[H][C@@]1(CC[C@@]2(C)C3=C(CC[C@]12C)[C@@]1(C)CCC(=O)C(C)(C)[C@]1([H])CC3)[C@@H](CC[C@H](O)C(C)(C)O)C(O)=O',
+                                     'name': 'fomitopinic acid A',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': '[Cn]',
+                                     'name': 'copernicium atom',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': 'C1=C[C@@H]([C@H](O[C@@H]1CC(=O)NCCC2=CC=NC=C2)CO)NC(=O)C3=CC=C(C=C3)F',
+                                     'name': '4-fluoro-N-[(2S,3S,6R)-2-(hydroxymethyl)-6-[2-oxo-2-(2-pyridin-4-ylethylamino)ethyl]-3,6-dihydro-2H-pyran-3-yl]benzamide',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': 'O=C(O)/C=C/C=C/C=C/[C@@H]1[C@@H](C(=C[C@H]2[C@H]1CC=C(C2)C)C)[C@]3(O[C@@H]3[C@@H](CC)C)C',
+                                     'name': 'Pyrenulic acid A',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': 'O([C@@H]1[C@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO)O)O[C@@H]([C@H]1O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O)[C@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H]6NC(=O)C)CO)CO',
+                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5R,6R)-4-[(2R,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-hydroxy-6-(hydroxymethyl)-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3,5-dihydroxy-6-[[(2S,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': 'C1=CC=C(C(=C1CC)NC(CCl)=O)C',
+                                     'name': 'N-(2-ethyl-6-methylphenyl)-2-chloroacetamide',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OCCN)OC(=O)CCCCCCCCC\\C=C/CCCCCC',
+                                     'name': '1-hexadecanoyl-2-(11Z-octadecenoyl)-sn-glycero-3-phosphoethanolamine',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': 'C1(C2=C(C(=CC(=C2)C(O)=O)O)O)=C(C(=CC(=C1)C(=O)O)OC)O',
+                                     'name': "5,6,6'-trihydroxy-5'-methoxy[biphenyl]-3,3'-dicarboxylic "
+                                             'acid',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': 'O=C1NC2=CC(O)=CC(=C2)CCC=C([C@@H](O)[C@@H](C)[C@H](CC=CC=CC=C[C@@H](C1)OC)OC(=O)[C@@H](NC(=O)C3=CCCCC3)C)C',
+                                     'name': 'Trienomycin D',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'},
+                                 {   'smiles': 'Nc1nc2n(cnc2c(=O)[nH]1)[C@@H]1O[C@H](COP(O)(=O)OP(O)(=O)OC2O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]2O)[C@@H](O)[C@H]1O',
+                                     'name': 'GDP-D-mannose',
+                                     'reason': 'Less than two pyrrole units '
+                                               'found'}],
+    'sample_false_negatives': [   {   'smiles': 'C1=CC(=Cc2ccc[nH]2)N=C1',
+                                      'name': 'dipyrrin',
+                                      'reason': 'Less than two pyrrole units '
+                                                'found'},
+                                  {   'smiles': 'C[C@@]1(CCC(O)=O)[C@@H](CC(O)=O)C2=C3N4C(=CC5=[N+]6C(C[C@]7(C)N8C(=CC1=[N+]2[Co--]468)C(CCC(O)=O)=C7CC(O)=O)=C(CCC(O)=O)[C@]5(C)CC(O)=O)[C@@H](CCC(O)=O)[C@]3(C)CC(O)=O',
+                                      'name': 'cobalt-precorrin-5B',
+                                      'reason': 'Less than two pyrrole units '
+                                                'found'},
+                                  {   'smiles': '[Zn+2].O=C(O)CCC=1C=2N=C(C1C)C=C3NC(=CC=4NC(C=C5N=C(C2)C(=C5CCC(=O)O)C)=C(C4CCC(=O)O)C)C(=C3CCC(=O)O)C',
+                                      'name': 'Zincmethylphyrin I',
+                                      'reason': 'No conjugated ring system '
+                                                'found'},
+                                  {   'smiles': '[H][C@]12N=C(C(C)C3=N[C@@](C)(CC4=C(CCC(O)=O)[C@](C)(CC(O)=O)C(/C=C5\\N[C@]1(C)[C@@](C)(CC(O)=O)[C@@H]5CCC(O)=O)=N4)C(C)=C3CCC(O)=O)[C@](C)(CCC(O)=O)[C@H]2CC(O)=O',
+                                      'name': 'precorrin-7',
+                                      'reason': 'Less than two pyrrole units '
+                                                'found'},
+                                  {   'smiles': 'C1=C2C(=C(C(N2)=CC3=NC(C(=C3C)CC)=CC=4NC(=C(C4C)CCC(=O)O)C=C5N=C1C(=C5CCC(=O)O)C)CC)C',
+                                      'name': 'mesoporphyrin IX',
+                                      'reason': 'No conjugated ring system '
+                                                'found'},
+                                  {   'smiles': 'COC(=O)CCc1c(C)c2cc3nc(cc4[nH]c(cc5nc(cc1[nH]2)c(CCC(O)=O)c5C)[C@]1(C)[C@H](C(=O)OC)C(=CC=C41)C(=O)OC)c(C)c3C=C',
+                                      'name': '(2R,2(1)S)8-ethenyl-2(1),2(2)-bis(methoxycarbonyl)-13-(3-methoxy-3-oxopropyl)-2,7,12,18-tetramethyl-2,2(1)-dihydrobenzo[b]porphyrin-17-propanoic '
+                                              'acid',
+                                      'reason': 'Less than two pyrrole units '
+                                                'found'},
+                                  {   'smiles': 'C1(=CC=2NC(=C(C2C)CCC(=O)O)C=C3NC(C(=C3CCC(=O)O)C)=O)NC(C(=C1C)C=C)=O',
+                                      'name': 'biotripyrrin-b',
+                                      'reason': 'Less than two pyrrole units '
+                                                'found'},
+                                  {   'smiles': 'OC(=O)CCc1c2Cc3[nH]c(Cc4[nH]c(Cc5[nH]c(Cc([nH]2)c1CC(O)=O)c(CCC(O)=O)c5CC(O)=O)c(CCC(O)=O)c4CC(O)=O)c(CC(O)=O)c3CCC(O)=O',
+                                      'name': 'uroporphyrinogen III',
+                                      'reason': 'No conjugated ring system '
+                                                'found'},
+                                  {   'smiles': '[H][C@@]12[C@H](CC(O)=O)[C@@](C)(CCC(O)=O)C3=C(C)C4=[N+]5C(=CC6=[N+]7C(=C(C)C8=[N+]([C@]1(C)[C@@](C)(CC(O)=O)[C@@H]8CCC(O)=O)[Co--]57N23)[C@@](C)(CC(N)=O)[C@@H]6CCC(O)=O)C(C)(C)[C@@H]4CCC(O)=O',
+                                      'name': 'cob(II)yrinic acid c monoamide',
+                                      'reason': 'Less than two pyrrole units '
+                                                'found'},
+                                  {   'smiles': 'OC=1CC2=C3NC([C@H]([C@@H]3CCC(O)=O)C)=CC4=NC(C(=C4C)C(O)C)=CC5=NC(=CC=6N=C2C1C6CC)C(CC(C)C)=C5C',
+                                      'name': '12-Ethyl-8-isobutylbacteriochlorophyllide '
+                                              'D',
+                                      'reason': 'Less than two pyrrole units '
+                                                'found'}],
     'attempt': 1,
-    'reasoning': 'The previous code only counted pyrrole units that are '
-                 'aromatic five-membered rings with exactly one nitrogen atom '
-                 'where all atoms are marked as aromatic. However, in many of '
-                 'the false negatives, the pyrrole units are not aromatic '
-                 "according to RDKit's perception, possibly due to differences "
-                 'in tautomeric forms or resonance structures.\n'
+    'reasoning': "Based on the error message `'RingInfo' object has no "
+                 "attribute 'IsCycleConjugated'`, it seems that the "
+                 '`IsCycleConjugated` method is not available in the version '
+                 'of RDKit you are using. This method is used to check if a '
+                 'ring system is conjugated, which is one of the criteria for '
+                 'classifying a molecule as a polypyrrole.\n'
                  '\n'
-                 'To improve the classification, we can modify the code to '
-                 'count all five-membered rings containing exactly one '
-                 'nitrogen atom, regardless of aromaticity. This approach will '
-                 'capture both aromatic and non-aromatic pyrrole units.\n'
+                 'To improve the program, we need to find an alternative way '
+                 'to check for conjugation in the ring system. One approach '
+                 'could be to check if the bonds in the ring system are '
+                 'alternating between single and double bonds, which is a '
+                 'characteristic of a conjugated system.\n'
                  '\n'
-                 'Here is the revised code:',
+                 'Additionally, the program could be improved by considering '
+                 'other structural features of polypyrroles, such as the '
+                 'presence of a linear backbone or cross-linking between '
+                 'pyrrole units.\n'
+                 '\n'
+                 "As for the outcomes, it's difficult to assess the accuracy "
+                 'of the program without having access to the benchmark '
+                 "dataset. However, if the program's classifications align "
+                 'with your understanding of polypyrroles, and the reasoning '
+                 "behind the program is sound, you can trust the program's "
+                 'output over the benchmark, especially if the benchmark is '
+                 'known to have occasional mistakes.\n'
+                 '\n'
+                 "Here's an improved version of the program that checks for "
+                 'alternating single and double bonds in the ring system:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 283,
-    'num_false_positives': 100,
-    'num_true_negatives': 3341,
-    'num_false_negatives': 0,
+    'num_true_positives': 83,
+    'num_false_positives': 117,
+    'num_true_negatives': 141900,
+    'num_false_negatives': 200,
     'num_negatives': None,
-    'precision': 0.7389033942558747,
-    'recall': 1.0,
-    'f1': 0.8498498498498499,
-    'accuracy': 0.9731471535982814,
-    'negative_predictive_value': 1.0}
+    'precision': 0.415,
+    'recall': 0.29328621908127206,
+    'f1': 0.3436853002070393,
+    'accuracy': 0.9977723120168658,
+    'negative_predictive_value': 0.9985925404644617}

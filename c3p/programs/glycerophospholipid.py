@@ -2,48 +2,48 @@
 Classifies: CHEBI:37739 glycerophospholipid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_glycerophospholipid(smiles: str):
     """
     Determines if a molecule is a glycerophospholipid based on its SMILES string.
-    A glycerophospholipid must have a glycerol backbone with two fatty acid chains
-    attached via ester linkages and a phosphate group ester-linked to a terminal carbon.
+    A glycerophospholipid is defined as having a glycerol backbone with a phosphate group 
+    ester-linked to a terminal carbon of the glycerol backbone.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
         bool: True if molecule is a glycerophospholipid, False otherwise
-        str: Reason for classification or failure
+        str: Reason for classification
     """
     
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for glycerol backbone (O-C-C-C-O)
-    glycerol_pattern = Chem.MolFromSmarts("OCC(O)COP")
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with phosphate found"
-
-    # Look for two ester or ether groups (-O-C(=O)- or -O-C-)
-    ester_or_ether_pattern = Chem.MolFromSmarts("[OX2][CX3](=O)[CX4]")
-    ether_pattern = Chem.MolFromSmarts("[OX2][CX4]")
-    ester_matches = mol.GetSubstructMatches(ester_or_ether_pattern)
-    ether_matches = mol.GetSubstructMatches(ether_pattern)
     
-    # Ensure there are at least two ester or ether groups
-    if len(ester_matches) + len(ether_matches) < 2:
-        return False, f"Found {len(ester_matches) + len(ether_matches)} ester or ether groups, need at least 2"
+    # Look for glycerol backbone pattern (C-C-C)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
+    if not mol.HasSubstructMatch(glycerol_pattern):
+        return False, "No glycerol backbone found"
 
-    # Check for phosphate group at terminal position
-    phosphate_pattern = Chem.MolFromSmarts("COP(=O)(O)O")
+    # Check for phosphate group pattern (P=O(OH)2 or variants with ester linkages)
+    phosphate_pattern = Chem.MolFromSmarts("P(=O)(O)(O)")
     if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No terminal phosphate group found"
+        return False, "No phosphate group found"
+    
+    # Ensure the phosphate is linked to a terminal carbon of the glycerol backbone
+    glycerol_atoms = mol.GetSubstructMatch(glycerol_pattern)
+    phosphate_atoms = mol.GetSubstructMatch(phosphate_pattern)
 
-    return True, "Contains glycerol backbone with two fatty acid chains and terminal phosphate group"
+    for glycerol_atom in [glycerol_atoms[0], glycerol_atoms[2]]:  # Check both terminal carbons
+        for phosphate_atom in phosphate_atoms:
+            if mol.GetBondBetweenAtoms(glycerol_atom, phosphate_atom) is not None:
+                # We found a glycerol-phosphate link
+                return True, "Contains glycerol backbone with phosphate group attached"
+    
+    return False, "Phosphate group not ester-linked to glycerol terminal carbon"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:37739',
@@ -55,123 +55,198 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:37739',
                           'xrefs': ['PMID:17393491'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 31,
+                           'log_lines_of_code': 3.4339872044851463,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 1,
+                                                 1],
+                           'max_indent': 4,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetSubstructMatch',
+                                                 'HasSubstructMatch',
+                                                 'GetBondBetweenAtoms',
+                                                 'MolFromSmiles',
+                                                 'MolFromSmarts'],
+                           'methods_called_count': 5,
+                           'smarts_strings': [   '[CH2X4][CHX4][CH2X4]',
+                                                 'P(=O)(O)(O)'],
+                           'smarts_strings_count': 2,
+                           'defs': ['is_glycerophospholipid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No glycerol backbone found"',
+                                          'False, "No phosphate group found"',
+                                          'True, "Contains glycerol backbone '
+                                          'with phosphate group attached"',
+                                          'False, "Phosphate group not '
+                                          'ester-linked to glycerol terminal '
+                                          'carbon"'],
+                           'returns_count': 5,
+                           'complexity': 3.686797440897029},
     'message': None,
-    'sample_true_negatives': [   {   'smiles': 'O=C1C2=C(OC(=C1)C)C3=C(OC)C=C(OC)C=C3C(=C2O)C4=C5OC(=CC(C5=C(O)C=6C4=CC(OC)=CC6OC)=O)C',
-                                     'name': 'Isonigerone',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'C(=C\\C/C=C\\CCCC(NC)=O)\\C/C=C\\C/C=C\\CCCCC',
-                                     'name': 'N-methyl arachidonoyl amine',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'OC1(O)[C@]23N(CC1)C(N(O)[C@H]([C@@]3(N=C(N2)N)[H])CO)=N',
-                                     'name': 'Decarbamoylneosaxitoxin',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'S([C@H]1N(C(=O)/C(=C\\C2=CC=C(OCC=C(C)C)C=C2)/N(C1=O)C)C)C',
-                                     'name': 'Fusaperazine F',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'Oc1ccccc1I',
-                                     'name': '2-iodophenol',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'O=C1N(CC(=O)N[C@H](C(=O)O[C@H]([C@@H](C(NC(C=C1)=C)=O)C)C(CCCCCCCCCCCCCC)C)C(O)C(=O)N)C',
-                                     'name': 'Rakicidin H',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=CC=C3)C=C2OC)C=C1)C/C=C(/CO)\\C',
-                                     'name': 'Prenylterphenyllin F',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@@H](O)[C@@H]1OC[C@H]3O[C@@H](OC[C@H]4O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]4O)[C@H](O)[C@@H](O)[C@@H]3O)CO[C@@H]5O[C@@H]([C@@H](O)[C@H](O[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO)[C@H]5O)CO[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7O)CO',
-                                     'name': '(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5R,6R)-6-[[(2R,3R,4S,5R,6R)-3,5-Dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxymethyl]oxane-2,3,4,5-tetrol',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)O)[C@@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H](O)[C@@H]6NC(=O)C)CO)CO)[C@@H]4O)CO[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)CO',
-                                     'name': 'Gal2GlcNAc2Man3GlcNAcFucGlcNAc',
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'},
-                                 {   'smiles': 'CN1CC2(CCN(CC2)S(=O)(=O)C3=CN(C=N3)C)C4=C([C@@H]1CO)NC5=C4C=CC(=C5)OC',
-                                     'name': "[(1R)-7-methoxy-2-methyl-1'-[(1-methyl-4-imidazolyl)sulfonyl]-1-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,4'-piperidine]yl]methanol",
-                                     'reason': 'No glycerol backbone with '
-                                               'phosphate found'}],
-    'sample_false_negatives': [   {   'smiles': 'O[C@@H]1C/C(=C\\C=C\\2/[C@]3([C@@]([C@](CC3)([C@H](C)C=C[C@@H](C(C)C)C)[H])(CCC2)C)[H])/C([C@@H](O)C1)=C',
+    'sample_true_negatives': [   {   'smiles': '[H][C@@]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)O[C@@H]1[C@@H](O)[C@@H](O)[C@@H](CO)O[C@H]1OC[C@H]1O[C@@H](OC[C@H]2O[C@@H](OC[C@H](NC(=O)[C@H](O)CCCCCCCCCCCCCCCCCCCCCC)[C@H](O)[C@H](O)CCCCCCCCCCCCCC)[C@H](O)[C@@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
+                                     'name': 'Neurosporaside',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': '[O-]C(=O)C1=CN(C2CC2)C2=CC(N3CC[NH2+]CC3)=C(F)C=C2C1=O',
+                                     'name': 'ciprofloxacin zwitterion',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O=C1NC(=CC2=C1O[C@H]([C@@H](O)CC(C)C)O2)C',
+                                     'name': 'Dihydroisoflavipucine',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O=C1N2C(C(=O)N([C@@]2(OC)C)C[C@@H](O)C3=CC=CC=C3)=CC4=C1N(C=5C=CC=CC45)C',
+                                     'name': 'Marinacarboline K',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O1[C@@H](O[C@H]2[C@@H](O)[C@H](O)[C@H](O[C@@H]2OC[C@H]3OC(O)[C@@H](O)[C@@H](O)[C@@H]3O)CO)[C@H](NC(=O)C)[C@@H](O)[C@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO[C@]5(O[C@H]([C@H](NC(=O)C)[C@@H](O)C5)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]1CO',
+                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[[(2R,3R,4S,5R,6S)-6-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2S,3S,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-2-[[(2R,3S,4S,5S)-3,4,5,6-tetrahydroxyoxan-2-yl]methoxy]oxan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
+                                             'acid',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O(C(=O)CCCCCCC)CCC1=CC=CC=C1',
+                                     'name': '2-Phenylethyl octanoate',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O=C1C2=C(OC=3C1=CC=CN3)C(Cl)=CC(=C2)C=4NN=NN4',
+                                     'name': 'traxanox',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'CCCCC(C)CCCCCC(C)CCCCCCCCCC(C)CC(O)=O',
+                                     'name': '3,13,19-trimethyltricosanoic '
+                                             'acid',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'COC(CC1=CC[C@]2(C)[C@@H](C)CCC[C@]2(C)C1=O)OC',
+                                     'name': 'aignopsane ketal',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'OC(C=C)(CC/C=C(/CC/C=C(/CCCC(O)(CCCC(O)(CCCC(O)(CCCC(O)(CCCC(O)(CCC=C(C)C)C)C)C)C)C)\\C)\\C)C',
+                                     'name': 'Hypsiziprenol-B9',
+                                     'reason': 'No glycerol backbone found'}],
+    'sample_false_negatives': [   {   'smiles': 'C([C@](COP(O)(=O)OC[C@@](CO/C=C\\CCCCCCCCCCCCCC)(OC(=O)CCCCCCCCCCCCCCCCCC)[H])(N)[H])(=O)O',
+                                      'name': 'PS(P-16:0/19:0)',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'},
+                                  {   'smiles': 'C(C[N+](C)(C)C)OP(=O)([O-])OC[C@H](OC(CCCCCCCCC/C=C\\C/C=C\\C/C=C\\CC)=O)COC(CCCCCCCCCCCCCCC)=O',
+                                      'name': '1-hexadecanoyl-2-[(11Z,14Z,17Z)-icosatrienoyl]-sn-glycero-3-phosphocholine',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'},
+                                  {   'smiles': 'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCC(=O)NCCOP(O)(=O)OC[C@H](O)CO',
+                                      'name': 'N-(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl-sn-glycero-3-phosphoethanolamine',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'},
+                                  {   'smiles': 'C(CN)OP(=O)(O)OC[C@H](OC(CCCCCCCCCCCCCC)=O)COC(=O)CCCCCCCCCCCCCCCCCCCCC',
+                                      'name': '1-docosanoyl-2-pentadecanoyl-sn-glycero-3-phosphoethanolamine',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'},
+                                  {   'smiles': 'C(C[N+](C)(C)C)OP(=O)([O-])OC[C@H](O)COC(CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)=O',
+                                      'name': '1-[(7Z,10Z,13Z,16Z)-docosatetraenoyl]-sn-glycero-3-phosphocholine',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'},
+                                  {   'smiles': 'P(OC[C@H]1O[C@@H](N2C=CC(=NC2=O)N)[C@H](O)[C@@H]1O)(OP(OC[C@H](OC(=O)CCCCCCCC3OC3C/C=C\\CCCCC)COC(=O)CCCCCCCCC(C)C)(O)=O)(O)=O',
+                                      'name': 'CDP-DG(i-12:0/18:1(12Z)-O(9S,10R))',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'},
+                                  {   'smiles': 'P1(O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@H]([C@@H](O)C[C@@H](O)[C@@H]([C@@H](O)[C@H]2OP(O)(O)=O)/C=C/[C@@H](O)CCCCC)CCCCCCC(OC[C@@H](OC(=O)CCCCCCCCCCCCCCCCC)CO1)=O)(O)=O',
+                                      'name': 'PIP(PGF1alpha/18:0)',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'},
+                                  {   'smiles': 'P(OC[C@H]1O[C@@H](N2C=CC(=NC2=O)N)C(O)[C@H]1O)(OP(OC[C@H](OC(=O)CCCCCCCCCCCCCC(C)C)COC(=O)CCCCCCCCC(C)C)(O)=O)(O)=O',
+                                      'name': 'CDP-DG(i-12:0/i-17:0)',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'},
+                                  {   'smiles': 'O[C@@H]1C/C(=C\\C=C\\2/[C@]3([C@@]([C@](CC3)([C@H](C)C=C[C@@H](C(C)C)C)[H])(CCC2)C)[H])/C([C@@H](O)C1)=C',
                                       'name': '1-octadecyl lysophosphatidic '
                                               'acid',
-                                      'reason': 'No glycerol backbone with '
-                                                'phosphate found'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCCSC[C@H](COP(O)(=O)OCC[N+](C)(C)C)OP(O)(=O)CCCCCCCCCCCCCCCC',
-                                      'name': '1-S-hexadecyl-2-O-[hexadecyl(hydroxy)phosphoryl]-1-thio-sn-glycero-3-phosphocholine',
-                                      'reason': 'No glycerol backbone with '
-                                                'phosphate found'},
-                                  {   'smiles': '[C@](COC(=O)CCCCCCCCCCCCCCC)(COP([O-])(=O)CC[N+](C)(C)C)(OC(=O)CCCCCCC/C=C\\CCCCCCCC)[H]',
-                                      'name': 'PnC(16:0/18:1(9Z))',
-                                      'reason': 'No terminal phosphate group '
-                                                'found'},
-                                  {   'smiles': 'C(CCCCCCCCCCCC)CCCSC[C@@H](NC(CCCCCCCCCCCCCCC)=O)COP(OCC[N+](C)(C)C)(=O)[O-]',
-                                      'name': 'thioetheramide PC',
-                                      'reason': 'No glycerol backbone with '
-                                                'phosphate found'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCC(=O)OCC(COP(O)(=O)CC[N+](C)(C)C)OC(=O)CCCCCCC\\C=C/CCCCCCCC',
-                                      'name': '1-hexadecanoyl-2-[(Z)-octadec-9-enoyl]-sn-glycerol '
-                                              '3-(2-trimethylaminoethylphosphonate)',
-                                      'reason': 'No terminal phosphate group '
-                                                'found'},
-                                  {   'smiles': 'O1C(C1)COC(=O)CCCC=CCC=CCC=CCC=CCCCCC',
-                                      'name': 'O-Arachidonoyl Glycidol',
-                                      'reason': 'No glycerol backbone with '
-                                                'phosphate found'},
-                                  {   'smiles': 'C(CCCCCCC/C=C\\CCCCCCCC)(OC[C@@H](COP(O)(=S)O)OC)=O',
-                                      'name': '(2S)-1-oleoyl-2-methylglycero-3-phosphothionate',
-                                      'reason': 'No terminal phosphate group '
-                                                'found'},
-                                  {   'smiles': 'P(OC(COC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCC=CCCCCCCCC)(OCC[NH3+])([O-])=O',
-                                      'name': '1-palmitoyl-3-oleoyl-sn-glycero-2-phosphoethanolamine',
-                                      'reason': 'No glycerol backbone with '
-                                                'phosphate found'}],
+                                      'reason': 'No phosphate group found'},
+                                  {   'smiles': 'P(=O)(O)(OCCN)OC[C@@H](CO)OC(CCC/C=C\\C[C@H]1[C@@H]2C[C@H]([C@@H]1/C=C/[C@H](CCCCC)O)OO2)=O',
+                                      'name': '2-[(9S,11R)-epidioxy-(15S)-hydroxy-(5Z,13E)-prostadienoyl]-sn-glycero-3-phosphoethanolamine',
+                                      'reason': 'Phosphate group not '
+                                                'ester-linked to glycerol '
+                                                'terminal carbon'}],
     'attempt': 0,
-    'reasoning': 'To classify a molecule as a glycerophospholipid using its '
-                 'SMILES representation, we need to identify specific '
-                 'structural features. A glycerophospholipid consists of a '
-                 'glycerol backbone, to which two fatty acid chains are '
-                 'attached via ester bonds, and a phosphate group ester-linked '
-                 'to a terminal carbon of the glycerol.\n'
+    'reasoning': 'To classify a molecule as a member of the '
+                 'glycerophospholipid class based on its SMILES string, we '
+                 'need to identify if the molecule has a glycerol backbone '
+                 'with a phosphate group ester-linked to a terminal carbon. '
+                 'Glycerophospholipids typically also have two fatty acid '
+                 'chains, attached via ester links, on the other carbons of '
+                 'the glycerol backbone.\n'
                  '\n'
-                 "Here's how we can develop a step-by-step approach to this "
-                 'classification:\n'
+                 "Here's the plan for the classification function:\n"
                  '\n'
-                 '1. **Validate the SMILES string**: First, we need to check '
-                 'if the SMILES string is valid and can be converted into a '
-                 'molecular structure.\n'
+                 '1. **Parse the SMILES string**: Use RDKit to convert the '
+                 'SMILES string into a molecule object.\n'
                  '\n'
-                 '2. **Identify the Glycerol Backbone**: Using a substructural '
-                 'match, we should detect a three-carbon chain with two ester '
-                 'or ether linkages at the C1 and C2 positions and a hydroxyl '
-                 'or similar group at C3 to which the phosphate can be '
-                 'linked. \n'
+                 '2. **Check for glycerol backbone**: Identify the pattern for '
+                 'a glycerol backbone, which can be represented by C-C-C, '
+                 'usually with two ester-linked fatty acid chains.\n'
                  '\n'
-                 '3. **Detect the Phosphate Group**: A glycerophospholipid '
-                 'must have a phosphate group attached to the terminal carbon '
-                 'of the glycerol backbone. The SMARTS pattern to find a '
-                 'phosphate group -linked to oxygen is necessary.\n'
+                 '3. **Look for a phosphate group**: Check for the presence of '
+                 'a phosphate group (P=O with oxygen atoms connected).\n'
                  '\n'
-                 '4. **Verify the Structure**: Ensure that there are fatty '
-                 'acid chains linked to the glycerol (possibly as ester or '
-                 'ether) and the phosphate group is present as described.\n'
+                 '4. **Link phosphate to the glycerol**: Confirm that the '
+                 'phosphate group is ester-linked to one of the terminal '
+                 'carbons of the glycerol backbone.\n'
                  '\n'
-                 'Below is a Python code using RDKit to implement this logic:',
+                 '5. **Check for presence of fatty acid chains**: Ensure there '
+                 'are other ester linkages that typically represent fatty acid '
+                 'chains.\n'
+                 '\n'
+                 '6. **Validation**: Confirm the characteristic structures '
+                 'present meet the criteria of a glycerophospholipid.\n'
+                 '\n'
+                 "Here's the implementation of the function:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 3867,
-    'num_false_positives': 100,
-    'num_true_negatives': 2879,
-    'num_false_negatives': 8,
+    'num_true_positives': 3750,
+    'num_false_positives': 502,
+    'num_true_negatives': 137923,
+    'num_false_negatives': 125,
     'num_negatives': None,
-    'precision': 0.9747920342828333,
-    'recall': 0.9979354838709678,
-    'f1': 0.9862280030604438,
-    'accuracy': 0.9842427779398891,
-    'negative_predictive_value': 0.99722895739522}
+    'precision': 0.8819379115710254,
+    'recall': 0.967741935483871,
+    'f1': 0.9228497600590623,
+    'accuracy': 0.9955938158819395,
+    'negative_predictive_value': 0.9990945178488642}

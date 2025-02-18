@@ -1,56 +1,115 @@
 """
 Classifies: CHEBI:35366 fatty acid
 """
+"""
+Classifies: fatty acid
+Definition: “Any acyclic aliphatic carboxylic acid. 
+Natural fatty acids commonly have a chain of 4 to 28 carbons (usually unbranched), which may be saturated or unsaturated.”
+The classifier now rejects molecules that are cyclic or that contain any nitrogen atoms (e.g. peptides).
+"""
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_fatty_acid(smiles: str):
     """
     Determines if a molecule is a fatty acid based on its SMILES string.
-    A fatty acid is characterized as an aliphatic monocarboxylic acid with a chain of 4 to 28 carbons 
-    (usually unbranched and even-numbered), which may be saturated or unsaturated.
-
+    For this classifier, a fatty acid must be:
+      - A valid molecule,
+      - Acyclic (no rings) and free of nitrogen atoms (to avoid peptides or amino-acid derivatives),
+      - Have a free (undissociated) carboxylic acid group (–C(=O)OH),
+      - Connected to a contiguous aliphatic chain (starting at the carbonyl carbon) of at least 4 carbons.
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string for the molecule.
+    
     Returns:
-        bool: True if the molecule is a fatty acid, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is classified as a fatty acid, False otherwise.
+        str: An explanation for the classification decision.
     """
-
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Look for carboxylic acid group
-    carboxylic_acid_pattern = Chem.MolFromSmarts("C(=O)O")
-    if not mol.HasSubstructMatch(carboxylic_acid_pattern):
-        return False, "No carboxylic acid group found"
+    # Rule 1: Fatty acids are acyclic.
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Molecule contains rings and is not acyclic aliphatic"
+        
+    # Extra check: Do not allow nitrogen atoms (which usually indicate peptides or amino acid derivatives).
+    if any(atom.GetAtomicNum() == 7 for atom in mol.GetAtoms()):
+        return False, "Molecule contains nitrogen atoms indicating peptide or amino acid derivatives"
     
-    # Get number of carbon atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    # Fatty acids typically have between 4 and 28 carbon atoms
-    # Adjust criteria to allow for more complexity than strictly chain length
-    if c_count < 4:
-        return False, f"Carbon chain length {c_count} too short for typical fatty acid"
+    # Rule 2: The molecule must contain a free carboxylic acid group.
+    # SMARTS here covers a free (undissociated) carboxyl: carbonyl carbon (CX3) bonded to an –OH (OX2H).
+    free_acid_smarts = "[CX3](=O)[OX2H]"
+    free_acid = Chem.MolFromSmarts(free_acid_smarts)
+    acid_matches = mol.GetSubstructMatches(free_acid)
+    if not acid_matches:
+        return False, "No free carboxyl (–C(=O)OH) group detected"
     
-    # We need to be cautious with long chains that might just be complex esters
-    # Look at length but allow higher values with more checks
-    if c_count > 28:
-        larger_chain_info = f"Carbon chain length {c_count} for complexities beyond typical"
-        # If structure is simple and exceeds typical complexity of these types
-        if mol.GetRingInfo().NumRings() == 0:
-            return False, larger_chain_info
-        connected_heavy_atoms = mol.GetNumHeavyAtoms()
-        if connected_heavy_atoms < c_count * 1.5: # Allow some connectivity above simple alkane chains
-            return True, f"Larger but valid fatty acid: {larger_chain_info}"
+    # Helper function: From a given starting carbon atom, compute the length of the longest contiguous carbon chain.
+    def longest_carbon_chain(atom, visited):
+        max_length = 1  # counting the starting atom
+        for nbr in atom.GetNeighbors():
+            # Only follow carbon atoms that haven’t been visited
+            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited:
+                new_visited = visited | {nbr.GetIdx()}
+                chain_length = 1 + longest_carbon_chain(nbr, new_visited)
+                if chain_length > max_length:
+                    max_length = chain_length
+        return max_length
 
-    # Check for presence of rings and ensure they are small if present
-    ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() > 0 and all(len(r) > 6 for r in ring_info.AtomRings()):
-        return False, "Contains large ring structure(s), not characteristic of typical fatty acids"
+    # Rule 3: For each acid candidate, compute the contiguous chain length from the carbonyl carbon.
+    # With our SMARTS the first atom in the match is the carbonyl carbon.
+    for match in acid_matches:
+        carbon_idx = match[0]
+        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
+        chain_length = longest_carbon_chain(carbon_atom, {carbon_idx})
+        if chain_length >= 4:
+            reason = (f"Found free acid group (–C(=O)OH) with a contiguous aliphatic chain of "
+                      f"{chain_length} carbons starting at the carbonyl carbon.")
+            return True, reason
 
-    return True, "Valid fatty acid: Aliphatic monocarboxylic acid with primarily aliphatic character"
+    return False, "No candidate free acid group is attached to a long enough (>=4 carbons) aliphatic chain"
+
+# Example tests:
+if __name__ == '__main__':
+    test_set = [
+        # True positives (fatty acids)
+        ("OC(=O)CCCCCCCCCCC=C", "12-tridecenoic acid"),
+        ("C(C(O)=O)C/C=C\\C[C@H](\\C=C\\C=C/C=C/C=C/[C@H]([C@@H](C/C=C\\CC)O)O)O", "aspirin-triggered resolvin D2"),
+        ("O=C(O)[C@H]([C@@H](C(=O)O)C)CCCCCCCC", "Sphaeric acid"),
+        ("O[C@H](CCC)C/C=C\\C/C=C\\CCCCCCCC(O)=O", "Avenoleic acid"),
+        ("OC(=O)C=CC=CC=CCCCCCCCCCCCCCCCCC", "Tetracosatrienoic acid"),
+        ("CC(C)C[C@@H](O)C(O)=O", "(R)-2-hydroxy-4-methylpentanoic acid"),
+        ("CCCCCC\\C=C/CCCCCC(O)=O", "cis-tetradec-7-enoic acid"),
+        ("OC(=O)CCCCCCCCCCC/C=C/CC", "13-hexadecenoic acid"),
+        ("C(O)(=O)CCCCCCCCC(CCCCCCCCC)=O", "10-oxo-nonadecanoic acid"),
+        ("OC(=O)CCCN(N=O)CCC", "4-[nitroso(propyl)amino]butanoic acid"),
+        ("CCCCCCCCCC(O)CCC(O)=O", "4-hydroxylauric acid"),
+        ("OC(=O)CCC(CCCC)CC", "4-Ethyloctanoic acid"),
+        ("O=C(CCCCCCCC(O)=O)/C=C/C=C\\C/C=C\\CC", "9-OxoOTrE"),
+        ("OC(=O)CCC#C/C=C\\C=C\\CCCCCCCCCC#CCCC", "6Z,8E-tricosdien-4,19-diynoic acid"),
+        ("CCC=CCC=CCC=CCC=CCCC(=O)O", "4,7,10,13-hexadecatetraenoic acid"),
+        ("OC(=O)CCCCCCC/C=C\\CCCCCCCCCC/C=C\\CCCCCC", "28:2(9Z,21Z)"),
+        ("C(/C=C/C=C\\C=C\\[C@@H](OO)CCCCC)=C\\[C@H]([C@H](CCCC(O)=O)O)O", "(5S,6R)-dihydroxy-(15S)-hydroperoxy-(7E,9E,11Z,13E)-icosatetraenoic acid"),
+        ("C(C(O)=O)C/C=C\\C/C=C\\C/C=C\\C\\C=C/C=C/C(C/C=C\\CC)=O", "(4Z,7Z,10Z,13Z,15E,19Z)-17-oxodocosahexaenoic acid"),
+        ("OC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "Hentriacontanoic acid"),
+        ("OC(=O)[C@H](C[C@H](CCCCCCCCCCCCCCCCCC)C)C", "Mycosanoic acid (C24)"),
+        ("OC(CCCCCC(O)=O)C#CCCCCCCCC", "7-hydroxy-10-heptadecen-8-ynoic acid"),
+        ("CCCCCC[C@@H](O)\\C=C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O", "15(R)-HETE"),
+        ("[H]\\C(C)=C\\C(O)=O", "isocrotonic acid"),
+        # False positives (should be rejected)
+        ("OC1C(C(C(=O)C1)C/C=C\\C/C=C\\CC)/C=C/C(O)C/C=C\\CCC(O)=O", "7-hydroxy-D4-neuroprostane"),
+        ("CC\\C(CC[C@H]1O[C@@]1(C)CC)=C/CC\\C(C)=C\\C(O)=O", "juvenile hormone I acid"),
+        ("O=C(O)/C=C/C=C/C=C/C=C/[C@@]1([C@@H](C(=C[C@H]2[C@H]1CC[C@@H]([C@@H]2O)C)CO)/C(=C/C)/C)C", "Janthinopolyenemycin B"),
+        ("O1C(C1)(C(OC(=O)C(O)C(CC)C)/C=C/C=C/C=C/C(O)=O)C", "AF Toxin II"),
+        ("Cl.OC(=O)CCCN1CCC(=CC1)C2=CC=CC=C2", "4-[4-phenyl-3,6-dihydro-1(2H)-pyridinyl]butanoic acid hydrochloride"),
+        ("CCCCCC/C=C\\C/C=C\\CCCCCCCCCCCCC(O)=O", "Prenateic acid"),
+    ]
+    
+    for smi, name in test_set:
+        result, explanation = is_fatty_acid(smi)
+        print(f"SMILES: {smi}\nName: {name}\nResult: {result}\nExplanation: {explanation}\n")
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35366',
@@ -74,231 +133,531 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35366',
                                        'Wikipedia:Fatty_acid'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 87,
+                           'log_lines_of_code': 4.465908118654584,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 0,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2],
+                           'max_indent': 5,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetIdx',
+                                                 'NumRings',
+                                                 'GetAtomicNum',
+                                                 'MolFromSmiles',
+                                                 'GetAtomWithIdx',
+                                                 'GetAtoms',
+                                                 'MolFromSmarts',
+                                                 'GetNeighbors',
+                                                 'OC',
+                                                 'GetRingInfo',
+                                                 'GetSubstructMatches'],
+                           'methods_called_count': 11,
+                           'smarts_strings': ['free_acid_smarts'],
+                           'smarts_strings_count': 1,
+                           'defs': [   'is_fatty_acid(smiles: str):',
+                                       'longest_carbon_chain(atom, visited):'],
+                           'defs_count': 2,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Molecule contains rings and '
+                                          'is not acyclic aliphatic"',
+                                          'False, "Molecule contains nitrogen '
+                                          'atoms indicating peptide or amino '
+                                          'acid derivatives"',
+                                          'False, "No free carboxyl (–C(=O)OH) '
+                                          'group detected"',
+                                          'max_length',
+                                          'True, reason',
+                                          'False, "No candidate free acid '
+                                          'group is attached to a long enough '
+                                          '(>=4 carbons) aliphatic chain"'],
+                           'returns_count': 7,
+                           'complexity': 5.893181623730916},
     'message': '\n'
-               'Attempt failed: F1 score of 0.8626373626373627 is too low.\n'
+               'Attempt failed: F1 score of 0.45722561290989966 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: [H]C(CCCCCCCC)=C([H])CCCCCCCC(O)=O '
-               'NAME: octadec-9-enoic acid REASON: CORRECT Valid fatty acid: '
-               'Aliphatic monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: OC(=O)CCCCC\\C=C\\C=C(\\[N+]([O-])=O)/CCCCCC NAME: '
-               'Dinor-10-NO2-CLA REASON: CORRECT Valid fatty acid: Aliphatic '
-               'monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: OCC(C)=CC(O)=O NAME: 4-hydroxy-3-methylbut-2-enoic '
-               'acid REASON: CORRECT Valid fatty acid: Aliphatic '
-               'monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: CCCCCCCC[C@H](O)\\C=C\\CCCCCCC(O)=O NAME: '
-               '(8E,10S)-10-hydroxy-8-octadecenoic acid REASON: CORRECT Valid '
-               'fatty acid: Aliphatic monocarboxylic acid with between 4 and '
-               '28 carbons\n'
-               ' * SMILES: CCCCCCCCCCCC[C@@H](O)C(O)=O NAME: '
-               '(2R)-2-hydroxytetradecanoic acid REASON: CORRECT Valid fatty '
-               'acid: Aliphatic monocarboxylic acid with between 4 and 28 '
-               'carbons\n'
-               ' * SMILES: O[C@H](CCCCCCCC)/C=C/CCCCCCC(O)=O NAME: '
-               '10R-HOME(8E) REASON: CORRECT Valid fatty acid: Aliphatic '
-               'monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: OC(=O)CCCCCCCC=CCC=CCCCC NAME: '
-               '9,12-Heptadecadienoic acid REASON: CORRECT Valid fatty acid: '
-               'Aliphatic monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: OC(=O)CC[C@@H](CCCCCCCCCCCC)C NAME: '
-               '4R-methyl-hexadecanoic acid REASON: CORRECT Valid fatty acid: '
-               'Aliphatic monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: O=C(CCCC(O)=O)/C=C/C=C\\CCCCCCCCC NAME: '
-               '(6E,8Z)-5-oxooctadecadienoic acid REASON: CORRECT Valid fatty '
-               'acid: Aliphatic monocarboxylic acid with between 4 and 28 '
-               'carbons\n'
-               ' * SMILES: CCCCCCCCCCCCCCC(C)C(O)=O NAME: 2-methylhexadecanoic '
-               'acid REASON: CORRECT Valid fatty acid: Aliphatic '
-               'monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: OC(=O)C(CCCCCCCCCCCCCC(O)=O)C NAME: '
-               '2-methyl-hexadecanedioic acid REASON: CORRECT Valid fatty '
-               'acid: Aliphatic monocarboxylic acid with between 4 and 28 '
-               'carbons\n'
+               'True positives: SMILES: OC(=O)CCCCCCCCCCC=C NAME: '
+               '12-tridecenoic acid REASON: CORRECT Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 13 carbons '
+               'starting at the carbonyl carbon.\n'
                ' * SMILES: '
-               'FC(F)(C(F)(F)C(F)(F)\\C(\\F)=C/C(O)=O)C(F)(F)C(F)(F)F NAME: '
-               '(2E)-3,4,4,5,5,6,6,7,7,8,8,8-Dodecafluoro-2-octenoic acid '
-               'REASON: CORRECT Valid fatty acid: Aliphatic monocarboxylic '
-               'acid with between 4 and 28 carbons\n'
-               ' * SMILES: OCCCCCCC(O)=O NAME: 7-hydroxyheptanoic acid REASON: '
-               'CORRECT Valid fatty acid: Aliphatic monocarboxylic acid with '
-               'between 4 and 28 carbons\n'
-               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
-               '22-hydroxydocosanoic acid REASON: CORRECT Valid fatty acid: '
-               'Aliphatic monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: CCCC(CCC)C(O)=O NAME: valproic acid REASON: CORRECT '
-               'Valid fatty acid: Aliphatic monocarboxylic acid with between 4 '
-               'and 28 carbons\n'
-               ' * SMILES: C[C@@H](O)CCCCCCCCCCCCCCCCCCC(O)=O NAME: '
-               '(20R)-20-hydroxyhenicosanoic acid REASON: CORRECT Valid fatty '
-               'acid: Aliphatic monocarboxylic acid with between 4 and 28 '
-               'carbons\n'
-               ' * SMILES: NCCCCCCCCCCC(O)=O NAME: 11-Aminoundecanoic acid '
-               'REASON: CORRECT Valid fatty acid: Aliphatic monocarboxylic '
-               'acid with between 4 and 28 carbons\n'
-               ' * SMILES: CC\\C=C/C\\C=C/C\\C=C/CCCCCC[C@@H](O)C(O)=O NAME: '
-               '(R)-2-hydroxy-alpha-linolenic acid REASON: CORRECT Valid fatty '
-               'acid: Aliphatic monocarboxylic acid with between 4 and 28 '
-               'carbons\n'
-               ' * SMILES: CC[C@@H](C)C(O)=O NAME: (R)-2-methylbutyric acid '
-               'REASON: CORRECT Valid fatty acid: Aliphatic monocarboxylic '
-               'acid with between 4 and 28 carbons\n'
-               ' * SMILES: [O-]C(=O)CCC/C=C\\CC NAME: cis-3-hexenylacetate '
-               'REASON: CORRECT Valid fatty acid: Aliphatic monocarboxylic '
-               'acid with between 4 and 28 carbons\n'
-               ' * SMILES: OC(=O)CCCCCC#C NAME: 7-octynoic acid REASON: '
-               'CORRECT Valid fatty acid: Aliphatic monocarboxylic acid with '
-               'between 4 and 28 carbons\n'
-               ' * SMILES: OC(=O)CCCCC/C=C/C\\C=C\\CCCCC NAME: '
-               '7,10-hexadecadienoic acid REASON: CORRECT Valid fatty acid: '
-               'Aliphatic monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: CC(=O)CCCC(O)=O NAME: 5-oxohexanoic acid REASON: '
-               'CORRECT Valid fatty acid: Aliphatic monocarboxylic acid with '
-               'between 4 and 28 carbons\n'
-               ' * SMILES: OC(=O)CCCCCCCCCCCCC/C=C/CCCCCC NAME: 15-docosenoic '
-               'acid REASON: CORRECT Valid fatty acid: Aliphatic '
-               'monocarboxylic acid with between 4 and 28 carbons\n'
-               ' * SMILES: OC(=O)CC\\C=C\\C\\C=C\\C\\C=C\\C\\C=C\\CCCCCCCC '
-               'NAME: 4,7,10,13-Docosatetraenoic acid REASON: CORRECT Valid '
-               'fatty acid: Aliphatic monocarboxylic acid with between 4 and '
-               '28 carbons\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: O=C1OC(=C(C)C(=C1)OC)/C=C/C=C/C(=O)O '
-               'NAME: Herbarin A REASON: MISSED Contains ring structure(s), '
-               'usually not characteristic of typical fatty acids\n'
+               'C(C(O)=O)C/C=C\\C[C@H](\\C=C\\C=C/C=C/C=C/[C@H]([C@@H](C/C=C\\CC)O)O)O '
+               'NAME: aspirin-triggered resolvin D2 REASON: CORRECT Found free '
+               'acid group (–C(=O)OH) with a contiguous aliphatic chain of 22 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: O=C(O)[C@H]([C@@H](C(=O)O)C)CCCCCCCC NAME: Sphaeric '
+               'acid REASON: CORRECT Found free acid group (–C(=O)OH) with a '
+               'contiguous aliphatic chain of 10 carbons starting at the '
+               'carbonyl carbon.\n'
+               ' * SMILES: O[C@H](CCC)C/C=C\\C/C=C\\CCCCCCCC(O)=O NAME: '
+               'Avenoleic acid REASON: CORRECT Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 18 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(=O)C=CC=CC=CCCCCCCCCCCCCCCCCC NAME: '
+               'Tetracosatrienoic acid REASON: CORRECT Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 24 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: C(CCCCCCC[C@H]([C@H](CCCCCCCC)O)O)(=O)O NAME: '
+               '(9R,10S)-dihydroxyoctadecanoic acid REASON: CORRECT Found free '
+               'acid group (–C(=O)OH) with a contiguous aliphatic chain of 18 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: CC(C)C[C@@H](O)C(O)=O NAME: '
+               '(R)-2-hydroxy-4-methylpentanoic acid REASON: CORRECT Found '
+               'free acid group (–C(=O)OH) with a contiguous aliphatic chain '
+               'of 5 carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: CCCCCC\\C=C/CCCCCC(O)=O NAME: cis-tetradec-7-enoic '
+               'acid REASON: CORRECT Found free acid group (–C(=O)OH) with a '
+               'contiguous aliphatic chain of 14 carbons starting at the '
+               'carbonyl carbon.\n'
+               ' * SMILES: OC(=O)CCCCCCCCCCC/C=C/CC NAME: 13-hexadecenoic acid '
+               'REASON: CORRECT Found free acid group (–C(=O)OH) with a '
+               'contiguous aliphatic chain of 16 carbons starting at the '
+               'carbonyl carbon.\n'
+               ' * SMILES: C(O)(=O)CCCCCCCCC(CCCCCCCCC)=O NAME: '
+               '10-oxo-nonadecanoic acid REASON: CORRECT Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 19 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(=O)CCCN(N=O)CCC NAME: '
+               '4-[nitroso(propyl)amino]butanoic acid REASON: CORRECT Found '
+               'free acid group (–C(=O)OH) with a contiguous aliphatic chain '
+               'of 4 carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: CCCCCCCCC(O)CCC(O)=O NAME: 4-hydroxylauric acid '
+               'REASON: CORRECT Found free acid group (–C(=O)OH) with a '
+               'contiguous aliphatic chain of 12 carbons starting at the '
+               'carbonyl carbon.\n'
+               ' * SMILES: OC(=O)CCC(CCCC)CC NAME: 4-Ethyloctanoic acid '
+               'REASON: CORRECT Found free acid group (–C(=O)OH) with a '
+               'contiguous aliphatic chain of 8 carbons starting at the '
+               'carbonyl carbon.\n'
+               ' * SMILES: O=C(CCCCCCCC(O)=O)/C=C/C=C\\C/C=C\\CC NAME: '
+               '9-OxoOTrE REASON: CORRECT Found free acid group (–C(=O)OH) '
+               'with a contiguous aliphatic chain of 18 carbons starting at '
+               'the carbonyl carbon.\n'
+               ' * SMILES: OC(=O)CCC#C/C=C\\C=C\\CCCCCCCCCC#CCCC NAME: '
+               '6Z,8E-tricosdien-4,19-diynoic acid REASON: CORRECT Found free '
+               'acid group (–C(=O)OH) with a contiguous aliphatic chain of 23 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: CCC=CCC=CCC=CCC=CCCC(=O)O NAME: '
+               '4,7,10,13-hexadecatetraenoic acid REASON: CORRECT Found free '
+               'acid group (–C(=O)OH) with a contiguous aliphatic chain of 16 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(=O)CCCCCCC/C=C\\CCCCCCCCCC/C=C\\CCCCCC NAME: '
+               '28:2(9Z,21Z) REASON: CORRECT Found free acid group (–C(=O)OH) '
+               'with a contiguous aliphatic chain of 28 carbons starting at '
+               'the carbonyl carbon.\n'
                ' * SMILES: '
-               'C(CCC(O)=O)[C@@H](/C=C/C=C\\C/C=C\\C[C@@H]1[C@H](CCCCC)O1)OO '
+               'C(/C=C/C=C\\C=C\\[C@@H](OO)CCCCC)=C\\[C@H]([C@H](CCCC(O)=O)O)O '
                'NAME: '
-               '(5S)-hydroperoxy-(14R,15S)-epoxy-(6E,8Z,11Z)-icosatrienoic '
-               'acid REASON: MISSED Contains ring structure(s), usually not '
-               'characteristic of typical fatty acids\n'
-               ' * SMILES: O(C(CCCCCCCCCCCC(O)=O)CCC)C(=O)CCCCCCCCCCCCCCC '
-               'NAME: FAHFA(16:0/13-O-16:0) REASON: MISSED Carbon chain length '
-               '32 not in [4, 28]\n'
-               ' * SMILES: O1C(CCCC)=CC=C1CCC2=CC(OC)=C(O)C=C2 NAME: '
-               '2-Butyl-5-[2-(4-hydroxy-3-methoxyphenyl)ethyl]furan REASON: '
-               'MISSED No carboxylic acid group found\n'
+               '(5S,6R)-dihydroxy-(15S)-hydroperoxy-(7E,9E,11Z,13E)-icosatetraenoic '
+               'acid REASON: CORRECT Found free acid group (–C(=O)OH) with a '
+               'contiguous aliphatic chain of 20 carbons starting at the '
+               'carbonyl carbon.\n'
                ' * SMILES: '
-               'CC\\C=C/CC1C(CCCCCCCC(=O)OC[C@H](CO[C@@H]2O[C@H](CO[C@H]3O[C@H](CO)[C@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@H](O)[C@H]2O)OC(=O)CCCCCC2C=CC(=O)C2C\\C=C/CC)C=CC1=O '
-               'NAME: arabidopside C REASON: MISSED Carbon chain length 49 not '
-               'in [4, 28]\n'
-               ' * SMILES: O=C1OC(CCCCC(CC(=CC(=CC(=O)O)C)C)C)C1CO NAME: 1233A '
-               'REASON: MISSED Contains ring structure(s), usually not '
-               'characteristic of typical fatty acids\n'
+               'C(C(O)=O)C/C=C\\C/C=C\\C/C=C\\C\\C=C/C=C/C(C/C=C\\CC)=O NAME: '
+               '(4Z,7Z,10Z,13Z,15E,19Z)-17-oxodocosahexaenoic acid REASON: '
+               'CORRECT Found free acid group (–C(=O)OH) with a contiguous '
+               'aliphatic chain of 22 carbons starting at the carbonyl '
+               'carbon.\n'
+               ' * SMILES: OC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC NAME: '
+               'Hentriacontanoic acid REASON: CORRECT Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 31 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(=O)[C@H](C[C@H](CCCCCCCCCCCCCCCCCC)C)C NAME: '
+               'Mycosanoic acid (C24) REASON: CORRECT Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 22 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(CCCCCC(O)=O)C#CCCCCCCCC NAME: '
+               '7-hydroxy-10-heptadecen-8-ynoic acid REASON: CORRECT Found '
+               'free acid group (–C(=O)OH) with a contiguous aliphatic chain '
+               'of 17 carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: CCCCC[C@@H](O)\\C=C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O '
+               'NAME: 15(R)-HETE REASON: CORRECT Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 20 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: O(C(=O)CCCCCCCCC(O)=O)C NAME: Sebacic acid '
+               'monomethyl ester REASON: CORRECT Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 10 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: [H]\\C(C)=C\\C(O)=O NAME: isocrotonic acid REASON: '
+               'CORRECT Found free acid group (–C(=O)OH) with a contiguous '
+               'aliphatic chain of 4 carbons starting at the carbonyl carbon.\n'
+               'False positives: SMILES: '
+               'O=C(N[C@H](C(=O)N[C@@H](CC(O)=O)C(O)=O)CO)[C@@H](N)[C@H](CC)C '
+               'NAME: Ile-Ser-Asp REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 4 '
+               'carbons starting at the carbonyl carbon.\n'
                ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/[C@H](O)[C@H]1O[C@H]1CCCC(O)=O NAME: '
-               '(7R)-hydroxy-(5S,6S)-epoxy-(8Z,11Z,14Z)-icosatrienoic acid '
-               'REASON: MISSED Contains ring structure(s), usually not '
-               'characteristic of typical fatty acids\n'
-               ' * SMILES: CCCCC(C(=O)O)SC1=NC(=O)C(=C(N1)C)CC2=CC=CC=C2 NAME: '
-               '2-[[6-methyl-4-oxo-5-(phenylmethyl)-1H-pyrimidin-2-yl]thio]hexanoic '
-               'acid REASON: MISSED Contains ring structure(s), usually not '
-               'characteristic of typical fatty acids\n'
-               ' * SMILES: O1C(CCCC(O)C)=C(C(=C1CCC(O)=O)C(O)=O)C NAME: '
-               '3-carboxy-4-methyl-5-(4-hydroxypentyl)-2-furanpropanoic acid '
-               'REASON: MISSED Contains ring structure(s), usually not '
-               'characteristic of typical fatty acids\n'
+               'O=C(N[C@H](C(=O)N[C@@H](C(C)C)C(O)=O)CO)[C@@H](N)CCCCN NAME: '
+               'Lys-Ser-Val REASON: WRONGLY CLASSIFIED Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 4 carbons '
+               'starting at the carbonyl carbon.\n'
                ' * SMILES: '
-               'C(CCCCCCCCC1C(CCCCCCCCCCC2C(CCCCCCCCCCCCCCCCC[C@@H](O)[C@H](C([O-])=O)CCCCCCCCCCCCCCCCCCCCCCCC)C2)C1)CCCCCCCCCC '
-               'NAME: '
-               '(2R)-2-[(1R)-1-hydroxy-18-{2-[10-(2-nonadecylcyclopropyl)decyl]cyclopropyl}octadecyl]hexacosanoate '
-               'REASON: MISSED Carbon chain length 79 not in [4, 28]\n'
+               'O[C@@H]([C@H](NC(=O)[C@@H](NC(=O)[C@@H](N)[C@H](O)C)CCC(O)=O)C(O)=O)C '
+               'NAME: Thr-Glu-Thr REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 5 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'O=C(N[C@@H](CC(C)C)C(O)=O)[C@@H](NC(=O)[C@@H](N)C(C)C)CCCN=C(N)N '
+               'NAME: Val-Arg-Leu REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 5 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(CCC(C)C)CC(O)=O NAME: 3-hydroxy-isoheptanoic '
+               'acid REASON: WRONGLY CLASSIFIED Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 7 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'O(C(C[N+](C)(C)C)CC(O)=O)C(=O)CCCCCCCC/C=C/C=C/CCCCC NAME: '
+               'ACar 18:2 REASON: WRONGLY CLASSIFIED Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 4 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'SC[C@H](NC(=O)[C@@H](N)CCCN=C(N)N)C(=O)N[C@@H](CC(O)=O)C(O)=O '
+               'NAME: Arg-Cys-Asp REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 4 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'O=C(N[C@@H](CC(=O)N)C(O)=O)[C@@H](NC(=O)[C@@H](N)CO)CCC(O)=O '
+               'NAME: Ser-Glu-Asn REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 4 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(=O)\\C=C\\C(O)=C\\C=O NAME: '
+               '(2E,4Z)-4-hydroxy-6-oxohexa-2,4-dienoic acid REASON: WRONGLY '
+               'CLASSIFIED Found free acid group (–C(=O)OH) with a contiguous '
+               'aliphatic chain of 6 carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'O[C@@H]([C@H](N)C(=O)N[C@H](C(=O)N[C@@H](CC(C)C)C(O)=O)C)C '
+               'NAME: Thr-Ala-Leu REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 5 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'S(CC[C@H](NC(=O)[C@@H](NC(=O)[C@@H](N)CCSC)CCCN=C(N)N)C(O)=O)C '
+               'NAME: Met-Arg-Met REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 4 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'C[C@@H](O)C(=O)SC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(O)=O '
+               'NAME: (R)-S-lactoylglutathione REASON: WRONGLY CLASSIFIED '
+               'Found free acid group (–C(=O)OH) with a contiguous aliphatic '
+               'chain of 5 carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(=O)[C@@H](NC(=O)[C@@H](NC(=O)CN)CO)C(C)C NAME: '
+               'Gly-Ser-Val REASON: WRONGLY CLASSIFIED Found free acid group '
+               '(–C(=O)OH) with a contiguous aliphatic chain of 4 carbons '
+               'starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'O=NN(O)CCC[C@@H](NC(=O)[C@@H](NC(=O)[C@H](NC(=O)[C@H](NC(=O)[C@@H](NC(=O)[C@H](NC(=O)CNC(=O)C[C@H](O)CCCCCCCCCCC)[C@@H](O)C(=O)O)CO)[C@H](O)C)CCCN(O)N=O)CO)C(=O)O '
+               'NAME: Megapolibactin F REASON: WRONGLY CLASSIFIED Found free '
+               'acid group (–C(=O)OH) with a contiguous aliphatic chain of 4 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: O=C(NC(CCC(=O)N)C(O)=O)CCCCCCC/C=C/C\\C=C\\CCCCC '
+               'NAME: N-Linoleoyl Glutamine REASON: WRONGLY CLASSIFIED Found '
+               'free acid group (–C(=O)OH) with a contiguous aliphatic chain '
+               'of 5 carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'SC[C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)N[C@@H]([C@H](O)C)C(O)=O '
+               'NAME: Glu-Cys-Thr REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 5 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: CCCC(N)C(O)=O NAME: 2-aminopentanoic acid REASON: '
+               'WRONGLY CLASSIFIED Found free acid group (–C(=O)OH) with a '
+               'contiguous aliphatic chain of 5 carbons starting at the '
+               'carbonyl carbon.\n'
+               ' * SMILES: O=C(N[C@@H](C(C)C)C(O)=O)[C@@H](NC(=O)CN)CCC(O)=O '
+               'NAME: Gly-Glu-Val REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 4 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(CC(N)C(O)=O)C(O)=O NAME: '
+               '(4R)-4-Hydroxy-L-glutamic acid REASON: WRONGLY CLASSIFIED '
+               'Found free acid group (–C(=O)OH) with a contiguous aliphatic '
+               'chain of 5 carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'O=C(O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)C[C@H](O)CCCCCCCC(CC)C)CCC(=O)O)CC(C)C)CC(C)C)C(C)C)CC(=O)O)CC(C)C)CC(C)C '
+               'NAME: Gageostatin A REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 5 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'O=C(N[C@@H](CCCCN)C(O)=O)[C@@H](NC(=O)[C@@H](N)C(C)C)CCCN=C(N)N '
+               'NAME: Val-Arg-Lys REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 6 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: '
+               'S(CC[C@H](NC(=O)[C@@H](NC(=O)[C@@H](N)CC(O)=O)CCC(=O)N)C(O)=O)C '
+               'NAME: Asp-Gln-Met REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 4 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: CCCCCC/C=C\\C/C=C\\CCCCCCCCCCCCC(O)=O NAME: '
+               'Prenateic acid REASON: WRONGLY CLASSIFIED Found free acid '
+               'group (–C(=O)OH) with a contiguous aliphatic chain of 24 '
+               'carbons starting at the carbonyl carbon.\n'
+               ' * SMILES: OC(CCCCCCCCCC/C=C\\CCC)=O NAME: Criegeenic acid '
+               'REASON: WRONGLY CLASSIFIED Found free acid group (–C(=O)OH) '
+               'with a contiguous aliphatic chain of 16 carbons starting at '
+               'the carbonyl carbon.\n'
+               ' * SMILES: '
+               'CC(=O)NC(CS[C@H](\\C=C\\C=C\\C=C/C\\C=C/CCCCC(O)=O)[C@@H](O)CCCC(O)=O)C(O)=O '
+               'NAME: omega-Carboxy-N-acetyl-LTE4 REASON: WRONGLY CLASSIFIED '
+               'Found free acid group (–C(=O)OH) with a contiguous aliphatic '
+               'chain of 20 carbons starting at the carbonyl carbon.\n'
+               'False negatives: SMILES: '
+               'OC1C(C(C(=O)C1)C/C=C\\C/C=C\\CC)/C=C/C(O)C/C=C\\CCC(O)=O NAME: '
+               '7-hydroxy-D4-neuroprostane REASON: MISSED Molecule contains '
+               'rings and is not acyclic aliphatic\n'
+               ' * SMILES: CC\\C(CC[C@H]1O[C@@]1(C)CC)=C/CC\\C(C)=C\\C(O)=O '
+               'NAME: juvenile hormone I acid REASON: MISSED Molecule contains '
+               'rings and is not acyclic aliphatic\n'
+               ' * SMILES: '
+               'O=C(O)/C=C/C=C/C=C/C=C/[C@@]1([C@@H](C(=C[C@H]2[C@H]1CC[C@@H]([C@@H]2O)C)CO)/C(=C/C)/C)C '
+               'NAME: Janthinopolyenemycin B REASON: MISSED Molecule contains '
+               'rings and is not acyclic aliphatic\n'
+               ' * SMILES: O1C(C1)(C(OC(=O)C(O)C(CC)C)/C=C/C=C/C=C/C(O)=O)C '
+               'NAME: AF Toxin II REASON: MISSED Molecule contains rings and '
+               'is not acyclic aliphatic\n'
+               ' * SMILES: Cl.OC(=O)CCCN1CCC(=CC1)C2=CC=CC=C2 NAME: '
+               '4-[4-phenyl-3,6-dihydro-1(2H)-pyridinyl]butanoic acid '
+               'hydrochloride REASON: MISSED Molecule contains rings and is '
+               'not acyclic aliphatic\n'
+               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/CC1OC1CCCC(O)=O NAME: '
+               '5,6-EET REASON: MISSED Molecule contains rings and is not '
+               'acyclic aliphatic\n'
+               ' * SMILES: O1C(CCCCC)=C(C(=C1\\C=C\\CCCCCCCCC(O)=O)C)C NAME: '
+               '12,15-Epoxy-13,14-dimethyleicosa-10,12,14-trienoic acid '
+               'REASON: MISSED Molecule contains rings and is not acyclic '
+               'aliphatic\n'
+               ' * SMILES: '
+               'C(C(O)=O)C/C=C\\C/C=C\\C/C=C\\CC1C(C/C=C\\C/C=C\\CC)O1 NAME: '
+               '(4Z,7Z,10Z,16Z,19Z)-13,14-epoxydocosapentaenoic acid REASON: '
+               'MISSED Molecule contains rings and is not acyclic aliphatic\n'
+               ' * SMILES: O=C1OC(\\C(=C/C(=C/C(=O)O)/C)\\C)=CC(=C1C)OC NAME: '
+               '4Z-Infectopyrone REASON: MISSED Molecule contains rings and is '
+               'not acyclic aliphatic\n'
+               ' * SMILES: OC(=O)CCCC[C@H]1CCSS1 NAME: (S)-lipoic acid REASON: '
+               'MISSED Molecule contains rings and is not acyclic aliphatic\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [],
-    'sample_false_negatives': [   {   'smiles': 'O(C(CCCCCCCCCCCC(O)=O)CCC)C(=O)CCCCCCCCCCCCCCC',
-                                      'name': 'FAHFA(16:0/13-O-16:0)',
-                                      'reason': 'Carbon chain length 32 for '
-                                                'complexities beyond typical'},
-                                  {   'smiles': 'O1C(CCCC)=CC=C1CCC2=CC(OC)=C(O)C=C2',
-                                      'name': '2-Butyl-5-[2-(4-hydroxy-3-methoxyphenyl)ethyl]furan',
-                                      'reason': 'No carboxylic acid group '
-                                                'found'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCC(=O)OC(CCCCCCCC)CCCCCCCCC(O)=O',
-                                      'name': '10-PAHSA',
-                                      'reason': 'Carbon chain length 34 for '
-                                                'complexities beyond typical'},
-                                  {   'smiles': 'O=C(O)CCC(=O)N(O)CCCCCNC(=O)CCC(=O)N(O)CCCCCNC(=O)CCC(=O)N(O)CCCCCNC(=O)C',
-                                      'name': 'Fulvivirgamide B2',
-                                      'reason': 'Carbon chain length 29 for '
-                                                'complexities beyond typical'},
-                                  {   'smiles': 'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCC(O)=O',
-                                      'name': '(12Z,15Z,18Z,21Z,24Z)-triacontapentaenoic '
+    'sample_true_negatives': [   {   'smiles': 'O=C(N[C@@H](C(O)(C)C)C)[C@H]([C@@]1([C@@]2([C@@](CC1)(/C(/CCC2)=C/C=C\\3/C[C@@H](O)C[C@H](O)C3=C)[H])C)[H])C',
+                                     'name': '1alpha,25-dihydroxy-24-oxo-23-azavitamin '
+                                             'D2 / '
+                                             '1alpha,25-dihydroxy-24-oxo-23-azaergocalciferol',
+                                     'reason': 'Molecule contains rings and is '
+                                               'not acyclic aliphatic'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCC(O)C([O-])=O',
+                                     'name': '2-hydroxyarachidate',
+                                     'reason': 'No free carboxyl (–C(=O)OH) '
+                                               'group detected'},
+                                 {   'smiles': 'C[C@@H](CN([C@@H](C)CO)C(=O)NC1=CC=C(C=C1)C(F)(F)F)[C@@H](CN(C)C(=O)C2CCOCC2)OC',
+                                     'name': 'N-[(2S,3S)-4-[[(2S)-1-hydroxypropan-2-yl]-[[4-(trifluoromethyl)phenyl]carbamoyl]amino]-2-methoxy-3-methylbutyl]-N-methyloxane-4-carboxamide',
+                                     'reason': 'Molecule contains rings and is '
+                                               'not acyclic aliphatic'},
+                                 {   'smiles': 'CC(=O)CC\\C=C(/C)CCC=C(C)C',
+                                     'name': 'geranyl acetone',
+                                     'reason': 'No free carboxyl (–C(=O)OH) '
+                                               'group detected'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@H](O[C@H](O)[C@H]1O)CO[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@@H]2O)CO)[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)CO',
+                                     'name': '(2S,3S,4S,5S,6R)-2-[[(2R,3R,4S,5S,6S)-4-[(2R,3S,4S,5S,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-3-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-3,5,6-trihydroxyoxan-2-yl]methoxy]-6-(hydroxymethyl)oxane-3,4,5-triol',
+                                     'reason': 'Molecule contains rings and is '
+                                               'not acyclic aliphatic'},
+                                 {   'smiles': 'O=C(OC1=C(C(O)=C(C(=O)O)C(=C1C)C)C)C2=C(OC)C(=C(OC(=O)C3=C(O)C=C(O)C=C3C)C=C2C)C',
+                                     'name': 'Thielavin Z5',
+                                     'reason': 'Molecule contains rings and is '
+                                               'not acyclic aliphatic'},
+                                 {   'smiles': '[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)NC(C)=O)O[C@@H]2[C@@H]([C@H](C(O[C@@H]2CO)O)O)O',
+                                     'name': 'beta-D-GlcpNAc-(1->4)-D-Galp',
+                                     'reason': 'Molecule contains rings and is '
+                                               'not acyclic aliphatic'},
+                                 {   'smiles': 'CN(C)C(=O)C1=CC=C(C=C1)C2=CC=C(C=C2)[C@@H]3[C@H]4CN(CC(=O)N4[C@H]3CO)C(=O)CC5CC5',
+                                     'name': '4-[4-[(6S,7R,8R)-4-(2-cyclopropyl-1-oxoethyl)-8-(hydroxymethyl)-2-oxo-1,4-diazabicyclo[4.2.0]octan-7-yl]phenyl]-N,N-dimethylbenzamide',
+                                     'reason': 'Molecule contains rings and is '
+                                               'not acyclic aliphatic'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCC=C',
+                                     'name': '1-docosene',
+                                     'reason': 'No free carboxyl (–C(=O)OH) '
+                                               'group detected'},
+                                 {   'smiles': 'C([C@@](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)([H])COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC',
+                                     'name': 'TG(22:5(7Z,10Z,13Z,16Z,19Z)/20:5(5Z,8Z,11Z,14Z,17Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))[iso6]',
+                                     'reason': 'No free carboxyl (–C(=O)OH) '
+                                               'group detected'}],
+    'sample_false_negatives': [   {   'smiles': 'OC1C(C(C(=O)C1)C/C=C\\C/C=C\\CC)/C=C/C(O)C/C=C\\CCC(O)=O',
+                                      'name': '7-hydroxy-D4-neuroprostane',
+                                      'reason': 'Molecule contains rings and '
+                                                'is not acyclic aliphatic'},
+                                  {   'smiles': 'CC\\C(CC[C@H]1O[C@@]1(C)CC)=C/CC\\C(C)=C\\C(O)=O',
+                                      'name': 'juvenile hormone I acid',
+                                      'reason': 'Molecule contains rings and '
+                                                'is not acyclic aliphatic'},
+                                  {   'smiles': 'O=C(O)/C=C/C=C/C=C/C=C/[C@@]1([C@@H](C(=C[C@H]2[C@H]1CC[C@@H]([C@@H]2O)C)CO)/C(=C/C)/C)C',
+                                      'name': 'Janthinopolyenemycin B',
+                                      'reason': 'Molecule contains rings and '
+                                                'is not acyclic aliphatic'},
+                                  {   'smiles': 'O1C(C1)(C(OC(=O)C(O)C(CC)C)/C=C/C=C/C=C/C(O)=O)C',
+                                      'name': 'AF Toxin II',
+                                      'reason': 'Molecule contains rings and '
+                                                'is not acyclic aliphatic'},
+                                  {   'smiles': 'Cl.OC(=O)CCCN1CCC(=CC1)C2=CC=CC=C2',
+                                      'name': '4-[4-phenyl-3,6-dihydro-1(2H)-pyridinyl]butanoic '
+                                              'acid hydrochloride',
+                                      'reason': 'Molecule contains rings and '
+                                                'is not acyclic aliphatic'},
+                                  {   'smiles': 'OC(=O)CCCN(N=O)CCC',
+                                      'name': '4-[nitroso(propyl)amino]butanoic '
                                               'acid',
-                                      'reason': 'Carbon chain length 30 for '
-                                                'complexities beyond typical'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCC(=O)OC(CCCCC)CCCCCCCCCCCC(O)=O',
-                                      'name': '13-PAHSA',
-                                      'reason': 'Carbon chain length 34 for '
-                                                'complexities beyond typical'},
-                                  {   'smiles': 'OCCC(O)=O',
-                                      'name': '3-hydroxypropionic acid',
-                                      'reason': 'Carbon chain length 3 too '
-                                                'short for typical fatty acid'},
-                                  {   'smiles': 'CCC(C)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O',
-                                      'name': '28-methyltriacontanoic acid',
-                                      'reason': 'Carbon chain length 31 for '
-                                                'complexities beyond typical'},
-                                  {   'smiles': 'OC([C@@H](C[C@@H](C[C@@H](C[C@@H](C[C@@H](C[C@@H](C[C@@H](C[C@H](C)C(O)=O)C)C)C)C)C)C)C)CCCCCCCCCCCCCCCCC',
-                                      'name': 'Hydroxyphthioceranic acid (C42)',
-                                      'reason': 'Carbon chain length 42 for '
-                                                'complexities beyond typical'},
-                                  {   'smiles': 'O(C(CCCCCCCCCCCCCCC)=O)C(CCCCCCCCC)CCCCCCCC(=O)O',
-                                      'name': '9-PAHSA',
-                                      'reason': 'Carbon chain length 34 for '
-                                                'complexities beyond typical'}],
+                                      'reason': 'Molecule contains nitrogen '
+                                                'atoms indicating peptide or '
+                                                'amino acid derivatives'},
+                                  {   'smiles': 'CCCCC\\C=C/C\\C=C/C\\C=C/CC1OC1CCCC(O)=O',
+                                      'name': '5,6-EET',
+                                      'reason': 'Molecule contains rings and '
+                                                'is not acyclic aliphatic'},
+                                  {   'smiles': 'O1C(CCCCC)=C(C(=C1\\C=C\\CCCCCCCCC(O)=O)C)C',
+                                      'name': '12,15-Epoxy-13,14-dimethyleicosa-10,12,14-trienoic '
+                                              'acid',
+                                      'reason': 'Molecule contains rings and '
+                                                'is not acyclic aliphatic'},
+                                  {   'smiles': 'OC(=O)CCCCCCCCCCCCC.OCCN(CCO)CCO',
+                                      'name': 'Triethanolamine myristate',
+                                      'reason': 'Molecule contains nitrogen '
+                                                'atoms indicating peptide or '
+                                                'amino acid derivatives'},
+                                  {   'smiles': 'N[C@H](C(=O)O)CS[C@H](/C=C/C=C/C=C\\C/C=C\\CCC(O)=O)[C@H](C/C=C\\C/C=C\\CC)O',
+                                      'name': '(13R)-S-cysteinyl-(14S)-hydroxy-(4Z,7Z,9E,11E,16Z,19Z)-docosahexaenoic '
+                                              'acid',
+                                      'reason': 'Molecule contains nitrogen '
+                                                'atoms indicating peptide or '
+                                                'amino acid derivatives'}],
     'attempt': 2,
-    'reasoning': 'To improve the classification of fatty acids, we need to '
-                 'address the false negative cases where the previous program '
-                 "failed. Let's analyze the possible reasons for these "
-                 'failures and think of improvements:\n'
+    'reasoning': 'Below is our reasoning before the code:\n'
                  '\n'
-                 '1. **Ring Structure Detection**: The current code considers '
-                 'any molecule with a ring structure as not a fatty acid. '
-                 'However, some fatty acids can have cyclic substructures, '
-                 'like Herbarin A, which contains a non-characteristic cyclic '
-                 'acetal. We should not outright dismiss molecules with small '
-                 'ring systems, especially if these are part of a larger '
-                 'aliphatic chain. A solution might be to check if these rings '
-                 'are small (5 or 6-membered) and not the predominant motif in '
-                 'the molecule.\n'
+                 'We examined the previous fatty‐acid classifier and observed '
+                 'that while it correctly identified many fatty acids (true '
+                 'positives), it also marked many peptides (or amino‐acid '
+                 'derivatives) as fatty acids. In many false‐positive cases '
+                 'the routine found a free carboxylic acid group (–C(=O)OH) '
+                 'and then computed a contiguous carbon chain of at least four '
+                 'carbons—even though that chain belonged to a peptide '
+                 'C‐terminus rather than an aliphatic fatty acid. In order to '
+                 'improve the precision we now add extra rules. First, since '
+                 '“acyclic aliphatic” fatty acids should not contain rings or '
+                 'heteroatoms (especially nitrogen), we now explicitly reject '
+                 '(or “flag”) molecules that contain rings or any nitrogen '
+                 'atoms. (Peptides will have one or more amide bonds and '
+                 'nitrogen atoms.) This extra nitrogen filter combined with '
+                 'the existing requirements (validity, acyclic, free carboxyl '
+                 'group, and enough contiguous carbon atoms from the carbonyl '
+                 'carbon) should reduce the false positives and improve '
+                 'performance.\n'
                  '\n'
-                 '2. **Carbon Chain Length**: The previous code was strict in '
-                 'accepting only carbon chains between 4 and 28 atoms. '
-                 'However, examples such as FAHFA(16:0/13-O-16:0) and some '
-                 'complex derivatives included larger carbon chains, possibly '
-                 'due to esterified or branched forms these may possess.\n'
-                 '\n'
-                 '3. **Multiple Substructural Features**: Some examples '
-                 'contain multiple or complex functional groups. We need to '
-                 'ensure a focus on an aliphatic backbone even when rings or '
-                 'other groups are present. Perhaps evaluating connectivity or '
-                 'predominant chain could help refine the logic.\n'
-                 '\n'
-                 '4. **Semantic Interpretation**: Clearing the ambiguity '
-                 'around what truly constitutes a "fatty acid" beyond just '
-                 'molecular features might require context-specific adjustment '
-                 'in classifications.\n'
-                 '\n'
-                 'Essentially, our improvements will include more nuanced '
-                 'handling of ring structures, tailored logic for chain '
-                 'evaluation, and sensitivity to broader chemical contexts '
-                 'when determining what pertains to the fatty acid class.',
+                 'Below is the complete single-code-block Python solution '
+                 'using RDKit:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 2552,
-    'num_false_positives': 0,
-    'num_true_negatives': 0,
-    'num_false_negatives': 100,
+    'num_true_positives': 2119,
+    'num_false_positives': 921,
+    'num_true_negatives': 138543,
+    'num_false_negatives': 717,
     'num_negatives': None,
-    'precision': 1.0,
-    'recall': 0.9622926093514329,
-    'f1': 0.9807840122982321,
-    'accuracy': 0.9622926093514329,
-    'negative_predictive_value': 0.0}
+    'precision': 0.6970394736842105,
+    'recall': 0.747179125528914,
+    'f1': 0.7212389380530974,
+    'accuracy': 0.9884891075193254,
+    'negative_predictive_value': 0.994851357173632}

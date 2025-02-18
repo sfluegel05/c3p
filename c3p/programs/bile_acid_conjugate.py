@@ -2,94 +2,101 @@
 Classifies: CHEBI:36249 bile acid conjugate
 """
 """
-Classifies: Bile Acid Conjugate
+Classifies: Bile acid conjugate
+Definition:
+  Any bile acid (i.e. a molecule with a cholanic/steroid core – typically a fused system
+  of three six-membered rings and one five-membered ring) conjugated to a functional group
+  that gives additional hydrophilicity or charge (e.g. glycine, taurine, sulfate, glucuronate,
+  sugars, or coenzyme A).
+  
+This implementation uses a heuristic method:
+  1. Detect the steroid core by examining the ring systems.
+  2. Look for one or more conjugation groups using common SMARTS patterns.
 """
 
 from rdkit import Chem
 
 def is_bile_acid_conjugate(smiles: str):
     """
-    Determines if a molecule is a bile acid conjugate based on its SMILES string.
-    A bile acid conjugate is a bile acid attached to a hydrophilic group such as glycine, taurine,
-    other amino acids, sulfate, glucuronic acid, glucose, other sugars, or coenzyme A.
-
+    Determines if a molecule (given as a SMILES string) is a bile acid conjugate.
+    It uses a heuristic for the steroid (cholanic) nucleus based on ring counts 
+    (expecting 3 six-membered rings and 1 five-membered ring) and then searches 
+    for common conjugation groups using SMARTS patterns.
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+        
     Returns:
-        bool: True if molecule is a bile acid conjugate, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is a bile acid conjugate, False otherwise.
+        str: Reason for the classification.
     """
-
-    # Parse SMILES
+    # Parse the SMILES string into an RDKit molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for steroid nucleus: fused ring system of four rings (6-6-6-5)
-    ri = mol.GetRingInfo()
-    sssr = ri.AtomRings()
-    if len(sssr) < 4:
-        return False, "No steroid nucleus found (not enough rings)"
-
-    # Get ring sizes
-    ring_sizes = [len(ring) for ring in sssr]
-
-    # Check for ring sizes 6-6-6-5
-    six_membered_rings = ring_sizes.count(6)
-    five_membered_rings = ring_sizes.count(5)
-    if not (six_membered_rings >= 3 and five_membered_rings >= 1):
-        return False, "No steroid nucleus found (incorrect ring sizes)"
-
-    # Now check for hydrophilic conjugation groups
-    # Define SMARTS patterns for conjugation groups
-
-    # Glycine conjugation (amide bond to glycine)
-    glycine_conj_smarts = '[NX3][CX3](=O)[CX4][CX3](=O)[O-,O]'
-    glycine_conj = Chem.MolFromSmarts(glycine_conj_smarts)
-
-    # Taurine conjugation (amide bond to taurine)
-    taurine_conj_smarts = '[NX3][CX4][CX4][SX4](=O)(=O)[O-,O]'
-    taurine_conj = Chem.MolFromSmarts(taurine_conj_smarts)
-
-    # Sulfate conjugation (sulfate ester)
-    sulfate_conj_smarts = '[OX2][SX4](=O)(=O)[O-,O]'
-    sulfate_conj = Chem.MolFromSmarts(sulfate_conj_smarts)
-
-    # Glucuronic acid conjugation (ester or glycosidic bond to glucuronic acid)
-    glucuronic_acid_conj_smarts = 'O[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@@H]1C(=O)[O-,O]'
-    glucuronic_acid_conj = Chem.MolFromSmarts(glucuronic_acid_conj_smarts)
-
-    # Glucose conjugation (glycosidic bond)
-    glucose_conj_smarts = 'O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H]1O'
-    glucose_conj = Chem.MolFromSmarts(glucose_conj_smarts)
-
-    # General amino acid conjugation (amide bond to amino acid side chain)
-    amino_acid_conj_smarts = '[NX3][CX3](=O)[CX4][CX3](=O)[O-,O]'
-    amino_acid_conj = Chem.MolFromSmarts(amino_acid_conj_smarts)
-
-    # List of conjugation patterns
-    conjugation_patterns = [
-        ('glycine', glycine_conj),
-        ('taurine', taurine_conj),
-        ('sulfate', sulfate_conj),
-        ('glucuronic acid', glucuronic_acid_conj),
-        ('glucose', glucose_conj),
-        ('amino acid', amino_acid_conj)
-    ]
-
-    # Check for conjugation
-    for name, pattern in conjugation_patterns:
+    
+    # --- Step 1. Check for a steroid (cholanic acid) nucleus ---
+    # Bile acids have a tetracyclic fused ring system: three cyclohexane rings and one cyclopentane ring.
+    # We use RDKit's ring information as a heuristic.
+    ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
+    
+    if len(rings) < 4:
+        return False, "Less than 4 rings detected – steroid nucleus likely missing"
+    
+    # Count how many rings have 5 atoms and how many have 6 atoms.
+    count_5 = sum(1 for ring in rings if len(ring) == 5)
+    count_6 = sum(1 for ring in rings if len(ring) == 6)
+    if count_5 < 1 or count_6 < 3:
+        return False, ("Detected rings do not match the expected pattern for a steroid nucleus "
+                       "(expect at least one 5-membered ring and three 6-membered rings)")
+    
+    # --- Step 2. Check for conjugation groups ---
+    # Define a list of SMARTS patterns for functional groups used for bile acid conjugation.
+    # These include generic amide bonds (common for amino acid conjugates), taurine and sulfate conjugates,
+    # glucuronate, and sugar moieties.
+    conjugation_smarts = {
+        "generic amide (e.g. amino acid conjugation)": "C(=O)N",
+        "taurine conjugation (anionic)": "NCCS(=O)(=O)[O-]",
+        "taurine conjugation (neutral)": "NCCS(=O)(=O)O",
+        "sulfate conjugation": "S(=O)(=O)[O-]",
+        "glucuronate": "O[C@@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)C(=O)[O-]1",
+        "sugar (e.g. glucose)": "OC1OC(O)C(O)C(O)C1O"
+        # Note: Additional patterns (e.g., for coenzyme A) can be included here as needed.
+    }
+    
+    found_conjugation = False
+    matched_groups = []
+    for desc, smart in conjugation_smarts.items():
+        pattern = Chem.MolFromSmarts(smart)
+        if pattern is None:
+            continue  # Skip invalid SMARTS
         if mol.HasSubstructMatch(pattern):
-            return True, f"Contains {name} conjugation"
+            found_conjugation = True
+            matched_groups.append(desc)
+            
+    if not found_conjugation:
+        return False, "No recognized conjugation group detected"
+    
+    # If both a steroid nucleus and at least one conjugation group are found,
+    # we classify the molecule as a bile acid conjugate.
+    reason = ("Steroid nucleus detected (heuristic: >=1 five-membered and >=3 six-membered rings) "
+              "with conjugation group(s): " + ", ".join(matched_groups))
+    return True, reason
 
-    # Also check for coenzyme A conjugation (simplified pattern)
-    coa_conj_smarts = 'NC(=O)CCNC(=O)[CX4][CX3](=O)[O-,O]'
-    coa_conj = Chem.MolFromSmarts(coa_conj_smarts)
-    if mol.HasSubstructMatch(coa_conj):
-        return True, "Contains coenzyme A conjugation"
-
-    return False, "No hydrophilic conjugation found"
+# Example usage (for testing purposes):
+if __name__ == "__main__":
+    # Example SMILES from the provided list (taurocholic acid is given as one example)
+    smiles_examples = [
+        "[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC(=O)NCCS(O)(=O)=O",  # taurocholic acid
+        "[C@]12([C@]([C@]3([C@]([C@@H]([C@@H](CCC(NCCS(=O)(=O)O)=O)C)CC3)(C)CC1)[H])([C@H]([C@H](O)[C@]4([C@@]2(CC[C@H](C4)O)C)[H])O)[H])[H]"  # tauro-omega-muricholic acid
+    ]
+    for s in smiles_examples:
+        result, reason = is_bile_acid_conjugate(s)
+        print("SMILES:", s)
+        print("Classification:", result)
+        print("Reason:", reason)
+        print("----------")
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:36249',
@@ -112,143 +119,259 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:36249',
                                        'PMID:37071431'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 68,
+                           'log_lines_of_code': 4.219507705176107,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2],
+                           'max_indent': 3,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'items',
+                                                 'GetRingInfo',
+                                                 'AtomRings',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmarts',
+                                                 'join',
+                                                 'MolFromSmiles',
+                                                 'append'],
+                           'methods_called_count': 8,
+                           'smarts_strings': ['smart'],
+                           'smarts_strings_count': 1,
+                           'defs': ['is_bile_acid_conjugate(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Less than 4 rings detected '
+                                          '– steroid nucleus likely missing"',
+                                          'False, ("Detected rings do not '
+                                          'match the expected pattern for a '
+                                          'steroid nucleus "',
+                                          'False, "No recognized conjugation '
+                                          'group detected"',
+                                          'True, reason'],
+                           'returns_count': 5,
+                           'complexity': 4.243901541035221},
     'message': '\n'
-               'Error: invalid syntax (<string>, line 1)\n'
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: NONE\n'
                'False positives: NONE\n'
-               'False negatives: NONE\n'
+               'False negatives: SMILES: '
+               '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])C[C@H](O)[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC(=O)NCCS(O)(=O)=O '
+               'NAME: taurocholic acid REASON: MISSED No steroid nucleus '
+               '(cholanic acid core) detected\n'
+               ' * SMILES: '
+               '[C@]12([C@]([C@]3([C@]([C@@H]([C@@H](CCC(NCCS(=O)(=O)O)=O)C)CC3)(C)CC1)[H])([C@H]([C@H](O)[C@]4([C@@]2(CC[C@H](C4)O)C)[H])O)[H])[H] '
+               'NAME: tauro-omega-muricholic acid REASON: MISSED No steroid '
+               'nucleus (cholanic acid core) detected\n'
+               ' * SMILES: '
+               'O[C@@H]1[C@]2([C@]([C@]3([C@@]([C@@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(C1)[H])[H])(CC[C@@]2([C@@H](CCC(=O)NCC(=O)NCC(O)=O)C)[H])[H])C '
+               'NAME: '
+               '((4R)-4-((3R,5S,7R,9S,10S,12S,13R,14S,17R)-3,7,12-Trihydroxy-10,13-dimethylhexadecahydro-1H-cyclopenta[a]phenanthren-17-yl)pentanoyl)glycylglycine '
+               'REASON: MISSED No steroid nucleus (cholanic acid core) '
+               'detected\n'
+               ' * SMILES: '
+               'S(O)(=O)(=O)CCC(NC(=O)CC[C@H]([C@@]1([C@@]2([C@]([C@]3([C@@]([C@@]4([C@](C[C@H]3O)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC1)[H])C)[H])C)C(O)=O '
+               'NAME: '
+               '((4R)-4-((3R,5S,7R,9S,10S,12S,13R,14S,17R)-3,7,12-Trihydroxy-10,13-dimethylhexadecahydro-1H-cyclopenta[a]phenanthren-17-yl)pentanoyl)valine '
+               'REASON: MISSED No steroid nucleus (cholanic acid core) '
+               'detected\n'
+               ' * SMILES: '
+               'C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3([C@H]([C@H]([C@@]2(C[C@@H](C1)O)[H])O)O)[H])(CC[C@@]4([C@@H](CCC(NCCS(O)(=O)=O)=O)C)[H])[H])C)[H])C '
+               'NAME: tauro-beta-muricholic acid REASON: MISSED No steroid '
+               'nucleus (cholanic acid core) detected\n'
+               ' * SMILES: '
+               '[H][C@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)CCC(=O)NCC(O)=O)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CC[C@@H](O)C2 '
+               'NAME: glycolithocholic acid REASON: MISSED No steroid nucleus '
+               '(cholanic acid core) detected\n'
+               ' * SMILES: '
+               'S(O)(=O)(=O)CCNC(=O)CC[C@H]([C@@]1([C@@]2([C@]([C@]3([C@@]([C@@]4([C@](CC3)(C([C@H](O)C(C4)([2H])[2H])([2H])[2H])[H])C)(C[C@@H]2O)[H])[H])(CC1)[H])C)[H])C '
+               'NAME: taurodeoxycholic acid-d4 REASON: MISSED No steroid '
+               'nucleus (cholanic acid core) detected\n'
+               ' * SMILES: '
+               '[H][C@@]12C[C@H](O)CC[C@]1(C)[C@@]1([H])CC[C@]3(C)[C@]([H])(CC[C@@]3([H])[C@]1([H])[C@H](O)C2)[C@H](C)CCC(=O)NCCS(O)(=O)=O '
+               'NAME: taurochenodeoxycholic acid REASON: MISSED No steroid '
+               'nucleus (cholanic acid core) detected\n'
+               ' * SMILES: '
+               'C(CNC(CC[C@H]([C@H]1CCC2C3[C@@H](C[C@]4(C[C@@H](CC[C@@]4(C3C[C@@H]([C@]12C)O)C)O)[H])O)C)=O)S(=O)(=O)O '
+               'NAME: taurallocholic acid REASON: MISSED No steroid nucleus '
+               '(cholanic acid core) detected\n'
+               ' * SMILES: '
+               'S(O)(=O)(=O)CCNC(=O)CC[C@H]([C@@]1([C@@]2([C@]([C@]3([C@@]([C@@]4([C@]([C@H](O)C3)(C[C@H](O)CC4)[H])C)(CC2)[H])[H])(CC1)[H])C)[H])C '
+               'NAME: Tauromurocholate REASON: MISSED No steroid nucleus '
+               '(cholanic acid core) detected\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'CNC(=O)CC[C@H](N)C(O)=O',
-                                     'name': 'N(5)-methyl-L-glutamine',
-                                     'reason': 'No steroid nucleus found (not '
-                                               'enough rings)'},
-                                 {   'smiles': 'C[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1nc(N)[nH]c2=O)C(O)=O',
-                                     'name': "L-lactyl-2-diphospho-5'-guanosine",
-                                     'reason': 'No steroid nucleus found (not '
-                                               'enough rings)'},
-                                 {   'smiles': '[H][C@@]1(CC[C@]2(C)[C@]1([H])CC[C@]1([H])[C@@]3(C)CCCC(C)(C)[C@]3([H])CC[C@@]21C)C(=C)CCC=C(C)C',
-                                     'name': 'dammara-20,24-diene',
-                                     'reason': 'No hydrophilic conjugation '
-                                               'found'},
-                                 {   'smiles': 'O=C1C2=C(O)C3=C(O)C=CC=C3C(=C2C(C(=O)C)C(C1)(O)C)C=4C=5C(C(O)=C6C4C(C(=O)C)C(O)(C)CC6=O)=C(O)C=CC5',
-                                     'name': 'A 39183A',
-                                     'reason': 'No steroid nucleus found '
-                                               '(incorrect ring sizes)'},
-                                 {   'smiles': 'C[C@H](O)[C@@H](O)C1=Nc2c(NC1)[nH]c(N)nc2=O',
-                                     'name': 'L-threo-7,8-dihydrobiopterin',
-                                     'reason': 'No steroid nucleus found (not '
-                                               'enough rings)'},
-                                 {   'smiles': 'C[C@@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)C)C(=O)N(C[C@H]1OC)C)C)CC3=CC=C(C=C3)F',
-                                     'name': 'N-[(4S,7R,8S)-5-[(4-fluorophenyl)methyl]-8-methoxy-4,7,10-trimethyl-11-oxo-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]acetamide',
-                                     'reason': 'No steroid nucleus found (not '
-                                               'enough rings)'},
-                                 {   'smiles': 'C(CCN1CCCCC1)(CCN(C(C)C)C(C)=O)(C(N)=O)C2=C(Cl)C=CC=C2',
-                                     'name': 'bidisomide',
-                                     'reason': 'No steroid nucleus found (not '
-                                               'enough rings)'},
-                                 {   'smiles': 'OCCCCCCCCCCC#CC=C',
-                                     'name': '13-Tetradece-11-yn-1-ol',
-                                     'reason': 'No steroid nucleus found (not '
-                                               'enough rings)'},
-                                 {   'smiles': 'C[C@@H]1CCCCO[C@@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)N(C)C)[C@@H](C)CO)C)CN(C)CC3=CC=C(C=C3)OC',
-                                     'name': '(3R,9S,10R)-16-(dimethylamino)-12-[(2S)-1-hydroxypropan-2-yl]-9-[[(4-methoxyphenyl)methyl-methylamino]methyl]-3,10-dimethyl-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-13-one',
-                                     'reason': 'No steroid nucleus found (not '
-                                               'enough rings)'},
-                                 {   'smiles': 'O(CCC12CC3CC(C1)CC(C2)C3)C(=O)CC4=CC=C(OCC(O)CNC(C)C)C=C4',
-                                     'name': 'Adaprolol',
-                                     'reason': 'No steroid nucleus found '
-                                               '(incorrect ring sizes)'}],
-    'sample_false_negatives': [   {   'smiles': 'C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3([C@H](C[C@@]2(C[C@@H](C1)O)[H])O)[H])(CC[C@]4([H])[C@@H](CCC(NCC(O)=O)=O)C)[H])C)[H])C',
-                                      'name': 'glycoursodeoxycholic acid',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': 'OC1C2C3C(C(CC3)C(CCC(=O)NCC(O)=O)C)(CCC2C4(C(C1O)CC(O)CC4)C)C',
-                                      'name': 'Glycine-|A-muricholic Acid',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': 'O[C@H]1[C@]2([C@]3([C@@]([C@](CC3)([C@@H](CCC(=O)NC(CO)C(O)=O)C)[H])(CC[C@@]2([C@@]4([C@](C1)(C[C@H](O)CC4)[H])C)[H])C)[H])[H]',
-                                      'name': 'Serine conjugated '
-                                              'chenodeoxycholic acid',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': 'O[C@H]1C[C@@]2([C@@]([C@@]3([C@]([C@]4([C@@]([C@](CC4)([C@@H](CCC(=O)N(CC(O)=O)C)C)[H])(CC3)C)[H])(CC2)[H])[H])(CC1)C)[H]',
-                                      'name': 'N-((4R)-4-((3R,5S,9S,10S,13R,14S,17R)-3-Hydroxy-10,13-dimethylhexadecahydro-1H-cyclopenta[a]phenanthren-17-yl)pentanoyl)-N-methylglycine',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': 'OC1C2(C(C3C(C4(C(CC3O)CC(O)CC4)C)C1)CCC2C(CCC(=O)NC(CCCNC(=O)N)C(O)=O)C)C',
-                                      'name': 'Cholylcitrulline',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': '[H][C@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)CCC(=O)NCC(O)=O)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CC[C@@H](O)C2',
-                                      'name': 'glycolithocholic acid',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': 'OC1C2(C(C3C(C4(C(CC3O)CC(O)CC4)C)C1)CCC2C(CCC(=O)NC(C)C(O)=O)C)C',
-                                      'name': 'Cholylalanine',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': 'O[C@H]1[C@]2([C@]3([C@@]([C@](CC3)([C@@H](CCC(=O)NC(CCC(O)=O)C(O)=O)C)[H])(CC[C@@]2([C@@]4([C@](C1)(C[C@H](O)CC4)[H])C)[H])C)[H])[H]',
-                                      'name': 'Glutamate conjugated '
-                                              'chenodeoxycholic acid',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': 'OC1C2(C(C3C(C4(C(CC3)CC(O)CC4)C)C1)CCC2C(CCC(=O)NC(CCC(=O)N)C(O)=O)C)C',
-                                      'name': 'Deoxycholylglutamine',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'},
-                                  {   'smiles': 'OC1C2(C(C3C(C4(C(CC3O)CC(O)CC4)C)C1)CCC2C(CCC(=O)NC(CCCCN)C(O)=O)C)C',
-                                      'name': 'Lysine conjugated cholic acid',
-                                      'reason': 'No hydrophilic conjugation '
-                                                'found'}],
+    'sample_true_negatives': [   {   'smiles': 'O=C(N1[C@H](CCC1)C(O)=O)[C@@H](NC(=O)[C@@H](N)CC(O)=O)CCC(=O)N',
+                                     'name': 'Asp-Gln-Pro',
+                                     'reason': 'Less than 4 rings detected – '
+                                               'steroid nucleus likely '
+                                               'missing'},
+                                 {   'smiles': 'O1C=2C(C(O)=C(CC3=C(O)C=4C(OC3=O)=CC=CC4C)C1=O)=C(C=CC2)C',
+                                     'name': 'Gerberinol',
+                                     'reason': 'Detected rings do not match '
+                                               'the expected pattern for a '
+                                               'steroid nucleus (expect at '
+                                               'least one 5-membered ring and '
+                                               'three 6-membered rings)'},
+                                 {   'smiles': 'O=C(O)/C(=C/[C@H]1C=C(CC[C@@H]1C(C)C)CO)/COC(=O)C',
+                                     'name': '3-acetylgliocladic acid',
+                                     'reason': 'Less than 4 rings detected – '
+                                               'steroid nucleus likely '
+                                               'missing'},
+                                 {   'smiles': 'O=C(CCCCCCCCC)C=1C=CC(=NC1)CCCCCCCCC',
+                                     'name': '1-(6-Nonylpyridin-3-yl)decan-1-one',
+                                     'reason': 'Less than 4 rings detected – '
+                                               'steroid nucleus likely '
+                                               'missing'},
+                                 {   'smiles': 'CCC(=O)O[C@H]1[C@H](C)O[C@H](C[C@@]1(C)O)O[C@@H]1[C@@H](C)O[C@@H](O[C@H]2[C@@H](CC=O)C[C@@H](C)[C@@H](O)\\C=C\\C=C\\C[C@@H](C)OC(=O)C[C@@H](O)[C@@H]2OC)[C@H](O)[C@H]1N(C)C',
+                                     'name': 'Leucomycin A7',
+                                     'reason': 'Less than 4 rings detected – '
+                                               'steroid nucleus likely '
+                                               'missing'},
+                                 {   'smiles': 'C[C@H]1O[C@H](C[C@@H](O)[C@@H]1O)c1ccc2C(=O)C3=C([C@H](O)C[C@]4(O)C[C@@](C)(O)CC(=O)[C@]34O)C(=O)c2c1O',
+                                     'name': 'Urdamycinone F',
+                                     'reason': 'Detected rings do not match '
+                                               'the expected pattern for a '
+                                               'steroid nucleus (expect at '
+                                               'least one 5-membered ring and '
+                                               'three 6-membered rings)'},
+                                 {   'smiles': 'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP([O-])(=O)OP([O-])([O-])=O',
+                                     'name': 'all-trans-dodecaprenyl '
+                                             'diphosphate(3-)',
+                                     'reason': 'Less than 4 rings detected – '
+                                               'steroid nucleus likely '
+                                               'missing'},
+                                 {   'smiles': '[O-][N+](=O)N1CN(CN(CN(C1)[N+]([O-])=O)[N+]([O-])=O)[N+]([O-])=O',
+                                     'name': 'octogen',
+                                     'reason': 'Less than 4 rings detected – '
+                                               'steroid nucleus likely '
+                                               'missing'},
+                                 {   'smiles': 'CC(=O)NCCC[NH2+]CCCC[NH2+]CCCNC(C)=O',
+                                     'name': 'N(1),N(12)-diacetylsperminium(2+)',
+                                     'reason': 'Less than 4 rings detected – '
+                                               'steroid nucleus likely '
+                                               'missing'},
+                                 {   'smiles': 'C[C@@H]([C@H]1CC[C@H]2[C@H](CCc3cc(O)ccc3C)C(=O)CC[C@]12C)C(O)=O',
+                                     'name': '3-hydroxy-9-oxo-9,10-seco-23,24-bisnorchola-1,3,5(10)-trien-22-oic '
+                                             'acid',
+                                     'reason': 'Less than 4 rings detected – '
+                                               'steroid nucleus likely '
+                                               'missing'}],
+    'sample_false_negatives': [],
     'attempt': 2,
-    'reasoning': 'The previous code failed due to a syntax error caused by an '
-                 'unterminated triple-quoted string at line 123. This '
-                 'indicates that the code had an incomplete multi-line string, '
-                 'likely in a docstring or comment, which led to invalid '
-                 'syntax. Additionally, the F1 score was 0, suggesting that '
-                 'the function did not correctly identify any true positives. '
-                 'This could be due to incorrect or insufficient substructure '
-                 'patterns used to detect bile acid conjugates.\n'
+    'reasoning': 'Below is my reasoning before the code:\n'
                  '\n'
-                 'To improve, we need to ensure that all triple-quoted strings '
-                 'are properly closed to prevent syntax errors. We should also '
-                 'enhance the detection of the bile acid core and conjugation '
-                 'groups by carefully defining the SMARTS patterns that '
-                 'accurately reflect the structures of bile acids and their '
-                 'conjugates.\n'
+                 'The previous program tried to detect a steroid (cholanic) '
+                 'nucleus by using a strict SMARTS pattern. However, many bile '
+                 'acids (even well‐known ones like taurocholic acid) were '
+                 'missed because the pattern was too narrowly defined. To '
+                 'improve detection we can use a heuristic based on ring '
+                 'counts since bile acids have the classic tetracyclic steroid '
+                 'core (three six‐membered rings fused to one five‐membered '
+                 'ring). In the new code we first use RDKit’s ring information '
+                 'to require that the molecule has at least four rings, '
+                 'including at least one 5‐membered ring and three 6‐membered '
+                 'rings. (This is a heuristic so that unusual bile acids might '
+                 'be missed but it should capture most standard bile acid '
+                 'cores.) Then, we look for conjugation groups using a set of '
+                 'relaxed SMARTS patterns (e.g. for generic amide bonds, '
+                 'taurine, sulfate, glucuronate, or sugar conjugations). If '
+                 'the molecule passes both checks we classify it as a bile '
+                 'acid conjugate.\n'
                  '\n'
-                 "In the new code, we'll:\n"
-                 '\n'
-                 '- Correct any syntax errors by ensuring all strings are '
-                 'properly closed.\n'
-                 '- Define a robust method to identify the steroid nucleus '
-                 'characteristic of bile acids.\n'
-                 '- Use comprehensive SMARTS patterns for the various '
-                 'conjugation groups (glycine, taurine, sulfate, sugars, amino '
-                 'acids).\n'
-                 '- Ensure that the function correctly identifies the examples '
-                 'provided.\n'
-                 '\n'
-                 'Here is the improved code:',
+                 'Below is the complete Python code.',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 39,
-    'num_false_positives': 100,
-    'num_true_negatives': 53463,
-    'num_false_negatives': 58,
+    'num_true_positives': 97,
+    'num_false_positives': 7633,
+    'num_true_negatives': 134570,
+    'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.2805755395683453,
-    'recall': 0.4020618556701031,
-    'f1': 0.3305084745762712,
-    'accuracy': 0.9970555348490495,
-    'negative_predictive_value': 0.9989163132228471}
+    'precision': 0.012548512289780078,
+    'recall': 1.0,
+    'f1': 0.024785997189216813,
+    'accuracy': 0.9463598032326072,
+    'negative_predictive_value': 1.0}

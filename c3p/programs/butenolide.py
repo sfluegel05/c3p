@@ -1,13 +1,17 @@
 """
 Classifies: CHEBI:50523 butenolide
 """
-from rdkit import Chem
+"""
+Classifies: CHEBI:30810 butenolide
+A gamma-lactone that consists of a 2-furanone skeleton and its substituted derivatives.
+"""
 
-def is_butenolide(smiles: str):
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_butenolide(smiles: str) -> tuple[bool, str]:
     """
     Determines if a molecule is a butenolide based on its SMILES string.
-    A butenolide consists of a 5-membered lactone ring (furanone structure), often with a ketone group or 
-    related functional group.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -16,34 +20,25 @@ def is_butenolide(smiles: str):
         bool: True if molecule is a butenolide, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES string
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for butenolide structure
-    # More flexible pattern to catch variations in the butenolide structure
-    butenolide_pattern_1 = Chem.MolFromSmarts("C1=COC(=O)C1")  # Basic furanone pattern
-    butenolide_pattern_2 = Chem.MolFromSmarts("C1=CC(=O)OC1")  # Variation on furanone positioning
+    # Look for 2-furanone skeleton
+    furanone_pattern = Chem.MolFromSmarts("O=C1OCC=C1")
+    if not mol.HasSubstructMatch(furanone_pattern):
+        return False, "Missing 2-furanone skeleton"
 
-    # Check if molecule matches any of the butenolide substructures
-    if mol.HasSubstructMatch(butenolide_pattern_1):
-        return True, "Contains a basic furanone (butenolide) structure"
-    elif mol.HasSubstructMatch(butenolide_pattern_2):
-        return True, "Contains a variation of furanone (butenolide) structure"
-    
-    return False, "Does not contain a recognized butenolide structure"
+    # Check for substitutions on the furanone ring
+    substituted_pattern = Chem.MolFromSmarts("O=C1OC(*)C=C1*")
+    if not mol.HasSubstructMatch(substituted_pattern):
+        return True, "Unsubstituted 2-furanone skeleton (butenolide)"
 
-# Test the function with examples
-examples = [
-    "CC1(C)OC(=O)C(OCC2CC2)=C1c1ccc(cc1)S(C)(=O)=O",  # firocoxib
-    "O=C1OC(=C)C(=C1C(=O)CCCC=CCCCCCC)O",            # Agglomerin B
-]
+    # Check for specific substitutions (optional)
+    # ...
 
-for example in examples:
-    result, reason = is_butenolide(example)
-    print(f"SMILES: {example} => Result: {result}, Reason: {reason}")
+    return True, "Contains a substituted 2-furanone skeleton (butenolide)"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:50523',
@@ -55,162 +50,137 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:50523',
                           'xrefs': ['Wikipedia:Butenolide'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0.0909090909090909 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: SMILES: O=C1OC(=O)C(=C1/C=C/CCCCCC)C NAME: '
-               'Tricladolide D REASON: CORRECT Contains a butenolide '
-               '(furanone) structure\n'
-               ' * SMILES: O1C(=O)C(CCCCCCCCCCCCCC)=C(C1=O)C NAME: '
-               'Chaetomellic acid A anhydride REASON: CORRECT Contains a '
-               'butenolide (furanone) structure\n'
-               ' * SMILES: O=C1OC(=O)C(=C1/C=C/C=C/C=C(\\C(=O)C)/C)C NAME: '
-               'Graphenone REASON: CORRECT Contains a butenolide (furanone) '
-               'structure\n'
-               ' * SMILES: O1C(=O)C(=C(C1=O)C)C NAME: 2,3-Dimethylmaleic '
-               'anhydride REASON: CORRECT Contains a butenolide (furanone) '
-               'structure\n'
-               ' * SMILES: O1C(=O)C(O)=C(O)C1=O NAME: '
-               '3,4-dihydroxy-2,5-furandione REASON: CORRECT Contains a '
-               'butenolide (furanone) structure\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'CC1(C)OC(=O)C(OCC2CC2)=C1c1ccc(cc1)S(C)(=O)=O NAME: firocoxib '
-               'REASON: MISSED Does not contain a butenolide structure\n'
-               ' * SMILES: '
-               'O[C@@]12[C@@]([C@](CC1)([C@]3(CC(OC3)=O)[H])[H])([C@H](O)C[C@]4(C2CC[C@]5([C@@]4(CC[C@H](O)C5)C)[H])[H])C '
-               'NAME: 20, 22-Dihydrodigoxigenin REASON: MISSED Does not '
-               'contain a butenolide structure\n'
-               ' * SMILES: '
-               'O=C1OC2=C3[C@@]([C@@H](C(C)C)[C@H]([C@H]3O)O)(CC[C@]4(C2=C1[C@@H](O)CC4)C)C '
-               'NAME: Plicatilisin A REASON: MISSED Does not contain a '
-               'butenolide structure\n'
-               ' * SMILES: '
-               'CC1C(C(C(C(O1)OC2CC(C3(C4C(CCC3(C2)O)C5(CCC(C5(CC4O)C)C6=CC(=O)OC6)O)CO)O)O)O)O '
-               'NAME: '
-               '3-[1,5,11,14-tetrahydroxy-10-(hydroxymethyl)-13-methyl-3-[(3,4,5-trihydroxy-6-methyl-2-oxanyl)oxy]-2,3,4,6,7,8,9,11,12,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-17-yl]-2H-furan-5-one '
-               'REASON: MISSED Does not contain a butenolide structure\n'
-               ' * SMILES: O=C1O[C@@H](CC(=O)CC)C(=C1)OC NAME: Annularin H '
-               'REASON: MISSED Does not contain a butenolide structure\n'
-               ' * SMILES: '
-               'O=C1O[C@@H]2[C@@H]3[C@@]([C@@H](C(C)C)[C@H]([C@H]3OC(=O)C)O)(CC[C@]4(C2=C1[C@@H](O)CC4)C)C '
-               'NAME: Radianspene I REASON: MISSED Does not contain a '
-               'butenolide structure\n'
-               ' * SMILES: O=C1O[C@@H]([C@@H](O)C)C=C1[C@H](OC)[C@H](O)C NAME: '
-               'Aspilactonol D REASON: MISSED Does not contain a butenolide '
-               'structure\n'
-               ' * SMILES: '
-               'C\\C=C(/C)C(=O)O[C@@H](C[C@@]1(C)[C@H](C)C[C@H](OC(C)=O)[C@]2(COC(C)=O)[C@@H]1CCC[C@]21CO1)C1=CC(=O)OC1 '
-               'NAME: ajuganipponin B REASON: MISSED Does not contain a '
-               'butenolide structure\n'
-               ' * SMILES: O=C1OC(=C)C(=C1C(=O)CCCC=CCCCCCC)O NAME: Agglomerin '
-               'B REASON: MISSED Does not contain a butenolide structure\n'
-               ' * SMILES: O=C1OC([C@H]2O[C@H](C(O)C)C=C2)C=C1 NAME: '
-               'Diplobifuranylone D REASON: MISSED Does not contain a '
-               'butenolide structure\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'P(OCC(OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)(OCCN(C)C)(O)=O',
-                                     'name': 'Pe-nme2(20:3(5Z,8Z,11Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'O1[C@]2([C@@H](O)[C@H](O)[C@@H](O)[C@@]1(OCC[C@H](CCC=C(C(OC[C@]3(O)[C@@H](O)[C@@](OC3)(OC2)[H])=O)C)C)[H])[H]',
-                                     'name': 'Urceolide',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'CC1=CC(=C(C=C1)C)C(=O)CSC2=NN=C(S2)C',
-                                     'name': '1-(2,5-dimethylphenyl)-2-[(5-methyl-1,3,4-thiadiazol-2-yl)thio]ethanone',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'O=C1C=C([C@@]2(C(C[C@@H](C2)O)(C)C)C)CC[C@@]1(O)C',
-                                     'name': 'Enokipodin H',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'CCCC[C@](Cn1cncn1)(C#N)c1ccc(Cl)cc1',
-                                     'name': '(S)-myclobutanil',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'O=C1O[C@@H]([C@H](NC(=O)[C@@H](NC(=O)CCCCC)CC(=O)O)C(=O)N[C@H](C(=O)N[C@H]2CC[C@H](N([C@H](C(N([C@H](C(N[C@H]1C(C)C)=O)CC3=CC=CC=C3)C)=O)CC(C)C)C2=O)O)CCCCN(C)C)C',
-                                     'name': 'Cyanopeptolin D',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'O1[C@]2(O)N([C@H](C(=O)N3[C@]2(CCC3)[H])C(C)C)C(=O)[C@@]1(NC(=O)[C@H]4CN([C@]5(C(=C4)C6=C7C(C5)=CNC7=CC=C6)[H])C)C',
-                                     'name': 'Ergovaline',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'OC(=O)CCCCCCC#CCCCC',
-                                     'name': '8-tridecynoic acid',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'CC(=O)N([O-])CCC[C@H](N)C(=O)N[C@@H](CCCN([O-])C(C)=O)C(=O)N[C@@H](CCCN([O-])C(C)=O)C(=O)N[C@@H](CO)C(=O)N[C@H]([C@H](O)[C@H]1S[C@H]([C@H](O)[C@H]1O)n1ccc(=N)n(C)c1=O)C(O)=O',
-                                     'name': 'desferrialbomycin epsilon(3-)',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'},
-                                 {   'smiles': 'OC[C@H]1O[C@H](O[C@@H]2[C@@H](CO)O[C@H](O[C@@H]3[C@@H](CO)O[C@H](O[C@@H]4[C@@H](CO)O[C@H](O)[C@H](O)[C@H]4O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O',
-                                     'name': 'alpha-maltotetraose',
-                                     'reason': 'Does not contain a recognized '
-                                               'butenolide structure'}],
-    'sample_false_negatives': [   {   'smiles': 'O[C@@]12[C@@]([C@](CC1)([C@]3(CC(OC3)=O)[H])[H])([C@H](O)C[C@]4(C2CC[C@]5([C@@]4(CC[C@H](O)C5)C)[H])[H])C',
-                                      'name': '20, 22-Dihydrodigoxigenin',
-                                      'reason': 'Does not contain a recognized '
-                                                'butenolide structure'},
-                                  {   'smiles': '[H][C@@]1(OC(=O)C(=O)C1=O)[C@@H](O)CO',
-                                      'name': 'L-dehydroascorbic acid',
-                                      'reason': 'Does not contain a recognized '
-                                                'butenolide structure'},
-                                  {   'smiles': '[H][C@@]1(CC[C@]2(O)[C@]3([H])CC[C@]4(O)C[C@H](C[C@@H](O)[C@]4(CO)[C@@]3([H])[C@H](O)C[C@]12C)O[C@@H]1O[C@@H](C)[C@H](O)[C@@H](O)[C@H]1O)C1COC(=O)C1',
-                                      'name': 'dihydroouabain',
-                                      'reason': 'Does not contain a recognized '
-                                                'butenolide structure'},
+    'code_statistics': {   'lines_of_code': 23,
+                           'log_lines_of_code': 3.1354942159291497,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem'],
+                           'imports_count': 2,
+                           'methods_called': [   'MolFromSmarts',
+                                                 'MolFromSmiles',
+                                                 'HasSubstructMatch'],
+                           'methods_called_count': 3,
+                           'smarts_strings': ['O=C1OC(*)C=C1*', 'O=C1OCC=C1'],
+                           'smarts_strings_count': 2,
+                           'defs': [   'is_butenolide(smiles: str) -> '
+                                       'tuple[bool, str]:'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Missing 2-furanone '
+                                          'skeleton"',
+                                          'True, "Unsubstituted 2-furanone '
+                                          'skeleton (butenolide)"',
+                                          'True, "Contains a substituted '
+                                          '2-furanone skeleton (butenolide)"'],
+                           'returns_count': 4,
+                           'complexity': 2.6270988431858298},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'C[C@@H](O)CCCCCCCCCCC[C@@H](O)CC(O)=O',
+                                     'name': '(3R,15R)-3,15-dihydroxypalmitic '
+                                             'acid',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'O1CC(CC2=CC=C(OC)C=C2)C(=O)C3=C1C=C(O)C=C3',
+                                     'name': 'Dihydrobonducellin',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'O(C(=O)CCCCC/C=C/C=C)C\\C=C\\CCC',
+                                     'name': '(E)-2-Hexenyl '
+                                             '(E)-7,9-decadienoate',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'O=C(O[C@H](C[C@H]1O[C@@H]([C@H](C(=O)O)C)CC1)CC)[C@H]([C@H]2O[C@@H](C[C@H](O)CC)CC2)C',
+                                     'name': 'Homononactyl homononactate',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'O=C(O)/C=C/C=C/[C@@H]1[C@@H](C(=C[C@H]2[C@H]1[C@H](C[C@H](C2)O)C)C)C(=CCOC(=O)C)C',
+                                     'name': 'Carneic acid M',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'O=C1OC(=CC=C1CC(O)(C)C)CC',
+                                     'name': '10-hydroxymucidone',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'COC1=C(C=C(C=C1)C=NNC2=C(C(=NC=N2)Cl)N)OC',
+                                     'name': '6-chloro-N4-[(3,4-dimethoxyphenyl)methylideneamino]pyrimidine-4,5-diamine',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'c1cc2ccc3cc4ccc5ccc6ccc7cc8ccc1c1c2c3c2c4c5c6c7c2c81',
+                                     'name': 'ovalene',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'Cc1cn2c(nc3n(cnc3c2=O)[C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)[nH]1',
+                                     'name': '4-demethylwyosine',
+                                     'reason': 'Missing 2-furanone skeleton'},
+                                 {   'smiles': 'S(C=1N(C(=NN1)C=2C=CC=NC2)C)CC(=O)NNC(=O)C3=CC=C(OC)C=C3',
+                                     'name': 'N-(4-Methoxybenzoyl)-2-{[4-methyl-5-(pyridin-3-yl)-4H-1,2,4-triazol-3-yl]sulfanyl}ethanehydrazonic '
+                                             'acid',
+                                     'reason': 'Missing 2-furanone skeleton'}],
+    'sample_false_negatives': [   {   'smiles': 'O=C1OC(CCCCC[C@H](CC)C)=CC1',
+                                      'name': '10-Methyldodec-3-en-4-olide',
+                                      'reason': 'Missing 2-furanone skeleton'},
                                   {   'smiles': 'C(C(C1C(C(C(=O)O1)O)O)=N)O',
                                       'name': '3,4-dihydroxy-5-(2-hydroxyethanimidoyl)oxolan-2-one',
-                                      'reason': 'Does not contain a recognized '
-                                                'butenolide structure'},
+                                      'reason': 'Missing 2-furanone skeleton'},
+                                  {   'smiles': 'Oc1ccc(\\C=C2\\C=C(OC2=O)c2ccc(O)c(O)c2)cc1O',
+                                      'name': '(Z)-3-(3,4-dihydroxybenzylidene)-5-(3,4-dihydroxyphenyl)-2(3H)-furanone',
+                                      'reason': 'Missing 2-furanone skeleton'},
+                                  {   'smiles': 'Oc1ccc(cc1O)\\C=C1/C=C(OC1=O)c1ccc(O)c(O)c1',
+                                      'name': 'BE-23372M',
+                                      'reason': 'Missing 2-furanone skeleton'},
+                                  {   'smiles': 'O1C(CCCCC)=CCC1=O',
+                                      'name': '5-Pentyl-3h-furan-2-one',
+                                      'reason': 'Missing 2-furanone skeleton'},
+                                  {   'smiles': 'OC(=O)CC1=CCC(=O)O1',
+                                      'name': '5-oxo-4,5-dihydro-2-furylacetic '
+                                              'acid',
+                                      'reason': 'Missing 2-furanone skeleton'},
                                   {   'smiles': 'O.[H][C@@]1(OC(=O)C(=O)C1=O)[C@@H](O)CO',
                                       'name': 'L-dehydroascorbic acid hydrate',
-                                      'reason': 'Does not contain a recognized '
-                                                'butenolide structure'}],
-    'attempt': 1,
-    'reasoning': "To improve the program for classifying butenolides, let's "
-                 'first analyze the issues with the current approach:\n'
-                 '\n'
-                 '1. **Pattern Specificity**: The SMARTS pattern used for '
-                 'detecting butenolides might be too strict or not entirely '
-                 'representative of all butenolide structures. Butenolides are '
-                 'a subclass of lactones containing a 5-membered ring with a '
-                 'certain degree of unsaturation, often represented by a '
-                 'furanone-like structure. The structure may vary slightly '
-                 'between different butenolides.\n'
-                 '\n'
-                 '2. **Missed Substructural Diversity**: The lactone ring in '
-                 'butenolides can have different substituents around the ring, '
-                 'which may not be covered by the current SMARTS pattern. \n'
-                 '\n'
-                 '3. **Structural Variability**: The current pattern does not '
-                 'account for variations such as different positions of double '
-                 'bonds or additional groups attached to the core butenolide '
-                 'structure.\n'
-                 '\n'
-                 'To address these issues, we can redefine the pattern to be '
-                 'broader while still aiming to capture the essence of a '
-                 'butenolide structure. We will incorporate variability in the '
-                 'ring and look for the furanone structure with a ketone ring:',
+                                      'reason': 'Missing 2-furanone skeleton'},
+                                  {   'smiles': 'O[C@@]12[C@@]([C@](CC1)([C@]3(CC(OC3)=O)[H])[H])([C@H](O)C[C@]4(C2CC[C@]5([C@@]4(CC[C@H](O)C5)C)[H])[H])C',
+                                      'name': '20, 22-Dihydrodigoxigenin',
+                                      'reason': 'Missing 2-furanone skeleton'},
+                                  {   'smiles': '[H][C@@]1(OC(=O)C(=O)C1=O)[C@@H](O)CO',
+                                      'name': 'L-dehydroascorbic acid',
+                                      'reason': 'Missing 2-furanone skeleton'},
+                                  {   'smiles': '[H][C@@]1(CC[C@]2(O)[C@]3([H])CC[C@]4(O)C[C@H](C[C@@H](O)[C@]4(CO)[C@@]3([H])[C@H](O)C[C@]12C)O[C@@H]1O[C@@H](C)[C@H](O)[C@@H](O)[C@H]1O)C1COC(=O)C1',
+                                      'name': 'dihydroouabain',
+                                      'reason': 'Missing 2-furanone skeleton'}],
+    'attempt': 0,
+    'reasoning': '',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 420,
-    'num_false_positives': 100,
-    'num_true_negatives': 13995,
-    'num_false_negatives': 5,
+    'num_true_positives': 415,
+    'num_false_positives': 908,
+    'num_true_negatives': 140967,
+    'num_false_negatives': 10,
     'num_negatives': None,
-    'precision': 0.8076923076923077,
-    'recall': 0.9882352941176471,
-    'f1': 0.888888888888889,
-    'accuracy': 0.9927685950413223,
-    'negative_predictive_value': 0.9996428571428572}
+    'precision': 0.31368102796674224,
+    'recall': 0.9764705882352941,
+    'f1': 0.47482837528604116,
+    'accuracy': 0.9935488404778636,
+    'negative_predictive_value': 0.9999290664434624}

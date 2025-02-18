@@ -1,115 +1,98 @@
 """
 Classifies: CHEBI:74716 withanolide
 """
+#!/usr/bin/env python
 """
-Classifies: withanolide
+Classifies: Withanolide – “Any steroid lactone that is a C28 steroid with a modified side chain forming a lactone ring and its substituted derivatives.”
 """
+
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
-    A withanolide is defined as any steroid lactone that is a C28 steroid 
-    with a modified side chain forming a lactone ring and its substituted derivatives.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a withanolide, False otherwise
-        str: Reason for classification
-    """
+    Withanolides are defined as steroid lactones that have a fused steroid nucleus
+    (typically four fused rings; the nucleus itself should contain 17 carbons) and
+    a side chain that forms a lactone (cyclic ester) ring. The total molecule should have at least 28 carbons.
     
-    # Parse SMILES
+    Args:
+        smiles (str): SMILES string of the molecule.
+        
+    Returns:
+        bool: True if molecule is classified as a withanolide, False otherwise.
+        str: Explanation / reason for the classification.
+    """
+    # Parse the SMILES string into a molecule object
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Check for tetracyclic steroid nucleus (fused ring system with 4 rings: 6-6-6-5)
+    # Check total carbon count; allow substitutions so require at least 28 C atoms.
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if total_carbons < 28:
+        return False, f"Total carbon count is {total_carbons}, which is too low for a typical withanolide."
+    
+    # Retrieve ring information from the molecule.
     ring_info = mol.GetRingInfo()
-    atom_rings = ring_info.AtomRings()
-    bond_rings = ring_info.BondRings()
+    all_rings = ring_info.AtomRings()  # List of tuples (atom indices) for each ring.
     
-    # Build a list of rings and their sizes
-    ring_sizes = [len(ring) for ring in atom_rings]
-    num_rings = len(atom_rings)
+    # Filter rings that are characteristic of steroid nucleus: 5- or 6-membered rings.
+    rings_filtered = [set(ring) for ring in all_rings if len(ring) in {5, 6}]
+    if not rings_filtered:
+        return False, "No 5- or 6-membered rings detected; expected a steroid nucleus."
     
-    # Build a connectivity map of rings
-    ring_adj_matrix = [[False]*num_rings for _ in range(num_rings)]
-    for i in range(num_rings):
-        for j in range(i+1, num_rings):
-            # If rings share bonds, they are fused
-            if set(bond_rings[i]) & set(bond_rings[j]):
-                ring_adj_matrix[i][j] = True
-                ring_adj_matrix[j][i] = True
-
-    # Function to find connected components (fused ring systems)
-    def get_fused_systems():
-        visited = set()
-        fused_systems = []
-        for i in range(num_rings):
-            if i not in visited:
-                stack = [i]
-                fused_system = []
-                while stack:
-                    idx = stack.pop()
-                    if idx not in visited:
-                        visited.add(idx)
-                        fused_system.append(idx)
-                        for j in range(num_rings):
-                            if ring_adj_matrix[idx][j] and j not in visited:
-                                stack.append(j)
-                fused_systems.append(fused_system)
-        return fused_systems
-
-    fused_systems = get_fused_systems()
-    has_steroid_nucleus = False
-    steroid_atoms = set()
-
-    for system in fused_systems:
-        if len(system) == 4:
-            system_ring_sizes = [ring_sizes[idx] for idx in system]
-            system_ring_sizes.sort()
-            if system_ring_sizes == [5,6,6,6]:
-                has_steroid_nucleus = True
-                # Collect atoms in the steroid nucleus
-                for idx in system:
-                    steroid_atoms.update(atom_rings[idx])
+    # Group fused rings (rings sharing at least one atom) into clusters.
+    # We will build clusters of rings (each cluster is a set of atom indices).
+    clusters = []
+    for ring in rings_filtered:
+        found_cluster = None
+        for cluster in clusters:
+            if cluster & ring:  # if there is any overlap
+                found_cluster = cluster
                 break
+        if found_cluster:
+            found_cluster.update(ring)
+        else:
+            clusters.append(set(ring))
+    
+    # Heuristically assume the largest fused cluster is the steroid nucleus.
+    nucleus_atoms = max(clusters, key=lambda s: len(s))
+    
+    # Additionally, we expect the steroid nucleus to arise from about 4 fused rings.
+    # Count how many rings in rings_filtered are largely contained (>=80%) in the nucleus.
+    fused_ring_count = sum(1 for ring in rings_filtered if ring.issubset(nucleus_atoms))
+    if fused_ring_count < 4:
+        return False, f"Only {fused_ring_count} fused rings detected in nucleus; expected at least 4 for a steroid nucleus."
+    
+    # Count how many carbons are in the nucleus (core steroid nucleus is expected to have 17 carbons).
+    nucleus_carbons = sum(1 for idx in nucleus_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+    if nucleus_carbons != 17:
+        return False, f"Steroid nucleus has {nucleus_carbons} carbons, expected 17."
 
-    if not has_steroid_nucleus:
-        return False, "No tetracyclic steroid nucleus (rings of sizes 6-6-6-5) found"
-
-    # Check for lactone ring in side chain (cyclic ester not part of steroid nucleus)
-    # Define lactone pattern (cyclic ester)
-    lactone_pattern = Chem.MolFromSmarts('C(=O)O[C;R]')
+    # Look for a lactone ring, i.e. a cyclic ester.
+    # We use a SMARTS that matches an ester where the oxygen is part of a ring (r5 or r6).
+    lactone_smarts = "[$([CX3](=O)[OX2;r5]),$([CX3](=O)[OX2;r6])]"
+    lactone_pattern = Chem.MolFromSmarts(lactone_smarts)
     lactone_matches = mol.GetSubstructMatches(lactone_pattern)
-    has_lactone = False
-
+    
+    lactone_found = False
+    # For each lactone candidate, check if the ester fragment is not completely part of the steroid nucleus.
     for match in lactone_matches:
-        lactone_o = match[2]
-        # Check if the oxygen is part of a ring
-        for ring in atom_rings:
-            if lactone_o in ring:
-                # Check if ring is not part of steroid nucleus
-                ring_atoms_set = set(ring)
-                if not ring_atoms_set.issubset(steroid_atoms):
-                    has_lactone = True
-                    break
-        if has_lactone:
+        match_set = set(match)
+        if not match_set.issubset(nucleus_atoms):
+            lactone_found = True
             break
+    
+    if not lactone_found:
+        return False, "No side chain lactone detected. Withanolides require a modified side chain that forms a lactone ring."
+    
+    # If all conditions are met, classify the molecule as a withanolide.
+    return True, "Molecule is a withanolide: Contains a steroid nucleus with 17 core carbons and a side chain lactone."
 
-    if not has_lactone:
-        return False, "No lactone ring found in side chain"
-
-    # Check number of carbons (should be around 28)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 26 or c_count > 30:
-        return False, f"Carbon count ({c_count}) not consistent with C28 steroid"
-
-    return True, "Molecule is a withanolide (tetracyclic steroid nucleus with side-chain lactone ring)"
+# Example usage:
+# result, reason = is_withanolide("C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3CC[C@]12C)[C@H]1CC(C)=C(CO)C(=O)O1")
+# print(result, reason)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:74716',
@@ -123,6 +106,133 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:74716',
                                        'Wikipedia:Withanolide'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 66,
+                           'log_lines_of_code': 4.189654742026425,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0],
+                           'max_indent': 4,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'append',
+                                                 'AtomRings',
+                                                 'MolFromSmarts',
+                                                 'GetAtoms',
+                                                 'GetAtomWithIdx',
+                                                 'GetSubstructMatches',
+                                                 'GetAtomicNum',
+                                                 'issubset',
+                                                 'update',
+                                                 'MolFromSmiles',
+                                                 'GetRingInfo'],
+                           'methods_called_count': 11,
+                           'smarts_strings': ['lactone_smarts'],
+                           'smarts_strings_count': 1,
+                           'defs': ['is_withanolide(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Total carbon count is '
+                                          '{total_carbons}, which is too low '
+                                          'for a typical withanolide."',
+                                          'False, "No 5- or 6-membered rings '
+                                          'detected; expected a steroid '
+                                          'nucleus."',
+                                          'False, f"Only {fused_ring_count} '
+                                          'fused rings detected in nucleus; '
+                                          'expected at least 4 for a steroid '
+                                          'nucleus."',
+                                          'False, f"Steroid nucleus has '
+                                          '{nucleus_carbons} carbons, expected '
+                                          '17."',
+                                          'False, "No side chain lactone '
+                                          'detected. Withanolides require a '
+                                          'modified side chain that forms a '
+                                          'lactone ring."',
+                                          'True, "Molecule is a withanolide: '
+                                          'Contains a steroid nucleus with 17 '
+                                          'core carbons and a side chain '
+                                          'lactone."'],
+                           'returns_count': 7,
+                           'complexity': 5.437930948405286},
     'message': '\n'
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
@@ -131,204 +241,201 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:74716',
                'True positives: NONE\n'
                'False positives: NONE\n'
                'False negatives: SMILES: '
-               'CC1=C(C(=O)O[C@@H](C1)C(C)[C@H]2CC[C@H]3[C@]2(CCC4[C@@H]3C[C@@H]5[C@@]6([C@]4(C(=O)C=C[C@@H]6O)C)O5)C)CO '
-               'NAME: LSM-5073 REASON: MISSED No steroid nucleus found\n'
+               'C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)[C@H](CC(=O)[C@]4(CO)[C@H]3CC[C@]12C)OS(O)(=O)=O)[C@H]1CC(C)=C(CO)C(=O)O1 '
+               'NAME: withalongolide G REASON: MISSED No lactone ring '
+               'detected. Withanolides require a side chain lactone '
+               'functionality.\n'
                ' * SMILES: '
-               'O=C1C2=C(C=C[C@]3([C@]2(CC[C@@H]3[C@@H](C[C@H]4OC(=O)C(=C4C)C)C)C)C)[C@]5(CC[C@H](C([C@@H]5C1)(C)C)OC(=O)C[C@@](O)(CC(=O)OC)C)C '
-               'NAME: Palustrisolide G REASON: MISSED No steroid nucleus '
-               'found\n'
-               ' * SMILES: '
-               'C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)[C@H](CC(=O)[C@]4(C)[C@H]3CC[C@]12C)OS(O)(=O)=O)[C@H]1CC(C)=C(CO)C(=O)O1 '
-               'NAME: 2,3-dihydro-3beta-O-sulfate withaferin A REASON: MISSED '
-               'No steroid nucleus found\n'
-               ' * SMILES: '
-               'O=C1O[C@]2(OC[C@@]34[C@](C5=C([C@@]6([C@H](C([C@H](O)CC6)(C)C)CC5)C)C[C@@H]3O)(CC[C@@H]4[C@@H](C2)C)C)[C@H]([C@@H]1C)C '
-               'NAME: Fomefficinol A REASON: MISSED No steroid nucleus found\n'
-               ' * SMILES: '
-               'ClC1CC2C3(O)C(C(O)(CC3)C(O)(C4OC(=O)C(=C(C4)C)C)C)(CCC2C5(C1(O)C(O)C=CC5=O)C)C '
-               'NAME: physalolactone REASON: MISSED No steroid nucleus found\n'
-               ' * SMILES: '
-               'O=C1C=C2O[C@@H]3C[C@@]4([C@H]([C@@H](OC(=O)C)C[C@]4(C5=C3[C@]2(C)[C@H](C1(C)C)CC5)C)[C@@H](C[C@@H]6OC(=O)C(=C6)C)C)C '
-               'NAME: Lepiotaprocerin E REASON: MISSED No steroid nucleus '
-               'found\n'
+               'O=C1C=C2C=CC3=C4[C@]([C@@H](/C(=C/[C@H]5OC(=O)[C@H]([C@@H]5C)C)/C)CC4)(C)CC[C@@H]3[C@@]2(C)CC1 '
+               'NAME: Penijanthoid B REASON: MISSED No lactone ring detected. '
+               'Withanolides require a side chain lactone functionality.\n'
                ' * SMILES: '
                'OC12C(C(CC1)C(O)(C3OC(=O)C(=C(C3)C)CO)C)(CCC4C2CC(O)C5(O)C4(C(=O)CCC5)C)C '
                'NAME: '
                '(5alpha,6beta,14alpha,20R,22R)-5,6,14,20,27-Pentahydroxy-1-oxowith-24-enolide '
-               'REASON: MISSED No steroid nucleus found\n'
+               'REASON: MISSED No lactone ring detected. Withanolides require '
+               'a side chain lactone functionality.\n'
                ' * SMILES: '
-               'O=C1C2=C([C@@]3([C@@H](OC(=O)C)C[C@]4([C@]3(C1)C)O[C@]5(OC(=O)[C@H](C5)C)C[C@H]4C)C)CC[C@@H]6[C@@]2(CCC(C6(C)C)=O)C '
-               'NAME: Spiroganocalitone C REASON: MISSED No steroid nucleus '
-               'found\n'
+               'O1[C@@]23[C@]([C@@]4([C@]([C@]5([C@@]([C@@]6([C@@](O[C@@]7(OC(=O)[C@@H]([C@H]7C)C)[C@@H](O)[C@@]6(O)C)(C5)[H])[H])(CC4)C)[H])(C[C@@]12[H])[H])[H])(C)C(=O)C=C[C@@H]3O '
+               'NAME: Ixocarpalactone B REASON: MISSED No lactone ring '
+               'detected. Withanolides require a side chain lactone '
+               'functionality.\n'
                ' * SMILES: '
-               'O=C1OC([C@H]([C@@H]2[C@@]3([C@@](C4=C([C@@]5([C@H](C([C@@H](O)CC5)(C)C)CC4)COC(=O)C)CC3)(C)CC2)C)C)CC=C1C '
-               'NAME: Colobetaolactone B REASON: MISSED No steroid nucleus '
-               'found\n'
+               'CC1=C(C)C(=O)O[C@H](C1)[C@](C)(O)[C@@]12O[C@@H]1C[C@H]1[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3CC[C@]21C '
+               'NAME: 20-hydroxytubocapsanolide A REASON: MISSED No lactone '
+               'ring detected. Withanolides require a side chain lactone '
+               'functionality.\n'
                ' * SMILES: '
-               'O1C2(C3(C(O)(C(OC(=O)C)C12)C4C(CC3)C5(C(O)(C(O)C4)CC=CC5=O)C)C)C(C6OC(=O)C(=C(C6)C)C)C '
-               'NAME: Physagulin F REASON: MISSED No steroid nucleus found\n'
+               'O=C1O[C@@H](C[C@H]([C@@H]2[C@@]3([C@@](C4=C([C@@]5([C@H](C([C@H](OC(=O)C[C@@](O)(CC(=O)O)C)CC5)(C)C)CC4)C)C[C@@H]3O)(C)CC2)C)C)C(=C1C)C '
+               'NAME: Palustrisolide B REASON: MISSED Carbon count is 37, '
+               'expected 28 for a typical withanolide.\n'
+               ' * SMILES: '
+               'O=C1O[C@@H]([C@H]([C@@H]2[C@@]3([C@@](C4=C([C@@]5([C@H](C([C@@H](O)CC5)(C)C)CC4)C)CC3)(C)CC2)C)C)CC=C1C '
+               'NAME: Colobetaolactone I REASON: MISSED Carbon count is 30, '
+               'expected 28 for a typical withanolide.\n'
+               ' * SMILES: '
+               'OC12C(C(O)(CC1)C(O)(C3OC(=O)C(=C(C3)C)C)C)(CCC4C2CC(O)C5(O)C4(C)C(=O)C=CC5O)C '
+               'NAME: Withaperuvin B REASON: MISSED No lactone ring detected. '
+               'Withanolides require a side chain lactone functionality.\n'
+               ' * SMILES: '
+               'C[C@@H]([C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)C=C[C@]4(C)[C@H]3CC[C@]12C=O)[C@H]1CC(C)=C(C)C(=O)O1 '
+               'NAME: paraminabeolide A REASON: MISSED No lactone ring '
+               'detected. Withanolides require a side chain lactone '
+               'functionality.\n'
+               ' * SMILES: '
+               'O=C1O[C@]2(O[C@H]3[C@]4([C@](C=5CC[C@@H]6[C@@](C5C3)(CC[C@H](C6(C)C)OC(=O)C)C)(CC[C@@H]4[C@@H](C2)C)C)C)[C@H]([C@@H]1C)C '
+               'NAME: Fomlactone A REASON: MISSED Carbon count is 33, expected '
+               '28 for a typical withanolide.\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'CNC(=O)CC[C@H](N)C(O)=O',
-                                     'name': 'N(5)-methyl-L-glutamine',
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'},
-                                 {   'smiles': 'C[C@H](OP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c1nc(N)[nH]c2=O)C(O)=O',
-                                     'name': "L-lactyl-2-diphospho-5'-guanosine",
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'},
-                                 {   'smiles': '[H][C@@]1(CC[C@]2(C)[C@]1([H])CC[C@]1([H])[C@@]3(C)CCCC(C)(C)[C@]3([H])CC[C@@]21C)C(=C)CCC=C(C)C',
-                                     'name': 'dammara-20,24-diene',
-                                     'reason': 'No lactone ring found in side '
-                                               'chain'},
-                                 {   'smiles': 'O=C1C2=C(O)C3=C(O)C=CC=C3C(=C2C(C(=O)C)C(C1)(O)C)C=4C=5C(C(O)=C6C4C(C(=O)C)C(O)(C)CC6=O)=C(O)C=CC5',
-                                     'name': 'A 39183A',
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'},
-                                 {   'smiles': 'C[C@H](O)[C@@H](O)C1=Nc2c(NC1)[nH]c(N)nc2=O',
-                                     'name': 'L-threo-7,8-dihydrobiopterin',
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'},
-                                 {   'smiles': 'C[C@@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)C)C(=O)N(C[C@H]1OC)C)C)CC3=CC=C(C=C3)F',
-                                     'name': 'N-[(4S,7R,8S)-5-[(4-fluorophenyl)methyl]-8-methoxy-4,7,10-trimethyl-11-oxo-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]acetamide',
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'},
-                                 {   'smiles': 'C(CCN1CCCCC1)(CCN(C(C)C)C(C)=O)(C(N)=O)C2=C(Cl)C=CC=C2',
-                                     'name': 'bidisomide',
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'},
-                                 {   'smiles': 'OCCCCCCCCCCC#CC=C',
-                                     'name': '13-Tetradece-11-yn-1-ol',
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'},
-                                 {   'smiles': 'C[C@@H]1CCCCO[C@@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)N(C)C)[C@@H](C)CO)C)CN(C)CC3=CC=C(C=C3)OC',
-                                     'name': '(3R,9S,10R)-16-(dimethylamino)-12-[(2S)-1-hydroxypropan-2-yl]-9-[[(4-methoxyphenyl)methyl-methylamino]methyl]-3,10-dimethyl-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-13-one',
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'},
-                                 {   'smiles': 'O(CCC12CC3CC(C1)CC(C2)C3)C(=O)CC4=CC=C(OCC(O)CNC(C)C)C=C4',
-                                     'name': 'Adaprolol',
-                                     'reason': 'No tetracyclic steroid nucleus '
-                                               '(rings of sizes 6-6-6-5) '
-                                               'found'}],
-    'sample_false_negatives': [   {   'smiles': 'CC1=C(C(=O)O[C@@H](C1)C(C)[C@H]2CC[C@H]3[C@]2(CCC4[C@@H]3C[C@@H]5[C@@]6([C@]4(C(=O)C=C[C@@H]6O)C)O5)C)CO',
-                                      'name': 'LSM-5073',
-                                      'reason': 'No tetracyclic steroid '
-                                                'nucleus (rings of sizes '
-                                                '6-6-6-5) found'},
-                                  {   'smiles': 'O=C1C2=C(C=C[C@]3([C@]2(CC[C@@H]3[C@@H](C[C@H]4OC(=O)C(=C4C)C)C)C)C)[C@]5(CC[C@H](C([C@@H]5C1)(C)C)OC(=O)C[C@@](O)(CC(=O)OC)C)C',
-                                      'name': 'Palustrisolide G',
-                                      'reason': 'Carbon count (38) not '
-                                                'consistent with C28 steroid'},
-                                  {   'smiles': 'C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)[C@H](CC(=O)[C@]4(C)[C@H]3CC[C@]12C)OS(O)(=O)=O)[C@H]1CC(C)=C(CO)C(=O)O1',
-                                      'name': '2,3-dihydro-3beta-O-sulfate '
-                                              'withaferin A',
-                                      'reason': 'No tetracyclic steroid '
-                                                'nucleus (rings of sizes '
-                                                '6-6-6-5) found'},
-                                  {   'smiles': 'O=C1O[C@]2(OC[C@@]34[C@](C5=C([C@@]6([C@H](C([C@H](O)CC6)(C)C)CC5)C)C[C@@H]3O)(CC[C@@H]4[C@@H](C2)C)C)[C@H]([C@@H]1C)C',
-                                      'name': 'Fomefficinol A',
-                                      'reason': 'No tetracyclic steroid '
-                                                'nucleus (rings of sizes '
-                                                '6-6-6-5) found'},
-                                  {   'smiles': 'O=C1C=C2O[C@@H]3C[C@@]4([C@H]([C@@H](OC(=O)C)C[C@]4(C5=C3[C@]2(C)[C@H](C1(C)C)CC5)C)[C@@H](C[C@@H]6OC(=O)C(=C6)C)C)C',
-                                      'name': 'Lepiotaprocerin E',
-                                      'reason': 'No tetracyclic steroid '
-                                                'nucleus (rings of sizes '
-                                                '6-6-6-5) found'},
-                                  {   'smiles': 'O=C1C2=C([C@@]3([C@@H](OC(=O)C)C[C@]4([C@]3(C1)C)O[C@]5(OC(=O)[C@H](C5)C)C[C@H]4C)C)CC[C@@H]6[C@@]2(CCC(C6(C)C)=O)C',
-                                      'name': 'Spiroganocalitone C',
-                                      'reason': 'Carbon count (32) not '
-                                                'consistent with C28 steroid'},
-                                  {   'smiles': 'O=C1OC([C@H]([C@@H]2[C@@]3([C@@](C4=C([C@@]5([C@H](C([C@@H](O)CC5)(C)C)CC4)COC(=O)C)CC3)(C)CC2)C)C)CC=C1C',
-                                      'name': 'Colobetaolactone B',
-                                      'reason': 'Carbon count (32) not '
-                                                'consistent with C28 steroid'},
-                                  {   'smiles': 'O1C2(C3(C(O)(C(OC(=O)C)C12)C4C(CC3)C5(C(O)(C(O)C4)CC=CC5=O)C)C)C(C6OC(=O)C(=C(C6)C)C)C',
-                                      'name': 'Physagulin F',
-                                      'reason': 'No tetracyclic steroid '
-                                                'nucleus (rings of sizes '
-                                                '6-6-6-5) found'},
-                                  {   'smiles': 'OC(C1C2(C(C3C(C4(C(=CC3)CC(OC5OC(C(O)C(O)C5O)CO)CC4OC(=O)C)C)CC2)CC1)C)(C6OC(=O)C(=C(C6)C)C)C',
-                                      'name': 'Physalolactone B 3-glucoside',
-                                      'reason': 'Carbon count (36) not '
-                                                'consistent with C28 steroid'},
-                                  {   'smiles': 'O1C23C(C4C(C5(O)C(C(O)(CC5)C(O)(C6OC(=O)C(=C(C6)C)C)C)(CC4)C)CC12)(C)C(=O)C=CC3=O',
-                                      'name': 'Withaperuvin E',
-                                      'reason': 'No tetracyclic steroid '
-                                                'nucleus (rings of sizes '
-                                                '6-6-6-5) found'}],
-    'attempt': 3,
-    'reasoning': "In analyzing the previous code and the given outcomes, it's "
-                 'clear that the function `is_withanolide` failed to recognize '
-                 'the steroid nucleus in any of the provided SMILES strings, '
-                 'consistently returning "No steroid nucleus found".\n'
+    'sample_true_negatives': [   {   'smiles': 'O1C2=C(O)C=C(COC)C=C2C[C@@H](C1(C)C)O',
+                                     'name': 'Conoideochromane B',
+                                     'reason': 'Total carbon count is 13, '
+                                               'which is too low for a typical '
+                                               'withanolide.'},
+                                 {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCC)CO/C=C\\CCCCCCCCCCCCCC)(OCCN)(O)=O',
+                                     'name': 'PE(P-16:0/15:1(9Z))',
+                                     'reason': 'No 5- or 6-membered rings '
+                                               'detected; expected a steroid '
+                                               'nucleus.'},
+                                 {   'smiles': 'O=C1C=2C(OC(=C1)C)=C(C3=C4O[C@](O)(CC(C4=C(O)C=5C3=CC(OC)=CC5OC)=O)C)C6=CC(OC)=CC(=C6C2O)OC',
+                                     'name': '2-hydroxydihydronigerone',
+                                     'reason': 'Only 3 fused rings detected in '
+                                               'nucleus; expected at least 4 '
+                                               'for a steroid nucleus.'},
+                                 {   'smiles': 'O([C@@H]1[C@@H](NC(=O)C)[C@@H](O[C@@H]([C@H]1O)CO)OC[C@H]2O[C@@H](O)[C@H](NC(=O)C)[C@@H](O)[C@H]2O)[C@@H]3O[C@@H]([C@H](O)[C@H](O[C@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H]3O)CO',
+                                     'name': 'N-[(2R,3R,4R,5R,6R)-6-[[(2R,3R,4R,5S,6R)-3-Acetamido-4-[(2R,3R,4S,5S,6R)-3,5-dihydroxy-6-(hydroxymethyl)-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-5-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-2,4,5-trihydroxyoxan-3-yl]acetamide',
+                                     'reason': 'Only 1 fused rings detected in '
+                                               'nucleus; expected at least 4 '
+                                               'for a steroid nucleus.'},
+                                 {   'smiles': 'O1C(C(O)C(O)C(O)C1OC=2C(O)=C(O)C=C(C2)C=O)COC(=O)C3=CC(O)=C(O)C(O)=C3',
+                                     'name': 'Castamollissin',
+                                     'reason': 'Total carbon count is 20, '
+                                               'which is too low for a typical '
+                                               'withanolide.'},
+                                 {   'smiles': 'S(OC[C@H]1O[C@@H](OC[C@H]2O[C@@H](O[C@@H]([C@@H](O)[C@H](O)CO[C@]3(O[C@H]([C@H](NC(=O)C)[C@@H](O)C3)[C@H](O)[C@H](O)CO)C(O)=O)[C@@H](NC(=O)C)CO)[C@H](O)[C@@H](O)[C@H]2O)[C@H](NC(=O)C)[C@@H](O)[C@@H]1O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO[C@]5(O[C@H]([C@H](NC(=O)C)[C@@H](O)C5)[C@H](O)[C@H](O)CO)C(O)=O)(O)(=O)=O',
+                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[[(2R,3R,4S,5R,6S)-6-[(2R,3S,4R,5R,6R)-5-acetamido-6-[[(2R,3R,4S,5R,6R)-6-[(2S,3R,4S,5R)-2-acetamido-6-[(2R,4S,5R,6R)-5-acetamido-2-carboxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxan-2-yl]oxy-1,4,5-trihydroxyhexan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-2-(sulfooxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
+                                             'acid',
+                                     'reason': 'Only 1 fused rings detected in '
+                                               'nucleus; expected at least 4 '
+                                               'for a steroid nucleus.'},
+                                 {   'smiles': 'FC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F',
+                                     'name': 'perfluorohexane',
+                                     'reason': 'Total carbon count is 6, which '
+                                               'is too low for a typical '
+                                               'withanolide.'},
+                                 {   'smiles': 'CC(C)(O)CCC(=O)[C@](C)(O)[C@H]1[C@H](O)C[C@@]2(C)[C@@H]3CC=C4[C@@H](C[C@@H](O)[C@@H](O)C4(C)C)[C@]3(C)C(=O)C[C@]12C',
+                                     'name': 'Cucurbitacin P',
+                                     'reason': 'Only 2 fused rings detected in '
+                                               'nucleus; expected at least 4 '
+                                               'for a steroid nucleus.'},
+                                 {   'smiles': 'CCCCCCCc1cc(O)cc(=O)o1',
+                                     'name': '4-hydroxy-6-heptylpyran-2-one',
+                                     'reason': 'Total carbon count is 12, '
+                                               'which is too low for a typical '
+                                               'withanolide.'},
+                                 {   'smiles': 'S(O[C@@H]1[C@@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@H](O[C@H]3[C@@H](O)[C@H](O[C@@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](OS(O)(=O)=O)[C@H]5O)CO)[C@H](O)[C@H]4NC(=O)C)CO)[C@H](O[C@@H]3O[C@H]6[C@H](O)[C@H](O[C@@H](O[C@H]7[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]7CO)O[C@H]8[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]8CO[C@@H]9O[C@H]([C@@H](O)[C@@H](O)[C@@H]9O)C)O)[C@H]6O)CO[C@H]%10O[C@@H]([C@@H](O)[C@H](O)[C@@H]%10O[C@@H]%11O[C@@H]([C@@H](O[C@@H]%12O[C@@H]([C@H](O[C@@H]%13O[C@@H]([C@H](O)[C@H](O)[C@H]%13NC(=O)C)CO)[C@H](O[C@]%14(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%14)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%12O)CO)[C@H](O)[C@H]%11NC(=O)C)CO)CO[C@@H]%15O[C@@H]([C@@H](O[C@@H]%16O[C@@H]([C@H](O)[C@H](O[C@]%17(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%17)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%16O)CO)[C@H](O)[C@H]%15NC(=O)C)CO)CO)O[C@@H]2CO)O[C@@H]([C@@H]1O)CO)(O)(=O)=O',
+                                     'name': 'CID 146017241',
+                                     'reason': 'Only 1 fused rings detected in '
+                                               'nucleus; expected at least 4 '
+                                               'for a steroid nucleus.'}],
+    'sample_false_negatives': [   {   'smiles': 'C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)[C@H](CC(=O)[C@]4(CO)[C@H]3CC[C@]12C)OS(O)(=O)=O)[C@H]1CC(C)=C(CO)C(=O)O1',
+                                      'name': 'withalongolide G',
+                                      'reason': 'Only 2 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'},
+                                  {   'smiles': 'O=C1C=C2C=CC3=C4[C@]([C@@H](/C(=C/[C@H]5OC(=O)[C@H]([C@@H]5C)C)/C)CC4)(C)CC[C@@H]3[C@@]2(C)CC1',
+                                      'name': 'Penijanthoid B',
+                                      'reason': 'Only 3 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'},
+                                  {   'smiles': 'O1[C@@]23[C@]([C@@]4([C@]([C@]5([C@@]([C@@]6([C@@](O[C@@]7(OC(=O)[C@@H]([C@H]7C)C)[C@@H](O)[C@@]6(O)C)(C5)[H])[H])(CC4)C)[H])(C[C@@]12[H])[H])[H])(C)C(=O)C=C[C@@H]3O',
+                                      'name': 'Ixocarpalactone B',
+                                      'reason': 'Steroid nucleus has 23 '
+                                                'carbons, expected 17.'},
+                                  {   'smiles': 'CC1=C(C)C(=O)O[C@H](C1)[C@](C)(O)[C@@]12O[C@@H]1C[C@H]1[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3CC[C@]21C',
+                                      'name': '20-hydroxytubocapsanolide A',
+                                      'reason': 'Only 2 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'},
+                                  {   'smiles': 'C[C@@H]([C@H]1CC[C@H]2[C@@H]3CCC4=CC(=O)C=C[C@]4(C)[C@H]3CC[C@]12C=O)[C@H]1CC(C)=C(C)C(=O)O1',
+                                      'name': 'paraminabeolide A',
+                                      'reason': 'Only 2 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'},
+                                  {   'smiles': 'C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3CC[C@]12C)[C@H]1CC(C)=C(CO)C(=O)O1',
+                                      'name': 'withaferin A',
+                                      'reason': 'Only 2 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'},
+                                  {   'smiles': 'O1C2C3C4(O)C(C(CC4)C(C5OC(=O)C(C(C5)C)C)C)(CCC3C6(C(O)(C12)CC=CC6=O)C)C',
+                                      'name': 'Vamonolide',
+                                      'reason': 'Only 3 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'},
+                                  {   'smiles': 'O[C@@H]1[C@@]2([C@@]3([C@]([C@]4([C@@]([C@](CC4)([C@@H]([C@@]5(OC(=O)C(=C(C5)C)C)[H])C)[H])(CC3)C)[H])(CC=C2C[C@@H](O[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7O)CO)C1)[H])[H])C',
+                                      'name': 'Withanoside V',
+                                      'reason': 'Only 2 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'},
+                                  {   'smiles': 'CC1=C(C)C(=O)O[C@H](C1)[C@](C)(O)[C@@]1(O)CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3CC[C@]12C',
+                                      'name': '17alpha-hydroxywithanolide D',
+                                      'reason': 'Only 2 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'},
+                                  {   'smiles': 'OC1C2(C3C(C4C(C(CC4)C(C5OC(=O)C(=C(C5)CO)C)C)(CC3)C)CC=C2CC(OC6OC(C(O)C(O)C6O)COC7OC(C(O)C(O)C7O)CO)C1)C',
+                                      'name': '2-[1-[1-hydroxy-10,13-dimethyl-3-[3,4,5-trihydroxy-6-[[3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxy-2,3,4,7,8,9,11,12,14,15,16,17-dodecahydro-1H-cyclopenta[a]phenanthren-17-yl]ethyl]-4-(hydroxymethyl)-5-methyl-2,3-dihydropyran-6-one',
+                                      'reason': 'Only 2 fused rings detected '
+                                                'in nucleus; expected at least '
+                                                '4 for a steroid nucleus.'}],
+    'attempt': 1,
+    'reasoning': 'Below is our reasoning followed by the complete Python code '
+                 'in a single code block.\n'
                  '\n'
-                 '**Possible Reasons for Failure:**\n'
+                 'We first analyzed the previous attempt and the error '
+                 'outcomes. Many of the failures were due to two issues. '
+                 'First, the original code strictly checked that the total '
+                 'molecule had exactly 28 carbons—even for substituted '
+                 'derivatives—and it did not “see” the lactone ring in many '
+                 'cases. In reality, withanolides are defined as steroid '
+                 'lactones deriving from a fused steroid nucleus (typically '
+                 'four fused rings whose “core” has 17 carbons) plus a '
+                 'modified side‐chain that forms a lactone ring. Therefore, '
+                 'instead of checking the overall carbon count one must (a) '
+                 'verify that the fused steroid nucleus (three six‐membered '
+                 'plus one five‐membered ring) contains a “core” of 17 carbon '
+                 'atoms and (b) look for a cyclic ester (lactone) that is not '
+                 'entirely contained in that nucleus. To do so we (1) filter '
+                 'the rings in the molecule for those of size 5 or 6, then '
+                 'cluster those rings by fusions (shared atoms) and select the '
+                 'largest cluster; (2) count its carbon atoms (expecting 17) '
+                 'and (3) search for a lactone using a SMARTS pattern that '
+                 'requires the ester function to be in a ring (r5 or r6) and '
+                 'then confirm that its atoms do not lie completely within the '
+                 'nucleus. In addition, we allow molecules with a total carbon '
+                 'count above 28 (substituted derivatives) but require at '
+                 'least 28 carbons overall. This approach should help avoid '
+                 'missing the side‐chain lactone feature and also '
+                 'mis‐classifying molecules that deviate from the steroid '
+                 '“core.”\n'
                  '\n'
-                 '1. **Overly Specific Steroid Pattern:**\n'
-                 '   - The SMARTS pattern used for the steroid nucleus '
-                 "(`'C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C'`) is too specific.\n"
-                 '   - This pattern represents a specific steroid skeleton and '
-                 'does not account for variations commonly found in natural '
-                 'withanolides, such as double bonds, ring fusions, '
-                 'stereochemistry, and various substituents.\n'
+                 'Below is the complete code implementing these improvements.\n'
                  '\n'
-                 '2. **Lactone Ring Pattern Limitations:**\n'
-                 "   - The lactone pattern (`'C1OC(=O)[C;R]1'`) focuses only "
-                 'on 5-membered lactone rings.\n'
-                 '   - Withanolides may have lactone rings of different sizes '
-                 'and complexities in their side chains.\n'
-                 '\n'
-                 '**Improvements:**\n'
-                 '\n'
-                 '1. **Generalize Steroid Nucleus Detection:**\n'
-                 '   - Use a more flexible approach to identify the '
-                 'tetracyclic steroid nucleus.\n'
-                 '   - Instead of a rigid SMARTS pattern, analyze the '
-                 "molecule's ring structures to identify a fused ring system "
-                 'with four rings, typically of sizes 6-6-6-5.\n'
-                 '\n'
-                 '2. **Generalize Lactone Ring Detection:**\n'
-                 '   - Use a more general method to detect lactone rings, '
-                 'regardless of ring size.\n'
-                 '   - Ensure the lactone ring is part of the side chain and '
-                 'not within the steroid nucleus.\n'
-                 '\n'
-                 '3. **Analyze Ring Connectivity:**\n'
-                 "   - Utilize RDKit's ring information to identify fused ring "
-                 'systems and their sizes.\n'
-                 '   - This allows for more flexibility in detecting the core '
-                 'structure of withanolides.\n'
-                 '\n'
-                 '4. **Consider Carbon Count:**\n'
-                 '   - Verify that the molecule has approximately 28 carbons, '
-                 'as withanolides are C28 steroids.\n'
-                 '\n'
-                 '**Revised Code:**\n'
-                 '\n'
-                 'Below is the improved code that implements these changes:',
+                 '------------------------------------------------',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 32,
-    'num_false_positives': 71,
-    'num_true_negatives': 142103,
-    'num_false_negatives': 94,
+    'num_true_positives': 54,
+    'num_false_positives': 91,
+    'num_true_negatives': 142083,
+    'num_false_negatives': 72,
     'num_negatives': None,
-    'precision': 0.3106796116504854,
-    'recall': 0.25396825396825395,
-    'f1': 0.2794759825327511,
-    'accuracy': 0.9988404778636683,
-    'negative_predictive_value': 0.9993389452660746}
+    'precision': 0.3724137931034483,
+    'recall': 0.42857142857142855,
+    'f1': 0.3985239852398524,
+    'accuracy': 0.9988545326774421,
+    'negative_predictive_value': 0.9994935106046218}

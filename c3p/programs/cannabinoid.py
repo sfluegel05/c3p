@@ -2,7 +2,7 @@
 Classifies: CHEBI:67194 cannabinoid
 """
 """
-Classifies: CHEBI:67194 cannabinoid
+Classifies: Cannabinoids
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -10,9 +10,11 @@ from rdkit.Chem import rdMolDescriptors
 def is_cannabinoid(smiles: str):
     """
     Determines if a molecule is a cannabinoid based on its SMILES string.
-    Cannabinoids are characterized by either:
-    1. A benzene ring with oxygen-containing functional groups and long hydrocarbon chains
-    2. A fatty acid/ethanolamide structure with long hydrocarbon chains
+    Cannabinoids are characterized by specific structural features such as
+    the dibenzopyran ring system in phytocannabinoids (e.g., THC, CBD),
+    long-chain polyunsaturated fatty acid derivatives linked to ethanolamine
+    or glycerol (e.g., endocannabinoids like anandamide and 2-AG),
+    and synthetic cannabinoids with varied core structures but common pharmacophores.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,48 +23,106 @@ def is_cannabinoid(smiles: str):
         bool: True if molecule is a cannabinoid, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight - cannabinoids typically have higher molecular weights
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:
-        return False, "Molecular weight too low for a cannabinoid"
+    # Define pattern for phytocannabinoids like THC, CBD (dibenzopyran core)
+    dibenzopyran_pattern = Chem.MolFromSmarts('c1ccc2c(c1)Oc3ccccc3c2')  # General dibenzopyran ring
 
-    # Define patterns for cannabinoid features
-    benzene_pattern = Chem.MolFromSmarts("c1ccccc1")
-    oxygen_pattern = Chem.MolFromSmarts("[OX2]")
-    long_chain_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
-    ethanolamide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4]")
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2][CX4]")
-    cannabinoid_pattern = Chem.MolFromSmarts("c1cc(O)c2[C@@H]3C=C(CC[C@H]3C(C)(C)Oc2c1)")
+    # Check for phytocannabinoid features
+    if mol.HasSubstructMatch(dibenzopyran_pattern):
+        return True, "Contains dibenzopyran ring system characteristic of phytocannabinoids"
 
-    # Check for classic cannabinoid structure (benzene + oxygen + long chain)
-    has_benzene = mol.HasSubstructMatch(benzene_pattern)
-    has_oxygen = len(mol.GetSubstructMatches(oxygen_pattern)) >= 1
-    has_long_chain = mol.HasSubstructMatch(long_chain_pattern)
+    # Define pattern for endocannabinoids like anandamide (N-acylethanolamines)
+    n_acylethanolamine_pattern = Chem.MolFromSmarts('C(=O)NCCO')
 
-    # Check for ethanolamide/fatty acid structure
-    has_ethanolamide = mol.HasSubstructMatch(ethanolamide_pattern)
-    has_fatty_acid = mol.HasSubstructMatch(fatty_acid_pattern)
+    # Define pattern for 2-acylglycerols like 2-AG (monoacylglycerols)
+    monoacylglycerol_pattern = Chem.MolFromSmarts('C(=O)OCC(O)CO')
 
-    # Check for specific cannabinoid pattern
-    has_cannabinoid_pattern = mol.HasSubstructMatch(cannabinoid_pattern)
+    # Function to analyze fatty acid chains
+    def _analyze_fatty_acid_chain(mol, carbonyl_carbon_idx):
+        """
+        Analyzes the fatty acid chain attached to the carbonyl carbon.
 
-    # Classification logic
-    if has_cannabinoid_pattern:
-        return True, "Contains specific cannabinoid structural motif"
-    elif (has_benzene and has_oxygen and has_long_chain):
-        return True, "Contains a benzene ring with oxygen-containing functional groups and long hydrocarbon chains"
-    elif (has_ethanolamide or has_fatty_acid) and has_long_chain:
-        return True, "Contains ethanolamide/fatty acid structure with long hydrocarbon chain"
-    elif has_benzene and has_oxygen:
-        return False, "Contains benzene and oxygen but lacks characteristic long chain"
-    else:
-        return False, "Does not match cannabinoid structural patterns"
+        Args:
+            mol: RDKit Mol object
+            carbonyl_carbon_idx: Index of the carbonyl carbon
+
+        Returns:
+            chain_length: Number of carbons in the chain
+            num_double_bonds: Number of double bonds in the chain
+        """
+        atom = mol.GetAtomWithIdx(carbonyl_carbon_idx)
+        neighbors = [nbr.GetIdx() for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+        chain_start_idx = None
+        for idx in neighbors:
+            if idx != carbonyl_carbon_idx:
+                chain_start_idx = idx
+                break
+        if chain_start_idx is None:
+            return 0, 0
+
+        visited = set()
+        to_visit = [(chain_start_idx, None)]  # (atom_idx, bond)
+        chain_length = 0
+        num_double_bonds = 0
+
+        while to_visit:
+            current_idx, bond = to_visit.pop()
+            if current_idx in visited:
+                continue
+            visited.add(current_idx)
+            atom = mol.GetAtomWithIdx(current_idx)
+            if atom.GetAtomicNum() != 6:
+                continue
+            chain_length += 1
+            if bond is not None and bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                num_double_bonds += 1
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx not in visited and neighbor.GetAtomicNum() == 6:
+                    b = mol.GetBondBetweenAtoms(current_idx, neighbor_idx)
+                    to_visit.append((neighbor_idx, b))
+        return chain_length, num_double_bonds
+
+    # Check for endocannabinoid features (N-acylethanolamines)
+    if mol.HasSubstructMatch(n_acylethanolamine_pattern):
+        for match in mol.GetSubstructMatches(n_acylethanolamine_pattern):
+            carbonyl_carbon_idx = match[0]  # Index of the carbonyl carbon
+            chain_length, num_double_bonds = _analyze_fatty_acid_chain(mol, carbonyl_carbon_idx)
+            if chain_length >= 16 and num_double_bonds >= 2:
+                return True, "Contains long-chain polyunsaturated fatty acid amide linked to ethanolamine characteristic of endocannabinoids"
+        return False, "Amide group found but fatty acid chain too short or not sufficiently unsaturated"
+
+    # Check for endocannabinoid features (monoacylglycerols)
+    if mol.HasSubstructMatch(monoacylglycerol_pattern):
+        for match in mol.GetSubstructMatches(monoacylglycerol_pattern):
+            carbonyl_carbon_idx = match[0]  # Index of the carbonyl carbon
+            chain_length, num_double_bonds = _analyze_fatty_acid_chain(mol, carbonyl_carbon_idx)
+            if chain_length >= 16 and num_double_bonds >= 2:
+                return True, "Contains long-chain polyunsaturated fatty acid ester linked to glycerol characteristic of endocannabinoids"
+        return False, "Ester group found but fatty acid chain too short or not sufficiently unsaturated"
+
+    # Define pattern for synthetic cannabinoids (indole-based)
+    indole_pattern = Chem.MolFromSmarts('c1ccc2c(c1)[nH]cc2')  # Indole core
+
+    # Check for synthetic cannabinoid features (indole-based)
+    if mol.HasSubstructMatch(indole_pattern):
+        # Additional check for acyl or alkyl side chains
+        side_chain_pattern = Chem.MolFromSmarts('n1cc(c2ccc(Cl)cc2)c(c1)C(=O)')
+        if mol.HasSubstructMatch(side_chain_pattern):
+            return True, "Contains indole core with acyl side chain characteristic of synthetic cannabinoids"
+        return True, "Contains indole core characteristic of some synthetic cannabinoids"
+
+    # Include pattern for naphthoylindole cannabinoids
+    naphthoylindole_pattern = Chem.MolFromSmarts('c1ccc2c(c1)cccc2C(=O)N3CCCCC3')
+
+    if mol.HasSubstructMatch(naphthoylindole_pattern):
+        return True, "Contains naphthoylindole structure characteristic of synthetic cannabinoids"
+
+    return False, "No characteristic cannabinoid structural features found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:67194',
@@ -84,393 +144,507 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:67194',
                                        'Wikipedia:Cannabinoid'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 60,
+                           'log_lines_of_code': 4.0943445622221,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 4,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'MolFromSmiles',
+                                                 'MolFromSmarts',
+                                                 'HasSubstructMatch',
+                                                 'GetSubstructMatches'],
+                           'methods_called_count': 4,
+                           'smarts_strings': [   'C(=O)NCCO',
+                                                 'C(=O)OCC(O)CO',
+                                                 'c1ccc2c(c1)[nH]cc2',
+                                                 'n1cc(c2ccc(Cl)cc2)c(c1)C(=O)',
+                                                 'c1ccc2c(c1)cccc2C(=O)N3CCCCC3',
+                                                 'c1ccc2c(c1)Oc3ccccc3c2'],
+                           'smarts_strings_count': 6,
+                           'defs': [   'is_cannabinoid(smiles: str):',
+                                       '_analyze_fatty_acid_chain(mol, '
+                                       'carbonyl_carbon_idx):'],
+                           'defs_count': 2,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'True, "Contains dibenzopyran ring '
+                                          'system characteristic of '
+                                          'phytocannabinoids"',
+                                          'True, "Contains long-chain '
+                                          'polyunsaturated fatty acid amide '
+                                          'linked to ethanolamine '
+                                          'characteristic of endocannabinoids"',
+                                          'False, "Amide group found but fatty '
+                                          'acid chain too short or not '
+                                          'sufficiently unsaturated"',
+                                          'True, "Contains long-chain '
+                                          'polyunsaturated fatty acid ester '
+                                          'linked to glycerol characteristic '
+                                          'of endocannabinoids"',
+                                          'False, "Ester group found but fatty '
+                                          'acid chain too short or not '
+                                          'sufficiently unsaturated"',
+                                          'True, "Contains indole core with '
+                                          'acyl side chain characteristic of '
+                                          'synthetic cannabinoids"',
+                                          'True, "Contains indole core '
+                                          'characteristic of some synthetic '
+                                          'cannabinoids"',
+                                          'True, "Contains naphthoylindole '
+                                          'structure characteristic of '
+                                          'synthetic cannabinoids"',
+                                          'False, "No characteristic '
+                                          'cannabinoid structural features '
+                                          'found"'],
+                           'returns_count': 10,
+                           'complexity': 4.818868912444421},
     'message': '\n'
-               'Attempt failed: F1 score of 0.3067484662576688 is too low.\n'
+               'Attempt failed: F1 score of 0.002892611787393034 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: '
-               'CCCCCN1C=C(C(=O)CC2=CC=C(OC)C=C2)C2=CC=CC=C12 NAME: JWH-201 '
-               'REASON: CORRECT Contains a benzene ring with oxygen-containing '
-               'functional groups and long hydrocarbon chains\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]([C@H](O)[C@H](O)CO)CO)C(=CC(C(O)C(=CC(C(O)C(=CC(C(O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@@H]1O)O)CO)C(=CC(CC(CC)C)C)C)C)C)C)C)C)C '
-               'NAME: Roselipin 3D REASON: CORRECT Contains ethanolamide/fatty '
-               'acid structure with long hydrocarbon chain\n'
-               ' * SMILES: O(C(CO)CO)C(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC '
-               'NAME: MG(0:0/20:3(5Z,8Z,11Z)/0:0) REASON: CORRECT Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               'CCCCCc1cc(O)c2[C@@H]3C=C(CC[C@H]3C(C)(C)Oc2c1)C(O)=O NAME: '
-               '11-nor-9-carboxy-Delta(9)-tetrahydrocannabinol REASON: CORRECT '
-               'Contains a benzene ring with oxygen-containing functional '
-               'groups and long hydrocarbon chains\n'
-               ' * SMILES: '
-               '[H][C@@]12CCC(C)=C[C@@]1([H])c1c(O)c(C(O)=O)c(CCCCC)cc1OC2(C)C '
-               'NAME: Delta(9)-tetrahydrocannabinolic acid REASON: CORRECT '
-               'Contains a benzene ring with oxygen-containing functional '
-               'groups and long hydrocarbon chains\n'
-               ' * SMILES: '
-               '[H][C@]1(CCC(C)=C[C@H]1C1=C(O)C=C(CCCCC)C=C1O)C(C)=C NAME: '
-               'cannabidiol REASON: CORRECT Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'CCCCCCC(C)(C)C=1C=CC([C@@]2(C[C@](CC[C@]2(CCCO)[H])([H])O)[H])=C(C1)O '
-               'NAME: CP-55940 REASON: CORRECT Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'O[C@@H](CCCCC)/C=C/C=C\\C/C=C\\C/C=C\\CCCC(OC(CO)CO)=O NAME: '
-               '15-HETE-G REASON: CORRECT Contains ethanolamide/fatty acid '
-               'structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]([C@H](O)[C@H](O)CO)[C@H](O)CO)/C(=C/[C@@H]([C@H](O)/C(=C/[C@@H]([C@H](O)/C(=C/[C@@H]([C@H](O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@@H]1O)O)CO)/C(=C/[C@H](C[C@H](CC)C)C)/C)C)/C)C)/C)C)/C '
-               'NAME: TMC-171A REASON: CORRECT Contains ethanolamide/fatty '
-               'acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               '[H]C(CO)(CO)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC NAME: '
-               '2-arachidonoylglycerol REASON: CORRECT Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               'O(C(C(O)([2H])[2H])(C(O)([2H])[2H])[2H])C(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC '
-               'NAME: 2-arachidonoyl glycerol-d5 REASON: CORRECT Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: CCCCCC=CCC=CCC=CCC=CCCCC(=O)OC(CO)CO NAME: '
-               'eicosa-5,8,11,14-tetraenoic acid 1,3-dihydroxypropan-2-yl '
-               'ester REASON: CORRECT Contains ethanolamide/fatty acid '
-               'structure with long hydrocarbon chain\n'
-               ' * SMILES: CCCCCc1cc(O)c(C\\C=C(\\C)CCC=C(C)C)c(O)c1C(O)=O '
-               'NAME: cannabinerolic acid REASON: CORRECT Contains a benzene '
-               'ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: O(C(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)C(CO)CO NAME: '
-               'MG(0:0/20:2(11Z,14Z)/0:0) REASON: CORRECT Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: O(C(=O)CCCCCCCCC/C=C\\CCCCCCCC)C(CO)CO NAME: '
-               'MG(0:0/20:1(11Z)/0:0) REASON: CORRECT Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               '[H][C@@]12CCC(C)=C[C@@]1([H])c1c(O)cc(CCCCC)cc1OC2(C)C NAME: '
-               'Delta(9)-tetrahydrocannabinol REASON: CORRECT Contains a '
-               'benzene ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]([C@@H](O)[C@H](O)CO)CO)C(=CC(C(O)C(=CC(C(O)C(=CC(C(O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@@H]1O)O)CO)C(=CC(CC(CC)C)C)C)C)C)C)C)C)C '
-               'NAME: Roselipin 3E REASON: CORRECT Contains ethanolamide/fatty '
-               'acid structure with long hydrocarbon chain\n'
-               ' * SMILES: CCCCCc1cc(O)c(C\\C=C(/C)CCC=C(C)C)c(O)c1C(O)=O '
-               'NAME: cannabigerolic acid REASON: CORRECT Contains a benzene '
-               'ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: CCCCCc1cc(O)c2[C@@H]3C=C(CO)CC[C@H]3C(C)(C)Oc2c1 '
-               'NAME: 11-hydroxy-Delta(9)-tetrahydrocannabinol REASON: CORRECT '
-               'Contains a benzene ring with oxygen-containing functional '
-               'groups and long hydrocarbon chains\n'
-               ' * SMILES: O(C(=O)CCCCCCCCC/C=C\\C/C=C\\C/C=C\\CC)C(CO)CO '
-               'NAME: MG(0:0/20:3(11Z,14Z,17Z)/0:0) REASON: CORRECT Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               '[H][C@]1(C=C(C)CC[C@H]1C(C)=C)c1c(O)cc(CCCCC)c(C(O)=O)c1O '
-               'NAME: cannabidiolic acid REASON: CORRECT Contains a benzene '
-               'ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: O(C(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)C(CO)CO '
-               'NAME: MG(0:0/20:4(8Z,11Z,14Z,17Z)/0:0) REASON: CORRECT '
-               'Contains ethanolamide/fatty acid structure with long '
-               'hydrocarbon chain\n'
-               ' * SMILES: '
-               '[C@@H]1(C=C([C@@H]2C([C@H]1C2)(C)C)CO)C=3C(=CC(=CC3OC)C(CCCCCC)(C)C)OC '
-               'NAME: HU-308 REASON: CORRECT Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'O(C(CO)CO)C(=O)CCC/C=C\\C/C=C\\C=C\\[C@@H](O)C/C=C\\CCCCC '
-               'NAME: 12-HETE-G REASON: CORRECT Contains ethanolamide/fatty '
-               'acid structure with long hydrocarbon chain\n'
-               ' * SMILES: C1(=C(C=C(CCCCC)C=C1O)O)C/C=C(/CCC=C(C)C)\\C NAME: '
-               'cannabigerol REASON: CORRECT Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               'False positives: SMILES: '
-               'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\CCCCC)(O)(O)=O '
-               'NAME: PA(18:3(6Z,9Z,12Z)/20:1(11Z)) REASON: WRONGLY CLASSIFIED '
-               'Contains ethanolamide/fatty acid structure with long '
-               'hydrocarbon chain\n'
-               ' * SMILES: '
-               'C1CC(C1)CNC[C@H]2[C@@H]([C@@H](N2C(=O)CC3=CN=CC=C3)CO)C4=CC=CC=C4 '
-               'NAME: '
-               '1-[(2R,3S,4R)-2-[(cyclobutylmethylamino)methyl]-4-(hydroxymethyl)-3-phenyl-1-azetidinyl]-2-(3-pyridinyl)ethanone '
-               'REASON: WRONGLY CLASSIFIED Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'O=C(O[C@H](CC(=O)N)CCCCCCCCCCC(C)C)[C@@H](NC(=O)C[C@@H](O)CCCCCCCCCCCC(C)C)CCCC(=O)O '
-               'NAME: WA8242A1 REASON: WRONGLY CLASSIFIED Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               'COC1=CC=CC(=C1)C(=O)N2C[C@@H]3[C@@H]([C@H](N3CC4=CC=CC=C4Cl)CO)C5=CC=CC=C52 '
-               'NAME: '
-               '[(1S,2aS,8bS)-2-[(2-chlorophenyl)methyl]-1-(hydroxymethyl)-1,2a,3,8b-tetrahydroazeto[2,3-c]quinolin-4-yl]-(3-methoxyphenyl)methanone '
-               'REASON: WRONGLY CLASSIFIED Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'O=C1C2=C(C(=O)C(=C1C(C)C)C)C3[C@@H](C4=CC=CC=C4)C56C2(C(=O)C(=C(O)C5=O)C(C)C)C6[C@H]3C7=CC=CC=C7 '
-               'NAME: Carbocyclinone-534 REASON: WRONGLY CLASSIFIED Contains a '
-               'benzene ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: SC[C@H](N)C(=O)N[C@H](C(=O)N[C@@H](CC(C)C)C(O)=O)CO '
-               'NAME: Cys-Ser-Leu REASON: WRONGLY CLASSIFIED Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               '[H][C@]12CC[C@]([H])([C@H]([C@H](C1)OC(=O)c1ccccc1)C(=O)OC)[NH+]2C '
-               'NAME: cocaine(1+) REASON: WRONGLY CLASSIFIED Contains a '
-               'benzene ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: '
-               'C=12[C@]3(C)[C@@]([H])(CCC1C=C(C(=C2)O)C(C)C)C(C[C@@H](C3)O)(C)C '
-               'NAME: salviol REASON: WRONGLY CLASSIFIED Contains a benzene '
-               'ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: '
-               'C[C@@H]1CCCCO[C@H]([C@H](CN(C(=O)C2=C(O1)C=CC(=C2)NS(=O)(=O)C)[C@H](C)CO)C)CN(C)C '
-               'NAME: '
-               'N-[(3R,9R,10S)-9-[(dimethylamino)methyl]-12-[(2R)-1-hydroxypropan-2-yl]-3,10-dimethyl-13-oxo-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-16-yl]methanesulfonamide '
-               'REASON: WRONGLY CLASSIFIED Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'O=C(N[C@@H](CCC(O)=O)C(O)=O)[C@@H](NC(=O)[C@@H](N)CC(O)=O)CC=1C=2C(NC1)=CC=CC2 '
-               'NAME: Asp-Trp-Glu REASON: WRONGLY CLASSIFIED Contains a '
-               'benzene ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: '
-               'P(O[C@H]1[C@H](O[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2NC(=O)C)CO)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O)(OCC(OC(=O)C)COC(=O)C)(O)=O '
-               'NAME: '
-               'N-[(2R,3R,4R,5S,6R)-2-{[(1R,2R,3R,4R,5R,6S)-2-({[2,3-bis(acetyloxy)propoxy](hydroxy)phosphoryl}oxy)-3,4,5,6-tetrahydroxycyclohexyl]oxy}-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]ethanimidic '
-               'acid REASON: WRONGLY CLASSIFIED Contains ethanolamide/fatty '
-               'acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               'P(OCC(OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OCCNC)(O)=O '
-               'NAME: '
-               '{2-[(7Z,10Z,13Z,16Z)-docosa-7,10,13,16-tetraenoyloxy]-3-(tetracosanoyloxy)propoxy}[2-(methylamino)ethoxy]phosphinic '
-               'acid REASON: WRONGLY CLASSIFIED Contains ethanolamide/fatty '
-               'acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               'C1C[C@H]([C@H](O[C@@H]1CCNC(=O)C2=CC3=C(C=C2)OCO3)CO)NS(=O)(=O)C4=CC=C(C=C4)Cl '
-               'NAME: '
-               'N-[2-[(2S,5R,6S)-5-[(4-chlorophenyl)sulfonylamino]-6-(hydroxymethyl)oxan-2-yl]ethyl]-1,3-benzodioxole-5-carboxamide '
-               'REASON: WRONGLY CLASSIFIED Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'O=C1OC([C@@H]2CCC=3[C@]4([C@]([C@@H]([C@@H]([C@H]5OC(=O)C(C)=CC5)C)C[C@H]4OC(=O)C)(C)CC(C3C=C2C=C1)=O)C)(C)C '
-               'NAME: 11-oxo-colobetaolactone E REASON: WRONGLY CLASSIFIED '
-               'Contains ethanolamide/fatty acid structure with long '
-               'hydrocarbon chain\n'
-               ' * SMILES: O=C1O[C@@H](CCCCCCCCCCCCC)C(=C1C)C(=O)O NAME: '
-               'Lichesterinic acid REASON: WRONGLY CLASSIFIED Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               'COC(=O)C[C@@H]1C[C@H]2[C@@H]([C@@H](O1)CO)OC3=C2C=C(C=C3)NS(=O)(=O)C '
-               'NAME: methyl '
-               '2-[(1S,3S,4aR,9aS)-1-(hydroxymethyl)-6-(methanesulfonamido)-3,4,4a,9a-tetrahydro-1H-pyrano[3,4-b][1]benzofuran-3-yl]acetate '
-               'REASON: WRONGLY CLASSIFIED Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'O=C1C(OC)=C(C(=O)C=2C1=C(O)C3=C(C(=O)C4(O)C5C3OC4(C(O[C@@H]6O[C@@H]([C@@H](O[C@H]7O[C@@H]([C@@](O)(C(=O)C)[C@H](C7)O)C)CC6)C)C(C5OC8O[C@H]([C@H](O)[C@@H](C8)O)C)O)CCC)C2O)C=9C(OC)=C(OC)C%10=CC=%11CC%12C(O[C@@H]%13O[C@H]([C@H](O)[C@@H](C%13)O)C)C(O)C(C(C%12(C(C%11C(=C%10C9O)O)=O)O)(O)CCC)O[C@@H]%14O[C@@H]([C@@H](O[C@H]%15O[C@@H]([C@@](O)(C(=O)C)[C@H](C%15)O)C)CC%14)C '
-               'NAME: Hibarimicin G REASON: WRONGLY CLASSIFIED Contains a '
-               'benzene ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: '
-               'C[C@H]1CN(C(=O)C2=CC=CC(=C2OCC[C@@H]3CC[C@@H]([C@@H](O3)CN(C1=O)C)OC)C#N)C '
-               'NAME: LSM-9211 REASON: WRONGLY CLASSIFIED Contains a benzene '
-               'ring with oxygen-containing functional groups and long '
-               'hydrocarbon chains\n'
-               ' * SMILES: '
-               'O1C([C@@H](O)C(O)C(O)[C@@H]1OC2=C(OC=3C(C2=O)=C(O)C=C(O[C@@H]4OC([C@@H](O)[C@H](O)C4O)CO)C3)C5=CC(OC)=C(O)C=C5)CO[C@@H]6OC([C@H](O)[C@H](O)C6O)C '
-               'NAME: isorhamnetin 3-rutinoside-7-glucoside REASON: WRONGLY '
-               'CLASSIFIED Contains a benzene ring with oxygen-containing '
-               'functional groups and long hydrocarbon chains\n'
-               ' * SMILES: O(CCCCCCCCCCC)C(=O)C(N(C)C(OC)=O)C NAME: Alanine, '
-               'N-methyl-N-methoxycarbonyl-, undecyl ester REASON: WRONGLY '
-               'CLASSIFIED Contains ethanolamide/fatty acid structure with '
-               'long hydrocarbon chain\n'
-               ' * SMILES: '
-               'O=C1NC=2C(=O)C(=C(OC)C(C2)=O)[C@H](O)[C@H](C[C@H](OC)[C@H](O)[C@H](C=C([C@@H]([C@H](C=CC=C1C)OC)OC(=O)N)C)C)C '
-               'NAME: 15-Hydroxygeldanamycin REASON: WRONGLY CLASSIFIED '
-               'Contains ethanolamide/fatty acid structure with long '
-               'hydrocarbon chain\n'
-               ' * SMILES: '
-               'CN(C)C(=O)C[C@@H]1C[C@@H]2[C@H]([C@H](O1)CO)OC3=C2C=C(C=C3)NS(=O)(=O)C4=CC=CC(=C4)OC '
-               'NAME: '
-               '2-[(1R,3S,4aS,9aR)-1-(hydroxymethyl)-6-[(3-methoxyphenyl)sulfonylamino]-3,4,4a,9a-tetrahydro-1H-pyrano[3,4-b]benzofuran-3-yl]-N,N-dimethylacetamide '
-               'REASON: WRONGLY CLASSIFIED Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'C1[C@H]2[C@@H]([C@@H]([C@H](O2)N3C4=C(C(=NC=N4)N)N=C3SC5=CC=C(C=C5)Cl)O)OP(=O)(O1)O '
-               'NAME: '
-               '(4aS,6S,7S,7aR)-6-[6-amino-8-[(4-chlorophenyl)thio]-9-purinyl]-2-hydroxy-2-oxo-4a,6,7,7a-tetrahydro-4H-furo[3,2-d][1,3,2]dioxaphosphorin-7-ol '
-               'REASON: WRONGLY CLASSIFIED Contains a benzene ring with '
-               'oxygen-containing functional groups and long hydrocarbon '
-               'chains\n'
-               ' * SMILES: '
-               'ClC(C(O)CCCCCCCC)C/C=C/C=C\\[C@H](O)CC(=O)NC=1C(=O)O[C@](C1)(CC)C '
-               'NAME: Korormicin H REASON: WRONGLY CLASSIFIED Contains '
-               'ethanolamide/fatty acid structure with long hydrocarbon chain\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCC(=O)OC(CCCCCCCCCCC)CC(=O)N[C@H]1[C@@H](OP(O)(O)=O)O[C@H](CO[C@@H]2O[C@H](CO)[C@@H](OP(O)(O)=O)[C@H](OC(=O)CC(CCCCCCCCCCC)OC(=O)CCCCCCCCCCCCC)[C@H]2NC(=O)CC(CCCCCCCCCCC)OC(=O)CCCCCCCCCCC)[C@@H](O)[C@@H]1OC(=O)CC(O)CCCCCCCCCCC '
-               'NAME: diphospho heptaacyl lipid A REASON: WRONGLY CLASSIFIED '
-               'Contains ethanolamide/fatty acid structure with long '
-               'hydrocarbon chain\n'
-               'False negatives: SMILES: CCCCCCCCCCCCCCCC(=O)NCCO NAME: '
-               'palmitoyl ethanolamide REASON: MISSED Does not match '
-               'cannabinoid structural patterns\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(=O)NCCCl NAME: '
-               "arachidonyl-2'-chloroethylamide REASON: MISSED Does not match "
-               'cannabinoid structural patterns\n'
+               'True positives: SMILES: CCCCCCCC\\C=C/CCCCCCCC(=O)NCCO NAME: '
+               'oleoyl ethanolamide REASON: CORRECT Contains long-chain fatty '
+               'acid amide linked to ethanolamine characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: C(CCC)C/C=C\\C/C=C\\C/C=C\\CC1C(CCCC(NCCO)=O)O1 '
+               'NAME: N-[(8Z,11Z,14Z)-5,6-epoxyicosatrienoyl]ethanolamine '
+               'REASON: CORRECT Contains long-chain fatty acid amide linked to '
+               'ethanolamine characteristic of endocannabinoids\n'
+               ' * SMILES: CCCCCC\\C=C/CCCCCCCC(=O)NCCO NAME: palmitoleoyl '
+               'ethanolamide REASON: CORRECT Contains long-chain fatty acid '
+               'amide linked to ethanolamine characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: C(CCC)CC1C(C/C=C\\C/C=C\\C/C=C\\CCCC(NCCO)=O)O1 '
+               'NAME: N-[(5Z,8Z,11Z)-14,15-epoxyicosatrienoyl]ethanolamine '
+               'REASON: CORRECT Contains long-chain fatty acid amide linked to '
+               'ethanolamine characteristic of endocannabinoids\n'
                ' * SMILES: C(CCC)C/C=C\\C/C=C\\CC1C(C/C=C\\CCCC(NCCO)=O)O1 '
                'NAME: N-[(5Z,11Z,14Z)-8,9-epoxyicosatrienoyl]ethanolamine '
-               'REASON: MISSED Does not match cannabinoid structural patterns\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(=O)NCCO NAME: '
-               'anandamide REASON: MISSED Does not match cannabinoid '
-               'structural patterns\n'
-               ' * SMILES: N1(C=C(C2=C1C=CC=C2)C(=O)C3=C(C=CC=C3)I)CCCCCF '
-               'NAME: 1-(5-fluoropentyl)-3-(2-iodobenzoyl)indole REASON: '
-               'MISSED Does not match cannabinoid structural patterns\n'
-               ' * SMILES: C(CCCCCCCCCCCCC/C=C\\CCCCCCCC)(NCCO)=O NAME: '
-               'N-(15Z-tetracosenoyl)ethanolamine REASON: MISSED Does not '
-               'match cannabinoid structural patterns\n'
+               'REASON: CORRECT Contains long-chain fatty acid amide linked to '
+               'ethanolamine characteristic of endocannabinoids\n'
                ' * SMILES: '
-               'Cc1c(C(=O)c2cccc3ccccc23)c2cccc3OC[C@@H](CN4CCOCC4)n1c23 NAME: '
-               'WIN 55212-2 REASON: MISSED Contains benzene and oxygen but '
-               'lacks characteristic long chain\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCOC(CO)CO NAME: '
-               '2-arachidonyl glyceryl ether REASON: MISSED Does not match '
-               'cannabinoid structural patterns\n'
+               'O=C(O[C@@H]([C@@H](O)[C@H](O)CO)CO)C(=CC(C(O)C(=CC(C(O)C(=CC(C(O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@@H]1O)O)CO)C(=CC(CC(CC)C)C)C)C)C)C)C)C)C '
+               'NAME: Roselipin 3E REASON: CORRECT Contains long-chain fatty '
+               'acid ester linked to glycerol characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: '
+               'O=C(O[C@@H]([C@H](O)[C@H](O)CO)CO)C(=CC(C(O)C(=CC(C(O)C(=CC(C(O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@@H]1O)O)CO)C(=CC(CC(CC)C)C)C)C)C)C)C)C)C '
+               'NAME: Roselipin 3D REASON: CORRECT Contains long-chain fatty '
+               'acid ester linked to glycerol characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: CCCCCCCCCCCCCCCC(=O)NCCO NAME: palmitoyl '
+               'ethanolamide REASON: CORRECT Contains long-chain fatty acid '
+               'amide linked to ethanolamine characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: C(CCCCCCCCCCCCC/C=C\\CCCCCCCC)(NCCO)=O NAME: '
+               'N-(15Z-tetracosenoyl)ethanolamine REASON: CORRECT Contains '
+               'long-chain fatty acid amide linked to ethanolamine '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(=O)NCCO NAME: '
+               'anandamide REASON: CORRECT Contains long-chain fatty acid '
+               'amide linked to ethanolamine characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: '
+               'O=C(O[C@@H]([C@H](O)[C@H](O)CO)[C@H](O)CO)/C(=C/[C@@H]([C@H](O)/C(=C/[C@@H]([C@H](O)/C(=C/[C@@H]([C@H](O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@@H]1O)O)CO)/C(=C/[C@H](C[C@H](CC)C)C)/C)C)/C)C)/C)C)/C '
+               'NAME: TMC-171A REASON: CORRECT Contains long-chain fatty acid '
+               'ester linked to glycerol characteristic of endocannabinoids\n'
                ' * SMILES: C(CCCO)C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCC(NCCO)=O '
-               'NAME: N-(20-hydroxyarachidonoyl)ethanolamine REASON: MISSED '
-               'Does not match cannabinoid structural patterns\n'
-               ' * SMILES: CCCCCCCC\\C=C/CCCCCCCC(=O)NCCO NAME: oleoyl '
-               'ethanolamide REASON: MISSED Does not match cannabinoid '
-               'structural patterns\n'
+               'NAME: N-(20-hydroxyarachidonoyl)ethanolamine REASON: CORRECT '
+               'Contains long-chain fatty acid amide linked to ethanolamine '
+               'characteristic of endocannabinoids\n'
+               'False positives: SMILES: '
+               'S(=O)(=O)(CC[C@@H]1NC(=O)[C@H](NC(=O)C(N(C(=O)CC[C@@H](NC([C@H]([C@@H](NC([C@@H](NC(C[C@@H](NC1=O)C(=O)O)=O)CCCN=C(N)N)=O)/C=C/C(=C/[C@@H]([C@@H](OC)CC2=CC=CC=C2)C)/C)C)=O)C(=O)O)C)=C)C)C '
+               'NAME: [D-Asp3]MC-M(O2)R REASON: WRONGLY CLASSIFIED Contains '
+               'long-chain fatty acid amide linked to ethanolamine '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: '
+               '(2S)-2-amino-3-({hydroxy[(2R)-2-[(11Z,14Z)-icosa-11,14-dienoyloxy]-3-(tetracosanoyloxy)propoxy]phosphoryl}oxy)propanoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains long-chain fatty acid '
+               'ester linked to glycerol characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'C1[C@@]2([C@]3(C[C@@H]([C@]4([C@]([C@@]3(CC[C@@]2(C[C@@H](C1)O)[H])[H])(CC[C@@]4([C@@H](CCC(NCC(O)=O)=O)C)[H])[H])C)O)[H])C '
+               'NAME: glycodeoxycholic acid REASON: WRONGLY CLASSIFIED '
+               'Contains long-chain fatty acid amide linked to ethanolamine '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'O(P(=O)(OCCNC(=O)CCCCCCCCCCCCCCC)O)C[C@H](OC(CCCCCCC/C=C\\CCCCCCCC)=O)COC(CCCCCCC/C=C\\CCCCCCCC)=O '
+               'NAME: '
+               'N-palmitoyl-1,2-dioleoyl-sn-glycero-3-phosphoethanolamine '
+               'REASON: WRONGLY CLASSIFIED Contains long-chain fatty acid '
+               'amide linked to ethanolamine characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: '
+               'CC(C)C[C@@H](C(=O)O)NC(=O)C1=C(C=C(C=C1)NC[C@H](CS)N)C2=CC=CC3=CC=CC=C32 '
+               'NAME: '
+               '(2S)-2-[[[4-[[(2R)-2-amino-3-mercaptopropyl]amino]-2-(1-naphthalenyl)phenyl]-oxomethyl]amino]-4-methylpentanoic '
+               'acid REASON: WRONGLY CLASSIFIED Contains long-chain fatty acid '
+               'amide linked to ethanolamine characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: '
+               'P(OCC[N+](C)(C)C)(OC[C@H](O)COC(=O)CCCCCCCC/C=C\\C/C=C\\C/C=C\\CC)([O-])=O '
+               'NAME: PC(19:3(10Z,13Z,16Z)/0:0) REASON: WRONGLY CLASSIFIED '
+               'Contains long-chain fatty acid ester linked to glycerol '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'O(C(=O)CCCCCCC/C=C\\C/C=C\\CCCC)C[C@@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC '
+               'NAME: '
+               'TG(17:2(9Z,12Z)/20:4(5Z,8Z,11Z,14Z)/20:4(5Z,8Z,11Z,14Z))[iso3] '
+               'REASON: WRONGLY CLASSIFIED Contains long-chain fatty acid '
+               'ester linked to glycerol characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'O=C1NCCC(O)C2NC(=O)C(C2=O)=C(O)C=C[C@H]3[C@H](CC=C1)[C@@H]4[C@H]([C@@H]5[C@H]([C@@H](CC)C[C@@H]5C4)C)[C@H](C3)O '
+               'NAME: Dihydromaltophilin REASON: WRONGLY CLASSIFIED Contains '
+               'long-chain fatty acid amide linked to ethanolamine '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'O(C(=O)CCCCCCCCCCCCCCCCCCCCC)C[C@H](OC(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC '
+               'NAME: TG(22:0/20:4(8Z,11Z,14Z,17Z)/20:4(5Z,8Z,11Z,14Z)) '
+               'REASON: WRONGLY CLASSIFIED Contains long-chain fatty acid '
+               'ester linked to glycerol characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'OC12C(C(O)(CC1)C(O)(C3OC(=O)C(=C(C3)C)C)C)(CCC4C2CC(O)C5(O)C4(C)C(=O)C=CC5O)C '
+               'NAME: Withaperuvin B REASON: WRONGLY CLASSIFIED Contains '
+               'long-chain fatty acid ester linked to glycerol characteristic '
+               'of endocannabinoids\n'
+               ' * SMILES: '
+               'P(OCC[N+](C)(C)C)(OC[C@H](NC(=O)CC=CCCCCCCCCCCCCCCCCCC)[C@H](O)CC=CCCCCCCCCCCCC)([O-])=O '
+               'NAME: SM(d40:2) REASON: WRONGLY CLASSIFIED Contains long-chain '
+               'fatty acid amide linked to ethanolamine characteristic of '
+               'endocannabinoids\n'
+               ' * SMILES: '
+               'C([C@@](COC(CCCCCCCCC/C=C\\C/C=C\\CCCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])O '
+               'NAME: DG(20:2(11Z,14Z)/18:1(11Z)/0:0) REASON: WRONGLY '
+               'CLASSIFIED Contains long-chain fatty acid ester linked to '
+               'glycerol characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO '
+               'NAME: N-pentacosanoyl-14-methylhexadecasphinganine REASON: '
+               'WRONGLY CLASSIFIED Contains long-chain fatty acid amide linked '
+               'to ethanolamine characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCC[C@@H](O)[C@H](CO)NC(=O)C(O)CCCCCCCCCCCCCC '
+               'NAME: N-(2-hydroxyhexadecanoyl)eicosasphinganine REASON: '
+               'WRONGLY CLASSIFIED Contains long-chain fatty acid amide linked '
+               'to ethanolamine characteristic of endocannabinoids\n'
+               ' * SMILES: O=C(N1[C@@H](CCC1)C(O)=O)CCCCCCCCCCCCCCC NAME: '
+               'N-Palmitoyl proline REASON: WRONGLY CLASSIFIED Contains '
+               'long-chain fatty acid amide linked to ethanolamine '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCC)COC(=O)CCCCC(=O)C[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)(O)(O)=O '
+               'NAME: PA(6 keto-PGF1alpha/14:1(9Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains long-chain fatty acid ester linked to glycerol '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               '[C@@H]1(C(C(C([C@H](C1O)O)O)O)O)OP(OC[C@@](COC(CCCCCCCCCCCCCCC)=O)(OC(CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)=O)[H])(O)=O '
+               'NAME: PI(16:0/22:5(7Z,10Z,13Z,16Z,19Z)) REASON: WRONGLY '
+               'CLASSIFIED Contains long-chain fatty acid ester linked to '
+               'glycerol characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'O(C(=O)CCCCCCCCCCCCCCCCC)C[C@@H](OC(=O)CCCCCCCCC/C=C\\CCCCCCCC)COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC '
+               'NAME: TG(18:0/20:1(11Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z)) REASON: '
+               'WRONGLY CLASSIFIED Contains long-chain fatty acid ester linked '
+               'to glycerol characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCC(=O)OCC(CO)OC(=O)CCCCCCC\\C=C/CCCCCCCC NAME: '
+               '1-stearoyl-2-oleoylglycerol REASON: WRONGLY CLASSIFIED '
+               'Contains long-chain fatty acid ester linked to glycerol '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'P(OC1C(O)C(O)C(O)[C@@H](O)C1O)(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCCCC)COC(=O)CCCCCCC/C=C\\CCCCCC)(O)=O '
+               'NAME: PI(16:1(9Z)/17:1(9Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains long-chain fatty acid ester linked to glycerol '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'C([C@@](COC(CCCCCCC/C=C\\CCCCCCCC)=O)(OC(CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O '
+               'NAME: PG(18:1(9Z)/18:3(9Z,12Z,15Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains long-chain fatty acid ester linked to glycerol '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               '[C@](COC(=O)CCCCCCCCCCCCCCCCCC)(OC(=O)CCCCCCCCCCCCCC)([H])COP(OCCN)(O)=O '
+               'NAME: PE(19:0/15:0) REASON: WRONGLY CLASSIFIED Contains '
+               'long-chain fatty acid ester linked to glycerol characteristic '
+               'of endocannabinoids\n'
+               ' * SMILES: '
+               'C([C@@](COC(CCCCCCCCCCCCCCCCCCCCCCC)=O)(OC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)[H])OP([O-])(=O)OCC[N+](C)(C)C '
+               'NAME: PC(24:0/18:2(9Z,12Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains long-chain fatty acid ester linked to glycerol '
+               'characteristic of endocannabinoids\n'
+               ' * SMILES: '
+               'P(OC[C@H](O)COC(=O)CCCCCCCCCCCCCCCCCC)(OC[C@@H](O)CO)(O)=O '
+               'NAME: PG(19:0/0:0) REASON: WRONGLY CLASSIFIED Contains '
+               'long-chain fatty acid ester linked to glycerol characteristic '
+               'of endocannabinoids\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCC)(O)(O)=O '
+               'NAME: PA(20:0/22:2(13Z,16Z)) REASON: WRONGLY CLASSIFIED '
+               'Contains long-chain fatty acid ester linked to glycerol '
+               'characteristic of endocannabinoids\n'
+               'False negatives: SMILES: '
+               'CCCCCCC(C)(C)C=1C=CC([C@@]2(C[C@](CC[C@]2(CCCO)[H])([H])O)[H])=C(C1)O '
+               'NAME: CP-55940 REASON: MISSED No characteristic cannabinoid '
+               'structural features found\n'
+               ' * SMILES: '
+               '[H][C@@]12CCC(C)=C[C@@]1([H])c1c(O)cc(CCCCC)cc1OC2(C)C NAME: '
+               'Delta(9)-tetrahydrocannabinol REASON: MISSED No characteristic '
+               'cannabinoid structural features found\n'
+               ' * SMILES: '
+               '[H]C(CO)(CO)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC NAME: '
+               '2-arachidonoylglycerol REASON: MISSED No characteristic '
+               'cannabinoid structural features found\n'
+               ' * SMILES: O(C(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)C(CO)CO '
+               'NAME: MG(0:0/20:4(8Z,11Z,14Z,17Z)/0:0) REASON: MISSED No '
+               'characteristic cannabinoid structural features found\n'
+               ' * SMILES: '
+               '[H][C@]1(C=C(C)CC[C@H]1C(C)=C)c1c(O)cc(CCCCC)c(C(O)=O)c1O '
+               'NAME: cannabidiolic acid REASON: MISSED No characteristic '
+               'cannabinoid structural features found\n'
+               ' * SMILES: '
+               'O(C(C(O)([2H])[2H])(C(O)([2H])[2H])[2H])C(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC '
+               'NAME: 2-arachidonoyl glycerol-d5 REASON: MISSED No '
+               'characteristic cannabinoid structural features found\n'
+               ' * SMILES: CCCCCc1cc(O)c(C\\C=C(/C)CCC=C(C)C)c(O)c1C(O)=O '
+               'NAME: cannabigerolic acid REASON: MISSED No characteristic '
+               'cannabinoid structural features found\n'
+               ' * SMILES: O(C(=O)CCCCCCCCC/C=C\\C/C=C\\C/C=C\\CC)C(CO)CO '
+               'NAME: MG(0:0/20:3(11Z,14Z,17Z)/0:0) REASON: MISSED No '
+               'characteristic cannabinoid structural features found\n'
+               ' * SMILES: C1(=C(C=C(CCCCC)C=C1O)O)C/C=C(/CCC=C(C)C)\\C NAME: '
+               'cannabigerol REASON: MISSED No characteristic cannabinoid '
+               'structural features found\n'
+               ' * SMILES: '
+               '[H][C@]1(CCC(C)=C[C@H]1C1=C(O)C=C(CCCCC)C=C1O)C(C)=C NAME: '
+               'cannabidiol REASON: MISSED No characteristic cannabinoid '
+               'structural features found\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'Cl.C=1C=C(OC)C(OC)=C(C1CN2CCNCC2)OC.Cl',
-                                     'name': 'Trimetazidine hydrochloride',
-                                     'reason': 'Contains benzene and oxygen '
-                                               'but lacks characteristic long '
-                                               'chain'},
-                                 {   'smiles': '[H]S(=O)(=O)C[C@H](N)C(O)=O',
-                                     'name': 'L-cysteine-S-dioxide',
-                                     'reason': 'Molecular weight too low for a '
-                                               'cannabinoid'},
-                                 {   'smiles': 'C[C@@H]1CN(C(=O)CCCN2C=C(CO[C@@H]1CN(C)CC3=CC=CC=C3OC)N=N2)[C@H](C)CO',
-                                     'name': '(8R,9S)-6-[(2R)-1-hydroxypropan-2-yl]-9-[[(2-methoxyphenyl)methyl-methylamino]methyl]-8-methyl-10-oxa-1,6,13,14-tetrazabicyclo[10.2.1]pentadeca-12(15),13-dien-5-one',
-                                     'reason': 'Contains benzene and oxygen '
-                                               'but lacks characteristic long '
-                                               'chain'},
-                                 {   'smiles': 'Cc1ccc(cc1)N=C=Nc1ccc(C)cc1',
-                                     'name': '1,3-di(p-tolyl)carbodiimide',
-                                     'reason': 'Does not match cannabinoid '
-                                               'structural patterns'},
-                                 {   'smiles': 'O=C1[C@H]([C@H]2[C@](C3=C([C@]4([C@]([C@@H]([C@@H]([C@H](O)CC(=C)C(C)C)C)CC4)(C)CC3)C)CC2)(C)CC1)C',
-                                     'name': 'Gilvsin C',
-                                     'reason': 'Does not match cannabinoid '
-                                               'structural patterns'},
-                                 {   'smiles': 'C[C@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)NC3=CC=CC=C3)C(=O)N(C[C@H]1OC)C)C)C(=O)C',
-                                     'name': '1-[(4S,7S,8S)-5-acetyl-8-methoxy-4,7,10-trimethyl-11-oxo-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]-3-phenylurea',
-                                     'reason': 'Contains benzene and oxygen '
-                                               'but lacks characteristic long '
-                                               'chain'},
-                                 {   'smiles': 'C[C@@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)C)C(=O)N(C[C@@H]1OC)C)C)C(=O)C3=NC=CN=C3',
-                                     'name': 'N-[(4S,7R,8R)-8-methoxy-4,7,10-trimethyl-11-oxo-5-[oxo(2-pyrazinyl)methyl]-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]acetamide',
-                                     'reason': 'Contains benzene and oxygen '
-                                               'but lacks characteristic long '
-                                               'chain'},
-                                 {   'smiles': 'COc1ccc(cc1)\\C=C(NC=O)\\C(NC=O)=C\\c1ccc(OS(O)(=O)=O)cc1',
-                                     'name': 'Fumiformamide',
-                                     'reason': 'Contains benzene and oxygen '
-                                               'but lacks characteristic long '
-                                               'chain'},
-                                 {   'smiles': 'CCCCC(CC)COCCCN',
-                                     'name': '3-(2-ethylhexoxy)propan-1-amine',
-                                     'reason': 'Molecular weight too low for a '
-                                               'cannabinoid'},
-                                 {   'smiles': 'N(=CC1=CC=CC=C1)CCC2=CC=CC=C2',
-                                     'name': 'N-benzylidene-2-phenylethanamine',
-                                     'reason': 'Does not match cannabinoid '
-                                               'structural patterns'}],
-    'sample_false_negatives': [   {   'smiles': 'N1(C=C(C2=C1C=CC=C2)C(=O)C3=C(C=CC=C3)I)CCCCCF',
-                                      'name': '1-(5-fluoropentyl)-3-(2-iodobenzoyl)indole',
-                                      'reason': 'Does not match cannabinoid '
-                                                'structural patterns'},
-                                  {   'smiles': 'Cc1c(C(=O)c2cccc3ccccc23)c2cccc3OC[C@@H](CN4CCOCC4)n1c23',
-                                      'name': 'WIN 55212-2',
-                                      'reason': 'Contains benzene and oxygen '
-                                                'but lacks characteristic long '
-                                                'chain'},
-                                  {   'smiles': 'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCOC(CO)CO',
-                                      'name': '2-arachidonyl glyceryl ether',
-                                      'reason': 'Does not match cannabinoid '
-                                                'structural patterns'}],
+    'sample_true_negatives': [   {   'smiles': 'CCOC(=O)CC(C1=CC=CC=C1Cl)NC2=NC(=NC(=N2)N3CCOCC3)N4CCOCC4',
+                                     'name': '3-[[4,6-bis(4-morpholinyl)-1,3,5-triazin-2-yl]amino]-3-(2-chlorophenyl)propanoic '
+                                             'acid ethyl ester',
+                                     'reason': 'No characteristic cannabinoid '
+                                               'structural features found'},
+                                 {   'smiles': 'O([C@@H]1[C@@H](O)[C@H](O)[C@H](O[C@]1(C=2C=3OC(=CC(=O)C3C(O)=CC2O)C4=CC(O)=C(O)C=C4)[H])CO)[C@@H]5O[C@H]([C@@H](O)[C@@H](O)[C@@H]5O)CO',
+                                     'name': "2''-O-beta-L-Galactopyranosylorientin",
+                                     'reason': 'No characteristic cannabinoid '
+                                               'structural features found'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](O[C@@H]2[C@@H](NC(C)=O)[C@@H](O[C@H](CO)[C@H]2O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O)[C@H]2NC(C)=O)O[C@@H]2[C@@H](O)[C@@H](O)O[C@H](CO)[C@@H]2O)[C@@H](O)[C@H](O)[C@@H]1O',
+                                     'name': 'beta-D-GalpNAc-(1->4)-[alpha-L-Fucp-(1->3)]-beta-D-GlcpNAc-(1->3)-alpha-D-Galp',
+                                     'reason': 'Amide group found but fatty '
+                                               'acid chain too short or not '
+                                               'sufficiently unsaturated'},
+                                 {   'smiles': 'C[C@H]1CN(C(=O)CC2=C(C=CC(=C2)NC(=O)CCC(F)(F)F)O[C@H]1CN(C)CC3=CC4=C(C=C3)OCO4)[C@@H](C)CO',
+                                     'name': 'N-[(2R,3S)-2-[[1,3-benzodioxol-5-ylmethyl(methyl)amino]methyl]-5-[(2S)-1-hydroxypropan-2-yl]-3-methyl-6-oxo-2,3,4,7-tetrahydro-1,5-benzoxazonin-9-yl]-4,4,4-trifluorobutanamide',
+                                     'reason': 'Amide group found but fatty '
+                                               'acid chain too short or not '
+                                               'sufficiently unsaturated'},
+                                 {   'smiles': 'C1CC(C1)C(=O)N[C@@H]2C=C[C@H](O[C@H]2CO)CC(=O)NCCCN3CCOCC3',
+                                     'name': 'N-[(2R,3R,6R)-2-(hydroxymethyl)-6-[2-[3-(4-morpholinyl)propylamino]-2-oxoethyl]-3,6-dihydro-2H-pyran-3-yl]cyclobutanecarboxamide',
+                                     'reason': 'Amide group found but fatty '
+                                               'acid chain too short or not '
+                                               'sufficiently unsaturated'},
+                                 {   'smiles': 'O=C1O[C@@H](CC[C@H](O)C=C[C@H](C1)O)C',
+                                     'name': 'Decarestrictine C1',
+                                     'reason': 'No characteristic cannabinoid '
+                                               'structural features found'},
+                                 {   'smiles': '[H]P(O)(=O)OP([H])(O)=O',
+                                     'name': 'diphosphonic acid',
+                                     'reason': 'No characteristic cannabinoid '
+                                               'structural features found'},
+                                 {   'smiles': 'C[C@H]1CN(C(=O)CCCN2C(=CN=N2)CO[C@@H]1CN(C)C(=O)C3=NOC(=C3)C4=CC=CC=C4)[C@H](C)CO',
+                                     'name': 'N-[[(8S,9S)-6-[(2R)-1-hydroxypropan-2-yl]-8-methyl-5-oxo-10-oxa-1,6,14,15-tetrazabicyclo[10.3.0]pentadeca-12,14-dien-9-yl]methyl]-N-methyl-5-phenyl-3-isoxazolecarboxamide',
+                                     'reason': 'Amide group found but fatty '
+                                               'acid chain too short or not '
+                                               'sufficiently unsaturated'},
+                                 {   'smiles': 'OCCCCCCC[C@@H](O)CC(O)=O',
+                                     'name': '(3R)-3,10-dihydroxydecanoic acid',
+                                     'reason': 'No characteristic cannabinoid '
+                                               'structural features found'},
+                                 {   'smiles': 'O=C1C2=C(OC3=C1C(=CC(=C3)CO)CO)C=C(O)C=C2O',
+                                     'name': 'Phomoxanthone J',
+                                     'reason': 'No characteristic cannabinoid '
+                                               'structural features found'}],
+    'sample_false_negatives': [   {   'smiles': 'CCCCCCCC\\C=C/CCCCCCCC(=O)NCCO',
+                                      'name': 'oleoyl ethanolamide',
+                                      'reason': 'Amide group found but fatty '
+                                                'acid chain too short or not '
+                                                'sufficiently unsaturated'},
+                                  {   'smiles': 'CCCCCCC(C)(C)C=1C=CC([C@@]2(C[C@](CC[C@]2(CCCO)[H])([H])O)[H])=C(C1)O',
+                                      'name': 'CP-55940',
+                                      'reason': 'No characteristic cannabinoid '
+                                                'structural features found'},
+                                  {   'smiles': 'CCCCCC\\C=C/CCCCCCCC(=O)NCCO',
+                                      'name': 'palmitoleoyl ethanolamide',
+                                      'reason': 'Amide group found but fatty '
+                                                'acid chain too short or not '
+                                                'sufficiently unsaturated'},
+                                  {   'smiles': '[H][C@@]12CCC(C)=C[C@@]1([H])c1c(O)cc(CCCCC)cc1OC2(C)C',
+                                      'name': 'Delta(9)-tetrahydrocannabinol',
+                                      'reason': 'No characteristic cannabinoid '
+                                                'structural features found'},
+                                  {   'smiles': '[H]C(CO)(CO)OC(=O)CCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC',
+                                      'name': '2-arachidonoylglycerol',
+                                      'reason': 'No characteristic cannabinoid '
+                                                'structural features found'},
+                                  {   'smiles': 'O(C(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)C(CO)CO',
+                                      'name': 'MG(0:0/20:4(8Z,11Z,14Z,17Z)/0:0)',
+                                      'reason': 'No characteristic cannabinoid '
+                                                'structural features found'},
+                                  {   'smiles': '[H][C@]1(C=C(C)CC[C@H]1C(C)=C)c1c(O)cc(CCCCC)c(C(O)=O)c1O',
+                                      'name': 'cannabidiolic acid',
+                                      'reason': 'No characteristic cannabinoid '
+                                                'structural features found'},
+                                  {   'smiles': 'O(C(C(O)([2H])[2H])(C(O)([2H])[2H])[2H])C(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC',
+                                      'name': '2-arachidonoyl glycerol-d5',
+                                      'reason': 'No characteristic cannabinoid '
+                                                'structural features found'},
+                                  {   'smiles': 'CCCCCc1cc(O)c(C\\C=C(/C)CCC=C(C)C)c(O)c1C(O)=O',
+                                      'name': 'cannabigerolic acid',
+                                      'reason': 'No characteristic cannabinoid '
+                                                'structural features found'},
+                                  {   'smiles': 'O(C(=O)CCCCCCCCC/C=C\\C/C=C\\C/C=C\\CC)C(CO)CO',
+                                      'name': 'MG(0:0/20:3(11Z,14Z,17Z)/0:0)',
+                                      'reason': 'No characteristic cannabinoid '
+                                                'structural features found'}],
     'attempt': 2,
-    'reasoning': 'The previous code had several issues that led to both false '
-                 'positives and false negatives:\n'
+    'reasoning': 'Analyzing the previous program and the outcomes, it appears '
+                 'that the classifier failed to correctly identify several '
+                 'known cannabinoids, particularly phytocannabinoids like '
+                 'Delta(9)-tetrahydrocannabinol (THC), cannabidiol (CBD), '
+                 'cannabigerol, and their acidic counterparts. This is likely '
+                 'because the SMARTS patterns for phytocannabinoids were too '
+                 "specific and didn't account for variations in the core "
+                 'structures and side chains of these compounds.\n'
                  '\n'
-                 '1. **False Positives**: The code incorrectly classified '
-                 'molecules that had benzene rings with oxygen-containing '
-                 'functional groups and long hydrocarbon chains, even if they '
-                 "weren't cannabinoids. This is because the criteria were too "
-                 "broad and didn't account for the specific structural motifs "
-                 'found in cannabinoids.\n'
+                 'Additionally, the classifier incorrectly identified many '
+                 'non-cannabinoid molecules as cannabinoids (false positives). '
+                 'This happened because the patterns for endocannabinoids were '
+                 'too broad—any molecule with a long-chain fatty acid linked '
+                 'to ethanolamine or glycerol was classified as a cannabinoid, '
+                 'even if it lacked other characteristic features.\n'
                  '\n'
-                 '2. **False Negatives**: The code missed several true '
-                 'cannabinoids, particularly those with ethanolamide/fatty '
-                 'acid structures, because the patterns used to identify these '
-                 'structures were not specific enough. For example, the '
-                 'ethanolamide pattern `[NX3][CX3](=[OX1])CCO` was too '
-                 'restrictive and missed many valid cannabinoids.\n'
+                 'To improve the classifier, the following changes are '
+                 'necessary:\n'
                  '\n'
-                 '3. **Molecular Weight Filter**: The molecular weight filter '
-                 'was too restrictive, potentially excluding smaller '
-                 'cannabinoids.\n'
+                 '1. **Expand the SMARTS patterns for phytocannabinoids** to '
+                 'capture the core dibenzopyran ring system common to many '
+                 'cannabinoids, allowing for variations in side chains and '
+                 'substitutions.\n'
                  '\n'
-                 '### Improvements:\n'
-                 '1. **Refine Patterns**: Use more specific patterns to '
-                 'identify cannabinoid structures. For example, the '
-                 'ethanolamide pattern should be more inclusive to capture a '
-                 'wider range of cannabinoids.\n'
+                 '2. **Refine the patterns for endocannabinoids** by ensuring '
+                 'that the fatty acid chains are not only long but also '
+                 'polyunsaturated, reflecting the nature of endocannabinoids '
+                 'like anandamide and 2-arachidonoylglycerol.\n'
                  '\n'
-                 '2. **Combine Patterns**: Use combined patterns to ensure '
-                 'that the molecule has both the necessary functional groups '
-                 'and the correct structural arrangement.\n'
+                 '3. **Enhance synthetic cannabinoid detection** by including '
+                 'additional patterns for commonly found scaffolds, such as '
+                 'indole and naphthoylindole cores.\n'
                  '\n'
-                 '3. **Adjust Molecular Weight Filter**: Lower the molecular '
-                 'weight threshold to include smaller cannabinoids.\n'
+                 '4. **Implement stricter criteria** to avoid false positives, '
+                 'such as requiring specific chain lengths, degrees of '
+                 'unsaturation, and the presence of key functional groups '
+                 'unique to cannabinoids.\n'
                  '\n'
-                 '4. **Add Additional Checks**: Include checks for specific '
-                 'functional groups and structural motifs that are '
-                 'characteristic of cannabinoids.\n'
+                 'By making these adjustments, the classifier should more '
+                 'accurately distinguish cannabinoids from non-cannabinoids, '
+                 'reducing both false negatives and false positives.\n'
                  '\n'
-                 'Here is the improved code:',
+                 'Here is the updated code implementing these improvements:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 35,
-    'num_false_positives': 100,
-    'num_true_negatives': 132,
-    'num_false_negatives': 3,
+    'num_true_positives': 8,
+    'num_false_positives': 5372,
+    'num_true_negatives': 136890,
+    'num_false_negatives': 30,
     'num_negatives': None,
-    'precision': 0.25925925925925924,
-    'recall': 0.9210526315789473,
-    'f1': 0.40462427745664736,
-    'accuracy': 0.6185185185185185,
-    'negative_predictive_value': 0.9777777777777777}
+    'precision': 0.001486988847583643,
+    'recall': 0.21052631578947367,
+    'f1': 0.0029531192321889995,
+    'accuracy': 0.962037947997189,
+    'negative_predictive_value': 0.9997808939526731}

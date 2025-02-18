@@ -96,6 +96,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:53156',
                           'xrefs': ['Wikipedia:Polychlorinated_biphenyl'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Attempt failed: F1 score of 0.6262626262626263 is too low.\n'
                'Outcomes:\n'

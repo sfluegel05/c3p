@@ -2,16 +2,15 @@
 Classifies: CHEBI:23899 icosanoid
 """
 """
-Classifies: CHEBI:24913 icosanoid
+Classifies: CHEBI:36080 icosanoid
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_icosanoid(smiles: str):
     """
     Determines if a molecule is an icosanoid based on its SMILES string.
-    Icosanoids are signaling molecules derived from C20 essential fatty acids.
+    An icosanoid is a signaling molecule derived from the oxidation of C20 essential fatty acids.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,73 +25,55 @@ def is_icosanoid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count oxygens (should have multiple from oxidation)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if o_count < 2:
-        return False, "Too few oxygen atoms for an icosanoid"
+    # Check for core icosanoid structure (relaxed carbon count)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 16:
+        return False, f"Expected at least 16 carbons, found {c_count}"
 
-    # Look for key structural features
-    features_found = []
-    
-    # Carbon chain patterns characteristic of icosanoids
-    chain_patterns = [
-        'C~C~C~C~C~C~C~C~C~C~C~C', # Basic long chain
-        'C~C=C~C=C~C~C', # Conjugated double bonds
-        'C1CCCC1C~C~C~C', # Prostaglandin-like
-    ]
-    
-    for pattern in chain_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            features_found.append("characteristic carbon chain")
-            break
+    # Check for multiple double bonds (relaxed requirement)
+    double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if double_bonds < 1:
+        return False, f"Expected at least 1 double bond, found {double_bonds}"
 
-    if not features_found:
-        return False, "No characteristic icosanoid carbon chain found"
+    # Check for oxygen-containing functional groups (at least 2)
+    oxygen_atoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if oxygen_atoms < 2:
+        return False, f"Expected at least 2 oxygen atoms, found {oxygen_atoms}"
 
-    # Oxidation and functional group patterns
-    patterns = {
-        'C=C': "double bonds",
-        '[OH]': "hydroxyl groups",
-        'C1CCCC1': "cyclopentane ring",
-        'C1OC1': "epoxide group",
-        'C(=O)C': "ketone group",
-        'C(=O)[OH]': "carboxylic acid",
-        'C(=O)O[CH2,CH3]': "ester group",
-        '[OO]': "peroxide group",
-        'C(=O)N': "amide group",
-    }
-    
-    for smart, feature in patterns.items():
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(smart)):
-            features_found.append(feature)
+    # More flexible patterns for characteristic icosanoid structures
+    # 1. Cyclopentane ring with oxygen-containing groups (prostaglandin-like)
+    prostaglandin_pattern = Chem.MolFromSmarts("[C]1[C][C][C][C]1([C]=O)([OH])")
+    # 2. Conjugated polyene system (leukotriene-like)
+    leukotriene_pattern = Chem.MolFromSmarts("[C]=[C][C]=[C][C]=[C]")
+    # 3. Epoxide structure (common in EETs)
+    epoxide_pattern = Chem.MolFromSmarts("[OX2]1[CX4][CX4]1")
+    # 4. Hydroperoxide structure (common in HPETEs)
+    hydroperoxide_pattern = Chem.MolFromSmarts("[OH][OX2]")
+    # 5. Carboxyl group (common in many icosanoids)
+    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
 
-    # Need multiple oxidation features to be an icosanoid
-    oxidation_features = ["hydroxyl groups", "epoxide group", "ketone group", 
-                         "carboxylic acid", "peroxide group"]
-    oxidation_count = sum(1 for f in oxidation_features if f in features_found)
-    
-    if oxidation_count < 1:
-        return False, "Lacks typical icosanoid oxidation features"
+    has_prostaglandin = mol.HasSubstructMatch(prostaglandin_pattern)
+    has_leukotriene = mol.HasSubstructMatch(leukotriene_pattern)
+    has_epoxide = mol.HasSubstructMatch(epoxide_pattern)
+    has_hydroperoxide = mol.HasSubstructMatch(hydroperoxide_pattern)
+    has_carboxyl = mol.HasSubstructMatch(carboxyl_pattern)
 
-    # Look for specific icosanoid substructures
-    icosanoid_patterns = [
-        'C(=O)CCC=CCC1C(O)CC(O)C1', # Prostaglandin core
-        'C=CC=CC=CC(O)', # Characteristic hydroxylated polyene
-        'CC=CC=CC=CC(OO)', # Hydroperoxy pattern
-        'C1OC1CC=CC=C', # Epoxy-fatty acid pattern
-    ]
-    
-    for pattern in icosanoid_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            features_found.append("characteristic icosanoid substructure")
-            break
+    if not (has_prostaglandin or has_leukotriene or has_epoxide or has_hydroperoxide or has_carboxyl):
+        return False, "No characteristic icosanoid structural patterns found"
 
-    # If we have enough characteristic features, classify as icosanoid
-    if len(set(features_found)) >= 3:  # Need at least 3 different features
-        features_str = ", ".join(set(features_found))
-        return True, f"Contains characteristic icosanoid features: {features_str}"
-    
-    return False, "Insufficient characteristic icosanoid features"
+    # Check for specific functional groups (hydroxyl, carboxyl, epoxide, peroxide, ester, ether)
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+    ether_pattern = Chem.MolFromSmarts("[CX4][OX2][CX4]")
+
+    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
+    has_ester = mol.HasSubstructMatch(ester_pattern)
+    has_ether = mol.HasSubstructMatch(ether_pattern)
+
+    if not (has_hydroxyl or has_carboxyl or has_ester or has_ether):
+        return False, "No hydroxyl, carboxyl, ester, or ether groups found"
+
+    return True, "Contains characteristic icosanoid structure with multiple double bonds and oxygen-containing functional groups"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23899',
@@ -112,272 +93,322 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23899',
                                        'Wikipedia:Eicosanoid'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 53,
+                           'log_lines_of_code': 3.970291913552122,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetBonds',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmarts',
+                                                 'MolFromSmiles',
+                                                 'GetAtomicNum',
+                                                 'GetAtoms',
+                                                 'GetBondType'],
+                           'methods_called_count': 7,
+                           'smarts_strings': [   '[CX4][OX2][CX4]',
+                                                 '[C]1[C][C][C][C]1([C]=O)([OH])',
+                                                 '[OX2H]',
+                                                 '[OX2]1[CX4][CX4]1',
+                                                 '[C]=[C][C]=[C][C]=[C]',
+                                                 '[OH][OX2]',
+                                                 '[CX3](=O)[OX2H0]',
+                                                 '[CX3](=O)[OX2H1]'],
+                           'smarts_strings_count': 8,
+                           'defs': ['is_icosanoid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Expected at least 16 '
+                                          'carbons, found {c_count}"',
+                                          'False, f"Expected at least 1 double '
+                                          'bond, found {double_bonds}"',
+                                          'False, f"Expected at least 2 oxygen '
+                                          'atoms, found {oxygen_atoms}"',
+                                          'False, "No characteristic icosanoid '
+                                          'structural patterns found"',
+                                          'False, "No hydroxyl, carboxyl, '
+                                          'ester, or ether groups found"',
+                                          'True, "Contains characteristic '
+                                          'icosanoid structure with multiple '
+                                          'double bonds and oxygen-containing '
+                                          'functional groups"'],
+                           'returns_count': 7,
+                           'complexity': 4.194058382710424},
     'message': '\n'
-               'Attempt failed: F1 score of 0.7395833333333334 is too low.\n'
+               'Attempt failed: F1 score of 0.20634920634920637 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: SMILES: '
-               'O[C@H]1[C@@H]([C@@H]([C@@H](O)C1)/C=C/[C@@H](O)C/C=C\\C/C=C\\CC)C/C=C\\CCC(O)=O '
-               'NAME: ent-14-epi-14-F4t-NeuroP REASON: CORRECT Contains '
-               'characteristic icosanoid features: double bonds, hydroxyl '
-               'groups, cyclopentane ring, ketone group\n'
-               ' * SMILES: C(\\CC(/C=C/C=C\\C/C=C\\CCCCCO)O)=C\\CCCC(O)=O '
-               'NAME: 8,20-DiHETE REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, ketone '
-               'group\n'
+               'CCCCCC1OC1C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O NAME: 14,15-EET '
+               'REASON: CORRECT Contains characteristic icosanoid structure '
+               'with multiple double bonds and oxygen-containing functional '
+               'groups\n'
+               ' * SMILES: C(CCCO)CC1C(C/C=C\\C/C=C\\C/C=C\\CCCC(O)=O)O1 NAME: '
+               '14,15-epoxy-20-hydroxy-(5Z,8Z,11Z)-icosatrienoic acid REASON: '
+               'CORRECT Contains characteristic icosanoid structure with '
+               'multiple double bonds and oxygen-containing functional groups\n'
+               ' * SMILES: CCCCC[C@H](OO)\\C=C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O '
+               'NAME: 15(S)-HPETE REASON: CORRECT Contains characteristic '
+               'icosanoid structure with multiple double bonds and '
+               'oxygen-containing functional groups\n'
+               ' * SMILES: O(O)C(C/C=C\\CC)/C=C/C=C\\C/C=C\\C/C=C\\CCCC(O)=O '
+               'NAME: 15S-HpEPE REASON: CORRECT Contains characteristic '
+               'icosanoid structure with multiple double bonds and '
+               'oxygen-containing functional groups\n'
+               ' * SMILES: CCCCC\\C=C/C[C@H](OO)\\C=C\\C=C/C\\C=C/CCCC(O)=O '
+               'NAME: 12(S)-HPETE REASON: CORRECT Contains characteristic '
+               'icosanoid structure with multiple double bonds and '
+               'oxygen-containing functional groups\n'
+               ' * SMILES: C(CCCO)C/C=C\\C/C=C\\C/C=C\\CC1C(CCCC(O)=O)O1 NAME: '
+               '5,6-epoxy-20-hydroxy-(8Z,11Z,14Z)-icosatrienoic acid REASON: '
+               'CORRECT Contains characteristic icosanoid structure with '
+               'multiple double bonds and oxygen-containing functional groups\n'
                ' * SMILES: '
-               'CCCCC[C@H](O)\\C=C\\[C@H]1OC(O)C[C@H](O)[C@@H]1CCC(O)=O NAME: '
-               '2,3,4,5-tetranor-thromboxane B1 REASON: CORRECT Contains '
-               'characteristic icosanoid features: double bonds, hydroxyl '
-               'groups, ketone group\n'
+               'O1O[C@]2([C@@H]([C@@H]([C@@]1(C2)[H])CCC(O)=O)/C=C/[C@@H](OO)C/C=C\\C/C=C\\C/C=C\\CC)[H] '
+               'NAME: 11-Hydroperoxy-H4-neuroprostane REASON: CORRECT Contains '
+               'characteristic icosanoid structure with multiple double bonds '
+               'and oxygen-containing functional groups\n'
                ' * SMILES: '
-               'O[C@H]1[C@H]([C@@H](CCCCCCCC(O)=O)C(=O)C1)/C=C/[C@@H](O)CC '
-               'NAME: 16-E1c-PhytoP REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, '
-               'cyclopentane ring, ketone group\n'
-               ' * SMILES: O1C(C(O)CC1C(O)/C=C/C(O)CC)CCCCCCCC(O)=O NAME: '
-               'delta14-9-PhytoF REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, ketone '
-               'group\n'
+               'O(O)[C@@H](CCCC(O)=O)/C=C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC NAME: '
+               '5S-HpEPE REASON: CORRECT Contains characteristic icosanoid '
+               'structure with multiple double bonds and oxygen-containing '
+               'functional groups\n'
                ' * SMILES: '
-               'O=C1[C@@H]([C@@H](C/C=C\\CCCCCC(O)=O)C=C1)/C=C/[C@@H](O)CCCCC '
-               'NAME: 1a,1b-Dihomo-PGJ2 REASON: CORRECT Contains '
-               'characteristic icosanoid features: double bonds, hydroxyl '
-               'groups, ketone group\n'
-               ' * SMILES: C(CCCO)C/C=C\\CC1C(C/C=C\\C/C=C\\CCCC(O)=O)O1 NAME: '
-               '11,12-epoxy-20-hydroxy-(5Z,8Z,14Z)-icosatrienoic acid REASON: '
-               'CORRECT Contains characteristic icosanoid features: double '
-               'bonds, hydroxyl groups, epoxide group, ketone group\n'
+               'CC[C@H]1O[C@H]1C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O NAME: '
+               '17(S),18(R)-EETeTr REASON: CORRECT Contains characteristic '
+               'icosanoid structure with multiple double bonds and '
+               'oxygen-containing functional groups\n'
                ' * SMILES: '
-               'CCCCC[C@H](O)\\C=C\\[C@@H](C=O)[C@@H](C\\C=C/CCCC(O)=O)C(C)=O '
-               'NAME: levuglandin E2 REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, ketone '
-               'group\n'
+               'CC[C@@H]1O[C@@H]1C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(O)=O NAME: '
+               '17(R),18(S)-EETeTr REASON: CORRECT Contains characteristic '
+               'icosanoid structure with multiple double bonds and '
+               'oxygen-containing functional groups\n'
                ' * SMILES: '
-               'CCCCC[C@H](O)\\C=C\\C=C/C=C/C=C/[C@H](O)[C@@H](O)CCCC(O)=O '
-               'NAME: 6-epi-lipoxin A4 REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, ketone '
-               'group\n'
-               ' * SMILES: CCCCCCCCC#CCC#CCC#CCCCC(O)=O NAME: '
-               '5,8,11-icosatriynoic acid REASON: CORRECT Contains '
-               'characteristic icosanoid features: hydroxyl groups, ketone '
-               'group\n'
+               'O[C@@H]1[C@@H]([C@H](C(=O)C1)/C=C/[C@@H](OO)CCCCC)C/C=C\\CCCC(O)=O '
+               'NAME: 15S-hydroperoxy-PGD2 REASON: CORRECT Contains '
+               'characteristic icosanoid structure with multiple double bonds '
+               'and oxygen-containing functional groups\n'
                ' * SMILES: '
-               'O[C@H]1[C@@H]([C@@H](C(=O)C1)/C=C/[C@@H](O)CCCCCCCC(O)=O)CC '
-               'NAME: 9-E1t-PhytoP REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, '
-               'cyclopentane ring, ketone group\n'
+               'C(CCC)C/C=C\\C[C@@H]1[C@H](C/C=C\\C/C=C\\CCCC(O)=O)O1 NAME: '
+               '(11S,12R)-EET REASON: CORRECT Contains characteristic '
+               'icosanoid structure with multiple double bonds and '
+               'oxygen-containing functional groups\n'
                ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/[C@H](O)[C@H]1O[C@H]1C\\C=C/CCCC(O)=O NAME: '
-               '(8S,9S)-epoxy-(10R)-hydroxyicosa-(5Z,11Z,14Z)-trienoic acid '
-               'REASON: CORRECT Contains characteristic icosanoid features: '
-               'double bonds, hydroxyl groups, epoxide group, ketone group\n'
-               ' * SMILES: O=C1[C@H]([C@H](CC1)CCCCCCCC(O)=O)CC=CCC NAME: '
-               'Oxo-(pentenyl)cyclopentaneoctanoic acid REASON: CORRECT '
-               'Contains characteristic icosanoid features: double bonds, '
-               'hydroxyl groups, cyclopentane ring, ketone group\n'
-               ' * SMILES: '
-               'C(\\[C@H](CCCC(O)=O)O)=C\\C=C\\C=C\\[C@@H](C\\C=C/C=C/[C@@H](CC)O)O '
-               'NAME: resolvin E1 REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, ketone '
-               'group\n'
-               ' * SMILES: '
-               'C1(=C(C(CC1)=O)C/C=C\\CCCC(O)=O)/C=C/[C@H](CCCC(C)O)O NAME: '
-               '19-hydroxy-PGB2 REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, ketone '
-               'group\n'
-               ' * SMILES: '
-               '[C@H](CCCC(O)=O)(/C=C/C=C\\C[C@H](/C=C/C=C\\CCCCC)O)O NAME: '
-               '5(S),11(R)-DiHETE REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, ketone '
-               'group\n'
-               ' * SMILES: '
-               'O[C@@H](C(CCCC)(C)C)\\C=C\\[C@@H]1[C@H](C(=O)CC1)C/C=C\\CCCC(O)=O '
-               'NAME: 11-Deoxy-16,16-dimethyl-PGE2 REASON: CORRECT Contains '
-               'characteristic icosanoid features: double bonds, hydroxyl '
-               'groups, cyclopentane ring, ketone group\n'
-               ' * SMILES: '
-               'O=C1[C@@H]([C@H](C/C=C\\C/C=C\\C/C=C\\CC)C=C1)/C=C/[C@H](O)CCC(O)=O '
-               'NAME: 4-epi-4-A4-NeuroP REASON: CORRECT Contains '
-               'characteristic icosanoid features: double bonds, hydroxyl '
-               'groups, ketone group\n'
-               ' * SMILES: '
-               'O[C@H]1[C@@H]([C@@H](CCCCCCC(O)=O)C(=O)C1)/C=C/[C@@H](O)CCC[C@H](O)C '
-               'NAME: 19R-Hydroxy-PGE1 REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, '
-               'cyclopentane ring, ketone group\n'
-               ' * SMILES: CCCCC\\C=C/CC1OC1C\\C=C/C\\C=C/CCCC(O)=O NAME: '
-               '11,12-EET REASON: CORRECT Contains characteristic icosanoid '
-               'features: double bonds, hydroxyl groups, epoxide group, ketone '
-               'group\n'
-               ' * SMILES: '
-               '[C@H](CCCC(O)=O)(/C=C/C=C\\C/C=C\\C\\C=C/C=C/[C@@H](CC)O)OO '
-               'NAME: '
-               '5(S)-hydroperoxy-18(R)-hydroxy-(6E,8Z,11Z,14Z,16E)-icosapentaenoic '
-               'acid REASON: CORRECT Contains characteristic icosanoid '
-               'features: double bonds, hydroxyl groups, ketone group\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/C=C/[C@@H](C\\C=C/CCCC(O)=O)OO '
-               'NAME: 8(R)-HPETE REASON: CORRECT Contains characteristic '
-               'icosanoid features: double bonds, hydroxyl groups, ketone '
-               'group\n'
-               ' * SMILES: '
-               'C([C@H](/C=C/C=C/C=C\\[C@H](CCCC(O)=O)O)O)/C=C\\CCCCC(O)O '
-               'NAME: 20,20-dihydroxyleukotriene B4 REASON: CORRECT Contains '
-               'characteristic icosanoid features: double bonds, hydroxyl '
-               'groups, ketone group\n'
-               ' * SMILES: O[C@H](C/C=C\\CCCCC)/C=C/C=C/C=C/C(=O)CCCC(O)=O '
-               'NAME: 5-Oxo-6-trans-leukotriene B4 REASON: CORRECT Contains '
-               'characteristic icosanoid features: double bonds, hydroxyl '
-               'groups, ketone group\n'
-               ' * SMILES: '
-               'O=C1C([C@@]2([C@@](C(C(=O)CC2)CCCC)(C1)[H])[H])CCCCCCC(O)=O '
-               'NAME: Bicyclo Prostaglandin E1 REASON: CORRECT Contains '
-               'characteristic icosanoid features: hydroxyl groups, '
-               'cyclopentane ring, ketone group\n'
+               'O[C@H]1[C@@H]([C@H](C(=O)C1)C/C=C\\CCCC(O)=O)/C=C/[C@@H](OO)CCCCC '
+               'NAME: 15S-hydroperoxy-PGE2 REASON: CORRECT Contains '
+               'characteristic icosanoid structure with multiple double bonds '
+               'and oxygen-containing functional groups\n'
                'False positives: NONE\n'
                'False negatives: SMILES: '
-               'O=C1[C@H]([C@@]2([C@H]([C@](C(=O)O)([C@@H](O)CC2)C)CC1)C)C[C@H](OC(=O)C)[C@@]3(C(=O)CC[C@H]3[C@@H](CCC(=C)C(C)C)C)C '
-               'NAME: Gloeophyllin J REASON: MISSED Carbon count (32) outside '
-               'typical range for icosanoids\n'
+               'O=C1[C@@H]([C@H](CC1)/C=C/[C@@H](O)CCCCC)CCCCCCC(O)=O NAME: '
+               '11-deoxyprostaglandin E1 REASON: MISSED No characteristic '
+               'icosanoid structural patterns found\n'
                ' * SMILES: '
-               'O(C(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)C[C@H](O)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\CCCCC '
-               'NAME: DG(18:3n6/0:0/20:4n3) REASON: MISSED Carbon count (41) '
-               'outside typical range for icosanoids\n'
+               'O[C@H]1[C@@H]([C@H](C(=O)C1)C/C=C\\CCCC(OC)=O)/C=C/[C@H](O)CCCCC '
+               'NAME: 15R-PGE2 methyl ester REASON: MISSED No characteristic '
+               'icosanoid structural patterns found\n'
                ' * SMILES: '
-               'P(OC[C@H](OC(=O)CCC\\C=C\\C[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
-               'NAME: PS(24:0/PGF2alpha) REASON: MISSED Carbon count (50) '
-               'outside typical range for icosanoids\n'
-               ' * SMILES: '
-               'O([C@]1(C/C=C\\CCCCC)/C(/C(=O)C=C1)=C/C=C/[C@@H]2OC(=O)CC2)C(=O)C '
-               'NAME: clavulolactone III REASON: MISSED No carboxylic acid '
-               'group found\n'
-               ' * SMILES: '
-               'O(C(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)C[C@H](O)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC '
-               'NAME: DG(20:3n9/0:0/18:3n3) REASON: MISSED Carbon count (41) '
-               'outside typical range for icosanoids\n'
-               ' * SMILES: '
-               'O(C(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)C[C@@H](O)COC(=O)CCCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC '
-               'NAME: DG(18:3n3/0:0/20:4n3) REASON: MISSED Carbon count (41) '
-               'outside typical range for icosanoids\n'
-               ' * SMILES: '
-               'OC1C(C(C(O)C1)CCCCCCC(OC(C[N+](C)(C)C)CC([O-])=O)=O)CCC(O)CCCCC '
+               'O(C(C[N+](C)(C)C)CC([O-])=O)C(=O)CCC\\C=C\\CC1/C(/C(=O)C=C1)=C/C=C/CCCCC '
                'NAME: '
-               '7-[(1R,2R,3R,5S)-3,5-Dihydroxy-2-[(3S)-3-hydroxyoctyl]cyclopentyl]heptanoylcarnitine '
-               'REASON: MISSED Carbon count (27) outside typical range for '
-               'icosanoids\n'
+               '(5Z)-7-[(1S,5E)-5-[(2E)-Oct-2-en-1-ylidene]-4-oxocyclopent-2-en-1-yl]hept-5-enoylcarnitine '
+               'REASON: MISSED Expected 16-22 carbons, found 27\n'
                ' * SMILES: '
-               'O(C(=O)CCC/C=C\\CCCCCCCC)C[C@@H](O)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC '
-               'NAME: DG(14:1n5/0:0/20:5n3) REASON: MISSED Carbon count (37) '
-               'outside typical range for icosanoids\n'
+               'P(OC[C@H](OC(=O)C/C=C\\C[C@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@H](O)CCCCC)COC(=O)CCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(14:0/5-iso PGF2VI) REASON: MISSED Expected 16-22 '
+               'carbons, found 38\n'
                ' * SMILES: '
-               'O/1[C@@]2([C@@]([C@H]([C@H](O)C2)/C=C/[C@@H](O)CCCCC)(C\\C1=C\\CCCC(=O)NCCO)[H])[H] '
-               'NAME: PGI2-EA REASON: MISSED No carboxylic acid group found\n'
+               'CCCCC(C)(CC=C[C@H]1[C@@H](CC(=O)[C@@H]1CCCCCCC(=O)OC)O)O NAME: '
+               '7-[(1R,2R,3R)-3-hydroxy-2-(4-hydroxy-4-methyloct-1-enyl)-5-oxocyclopentyl]heptanoic '
+               'acid methyl ester REASON: MISSED No characteristic icosanoid '
+               'structural patterns found\n'
                ' * SMILES: '
-               'O[C@@H]1[C@@H]([C@H](C(=O)C1)/C=C/[C@@H](O)CCCCC)C/C=C\\CCCC(OC)=O '
-               'NAME: Prostaglandin D2 methyl ester REASON: MISSED No '
-               'carboxylic acid group found\n'
+               'N[C@@H](CCC(=O)N[C@@H](CS[C@H]1[C@@H]([C@H](C(C1)=O)/C=C/[C@H](CCCCC)O)C/C=C\\CCCC(=O)O)C(=O)NCC(=O)O)C(=O)O '
+               'NAME: (R)-PGJ2-S-glutathione conjugate REASON: MISSED Expected '
+               '16-22 carbons, found 30\n'
+               ' * SMILES: '
+               'O[C@H]1[C@@H]([C@@H](CCCCC(O)=O)C(=O)C1)/C=C/[C@@H](O)CCCCC '
+               'NAME: 2,3-Dinor-PGE1 REASON: MISSED No characteristic '
+               'icosanoid structural patterns found\n'
+               ' * SMILES: '
+               'P(OC[C@H](OC(=O)CCCCCC[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OC[C@H](N)C(O)=O)(O)=O '
+               'NAME: PS(24:0/PGF1alpha) REASON: MISSED Expected 16-22 '
+               'carbons, found 50\n'
+               ' * SMILES: '
+               'S([C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC)C[C@H](N)C(OC[C@@H](OC(=O)CCCCCCCCCCCCCCCCC(CC)C)COP(OC[C@@H](O)CO)(O)=O)=O '
+               'NAME: PG(LTE4/a-21:0) REASON: MISSED Expected 16-22 carbons, '
+               'found 50\n'
+               ' * SMILES: '
+               'C1[C@@H]([C@@H]([C@H]([C@@H]1O)C=C[C@H](COC2=CC(=CC=C2)Cl)O)CC=CCCCC(=O)O)O '
+               'NAME: '
+               '7-[(1R,2R,3R,5S)-2-[(3R)-4-(3-chlorophenoxy)-3-hydroxybut-1-enyl]-3,5-dihydroxycyclopentyl]-5-heptenoic '
+               'acid REASON: MISSED No characteristic icosanoid structural '
+               'patterns found\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'C[C@H]1CN(C(=O)C2=C(C3=CC=CC=C3CO[C@@H]1CN(C)C(=O)NC4=CC=C(C=C4)OC)C5=CC=CC=C5N2C)[C@H](C)CO',
-                                     'name': 'LSM-30659',
-                                     'reason': 'No characteristic icosanoid '
-                                               'carbon chain found'},
-                                 {   'smiles': 'c1c[nH+]c[nH]1',
-                                     'name': 'imidazolium cation',
-                                     'reason': 'Too few oxygen atoms for an '
-                                               'icosanoid'},
-                                 {   'smiles': 'ClC=1C(O)=C2O[C@@]([C@H](NC(=O)[C@@H](NC(=O)[C@@H](NC)[C@@H](O)C(=C2)C1)C(C)=C)C(=O)N3[C@@H](C=CC3)C(=O)N/C(=C(/CC)\\C)/C(=O)N/C(=C/C(O)=O)/C(O)=O)(CC)C',
-                                     'name': 'Phomopsin A',
-                                     'reason': 'No characteristic icosanoid '
-                                               'carbon chain found'},
-                                 {   'smiles': 'ClC(Cl)[C@H](O)CC=1OC(=O)C=2C(O)=CC(=CC2C1)O',
-                                     'name': 'Desmethyldichlorodiaportin',
-                                     'reason': 'No characteristic icosanoid '
-                                               'carbon chain found'},
-                                 {   'smiles': 'ClC=1C(=C(O)C2=C(C1O)C(=O)C=CC2=O)CC=C(C)C',
-                                     'name': 'Chlorosesamone',
-                                     'reason': 'No characteristic icosanoid '
-                                               'carbon chain found'},
-                                 {   'smiles': 'O(C1C(O)C(OC(OC=2C3=C(C=CC2)C=C(C(=C3O)C(=O)C)C)C1O)CO)C4OC(C(O)C(O)C4O)CO',
-                                     'name': 'Orientaloside',
-                                     'reason': 'No characteristic icosanoid '
-                                               'carbon chain found'},
-                                 {   'smiles': 'O(C1=C(C=CC=C1C(O)=O)C)C(=O)C',
-                                     'name': 'CRESOPYRINE',
-                                     'reason': 'No characteristic icosanoid '
-                                               'carbon chain found'},
-                                 {   'smiles': 'C[C@H]1CN(S(=O)(=O)C2=C(C=C(C=C2)C#CC3=CC=NC=C3)O[C@@H]1CN(C)C(=O)NC4=CC5=C(C=C4)OCO5)[C@@H](C)CO',
-                                     'name': '3-(1,3-benzodioxol-5-yl)-1-[[(4S,5S)-2-[(2S)-1-hydroxypropan-2-yl]-4-methyl-1,1-dioxo-8-(2-pyridin-4-ylethynyl)-4,5-dihydro-3H-6,1$l^{6},2-benzoxathiazocin-5-yl]methyl]-1-methylurea',
-                                     'reason': 'No characteristic icosanoid '
-                                               'carbon chain found'},
-                                 {   'smiles': '[H][C@@]12C[C@]1(C)[C@H](O)C[C@]1(C)CC[C@@]3(C)CC[C@H](C(C)C)[C@]3([H])[C@@]21[H]',
-                                     'name': '13-epi-neoverrucosan-5beta-ol',
-                                     'reason': 'Too few oxygen atoms for an '
-                                               'icosanoid'},
-                                 {   'smiles': 'O([C@@H]1[C@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]3CO)O)O[C@@H]([C@H]1O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO)[C@H](O)[C@H]5NC(=O)C)CO)CO)[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9O)CO[C@]%10(O[C@H]([C@H](NC(=O)CO)[C@@H](O)C%10)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]8NC(=O)C)CO)CO',
-                                     'name': '(2R,4S,5R,6R)-2-[[(2R,3R,4S,5R,6S)-6-[(2R,3S,4R,5R,6S)-5-Acetamido-6-[(2R,3S,4S,5S,6R)-2-[(2S,3S,4S,5R,6R)-2-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2R,3S,4R,5R,6R)-5-acetamido-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-6-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-4-hydroxy-6-(hydroxymethyl)-5-[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-4-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-5-[(2-hydroxyacetyl)amino]-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
-                                             'acid',
-                                     'reason': 'No characteristic icosanoid '
-                                               'carbon chain found'}],
-    'sample_false_negatives': [   {   'smiles': 'O=C1OC[C@]23[C@H]4C(=O)C=5C=6C(C(=O)N(C5)[C@H](C(=O)O)CC(C)C)=C(O)C=C(C6[C@@]4(OC)[C@H]([C@@H]2OC(=O)C)C(C7=C3C1=C(O)C=C7C)=O)C',
-                                      'name': 'Talauxin L',
+    'sample_true_negatives': [],
+    'sample_false_negatives': [   {   'smiles': 'O[C@H]1[C@@H]([C@H](C(=O)C1)C/C=C\\CCCC(OC)=O)/C=C/[C@H](O)CCCCC',
+                                      'name': '15R-PGE2 methyl ester',
                                       'reason': 'No characteristic icosanoid '
-                                                'carbon chain found'},
-                                  {   'smiles': 'O=C1OC[C@]23[C@H]4C(=O)C=5C=6C(C(=O)N(C5)[C@H](C(=O)O)C(C)C)=C(O)C=C(C6[C@@]4(OC)[C@H]([C@@H]2OC(=O)C)C(C7=C3C1=C(O)C=C7C)=O)C',
-                                      'name': 'Talauxin V',
+                                                'structural patterns found'},
+                                  {   'smiles': 'O(C(C[N+](C)(C)C)CC([O-])=O)C(=O)CCC\\C=C\\CC1/C(/C(=O)C=C1)=C/C=C/CCCCC',
+                                      'name': '(5Z)-7-[(1S,5E)-5-[(2E)-Oct-2-en-1-ylidene]-4-oxocyclopent-2-en-1-yl]hept-5-enoylcarnitine',
                                       'reason': 'No characteristic icosanoid '
-                                                'carbon chain found'},
-                                  {   'smiles': 'O=C1OC[C@]23[C@H]4C(=O)C=5C=6C(C(=O)N(C5)[C@H](C(=O)O)[C@H](CC)C)=C(O)C=C(C6[C@@]4(OC)[C@H]([C@@H]2OC(=O)C)C(C7=C3C1=C(O)C=C7C)=O)C',
-                                      'name': 'Talauxin I',
+                                                'structural patterns found'},
+                                  {   'smiles': 'CCCCC(C)(CC=C[C@H]1[C@@H](CC(=O)[C@@H]1CCCCCCC(=O)OC)O)O',
+                                      'name': '7-[(1R,2R,3R)-3-hydroxy-2-(4-hydroxy-4-methyloct-1-enyl)-5-oxocyclopentyl]heptanoic '
+                                              'acid methyl ester',
                                       'reason': 'No characteristic icosanoid '
-                                                'carbon chain found'},
-                                  {   'smiles': 'O=C1OC[C@]23[C@H]4C(=O)C=5C=6C(C(=O)N(C5)[C@H](C(=O)O)CCC(=O)O)=C(O)C=C(C6[C@@]4(OC)[C@H]([C@@H]2OC(=O)C)C(C7=C3C1=C(O)C=C7C)=O)C',
-                                      'name': 'Talauxin E',
+                                                'structural patterns found'},
+                                  {   'smiles': 'P(OCC[N+](C)(C)C)(OC[C@H](OC(=O)CCC/C=C\\C[C@H]1[C@@H](O)CC(O[C@@H]1/C=C/[C@@H](O)CCCCC)O)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)([O-])=O',
+                                      'name': 'PC(24:0/TXB2)',
                                       'reason': 'No characteristic icosanoid '
-                                                'carbon chain found'}],
-    'attempt': 1,
-    'reasoning': 'Let me analyze the issues with the previous code and suggest '
-                 'improvements:\n'
+                                                'structural patterns found'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCC\\C=C\\C[C@@H]1[C@H]([C@H](O)C[C@@H]1O)/C=C/[C@@H](O)CCCCC)COC(=O)CCCCCCCCCCCCCCC)(OCC[N+](C)(C)C)([O-])=O',
+                                      'name': 'PC(16:0/PGF2alpha)',
+                                      'reason': 'No characteristic icosanoid '
+                                                'structural patterns found'},
+                                  {   'smiles': 'CCCCC[C@H](O)\\C=C\\[C@H]1[C@H](O)C[C@H](O)[C@@H]1C\\C=C/CCCCN(C)C',
+                                      'name': 'prostaglandin F2alpha '
+                                              'dimethylamine',
+                                      'reason': 'No characteristic icosanoid '
+                                                'structural patterns found'},
+                                  {   'smiles': 'CCCCC\\C=C/C[C@]1(OC(C)=O)C=CC(=O)\\C1=C\\C=C/[C@@H](CCC(=O)OC)OC(C)=O',
+                                      'name': 'clavulone I',
+                                      'reason': 'No characteristic icosanoid '
+                                                'structural patterns found'},
+                                  {   'smiles': 'C1[C@@H]([C@H]([C@H]([C@@H]1O)/C=C/[C@H](CCCCC)O[C@@H]2O[C@H](C([O-])=O)[C@H]([C@@H]([C@H]2O)O)O)C/C=C\\CCCC([O-])=O)O',
+                                      'name': '8-iso-prostaglandin '
+                                              'F2alpha-glucuronide(2-)',
+                                      'reason': 'No characteristic icosanoid '
+                                                'structural patterns found'},
+                                  {   'smiles': 'O1[C@@]2([C@@]([C@](O)([C@]3([C@]4([C@@]([C@@]5([C@@](CC4)(CC=6N=C7C[C@@]8([C@@]9([C@](C=%10[C@@]([C@]%11(O)[C@@](O[C@@]%12(OC[C@@](O)(CC%12)C)[C@H]%11C)(C%10)[H])([C@H](O)C9)C)([C@@H](O)C[C@]8(CC7=NC6C5)[H])[H])[H])C)[H])C)(CC3=O)[H])[H])C2)C)([C@@H]([C@@]1%13OC(CC%13)(C)C)C)[H])[H]',
+                                      'name': 'Ritterazine A',
+                                      'reason': 'No characteristic icosanoid '
+                                                'structural patterns found'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCC[C@@H]1[C@H]([C@H](O)CC1=O)/C=C/[C@@H](O)CCCCC)COC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)(O)(O)=O',
+                                      'name': 'PA(22:5(7Z,10Z,13Z,16Z,19Z)/PGE1)',
+                                      'reason': 'No characteristic icosanoid '
+                                                'structural patterns found'}],
+    'attempt': 4,
+    'reasoning': 'The previous code had several issues that led to a low F1 '
+                 'score:\n'
                  '\n'
-                 '1. Carbon Count Range: The previous code was too restrictive '
-                 '(15-25 carbons). Looking at the false negatives, many valid '
-                 'icosanoids are actually part of larger molecules like '
-                 'diglycerides (DG) and phosphatidylserines (PS). We should '
-                 'either:\n'
-                 '   - Ignore the carbon count restriction entirely, or\n'
-                 '   - Look for a C20 backbone specifically within larger '
-                 'molecules\n'
+                 '1. **Carbon Count Restriction**: The code strictly enforced '
+                 'a carbon count between 16-22, which excluded many valid '
+                 'icosanoids that are derivatives or conjugates with '
+                 'additional carbon atoms. This was evident in the false '
+                 'negatives where molecules with more than 22 carbons were '
+                 'incorrectly rejected.\n'
                  '\n'
-                 '2. Carboxylic Acid Requirement: Some valid icosanoids (like '
-                 "PGI2-EA and prostaglandin esters) don't have free carboxylic "
-                 "acid groups because they're derivatized. We should make this "
-                 'requirement optional.\n'
+                 '2. **Structural Pattern Matching**: The structural patterns '
+                 'used for matching (prostaglandin, leukotriene, epoxide, '
+                 'hydroperoxide) were too specific and missed many valid '
+                 'icosanoid structures. The patterns need to be more flexible '
+                 'to capture the diversity of icosanoid structures.\n'
                  '\n'
-                 '3. Missing Pattern Recognition: We should add more specific '
-                 'patterns for:\n'
-                 '   - Prostaglandin-like structures\n'
-                 '   - Characteristic spacing of double bonds\n'
-                 '   - Common modifications like hydroperoxy groups (-OOH)\n'
+                 '3. **Functional Group Detection**: The code required at '
+                 'least one of hydroxyl, carboxyl, peroxide, or ester groups, '
+                 'which might be too restrictive. Some icosanoids might have '
+                 'other oxygen-containing functional groups.\n'
                  '\n'
-                 '4. Molecular Weight: The current range (250-500) is too '
-                 'restrictive for modified icosanoids.\n'
+                 '4. **Double Bond Count**: The code required at least one '
+                 'double bond, but some icosanoids might have fewer or more '
+                 'complex bonding patterns.\n'
                  '\n'
-                 "Here's my improved version:",
+                 'To improve the code, we should:\n'
+                 '- Relax the carbon count restriction to allow for '
+                 'derivatives and conjugates.\n'
+                 '- Use more flexible structural patterns to capture a wider '
+                 'range of icosanoid structures.\n'
+                 '- Broaden the functional group detection to include more '
+                 'oxygen-containing groups.\n'
+                 '- Adjust the double bond count requirement to be more '
+                 'inclusive.\n'
+                 '\n'
+                 'Here is the revised code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 709,
-    'num_false_positives': 100,
-    'num_true_negatives': 292,
-    'num_false_negatives': 4,
+    'num_true_positives': 242,
+    'num_false_positives': 0,
+    'num_true_negatives': 0,
+    'num_false_negatives': 100,
     'num_negatives': None,
-    'precision': 0.8763906056860321,
-    'recall': 0.9943899018232819,
-    'f1': 0.9316688567674112,
-    'accuracy': 0.9058823529411765,
-    'negative_predictive_value': 0.9864864864864865}
+    'precision': 1.0,
+    'recall': 0.7076023391812866,
+    'f1': 0.8287671232876712,
+    'accuracy': 0.7076023391812866,
+    'negative_predictive_value': 0.0}

@@ -2,74 +2,39 @@
 Classifies: CHEBI:137419 secondary ammonium ion
 """
 """
-Classifies: secondary ammonium ion
+Classifies: CHEBI:39143 secondary ammonium ion
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_secondary_ammonium_ion(smiles: str):
     """
-    Determines if a molecule contains a secondary ammonium ion based on its SMILES string.
-    A secondary ammonium ion has an NH2+ group with exactly two carbons attached.
+    Determines if a molecule is a secondary ammonium ion based on its SMILES string.
+    A secondary ammonium ion has a nitrogen atom with +1 charge bonded to exactly two carbons (protonated secondary amine).
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule contains a secondary ammonium ion, False otherwise
+        bool: True if molecule is a secondary ammonium ion, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all nitrogen atoms
-    potential_ammonium = False
-    reason = "No secondary ammonium ion found"
-    
+    # Iterate through all nitrogen atoms
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 7:  # Nitrogen
-            # Check formal charge
-            if atom.GetFormalCharge() != 1:
-                continue
-                
-            # Count attached hydrogens
-            n_hydrogens = atom.GetTotalNumHs()
+        # Check for positively charged nitrogen
+        if atom.GetAtomicNum() == 7 and atom.GetFormalCharge() == 1:
+            # Count carbon neighbors
+            carbon_count = sum(1 for neighbor in atom.GetNeighbors() 
+                              if neighbor.GetAtomicNum() == 6)
             
-            # Count attached carbons
-            carbon_neighbors = sum(1 for neighbor in atom.GetNeighbors() 
-                                if neighbor.GetAtomicNum() == 6)
-            
-            # Secondary ammonium should have:
-            # - Exactly 2 hydrogens (NH2+)
-            # - Exactly 2 carbon neighbors
-            # - Formal charge of +1
-            if n_hydrogens == 2 and carbon_neighbors == 2:
-                return True, "Contains NH2+ group with exactly two carbons attached"
-            
-            # Help identify why classification failed
-            if n_hydrogens > 2:
-                reason = "Primary ammonium ion (NH3+)"
-            elif n_hydrogens == 1 and carbon_neighbors == 3:
-                reason = "Tertiary ammonium ion (NHR3+)"
-            elif n_hydrogens == 0 and carbon_neighbors == 4:
-                reason = "Quaternary ammonium ion (NR4+)"
-            elif carbon_neighbors < 2:
-                reason = f"Only {carbon_neighbors} carbon(s) attached to NH2+ group"
-            elif n_hydrogens < 2:
-                reason = f"Only {n_hydrogens} hydrogen(s) on charged nitrogen"
-                
-    return False, reason
-
-__metadata__ = {
-    'chemical_class': {
-        'name': 'secondary ammonium ion',
-        'definition': 'An organic cation obtained by protonation of any secondary amino compound; major species at pH 7.3.',
-        'parents': ['organic cation', 'ammonium ion']
-    }
-}
+            # Secondary ammonium has exactly two carbon neighbors
+            if carbon_count == 2:
+                return True, "Positively charged nitrogen with two carbon substituents"
+    
+    return False, "No secondary ammonium group (N+ with two carbons) found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:137419',
@@ -81,83 +46,115 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:137419',
                           'xrefs': ['MetaCyc:Secondary-Amines'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 23,
+                           'log_lines_of_code': 3.1354942159291497,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 1,
+                                                 1],
+                           'max_indent': 4,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'GetFormalCharge',
+                                                 'GetNeighbors',
+                                                 'MolFromSmiles',
+                                                 'GetAtomicNum',
+                                                 'GetAtoms'],
+                           'methods_called_count': 5,
+                           'smarts_strings': [],
+                           'smarts_strings_count': 0,
+                           'defs': ['is_secondary_ammonium_ion(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'True, "Positively charged nitrogen '
+                                          'with two carbon substituents"',
+                                          'False, "No secondary ammonium group '
+                                          '(N+ with two carbons) found"'],
+                           'returns_count': 3,
+                           'complexity': 3.22709884318583},
     'message': None,
-    'sample_true_negatives': [   {   'smiles': 'O=C1O[C@H]2[C@H](O[C@H](C2)C[C@H](O)C)C=3C1=C(O)C(OC)=C(OC)C3',
-                                     'name': '(12R)-12-hydroxymonocerin',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'},
-                                 {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(OCCN)(O)=O',
-                                     'name': 'PE(20:1(11Z)/16:0)',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'},
-                                 {   'smiles': 'O=C(C1=C(N)C2=C(OC(C)(C)C=C2)C=C1)C[C@@H](NC(=O)C)CO',
-                                     'name': 'Fusarochromene',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'},
-                                 {   'smiles': 'COc1cc(\\C=C\\C(=O)c2c(O)cc(O)cc2O)ccc1O',
-                                     'name': 'homoeriodictyol chalcone',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'},
-                                 {   'smiles': 'O([C@H]1[C@H](O)[C@H](O[C@@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@@H]([C@H](O)[C@@H](NC(=O)C)CO)[C@H](O)CO)[C@H]1O)CO[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](O[C@]6(O[C@H]([C@H](NC(=O)C)[C@@H](O)C6)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]5O)CO)[C@H](O)[C@H]4NC(=O)C)CO)CO)[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9NC(=O)C)CO[C@]%10(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%10)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]8NC(=O)C)CO)CO',
-                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[[(2R,3R,4R,5R,6S)-5-acetamido-6-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2R,3S,4S,5S,6R)-2-[(2R,3R,4S,5S,6S)-2-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4S,5S,6R)-4-[(2S,4S,5R,6R)-5-acetamido-2-carboxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxan-2-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-6-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2R,3S,4R,5S)-5-acetamido-1,2,4,6-tetrahydroxyhexan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,5-dihydroxyoxan-4-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4-dihydroxyoxan-2-yl]methoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
-                                             'acid',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'},
-                                 {   'smiles': 'O1C=2C(CC=C(C)C)=C(OC)C=C(O)C2C(=O)C=C1C3=CC=C(O)C=C3',
-                                     'name': 'Artonin U',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'},
-                                 {   'smiles': 'O=C(CCCCCCCCC)CCCCCC(O)=O',
-                                     'name': '7-Keto palmitic acid',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'},
-                                 {   'smiles': 'CNC(=N)NCCC[C@H]([NH3+])C([O-])=O',
-                                     'name': 'N(omega)-methyl-L-arginine '
-                                             'zwitterion',
-                                     'reason': 'Primary ammonium ion (NH3+)'},
-                                 {   'smiles': '[C@]([C@@](/C=C/CCCCCCCCCCC)(O)[H])(NC(=O)C(CCCCCCCCCCCCCCCCCCCCCC)O)([H])CO',
-                                     'name': 'N-(2-hydroxy-tetracosanoyl)-hexadecasphing-4-enine',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'},
-                                 {   'smiles': 'COc1cc2oc(-c3ccc(O)cc3O)c(CC=C(C)C)c(=O)c2c(O)c1\\C=C\\C(C)C',
-                                     'name': 'artocarpin',
-                                     'reason': 'No secondary ammonium ion '
-                                               'found'}],
+    'sample_true_negatives': [   {   'smiles': 'OC[C@H]1O[C@@H](Oc2ccc(\\C=C\\C(=O)OC[C@H]3O[C@@H](Oc4cc5c(O[C@@H]6O[C@H](COC(=O)CC(O)=O)[C@@H](O)[C@H](O)[C@H]6O)cc(O)cc5[o+]c4-c4ccc(O)c(O)c4)[C@H](O[C@@H]4OC[C@@H](O)[C@H](O)[C@H]4O)[C@@H](O)[C@@H]3O)cc2)[C@H](O)[C@@H](O)[C@@H]1O',
+                                     'name': 'cyanidin '
+                                             '3-O-[6-O-(4-O-beta-D-glucosyl-p-coumaroyl)-2-O-(beta-D-xylosyl)-beta-D-glucosyl]-5-O-(6-O-malonyl-beta-D-glucoside)',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'C1=CC(=NC2=C1C(=CC(=N2)C(F)(F)F)C(F)(F)F)NN',
+                                     'name': '[5,7-bis(trifluoromethyl)-1,8-naphthyridin-2-yl]hydrazine',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'C[C@H]1CN(S(=O)(=O)C2=C(C=C(C=C2)C#CCC(C)C)O[C@@H]1CN(C)C(=O)CC3=CN=CC=C3)[C@@H](C)CO',
+                                     'name': 'N-[[(4S,5S)-2-[(2S)-1-hydroxypropan-2-yl]-4-methyl-8-(4-methylpent-1-ynyl)-1,1-dioxo-4,5-dihydro-3H-6,1$l^{6},2-benzoxathiazocin-5-yl]methyl]-N-methyl-2-(3-pyridinyl)acetamide',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'O1C2=C(C3=C(OC)C=4C(C=C3OC)=CC=5OC(=CC(=O)C5C4O)C)C6=C(C(O)=C2C(=O)C=C1C)C(OC)=CC(OC)=C6',
+                                     'name': 'aurasperone A',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'O[C@]1([C@@H](OC)C(=O)NC2=C1C(O)=C(C=C2)/C=C/C(=C)C)C3=CC=C(OC)C=C3',
+                                     'name': 'yaequinolone E',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'CC1=C(C=CC(=C1)F)S(=O)(=O)NC2=CC=CC=C2C(=O)NCC3=CN=CC=C3',
+                                     'name': '2-[(4-fluoro-2-methylphenyl)sulfonylamino]-N-(3-pyridinylmethyl)benzamide',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'CC1=C(C=CC(=C1)O)N=CC2CCCC2=O',
+                                     'name': 'LSM-27175',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'O(CC(C1C2(C(CC1)/C(/CCC2)=C/C=C\\3/CC(O)CC(O)C3=C)C)C)C=4C=C(C=CC4)C(O)(C)C',
+                                     'name': '(1R,3S,5Z)-5-[(2Z)-2-[(1R,3Ar,7aS)-1-[(2S)-1-[3-(2-hydroxypropan-2-yl)phenoxy]propan-2-yl]-7a-methyl-2,3,3a,5,6,7-hexahydro-1H-inden-4-ylidene]ethylidene]-4-methylidenecyclohexane-1,3-diol',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'O1[C@@H]([C@H](N(CC=2N(C=CN2)C)C(=O)C1)CO)C3=CC=C(NC(=O)C(C)C)C=C3',
+                                     'name': 'N-(4-{(2r,3r)-3-(hydroxymethyl)-4-[(1-methyl-1h-imidazol-2-yl)methyl]-5-oxo-2-morpholinyl}phenyl)-2-methylpropanamide',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'},
+                                 {   'smiles': 'O=C1OC(C2=CC=C(OC)C=C2)=CC3=C1C[C@]4(O)[C@@]5([C@](O)(C([C@H](OC(=O)C)C[C@@H]5O)(C)C)CC[C@]4(O3)C)C',
+                                     'name': 'Arisugacin H',
+                                     'reason': 'No secondary ammonium group '
+                                               '(N+ with two carbons) found'}],
     'sample_false_negatives': [   {   'smiles': 'C(CC[NH3+])CC[NH+](C)C',
                                       'name': 'N,N-dimethyl-cadaverine(+2)',
-                                      'reason': 'Tertiary ammonium ion '
-                                                '(NHR3+)'}],
+                                      'reason': 'No secondary ammonium group '
+                                                '(N+ with two carbons) found'}],
     'attempt': 0,
-    'reasoning': 'Let me help create a program to classify secondary ammonium '
-                 "ions. Here's my thought process:\n"
-                 '\n'
-                 '1. A secondary ammonium ion has:\n'
-                 '   - A positively charged nitrogen (NH2+)\n'
-                 '   - Two carbon atoms attached to the nitrogen (making it '
-                 'secondary)\n'
-                 '   - The nitrogen should not have more than 2 carbons '
-                 'attached (would be tertiary)\n'
-                 '   - Not be a primary ammonium (NH3+) or quaternary ammonium '
-                 '(N+)\n'
-                 '\n'
-                 '2. Key checks needed:\n'
-                 '   - Presence of NH2+ group\n'
-                 '   - Count of carbon atoms attached to the nitrogen\n'
-                 '   - Verify charge state\n'
-                 '   - Check for correct valence\n'
-                 '\n'
-                 "Here's the implementation:",
+    'reasoning': '',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
     'num_true_positives': 26,
     'num_false_positives': 100,
-    'num_true_negatives': 37071,
+    'num_true_negatives': 16765,
     'num_false_negatives': 1,
     'num_negatives': None,
     'precision': 0.20634920634920634,
     'recall': 0.9629629629629629,
     'f1': 0.3398692810457516,
-    'accuracy': 0.9972848002580784,
-    'negative_predictive_value': 0.999973025463962}
+    'accuracy': 0.9940208382666351,
+    'negative_predictive_value': 0.9999403554813313}

@@ -1,9 +1,6 @@
 """
 Classifies: CHEBI:26658 sesquiterpenoid
 """
-"""
-Classifies: CHEBI:35189 sesquiterpenoid
-"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
@@ -11,8 +8,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_sesquiterpenoid(smiles: str):
     """
     Determines if a molecule is a sesquiterpenoid based on its SMILES string.
-    Sesquiterpenoids are terpenoids derived from sesquiterpenes (C15 skeleton),
-    possibly modified by rearrangement or removal of some carbons.
+    Sesquiterpenoids are characterized by a 15-carbon skeleton derived from three isoprene units.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,114 +17,30 @@ def is_sesquiterpenoid(smiles: str):
         bool: True if molecule is a sesquiterpenoid, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Count atoms
+    # 1. Check for 15 carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    
-    # Sesquiterpenoids should have around 15 carbons (allowing variation due to modifications)
-    if c_count < 11 or c_count > 25:
-        return False, f"Carbon count ({c_count}) outside typical range for sesquiterpenoids (11-25)"
+    if c_count != 15:
+        return False, f"Incorrect number of carbons: {c_count} (should be 15)"
 
-    # Calculate rings
+    # 2. Check for isoprene units (using SMARTS pattern).  Allow carbons to be CH2 or CH or C.
+    #   a basic branched carbon pattern can be used to detect isoprenoid structures.
+    isoprene_pattern = Chem.MolFromSmarts("[CX4]([CX4])([CX4])([CX4])")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_matches) < 2:  # Typically expect at least 2 branched centers
+            return False, f"Not branched as expected for isoprene units, only {len(isoprene_matches)} found"
+
+    # 3. Check for cyclic structures (at least one ring).
     ring_info = mol.GetRingInfo()
-    ring_count = ring_info.NumRings()
-    
-    # Most sesquiterpenoids are cyclic, but some can be linear
-    if ring_count > 5:
-        return False, f"Too many rings ({ring_count}) for a typical sesquiterpenoid"
+    if ring_info.NumRings() == 0:
+        return False, "No ring structure found"
 
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 180 or mol_wt > 600:
-        return False, f"Molecular weight ({mol_wt:.1f}) outside typical range for sesquiterpenoids"
 
-    # Count double bonds using SMARTS pattern
-    double_bond_pattern = Chem.MolFromSmarts('C=C')
-    if double_bond_pattern:
-        double_bond_count = len(mol.GetSubstructMatches(double_bond_pattern))
-    else:
-        double_bond_count = 0
-
-    # Look for typical functional groups found in sesquiterpenoids
-    functional_groups = {
-        'alcohol': '[OH1]',
-        'ketone': '[CX3](=[OX1])[CX4]',
-        'carboxylic_acid': '[CX3](=O)[OX2H1]',
-        'ester': '[#6][CX3](=O)[OX2H0][#6]',
-        'epoxide': '[C]1O[C]1',
-        'ether': '[OX2]([CX4])[CX4]'
-    }
-    
-    found_groups = []
-    for group_name, smarts in functional_groups.items():
-        pattern = Chem.MolFromSmarts(smarts)
-        if pattern and mol.HasSubstructMatch(pattern):
-            found_groups.append(group_name)
-
-    # Look for branching methyl groups - common in terpenoids
-    methyl_pattern = Chem.MolFromSmarts('[CH3]')
-    if methyl_pattern:
-        methyl_count = len(mol.GetSubstructMatches(methyl_pattern))
-    else:
-        methyl_count = 0
-
-    # Common sesquiterpenoid ring patterns
-    ring_patterns = [
-        ('[C]1[C][C][C][C][C]1', 'cyclohexane'),  # 6-membered ring
-        ('[C]1[C][C][C][C]1', 'cyclopentane'),    # 5-membered ring
-        ('[C]1[C][C][C]1', 'cyclobutane'),        # 4-membered ring
-    ]
-    
-    found_rings = []
-    for smarts, ring_name in ring_patterns:
-        pattern = Chem.MolFromSmarts(smarts)
-        if pattern and mol.HasSubstructMatch(pattern):
-            found_rings.append(ring_name)
-
-    # Scoring system
-    score = 0
-    reasons = []
-    
-    # Base score from carbon count
-    if 13 <= c_count <= 17:
-        score += 2
-        reasons.append(f"Typical sesquiterpenoid carbon count ({c_count})")
-    elif 11 <= c_count <= 25:
-        score += 1
-        reasons.append(f"Acceptable carbon count ({c_count})")
-
-    # Score from rings
-    if 1 <= ring_count <= 4:
-        score += 2
-        reasons.append(f"Typical ring count ({ring_count})")
-    elif ring_count == 0 and double_bond_count >= 2:
-        score += 1
-        reasons.append("Linear with multiple double bonds")
-
-    # Score from functional groups
-    if found_groups:
-        score += len(found_groups)
-        reasons.append(f"Contains {', '.join(found_groups)}")
-
-    # Score from methyl groups
-    if 3 <= methyl_count <= 6:
-        score += 2
-        reasons.append(f"Contains {methyl_count} methyl groups")
-    elif methyl_count > 0:
-        score += 1
-        reasons.append(f"Contains {methyl_count} methyl groups")
-
-    # Final decision
-    if score >= 4:
-        return True, "; ".join(reasons)
-    else:
-        return False, "Insufficient sesquiterpenoid characteristics"
+    return True, "Contains 15 carbons, appears to be built from isoprene units, and contains a ring."
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26658',
@@ -144,111 +56,195 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:26658',
                           'xrefs': ['LIPID_MAPS_class:LMPR0103'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               "Error: module 'rdkit.Chem.rdMolDescriptors' has no attribute "
-               "'CalcNumDoubleBonds'\n"
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: NONE\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [],
-    'sample_false_negatives': [   {   'smiles': 'O=C(O)[C@]12C(=C[C@@H]3[C@]1(C[C@H]4[C@H]([C@@]2(C=O)C3)CC[C@H]4C)CO[C@]56O[C@@H]7O[C@H]([C@@H]5O)[C@@H]([C@@H]7O6)OC(=O)C)C(C)C',
-                                      'name': 'BE-31405',
-                                      'reason': 'Carbon count (28) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': 'O=C1C2=C([C@@]3(CC[C@H]4[C@]3(C1)CO[C@@]4(CCC(=O)CC)C)C)[C@@H](OC(=O)C)C[C@H]([C@@]2(CCC(=O)O)C)C(=C)C',
-                                      'name': 'Ganoboninone H',
-                                      'reason': 'Carbon count (31) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': 'O=C1C(=O)C(=C(O)C(=C1/C=C/C2=CC=CC=C2)C3=C(O)C(=C(O)C=C3/C=C/C4=CC=CC=C4)C(C)C)C(C)C',
-                                      'name': 'Duotap-520',
-                                      'reason': 'Carbon count (34) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(C)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(C)=O)OC(C)=O',
-                                      'name': 'Triptogelin C-1',
-                                      'reason': 'Carbon count (28) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': 'O=C1[C@H]([C@]2([C@@]([C@](CC2)([C@H](C)/C=C/CC(C)C)[H])(CC1)C)[H])CCC3=C(C=CC(O)=C3)C',
-                                      'name': 'calicoferol A',
-                                      'reason': 'Carbon count (27) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': 'ClC1=C2N([C@H]3N[C@H](C(=O)O[C@@H]4[C@]5(O)[C@H](C=C([C@H]4OC(=O)C)C)[C@H](C(=C)C)CC[C@H]5C)C[C@]3(C2=CC=C1)O)C',
-                                      'name': '7-chlorofischerindoline',
-                                      'reason': 'Carbon count (29) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': 'O=C1C(=C2[C@@](CC2)(C)[C@@H]3[C@@]1(O)CC(C)(C)C3)COC(=O)CCCCCCC/C=C/CCCCCCCC',
-                                      'name': 'Atlanticone A',
-                                      'reason': 'Carbon count (33) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': 'O=C1NCCCC2NC(=O)C(C2=O)=C(O)C=CC3C(CC=C1)C4C5C(C(C(C(OC)C)C(C5)C)C6C4O6)C3',
-                                      'name': 'Ripromycin',
-                                      'reason': 'Carbon count (30) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': 'O=C1NC(OCCCC)(C)C=C1C(=O)[C@@H]2[C@@H](C(=C[C@H]3[C@@H]2[C@H](C[C@H](C3)C)C)C)/C(=C/C)/C',
-                                      'name': 'Ascosalipyrrolidinone A',
-                                      'reason': 'Carbon count (27) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'},
-                                  {   'smiles': 'O=C1OCC23C4(C5(OC5)C(OC2C=C(C)CC3)C(C4OC(=O)C=CC=CC6OC(CC(=C1)C)OC6C)O)C',
-                                      'name': 'Roridin M',
-                                      'reason': 'Carbon count (29) outside '
-                                                'typical range for '
-                                                'sesquiterpenoids (11-25)'}],
-    'attempt': 1,
-    'reasoning': 'Let me analyze the previous attempt and suggest '
-                 'improvements:\n'
+    'code_statistics': {   'lines_of_code': 28,
+                           'log_lines_of_code': 3.332204510175204,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 0,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 3,
+                           'methods_called': [   'GetSubstructMatches',
+                                                 'GetAtomicNum',
+                                                 'MolFromSmarts',
+                                                 'NumRings',
+                                                 'GetAtoms',
+                                                 'MolFromSmiles',
+                                                 'GetRingInfo'],
+                           'methods_called_count': 7,
+                           'smarts_strings': ['[CX4]([CX4])([CX4])([CX4])'],
+                           'smarts_strings_count': 1,
+                           'defs': ['is_sesquiterpenoid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Incorrect number of '
+                                          'carbons: {c_count} (should be 15)"',
+                                          'False, f"Not branched as expected '
+                                          'for isoprene units, only '
+                                          '{len(isoprene_matches)} found"',
+                                          'False, "No ring structure found"',
+                                          'True, "Contains 15 carbons, appears '
+                                          'to be built from isoprene units, '
+                                          'and contains a ring."'],
+                           'returns_count': 5,
+                           'complexity': 3.6664409020350406},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'CCN1N=C(N=N1)C2=CC=CC=C2NC(=O)C3=CC=C(C=C3)N4C=NN=N4',
+                                     'name': 'N-[2-(2-ethyl-5-tetrazolyl)phenyl]-4-(1-tetrazolyl)benzamide',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '17 (should be 15)'},
+                                 {   'smiles': 'CCS(=O)(=O)N1CC2(C1)[C@@H]([C@@H](N2C(=O)C3CCCC3)CO)C4=CC=C(C=C4)C=CC',
+                                     'name': 'LSM-38092',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '23 (should be 15)'},
+                                 {   'smiles': 'O=C/1N/C(/C(=O)N\\C1=C\\C2=CC=CC=C2)=C\\C=3N=CNC3C(C=C)(C)C',
+                                     'name': 'DeltaPLH',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '20 (should be 15)'},
+                                 {   'smiles': 'C1CCN(CC1)C(=O)C[C@H]2C[C@@H]3[C@H]([C@@H](O2)CO)OC4=C3C=C(C=C4)NC(=O)CC5CC5',
+                                     'name': 'N-[(1S,3R,4aS,9aR)-1-(hydroxymethyl)-3-[2-oxo-2-(1-piperidinyl)ethyl]-3,4,4a,9a-tetrahydro-1H-pyrano[3,4-b]benzofuran-6-yl]-2-cyclopropylacetamide',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '24 (should be 15)'},
+                                 {   'smiles': 'C[C@H]1C[C@@]2(OC(=O)c3ccccc3)[C@H]([C@H]1OC(C)=O)[C@@H](O)\\C(C)=C/C[C@H]1[C@@H](\\C=C(C)\\C2=O)C1(C)C',
+                                     'name': '(-)-(6Z,12E,2S,3S,4R,5R,9S,11S,15R)-3-acetoxy-15-benzoyloxylathyra-6,12-dien-5-ol-14-one',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '29 (should be 15)'},
+                                 {   'smiles': 'O=C1C(O)=CC=2O[C@]3([C@H](O)C[C@@H]4[C@](OC=5C=C(O)C(C=C(C5C4)C)=O)(CC=CC(C[C@H]3CC2C(=C1)C)(C)C)C)C',
+                                     'name': 'Eupenifeldin',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '33 (should be 15)'},
+                                 {   'smiles': 'O1[C@@H](O[C@@H]2[C@@H](OC[C@H]3O[C@@H](O[C@H]4[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]4CO)O[C@H]5[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]5CO[C@@H]6O[C@H]([C@@H](O)[C@@H](O)[C@@H]6O)C)O)[C@@H](O)[C@@H](O[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9NC(=O)C)CO)[C@H](O)[C@H]8NC(=O)C)CO)CO)[C@@H]3O)O[C@@H]([C@@H](O)[C@@H]2O)CO)[C@H](NC(=O)C)[C@@H](O[C@@H]%10O[C@H]([C@@H](O)[C@@H](O)[C@@H]%10O)C)[C@H](O[C@@H]%11O[C@@H]([C@H](O)[C@H](O)[C@H]%11NC(=O)C)CO)[C@H]1CO',
+                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5R,6R)-4-[(2R,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4R,5R,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4R,5R,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-(hydroxymethyl)-4-[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-[[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxymethyl]oxan-3-yl]acetamide',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '78 (should be 15)'},
+                                 {   'smiles': 'CN1C[C@@H]2C[C@H](Cn3c2cccc3=O)[C@H]1CC=C',
+                                     'name': 'Tinctorine',
+                                     'reason': 'Not branched as expected for '
+                                               'isoprene units, only 1 found'},
+                                 {   'smiles': 'CCC1=C2COC(CC2=C3C(=C(OC3=N1)C(=O)C4=CC=CC=C4)N)(C)C',
+                                     'name': 'LSM-4563',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '21 (should be 15)'},
+                                 {   'smiles': 'CN1CCN(CC1)C(=O)C[C@@H]2CC[C@H]3[C@H](O2)COC[C@@H](CN3C(=O)NC4=CC5=C(C=C4)OCO5)O',
+                                     'name': '(3R,6aS,8S,10aS)-N-(1,3-benzodioxol-5-yl)-3-hydroxy-8-[2-(4-methyl-1-piperazinyl)-2-oxoethyl]-3,4,6,6a,8,9,10,10a-octahydro-2H-pyrano[2,3-c][1,5]oxazocine-1-carboxamide',
+                                     'reason': 'Incorrect number of carbons: '
+                                               '24 (should be 15)'}],
+    'sample_false_negatives': [   {   'smiles': 'O=C1C(C2C(C3[C@](C4(C(C5(C(C(=O)C(C)(C)CC5)CC4)C)CC3)C)(C)CC2)(C)CC1OC(=O)C)(C)C',
+                                      'name': '2a-Acetoxy-3,22-stictandione',
+                                      'reason': 'Incorrect number of carbons: '
+                                                '32 (should be 15)'},
+                                  {   'smiles': 'C\\C(CO)=C/CC\\C(C)=C\\CC\\C(C)=C\\CO',
+                                      'name': '(2E,6E,10E)-omega-hydroxyfarnesol',
+                                      'reason': 'Not branched as expected for '
+                                                'isoprene units, only 0 found'},
+                                  {   'smiles': 'O(CC1=CC[C@@]2(C[C@@H](O)[C@]([C@H]2CC1)(O)C(C)C)C)C',
+                                      'name': '14-O-methyl CAF-603',
+                                      'reason': 'Incorrect number of carbons: '
+                                                '16 (should be 15)'},
+                                  {   'smiles': 'CO[C@H]1CC(=O)C([C@H]2OC(=O)C(=C)[C@@H]2CCC(C)=O)=C1C',
+                                      'name': '3-O-methyl-isosecotanapartholide',
+                                      'reason': 'Incorrect number of carbons: '
+                                                '16 (should be 15)'},
+                                  {   'smiles': 'O=C(OC[C@@]12[C@@]3([C@@]4(OC4)[C@H](O[C@@H]1C=C(C)CC2)C[C@H]3OC(=O)/C=C\\C=C\\[C@H](O)[C@H](OC(=O)C)C)C)/C=C(/CCO)\\C',
+                                      'name': "13'-Acetyltrichoverrin B",
+                                      'reason': 'Incorrect number of carbons: '
+                                                '31 (should be 15)'},
+                                  {   'smiles': 'O1C=2C=3C([N+]([O-])=C(C2C[C@H]1[C@](O)(/C=C/C=C(/CCC=C(C)C)\\C)C)C)=CC=CC3',
+                                      'name': 'Aurachin G',
+                                      'reason': 'Incorrect number of carbons: '
+                                                '25 (should be 15)'},
+                                  {   'smiles': 'OC1=C(C#CC(=C)CC/C=C(/CCC=C(C)C)\\C)C=C(O)C=C1',
+                                      'name': 'Pestalotioquinol E',
+                                      'reason': 'Incorrect number of carbons: '
+                                                '21 (should be 15)'},
+                                  {   'smiles': 'C\\C=C(\\C)C(=O)O[C@@H]1\\C=C(C)/[C@@H](O)C[C@H](OC(C)=O)\\C(C)=C/[C@H]2OC(=O)C(=C)[C@H]12',
+                                      'name': 'Eupacunin',
+                                      'reason': 'Incorrect number of carbons: '
+                                                '22 (should be 15)'},
+                                  {   'smiles': 'O=C1C(=CC2OC3[C@@]4([C@@]([C@]2([C@@H]1O)C)(C(OC(=O)C)C3)C)OC4)C',
+                                      'name': '(S)-7-hydroxytrichothecolone '
+                                              'acetate',
+                                      'reason': 'Incorrect number of carbons: '
+                                                '17 (should be 15)'},
+                                  {   'smiles': 'O=C1C=C2[C@]([C@H](CC[C@H]2OC(=O)C(CC(CC(CC)C)C)C)C)(C)C3[C@]1(O3)C(=C)CO',
+                                      'name': 'Xylarenone C',
+                                      'reason': 'Incorrect number of carbons: '
+                                                '26 (should be 15)'}],
+    'attempt': 0,
+    'reasoning': "Okay, let's break down how to classify sesquiterpenoids.\n"
                  '\n'
-                 '1. The main error was using `CalcNumDoubleBonds` which '
-                 "doesn't exist in rdMolDescriptors. We can instead use a "
-                 'SMARTS pattern to count double bonds.\n'
+                 '**Reasoning:**\n'
                  '\n'
-                 '2. Looking at the example structures provided:\n'
-                 '- They all have a C15 base skeleton (some modified)\n'
-                 '- Many contain oxygen-containing functional groups '
-                 '(alcohols, ketones, esters)\n'
-                 '- Most are cyclic with 1-4 rings\n'
-                 '- They have varying degrees of unsaturation\n'
-                 '- Some have modifications that add or remove carbons from '
-                 'the base C15 skeleton\n'
+                 'Sesquiterpenoids are a class of terpenes characterized by a '
+                 '15-carbon skeleton.  This skeleton is typically assembled '
+                 'from three isoprene units (C5H8). They often have cyclic '
+                 'structures, but can also be acyclic, and they can have '
+                 'various functional groups, including hydroxyls, ketones, '
+                 'aldehydes, esters, and epoxides. The core structure is '
+                 'important, but various rearrangements and modifications are '
+                 'allowed, such as removing methyl groups.\n'
                  '\n'
-                 '3. Improvements needed:\n'
-                 '- Fix the double bond counting\n'
-                 '- Adjust carbon count range (some examples have more carbons '
-                 'due to modifications)\n'
-                 '- Add more specific structural patterns for sesquiterpenoid '
-                 'skeletons\n'
-                 '- Consider molecular weight range adjustment\n'
-                 '- Add checks for specific ring systems common in '
-                 'sesquiterpenoids\n'
+                 "Therefore, we'll implement the function `is_sesquiterpenoid` "
+                 'as follows:\n'
+                 '1. **Check for 15 Carbon atoms:** We will verify the '
+                 'molecule contains 15 carbon atoms.\n'
+                 '2. **Check for Isoprene units:** We will look for patterns '
+                 'consistent with isoprene units, such as branched chains of '
+                 'carbons.\n'
+                 '3. **Consider Cyclic Structures:** Because they are often '
+                 'cyclic, we check for the presence of at least one ring '
+                 'structure\n'
+                 '4. **Allow Modifications:** While we need the 15 carbon '
+                 'skeleton as a foundation, the molecule can contain other '
+                 'functional groups, which will not be tested specifically.\n'
                  '\n'
-                 "Here's the improved code:",
+                 "Here's the implementation in Python:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 558,
-    'num_false_positives': 0,
-    'num_true_negatives': 0,
-    'num_false_negatives': 100,
+    'num_true_positives': 858,
+    'num_false_positives': 961,
+    'num_true_negatives': 138954,
+    'num_false_negatives': 1527,
     'num_negatives': None,
-    'precision': 1.0,
-    'recall': 0.8480243161094225,
-    'f1': 0.9177631578947368,
-    'accuracy': 0.8480243161094225,
-    'negative_predictive_value': 0.0}
+    'precision': 0.47168774051676743,
+    'recall': 0.35974842767295595,
+    'f1': 0.4081826831588963,
+    'accuracy': 0.9825158116654954,
+    'negative_predictive_value': 0.989130202660858}

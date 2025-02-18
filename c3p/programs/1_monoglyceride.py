@@ -78,6 +78,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:35759',
                           'xrefs': ['KEGG:C01885'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Error: Python argument types in\n'
                '    Mol.HasSubstructMatch(Mol, NoneType)\n'

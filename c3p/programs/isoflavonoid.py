@@ -2,68 +2,127 @@
 Classifies: CHEBI:50753 isoflavonoid
 """
 """
-Classifies: Isoflavonoids
+Classifies: Any 1-benzopyran with an aryl substituent at position 3 (isoflavonoid).
+An isoflavonoid is defined as a benzopyran (a 6‐membered pyran ring containing exactly one oxygen)
+fused to a benzene ring (6‐membered, fully aromatic, carbon only) such that an exocyclic aryl substituent
+(i.e. a 6‐membered aromatic ring not part of the fused core) is attached at the “3‐position” of the pyran.
+This code implements a heuristic that uses ring order (via RDKit’s GetSymmSSSR) so that the position
+two bonds away (clockwise from the oxygen in the ordered pyran) is taken as position 3.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_isoflavonoid(smiles: str):
     """
     Determines if a molecule is an isoflavonoid based on its SMILES string.
-    An isoflavonoid is a 1-benzopyran with an aryl substituent at the 3-position.
-
+    An isoflavonoid is defined as any 1-benzopyran with an aryl substituent at position 3.
+    
     Args:
-        smiles (str): SMILES string of the molecule
-
+        smiles (str): SMILES string of the molecule.
+        
     Returns:
-        bool: True if molecule is an isoflavonoid, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is classified as an isoflavonoid, otherwise False.
+        str: Explanation of the classification.
     """
-    
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return (None, "Invalid SMILES string")
+    if not mol:
+        return False, "Invalid SMILES string"
 
-    # Expand isoflavonoid definition: 1-benzopyran core with diverse aryl group
-    isoflavonoid_patterns = [
-        Chem.MolFromSmarts("Oc1ccc2ccccc2c1-c3ccccc3"),         # Typical isoflavonoid
-        Chem.MolFromSmarts("O=c1cc2ccccc2oc1-c3ccccc3"),        # Variant with additional ketone
-        Chem.MolFromSmarts("Oc1ccc2ccccc2c1-c3cc(O)ccc3"),      # With hydroxyl groups
-        Chem.MolFromSmarts("Oc1ccc2cc(O)cccc2c1-c3ccc(OC)cc3")  # With methoxy groups
-    ]
+    # Get basic ring information from the molecule.
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()  # each ring is a tuple of atom indices
+    if not atom_rings:
+        return False, "No rings found in the molecule"
 
-    for pattern in isoflavonoid_patterns:
-        if mol.HasSubstructMatch(pattern):
-            return True, "Matches isoflavonoid substructure with possible functional variations"
+    # Use RDKit's Symmetry-based ring finder for ordered rings.
+    # This returns RingInfo objects (as tuples representing a cyclic order)
+    rings = list(Chem.GetSymmSSSR(mol))
     
-    # Check possible higher complexity with glucose or other sugar attachments
-    sugar_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H]([C@@H]([C@H]([C@@H]([C@H]1O)O)O)O)CO")
-    if mol.HasSubstructMatch(sugar_pattern):
-        return True, "Contains potential isoflavonoid structure with sugar attachments"
+    # Build candidate benzene rings: 6-membered rings with all aromatic carbons.
+    benzene_rings = []
+    for ring in atom_rings:
+        if len(ring) == 6:
+            if all(mol.GetAtomWithIdx(idx).GetIsAromatic() and
+                   mol.GetAtomWithIdx(idx).GetAtomicNum() == 6
+                   for idx in ring):
+                benzene_rings.append(set(ring))
+    if not benzene_rings:
+        return False, "No benzene rings (6-membered, fully aromatic carbons) found."
 
-    # Check for common substituents in isoflavonoids
-    common_substituents = [
-        Chem.MolFromSmarts("CO"),  # Methoxy group
-        Chem.MolFromSmarts("C=C"), # Carbon double bonds
-        Chem.MolFromSmarts("CC(=O)O") # Acetate or ester linkages
+    # Collect candidate pyran rings from the ordered rings (from GetSymmSSSR):
+    # We require a 6-membered ring with exactly one oxygen and five carbons.
+    pyran_candidates = []  # list of tuples (ordered_ring, set(ring))
+    for cyc in rings:
+        if len(cyc) == 6:
+            atoms = [mol.GetAtomWithIdx(idx) for idx in cyc]
+            ocount = sum(1 for a in atoms if a.GetAtomicNum() == 8)
+            ccount = sum(1 for a in atoms if a.GetAtomicNum() == 6)
+            if ocount == 1 and ccount == 5:
+                pyran_candidates.append( (list(cyc), set(cyc)) )
+    if not pyran_candidates:
+        return False, "No candidate pyran ring (6-membered with exactly one oxygen) found."
+    
+    # Now try to detect a fused benzopyran system with the correct exocyclic substitution.
+    for ordered_pyran, pyran_set in pyran_candidates:
+        # Look for a fused benzene ring which shares 2 or 3 atoms with the pyran.
+        for benzene in benzene_rings:
+            shared = pyran_set.intersection(benzene)
+            if len(shared) in (2, 3):
+                fused_core = pyran_set.union(benzene)
+                # Try to locate the oxygen atom in the ordered pyran ring.
+                oxygen_index = None
+                for i, idx in enumerate(ordered_pyran):
+                    atom = mol.GetAtomWithIdx(idx)
+                    if atom.GetAtomicNum() == 8:
+                        oxygen_index = i
+                        break
+                if oxygen_index is None:
+                    continue  # should not occur as we filtered for one oxygen
+
+                # In a typical 1-benzopyran, the heterocyclic numbering (starting at the oxygen as 1)
+                # implies that the atom two positions away (clockwise) is at position 3.
+                candidate_pos = ordered_pyran[(oxygen_index + 2) % 6]
+                # If this candidate atom is already in the fused interface, skip it.
+                if candidate_pos in shared:
+                    # It would be fused with the benzene, not free for exocyclic substitution.
+                    continue
+
+                candidate_atom = mol.GetAtomWithIdx(candidate_pos)
+                # Look for neighbors of candidate_atom that are not in the pyran ring.
+                for nbr in candidate_atom.GetNeighbors():
+                    if nbr.GetIdx() in pyran_set:
+                        continue  # Skip connections within the pyran
+                    # For an aryl substituent, the neighbor should be an aromatic carbon.
+                    if nbr.GetAtomicNum() != 6 or not nbr.GetIsAromatic():
+                        continue
+                    # Now check that this neighbor participates in a 6-membered aromatic ring (phenyl-like)
+                    found_aryl_ring = False
+                    for ring in atom_rings:
+                        if len(ring) == 6 and nbr.GetIdx() in ring:
+                            if all(mol.GetAtomWithIdx(i).GetIsAromatic() and mol.GetAtomWithIdx(i).GetAtomicNum() == 6 
+                                   for i in ring):
+                                # Ensure this ring is not completely part of the fused benzopyran core.
+                                if not set(ring).issubset(fused_core):
+                                    found_aryl_ring = True
+                                    break
+                    if found_aryl_ring:
+                        return True, ("Molecule contains a fused benzopyran core (6-membered pyran with one oxygen fused "
+                                      "with a benzene ring sharing 2–3 atoms) and an exocyclic aryl substituent attached at "
+                                      "the position expected to be position 3.")
+    # If we have exhausted the candidates without a positive identification.
+    return False, "Scaffold not recognized as isoflavonoid (no fused benzopyran core with an aryl substituent at position 3 found)."
+
+# Example usage (for testing purposes – you may run several SMILES strings):
+if __name__ == '__main__':
+    test_smiles = [
+        # Some test SMILES examples (these do not cover full complexity)
+        "O1C(C2=CC=CC=C2)=CC(O)=C1",  # simple benzopyran (may lack the proper substitution)
+        "COc1ccc(-c2coc3ccccc3c2)cc1"  # a rough example of benzopyran with a phenyl substituent.
     ]
-
-    for substituent in common_substituents:
-        if mol.HasSubstructMatch(substituent):
-            return True, "Contains functional group common in isoflavonoids"
-
-    return False, "Does not contain the necessary isoflavonoid structure or functional groups"
-
-# Example validation
-examples = [
-    "COc1ccc(cc1)C1COc2cc(O)cc(O)c2C1=O",  # 2,3-dihydrobiochanin A
-    "CC(C)=CCc1cc(ccc1O)-c1coc2cc(O)ccc2c1=O"  # neobavaisoflavone
-]
-
-for e in examples:
-    result, reason = is_isoflavonoid(e)
-    print(f"SMILES: {e}, Result: {result}, Reason: {reason}")
+    for smi in test_smiles:
+        res, reason = is_isoflavonoid(smi)
+        print(f"SMILES: {smi}\nResult: {res}\nReason: {reason}\n")
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:50753',
@@ -81,407 +140,639 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:50753',
                                        'Wikipedia:Isoflavonoid'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 68,
+                           'log_lines_of_code': 4.219507705176107,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 6,
+                                                 6,
+                                                 4,
+                                                 5,
+                                                 0,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2],
+                           'max_indent': 6,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetAtomWithIdx',
+                                                 'union',
+                                                 'append',
+                                                 'GetSymmSSSR',
+                                                 'MolFromSmiles',
+                                                 'GetAtomicNum',
+                                                 'GetIsAromatic',
+                                                 'GetRingInfo',
+                                                 'intersection',
+                                                 'AtomRings'],
+                           'methods_called_count': 10,
+                           'smarts_strings': [],
+                           'smarts_strings_count': 0,
+                           'defs': ['is_isoflavonoid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No rings found in the '
+                                          'molecule"',
+                                          'False, "No benzene rings '
+                                          '(6-membered, fully aromatic '
+                                          'carbons) found."',
+                                          'False, "No candidate pyran ring '
+                                          '(6-membered with exactly one '
+                                          'oxygen) found."',
+                                          'False, "Scaffold not recognized as '
+                                          'isoflavonoid (no fused benzopyran '
+                                          'core with an aryl substituent at '
+                                          'position 3 found)."'],
+                           'returns_count': 5,
+                           'complexity': 5.243901541035221},
     'message': '\n'
-               'Attempt failed: F1 score of 0.8172484599589322 is too low.\n'
+               'Attempt failed: F1 score of 0.18562144597887897 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: COc1ccc(cc1)C1COc2cc(O)cc(O)c2C1=O '
-               'NAME: 2,3-dihydrobiochanin A REASON: CORRECT Contains '
-               'isoflavonoid structure with methoxy group\n'
+               'True positives: SMILES: '
+               'O=C1C(=C(OC=2C1=C(C(O)=C(O)C2)C(=O)O)OC)C3=C(C=4OC5=C(C(=C(O)C(=C5)O)C(=O)O)C(C4C=C3C(=O)C)=O)C(=O)C '
+               "NAME: (aR)-2'-methoxyvinaxanthone REASON: CORRECT Molecule "
+               'contains a fused benzopyran core (a six-membered pyran with '
+               'one oxygen fused with a benzene ring sharing 2–3 atoms) with '
+               'an exocyclic aryl substituent.\n'
                ' * SMILES: '
-               'O(C1C(O)C(O)C(OC1OC2=CC=3OC=C(C(=O)C3C=C2)C4=CC=C(OC)C=C4)CO)C5OCC(O)(C5O)CO '
-               'NAME: Formononetin 7-O-apiosyl-(1->2)-glucoside REASON: '
-               'CORRECT Contains isoflavonoid structure with methoxy group\n'
-               ' * SMILES: [H][C@]1(COc2cc(C)ccc2[C@H]1O)c1ccccc1OC NAME: '
-               'conferol B REASON: CORRECT Contains isoflavonoid structure '
-               'with methoxy group\n'
+               'S(OC1=CC=2OC=C(C3=CC=C(O[C@H]4O[C@H](C(O)[C@@H](O)C4O)C(O)=O)C=C3)C(=O)C2C=C1)(O)(=O)=O '
+               "NAME: daidzein 4'-glucuronide-7-sulfate REASON: CORRECT "
+               'Molecule contains a fused benzopyran core (a six-membered '
+               'pyran with one oxygen fused with a benzene ring sharing 2–3 '
+               'atoms) with an exocyclic aryl substituent.\n'
                ' * SMILES: '
-               'O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC2=C(OC)C=C3C(OC=C(C3=O)C4=CC=C(OC)C=C4)=C2)CO '
-               'NAME: Wistin REASON: CORRECT Contains isoflavonoid structure '
-               'with methoxy group\n'
-               ' * SMILES: '
-               'Oc1ccc-2c(c1)[C@@H]1Oc3ccccc3[C@H]3CC(=O)c4c(O)cc(O)c-2c4[C@@H]13 '
-               'NAME: Ohioensin-A REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: '
-               'O1C2=C(C(=O)C(C3=CC=C(OC)C=C3)=C1)C=CC(OCC=C(C)C)=C2 NAME: '
-               'Maximaisoflavone J REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: O=C1[C@H](COc2ccccc12)c1ccccc1 NAME: '
-               '(3S)-isoflavanone REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: '
-               'O1C(C=CC2=C1C=CC(C=3C(=O)C=4C(O)=C(CCC(O)(C)C)C(O)=CC4OC3)=C2O)(C)C '
-               'NAME: Kanzonol T REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: COc1cc(O)c2c(c1)occ(-c1ccc(O)cc1)c2=O NAME: '
-               'prunetin REASON: CORRECT Contains isoflavonoid structure with '
-               'methoxy group\n'
-               ' * SMILES: COc1ccc(cc1)-c1coc2cc(OC)c(OC)c(OC)c2c1=O NAME: '
-               "5,6,7,4'-tetramethoxyisoflavone REASON: CORRECT Contains "
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: Oc1ccc(cc1)-c1coc2cc3OCOc3c(O)c2c1=O NAME: irilone '
-               'REASON: CORRECT Contains isoflavonoid structure with methoxy '
-               'group\n'
-               ' * SMILES: '
-               'O1C(C=CC2=C1C=C(O)C3=C2OC=C(C4=CC5=C(OC(C=C5)(C)C)C=C4)C3=O)(C)C '
-               'NAME: Ulexone B REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: O=C1C2=C(OC[C@@]1(O)C3=CC=C(O)C=C3)C=C(O)C=C2O '
-               'NAME: Dothideoisoflavanone REASON: CORRECT Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'O1C([C@@H](O)[C@H](O)C(O)[C@@H]1OC2=CC=3OCC(CC3C=C2)C4=C(O)C(OC)=C(OC)C=C4)CO '
-               'NAME: Isomucronulator 7-O-glucoside REASON: CORRECT Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'O=C1C(C2=CC=C(O[C@@H]3O[C@H]([C@H](O)[C@H]([C@H]3O)OC)C)C=C2)=COC4=C1C=CC(=C4)O[C@@H]5O[C@H]([C@H](O)[C@H]([C@H]5O)OC)C '
-               'NAME: Termisoflavone C REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
+               'O1C2=C(CC=C(C)C)C(O)=CC(O)=C2C(=O)C(C3=CC=C(OC)C=C3)=C1 NAME: '
+               'Gancaonin M REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
                ' * SMILES: '
                'O1C(C(O)CC=2C1=C(C=CC2O)C=3C(=O)C4=C(OC3)C=C(O)C(=C4O)CC=C(C)C)(C)C '
-               'NAME: Lupinisolone C REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
+               'NAME: Lupinisolone C REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
                ' * SMILES: '
-               'O1C(C(O)C(O)C(O)C1OC2=CC=3OCC(CC3C=C2)C4=C(O)C=C(OC)C=C4)CO '
-               'NAME: Vestitone 7-glucoside REASON: CORRECT Contains '
-               'isoflavonoid structure with methoxy group\n'
+               'O1[C@H]([C@@H](O)C(O)C(O)[C@@]1(C=2C=3OC=C(C(=O)C3C=CC2O)C4=CC=C(O)C=C4)[H])CO[C@@H]5OC[C@@H](O)[C@H](O)C5O '
+               'NAME: Pueraria glycoside 2 REASON: CORRECT Molecule contains a '
+               'fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
+               ' * SMILES: CC1(C)Oc2ccc(cc2C=C1)-c1coc2cc(O)cc(O)c2c1=O NAME: '
+               'isoderrone REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
                ' * SMILES: '
-               'O1[C@@H](OC2=CC=3OC[C@@H](CC3C=C2)C4=CC=C(O)C=C4)[C@H](O)[C@@H](O)[C@H](O)[C@H]1C(O)=O '
-               'NAME: Equol 7-O-glucuronide REASON: CORRECT Contains '
-               'isoflavonoid structure with methoxy group\n'
+               'COc1cc2OC[C@H](Cc2c(OC)c1CC=C(C)C)c1ccc(O)c(CC=C(C)C)c1O NAME: '
+               'licorisoflavan A REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
                ' * SMILES: '
-               'O1C(C(O)C(O)C(O)C1C(O)=O)C(C(OCC2OC(OC=3C=C4OC=C(C(=O)C4=C(O)C3)C5=CC=C(OC)C=C5)C(O)C(O)C2O)=O)C(OC)=O '
+               'O=C1C2=C(OC=C1C3=CC=C(O)C=C3)C=C(O[C@@H]4OC(C(OC)[C@H]([C@@H]4O)O)CO)C=C2O '
                'NAME: '
-               '3,4,5-trihydroxy-6-{1-methoxy-1,3-dioxo-3-[(3,4,5-trihydroxy-6-{[5-hydroxy-3-(4-methoxyphenyl)-4-oxo-4H-chromen-7-yl]oxy}oxan-2-yl)methoxy]propan-2-yl}oxane-2-carboxylic '
-               'acid REASON: CORRECT Contains isoflavonoid structure with '
-               'methoxy group\n'
-               ' * SMILES: O1C(C(C2=C1C=C3OCC(CC3=C2)C4=C(O)C=C(O)C=C4)(C)C)C '
-               'NAME: Cyclomillinol REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: O=C1C2=C(OC=C1C3=CC=C(O)C=C3)C(OC)=C(O)C=C2O NAME: '
-               'Psi-tectorigenin REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: C1Oc2ccccc2C[C@H]1c1ccccc1 NAME: (S)-isoflavan '
-               'REASON: CORRECT Contains isoflavonoid structure with methoxy '
-               'group\n'
+               '5,7,4′-trihydroxyisoflavone-7-O-(4′′-O-methyl)-beta-D-glucopyranoside '
+               'REASON: CORRECT Molecule contains a fused benzopyran core (a '
+               'six-membered pyran with one oxygen fused with a benzene ring '
+               'sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
                ' * SMILES: '
-               'O1C(C=CC=2C1=C(C=3OC=C(C(=O)C3C2O)C4=CC(O)=C(O)C=C4)CC=C(C)C)(C)C '
-               'NAME: Auriculasin REASON: CORRECT Contains isoflavonoid '
-               'structure with methoxy group\n'
+               'OC[C@H]1O[C@@H](Oc2cc(O)c3c(c2)occ(-c2ccc(O)cc2)c3=O)[C@H](O)[C@@H](O)[C@@H]1O '
+               'NAME: genistein 7-O-beta-D-glucoside REASON: CORRECT Molecule '
+               'contains a fused benzopyran core (a six-membered pyran with '
+               'one oxygen fused with a benzene ring sharing 2–3 atoms) with '
+               'an exocyclic aryl substituent.\n'
+               ' * SMILES: CC(C)(O)CCc1cc(ccc1O)-c1coc2cc(O)cc(O)c2c1=O NAME: '
+               'isowigtheone hydrate REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
                ' * SMILES: '
-               'CC(C)=CCc1c(O)c2c(occ(-c3ccc(O)cc3)c2=O)c2C=CC(C)(C)Oc12 NAME: '
-               'Osajin REASON: CORRECT Contains isoflavonoid structure with '
-               'methoxy group\n'
+               'O1C(C(O)C(O)C(O)C1OC2=CC=3OC=C(C(=O)C3C=C2)C4=CC=C(O)C=C4)COC(=O)C '
+               'NAME: '
+               '[6-[3-(4-Hydroxyphenyl)-4-oxidanylidene-chromen-7-yl]oxy-3,4,5-tris(oxidanyl)oxan-2-yl]methyl '
+               'ethanoate REASON: CORRECT Molecule contains a fused benzopyran '
+               'core (a six-membered pyran with one oxygen fused with a '
+               'benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: Oc1ccc(C2COc3cc(O)cc(O)c3C2=O)c(O)c1 NAME: '
+               '(+-)-dalbergioidin REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
                ' * SMILES: '
-               'O1CC(CC2=C1C3=C(OC(C=C3)(C)C)C=C2)C4=C(OC)C=C(O)C=C4 NAME: '
-               "2'-O-Methylglabridin REASON: CORRECT Contains isoflavonoid "
-               'structure with methoxy group\n'
+               'COc1cc2c(cc1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)occ(-c1ccc(O)cc1)c2=O '
+               'NAME: glycitin REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: '
+               'O=C1C(C2=CC=C(O)C=C2)=COC3=C1C=C(OC)C(=C3)O[C@@H]4O[C@H]([C@H](O)[C@H]([C@H]4O)O)C '
+               'NAME: 6-O-methyl-7-O-alpha-rhamnopyranosyldaidzein REASON: '
+               'CORRECT Molecule contains a fused benzopyran core (a '
+               'six-membered pyran with one oxygen fused with a benzene ring '
+               'sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'O1C([C@@H](O)[C@H](O)C(O)[C@@H]1OC2=CC=3OC=C(C(=O)C3C=C2)C4=C(O)C(OC)=C(OC)C=C4)CO '
+               "NAME: 7,2'-Dihydroxy-3',4'-dimethoxyisoflavone 7-O-glucoside "
+               'REASON: CORRECT Molecule contains a fused benzopyran core (a '
+               'six-membered pyran with one oxygen fused with a benzene ring '
+               'sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: O1C[C@@H]([C@H](O)C2=C1C=C(O)C=C2)C3=CC=C(O)C=C3 '
+               'NAME: cis-4-Hydroxyequol REASON: CORRECT Molecule contains a '
+               'fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
+               ' * SMILES: '
+               'O=C1C(C2=CC=C(O)C=C2)=COC3=C1C=CC(=C3)OC4O[C@H]([C@H](O)[C@H]([C@H]4OC)O)C '
+               'NAME: Daidzein G3 REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: '
+               'Oc1ccc-2c(c1)[C@@H]1Oc3ccccc3[C@H]3CC(=O)c4c(O)cc(O)c-2c4[C@@H]13 '
+               'NAME: Ohioensin-A REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: '
+               'O1CC(C=2C=C(C/C=C(/CCC=C(C)C)\\C)C(O)=CC2O)C(=O)C3=C1C=C(O)C(=C3O)CC=C(C)C '
+               'NAME: Sophoraisoflavanone D REASON: CORRECT Molecule contains '
+               'a fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
+               ' * SMILES: O1C2=C(C(=O)C(C3=CC(OC)=C(OC)C=C3)=C1)C=CC=4OCOC24 '
+               'NAME: Maximaisoflavone D REASON: CORRECT Molecule contains a '
+               'fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
+               ' * SMILES: '
+               'O1C(C(O)CC2=C1C=C3OC(=O)C(=CC3=C2OC)C4=C(O)C=C(O)C=C4)(C)C '
+               'NAME: Isolicopyranocoumarin REASON: CORRECT Molecule contains '
+               'a fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
+               ' * SMILES: O1C2=C(C(=O)C(C3=CC(=C(O)C=C3)C=O)=C1)C=CC(O)=C2 '
+               'NAME: Corylinal REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: COc1cc2OC[C@H](Cc2c(OC)c1CC=C(C)C)c1ccc(O)cc1O '
+               'NAME: glyasperin D REASON: CORRECT Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: '
+               'S(OC1=CC=C(C=2C(=O)C=3C(OC2)=CC(O[C@@H]4O[C@@H]([C@@H](O)[C@H](O)[C@H]4O)C([O-])=O)=CC3[O-])C=C1)(O)(=O)=O.[Na+].[Na+] '
+               "NAME: genistein 7-glucuronide-4'-sulfate REASON: CORRECT "
+               'Molecule contains a fused benzopyran core (a six-membered '
+               'pyran with one oxygen fused with a benzene ring sharing 2–3 '
+               'atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'O1CC(O)(C2=C(OC)C(=C(OC)C=C2)CC=C(C)C)C(=O)C=3C1=CC(O)=CC3O '
+               'NAME: (+)-echinoisoflavanone REASON: CORRECT Molecule contains '
+               'a fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
                'False positives: SMILES: '
-               'C=1(OC)C2=C(C=C3C[C@H]([C@](CC=4C=C(OC)C(OC)=C(C4C13)OC)(C)O)C)OCO2 '
-               'NAME: Besigomsin REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
+               'O1C([C@H](O)C(O)[C@H](O)[C@@H]1OC2=CC=C(C=C2)C=3OC4=C(C(=O)C3O)C(OC)=C(O)C(O)=C4)C '
+               'NAME: Vogelin REASON: WRONGLY CLASSIFIED Molecule contains a '
+               'fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
                ' * SMILES: '
-               '[H][C@@]1(COC(C)(C)[C@@]1([H])OC(=O)\\C=C\\c1ccccc1)c1c(O)ccc2C(=O)C[C@H](Oc12)c1ccccc1 '
-               'NAME: (+)-tephrorin B REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: Cl.OC[C@H]1O[C@@H]2[C@@H](Oc3nc(=N)ccn23)[C@@H]1O '
-               'NAME: ancitabine hydrochloride REASON: WRONGLY CLASSIFIED '
-               'Contains isoflavonoid structure with methoxy group\n'
+               'O=C1O[C@H]2[C@H](O)[C@@H](O)C(O)O[C@@H]2COC(=O)C3=C(C(O)=C(O)C(=C3)O)C4=C5C=6C7=C(C(C8=C1C=C(O)C(=C8O)O)=C(O)C(O)=C7OC5=O)C(=O)OC6C(O)=C4O '
+               'NAME: Punicalin REASON: WRONGLY CLASSIFIED Molecule contains a '
+               'fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
                ' * SMILES: '
-               'C[C@@H]1CN(S(=O)(=O)C2=C(C=C(C=C2)C3=CC=CC(=C3)C#N)O[C@H]1CN(C)C(=O)C4=CC=NC=C4)[C@H](C)CO '
+               'CC(C)=CCC\\C(C)=C\\Cc1c(O)c(O)ccc1[C@@H]1CC(=O)c2c(O1)cc(O)c(CC=C(C)C)c2O '
+               'NAME: nymphaeol C REASON: WRONGLY CLASSIFIED Molecule contains '
+               'a fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
+               ' * SMILES: '
+               'O1[C@@H]([C@@H](O)C(OC(=O)/C=C/C2=CC=C(O)C=C2)C(O)[C@@H]1OC3=C(OC=4C(C3=O)=C(O)C=C(O)C4)C5=CC(O)=C(O)C=C5)COC(=O)/C=C/C6=CC=C(O)C=C6 '
+               "NAME: Quercetin 3-(3'',6''-di-p-coumarylglucoside) REASON: "
+               'WRONGLY CLASSIFIED Molecule contains a fused benzopyran core '
+               '(a six-membered pyran with one oxygen fused with a benzene '
+               'ring sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'O1C(C=2C(OC)=CC(OC)=C(OC)C2)=C(O)C(=O)C=3C1=CC(O)=CC3O NAME: '
+               "3,5,7-Trihydroxy-2',4',5'-trimethoxyflavone REASON: WRONGLY "
+               'CLASSIFIED Molecule contains a fused benzopyran core (a '
+               'six-membered pyran with one oxygen fused with a benzene ring '
+               'sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'S(OC1C(COC=2C1=C(O)C=C(O)C2)C3=C(O)C=C(OC)C=C3)(O)(=O)=O NAME: '
+               '[5,7-dihydroxy-3-(2-hydroxy-4-methoxyphenyl)-3,4-dihydro-2H-1-benzopyran-4-yl]oxidanesulfonic '
+               'acid REASON: WRONGLY CLASSIFIED Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: '
+               'CCC1=CC=CC=C1NC(=O)COC2=CC3=C(C=C2)OC(=CC3=O)C4=CC=C(C=C4)OC '
                'NAME: '
-               'N-[[(4R,5R)-8-(3-cyanophenyl)-2-[(2R)-1-hydroxypropan-2-yl]-4-methyl-1,1-dioxo-4,5-dihydro-3H-6,1$l^{6},2-benzoxathiazocin-5-yl]methyl]-N-methyl-4-pyridinecarboxamide '
-               'REASON: WRONGLY CLASSIFIED Contains isoflavonoid structure '
-               'with methoxy group\n'
+               'N-(2-ethylphenyl)-2-[[2-(4-methoxyphenyl)-4-oxo-1-benzopyran-6-yl]oxy]acetamide '
+               'REASON: WRONGLY CLASSIFIED Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
                ' * SMILES: '
-               'C[C@@H]1CCCCO[C@@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)NC(=O)NC(C)C)[C@H](C)CO)C)CN(C)C '
+               'O[C@@H]1[C@H](OC2=C(C=CC(O)=C2)C1=O)C1=CC=C(O)C(O)=C1 NAME: '
+               '(+)-trans-fustin REASON: WRONGLY CLASSIFIED Molecule contains '
+               'a fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
+               ' * SMILES: '
+               'O1C2(OC3=C(C(C2O)C4=C1C=C(O)C5=C4OC(C(O)C5)C6=CC(OC)=C(O)C=C6)C(O)=C(C7C(O)C(OC=8C7=C(O)C=C(O)C8)C9=CC(O)=C(O)C=C9)C(O)=C3)C%10=CC(O)=C(O)C=C%10 '
                'NAME: '
-               '1-[(3R,9S,10R)-9-[(dimethylamino)methyl]-12-[(2R)-1-hydroxypropan-2-yl]-3,10-dimethyl-13-oxo-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-16-yl]-3-propan-2-ylurea '
-               'REASON: WRONGLY CLASSIFIED Contains isoflavonoid structure '
-               'with methoxy group\n'
+               '5-(3,4-dihydroxyphenyl)-18-[2-(3,4-dihydroxyphenyl)-3,5,7-trihydroxy-3,4-dihydro-2H-1-benzopyran-4-yl]-13-(4-hydroxy-3-methoxyphenyl)-4,12,14-trioxapentacyclo[11.7.1.0?,??.0?,?.0??,??]henicosa-2(11),3(8),9,15(20),16,18-hexaene-6,9,17,19,21-pentol '
+               'REASON: WRONGLY CLASSIFIED Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: Cc1c(O)c(C)c2O[C@@H](CC(=O)c2c1O)c1ccccc1O NAME: '
+               "(2S)-2'-hydroxydemethoxymatteucinol REASON: WRONGLY CLASSIFIED "
+               'Molecule contains a fused benzopyran core (a six-membered '
+               'pyran with one oxygen fused with a benzene ring sharing 2–3 '
+               'atoms) with an exocyclic aryl substituent.\n'
                ' * SMILES: '
-               'O[C@@H]1Cc2c(O)cc3O[C@@]4(C[C@@H](c5c(O)cc(O)cc5O4)c3c2O[C@@H]1c1ccc(O)cc1)c1ccc(O)cc1 '
-               'NAME: mahuannin D REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
+               'O1C2=C(C(OC=3C2=CC(O)=C(OC)C3)C=C(C)C)C(=O)C=4C1=C(CC=C(C)C)C(O)=CC4O '
+               'NAME: Cycloaltilisin REASON: WRONGLY CLASSIFIED Molecule '
+               'contains a fused benzopyran core (a six-membered pyran with '
+               'one oxygen fused with a benzene ring sharing 2–3 atoms) with '
+               'an exocyclic aryl substituent.\n'
+               ' * SMILES: O=C1C2=C(OC3=C1C(C(=O)OC)=CC=C3)C=C(CCO)C=C2O NAME: '
+               '1-hydroxy-3-hydroxyethyl-8-ethoxycarbonylxanthone REASON: '
+               'WRONGLY CLASSIFIED Molecule contains a fused benzopyran core '
+               '(a six-membered pyran with one oxygen fused with a benzene '
+               'ring sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
                ' * SMILES: '
-               'CN1[C@@H]([C@H]2CCN([C@H]2C3=C1C=CC(=C3)C#CC4=CC=C(C=C4)OC)C(=O)NC5=CC=C(C=C5)C(F)(F)F)CO '
+               'O1[C@@H]([C@@H](O)C(O)C(O)[C@@H]1OC2=C(OC3=C(C2=O)C(OC)=CC(O)=C3)C4=CC(O)=C(O)C=C4)CO '
+               'NAME: Azaleatin 3-glucoside REASON: WRONGLY CLASSIFIED '
+               'Molecule contains a fused benzopyran core (a six-membered '
+               'pyran with one oxygen fused with a benzene ring sharing 2–3 '
+               'atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'S(C1C(O)C(OC2=C1C=3OC(=O)C=C(C3C(O)=C2)C4=CC=CC=C4)(C)C)CC(NC(=O)CCC(N)C(O)=O)C(=O)NCC(O)=O '
                'NAME: '
-               '(3aS,4S,9bR)-4-(hydroxymethyl)-8-[2-(4-methoxyphenyl)ethynyl]-5-methyl-N-[4-(trifluoromethyl)phenyl]-3,3a,4,9b-tetrahydro-2H-pyrrolo[3,2-c]quinoline-1-carboxamide '
-               'REASON: WRONGLY CLASSIFIED Contains isoflavonoid structure '
-               'with methoxy group\n'
+               '2-amino-4-({1-[(carboxymethyl)-C-hydroxycarbonimidoyl]-2-({5,9-dihydroxy-8,8-dimethyl-2-oxo-4-phenyl-2H,8H,9H,10H-pyrano[2,3-h]chromen-10-yl}sulfanyl)ethyl}-C-hydroxycarbonimidoyl)butanoic '
+               'acid REASON: WRONGLY CLASSIFIED Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: CC(C)(C=C)c1c(O)cc(O)c2c1oc(-c1ccccc1)c(O)c2=O '
+               'NAME: 8-(1,1-dimethylallyl)galangin REASON: WRONGLY CLASSIFIED '
+               'Molecule contains a fused benzopyran core (a six-membered '
+               'pyran with one oxygen fused with a benzene ring sharing 2–3 '
+               'atoms) with an exocyclic aryl substituent.\n'
                ' * SMILES: '
-               'C[C@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)C3=CC=C(C=C3)OC)C(=O)N(C[C@@H]1OC)C)C)C '
+               'O1C2=C(C(OC)=CC(OCC=C(C)C)=C2OC)C(=O)C(OC)=C1C3=CC(OC)=C(O)C=C3 '
+               "NAME: 4'-Hydroxy-3,5,8,3'-tetramethoxy-7-prenyloxyflavone "
+               'REASON: WRONGLY CLASSIFIED Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
+               ' * SMILES: CC1=CC(=CC2=C1C(C3=C(C(=C(C(=C3O2)Cl)OC)Cl)O)=O)OC '
+               'NAME: 2,4-dichlorolichexanthone REASON: WRONGLY CLASSIFIED '
+               'Molecule contains a fused benzopyran core (a six-membered '
+               'pyran with one oxygen fused with a benzene ring sharing 2–3 '
+               'atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'O1C([C@@H](O)[C@H](O)C(O)[C@@H]1OC=2C=3C(C=4C(O)=CC(O)=C(O)C4)=CC(OC3C=C(OC)C2)=O)CO '
+               "NAME: 5,2',4',5'-Tetrahydroxy-7-methoxy-4-phenylcoumarin "
+               '5-O-glucoside REASON: WRONGLY CLASSIFIED Molecule contains a '
+               'fused benzopyran core (a six-membered pyran with one oxygen '
+               'fused with a benzene ring sharing 2–3 atoms) with an exocyclic '
+               'aryl substituent.\n'
+               ' * SMILES: '
+               'O1[C@@H]([C@H](O)[C@H](O)[C@@H](O)C1OC2=C(OC=3C(C2=O)=C(O)C=C(O)C3)C4=CC(OC)=C(O)C=C4)CO[C@@]5(O[C@H]([C@H](O)[C@@H](O)[C@H]5O)C)[H] '
+               'NAME: isorhamnetin 3-O-robinobioside REASON: WRONGLY '
+               'CLASSIFIED Molecule contains a fused benzopyran core (a '
+               'six-membered pyran with one oxygen fused with a benzene ring '
+               'sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'C[C@@H]1O[C@@H](Oc2cc(O)c3c(c2)oc(-c2ccc(O)c(O)c2)c(O)c3=O)[C@H](O)[C@H](O)[C@H]1O '
+               'NAME: quercetin 7-O-alpha-L-rhamnopyranoside REASON: WRONGLY '
+               'CLASSIFIED Molecule contains a fused benzopyran core (a '
+               'six-membered pyran with one oxygen fused with a benzene ring '
+               'sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'O1[C@H]([C@H](O)[C@@H](O)[C@H]1OC=2C(=[O+]C=3C(C2)=C(O)C=C(O)C3)C4=CC(O)=C(O)C=C4)CO '
+               'NAME: Cyanidin 3-O-arabinoside REASON: WRONGLY CLASSIFIED '
+               'Molecule contains a fused benzopyran core (a six-membered '
+               'pyran with one oxygen fused with a benzene ring sharing 2–3 '
+               'atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: CC(C)OC1=CC2=C(C=C1)C(=O)C3=C(O2)C=CC(=C3)C(=O)O '
+               'NAME: 9-oxo-6-propan-2-yloxy-2-xanthenecarboxylic acid REASON: '
+               'WRONGLY CLASSIFIED Molecule contains a fused benzopyran core '
+               '(a six-membered pyran with one oxygen fused with a benzene '
+               'ring sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
+               ' * SMILES: '
+               'O1C(OC2=C3C(CC(OC3=C4CC(O)C(OC4=C2)C5=CC(O)=C(O)C=C5)=O)C6=CC(OC)=C(O)C=C6)C(O)C(O)C(O)C1CO '
                'NAME: '
-               '4-methoxy-N-[(4S,7S,8R)-8-methoxy-4,5,7,10-tetramethyl-11-oxo-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]benzamide '
-               'REASON: WRONGLY CLASSIFIED Contains isoflavonoid structure '
-               'with methoxy group\n'
+               '12-(3,4-dihydroxyphenyl)-13-hydroxy-6-(4-hydroxy-3-methoxyphenyl)-8-{[3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy}-3,11-dioxatricyclo[8.4.0.0?,?]tetradeca-1,7,9-trien-4-one '
+               'REASON: WRONGLY CLASSIFIED Molecule contains a fused '
+               'benzopyran core (a six-membered pyran with one oxygen fused '
+               'with a benzene ring sharing 2–3 atoms) with an exocyclic aryl '
+               'substituent.\n'
                ' * SMILES: '
-               'C[C@@H]1CCCCO[C@H]([C@H](CN(C(=O)C2=C(O1)C=CC(=C2)N(C)C)[C@H](C)CO)C)CN(C)CC3=CC=C(C=C3)C(=O)O '
-               'NAME: '
-               '4-[[[(3R,9R,10S)-16-(dimethylamino)-12-[(2R)-1-hydroxypropan-2-yl]-3,10-dimethyl-13-oxo-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-9-yl]methyl-methylamino]methyl]benzoic '
-               'acid REASON: WRONGLY CLASSIFIED Contains isoflavonoid '
-               'structure with methoxy group\n'
+               'O1C(C(O)C(O)C(O)C1OC=2C=3OC(=O)C=4C=5C3C(=CC2O)C(OC5C(OC)=C(O)C4)=O)C '
+               'NAME: 3-Methylellagic acid 8-rhamnoside REASON: WRONGLY '
+               'CLASSIFIED Molecule contains a fused benzopyran core (a '
+               'six-membered pyran with one oxygen fused with a benzene ring '
+               'sharing 2–3 atoms) with an exocyclic aryl substituent.\n'
                ' * SMILES: '
-               'C1=C(C=C2C(=C1OC)O[C@@H]([C@H]2C(=O)[O-])C3=CC=C(C(=C3)OC)O)/C=C/C([O-])=O '
-               'NAME: (+)-DCA-CC(2-) REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'C[C@H]1CN(C(=O)C2=C(C=CC(=C2)C#N)OC[C@@H]3[C@@H](CC[C@@H](O3)CCN(C1=O)C)OC)C '
-               'NAME: LSM-38104 REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'CN1C[C@@H]2[C@@H](CC[C@@H](O2)CCOC3=C(C=C(C=C3)C#N)C(=O)N(C[C@H](CC1=O)C4=CC=CC=C4)C)OC '
-               'NAME: LSM-38314 REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: O=C1[C@]2(C(C3C(CC2)C=4C(CC3)=CC(OC)=C(O)C4)CC1)C '
-               'NAME: 2-Hydroxy-3-methoxyestrone REASON: WRONGLY CLASSIFIED '
-               'Contains isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'C[C@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)NC(C)C)C(=O)N(C[C@@H]1OC)C)C)CC3=CC=C(C=C3)C4=CC=CC=N4 '
-               'NAME: '
-               '1-[(4S,7S,8R)-8-methoxy-4,7,10-trimethyl-11-oxo-5-[[4-(2-pyridinyl)phenyl]methyl]-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]-3-propan-2-ylurea '
-               'REASON: WRONGLY CLASSIFIED Contains isoflavonoid structure '
-               'with methoxy group\n'
-               ' * SMILES: '
-               'C[C@H]1CN(C(=O)C2=CC=CC=C2C3=CC=CC=C3CO[C@@H]1CN(C)S(=O)(=O)C4=CC=CC=C4OC)[C@H](C)CO '
-               'NAME: LSM-8955 REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'O=C1C(=C(NC(=C1)OC)C/C=C(/C/C=C/C(=C/C(C(O)/C(=C/C)/C)C)/C)\\C)C '
-               'NAME: Mer-A2026B REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'O(C1CC(O)(CC2=C1C(O)=C3C(=C2O)C([O-])C4=C(C3[O-])C(OC)=CC=C4)C(=O)CO)C5OC(C(O)C(N)C5)C '
-               'NAME: Doxorubicin-semiquinone REASON: WRONGLY CLASSIFIED '
-               'Contains isoflavonoid structure with methoxy group\n'
-               ' * SMILES: O1C=2C(=CC(=C(OC)C2)C(O)=O)C=CC1=O NAME: Buntansin '
-               'A REASON: WRONGLY CLASSIFIED Contains isoflavonoid structure '
-               'with methoxy group\n'
-               ' * SMILES: '
-               'COC1=CC=CC=C1C(=O)OCC#CCSC2=NN=C(O2)C3=CC=CC4=CC=CC=C43 NAME: '
-               '2-methoxybenzoic acid '
-               '4-[[5-(1-naphthalenyl)-1,3,4-oxadiazol-2-yl]thio]but-2-ynyl '
-               'ester REASON: WRONGLY CLASSIFIED Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: '
-               'COC1=CC=CC=C1S(=O)(=O)N2C[C@H](COC[C@H]3[C@H]2CC[C@H](O3)CC(=O)OC)O '
-               'NAME: '
-               '2-[(3R,6aR,8S,10aR)-3-hydroxy-1-(2-methoxyphenyl)sulfonyl-3,4,6,6a,8,9,10,10a-octahydro-2H-pyrano[2,3-c][1,5]oxazocin-8-yl]acetic '
-               'acid methyl ester REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'CC=CC1=CN=C2C(=C1)C(=O)N(C[C@@H]([C@@H](O2)CN(C)C(=O)NC3=CC=C(C=C3)F)C)[C@@H](C)CO '
-               'NAME: LSM-7398 REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: CN1CCc2cc3OCOc3c3c2[C@@H]1CC31C=CC(=O)C=C1 NAME: '
-               'Mecambrine REASON: WRONGLY CLASSIFIED Contains isoflavonoid '
-               'structure with methoxy group\n'
-               ' * SMILES: '
-               'O1C2=C(O)C(O)=CC(=C2C[C@H]3[C@]1(CC=CC(C[C@@H]4[C@](CC3)(OC5=C(C(=CC(=C5)O)C)C4)C)(C)C)C)C '
-               'NAME: 22-hydroxyramiferin REASON: WRONGLY CLASSIFIED Contains '
-               'isoflavonoid structure with methoxy group\n'
-               ' * SMILES: '
-               'CCCC#CC1=CC2=C(N=C1)O[C@@H]([C@@H](CN(C2=O)[C@H](C)CO)C)CN(C)C(=O)NC3=CC(=CC=C3)F '
-               'NAME: '
-               '3-(3-fluorophenyl)-1-[[(2S,3R)-5-[(2R)-1-hydroxypropan-2-yl]-3-methyl-6-oxo-8-pent-1-ynyl-3,4-dihydro-2H-pyrido[2,3-b][1,5]oxazocin-2-yl]methyl]-1-methylurea '
-               'REASON: WRONGLY CLASSIFIED Contains isoflavonoid structure '
-               'with methoxy group\n'
-               ' * SMILES: CC(=O)OC(C)(C)C1CC2=C(O1)C=C3C(=C2)C=CC(=O)O3 NAME: '
-               'acetic acid '
-               '2-(7-oxo-2,3-dihydrofuro[3,2-g][1]benzopyran-2-yl)propan-2-yl '
-               'ester REASON: WRONGLY CLASSIFIED Contains isoflavonoid '
-               'structure with methoxy group\n'
+               'C[C@@H]1Cc2c3O[C@@]4(O)[C@@H](C)O[C@H](C)c5c4c4c6c(cc(=O)c(c(O)c2[C@@H](C)O1)c36)oc1c(O)cc(O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)c(c41)c5=O '
+               'NAME: viridaphin A1 glucoside REASON: WRONGLY CLASSIFIED '
+               'Molecule contains a fused benzopyran core (a six-membered '
+               'pyran with one oxygen fused with a benzene ring sharing 2–3 '
+               'atoms) with an exocyclic aryl substituent.\n'
                'False negatives: SMILES: '
-               'ClC1=C2OC=C(C3=CC=C(O)C=C3)C(C2=C(Cl)C(=C1O)O)=O NAME: '
-               'Maduraktermol G REASON: MISSED Does not contain the necessary '
-               'isoflavonoid structure or functional groups\n'
-               ' * SMILES: CC(C)=CCc1cc(ccc1O)-c1coc2cc(O)ccc2c1=O NAME: '
-               'neobavaisoflavone REASON: MISSED Does not contain the '
-               'necessary isoflavonoid structure or functional groups\n'
+               'O=C1NCC2=C1C=C(O)C3=C2O[C@@]4([C@@H]([C@@]5([C@H](C([C@@H](OC(=O)C)CC5)(C)C)CC4)C)C3)C '
+               'NAME: Memnobotrin A REASON: MISSED Scaffold not recognized as '
+               'isoflavonoid (no fused benzopyran core with suitable exocyclic '
+               'aryl substituent found).\n'
                ' * SMILES: '
-               'O=C1C=2C=3C=4C(OC=5C=CC=C(C5C4[C@@H](O)[C@@H](C3C(=C1)O)C)O)=CC2O '
-               'NAME: (-)-dalmanol A REASON: MISSED Does not contain the '
-               'necessary isoflavonoid structure or functional groups\n'
+               'O1CC(CC=2C1=C(OC)C(OC)=C(OC)C2)C=3C(=O)C(OC)=C(OC)C(=O)C3 '
+               "NAME: 6,7,8,3',4'-Pentamethoxyisoflavanquinone REASON: MISSED "
+               'Scaffold not recognized as isoflavonoid (no fused benzopyran '
+               'core with suitable exocyclic aryl substituent found).\n'
                ' * SMILES: '
-               'O=C1C2=C(O)C(C(O)=C3C2=C4C(=C5C(=O)C=CC=C5OC4=C1)[C@H]([C@@H](CC(=O)C6=C(O)C=CC=C6O)C)[C@H]3C)=C(O)C '
-               'NAME: (+)-acetodalmanol B REASON: MISSED Does not contain the '
-               'necessary isoflavonoid structure or functional groups\n'
+               'O1CC(CC2=C1C(OC)=C(O)C=C2)C=3C(=O)C(OC)=C(OC)C(=O)C3 NAME: '
+               'Amorphaquinone REASON: MISSED Scaffold not recognized as '
+               'isoflavonoid (no fused benzopyran core with suitable exocyclic '
+               'aryl substituent found).\n'
                ' * SMILES: '
-               'O1C2=C(C/C=C(/CO)\\C)C(O)=CC(O)=C2C(=O)C(C3=C(O)C=C(O)C=C3)=C1 '
-               'NAME: 2,3-Dehydrokievitol REASON: MISSED Does not contain the '
-               'necessary isoflavonoid structure or functional groups\n'
+               'O=C(O)C1=C(O)C2=C(O[C@@]3(CC[C@@H]4[C@@]([C@H]3C2)(CCCC4(C)C)C)C)C=C1C '
+               'NAME: Hongoquercin A REASON: MISSED Scaffold not recognized as '
+               'isoflavonoid (no fused benzopyran core with suitable exocyclic '
+               'aryl substituent found).\n'
+               ' * SMILES: O1CC(CC2=C1C=C(O)C=C2)C=3C(=O)C=C(OC)C(=O)C3 NAME: '
+               'Claussequinone REASON: MISSED Scaffold not recognized as '
+               'isoflavonoid (no fused benzopyran core with suitable exocyclic '
+               'aryl substituent found).\n'
                ' * SMILES: '
-               'C=1(C2C(C=CC1O)C(C(=CO2)C=3C=CC(=CC3)O)=O)[C@@H]4O[C@@H]([C@H](C([C@H]4O)=O)O)CO '
-               "NAME: 3''-oxopuearin REASON: MISSED Does not contain the "
-               'necessary isoflavonoid structure or functional groups\n'
+               'O1[C@@]2([C@H](O)C[C@H]3C(CCC[C@@]3([C@H]2C[C@@]4([C@H]1[C@H](O)C(=C)[C@@H]([C@H]4O)O)O)C)(C)C)C '
+               'NAME: Coniothyrenol REASON: MISSED No benzene rings (aromatic '
+               '6-membered all-carbon) found for a fused system\n'
                ' * SMILES: '
-               'S(OC1=CC=C(C=2C(=O)C3=C(OC2)C=C(O)C=C3)C=C1)(O)(=O)=O NAME: '
-               "Daidzein 4'-sulfate REASON: MISSED Does not contain the "
-               'necessary isoflavonoid structure or functional groups\n'
+               'O=C1C([C@H]2[C@]([C@@H]3[C@](OC=4C(=C5COC(C5=C(C4C3)O)=O)C)(C)CC2)(C)CC1)(C)C '
+               'NAME: Austalide V REASON: MISSED Scaffold not recognized as '
+               'isoflavonoid (no fused benzopyran core with suitable exocyclic '
+               'aryl substituent found).\n'
                ' * SMILES: '
-               'O1C2=C(C3=C1OC4=C(C3=O)C(O)=C(C(O)=C4)CC=C(C)C)C=CC(O)=C2CC=C(C)C '
-               'NAME: Lupinalbin F REASON: MISSED Does not contain the '
-               'necessary isoflavonoid structure or functional groups\n'
+               'C=1(C=C(C=C(C1O)O)CC2OC(CC2)=O)OC3[C@@H]([C@H]([C@@H]([C@H](O3)C(O)=O)O)O)O '
+               'NAME: '
+               "5-(3',4',5'-Trihydroxyphenyl)-gamma-valerolactone-3'-O-glucuronide "
+               'REASON: MISSED Scaffold not recognized as isoflavonoid (no '
+               'fused benzopyran core with suitable exocyclic aryl substituent '
+               'found).\n'
                ' * SMILES: '
-               'O1C2=C(CC=C(C)C)C(O)=CC(O)=C2C(=O)C(C3=C(O)C=C(O)C=C3)=C1 '
-               "NAME: 2',4',5,7-Tetrahydroxy-8-prenylisoflavone REASON: MISSED "
-               'Does not contain the necessary isoflavonoid structure or '
-               'functional groups\n'
+               'O1C[C@H](CC2=C1C(OC)=C(O)C=C2)C=3C(=O)C=C(OC)C(=O)C3 NAME: '
+               'Mucroquinone REASON: MISSED Scaffold not recognized as '
+               'isoflavonoid (no fused benzopyran core with suitable exocyclic '
+               'aryl substituent found).\n'
                ' * SMILES: '
-               'O1C2=C(C/C=C(/CO)\\C)C(O)=CC(O)=C2C(=O)C(=C1)C3=CC=C(O)C=C3 '
-               'NAME: Gancaonin C REASON: MISSED Does not contain the '
-               'necessary isoflavonoid structure or functional groups\n'
+               '[H][C@@]12CC[C@]3(C)Oc4c(C[C@]3([H])[C@@]1(C)CC[C@H](OC(C)=O)C2(C)C)c(O)cc1C(=O)OCc41 '
+               'NAME: kampanol A REASON: MISSED Scaffold not recognized as '
+               'isoflavonoid (no fused benzopyran core with suitable exocyclic '
+               'aryl substituent found).\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': '[Li+].[Br-]',
-                                     'name': 'lithium bromide',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'FC(F)(F)c1nc2c(Cl)c(Cl)c(Cl)c(Cl)c2[nH]1',
-                                     'name': '4,5,6,7-Tetrachloro-2-trifluoromethylbenzimidazole',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'OC1=C(NC(=O)NC2=CC=CC=C2Br)C=CC(=C1)[N+]([O-])=O',
-                                     'name': 'SB225002',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'C1CNC(=O)C2=C1C3=C(C=CC(=C3N2)Cl)Cl',
-                                     'name': '5,8-dichloro-2,3,4,9-tetrahydropyrido[3,4-b]indol-1-one',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'Cl[Si](Cl)(Cl)CCl',
-                                     'name': 'Trichloro(chloromethyl)silane',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'CCCCN1CCCC[C@H]1C(=O)Nc1c(C)cccc1C',
-                                     'name': 'levobupivacaine',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'CC(CCCCCCCC=O)C',
-                                     'name': '9-methyldecanal',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'O=C1OC(=CC(=C1C)O)CCCC(C)C',
-                                     'name': 'Violapyrone A',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'CC1=CC=C(C=C1)S(=O)(=O)NC2CC2',
-                                     'name': 'N-cyclopropyl-4-methylbenzenesulfonamide',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'},
-                                 {   'smiles': 'O=C(C=1NC(=O)NC1CC)C2=CC=NC=C2',
-                                     'name': 'piroximone',
-                                     'reason': 'Does not contain the necessary '
-                                               'isoflavonoid structure or '
-                                               'functional groups'}],
-    'sample_false_negatives': [   {   'smiles': 'ClC1=C2OC=C(C3=CC=C(O)C=C3)C(C2=C(Cl)C(=C1O)O)=O',
-                                      'name': 'Maduraktermol G',
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'S(OC1=CC=C(C=2C(=O)C3=C(OC2)C=C(O)C=C3)C=C1)(O)(=O)=O',
-                                      'name': "Daidzein 4'-sulfate",
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'O1C2=C(C(=O)C(C3=CC=C(O)C=C3)=C1)C=CC(O)=C2O',
-                                      'name': '8-Hydroxydaidzein',
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'S(OC1=CC=C(C=2C(=O)C=3C(OC2)=CC(O)=CC3O)C=C1)(O)(=O)=O',
-                                      'name': '[4-(5,7-dihydroxy-4-oxo-4H-chromen-3-yl)phenyl]oxidanesulfonic '
-                                              'acid',
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'O1C2=C(C(=O)C(C3=CC(O)=C(O)C=C3)=C1)C(O)=CC(O)=C2O',
-                                      'name': "5,7,8,3',4'-Pentahydroxyisoflavone",
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'Oc1cc(O)c2c(c1)occ(-c1ccc(O)c(O)c1)c2=O',
-                                      'name': 'orobol',
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'BrC1=C2OC=C(C3=CC(Br)=C(O)C=C3)C(C2=C(O)C(=C1O)Br)=O',
-                                      'name': 'Maduraktermol N',
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'O1C=2C(C(=O)C(C3=CC=CC=C3)=C1)=C(O)C=C(O)C2',
-                                      'name': '5,7-Dihydroxyisoflavone',
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'O=C1C=2C=3C=4C(OC=5C=CC=C(C5C4[C@H]([C@@H](CC(=O)C6=C(O)C=CC=C6O)C)[C@H](C3C(=C1)O)C)O)=CC2O',
-                                      'name': '(+)-dalmanol B',
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'},
-                                  {   'smiles': 'O=C1C(C2=CC(O)=CC(=C2)O)=COC3=C1C=CC(=C3)O',
-                                      'name': "7-hydroxy-3',5'-dihydroxyisoflavone",
-                                      'reason': 'Does not contain the '
-                                                'necessary isoflavonoid '
-                                                'structure or functional '
-                                                'groups'}],
-    'attempt': 3,
-    'reasoning': 'To improve the classification of isoflavonoids using the '
-                 "SMILES string, let's first analyze the shortcomings of the "
-                 'previous implementation. The `is_isoflavonoid` function '
-                 'primarily checked for a specific pattern of the isoflavonoid '
-                 'class - the 1-benzopyran core with an aryl group at position '
-                 '3. However, this approach failed to consider the broader '
-                 'diversity of isoflavonoid structures, ending up with a mix '
-                 'of false positives and false negatives.\n'
+    'sample_true_negatives': [   {   'smiles': 'O(C1=CC(=C(C(=C1)I)O)I)C=2C(=CC(=CC2I)CC(O)=O)I',
+                                     'name': "3,3',5,5'-tetraiodothyroacetic "
+                                             'acid',
+                                     'reason': 'No candidate pyran ring '
+                                               '(6-membered with exactly one '
+                                               'oxygen) found.'},
+                                 {   'smiles': 'COCC#CC1=CC=C(C=C1)[C@H]2[C@@H]3CN(CCCCN3[C@H]2CO)C(=O)NC4CCCC4',
+                                     'name': '(8R,9S,10R)-N-cyclopentyl-10-(hydroxymethyl)-9-[4-(3-methoxyprop-1-ynyl)phenyl]-1,6-diazabicyclo[6.2.0]decane-6-carboxamide',
+                                     'reason': 'No candidate pyran ring '
+                                               '(6-membered with exactly one '
+                                               'oxygen) found.'},
+                                 {   'smiles': 'O([C@@H]1[C@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]3CO)O)O[C@@H]([C@H]1O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO)[C@H](O)[C@H]5NC(=O)C)CO)CO)[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9O[C@@H]%10O[C@H]([C@@H](O)[C@@H](O)[C@@H]%10O)C)CO)[C@H](O)[C@H]8NC(=O)C)CO)CO',
+                                     'name': 'N-[(2R,3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5R,6R)-4-[(2R,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4S,5R,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-4-hydroxy-6-(hydroxymethyl)-5-[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'No benzene rings (6-membered, '
+                                               'fully aromatic carbons) '
+                                               'found.'},
+                                 {   'smiles': 'O(C(=O)CCCCCCCCCCCCCCCCC(C)C)C[C@@H](OC(=O)CCCCCCCCCCC)CO',
+                                     'name': 'DG(i-20:0/12:0/0:0)',
+                                     'reason': 'No rings found in the '
+                                               'molecule'},
+                                 {   'smiles': 'CCC(=O)N1C[C@H]2[C@@H]([C@@H](N2C(=O)C1)CO)C3=CC=C(C=C3)C#CC4=CN=CC=C4',
+                                     'name': '(6R,7S,8R)-8-(hydroxymethyl)-4-(1-oxopropyl)-7-[4-[2-(3-pyridinyl)ethynyl]phenyl]-1,4-diazabicyclo[4.2.0]octan-2-one',
+                                     'reason': 'No candidate pyran ring '
+                                               '(6-membered with exactly one '
+                                               'oxygen) found.'},
+                                 {   'smiles': 'O(C(C[N+](C)(C)C)CC([O-])=O)C(=O)CC/C=C/C/C=C/C/C=C/C\\C=C\\CC(O)/C=C/C=C/CC',
+                                     'name': '(4Z,7Z,10Z,13Z,17Z,19Z)-16-Hydroxydocosa-4,7,10,13,17,19-hexaenoylcarnitine',
+                                     'reason': 'No rings found in the '
+                                               'molecule'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@H](O[C@H]2[C@H](O[C@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O)O[C@@H]1CO)[C@@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O)CO)[C@@H]4O[C@@H]6OC[C@@H](O)[C@H](O)[C@H]6O)CO',
+                                     'name': 'N-[(2S,3R,4R,5S,6R)-2-[(2R,3S,4R,5R,6R)-5-Acetamido-6-hydroxy-2-(hydroxymethyl)-4-[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-3-yl]oxy-4-hydroxy-5-[(2S,3S,4S,5R,6R)-5-hydroxy-6-(hydroxymethyl)-4-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3-[(2S,3R,4S,5R)-3,4,5-trihydroxyoxan-2-yl]oxyoxan-2-yl]oxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'No benzene rings (6-membered, '
+                                               'fully aromatic carbons) '
+                                               'found.'},
+                                 {   'smiles': 'O(C=1C=2C(C(OC(=O)CCC)=CC1C)=CC=CC2)C(=O)CCC',
+                                     'name': 'Menadiol dibutyrate',
+                                     'reason': 'No candidate pyran ring '
+                                               '(6-membered with exactly one '
+                                               'oxygen) found.'},
+                                 {   'smiles': 'N1(CCCCC1)C=2C(=CC=CC2)C#N',
+                                     'name': '2-piperidinobenzonitrile',
+                                     'reason': 'No candidate pyran ring '
+                                               '(6-membered with exactly one '
+                                               'oxygen) found.'},
+                                 {   'smiles': 'COc1cc2c(cc1C)C(=CC(=O)[C@]2(C)O)C(C)C',
+                                     'name': 'Lacinilene C 7-methyl ether',
+                                     'reason': 'No candidate pyran ring '
+                                               '(6-membered with exactly one '
+                                               'oxygen) found.'}],
+    'sample_false_negatives': [   {   'smiles': 'O=C1NCC2=C1C=C(O)C3=C2O[C@@]4([C@@H]([C@@]5([C@H](C([C@@H](OC(=O)C)CC5)(C)C)CC4)C)C3)C',
+                                      'name': 'Memnobotrin A',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'CC1(C)Oc2ccc(cc2C=C1)-c1coc2cc(O)cc(O)c2c1=O',
+                                      'name': 'isoderrone',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'O=C1C2=C(OC=C1C3=CC=C(O)C=C3)C=C(O[C@@H]4OC(C(OC)[C@H]([C@@H]4O)O)CO)C=C2O',
+                                      'name': '5,7,4′-trihydroxyisoflavone-7-O-(4′′-O-methyl)-beta-D-glucopyranoside',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'CC(C)(O)CCc1cc(ccc1O)-c1coc2cc(O)cc(O)c2c1=O',
+                                      'name': 'isowigtheone hydrate',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'Oc1ccc(C2COc3cc(O)cc(O)c3C2=O)c(O)c1',
+                                      'name': '(+-)-dalbergioidin',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'O1CC(CC=2C1=C(OC)C(OC)=C(OC)C2)C=3C(=O)C(OC)=C(OC)C(=O)C3',
+                                      'name': "6,7,8,3',4'-Pentamethoxyisoflavanquinone",
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'O1C[C@@H]([C@H](O)C2=C1C=C(O)C=C2)C3=CC=C(O)C=C3',
+                                      'name': 'cis-4-Hydroxyequol',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'Oc1ccc-2c(c1)[C@@H]1Oc3ccccc3[C@H]3CC(=O)c4c(O)cc(O)c-2c4[C@@H]13',
+                                      'name': 'Ohioensin-A',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'O1CC(C=2C=C(C/C=C(/CCC=C(C)C)\\C)C(O)=CC2O)C(=O)C3=C1C=C(O)C(=C3O)CC=C(C)C',
+                                      'name': 'Sophoraisoflavanone D',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'},
+                                  {   'smiles': 'O1CC(O)(C2=C(OC)C(=C(OC)C=C2)CC=C(C)C)C(=O)C=3C1=CC(O)=CC3O',
+                                      'name': '(+)-echinoisoflavanone',
+                                      'reason': 'Scaffold not recognized as '
+                                                'isoflavonoid (no fused '
+                                                'benzopyran core with an aryl '
+                                                'substituent at position 3 '
+                                                'found).'}],
+    'attempt': 2,
+    'reasoning': 'Below is one possible improved solution. One hypothesis was '
+                 'that the previous code was “too loose” in that it simply '
+                 'looked for any non‐fused pyran atom having an aromatic '
+                 'neighbor without checking that it was in fact the “correct” '
+                 'position (position\u20053 from the heterocyclic oxygen) on a '
+                 'genuine 1‐benzopyran. In the revised approach the code first '
+                 'collects the ordered rings (using RDKit’s symmetry‐based '
+                 'ring finder) so that we can locate the sole oxygen in a '
+                 '6‐membered candidate pyran and then, using the cyclic order, '
+                 'pick the atom two away (the “3‐position”) as the expected '
+                 'attachment point. Then the code checks that the pyran is '
+                 'fused to a benzene ring (by sharing 2–3 atoms) and finally '
+                 'that the candidate 3‑position bears an exocyclic aromatic '
+                 'substituent (a 6‐membered fully aromatic, carbon‐only ring '
+                 'not included in the fused core). This extra ordering and '
+                 '“positional” check is intended to reduce both false '
+                 'positives (other extraneous aryl groups) and false negatives '
+                 '(missing the proper connectivity). Note that given the '
+                 'complexity of the many isoflavonoid subclasses, no automated '
+                 'method will be perfect, and this heuristic may still not '
+                 'catch some edge cases.\n'
                  '\n'
-                 'One key issue is that isoflavonoids come in various forms '
-                 'with additional substituents not limited to methoxy or '
-                 'hydroxyl groups, leading to the misclassification of many '
-                 'true positives and false positives. Therefore, we should:\n'
+                 'Below is the complete code in a single Python code block:\n'
                  '\n'
-                 '1. Adjust the substructure search to better capture the '
-                 'benzopyran core and its connectivity with the 3-position '
-                 'aryl group.\n'
-                 '2. Handle potential isoflavonoid variations, such as '
-                 'different functional groups or synthetic modifications.\n'
-                 '\n'
-                 "Here's how we can update the code:",
+                 '------------------------------------------------',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 443,
-    'num_false_positives': 100,
-    'num_true_negatives': 18,
-    'num_false_negatives': 33,
+    'num_true_positives': 303,
+    'num_false_positives': 784,
+    'num_true_negatives': 141040,
+    'num_false_negatives': 173,
     'num_negatives': None,
-    'precision': 0.8158379373848987,
-    'recall': 0.930672268907563,
-    'f1': 0.8694798822374878,
-    'accuracy': 0.7760942760942761,
-    'negative_predictive_value': 0.35294117647058826}
+    'precision': 0.27874885004599814,
+    'recall': 0.6365546218487395,
+    'f1': 0.38771593090211126,
+    'accuracy': 0.9932747716092761,
+    'negative_predictive_value': 0.9987749003278735}

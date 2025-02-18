@@ -1,114 +1,38 @@
 """
 Classifies: CHEBI:73080 hemiaminal
 """
-"""
-Classifies: CHEBI:60324 hemiaminal
-"""
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_hemiaminal(smiles: str):
     """
-    Determines if a molecule contains a hemiaminal group based on its SMILES string.
-    A hemiaminal has both an amino group and a hydroxy group attached to the same carbon atom.
+    Determines if a molecule is a hemiaminal based on its SMILES string.
+    A hemiaminal has an amino group and a hydroxy group attached to the same carbon atom.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule contains a hemiaminal group, False otherwise
+        bool: True if molecule is a hemiaminal, False otherwise
         str: Reason for classification
     """
     
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
+    if not mol:
         return False, "Invalid SMILES string"
-
-    # Add explicit hydrogens
-    mol = Chem.AddHs(mol)
-
-    # Collection of SMARTS patterns for different hemiaminal types
-    patterns = [
-        # Basic hemiaminal pattern - more relaxed version
-        '[CX4](-[OX2])(-[NX3])',
-        
-        # Cyclic hemiaminal patterns
-        '[CX4;R](-[OX2])(-[NX3;R])',
-        '[CX4;R](-[OX2])(-[NX3])',
-        
-        # Pattern for charged species
-        '[CX4](-[OX2])(-[NX4+])',
-        
-        # Bridged bicyclic patterns common in natural products
-        '[CX4;R2](-[OX2])(-[NX3;R])',
-        
-        # Pattern for fused ring systems
-        '[CX4;R2](-[OX2;R0])(-[NX3;R])',
-        
-        # Pattern catching more complex cases
-        '[CX4](-[OX2])(-[NX3,NX4+])',
-    ]
-
-    matches = set()
-    for pattern in patterns:
-        pat = Chem.MolFromSmarts(pattern)
-        if pat is not None:
-            these_matches = mol.GetSubstructMatches(pat)
-            matches.update(match[0] for match in these_matches)  # Add carbon indices
-
-    if not matches:
-        return False, "No hemiaminal group found"
-
-    # Patterns to exclude false positives
-    exclude_patterns = [
-        '[NX3](=[OX1])',  # Nitro group
-        '[CX3](=O)[OX2H1]',  # Carboxylic acid
-        '[NX3]-[OX2]',  # N-O bond
-        '[CX3](=O)-[OX2]',  # Ester
-        '[CX3]=N',  # Imine
-        '[CX3](=[OX1])[NX3]'  # Amide
-    ]
     
-    # Remove false positives
-    for pattern in exclude_patterns:
-        pat = Chem.MolFromSmarts(pattern)
-        if pat:
-            exclude_matches = mol.GetSubstructMatches(pat)
-            for match in exclude_matches:
-                matches.discard(match[0])
+    # Define SMARTS pattern for hemiaminal (C bonded to OH and NH2)
+    hemiaminal_pattern = Chem.MolFromSmarts("[CX4]([OH])([NH2])")
+    
+    # Check if the molecule matches the hemiaminal pattern
+    if mol.HasSubstructMatch(hemiaminal_pattern):
+        return True, "Contains a hemiaminal motif: C with OH and NH2 attached"
+    else:
+        return False, "No hemiaminal motif found"
 
-    if not matches:
-        return False, "Found potential matches but they are excluded patterns"
-
-    # Additional validation
-    valid_carbons = set()
-    for carbon_idx in matches:
-        carbon = mol.GetAtomWithIdx(carbon_idx)
-        neighbors = carbon.GetNeighbors()
-        
-        # Check neighbor atoms
-        n_count = 0
-        o_count = 0
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 7:  # N
-                if neighbor.GetFormalCharge() >= 0:  # Allow neutral or positive N
-                    n_count += 1
-            elif neighbor.GetAtomicNum() == 8:  # O
-                if neighbor.GetFormalCharge() == 0:  # Neutral O only
-                    o_count += 1
-        
-        # Must have exactly one N and one O
-        if n_count == 1 and o_count == 1:
-            # Check hybridization of carbon
-            if carbon.GetHybridization() == Chem.HybridizationType.SP3:
-                valid_carbons.add(carbon_idx)
-
-    if not valid_carbons:
-        return False, "No valid hemiaminal groups found after structural validation"
-
-    reason = f"Found {len(valid_carbons)} valid hemiaminal group(s)"
-    return True, reason
+# Example usage:
+# result, reason = is_hemiaminal("OC(N)CC")
+# print(f"Is hemiaminal: {result}, Reason: {reason}")
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:73080',
@@ -125,137 +49,105 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:73080',
                           'xrefs': ['Wikipedia:Hemiaminal'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               '[H][C@@]12C[C@]3(CN4CC[C@@]56C(Nc7ccccc57)=C(C[C@@]5(CCO[C@@]35[H])[C@]46[H])C(=O)OC)CN3c4c(OC)cccc4[C@@]4(CCN5CC[C@]6([H])OCC[C@]6(C1)[C@@]45[H])[C@]23O '
-               'NAME: vobtusine REASON: MISSED No valid hemiaminal groups '
-               'found after structural validation\n'
-               ' * SMILES: '
-               'N1[C@@]2([C@@]3(C4=C1C=CC=C4)[C@@H](C5[C@@H]([N+]6([C@]2(C[C@H]5[C@@H]([C@H]6O)CC)[H])C)C3)O)[H] '
-               'NAME: 4-methylnorajmaline REASON: MISSED No valid hemiaminal '
-               'groups found after structural validation\n'
-               ' * SMILES: C(CCCCCCCCCCC)(=O)N[C@H](C(O)=O)O NAME: '
-               'N-dodecanoyl-(2S)-hydroxyglycine REASON: MISSED No valid '
-               'hemiaminal groups found after structural validation\n'
-               ' * SMILES: '
-               'N12C=3C=4N(C=5C=CC=CC5C4C6=C(C3C7=C1C=CC=C7)C(NC6)=O)[C@@]8(O[C@]2(C[C@]8(N)C(=O)NC)[H])C '
-               'NAME: TTT-3002 REASON: MISSED No hemiaminal group found\n'
-               ' * SMILES: '
-               'NC(=O)C1=CN([C@@H](O)CC1)[C@@H]1O[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2cnc3c(N)ncnc23)[C@@H](O)[C@H]1O '
-               'NAME: (S)-NADHX REASON: MISSED No valid hemiaminal groups '
-               'found after structural validation\n'
-               ' * SMILES: '
-               'C1[C@@]2(N3CC[C@@]42[C@]5(N(C=6C4=CC(=C(C6)OC)OC)C(C[C@]7([C@@]5([C@@]1(C(=CCO7)C3)[H])[H])[H])=O)[H])O '
-               'NAME: pseudobrucine REASON: MISSED No valid hemiaminal groups '
-               'found after structural validation\n'
-               ' * SMILES: '
-               '[C@@]123[C@@]4([C@]5([C@@](CC1=O)(C(CN([C@H](C2)O)C)=CCO[C@]5(CC(N4C6=C3C=CC=C6)=O)[H])[H])[H])[H] '
-               'NAME: 5-hydroxyvomicine REASON: MISSED No valid hemiaminal '
-               'groups found after structural validation\n'
-               ' * SMILES: '
-               'CN1[C@H]2CN3C4=C([C@H](COC(N)=O)[C@@]3(O)[C@@H]12)C(=O)C(O)=C(C)C4=O '
-               'NAME: 7-demethylmitomycin B REASON: MISSED No valid hemiaminal '
-               'groups found after structural validation\n'
-               ' * SMILES: '
-               '[H][C@@]12C[C@H]3[C@H](CC)[C@@H](O)N1[C@H]1C[C@@]4([C@H](OC(C)=O)C31)c1ccccc1N(C)[C@@]24[H] '
-               'NAME: 17-O-acetylajmaline REASON: MISSED No valid hemiaminal '
-               'groups found after structural validation\n'
-               ' * SMILES: '
-               'C1[C@@]2(N3CC[C@@]42[C@]5(N(C=6C4=CC=CC6)C(C[C@]7([C@@]5([C@@]1(C(=CCO7)C3)[H])[H])[H])=O)[H])O '
-               'NAME: pseudostrychnine REASON: MISSED No valid hemiaminal '
-               'groups found after structural validation\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'OC(=O)CCNC(O)=O',
-                                     'name': 'N-carboxy-beta-alanine',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': 'C[C@@H]1CN([C@@H](COC2=C(C=CC(=C2)NC(=O)NC3=CC=CC=C3F)C(=O)N(C[C@H]1OC)C)C)CCC(F)(F)F',
-                                     'name': '1-(2-fluorophenyl)-3-[(5S,6R,9R)-5-methoxy-3,6,9-trimethyl-2-oxo-8-(3,3,3-trifluoropropyl)-11-oxa-3,8-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]urea',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': 'O(C1=CC(=C(O)C=C1)C2=C(O)C=CC(=C2)OC)C',
-                                     'name': '5,5′-dimethoxybiphenyl-2,2′-diol',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': 'COC1=CC=C(CCNC[C@H](O)C2=CC=C(O)C=C2)C=C1OC',
-                                     'name': 'denopamine',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': '[Zn++].[S-]C(=S)NCCNC([S-])=S',
-                                     'name': 'zineb',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': 'P(OC[C@H]1O[C@@H](N2C=CC(=NC2=O)N)C(O)[C@H]1O)(OP(OC[C@H](OC(=O)CCCCCCCCCCCC(C)C)COC(=O)CCCCCCCCC(CC)C)(O)=O)(O)=O',
-                                     'name': 'CDP-DG(a-13:0/i-15:0)',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': 'O=C1OC(O)C2=C1C[C@](O)([C@H]3CC(C[C@H]3[C@@H]2O)(C)C)C',
-                                     'name': 'Lactarolide A',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': 'CC(=O)O[C@H]1CC[C@]23C[C@@H]1OO[C@@]2(C)C(=O)CCC3(C)C',
-                                     'name': 'Talaperoxide B',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': 'O([C@H]1[C@H](O)[C@H](OC(O)[C@@H]1NC(=O)C)CO[C@@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2O)CO)[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO',
-                                     'name': 'N-[(3R,4R,5S,6R)-2,5-Dihydroxy-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-3-yl]acetamide',
-                                     'reason': 'No hemiaminal group found'},
-                                 {   'smiles': 'COc1ccc(\\C=C/C2CCC=CC2c2ccc(OC)c(OC)c2)cc1OC',
-                                     'name': '3-(3,4-dimethoxyphenyl)-4-[(Z)-3,4-dimethoxystyryl]cyclohex-1-ene',
-                                     'reason': 'No hemiaminal group found'}],
-    'sample_false_negatives': [   {   'smiles': 'N12C=3C=4N(C=5C=CC=CC5C4C6=C(C3C7=C1C=CC=C7)C(NC6)=O)[C@@]8(O[C@]2(C[C@]8(N)C(=O)NC)[H])C',
-                                      'name': 'TTT-3002',
-                                      'reason': 'No hemiaminal group found'},
-                                  {   'smiles': 'CCCOc1ccc2n3[C@H]4C[C@](O)(C(=O)OC)[C@](C)(O4)n4c5ccccc5c5c6CNC(=O)c6c(c2c1)c3c45',
+    'code_statistics': None,
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'O=C1C2=C(OC(=C1)C)C3=C(OC)C=C(OC)C=C3C(=C2O)C4=C5OC(=CC(C5=C(O)C=6C4=CC(OC)=CC6OC)=O)C',
+                                     'name': 'Isonigerone',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'CCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@@H](O)CO)OC(=O)CCCCCCC\\C=C/CCCCCCCC',
+                                     'name': '1-myristoyl-2-oleoyl-sn-glycero-3-phosphatidylglycerol(1-)',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'C(=C\\C/C=C\\CCCC(NC)=O)\\C/C=C\\C/C=C\\CCCCC',
+                                     'name': 'N-methyl arachidonoyl amine',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'OC1(O)[C@]23N(CC1)C(N(O)[C@H]([C@@]3(N=C(N2)N)[H])CO)=N',
+                                     'name': 'Decarbamoylneosaxitoxin',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'S([C@H]1N(C(=O)/C(=C\\C2=CC=C(OCC=C(C)C)C=C2)/N(C1=O)C)C)C',
+                                     'name': 'Fusaperazine F',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'Oc1ccccc1I',
+                                     'name': '2-iodophenol',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'O=C1N(CC(=O)N[C@H](C(=O)O[C@H]([C@@H](C(NC(C=C1)=C)=O)C)C(CCCCCCCCCCCCCC)C)C(O)C(=O)N)C',
+                                     'name': 'Rakicidin H',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=CC=C3)C=C2OC)C=C1)C/C=C(/CO)\\C',
+                                     'name': 'Prenylterphenyllin F',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@@H](O)[C@@H]1OC[C@H]3O[C@@H](OC[C@H]4O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]4O)[C@H](O)[C@@H](O)[C@@H]3O)CO[C@@H]5O[C@@H]([C@@H](O)[C@H](O[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO)[C@H]5O)CO[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7O)CO',
+                                     'name': '(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5R,6R)-6-[[(2R,3R,4S,5R,6R)-3,5-Dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxymethyl]oxane-2,3,4,5-tetrol',
+                                     'reason': 'No hemiaminal motif found'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)O)[C@@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H](O)[C@@H]6NC(=O)C)CO)CO)[C@@H]4O)CO[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)CO',
+                                     'name': 'Gal2GlcNAc2Man3GlcNAcFucGlcNAc',
+                                     'reason': 'No hemiaminal motif found'}],
+    'sample_false_negatives': [   {   'smiles': 'CCCOc1ccc2n3[C@H]4C[C@](O)(C(=O)OC)[C@](C)(O4)n4c5ccccc5c5c6CNC(=O)c6c(c2c1)c3c45',
                                       'name': 'KT 5926',
-                                      'reason': 'No hemiaminal group found'},
+                                      'reason': 'No hemiaminal motif found'},
+                                  {   'smiles': 'C1[C@@]2(N3CC[C@@]42[C@]5(N(C=6C4=CC=CC6)C(C[C@]7([C@@]5([C@@]1(C(=CCO7)C3)[H])[H])[H])=O)[H])O',
+                                      'name': 'pseudostrychnine',
+                                      'reason': 'No hemiaminal motif found'},
+                                  {   'smiles': 'O=C1NC(=O)N(C1(C)C)CO',
+                                      'name': '1-(hydroxymethyl)-5,5-dimethylhydantoin',
+                                      'reason': 'No hemiaminal motif found'},
+                                  {   'smiles': 'NC(=O)C1=CN([C@H](O)CC1)[C@@H]1O[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](OP(O)(O)=O)[C@@H]2O)n2cnc3c(N)ncnc23)[C@@H](O)[C@H]1O',
+                                      'name': '(R)-NADPHX',
+                                      'reason': 'No hemiaminal motif found'},
+                                  {   'smiles': 'N1[C@@]2([C@@]3(C4=C1C=CC=C4)[C@@H](C5[C@@H]([N+]6([C@]2(C[C@H]5[C@@H]([C@H]6O)CC)[H])C)C3)O)[H]',
+                                      'name': '4-methylnorajmaline',
+                                      'reason': 'No hemiaminal motif found'},
+                                  {   'smiles': '[H][C@@]12C[C@]3([H])N([C@H]4C[C@@]5([C@H](OC(C)=O)C14)c1ccccc1N=C35)[C@H](O)\\C2=C\\C',
+                                      'name': 'vomilenine',
+                                      'reason': 'No hemiaminal motif found'},
+                                  {   'smiles': '[H][C@@]12C[C@]3([H])N([C@H]4C[C@@]5([C@H](OC(C)=O)C14)c1ccccc1N[C@@]35[H])[C@H](O)\\C2=C\\C',
+                                      'name': '1,2-dihydrovomilenine',
+                                      'reason': 'No hemiaminal motif found'},
+                                  {   'smiles': 'C(CCCCCCCCCCC)(=O)N[C@H](C(O)=O)O',
+                                      'name': 'N-dodecanoyl-(2S)-hydroxyglycine',
+                                      'reason': 'No hemiaminal motif found'},
                                   {   'smiles': 'COC(=O)[C@]1(C[C@H]2O[C@]1(C)n1c3ccccc3c3c4CN(C)C(=O)c4c4c5ccccc5n2c4c13)OC',
                                       'name': 'KT 5823',
-                                      'reason': 'No hemiaminal group found'},
-                                  {   'smiles': '[H][C@]12N3CCC[C@@]1(CC)C[C@](O)(C(=O)OC)n1c2c(CC3)c2ccccc12',
-                                      'name': 'vincamine',
-                                      'reason': 'No hemiaminal group found'}],
-    'attempt': 3,
-    'reasoning': 'Let me analyze the previous attempt and suggest '
-                 'improvements:\n'
+                                      'reason': 'No hemiaminal motif found'},
+                                  {   'smiles': 'O=C1N2[C@@]3([C@@]4([C@]5(N(CC4)C\\C(\\[C@](C5)([C@]3(CC1)[H])[H])=C\\CO)O)C=6C2=CC=CC6)[H]',
+                                      'name': 'isopseudostrychnine',
+                                      'reason': 'No hemiaminal motif found'}],
+    'attempt': 0,
+    'reasoning': 'To develop a program that classifies chemical entities as '
+                 'hemiaminals based on their SMILES string, we need to create '
+                 'a function `is_hemiaminal`. A hemiaminal is defined as a '
+                 'compound with an amino group (NH2) and a hydroxy group (OH) '
+                 'attached to the same carbon atom. Our task is to check for '
+                 'this pattern in the provided SMILES structure using RDKit.\n'
                  '\n'
-                 '1. Pattern Matching Issues:\n'
-                 '- The previous code was too restrictive in its SMARTS '
-                 'patterns\n'
-                 '- It required explicit hydrogens on the hydroxyl group '
-                 '(-[OX2H1]) which might miss some cases\n'
-                 '- The nitrogen pattern was too general and might need more '
-                 'specific valence states\n'
+                 "Here's a step-by-step reasoning for implementing this:\n"
                  '\n'
-                 '2. False Negatives Analysis:\n'
-                 'Looking at the failed examples:\n'
-                 '- Many are complex natural products with bridged structures\n'
-                 '- Some have the hemiaminal as part of a ring system\n'
-                 '- The hydroxy group may not always have explicit hydrogens\n'
-                 '- Some structures have the hemiaminal nitrogen as part of a '
-                 'larger ring system\n'
+                 '1. **Parse the SMILES string**: Convert the SMILES string '
+                 'into an RDKit molecule object.\n'
                  '\n'
-                 '3. Improvements Needed:\n'
-                 '- Relax the hydroxyl pattern to catch more cases\n'
-                 '- Add patterns for ring-based hemiaminals\n'
-                 '- Better handle bridged bicyclic systems\n'
-                 '- Consider charged species (like in 4-methylnorajmaline)\n'
-                 '- Add specific patterns for natural product scaffolds\n'
+                 '2. **Define the SMARTS pattern for a hemiaminal**:\n'
+                 '    - To identify a hemiaminal, look for a carbon atom (C) '
+                 'that connects both an amino group (`[NH2]`) and a hydroxy '
+                 'group (`[OH]`).\n'
                  '\n'
-                 "Here's the improved code:",
+                 '3. **Search for the substructure match** using the SMARTS '
+                 'pattern in the molecule created from the SMILES.\n'
+                 '\n'
+                 '4. **Output the result**: If any such carbon with both amino '
+                 'and hydroxy groups is found, classify the molecule as a '
+                 'hemiaminal.\n'
+                 '\n'
+                 "Let's write the program now:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 22,
-    'num_false_positives': 100,
-    'num_true_negatives': 8849,
-    'num_false_negatives': 4,
+    'num_true_positives': 3,
+    'num_false_positives': 4,
+    'num_true_negatives': 142270,
+    'num_false_negatives': 23,
     'num_negatives': None,
-    'precision': 0.18032786885245902,
-    'recall': 0.8461538461538461,
-    'f1': 0.29729729729729726,
-    'accuracy': 0.9884122562674095,
-    'negative_predictive_value': 0.9995481757596295}
+    'precision': 0.42857142857142855,
+    'recall': 0.11538461538461539,
+    'f1': 0.18181818181818182,
+    'accuracy': 0.9998102600140548,
+    'negative_predictive_value': 0.999838361690315}

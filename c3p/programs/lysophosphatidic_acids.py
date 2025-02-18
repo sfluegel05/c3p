@@ -83,6 +83,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:32957',
                           'xrefs': ['Wikipedia:Lysophosphatidic_acid'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Attempt failed: F1 score of 0.6758620689655173 is too low.\n'
                'Outcomes:\n'

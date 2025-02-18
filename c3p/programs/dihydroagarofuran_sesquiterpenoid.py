@@ -1,74 +1,103 @@
 """
 Classifies: CHEBI:71548 dihydroagarofuran sesquiterpenoid
 """
+#!/usr/bin/env python
 """
 Classifies: dihydroagarofuran sesquiterpenoid
+Definition: Any sesquiterpenoid with a dihydroagarofuran skeleton.
+
+Heuristic:
+  1. Look for at least one tetrahydrofuran ring (5-membered ring with 1 oxygen and 4 carbons).
+  2. Check if that ring is fused with at least two other rings (i.e. shares at least 2 atoms with each additional ring).
+  3. In the fused ring system, roughly 10–20 carbons should be present (the true dihydroagarofuran core has 15 carbons).
+If these conditions are met then we classify the molecule as a dihydroagarofuran sesquiterpenoid.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem.AllChem import GetMorganFingerprintAsBitVect
-from rdkit.Chem import rdMolDescriptors
 
 def is_dihydroagarofuran_sesquiterpenoid(smiles: str):
     """
     Determines if a molecule is a dihydroagarofuran sesquiterpenoid based on its SMILES string.
     
+    This function uses a heuristic:
+      - It searches for a tetrahydrofuran ring (a 5-membered ring with one oxygen and four carbons).
+      - It then checks that this ring is fused (sharing at least two atoms) with at least two other rings.
+      - It also checks that the union of atoms in the fused ring system has a carbon count roughly 
+        consistent with a sesquiterpenoid core (about 15 carbons, here allowed in the 10 to 20 range).
+        
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
-        tuple: (bool, str) - (True/False for classification, reason for the classification)
+        bool: True if the molecule is classified as a dihydroagarofuran sesquiterpenoid, False otherwise.
+        str: Explanation for the classification decision.
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Core structure pattern for dihydroagarofuran skeleton
-    # Represents the characteristic tricyclic system with specific connectivity
-    core_pattern = Chem.MolFromSmarts("[C]1[C][C]2[C]3[C][C][C]([C])[C]3(O[C]1([C])[C])[C]2")
-    if not mol.HasSubstructMatch(core_pattern):
-        return False, "Missing dihydroagarofuran core structure"
-
-    # Count rings
+    # Get all rings in the molecule as tuples of atom indices.
     ring_info = mol.GetRingInfo()
-    if ring_info.NumRings() < 3:
-        return False, "Insufficient ring count for dihydroagarofuran skeleton"
-
-    # Check for ester groups (typically present in these compounds)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = len(mol.GetSubstructMatches(ester_pattern))
-    if ester_matches < 2:
-        return False, "Insufficient ester groups"
-
-    # Count carbons and oxygens
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if not ring_info or not ring_info.AtomRings():
+        return False, "No rings detected in the molecule"
+    rings = ring_info.AtomRings()
     
-    # Should have at least 15 carbons (sesquiterpenoid core)
-    if c_count < 15:
-        return False, "Insufficient carbon count for sesquiterpenoid"
+    # Look for candidate tetrahydrofuran rings:
+    candidate_thf_rings = []
+    for ring in rings:
+        if len(ring) == 5:
+            oxygen_count = 0
+            carbon_count = 0
+            for idx in ring:
+                symbol = mol.GetAtomWithIdx(idx).GetSymbol()
+                if symbol == 'O':
+                    oxygen_count += 1
+                elif symbol == 'C':
+                    carbon_count += 1
+            # A tetrahydrofuran ring typically has 1 O and 4 C.
+            if oxygen_count == 1 and carbon_count == 4:
+                candidate_thf_rings.append(set(ring))
     
-    # Should have multiple oxygens due to ester groups
-    if o_count < 4:
-        return False, "Insufficient oxygen count"
+    if not candidate_thf_rings:
+        return False, "No tetrahydrofuran (5-membered, 1O/4C) ring found"
+    
+    # Now, for each candidate THF ring, check for fusion with other rings:
+    for thf_ring in candidate_thf_rings:
+        fused_rings = [thf_ring]  # start with the THF ring
+        # Look for rings that share at least 2 atoms with our candidate THF ring.
+        for other_ring in rings:
+            other_ring_set = set(other_ring)
+            if other_ring_set == thf_ring:
+                continue
+            if len(thf_ring.intersection(other_ring_set)) >= 2:
+                fused_rings.append(other_ring_set)
+        if len(fused_rings) < 3:
+            # Not enough fused rings to match the dihydroagarofuran skeleton.
+            continue
+        
+        # Compute union of atoms in the fused ring system.
+        union_atoms = set()
+        for ring_set in fused_rings:
+            union_atoms = union_atoms.union(ring_set)
+        # Count carbons in the fused system.
+        core_carbons = 0
+        for idx in union_atoms:
+            if mol.GetAtomWithIdx(idx).GetSymbol() == 'C':
+                core_carbons += 1
+        # Many dihydroagarofuran cores are sesquiterpenoids (roughly 15 carbons).
+        # Allow some variation with substituents removed (here we require between 10 and 20 C).
+        if 10 <= core_carbons <= 20:
+            return True, ("Fused ring system detected with a tetrahydrofuran ring and ~{} core carbons (expected "
+                          "for a sesquiterpenoid).".format(core_carbons))
+    
+    return False, "No fused ring system consistent with a dihydroagarofuran skeleton was found"
 
-    # Check for characteristic bridged ring system
-    bridged_pattern = Chem.MolFromSmarts("[C]12[C][C][C]1[C][C]2")
-    if not mol.HasSubstructMatch(bridged_pattern):
-        return False, "Missing characteristic bridged ring system"
-
-    # Check for typical molecular weight range
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 250 or mol_wt > 1000:
-        return False, "Molecular weight outside typical range for dihydroagarofuran sesquiterpenoids"
-
-    # Count sp3 carbons (should have several)
-    sp3_c = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[CX4]")))
-    if sp3_c < 8:
-        return False, "Insufficient sp3 carbons for dihydroagarofuran skeleton"
-
-    return True, "Contains dihydroagarofuran skeleton with characteristic features"
+# If run as a script, some test cases can be executed.
+if __name__ == "__main__":
+    # Example: one of the provided SMILES for wilforidine.
+    test_smiles = "[C@@]12([C@@H]([C@@H]([C@@]3([C@H]([C@]14[C@]([C@H]([C@@H]([C@@H]2OC(=O)C)O)OC(C(CCC5=NC=CC=C5C(OC[C@@]3(O4)C)=O)(C)O)=O)(O)C)OC(C)=O)[H])OC(C)=O)OC(=O)C)COC(C)=O"
+    result, reason = is_dihydroagarofuran_sesquiterpenoid(test_smiles)
+    print("Result:", result)
+    print("Reason:", reason)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:71548',
@@ -79,114 +108,260 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:71548',
                           'xrefs': ['PMID:17898902'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 71,
+                           'log_lines_of_code': 4.2626798770413155,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 4,
+                                                 5,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 3,
+                                                 4,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1],
+                           'max_indent': 5,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'GetSymbol',
+                                                 'GetRingInfo',
+                                                 'AtomRings',
+                                                 'format',
+                                                 'union',
+                                                 'intersection',
+                                                 'GetAtomWithIdx',
+                                                 'MolFromSmiles',
+                                                 'append'],
+                           'methods_called_count': 9,
+                           'smarts_strings': [],
+                           'smarts_strings_count': 0,
+                           'defs': [   'is_dihydroagarofuran_sesquiterpenoid(smiles: '
+                                       'str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No rings detected in the '
+                                          'molecule"',
+                                          'False, "No tetrahydrofuran '
+                                          '(5-membered, 1O/4C) ring found"',
+                                          'True, ("Fused ring system detected '
+                                          'with a tetrahydrofuran ring and ~{} '
+                                          'core carbons (expected "',
+                                          'False, "No fused ring system '
+                                          'consistent with a dihydroagarofuran '
+                                          'skeleton was found"'],
+                           'returns_count': 5,
+                           'complexity': 4.852535975408263},
     'message': None,
-    'sample_true_negatives': [   {   'smiles': 'O([C@H](COC(=O)CCCCCCCCCCCCC)COC(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)C(=O)CCCCCCCCCCCCC',
-                                     'name': 'TG(14:0/14:0/22:2(13Z,16Z))',
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': 'O([C@@H]1O[C@@H]([C@H](O)[C@H](O[C@H]2O[C@@H]([C@H](O)[C@H](O)[C@H]2NC(=O)C)CO)[C@H]1O[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)CO)[C@H]4[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]4CO)OC[C@@H](O)[C@H](O)[C@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](O)[C@H]5O)CO)[C@@H](NC(=O)C)CO',
-                                     'name': 'N-[(2R,3R,4R,5R,6R)-2-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6R)-5-Acetamido-6-[(2R,3S,4R,5S)-5-acetamido-2,3,6-trihydroxy-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyhexoxy]-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-5-hydroxy-6-(hydroxymethyl)-3-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-4-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': 'P12(O[C@@]3(NC(=O)C)[C@@](O1)(O)[C@H](O)[C@H](O[C@]3(O2)O)CO)=O',
-                                     'name': 'N-Acetylglucosamine phosphate',
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': 'OC1=C(N=CC=C1)C',
-                                     'name': '3-hydroxyl-2-methylpyridine',
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': '[H][C@@]1(C)O[C@@]1([H])C1=C[C@H](O)[C@@H](C)OC1=O',
-                                     'name': 'aspyrone',
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': 'O=C1C(O)=C(NC2=C1C=C(C)C(=C2)C)C(=O)O',
-                                     'name': '3,4-dihydroxy-6,7-dimethyl-quinoline-2-carboxylic '
+    'sample_true_negatives': [   {   'smiles': 'O=C(N1[C@H](CCC1)C(O)=O)[C@@H](NC(=O)[C@@H](N)CC(O)=O)CCC(=O)N',
+                                     'name': 'Asp-Gln-Pro',
+                                     'reason': 'No tetrahydrofuran '
+                                               '(5-membered, 1O/4C) ring '
+                                               'found'},
+                                 {   'smiles': 'O1C=2C(C(O)=C(CC3=C(O)C=4C(OC3=O)=CC=CC4C)C1=O)=C(C=CC2)C',
+                                     'name': 'Gerberinol',
+                                     'reason': 'No tetrahydrofuran '
+                                               '(5-membered, 1O/4C) ring '
+                                               'found'},
+                                 {   'smiles': 'O=C(O)/C(=C/[C@H]1C=C(CC[C@@H]1C(C)C)CO)/COC(=O)C',
+                                     'name': '3-acetylgliocladic acid',
+                                     'reason': 'No tetrahydrofuran '
+                                               '(5-membered, 1O/4C) ring '
+                                               'found'},
+                                 {   'smiles': 'O=C(CCCCCCCCC)C=1C=CC(=NC1)CCCCCCCCC',
+                                     'name': '1-(6-Nonylpyridin-3-yl)decan-1-one',
+                                     'reason': 'No tetrahydrofuran '
+                                               '(5-membered, 1O/4C) ring '
+                                               'found'},
+                                 {   'smiles': 'CCC(=O)O[C@H]1[C@H](C)O[C@H](C[C@@]1(C)O)O[C@@H]1[C@@H](C)O[C@@H](O[C@H]2[C@@H](CC=O)C[C@@H](C)[C@@H](O)\\C=C\\C=C\\C[C@@H](C)OC(=O)C[C@@H](O)[C@@H]2OC)[C@H](O)[C@H]1N(C)C',
+                                     'name': 'Leucomycin A7',
+                                     'reason': 'No tetrahydrofuran '
+                                               '(5-membered, 1O/4C) ring '
+                                               'found'},
+                                 {   'smiles': 'C[C@H]1O[C@H](C[C@@H](O)[C@@H]1O)c1ccc2C(=O)C3=C([C@H](O)C[C@]4(O)C[C@@](C)(O)CC(=O)[C@]34O)C(=O)c2c1O',
+                                     'name': 'Urdamycinone F',
+                                     'reason': 'No tetrahydrofuran '
+                                               '(5-membered, 1O/4C) ring '
+                                               'found'},
+                                 {   'smiles': 'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP([O-])(=O)OP([O-])([O-])=O',
+                                     'name': 'all-trans-dodecaprenyl '
+                                             'diphosphate(3-)',
+                                     'reason': 'No rings detected in the '
+                                               'molecule'},
+                                 {   'smiles': '[O-][N+](=O)N1CN(CN(CN(C1)[N+]([O-])=O)[N+]([O-])=O)[N+]([O-])=O',
+                                     'name': 'octogen',
+                                     'reason': 'No tetrahydrofuran '
+                                               '(5-membered, 1O/4C) ring '
+                                               'found'},
+                                 {   'smiles': 'CC(=O)NCCC[NH2+]CCCC[NH2+]CCCNC(C)=O',
+                                     'name': 'N(1),N(12)-diacetylsperminium(2+)',
+                                     'reason': 'No rings detected in the '
+                                               'molecule'},
+                                 {   'smiles': 'C[C@@H]([C@H]1CC[C@H]2[C@H](CCc3cc(O)ccc3C)C(=O)CC[C@]12C)C(O)=O',
+                                     'name': '3-hydroxy-9-oxo-9,10-seco-23,24-bisnorchola-1,3,5(10)-trien-22-oic '
                                              'acid',
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': 'O1[C@@]2(OC(C)(C)[C@H]([C@H]2O)C)[C@H]([C@@H]3[C@@]4([C@@]1(C5=C(C(=C(O)C=C5)C)C=C4)CC3)C)C',
-                                     'name': 'Blazeispirol D',
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': 'CCS(=O)(=O)N1CC2(C1)CN([C@@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C',
-                                     'name': "[(1S)-1'-ethylsulfonyl-7-methoxy-2,9-dimethyl-1-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]yl]methanol",
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': 'CN(C)CC(=O)N1CCC2(CC1)CN([C@@H](C3=C2C4=C(N3)C=C(C=C4)OC)CO)C(=O)C5=CN=CC=C5',
-                                     'name': "2-(dimethylamino)-1-[(1S)-1-(hydroxymethyl)-7-methoxy-2-[oxo(3-pyridinyl)methyl]-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,4'-piperidine]yl]ethanone",
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'},
-                                 {   'smiles': 'O=C1C2(C(C(CC1(C(O)=C(C2=O)CC=C(C)C)CC=C(C)C)CC=C(C)C)(CCC=C(C)C)C)C(=O)C(CC)C',
-                                     'name': 'Adhyperforin',
-                                     'reason': 'Missing dihydroagarofuran core '
-                                               'structure'}],
-    'sample_false_negatives': [   {   'smiles': 'C1(C(O[C@@]2([C@](O)([C@@]34[C@H](OC(=O)C=5C=CC=CC5)[C@@]([H])([C@H]([C@H]([C@@]3([C@@H](OC(=O)C)[C@H]2OC(C)=O)COC(=O)C)OC(=O)C)OC(C)=O)[C@@](COC(C6=C(C1C)C=CN=C6)=O)(C)O4)C)[H])=O)C',
-                                      'name': 'cangorinine E-1',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
-                                  {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(C)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccoc1)OC(=O)c1ccoc1',
-                                      'name': 'orbiculin F',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
-                                  {   'smiles': '[C@@]1(C(O[C@@]2([C@](O)([C@@]34[C@H](OC(C)=O)[C@@]([H])([C@H]([C@H]([C@@]3([C@@H](OC(C=5C=CC=CC5)=O)[C@H]2OC(C)=O)COC(=O)C)OC(=O)C)OC(C)=O)[C@@](COC(C6=C([C@H]1C)C=CN=C6)=O)(C)O4)C)[H])=O)(C)O',
-                                      'name': 'wilfordinine C',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
-                                  {   'smiles': '[C@@H]1([C@H]([C@@]2([C@@H](OC(=O)C)[C@H]([C@]3([C@](O)([C@]42[C@H](OC(=O)C)[C@]1([H])[C@@](COC(C5=C(CC[C@@H](C(O3)=O)C)N=CC=C5)=O)(C)O4)C)[H])O)COC(=O)C)OC(=O)C)OC(C)=O',
-                                      'name': '2-O-deacetyleuonine',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
-                                  {   'smiles': 'C1(C(O[C@@]2([C@](O)([C@@]34[C@H](OC(=O)C=5C=CC=CC5)[C@@]([H])([C@H]([C@H]([C@@]3([C@@H](OC(=O)C)[C@H]2OC(C=6C=NC=CC6)=O)COC(=O)C)OC(=O)C)OC(C)=O)[C@@](COC(C7=C(C1C)N=CC=C7)=O)(C)O4)C)[H])=O)C',
-                                      'name': 'hyponine D',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
-                                  {   'smiles': '[C@@]12([C@@H]([C@@H]([C@@]3([C@H]([C@]14[C@]([C@H]([C@@H]([C@@H]2OC(=O)C)O)OC(C(CCC5=NC=CC=C5C(OC[C@@]3(O4)C)=O)(C)O)=O)(O)C)OC(C)=O)[H])OC(C)=O)OC(=O)C)COC(C)=O',
-                                      'name': 'wilforidine',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
+                                     'reason': 'No tetrahydrofuran '
+                                               '(5-membered, 1O/4C) ring '
+                                               'found'}],
+    'sample_false_negatives': [   {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(C)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1',
+                                      'name': 'orbiculin G',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
+                                  {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(C)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccoc1)OC(C)=O',
+                                      'name': 'orbiculin E',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
                                   {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(C)=O)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(=O)c1ccccc1',
                                       'name': '15-acetoxyorbiculin G',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
-                                  {   'smiles': '[C@@H]1([C@H]([C@@]2([C@@H](OC(=O)C)[C@H]([C@]3([C@]([C@]42[C@H](OC(=O)C)[C@]1([H])[C@@](COC(=O)C5=C(N=CC=C5)CC[C@@H](C(O3)=O)C)(C)O4)(C)O)[H])OC(C)=O)COC(=O)C)OC(=O)C)OC(C)=O',
-                                      'name': 'wilformine',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
-                                  {   'smiles': '[C@@H]1(C(O[C@@]2([C@](O)([C@@]34[C@H](O)[C@@]([H])([C@H]([C@H]([C@@]3([C@@H](OC(=O)C)[C@H]2OC(=O)C)COC(=O)C)OC(=O)C)OC(=O)C)[C@@](COC(C5=C(C1C)C=CN=C5)=O)(C)O4)C)[H])=O)C',
-                                      'name': 'tripfordine C',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'},
-                                  {   'smiles': '[H]C1OC(=O)c2cccnc2[C@@]([H])(C)[C@@]([H])(C)C(=O)O[C@@]2([H])[C@H](OC(=O)c3ccc(=O)n(C)c3)[C@H](OC(=O)c3ccccc3)[C@@]3(COC(C)=O)[C@H](OC(C)=O)[C@@H](O)[C@]4([H])[C@@H](OC(C)=O)[C@]3(O[C@@]14C)[C@@]2(C)O',
-                                      'name': 'emarginatine F',
-                                      'reason': 'Missing dihydroagarofuran '
-                                                'core structure'}],
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
+                                  {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O',
+                                      'name': '2alpha-acetoxy-1alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
+                                  {   'smiles': '[H][C@]12[C@@H](OC(C)=O)[C@H](OC(=O)c3ccoc3)[C@]3(C)[C@H](CC[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccoc1)OC(C)=O',
+                                      'name': 'orbiculin H',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
+                                  {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(COC(=O)c4ccccc4)[C@@H](OC(C)=O)[C@@H](O)C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1',
+                                      'name': '1alpha-acetoxy-2alpha-hydroxy-6beta,9beta,15-tribenzoyloxy-beta-dihydroagarofuran',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
+                                  {   'smiles': '[H][C@]12[C@H](OC(=O)c3ccccc3)[C@H](OC(=O)c3ccoc3)[C@]3(COC(C)=O)[C@H](CC[C@](C)(O)[C@@]3(OC1(C)C)[C@@H]2OC(=O)C(C)CC)OC(=O)C(C)CC',
+                                      'name': '1S,6R-di(2-)methylbutanoyloxy-4S-hydroxy-8S-benzoyloxy-9R-(3-)furancarbonyloxy-13-acetyloxy-beta-dihydroagarofuran',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
+                                  {   'smiles': '[C@]123[C@]([C@H]([C@H]([C@]([C@H]1OC(C)=O)(C(O2)(C)C)[H])OC(C=4C=CC=CC4)=O)OC(C5=CC=CC=C5)=O)([C@H]([C@H](C[C@]3(O)C)O)OC(=O)C)C',
+                                      'name': 'triptofordin C 2',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
+                                  {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(C)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccoc1)OC(=O)c1ccoc1',
+                                      'name': 'orbiculin F',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'},
+                                  {   'smiles': '[H][C@]12C[C@H](OC(=O)c3ccccc3)[C@]3(C)[C@@H](OC(C)=O)[C@H](C[C@@H](C)[C@@]3(OC1(C)C)[C@@H]2OC(=O)c1ccccc1)OC(C)=O',
+                                      'name': 'orbiculin A',
+                                      'reason': 'No fused ring system '
+                                                'consistent with a '
+                                                'dihydroagarofuran skeleton '
+                                                'was found'}],
     'attempt': 0,
-    'reasoning': 'Let me help create a program to classify dihydroagarofuran '
-                 'sesquiterpenoids. Based on the examples provided, these '
-                 'compounds have some key characteristics:\n'
+    'reasoning': 'Below is one possible solution. Note that the '
+                 'dihydroagarofuran skeleton is a complex, polycyclic '
+                 'structure. In this example we use a heuristic approach: we '
+                 'first look for a tetrahydrofuran ring (a five‐membered ring '
+                 'made up of four carbons and one oxygen) and then check '
+                 'whether that ring is fused (shares at least two atoms) with '
+                 'at least two other rings and that the union of atoms in the '
+                 'fused system has roughly the right number of carbons (around '
+                 '10–20) to be considered a sesquiterpenoid core (about 15 '
+                 'carbons). This method will classify many dihydroagarofuran '
+                 'sesquiterpenoids correctly, although it is necessarily '
+                 'approximate given the complexity of these molecules. (If a '
+                 'more robust classification is needed, one would likely '
+                 'require a dedicated curated SMARTS pattern or more '
+                 'elaborated logic.) \n'
                  '\n'
-                 '1. They share a common core structure (dihydroagarofuran '
-                 'skeleton)\n'
-                 '2. They typically have multiple ester groups (acetoxy, '
-                 'benzoyloxy, etc.)\n'
-                 '3. They have a specific carbon framework with characteristic '
-                 'ring system\n'
-                 '4. They usually contain 15 carbons in the core (as '
-                 'sesquiterpenoids)\n'
-                 '\n'
-                 "Here's the program to classify these compounds:",
+                 'Below is the full Python code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 0,
-    'num_false_positives': 0,
-    'num_true_negatives': 142274,
-    'num_false_negatives': 26,
+    'num_true_positives': 15,
+    'num_false_positives': 3250,
+    'num_true_negatives': 139024,
+    'num_false_negatives': 11,
     'num_negatives': None,
-    'precision': 0.0,
-    'recall': 0.0,
-    'f1': 0.0,
-    'accuracy': 0.9998172874209417,
-    'negative_predictive_value': 0.9998172874209417}
+    'precision': 0.004594180704441042,
+    'recall': 0.5769230769230769,
+    'f1': 0.00911577028258888,
+    'accuracy': 0.9770836261419537,
+    'negative_predictive_value': 0.9999208832308412}

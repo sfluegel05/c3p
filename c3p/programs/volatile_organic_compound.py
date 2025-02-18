@@ -2,119 +2,125 @@
 Classifies: CHEBI:134179 volatile organic compound
 """
 """
-Classifies: CHEBI:33262 volatile organic compound (VOC)
+Classifies: Volatile Organic Compound (VOC)
+Definition: “Any organic compound having an initial boiling point less than or equal 
+to 250 °C (482 °F) measured at a standard atmospheric pressure of 101.3 kPa.”
+
+Revised Heuristic Strategy:
+  1. The molecule must contain at least one carbon atom.
+  2. Calculate descriptors: molecular weight (MW) and topological polar surface area (TPSA).
+  3. Count non‐halogen heteroatoms (excluding H, carbon and common halogens F, Cl, Br, I).
+  4. Assess ring count – if acyclic, allow higher MW cutoff (<=400 Da); if one or more rings,
+     use a stricter cutoff (<=300 Da).
+  5. If the molecule is “highly functionalized” (≥3 non‐halogen heteroatoms, or if it has 
+     ≥2 rings and ≥2 heteroatoms) then assume it has a high boiling point.
+  6. If the molecule contains a problematic functional group (an ester group without also 
+     having a carboxylic acid group, a carboxylic acid, aromatic hydroxyl (phenol), aromatic 
+     amine, or a cyclic ketone), disqualify as VOC.
+  7. Finally, if MW is below the cutoff and TPSA is <60 Å², classify as VOC.
+
+Note: This heuristic is approximate.
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
 from rdkit.Chem import rdMolDescriptors
 
 def is_volatile_organic_compound(smiles: str):
     """
-    Determines if a molecule is a volatile organic compound based on its SMILES string.
-    VOCs are organic compounds with boiling point ≤ 250°C at standard pressure (101.3 kPa).
+    Determines if a molecule is a volatile organic compound (VOC) based on a 
+    heuristic estimation.
 
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if molecule is a VOC, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is classified as VOC, False otherwise.
+        str: Explanation of the classification.
     """
-    # Parse SMILES
+    # Parse SMILES into a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check if organic (contains carbon)
+    
+    # Check that the molecule is organic (has at least one carbon atom)
     if not any(atom.GetAtomicNum() == 6 for atom in mol.GetAtoms()):
-        return False, "Not an organic compound (no carbon atoms)"
+        return False, "Not organic (contains no carbon)"
+    
+    # Calculate descriptors: molecular weight (MW) and topological polar surface area (TPSA)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    tpsa = rdMolDescriptors.CalcTPSA(mol)
+    
+    # Count the non-halogen heteroatoms (exclude H=1, C=6 and common halogens: F=9, Cl=17, Br=35, I=53).
+    allowed_halogens = {9, 17, 35, 53}
+    hetero_count = sum(1 for atom in mol.GetAtoms() 
+                        if atom.GetAtomicNum() not in (1, 6) and atom.GetAtomicNum() not in allowed_halogens)
+    
+    # Get ring information: number of rings
+    ring_count = mol.GetRingInfo().NumRings()
+    # Define "simple" as having no rings.
+    simple = (ring_count == 0)
+    
+    # Set molecular weight cutoff based on ring content:
+    # For simple (acyclic) molecules, allow a higher cutoff (<=400 Da);
+    # for molecules with rings, use a stricter cutoff (<=300 Da).
+    cutoff_mw = 400 if simple else 300
 
-    # Calculate molecular descriptors
-    mol_wt = Descriptors.ExactMolWt(mol)
-    rotatable_bonds = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    tpsa = Descriptors.TPSA(mol)
-    log_p = Descriptors.MolLogP(mol)
+    # Extra rejection based on high functionality:
+    if hetero_count >= 3:
+        return False, f"Too many heteroatoms ({hetero_count}), suggesting high functionality and high boiling point."
+    if (not simple) and hetero_count >= 2 and ring_count >= 2:
+        return False, f"Multiple rings ({ring_count}) and heteroatoms ({hetero_count}) suggest non‐volatile functionality."
     
-    # Count atoms and rings
-    num_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    num_heteroatoms = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() not in [1, 6])
-    num_rings = rdMolDescriptors.CalcNumRings(mol)
-    num_aromatic_rings = rdMolDescriptors.CalcNumAromaticRings(mol)
+    # Define SMARTS patterns for problematic functional groups:
+    # 1. Ester group (but allow if there is also a carboxylic acid).
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+    acid_pattern  = Chem.MolFromSmarts("[CX3](=O)[OX1H]")
+    if mol.HasSubstructMatch(ester_pattern) and not mol.HasSubstructMatch(acid_pattern):
+        return False, "Contains an ester group (without accompanying acid functionality), which tends to increase the boiling point."
     
-    # Structural patterns
-    alcohol_pattern = Chem.MolFromSmarts("[CH2,CH3,CH1][OH1]")
-    alkene_pattern = Chem.MolFromSmarts("[C]=[C]")
-    alkyne_pattern = Chem.MolFromSmarts("[C]#[C]")
-    small_ring_pattern = Chem.MolFromSmarts("[r3,r4,r5,r6]")
-    complex_ring_pattern = Chem.MolFromSmarts("[r7,r8,r9,r10,r11,r12]")
+    # 2. Carboxylic acid group.
+    if mol.HasSubstructMatch(acid_pattern):
+        return False, "Contains a carboxylic acid group, which tends to raise the boiling point."
     
-    has_alcohol = mol.HasSubstructMatch(alcohol_pattern)
-    has_alkene = mol.HasSubstructMatch(alkene_pattern)
-    has_alkyne = mol.HasSubstructMatch(alkyne_pattern)
-    has_small_ring = mol.HasSubstructMatch(small_ring_pattern)
-    has_complex_ring = mol.HasSubstructMatch(complex_ring_pattern)
+    # 3. Aromatic hydroxyl (phenol): oxygen directly attached to an aromatic carbon.
+    phenol_pattern = Chem.MolFromSmarts("c[OH]")
+    if mol.HasSubstructMatch(phenol_pattern):
+        return False, "Contains an aromatic hydroxyl group (phenol), known to increase boiling point."
+    
+    # 4. Aromatic primary amine: aromatic carbon with attached NH2.
+    arylamine_pattern = Chem.MolFromSmarts("c[NH2]")
+    if mol.HasSubstructMatch(arylamine_pattern):
+        return False, "Contains an aromatic amine group, which tends to increase boiling point."
+    
+    # 5. Cyclic ketone: carbonyl group within a ring.
+    cyclic_ketone = Chem.MolFromSmarts("[R][CX3](=O)[R]")
+    if mol.HasSubstructMatch(cyclic_ketone):
+        return False, "Contains a cyclic ketone group, which tends to raise the boiling point."
+        
+    # Final decision based on descriptors:
+    # We require TPSA to be under 60 Å² and molecular weight to be within the cutoff.
+    if mol_wt <= cutoff_mw and tpsa < 60:
+        return True, (f"Estimated as VOC: MW ({mol_wt:.1f} Da) <= {cutoff_mw} and TPSA ({tpsa:.1f} Å²) < 60, "
+                      "suggesting a low boiling point (<=250 °C).")
+    else:
+        return False, (f"Estimated not VOC: MW ({mol_wt:.1f} Da) and TPSA ({tpsa:.1f} Å²) do not meet criteria "
+                       f"for low boiling point (<=250 °C) with cutoff MW = {cutoff_mw} Da.")
 
-    # Automatic rejections
-    if mol_wt > 350 and not has_alcohol:  # Higher limit for alcohols
-        return False, f"Molecular weight ({mol_wt:.1f}) too high for VOC"
+# Example usage (for testing)
+if __name__ == "__main__":
+    test_cases = {
+        "nonan-2-ol": "CCCCCCCC(C)O",
+        "decan-2-ol": "CCCCCCCCC(C)O",
+        "2-dodecene": "[H]C(C)=C([H])CCCCCCCCC",
+        "henicosan-3-ol": "CCCCCCCCCCCCCCCCCC(O)CC",
+        "hexacosan-4-ol": "CCCCCCCCCCCCCCCCCCCCCCCC(O)CCC",
+        "thiophene": "c1ccsc1",
+        "4-methylpent-3-enoic acid": "OC(=O)CC=C(C)C",
+        "pre-flavunoidine(2+)": "C1(C2CC34C(C1(OC2(CC3)C)C)CCC4C)[NH2+]CCCCC[NH+](C)C",
+    }
     
-    if tpsa > 90:  # Reduced from 100
-        return False, f"Too polar (TPSA={tpsa:.1f}) for VOC"
-        
-    if num_rings > 4 and not has_alcohol:
-        return False, "Too many ring systems for VOC"
-        
-    if has_complex_ring and num_heteroatoms > 3:
-        return False, "Complex ring system with multiple heteroatoms"
-        
-    if num_aromatic_rings > 3:
-        return False, "Too many aromatic rings for VOC"
-
-    # Special cases - always consider as VOCs
-    if any([
-        (mol_wt < 150),  # Very small molecules
-        (mol_wt < 200 and num_rings == 1),  # Small monocyclic compounds
-        (has_alcohol and num_carbons <= 20),  # Medium-chain alcohols
-        (has_alkene and mol_wt < 250 and num_rings <= 2),  # Small alkenes
-        (has_alkyne and mol_wt < 200),  # Small alkynes
-    ]):
-        reasons = []
-        if mol_wt < 150:
-            reasons.append(f"very low molecular weight ({mol_wt:.1f})")
-        if mol_wt < 200 and num_rings == 1:
-            reasons.append("small monocyclic compound")
-        if has_alcohol and num_carbons <= 20:
-            reasons.append("medium-chain alcohol")
-        if has_alkene and mol_wt < 250:
-            reasons.append("small alkene")
-        if has_alkyne and mol_wt < 200:
-            reasons.append("small alkyne")
-        return True, "VOC due to: " + ", ".join(reasons)
-
-    # Long-chain alcohol special case
-    if has_alcohol and num_carbons <= 30:  # Increased from previous limit
-        if rotatable_bonds <= 25:  # Increased from 20
-            return True, "Long-chain alcohol within VOC parameters"
-    
-    # Combined property score for other cases
-    volatility_score = (
-        -0.004 * mol_wt +  # Reduced weight factor
-        -0.2 * rotatable_bonds +  # Reduced penalty for flexibility
-        -0.05 * tpsa +  # Reduced polarity penalty
-        -0.1 * log_p +  # Reduced hydrophobicity penalty
-        -1.0 * num_rings +  # Penalty for ring systems
-        -0.5 * num_heteroatoms +  # Penalty for heteroatoms
-        (2 if has_alcohol else 0) +  # Bonus for alcohol groups
-        (1 if has_alkene else 0) +  # Bonus for alkenes
-        (1 if has_alkyne else 0) +  # Bonus for alkynes
-        (0.5 if has_small_ring else 0)  # Reduced bonus for rings
-    )
-    
-    if volatility_score > -8:  # Adjusted threshold
-        return True, "VOC based on combined physicochemical properties"
-        
-    return False, "Properties suggest non-volatile compound"
+    for name, sm in test_cases.items():
+        voc, reason = is_volatile_organic_compound(sm)
+        print(f"Name: {name}\n  SMILES: {sm}\n  VOC: {voc}\n  Reason: {reason}\n")
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:134179',
@@ -128,975 +134,552 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:134179',
                           'xrefs': ['Wikipedia:Volatile_organic_compound'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 78,
+                           'log_lines_of_code': 4.356708826689592,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'CalcExactMolWt',
+                                                 'GetAtoms',
+                                                 'NumRings',
+                                                 'MolFromSmiles',
+                                                 'HasSubstructMatch',
+                                                 'GetRingInfo',
+                                                 'CalcTPSA',
+                                                 'MolFromSmarts',
+                                                 'items',
+                                                 'GetAtomicNum'],
+                           'methods_called_count': 10,
+                           'smarts_strings': [   '[R][CX3](=O)[R]',
+                                                 '[CX3](=O)[OX1H]',
+                                                 'c[OH]',
+                                                 'c[NH2]',
+                                                 '[CX3](=O)[OX2H0]'],
+                           'smarts_strings_count': 5,
+                           'defs': [   'is_volatile_organic_compound(smiles: '
+                                       'str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Not organic (contains no '
+                                          'carbon)"',
+                                          'False, f"Too many heteroatoms '
+                                          '({hetero_count}), suggesting high '
+                                          'functionality and high boiling '
+                                          'point."',
+                                          'False, f"Multiple rings '
+                                          '({ring_count}) and heteroatoms '
+                                          '({hetero_count}) suggest '
+                                          'non‐volatile functionality."',
+                                          'False, "Contains an ester group '
+                                          '(without accompanying acid '
+                                          'functionality), which tends to '
+                                          'increase the boiling point."',
+                                          'False, "Contains a carboxylic acid '
+                                          'group, which tends to raise the '
+                                          'boiling point."',
+                                          'False, "Contains an aromatic '
+                                          'hydroxyl group (phenol), known to '
+                                          'increase boiling point."',
+                                          'False, "Contains an aromatic amine '
+                                          'group, which tends to increase '
+                                          'boiling point."',
+                                          'False, "Contains a cyclic ketone '
+                                          'group, which tends to raise the '
+                                          'boiling point."',
+                                          'True, (f"Estimated as VOC: MW '
+                                          '({mol_wt:.1f} Da) <= {cutoff_mw} '
+                                          'and TPSA ({tpsa:.1f} Å²) < 60, "',
+                                          'False, (f"Estimated not VOC: MW '
+                                          '({mol_wt:.1f} Da) and TPSA '
+                                          '({tpsa:.1f} Å²) do not meet '
+                                          'criteria "'],
+                           'returns_count': 11,
+                           'complexity': 5.671341765337918},
     'message': '\n'
-               'Attempt failed: F1 score of 0.7769110764430577 is too low.\n'
+               'Attempt failed: F1 score of 0.07133343199644812 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: CC(C)=CCC\\C(C)=C/CC[C@@](C)(O)C=C '
-               'NAME: (3R,6Z)-nerolidol REASON: CORRECT Likely VOC due to: low '
-               'molecular weight (222.2), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: CCCCCO NAME: pentan-1-ol REASON: CORRECT Likely VOC '
-               'due to: low molecular weight (88.1), short carbon chain (C5), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alcohol group\n'
-               ' * SMILES: CCCCCCC(O)CC NAME: nonan-3-ol REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (144.2), short carbon '
-               'chain (C9), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCC(O)CCCCCCC NAME: nonadecan-8-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: ClCCCl NAME: 1,2-dichloroethane REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (98.0), short carbon '
-               'chain (C2), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CCCCCCC(C)O NAME: octan-2-ol REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (130.1), short carbon chain '
-               '(C8), relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group\n'
-               ' * SMILES: CC(C)CCCCCCC(C)C NAME: 2,9-dimethyldecane REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (170.2), short '
-               'carbon chain (C12), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CCCCCCCCCCCCCC(O)CCCCCCC NAME: henicosan-8-ol '
-               'REASON: CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: OCC/C=C/CC NAME: (E)-hex-3-en-1-ol REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (100.1), short carbon '
-               'chain (C6), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains alkene\n'
-               ' * SMILES: CCC(CC)CC NAME: 3-ethylpentane REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (100.1), short carbon '
-               'chain (C7), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CCCCCCCCCC(O)CCCCC NAME: pentadecan-6-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (228.2), '
-               'contains alcohol group\n'
-               ' * SMILES: c1ccccc1 NAME: benzene REASON: CORRECT Likely VOC '
-               'due to: low molecular weight (78.0), short carbon chain (C6), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
+               'True positives: SMILES: CCCCCCCC(C)O NAME: nonan-2-ol REASON: '
+               'CORRECT Estimated as VOC: MW (144.2 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCC(C)O NAME: decan-2-ol REASON: CORRECT '
+               'Estimated as VOC: MW (158.2 Da) <= 350 and TPSA (20.2 Å²) < '
+               '60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: [H]C(C)=C([H])CCCCCCCCC NAME: 2-dodecene REASON: '
+               'CORRECT Estimated as VOC: MW (168.2 Da) <= 350 and TPSA (0.0 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCC(O)CCCCCCC NAME: heptadecan-8-ol REASON: '
+               'CORRECT Estimated as VOC: MW (256.3 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCC(O)CC NAME: henicosan-3-ol '
+               'REASON: CORRECT Estimated as VOC: MW (312.3 Da) <= 350 and '
+               'TPSA (20.2 Å²) < 60, suggesting a low boiling point (<=250 '
+               '°C).\n'
+               ' * SMILES: C(CC(C)C)(C(C)C)C NAME: 2,3,5-trimethylhexane '
+               'REASON: CORRECT Estimated as VOC: MW (128.2 Da) <= 350 and '
+               'TPSA (0.0 Å²) < 60, suggesting a low boiling point (<=250 '
+               '°C).\n'
+               ' * SMILES: CCC(C)CC NAME: 3-methylpentane REASON: CORRECT '
+               'Estimated as VOC: MW (86.1 Da) <= 350 and TPSA (0.0 Å²) < 60, '
+               'suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCCCCCCCC(O)CC NAME: octadecan-3-ol REASON: '
+               'CORRECT Estimated as VOC: MW (270.3 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCC(O)CCCCCCC NAME: pentadecan-8-ol REASON: '
+               'CORRECT Estimated as VOC: MW (228.2 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: c1ccsc1 NAME: thiophene REASON: CORRECT Estimated '
+               'as VOC: MW (84.0 Da) <= 300 and TPSA (0.0 Å²) < 60, suggesting '
+               'a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCCCC(O)CCCCCCCCC NAME: henicosan-10-ol '
+               'REASON: CORRECT Estimated as VOC: MW (312.3 Da) <= 350 and '
+               'TPSA (20.2 Å²) < 60, suggesting a low boiling point (<=250 '
+               '°C).\n'
+               ' * SMILES: CC(C)=CCC\\C(C)=C\\CC[C@](C)(O)C=C NAME: '
+               '(3S,6E)-nerolidol REASON: CORRECT Estimated as VOC: MW (222.2 '
+               'Da) <= 350 and TPSA (20.2 Å²) < 60, suggesting a low boiling '
+               'point (<=250 °C).\n'
+               ' * SMILES: CCCCCCC(C)O NAME: octan-2-ol REASON: CORRECT '
+               'Estimated as VOC: MW (130.1 Da) <= 350 and TPSA (20.2 Å²) < '
+               '60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCCCC(O)CCCCC NAME: heptadecan-6-ol REASON: '
+               'CORRECT Estimated as VOC: MW (256.3 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCCCCCC(O)CCCC NAME: octadecan-5-ol REASON: '
+               'CORRECT Estimated as VOC: MW (270.3 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: OC(=O)CC=C(C)C NAME: 4-methylpent-3-enoic acid '
+               'REASON: CORRECT Estimated as VOC: MW (114.1 Da) <= 350 and '
+               'TPSA (37.3 Å²) < 60, suggesting a low boiling point (<=250 '
+               '°C).\n'
+               ' * SMILES: CCCCCCCCCO NAME: nonan-1-ol REASON: CORRECT '
+               'Estimated as VOC: MW (144.2 Da) <= 350 and TPSA (20.2 Å²) < '
+               '60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCC(O)CCCCCC NAME: tridecan-7-ol REASON: '
+               'CORRECT Estimated as VOC: MW (200.2 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: C(/C=C/C=C/C)([H])=O NAME: (E,E)-2,4-hexadienal '
+               'REASON: CORRECT Estimated as VOC: MW (96.1 Da) <= 350 and TPSA '
+               '(17.1 Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CC/C=C\\CCCCCO NAME: (Z)-non-6-en-1-ol REASON: '
+               'CORRECT Estimated as VOC: MW (142.1 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCO NAME: docosan-1-ol REASON: '
+               'CORRECT Estimated as VOC: MW (326.4 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: C(CC(C)C)(CCC)C NAME: 2,4-dimethylheptane REASON: '
+               'CORRECT Estimated as VOC: MW (128.2 Da) <= 350 and TPSA (0.0 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCC(C)O NAME: octadecan-2-ol REASON: '
+               'CORRECT Estimated as VOC: MW (270.3 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: CCCCCCCCCCCCCCC(C)O NAME: hexadecan-2-ol REASON: '
+               'CORRECT Estimated as VOC: MW (242.3 Da) <= 350 and TPSA (20.2 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: ClC(Cl)C(Cl)(Cl)Cl NAME: pentachloroethane REASON: '
+               'CORRECT Estimated as VOC: MW (199.9 Da) <= 350 and TPSA (0.0 '
+               'Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               'False positives: SMILES: OC(=O)CCCCCCCC=CCC=CCCCC NAME: '
+               '9,12-Heptadecadienoic acid REASON: WRONGLY CLASSIFIED '
+               'Estimated as VOC: MW (266.2 Da) <= 350 and TPSA (37.3 Å²) < '
+               '60, suggesting a low boiling point (<=250 °C).\n'
                ' * SMILES: '
-               'C1(=C(C(=C(C(=C1[2H])[2H])[2H])[2H])[2H])C([2H])([2H])[2H] '
-               'NAME: toluene-d8 REASON: CORRECT Likely VOC due to: low '
-               'molecular weight (100.1), short carbon chain (C7), relatively '
-               'rigid structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: C1COCCO1 NAME: 1,4-dioxane REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (88.1), short carbon chain '
-               '(C4), relatively rigid structure, moderate hydrophobicity, '
-               'contains small ring\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCC(O)CCC NAME: icosan-4-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: [H][C@]1(CCC(C)=C[C@H]1O)[C@H](C)CCC=C(C)C NAME: '
-               '(1S,6S,7R)-sesquipiperitol REASON: CORRECT Likely VOC due to: '
-               'low molecular weight (222.2), relatively rigid structure, '
-               'moderate hydrophobicity, contains alcohol group, contains '
-               'alkene, contains small ring\n'
-               ' * SMILES: CCCCCCCCCCCCC(O)CCCCCC NAME: nonadecan-7-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
+               'O1C([C@]2([C@@](C[C@]1(C)C=C)(C=C(CC2)C)[H])[H])(C)C NAME: '
+               'Cabreuva oxide D REASON: WRONGLY CLASSIFIED Estimated as VOC: '
+               'MW (220.2 Da) <= 300 and TPSA (9.2 Å²) < 60, suggesting a low '
+               'boiling point (<=250 °C).\n'
+               ' * SMILES: O1C2(C(CCC=C2CC)(C)C)C=CC1C NAME: Etaspirene '
+               'REASON: WRONGLY CLASSIFIED Estimated as VOC: MW (206.2 Da) <= '
+               '300 and TPSA (9.2 Å²) < 60, suggesting a low boiling point '
+               '(<=250 °C).\n'
+               ' * SMILES: O=C(\\C(=C\\CCC)\\C)C NAME: 3-Methyl-3-hepten-2-one '
+               'REASON: WRONGLY CLASSIFIED Estimated as VOC: MW (126.1 Da) <= '
+               '350 and TPSA (17.1 Å²) < 60, suggesting a low boiling point '
+               '(<=250 °C).\n'
+               ' * SMILES: OC1(C(C2(C(C(CCC2)(C)C)CC1)C)CCC(C=C)=C)C NAME: '
+               '8alpha-13(16),14-Labdadien-8-ol REASON: WRONGLY CLASSIFIED '
+               'Estimated as VOC: MW (290.3 Da) <= 300 and TPSA (20.2 Å²) < '
+               '60, suggesting a low boiling point (<=250 °C).\n'
+               " * SMILES: C1CCC(C1)=C1CCCC1 NAME: 1,1'-bi(cyclopentylidene) "
+               'REASON: WRONGLY CLASSIFIED Estimated as VOC: MW (136.1 Da) <= '
+               '300 and TPSA (0.0 Å²) < 60, suggesting a low boiling point '
+               '(<=250 °C).\n'
+               ' * SMILES: CN(C\\C=C\\C#CC(C)(C)C)Cc1cccc2ccccc12 NAME: '
+               'terbinafine REASON: WRONGLY CLASSIFIED Estimated as VOC: MW '
+               '(291.2 Da) <= 300 and TPSA (3.2 Å²) < 60, suggesting a low '
+               'boiling point (<=250 °C).\n'
+               ' * SMILES: OC(=O)CCCC\\C=C\\CCCCC NAME: 6-lauroleic acid '
+               'REASON: WRONGLY CLASSIFIED Estimated as VOC: MW (198.2 Da) <= '
+               '350 and TPSA (37.3 Å²) < 60, suggesting a low boiling point '
+               '(<=250 °C).\n'
+               ' * SMILES: C(CCCC)CCC/C=C\\C/C=C\\C/C=C\\CC NAME: '
+               '3Z,6Z,9Z-Octadecatriene REASON: WRONGLY CLASSIFIED Estimated '
+               'as VOC: MW (248.3 Da) <= 350 and TPSA (0.0 Å²) < 60, '
+               'suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: C1C(=CCC=C1)C NAME: 1,4-Cyclohexadiene, 1-methyl- '
+               'REASON: WRONGLY CLASSIFIED Estimated as VOC: MW (94.1 Da) <= '
+               '300 and TPSA (0.0 Å²) < 60, suggesting a low boiling point '
+               '(<=250 °C).\n'
+               ' * SMILES: OC(=O)/C=C\\CC\\C=C\\CCC NAME: 2Z,6E-decadienoic '
+               'acid REASON: WRONGLY CLASSIFIED Estimated as VOC: MW (168.1 '
+               'Da) <= 350 and TPSA (37.3 Å²) < 60, suggesting a low boiling '
+               'point (<=250 °C).\n'
+               ' * SMILES: C[C@H]1CC[C@H](CC2=C1CC[C@@H]2C)C(C)=C NAME: '
+               'alpha-guaiene REASON: WRONGLY CLASSIFIED Estimated as VOC: MW '
+               '(204.2 Da) <= 300 and TPSA (0.0 Å²) < 60, suggesting a low '
+               'boiling point (<=250 °C).\n'
+               ' * SMILES: ClC(Cl)(F)F NAME: dichlorodifluoromethane REASON: '
+               'WRONGLY CLASSIFIED Estimated as VOC: MW (119.9 Da) <= 350 and '
+               'TPSA (0.0 Å²) < 60, suggesting a low boiling point (<=250 '
+               '°C).\n'
+               ' * SMILES: OCCCCCC/C=C/CC NAME: 7E-Decen-1-ol REASON: WRONGLY '
+               'CLASSIFIED Estimated as VOC: MW (156.2 Da) <= 350 and TPSA '
+               '(20.2 Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: C(CCC(C)C)CCCCCC NAME: Undecane, 2-methyl- REASON: '
+               'WRONGLY CLASSIFIED Estimated as VOC: MW (170.2 Da) <= 350 and '
+               'TPSA (0.0 Å²) < 60, suggesting a low boiling point (<=250 '
+               '°C).\n'
+               ' * SMILES: OC(=O)C/C(=C\\CCCCCC)/C NAME: '
+               '(Z)-3-Methyl-3-decenoic acid REASON: WRONGLY CLASSIFIED '
+               'Estimated as VOC: MW (184.1 Da) <= 350 and TPSA (37.3 Å²) < '
+               '60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: O1[C@H]([C@H]1C/C=C\\C/C=C\\CC)CCCCCCCCC NAME: '
+               '9S,10R-Epoxy-3Z,6Z-nonadecadiene REASON: WRONGLY CLASSIFIED '
+               'Estimated as VOC: MW (278.3 Da) <= 300 and TPSA (12.5 Å²) < '
+               '60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: '
+               'C[C@]12CC[C@H]3[C@@H](CCC4=CCCC[C@H]34)[C@@H]1CC[C@@]2(O)C#C '
+               'NAME: Lynestrenol REASON: WRONGLY CLASSIFIED Estimated as VOC: '
+               'MW (284.2 Da) <= 300 and TPSA (20.2 Å²) < 60, suggesting a low '
+               'boiling point (<=250 °C).\n'
+               ' * SMILES: CC(=O)CCCCC=C NAME: 7-octen-2-one REASON: WRONGLY '
+               'CLASSIFIED Estimated as VOC: MW (126.1 Da) <= 350 and TPSA '
+               '(17.1 Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: O=C(CCC)C(=O)CC NAME: 3,4-Heptanedione REASON: '
+               'WRONGLY CLASSIFIED Estimated as VOC: MW (128.1 Da) <= 350 and '
+               'TPSA (34.1 Å²) < 60, suggesting a low boiling point (<=250 '
+               '°C).\n'
+               ' * SMILES: C1(C2C1C=C(CC2)C)(C)C NAME: '
+               '3,7,7-Trimethylbicyclo[4.1.0]hept-2-ene REASON: WRONGLY '
+               'CLASSIFIED Estimated as VOC: MW (136.1 Da) <= 300 and TPSA '
+               '(0.0 Å²) < 60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: C1CCCCC1[NH+](C)C NAME: '
+               'N,N-dimethylcyclohexylaminium REASON: WRONGLY CLASSIFIED '
+               'Estimated as VOC: MW (128.1 Da) <= 300 and TPSA (4.4 Å²) < 60, '
+               'suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: O1C(=NC(=C1C)CC)CCCCC NAME: '
+               '4-Ethyl-5-methyl-2-pentyloxazol REASON: WRONGLY CLASSIFIED '
+               'Estimated as VOC: MW (181.1 Da) <= 300 and TPSA (26.0 Å²) < '
+               '60, suggesting a low boiling point (<=250 °C).\n'
+               ' * SMILES: C1Oc2ccccc2C[C@H]1c1ccccc1 NAME: (S)-isoflavan '
+               'REASON: WRONGLY CLASSIFIED Estimated as VOC: MW (210.1 Da) <= '
+               '300 and TPSA (9.2 Å²) < 60, suggesting a low boiling point '
+               '(<=250 °C).\n'
+               ' * SMILES: CCCOCCC(C)=O NAME: 4-propoxy-2-butanone REASON: '
+               'WRONGLY CLASSIFIED Estimated as VOC: MW (130.1 Da) <= 350 and '
+               'TPSA (26.3 Å²) < 60, suggesting a low boiling point (<=250 '
+               '°C).\n'
+               'False negatives: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)CCC NAME: '
+               'hexacosan-4-ol REASON: MISSED Estimated not VOC: MW (382.4 Da) '
+               'and TPSA (20.2 Å²) do not meet criteria for low boiling point '
+               '(<=250 °C) with cutoff MW = 350 Da.\n'
+               ' * SMILES: '
+               'COc1cc(ccc1O)[C@@H](O)[C@@H]1CO[C@@H]([C@H]1CO)c1ccc(O)c(OC)c1 '
+               'NAME: tanegool REASON: MISSED Too many heteroatoms (7), '
+               'suggesting high functionality and high boiling point.\n'
+               ' * SMILES: O=C1C(OC2=C(C(O)=CC(=C2)C)C)=C(C(=O)C(=C1C)O)C '
+               'NAME: Aculeatusquinone A REASON: MISSED Too many heteroatoms '
+               '(5), suggesting high functionality and high boiling point.\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCCCC NAME: hexacosan-6-ol '
+               'REASON: MISSED Estimated not VOC: MW (382.4 Da) and TPSA (20.2 '
+               'Å²) do not meet criteria for low boiling point (<=250 °C) with '
+               'cutoff MW = 350 Da.\n'
                ' * SMILES: '
                'C1(C2CC34C(C1(OC2(CC3)C)C)CCC4C)[NH2+]CCCCC[NH+](C)C NAME: '
-               'pre-flavunoidine(2+) REASON: CORRECT Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: ClC(C(Cl)CCl)CCl NAME: 1,2,3,4-tetrachlorobutane '
-               'REASON: CORRECT Likely VOC due to: low molecular weight '
-               '(193.9), short carbon chain (C4), relatively rigid structure, '
-               'moderate hydrophobicity\n'
-               ' * SMILES: CC#N NAME: acetonitrile REASON: CORRECT Likely VOC '
-               'due to: low molecular weight (41.0), short carbon chain (C2), '
-               'relatively rigid structure, moderate hydrophobicity\n'
-               ' * SMILES: CCCCC(C)O NAME: hexan-2-ol REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (102.1), short carbon chain '
-               '(C6), relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCC(O)CCCCCCCCC NAME: henicosan-10-ol '
-               'REASON: CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: C(CC(C)C)(CCC)C NAME: 2,4-dimethylheptane REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (128.2), short '
-               'carbon chain (C9), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CCCCCCCCCCCCCCC(O)CCCCCC NAME: henicosan-7-ol '
-               'REASON: CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCC(O)CCCC NAME: tetradecan-5-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (214.2), short '
-               'carbon chain (C14), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCC(O)CCCCCCCC NAME: nonadecan-9-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCC(O)CCC NAME: tridecan-4-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (200.2), short '
-               'carbon chain (C13), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CCCCCC(C)O NAME: heptan-2-ol REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (116.1), short carbon chain '
-               '(C7), relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCC(O)CCCCCCCCCC NAME: docosan-11-ol '
-               'REASON: CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCCCCC(O)CCCCCCC NAME: hexadecan-8-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (242.3), '
-               'contains alcohol group\n'
-               ' * SMILES: CC(C)C(C)CCC(C)C(C)C NAME: '
-               '2,3,6,7-tetramethyloctane REASON: CORRECT Likely VOC due to: '
-               'low molecular weight (170.2), short carbon chain (C12), '
-               'relatively rigid structure, moderate hydrophobicity\n'
-               ' * SMILES: CCCCC(O)CCCC NAME: nonan-5-ol REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (144.2), short carbon '
-               'chain (C9), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CC/C=C\\CCCCCO NAME: (Z)-non-6-en-1-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (142.1), short '
-               'carbon chain (C9), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains alkene\n'
-               ' * SMILES: CCCCCCCC\\C=C/CC NAME: (Z)-3-dodecene REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (168.2), short '
-               'carbon chain (C12), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: CCCC\\C=C/CC NAME: (Z)-3-octene REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (112.1), short carbon '
-               'chain (C8), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCCC(O)CC NAME: henicosan-3-ol '
-               'REASON: CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCCCCCC(C)O NAME: heptadecan-2-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCC NAME: hexane REASON: CORRECT Likely VOC due '
-               'to: low molecular weight (86.1), short carbon chain (C6), '
-               'relatively rigid structure, moderate hydrophobicity\n'
-               ' * SMILES: COC=O NAME: methyl formate REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (60.0), short carbon chain '
-               '(C2), relatively rigid structure, moderate hydrophobicity\n'
-               ' * SMILES: CCCCCCCCCCCCCCC(O)CCCC NAME: nonadecan-5-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: OC(\\C=C\\CCCCCC)C NAME: (E)-dec-3-en-2-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (156.2), short '
-               'carbon chain (C10), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains alkene\n'
-               ' * SMILES: C(C(Cl)(F)F)(F)(Cl)Cl NAME: '
-               '1,1,2-Trichlorotrifluoroethane REASON: CORRECT Likely VOC due '
-               'to: low molecular weight (185.9), short carbon chain (C2), '
-               'relatively rigid structure, moderate hydrophobicity\n'
-               ' * SMILES: CCCCCCCCCCCCC(O)CCCCCCCC NAME: henicosan-9-ol '
-               'REASON: CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCCCCC(O)CCC NAME: octadecan-4-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: C(CCCCCCC)CCCO NAME: undecan-1-ol REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (172.2), short carbon '
-               'chain (C11), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: [H]C(CC)=C([H])CCCCCCCC NAME: 3-dodecene REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (168.2), short '
-               'carbon chain (C12), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: [H][C@@]12CC=C(C)C=C1C(C)(C)CCC[C@H]2C NAME: '
-               '(6R,7S)-himachala-9,11-diene REASON: CORRECT Likely VOC due '
-               'to: low molecular weight (204.2), relatively rigid structure, '
-               'moderate hydrophobicity, contains alkene, contains small ring\n'
-               ' * SMILES: CCCCCC(=O)OCCCC NAME: butyl hexanoate REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (172.1), short '
-               'carbon chain (C10), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: FC(Cl)(Cl)Cl NAME: trichlorofluoromethane REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (135.9), short '
-               'carbon chain (C1), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CC[C@H](C)C(C)C NAME: (3S)-2,3-dimethylpentane '
-               'REASON: CORRECT Likely VOC due to: low molecular weight '
-               '(100.1), short carbon chain (C7), relatively rigid structure, '
-               'moderate hydrophobicity\n'
-               ' * SMILES: CCCCCCCCCCCC(O)CCCCCCCC NAME: icosan-9-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCCCCC(O)CCCCCCCC NAME: heptadecan-9-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CC(=C)C=C NAME: isoprene REASON: CORRECT Likely VOC '
-               'due to: low molecular weight (68.1), short carbon chain (C5), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alkene\n'
-               ' * SMILES: CCCCCCCC(O)CCC NAME: undecan-4-ol REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (172.2), short carbon '
-               'chain (C11), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: C(CCCC(=C(CC)[H])[H])=O NAME: oct-5-enal REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (126.1), short '
-               'carbon chain (C8), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: CCC(C)=O NAME: butan-2-one REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (72.1), short carbon chain '
-               '(C4), relatively rigid structure, moderate hydrophobicity\n'
-               ' * SMILES: [H]C(C)=C([H])CCCCCCCCC NAME: 2-dodecene REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (168.2), short '
-               'carbon chain (C12), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: CCCCCCCCCC(O)CCCCCCC NAME: heptadecan-8-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCCCCCC(O)CCCCCC NAME: docosan-7-ol '
-               'REASON: CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: C(CCCCCC)O NAME: heptan-1-ol REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (116.1), short carbon chain '
-               '(C7), relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group\n'
-               ' * SMILES: Cc1ccccc1C NAME: o-xylene REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (106.1), short carbon chain '
-               '(C8), relatively rigid structure, moderate hydrophobicity, '
-               'contains small ring\n'
-               ' * SMILES: ClCC(CC)O NAME: 1-chlorobutan-2-ol REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (108.0), short carbon '
-               'chain (C4), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CC1=CC=CO1 NAME: 2-methylfuran REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (82.0), short carbon '
-               'chain (C5), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: O(C([H])([H])[H])[H] NAME: methanol-d1 REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (32.0), short '
-               'carbon chain (C1), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CCCCCCCCO NAME: octan-1-ol REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (130.1), short carbon chain '
-               '(C8), relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCCCCCO NAME: pentadecan-1-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (228.2), '
-               'contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCCC(O)CCCCC NAME: octadecan-6-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCCCCCC(O)CC NAME: octadecan-3-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: FC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F NAME: '
-               'perfluorohexane REASON: CORRECT Likely VOC due to: short '
-               'carbon chain (C6), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CCCCCCCCC(O)CCCCCC NAME: pentadecan-7-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (228.2), '
-               'contains alcohol group\n'
-               ' * SMILES: CCCCCCCC(O)CCCCC NAME: tridecan-6-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (200.2), short '
-               'carbon chain (C13), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CCCCCCC(O)CCCCCC NAME: tridecan-7-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (200.2), short '
-               'carbon chain (C13), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CCCCCCCCCCCC(O)CCCCC NAME: heptadecan-6-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: CCC1=CC=CO1 NAME: 2-ethylfuran REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (96.1), short carbon '
-               'chain (C6), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: OCCCCCC(C)C NAME: 6-methylheptan-1-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (130.1), short '
-               'carbon chain (C8), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: ClCC(Cl)Cl NAME: 1,1,2-trichloroethane REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (131.9), short '
-               'carbon chain (C2), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CC[C@@H](C)C(C)C NAME: (3R)-2,3-dimethylpentane '
-               'REASON: CORRECT Likely VOC due to: low molecular weight '
-               '(100.1), short carbon chain (C7), relatively rigid structure, '
-               'moderate hydrophobicity\n'
-               ' * SMILES: CC(C)=CCC\\C(C)=C\\CC[C@](C)(O)C=C NAME: '
-               '(3S,6E)-nerolidol REASON: CORRECT Likely VOC due to: low '
-               'molecular weight (222.2), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: CCCCCCCCC\\C=C/C NAME: (Z)-2-dodecene REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (168.2), short '
-               'carbon chain (C12), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: C\\C=C/C#C NAME: (Z)-3-penten-1-yne REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (66.0), short carbon '
-               'chain (C5), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene, contains alkyne\n'
-               ' * SMILES: CC(C)CC#N NAME: isovaleronitrile REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (83.1), short carbon '
-               'chain (C5), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CCC1=NC=C(C)N=C1 NAME: 2-ethyl-5-methylpyrazine '
-               'REASON: CORRECT Likely VOC due to: low molecular weight '
-               '(122.1), short carbon chain (C7), relatively rigid structure, '
-               'moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: CCCCCCCCCCCCC(O)CC NAME: pentadecan-3-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (228.2), '
-               'contains alcohol group\n'
-               ' * SMILES: c1ccsc1 NAME: thiophene REASON: CORRECT Likely VOC '
-               'due to: low molecular weight (84.0), short carbon chain (C4), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: CCCCCCCCCCCCC(O)CCCCCCC NAME: icosan-8-ol REASON: '
-               'CORRECT Likely VOC due to: contains alcohol group\n'
-               ' * SMILES: C=Cc1ccccc1 NAME: styrene REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (104.1), short carbon chain '
-               '(C8), relatively rigid structure, moderate hydrophobicity, '
-               'contains alkene, contains small ring\n'
-               ' * SMILES: Brc1ccccc1 NAME: bromobenzene REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (156.0), short carbon '
-               'chain (C6), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: C(=C/CO)\\CCCCCC NAME: (E)-non-2-en-1-ol REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (142.1), short '
-               'carbon chain (C9), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains alkene\n'
-               ' * SMILES: Cc1ccccc1 NAME: toluene REASON: CORRECT Likely VOC '
-               'due to: low molecular weight (92.1), short carbon chain (C7), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: CCCCCCC(O)CCC NAME: decan-4-ol REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (158.2), short carbon '
-               'chain (C10), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: ClC=C NAME: chloroethene REASON: CORRECT Likely VOC '
-               'due to: low molecular weight (62.0), short carbon chain (C2), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alkene\n'
-               ' * SMILES: CCCCCCCCCC(C)O NAME: undecan-2-ol REASON: CORRECT '
-               'Likely VOC due to: low molecular weight (172.2), short carbon '
-               'chain (C11), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: CCC(CCCC(C)C)C(C)C NAME: 3-ethyl-2,7-dimethyloctane '
-               'REASON: CORRECT Likely VOC due to: low molecular weight '
-               '(170.2), short carbon chain (C12), relatively rigid structure, '
-               'moderate hydrophobicity\n'
-               ' * SMILES: C(#N)CC1C(C(=CC1)C)(C)C NAME: '
-               '(2,2,3-trimethylcyclopent-3-en-1-yl)acetonitrile REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (149.1), short '
-               'carbon chain (C10), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene, contains small ring\n'
-               ' * SMILES: '
-               'O=C1C(=C(O)[C@H](O)[C@]([C@@H]1OC2=C(C(O)=CC(=C2)C)C)(OC)C)C '
-               'NAME: Aculeatusquinone C REASON: CORRECT Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alcohol group, contains alkene, contains small ring\n'
-               ' * SMILES: COC(=O)C1CCCCC1 NAME: methyl cyclohexanecarboxylate '
-               'REASON: CORRECT Likely VOC due to: low molecular weight '
-               '(142.1), short carbon chain (C8), relatively rigid structure, '
-               'moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: C(CCCCCCC)C(=CC=O)[H] NAME: 2-undecenal REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (168.2), short '
-               'carbon chain (C11), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene\n'
-               ' * SMILES: OCC#C NAME: prop-2-yn-1-ol REASON: CORRECT Likely '
-               'VOC due to: low molecular weight (56.0), short carbon chain '
-               '(C3), relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group, contains alkyne\n'
-               ' * SMILES: C=1(C=CC=CC1)CCNC(C(C)=O)C NAME: '
-               '3-(phenethylamino)-butan-2-one REASON: CORRECT Likely VOC due '
-               'to: low molecular weight (191.1), short carbon chain (C12), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: [2H]C(Cl)(Cl)Cl NAME: deuterated chloroform REASON: '
-               'CORRECT Likely VOC due to: low molecular weight (118.9), short '
-               'carbon chain (C1), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               'False positives: SMILES: N12CN3CN(CN(C1)CC3)CC2 NAME: '
-               '1,3,6,8-tetraazatricyclo[4,4,1,1(3,8)]dodecane REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: low molecular weight (168.1), '
-               'short carbon chain (C8), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: CC1CC2C(CC=C1CCO)C(C)C(=O)O2 NAME: '
-               '(8alpha,10beta,11beta)-3-hydroxy-4,15-dinor-1(5)-xanthen-12,8-olide '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (224.1), short carbon chain (C13), relatively rigid '
-               'structure, moderate hydrophobicity, contains alcohol group, '
-               'contains alkene, contains small ring\n'
-               ' * SMILES: C1CNCCC1SC2=NC(=CC=C2)Cl NAME: '
-               '2-chloro-6-(4-piperidinylthio)pyridine REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: low molecular weight (228.0), '
-               'short carbon chain (C10), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: '
-               'O=C1OC[C@@]2(C1=C(CC[C@]34[C@H]2C[C@H](CC[C@H]3C)C4(C)C)C)C '
-               'NAME: Harzianelactone REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: relatively rigid structure, moderate hydrophobicity, '
-               'contains alkene, contains small ring\n'
-               ' * SMILES: O=C(NC1=NC=C(Cl)C=C1)CSC2=NN=C3C(NC4=C3C=CC=C4)=N2 '
-               'NAME: dCeMM2 REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: '
-               '[H][C@@]12CC[C@]3(C)Oc4c(C[C@]3([H])[C@@]1(C)CCC(=O)C2(C)C)c(O)cc1C(=O)OCc41 '
-               'NAME: Phomoarcherin B REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: relatively rigid structure, moderate hydrophobicity, '
-               'contains small ring\n'
-               ' * SMILES: S(OC=1C=C(C=CC1)/C=C/CO)(O)(=O)=O NAME: '
-               '{3-[(1E)-3-hydroxyprop-1-en-1-yl]phenyl}oxidanesulfonic acid '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (230.0), short carbon chain (C9), relatively rigid '
-               'structure, moderate hydrophobicity, contains alcohol group, '
-               'contains alkene, contains small ring\n'
-               ' * SMILES: CC1=NN=C(C2=CC=CC=C12)NC3=CC4=C(C=C3)OCO4 NAME: '
-               'N-(1,3-benzodioxol-5-yl)-4-methyl-1-phthalazinamine REASON: '
-               'WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: S(C=1C=C2OC(=O)C(=C2C=CC1)C=3C4=C(C=CC=C4)NC3)C '
-               'NAME: Roseobacticide C REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: relatively rigid structure, moderate hydrophobicity, '
-               'contains small ring\n'
-               ' * SMILES: ClC=1C(C[N+]=2CCC=3SC=CC3C2)=CC=CC1 NAME: '
-               'Thienodihydropyridinium REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: short carbon chain (C14), relatively rigid structure, '
-               'moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: '
-               'C[C@]12CC[C@]3([C@@H](CC[C@@]4([C@]3([C@]1([C@](C(CCC2)=C)([H])C4)[H])[H])[H])C)C '
-               'NAME: cephalot-3(20)-ene REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: relatively rigid structure, contains alkene, contains '
-               'small ring\n'
-               ' * SMILES: OC(=O)CCCCCCC(C)(C)C NAME: 9:0(8Me,8Me) REASON: '
-               'WRONGLY CLASSIFIED Likely VOC due to: low molecular weight '
-               '(186.2), short carbon chain (C11), relatively rigid structure, '
-               'moderate hydrophobicity\n'
-               ' * SMILES: '
-               '[H]C([H])(C=O)[C@]([H])(OC)[C@]([H])(O)[C@@]([H])(C)O NAME: '
-               'D-cymarose REASON: WRONGLY CLASSIFIED Likely VOC due to: low '
-               'molecular weight (162.1), short carbon chain (C7), relatively '
-               'rigid structure, moderate hydrophobicity, contains alcohol '
-               'group\n'
-               ' * SMILES: '
-               'O=C(O)C1=C(O)C(O)=C2[C@H](C[C@@H]([C@@H](C2=C1)C(C)C)O)C NAME: '
-               '4,9,10-trihydroxy-5-isopropyl-2-methyl-2,3,4,5-tetrahydronaphthalenecarboxylic '
-               'acid REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively '
-               'rigid structure, moderate hydrophobicity, contains alcohol '
-               'group, contains small ring\n'
-               ' * SMILES: '
-               '[H][C@]12C\\C(=C(/C)C(O)=O)[C@](O)(C[C@]3(C)[C@H](N)CC[C@]13C)N2C '
-               'NAME: hederacine A REASON: WRONGLY CLASSIFIED Likely VOC due '
-               'to: relatively rigid structure, moderate hydrophobicity, '
-               'contains alkene, contains small ring\n'
-               ' * SMILES: C1=C(C=C(C=C1O)CCC=2C=CC=CC2O)OC NAME: Batatasin IV '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (244.1), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: Oc1ccc(cc1)C1COc2cc(O)ccc2C1=O NAME: '
-               'dihydrodaidzein REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: '
-               'O1C(C=CC2=C1C=CC(=C2O)C(=O)/C=C/C3=CC(CC=C(C)C)=C(O)C=C3)(C)C '
-               'NAME: Paratocarpin B REASON: WRONGLY CLASSIFIED Likely VOC due '
-               'to: relatively rigid structure, contains alkene, contains '
-               'small ring\n'
-               ' * SMILES: O=C(O)C[C@@H]1OCC=2C1=C(C=CC2O)CC=C(C)C NAME: '
-               'Emefuran D REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alkene, contains small ring\n'
-               ' * SMILES: NCCCCCCN NAME: hexane-1,6-diamine REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: low molecular weight (116.1), '
-               'short carbon chain (C6), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: '
-               'COC1=CC=CC(=C1)C(=O)NC2=NC3=C(S2)C=C(C=C3)S(=O)(=O)C NAME: '
-               '3-methoxy-N-(6-methylsulfonyl-1,3-benzothiazol-2-yl)benzamide '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: OC=1C2=C(CCC=3C2=CC(O)=C(O)C3)C=C(O)C1 NAME: '
-               '9,10-Dihydro-2,3,5,7-Phenanthrenetetrol REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: low molecular weight (244.1), '
-               'short carbon chain (C14), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: '
-               'C1CN(CCN1CC2=CC3=C(C=C2[N+](=O)[O-])OCO3)C4=CC=CC=C4F NAME: '
-               '1-(2-fluorophenyl)-4-[(6-nitro-1,3-benzodioxol-5-yl)methyl]piperazine '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: CN1c2ccc(cc2C(=NCC1=O)c1ccccc1)[N+]([O-])=O NAME: '
-               'nimetazepam REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: CC1=C(C=CC(=N1)C2=CC=C(C=C2)Cl)C(=O)OC NAME: '
-               '6-(4-chlorophenyl)-2-methyl-3-pyridinecarboxylic acid methyl '
-               'ester REASON: WRONGLY CLASSIFIED Likely VOC due to: short '
-               'carbon chain (C14), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: OC(C(CC)C)C(OCC)=O NAME: (+/-)-Ethyl '
-               '2-hydroxy-3-methylvalerate REASON: WRONGLY CLASSIFIED Likely '
-               'VOC due to: low molecular weight (160.1), short carbon chain '
-               '(C8), relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group\n'
-               ' * SMILES: BrC(CCCCCCCCCCCCCC)C=O NAME: 2-bromopalmitaldehyde '
-               'REASON: WRONGLY CLASSIFIED Borderline VOC based on combined '
-               'physicochemical properties\n'
-               ' * SMILES: O(C[C@H](N)C(O)=O)CC1=CC=CC=C1 NAME: '
-               'O-BENZYL-l-SERINE REASON: WRONGLY CLASSIFIED Likely VOC due '
-               'to: low molecular weight (195.1), short carbon chain (C10), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: '
-               'COC1=C[C@@]23CCN(C)[C@@H](Cc4ccc(OC)c(O)c24)[C@H]3CC1=O NAME: '
-               'Isosinomenine REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alkene, contains small ring\n'
-               ' * SMILES: O1C=2C(CCC(C2)C)=C(C1=O)C NAME: '
-               'p-Mentha-2,4(8)-dien-9,3-olide REASON: WRONGLY CLASSIFIED '
-               'Likely VOC due to: low molecular weight (164.1), short carbon '
-               'chain (C10), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene, contains small ring\n'
-               ' * SMILES: [H][C@@]12Cc3ccc4OCOc4c3C[N@+]1(C)CCc1cc3OCOc3cc21 '
-               'NAME: (S)-cis-N-methylstylopine REASON: WRONGLY CLASSIFIED '
-               'Likely VOC due to: relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: '
-               'O=C(O)[C@@]1([C@]2(O)[C@@](C3=C([C@@H](O)[C@@](C=C)(C)CC3)CC2)(CCC1)C)C '
-               'NAME: Talascortene D REASON: WRONGLY CLASSIFIED Likely VOC due '
-               'to: relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group, contains alkene, contains small ring\n'
-               ' * SMILES: [O-]C(=O)C(=O)Cc1c[nH]c2ccccc12 NAME: '
-               '3-(indol-3-yl)pyruvate REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: low molecular weight (202.1), short carbon chain '
-               '(C11), relatively rigid structure, moderate hydrophobicity, '
-               'contains small ring\n'
-               ' * SMILES: Cl.C=1C=C(OCC(CNC(C)(C)C)O)C(C#N)=CC1 NAME: '
-               'Bunitrolol hydrochloride REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: short carbon chain (C14), relatively rigid structure, '
-               'moderate hydrophobicity, contains alcohol group, contains '
-               'small ring\n'
-               ' * SMILES: CC(C)C1=C/C=C(C)/CC\\C=C(C)\\CC\\1 NAME: germacrene '
-               'C REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (204.2), relatively rigid structure, contains alkene\n'
-               ' * SMILES: O=C1O[C@@H](CCCCCCCCCCCCCC=C[C@H](CC=C1)O)C NAME: '
-               'CIML A REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, contains alcohol group, contains '
-               'alkene\n'
-               ' * SMILES: '
-               'O[C@@H]1CC2=C(C3=C([C@H]4[C@](C([C@@H](CC[C@@H](C(C)C)C)C)CC4)(C)CC3)C=C2)CC1 '
-               'NAME: Phycomysterol B REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: relatively rigid structure, contains alcohol group, '
-               'contains small ring\n'
-               ' * SMILES: '
-               'O1[C@@H]([C@H]([C@@H]([C@H]([C@H]1OC=2C=C3C=CC=CC3=CC2)O)O)O)CO '
-               'NAME: 2-naphthyl alpha-D-glucoside REASON: WRONGLY CLASSIFIED '
-               'Likely VOC due to: relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains small ring\n'
-               ' * SMILES: CC(=O)NC1=CC2=C(C=C1)N(C(=NC(=O)C3=CC=CS3)S2)CC=C '
-               'NAME: '
-               'N-(6-acetamido-3-prop-2-enyl-1,3-benzothiazol-2-ylidene)-2-thiophenecarboxamide '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains alkene, contains '
-               'small ring\n'
-               ' * SMILES: O(C1=CC(=NC(=C1)C=NO)C2=NC=CC=C2)C NAME: '
-               'Caeurolomycin A REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'low molecular weight (229.1), short carbon chain (C12), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: COC1=C(C=C2C(=C1)CC(=O)NN=C2C3=CC=C(C=C3)N)OC NAME: '
-               '1-(4-aminophenyl)-7,8-dimethoxy-3,5-dihydro-2,3-benzodiazepin-4-one '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: CCOC(=O)[C@H]1CC[C@@H]2N(CCc3cc(OC)ccc23)C1 NAME: '
-               'trans-1,3,4,6,7,11b-Hexahydro-9-methoxy-2H-benzo[a]quinolizine-3-carboxylic '
-               'acid ethyl ester REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: [C@H]1(C2=CC=CC=C2)[C@H](N)C1.Cl NAME: '
-               '(1R,2S)-tranylcypromine hydrochloride REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: low molecular weight (169.1), '
-               'short carbon chain (C9), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: C1=CC=C(C(=C1)CN2C(=CC=C(C2=O)C(=O)N)C(F)(F)F)Cl '
-               'NAME: '
-               '1-[(2-chlorophenyl)methyl]-2-oxo-6-(trifluoromethyl)-3-pyridinecarboxamide '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: short carbon '
-               'chain (C14), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: O=C(O)C=C([C@H]1[C@@H](O)C2C(CCC=C2C1)(C)C)C NAME: '
-               'Phellilin B REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alcohol group, contains alkene, contains small ring\n'
-               ' * SMILES: OC(=O)CCCC[C@H](CC)C NAME: 6S-methyl-octanoic acid '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (158.1), short carbon chain (C9), relatively rigid '
-               'structure, moderate hydrophobicity\n'
-               ' * SMILES: Br/C(=C\\C)/C12OC1C(=O)C=C(C2O)OC NAME: Lachnumon '
-               'B1 REASON: WRONGLY CLASSIFIED Likely VOC due to: short carbon '
-               'chain (C10), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains alkene, '
-               'contains small ring\n'
-               ' * SMILES: CCCCCCCCCCCC\\C=C\\CC(=O)C1=C(O)CC(O)CC1=O NAME: '
-               "3,5-dihydroxy-2-(1'-oxo-3'-hexadecenyl)-2-cyclohexene-1-one "
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: contains alcohol '
-               'group, contains alkene, contains small ring\n'
-               ' * SMILES: O=C1OC(=C(C)C(=C1)OC)[C@]2(OC2)C NAME: Simple '
-               'Pyrone 3 REASON: WRONGLY CLASSIFIED Likely VOC due to: low '
-               'molecular weight (196.1), short carbon chain (C10), relatively '
-               'rigid structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: CCOC(=O)CCN(Cc1ccccc1)SN(C)C(=O)O\\N=C(\\C)SC NAME: '
-               'alanycarb REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: [Br-].CC[N+]1(CC)CCC(C1C)=C(c1ccccc1)c1ccccc1 NAME: '
-               'Prifinium bromide REASON: WRONGLY CLASSIFIED Likely VOC due '
-               'to: relatively rigid structure, moderate hydrophobicity, '
-               'contains alkene, contains small ring\n'
-               ' * SMILES: C(CN(CC)CC)C1(C(=O)NC(CC1)=O)C2=CC=CC=C2 NAME: '
-               'phenglutarimide REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: O[C@H]1C=Cc2c(cc3ccc4cccc5ccc2c3c45)[C@H]1O NAME: '
-               'benzo[a]pyrene-cis-7,8-dihydrodiol REASON: WRONGLY CLASSIFIED '
-               'Likely VOC due to: relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains alkene, '
-               'contains small ring\n'
-               ' * SMILES: '
-               'O1C2(C3([C@](C4[C@](CC3)(C5(C(C=C4)=CC(=O)CC5)C)[H])(CC2)[H])C)CCC1=O '
-               'NAME: '
-               "(9S,14S)-10,13-Dimethylspiro[2,8,9,11,12,14,15,16-octahydro-1H-cyclopenta[a]phenanthrene-17,5'-oxolane]-2',3-dione "
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains alkene, contains '
-               'small ring\n'
-               ' * SMILES: O[C@H](CC\\C=C\\c1ccccc1)CCc1ccc(O)c(O)c1 NAME: '
-               '(+)-(3R)-1-(3,4-dihydroxyphenyl)-7-phenyl-(6E)-6-hepten-3-ol '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains alcohol group, '
-               'contains alkene, contains small ring\n'
-               ' * SMILES: '
-               'O1[C@@]2(OCC=3C(O)=C(C)C(=CC3C2)O)[C@@H](O)CC[C@@H]1C NAME: '
-               'Peneciraistin A REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alcohol group, contains small ring\n'
-               ' * SMILES: [H][C@]12C[C@]1(CC(=O)[C@H]2C)C(C)C NAME: '
-               '(+)-beta-thujone REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'low molecular weight (152.1), short carbon chain (C10), '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: '
-               'O=C1N2C(=NC3=C1C=CC=C3)[C@@H](NC([C@H]2CC4=CC=CC=C4)=O)[C@@H](CC)C '
-               'NAME: Protuboxepin K REASON: WRONGLY CLASSIFIED Likely VOC due '
-               'to: relatively rigid structure, moderate hydrophobicity, '
-               'contains small ring\n'
-               ' * SMILES: O(O)C(CCCCC)/C=C/C=O NAME: 4-Hydroperoxy-2-nonenal '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (172.1), short carbon chain (C9), relatively rigid '
-               'structure, moderate hydrophobicity, contains alkene\n'
-               ' * SMILES: '
-               'O(C1CC2C3(C(C(CCC3)(C)C(O)=O)CC=C2CC1(C)C=C)C)C(=O)C NAME: '
-               '6-acetyloxy-7-ethenyl-1,4a,7-trimethyl-3,4,4b,5,6,8,10,10a-octahydro-2H-phenanthrene-1-carboxylic '
-               'acid REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively '
-               'rigid structure, moderate hydrophobicity, contains alkene, '
-               'contains small ring\n'
-               ' * SMILES: O=C(OC)CCOC1=CC=C(OC)C=C1 NAME: methyl '
-               '3-p-anisoloxypropionate REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: low molecular weight (210.1), short carbon chain '
-               '(C11), relatively rigid structure, moderate hydrophobicity, '
-               'contains small ring\n'
-               ' * SMILES: CC[C@H](Nc1ncnc(C)c1Cl)c1ccc(OC(F)F)cc1 NAME: '
-               '(S)-diflumetorim REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: C1C(OC2=CC=CC=C2O1)COC(=O)C3=C(C=CC=C3F)F NAME: '
-               '2,6-difluorobenzoic acid '
-               '2,3-dihydro-1,4-benzodioxin-3-ylmethyl ester REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: relatively rigid structure, '
-               'moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: N#C[Fe](C#N)C#N NAME: iron tricyanide REASON: '
-               'WRONGLY CLASSIFIED Likely VOC due to: low molecular weight '
-               '(133.9), short carbon chain (C3), relatively rigid structure, '
-               'moderate hydrophobicity\n'
-               ' * SMILES: '
-               'O=C(CCC/C=C\\C/C=C\\C/C=C\\[C@@H]([C@H]1[C@H](CCCCC)O1)O)O '
-               'NAME: (13S)-hydroxy-(14S,15S)-epoxy-(5Z,8Z,11Z)-icosatrienoic '
-               'acid REASON: WRONGLY CLASSIFIED Likely VOC due to: moderate '
-               'hydrophobicity, contains alcohol group, contains alkene, '
-               'contains small ring\n'
-               ' * SMILES: '
-               'O[C@@H](CCCC([O-])=O)/C=C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC NAME: '
-               '5(S)-HEPE(1-) REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'moderate hydrophobicity, contains alcohol group, contains '
-               'alkene\n'
-               ' * SMILES: CC1=CC(=NN1CCC2=NC(=CS2)C3=CC=CS3)C NAME: '
-               '2-[2-(3,5-dimethyl-1-pyrazolyl)ethyl]-4-thiophen-2-ylthiazole '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: short carbon '
-               'chain (C14), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: CCOC(=O)C(C)O NAME: ethyl 2-hydroxypropanoate '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (118.1), short carbon chain (C5), relatively rigid '
-               'structure, moderate hydrophobicity, contains alcohol group\n'
-               ' * SMILES: O1C(C1C)C2=C(OC(=O)C(CC)C)C=CC(OC)=C2 NAME: '
-               'Thellungianin G REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: O1C2C=Cc3cc4ccc5cccc6ccc(c3C12)c4c56 NAME: '
-               'Benzo[a]pyrene-9,10-oxide REASON: WRONGLY CLASSIFIED Likely '
-               'VOC due to: relatively rigid structure, contains alkene, '
-               'contains small ring\n'
-               ' * SMILES: CCCCC\\C=C\\C=C\\C(O)C\\C=C\\C=C\\C(O)=O NAME: '
-               'all-trans-7-hydroxyhexadeca-2,4,8,10-tetraenoic acid REASON: '
-               'WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains alcohol group, '
-               'contains alkene\n'
-               ' * SMILES: OC(=O)CCC\\C=C\\CC1C2N=NC(C1)(C2)CCCCC/C=C/C NAME: '
-               '(Z)-7-[(1S,4R,6R)-4-[(E)-Oct-6-enyl]-2,3-diazabicyclo[2.2.1]hept-2-en-6-yl]hept-5-enoic '
-               'acid REASON: WRONGLY CLASSIFIED Likely VOC due to: contains '
-               'alkene, contains small ring\n'
-               ' * SMILES: CCCCCCCCCCC[C@H](O)CC(O)=O NAME: '
-               '(S)-3-hydroxytetradecanoic acid REASON: WRONGLY CLASSIFIED '
-               'Likely VOC due to: low molecular weight (244.2), short carbon '
-               'chain (C14), moderate hydrophobicity, contains alcohol group\n'
-               ' * SMILES: C\\C1=C/CC\\C(C)=C\\C[C@@H](CC1)C(=C)CO NAME: '
-               'germacra-1(10),4,11(13)-trien-12-ol REASON: WRONGLY CLASSIFIED '
-               'Likely VOC due to: low molecular weight (220.2), relatively '
-               'rigid structure, moderate hydrophobicity, contains alcohol '
-               'group, contains alkene\n'
-               ' * SMILES: O=C1C=2N(C=CC2)[C@@H](C1)C(=O)O NAME: '
-               '(2S)-4-oxo-1-azabicyclo<3.3.0>octa-5,7-diene-2-carboxylic acid '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (165.0), short carbon chain (C8), relatively rigid '
-               'structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: '
-               'O=C1C2=C(C=C(/C=C/C)OC2)C[C@@H]3[C@@]1(OC(=O)[C@H]3C(O)CCCCCCC)C '
-               'NAME: Monapilosusazaphilone REASON: WRONGLY CLASSIFIED Likely '
-               'VOC due to: relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains alkene, '
-               'contains small ring\n'
-               ' * SMILES: CCC(=O)N[C@@H]1C=C[C@H](O[C@H]1CO)CC(=O)OC NAME: '
-               '2-[(2R,3R,6R)-2-(hydroxymethyl)-3-(1-oxopropylamino)-3,6-dihydro-2H-pyran-6-yl]acetic '
-               'acid methyl ester REASON: WRONGLY CLASSIFIED Likely VOC due '
-               'to: short carbon chain (C12), relatively rigid structure, '
-               'moderate hydrophobicity, contains alcohol group, contains '
-               'alkene, contains small ring\n'
-               ' * SMILES: C=1C=C(C2N(CCC2)C)C=NC1 NAME: '
-               '3-(1-methylpyrrolidin-2-yl)pyridine REASON: WRONGLY CLASSIFIED '
-               'Likely VOC due to: low molecular weight (162.1), short carbon '
-               'chain (C10), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: '
-               'C[C@]12CC[C@H]3[C@@H](CCC4=CC(=O)CC[C@]34C)[C@]1(O)CC[C@@H]2O '
-               'NAME: 14alpha,17beta-Dihydroxyandrost-4-en-3-one REASON: '
-               'WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains alcohol group, '
-               'contains alkene, contains small ring\n'
-               ' * SMILES: '
-               'CN(C[C@@H]1[C@H]([C@H](N1CC2=CC=CC=N2)CO)C3=CC=CC=C3)S(=O)(=O)C '
-               'NAME: '
-               'N-[[(2S,3R,4S)-4-(hydroxymethyl)-3-phenyl-1-(2-pyridinylmethyl)-2-azetidinyl]methyl]-N-methylmethanesulfonamide '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains alcohol group, '
-               'contains small ring\n'
-               ' * SMILES: O1C(COC1C2=CC(OC)=C(O)C=C2)C NAME: '
-               '2-Methoxy-4-(4-methyl-1,3-dioxolan-2-yl)phenol REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: low molecular weight (210.1), '
-               'short carbon chain (C11), relatively rigid structure, moderate '
-               'hydrophobicity, contains small ring\n'
-               ' * SMILES: CC[C@H](C)[C@H](N)C(=O)N[C@@H](Cc1ccccc1)C(O)=O '
-               'NAME: Ile-Phe REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: O1C(CCC(=O)CC(OC)C(O)CC1=O)C NAME: '
-               '4-hydroxy-5-methoxy-10-methyloxecane-2,7-dione REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: low molecular weight (230.1), '
-               'short carbon chain (C11), relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group\n'
-               ' * SMILES: OC(CCCCCCC)CCCC(O)=O NAME: xi-5-Hydroxydodecanoic '
-               'acid REASON: WRONGLY CLASSIFIED Likely VOC due to: low '
-               'molecular weight (216.2), short carbon chain (C12), relatively '
-               'rigid structure, moderate hydrophobicity, contains alcohol '
-               'group\n'
-               ' * SMILES: C1CN(CCN1C2=NC3=CC=CC=C3S2)C(=O)NC4=CC=CC=C4 NAME: '
-               '4-(1,3-benzothiazol-2-yl)-N-phenyl-1-piperazinecarboxamide '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: O[C@@H]1C(C#CC#C)=C[C@@H](C1)O NAME: Sistodiolynne '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (148.1), short carbon chain (C9), relatively rigid '
-               'structure, moderate hydrophobicity, contains alcohol group, '
-               'contains alkene, contains alkyne, contains small ring\n'
-               ' * SMILES: CC1=CC2=NC(=C(C=C2C=C1)C)N3CCN(CC3)C4=CC=CC=N4 '
-               'NAME: 3,7-dimethyl-2-[4-(2-pyridinyl)-1-piperazinyl]quinoline '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: relatively rigid '
-               'structure, moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: Cc1coc2CC(C)=CCC\\C(C)=C\\Cc12 NAME: Furanodiene '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (216.2), relatively rigid structure, moderate '
-               'hydrophobicity, contains alkene, contains small ring\n'
-               ' * SMILES: [H]C(CCCCCC)=C([H])CCCCCCCC([O-])=O NAME: '
-               'hexadec-9-enoate REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'moderate hydrophobicity, contains alkene\n'
-               ' * SMILES: S=C=NC1=CC=C(C=C1)N=C=S NAME: bitoscanate REASON: '
-               'WRONGLY CLASSIFIED Likely VOC due to: low molecular weight '
-               '(192.0), short carbon chain (C8), relatively rigid structure, '
-               'moderate hydrophobicity, contains small ring\n'
-               ' * SMILES: c1ccc2cc3cc4cc5cc6ccccc6cc5cc4cc3cc2c1 NAME: '
-               'hexacene REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, contains small ring\n'
-               ' * SMILES: '
-               'S=C1N(C2=C(N1)C=CC=C2)C3CCN(CC3)CCCC(=O)C4=CC=C(C=C4)F NAME: '
-               'timiperone REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, contains small ring\n'
-               ' * SMILES: CCOC(=O)C1=CC=CC=C1NC(=O)C2=C(C(=C(C(=C2F)F)F)F)F '
-               'NAME: '
-               '2-[[oxo-(2,3,4,5,6-pentafluorophenyl)methyl]amino]benzoic acid '
-               'ethyl ester REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'small ring\n'
-               ' * SMILES: '
-               'CC\\C=C/C\\C=C/CC(OO)\\C=C\\C=C/C\\C=C/C\\C=C/CCC([O-])=O '
-               'NAME: 14-HPDHE(1-) REASON: WRONGLY CLASSIFIED Likely VOC due '
-               'to: moderate hydrophobicity, contains alkene\n'
-               ' * SMILES: '
-               'O[C@@]12C=C3[C@@H](O)C(C)(C)C=C3[C@@]1([C@H](C)[C@H](C2)O)C '
-               'NAME: Chondroterpene D REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: relatively rigid structure, moderate hydrophobicity, '
-               'contains alcohol group, contains alkene, contains small ring\n'
-               ' * SMILES: C[N+](C)(C)CCP(O)(O)=O NAME: '
-               '2-trimethylaminoethylphosphonic acid REASON: WRONGLY '
-               'CLASSIFIED Likely VOC due to: low molecular weight (168.1), '
-               'short carbon chain (C5), relatively rigid structure, moderate '
-               'hydrophobicity\n'
-               ' * SMILES: '
-               'O=C1C=C2[C@]([C@H](CC[C@@H]2O)C)(C)[C@@H]3[C@H]1[C@]3(CO)C '
-               'NAME: Ramarin A REASON: WRONGLY CLASSIFIED Likely VOC due to: '
-               'relatively rigid structure, moderate hydrophobicity, contains '
-               'alcohol group, contains alkene, contains small ring\n'
-               ' * SMILES: N[C@H](Cc1c[nH]c2ccc(O)cc12)C(O)=O NAME: '
-               '5-hydroxy-D-tryptophan REASON: WRONGLY CLASSIFIED Likely VOC '
-               'due to: low molecular weight (220.1), short carbon chain '
-               '(C11), relatively rigid structure, moderate hydrophobicity, '
-               'contains small ring\n'
-               ' * SMILES: '
-               'O=C1O[C@@H](CC[C@H](O)C=CC(=O)O[C@@H](CC[C@@H](C=C1)OC(=O)C)C)C '
-               'NAME: 4-acetylpyrenophorol REASON: WRONGLY CLASSIFIED Likely '
-               'VOC due to: relatively rigid structure, moderate '
-               'hydrophobicity, contains alcohol group, contains alkene\n'
-               ' * SMILES: O=CCCCCCCC/C=C/C=C/CCCC NAME: 9E,11E-Hexadecadienal '
-               'REASON: WRONGLY CLASSIFIED Likely VOC due to: low molecular '
-               'weight (236.2), contains alkene\n'
-               'False negatives: SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCCC NAME: '
-               'pentacosan-12-ol REASON: MISSED Too many rotatable bonds (22) '
-               'for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCCCCC(O)CCC NAME: tetracosan-4-ol '
-               'REASON: MISSED Too many rotatable bonds (21) for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCCC NAME: hexacosan-12-ol '
-               'REASON: MISSED Too many rotatable bonds (23) for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCC NAME: tricosan-9-ol '
-               'REASON: MISSED Too hydrophobic (logP=8.2) for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCC(O)CCCCCCCCCC NAME: pentacosan-11-ol '
-               'REASON: MISSED Too many rotatable bonds (22) for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCC NAME: tricosan-7-ol '
-               'REASON: MISSED Too hydrophobic (logP=8.2) for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCCCC(O)CCCCCC NAME: hexacosan-7-ol '
-               'REASON: MISSED Too many rotatable bonds (23) for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCC(O)CCCCCCCC NAME: pentacosan-9-ol '
-               'REASON: MISSED Too many rotatable bonds (22) for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCC(O)CCCCC NAME: tricosan-6-ol '
-               'REASON: MISSED Too hydrophobic (logP=8.2) for VOC\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCCC(O)CCCCCC NAME: pentacosan-7-ol '
-               'REASON: MISSED Too many rotatable bonds (22) for VOC\n'
+               'pre-flavunoidine(2+) REASON: MISSED Too many heteroatoms (3), '
+               'suggesting high functionality and high boiling point.\n'
+               ' * SMILES: CCOC(=O)C1CCCCC1 NAME: ethyl cyclohexanecarboxylate '
+               'REASON: MISSED Contains an ester group (without acid '
+               'functionality), which tends to increase the boiling point.\n'
+               ' * SMILES: CCCCCCCCCCCCCC(O)CCCCCCCCCC NAME: tetracosan-11-ol '
+               'REASON: MISSED Estimated not VOC: MW (354.4 Da) and TPSA (20.2 '
+               'Å²) do not meet criteria for low boiling point (<=250 °C) with '
+               'cutoff MW = 350 Da.\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(C)O NAME: hexacosan-2-ol '
+               'REASON: MISSED Estimated not VOC: MW (382.4 Da) and TPSA (20.2 '
+               'Å²) do not meet criteria for low boiling point (<=250 °C) with '
+               'cutoff MW = 350 Da.\n'
+               ' * SMILES: CCOC(C)=O NAME: ethyl acetate REASON: MISSED '
+               'Contains an ester group (without acid functionality), which '
+               'tends to increase the boiling point.\n'
+               ' * SMILES: OC1=C(C(O)=CC(=C1)C)C NAME: Beta-Orcinol REASON: '
+               'MISSED Contains an aromatic hydroxyl group (phenol), known to '
+               'increase boiling point.\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'N12CN3CN(CN(C1)CC3)CC2',
-                                     'name': '1,3,6,8-tetraazatricyclo[4,4,1,1(3,8)]dodecane',
-                                     'reason': 'Complex ring system with '
-                                               'multiple heteroatoms'},
-                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP(O)(O)=O)[C@H](O)\\C=C\\CCCCCCCCCCCCC',
-                                     'name': 'N-docosanoylsphingosine-1-phosphate',
-                                     'reason': 'Too polar (TPSA=116.1) for '
-                                               'VOC'},
-                                 {   'smiles': '[H][C@@]1(CC[C@@]2(C)[C@]3([H])CC[C@@]4([H])[C@@](C)([C@H](CC[C@@]44C[C@@]34CC[C@]12C)OC(C)=O)C(O)=O)[C@H](C)CCC(=O)C(C)C',
-                                     'name': 'bonianic acid B, (rel)-',
-                                     'reason': 'Molecular weight (514.4) too '
-                                               'high for VOC'},
-                                 {   'smiles': 'O=C(NC1=NC=C(Cl)C=C1)CSC2=NN=C3C(NC4=C3C=CC=C4)=N2',
-                                     'name': 'dCeMM2',
-                                     'reason': 'Molecular weight (370.0) too '
-                                               'high for VOC'},
-                                 {   'smiles': 'N[C@@H](CS[C@H](\\C=C\\C=C\\C=C/C=C/CC(O)=O)[C@@H](O)CCCC(O)=O)C(O)=O',
-                                     'name': '(13E)-16-carboxy-Delta(13)-17,18,19,20-tetranor-leukotriene '
-                                             'E4',
-                                     'reason': 'Too polar (TPSA=158.1) for '
-                                               'VOC'},
-                                 {   'smiles': 'C[C@@H]1O[C@@H](OC[C@H]2OC(O)[C@H](NC(C)=O)[C@@H](O[C@@H]3O[C@@H](C)[C@@H](O)[C@@H](O)[C@@H]3O)[C@@H]2O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H](O)[C@H](O)[C@@H]1O',
-                                     'name': 'alpha-L-Fucp-(1->3)-[alpha-L-Fucp-(1->6)]-{beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->3)-[beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->6)]-beta-D-Manp-(1->4)-beta-GlcpNAc-(1->4)}-D-GlcpNAc',
-                                     'reason': 'Too polar (TPSA=738.6) for '
-                                               'VOC'},
-                                 {   'smiles': 'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1ccc(N)nc1=O)OC(=O)CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CC',
-                                     'name': 'CDP-1-stearoyl-2-(4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl-sn-glycerol',
-                                     'reason': 'Too polar (TPSA=265.5) for '
-                                               'VOC'},
-                                 {   'smiles': 'O([C@@H]1[C@@H](O[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)[C@@H](O[C@@H]([C@@H]1O)CO)O[C@H]([C@H](O)[C@@H](NC(=O)C)CO)[C@H](O)CO)[C@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3NC(=O)C)CO',
-                                     'name': 'N-[(2R,3R,4R,5R,6R)-2-[(2S,3R,4S,5S,6R)-2-[(2R,3R,4R,5S)-5-Acetamido-1,2,4,6-tetrahydroxyhexan-3-yl]oxy-5-hydroxy-6-(hydroxymethyl)-3-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-4-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
-                                     'reason': 'Too polar (TPSA=356.3) for '
-                                               'VOC'},
-                                 {   'smiles': 'O=C1N(C(CO)C(C1=C(O)[C@@]2([C@@H](C=C[C@H]3[C@H]2CC[C@H](C3)CO)/C=C/CO)C)=O)C',
-                                     'name': 'Pallidorosetin B',
-                                     'reason': 'Too polar (TPSA=118.3) for '
-                                               'VOC'},
-                                 {   'smiles': '[H][C@@]12CC[C@]3(C)Oc4c(C[C@]3([H])[C@@]1(C)CCC(=O)C2(C)C)c(O)cc1C(=O)OCc41',
-                                     'name': 'Phomoarcherin B',
-                                     'reason': 'Molecular weight (384.2) too '
-                                               'high for VOC'}],
-    'sample_false_negatives': [   {   'smiles': 'C1(C2CC34C(C1(OC2(CC3)C)C)CCC4C)[NH2+]CCCCC[NH+](C)C',
-                                      'name': 'pre-flavunoidine(2+)',
-                                      'reason': 'Molecular weight (350.3) too '
-                                                'high for VOC'},
-                                  {   'smiles': 'FC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F',
-                                      'name': 'perfluorohexane',
-                                      'reason': 'Properties suggest '
-                                                'non-volatile compound'},
-                                  {   'smiles': 'O=C1C(=C(O)[C@H](O)[C@]([C@@H]1OC2=C(C(O)=CC(=C2)C)C)(OC)C)C',
-                                      'name': 'Aculeatusquinone C',
-                                      'reason': 'Too polar (TPSA=96.2) for '
-                                                'VOC'},
+    'sample_true_negatives': [   {   'smiles': 'O=C1OC[C@@H]2O[C@@H](O[C@@H]3[C@@H](OC(=O)CCCCCCCCCCCCCCC)[C@H](C=CCCCC1)[C@H](CCCCC)[C@@H](C3)O)[C@H](O)[C@H]([C@@H]2O)O',
+                                     'name': 'Mucorolactone',
+                                     'reason': 'Too many heteroatoms (10), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'},
+                                 {   'smiles': 'C[C@@H]1CN[C@H](COC2=C(C=CC(=C2)NC(=O)C3=NC4=CC=CC=C4S3)C(=O)N(C[C@H]1OC)C)C',
+                                     'name': 'N-[(5S,6R,9S)-5-methoxy-3,6,9-trimethyl-2-oxo-11-oxa-3,8-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]-1,3-benzothiazole-2-carboxamide',
+                                     'reason': 'Too many heteroatoms (9), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'},
+                                 {   'smiles': 'COC1=CC=CC(=C1)C2=CC=C(C=C2)[C@@H]3[C@@H]4CN(CC(=O)N4[C@@H]3CO)C(=O)C5=CN=CC=C5',
+                                     'name': '(6R,7R,8S)-8-(hydroxymethyl)-7-[4-(3-methoxyphenyl)phenyl]-4-[oxo(3-pyridinyl)methyl]-1,4-diazabicyclo[4.2.0]octan-2-one',
+                                     'reason': 'Too many heteroatoms (7), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'},
+                                 {   'smiles': 'C(C(/C=C/C=C/C=C/[C@H](CCCC(O)=O)O)=O)/C=C\\CCCCC',
+                                     'name': '12-oxo-6-trans-leukotriene B4',
+                                     'reason': 'Too many heteroatoms (4), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'},
+                                 {   'smiles': 'O=C1OC(=C(C#C[C@H](COC(=O)C)C)CO)C=C1',
+                                     'name': "5'-O-acetylaporpinone A",
+                                     'reason': 'Too many heteroatoms (5), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'},
+                                 {   'smiles': 'O=C(N1[C@@H](CCC1)C(=O)N[C@@H](CCC(=O)N)C(O)=O)[C@@H](N)[C@H](CC)C',
+                                     'name': 'Ile-Pro-Gln',
+                                     'reason': 'Too many heteroatoms (9), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'},
+                                 {   'smiles': 'O[C@@H]1C=CC=C(CCC(O)=O)[C@@H]1O',
+                                     'name': '3-[(5R,6S)-5,6-dihydroxycyclohexa-1,3-dienyl]propanoic '
+                                             'acid',
+                                     'reason': 'Too many heteroatoms (4), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'},
+                                 {   'smiles': 'O=C(OC)/C=C/C(C)(C)C',
+                                     'name': '4,4-Dimethyl-pentenoic acid '
+                                             'methyl ester',
+                                     'reason': 'Contains an ester group '
+                                               '(without accompanying acid '
+                                               'functionality), which tends to '
+                                               'increase the boiling point.'},
+                                 {   'smiles': 'CCCCOc1ccc(OCCCN2CCOCC2)cc1',
+                                     'name': 'pramocaine',
+                                     'reason': 'Too many heteroatoms (4), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'},
+                                 {   'smiles': 'OC[C@@H](O)C(=O)[C@H](O)[C@H](O)COP(O)(O)=O',
+                                     'name': 'D-arabino-hex-3-ulose '
+                                             '6-phosphate',
+                                     'reason': 'Too many heteroatoms (10), '
+                                               'suggesting high functionality '
+                                               'and high boiling point.'}],
+    'sample_false_negatives': [   {   'smiles': 'COc1cc(ccc1O)[C@@H](O)[C@@H]1CO[C@@H]([C@H]1CO)c1ccc(O)c(OC)c1',
+                                      'name': 'tanegool',
+                                      'reason': 'Too many heteroatoms (7), '
+                                                'suggesting high functionality '
+                                                'and high boiling point.'},
                                   {   'smiles': 'O=C1C(OC2=C(C(O)=CC(=C2)C)C)=C(C(=O)C(=C1C)O)C',
                                       'name': 'Aculeatusquinone A',
-                                      'reason': 'Properties suggest '
-                                                'non-volatile compound'},
-                                  {   'smiles': 'O=C1C(O)=C(C(=O)[C@H]([C@@]1(OC)C)OC2=C(C(O)=CC(=C2)C)C)C',
-                                      'name': 'Aculeatusquinone B',
-                                      'reason': 'Too polar (TPSA=93.1) for '
-                                                'VOC'},
-                                  {   'smiles': 'COc1cc(ccc1O)[C@@H](O)[C@@H]1CO[C@@H]([C@H]1CO)c1ccc(O)c(OC)c1',
-                                      'name': 'tanegool',
-                                      'reason': 'Too polar (TPSA=108.6) for '
-                                                'VOC'}],
-    'attempt': 2,
-    'reasoning': 'Let me analyze the issues with the previous program:\n'
+                                      'reason': 'Too many heteroatoms (5), '
+                                                'suggesting high functionality '
+                                                'and high boiling point.'},
+                                  {   'smiles': 'C1(C2CC34C(C1(OC2(CC3)C)C)CCC4C)[NH2+]CCCCC[NH+](C)C',
+                                      'name': 'pre-flavunoidine(2+)',
+                                      'reason': 'Too many heteroatoms (3), '
+                                                'suggesting high functionality '
+                                                'and high boiling point.'},
+                                  {   'smiles': 'CCOC(=O)C1CCCCC1',
+                                      'name': 'ethyl cyclohexanecarboxylate',
+                                      'reason': 'Contains an ester group '
+                                                '(without accompanying acid '
+                                                'functionality), which tends '
+                                                'to increase the boiling '
+                                                'point.'},
+                                  {   'smiles': 'CCOC(C)=O',
+                                      'name': 'ethyl acetate',
+                                      'reason': 'Contains an ester group '
+                                                '(without accompanying acid '
+                                                'functionality), which tends '
+                                                'to increase the boiling '
+                                                'point.'},
+                                  {   'smiles': 'OC1=C(C(O)=CC(=C1)C)C',
+                                      'name': 'Beta-Orcinol',
+                                      'reason': 'Contains an aromatic hydroxyl '
+                                                'group (phenol), known to '
+                                                'increase boiling point.'},
+                                  {   'smiles': 'C1(C2CC34C(C1(OC2(CC3O)C)C)CCC4C)[NH2+]CCCCC[NH+](C)C',
+                                      'name': '10-hydroxy-pre-flavunoidine',
+                                      'reason': 'Too many heteroatoms (4), '
+                                                'suggesting high functionality '
+                                                'and high boiling point.'},
+                                  {   'smiles': 'CCOC(=O)C(C)CC',
+                                      'name': 'ethyl 2-methylbutyrate',
+                                      'reason': 'Contains an ester group '
+                                                '(without accompanying acid '
+                                                'functionality), which tends '
+                                                'to increase the boiling '
+                                                'point.'},
+                                  {   'smiles': 'CCCCCC(=O)OCCCC',
+                                      'name': 'butyl hexanoate',
+                                      'reason': 'Contains an ester group '
+                                                '(without accompanying acid '
+                                                'functionality), which tends '
+                                                'to increase the boiling '
+                                                'point.'},
+                                  {   'smiles': 'O=C1C(=C(O)[C@H](O)[C@]([C@@H]1OC2=C(C(O)=CC(=C2)C)C)(OC)C)C',
+                                      'name': 'Aculeatusquinone C',
+                                      'reason': 'Too many heteroatoms (6), '
+                                                'suggesting high functionality '
+                                                'and high boiling point.'}],
+    'attempt': 4,
+    'reasoning': 'Below is our reasoning and improved solution.\n'
                  '\n'
-                 '1. Main Problem: Long-chain alcohols\n'
-                 '- The program missed several long-chain alcohols (C20-C26) '
-                 'that should be classified as VOCs\n'
-                 '- The issue appears to be that the code was too restrictive '
-                 'with rotatable bonds (>20) and logP (>8) cutoffs\n'
-                 '- Many of these compounds, despite being long and flexible, '
-                 'are still VOCs\n'
+                 'One observation from our earlier attempt is that many '
+                 'compounds were rejected solely because the “simple” '
+                 '(acyclic) cutoff was set to 350 Da. For example, long‐chain '
+                 'alcohols (such as hexacosan-4-ol, MW ≈ 382 Da) were '
+                 'considered non‐volatile even though their overall low '
+                 'polarity (TPSA) and flexible structure keep their boiling '
+                 'points low. In addition, the status of problematic '
+                 'functional groups (ester, carboxylic acid, aromatic –OH or '
+                 'arylamines, cyclic ketones) sometimes caused false positives '
+                 'when these features weren’t appropriately filtered.\n'
                  '\n'
-                 '2. False Positives Analysis:\n'
-                 '- Many complex ring systems and polycyclic compounds were '
-                 'incorrectly classified as VOCs\n'
-                 '- The presence of rings was given too much weight in the '
-                 'classification\n'
-                 '- Some compounds with multiple heteroatoms were '
-                 'misclassified\n'
-                 '- The molecular weight cutoff of 400 may be too high\n'
+                 'In this revision we:\n'
+                 '1. Require the molecule to be organic (at least one carbon '
+                 'atom).\n'
+                 '2. Compute descriptors (MW and TPSA) using '
+                 'rdMolDescriptors.\n'
+                 '3. Count “non‐halogen” heteroatoms to decide on '
+                 'functionality.\n'
+                 '4. Adjust the MW cutoff so that “simple” (acyclic) molecules '
+                 'are allowed a higher cutoff (now 400 Da) versus molecules '
+                 'with rings (300 Da).\n'
+                 '5. Reject molecules that are too functionalized (≥3 '
+                 'non‐halogen heteroatoms, or if the molecule has both ≥2 '
+                 'rings and ≥2 heteroatoms).\n'
+                 '6. Look for specific problematic groups (ester without acid, '
+                 'carboxylic acid, aromatic hydroxyl, aromatic amine, cyclic '
+                 'ketone).\n'
+                 '7. Finally, if the (adjusted) MW and TPSA (must be below 60 '
+                 'Å²) criteria are met then we classify the molecule as VOC.\n'
                  '\n'
-                 '3. Improvements Needed:\n'
+                 'The code below implements this revised heuristic. (Note that '
+                 'the overall approximation is still heuristic – further '
+                 'improvements might require more advanced boiling‐point '
+                 'prediction methods.) \n'
                  '\n'
-                 'a) Adjust the main criteria:\n'
-                 '- Increase tolerance for rotatable bonds in '
-                 'alcohol-containing compounds\n'
-                 '- Allow higher logP values for certain structural classes\n'
-                 '- Lower the molecular weight cutoff to around 350\n'
-                 '- Make ring presence a less dominant factor\n'
-                 '\n'
-                 'b) Add new criteria:\n'
-                 '- Consider carbon chain length more explicitly\n'
-                 '- Add checks for complex ring systems\n'
-                 '- Consider number of heteroatoms\n'
-                 '- Add specific patterns for known VOC classes\n'
-                 '\n'
-                 "Here's my proposed improved code:",
+                 'Below is the complete Python code enclosed in one code '
+                 'block:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 286,
-    'num_false_positives': 100,
-    'num_true_negatives': 304,
-    'num_false_negatives': 6,
+    'num_true_positives': 271,
+    'num_false_positives': 6364,
+    'num_true_negatives': 135644,
+    'num_false_negatives': 21,
     'num_negatives': None,
-    'precision': 0.7409326424870466,
-    'recall': 0.9794520547945206,
-    'f1': 0.8436578171091444,
-    'accuracy': 0.8477011494252874,
-    'negative_predictive_value': 0.9806451612903225}
+    'precision': 0.04084400904295403,
+    'recall': 0.928082191780822,
+    'f1': 0.07824455031037966,
+    'accuracy': 0.9551300070274069,
+    'negative_predictive_value': 0.9998452069435743}

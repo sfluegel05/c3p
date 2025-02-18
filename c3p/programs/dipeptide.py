@@ -2,45 +2,71 @@
 Classifies: CHEBI:46761 dipeptide
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_dipeptide(smiles: str):
     """
-    Determines if a molecule is likely to be a dipeptide based on its SMILES string.
-    A dipeptide is generally composed of two amino acid units, possibly within more complex connections.
-    
-    It is vital to recognize varying structures, allowing some flexibility in peptide bond counts,
-    provided there are recognizably two amino acid-like structures.
+    Determines if a molecule is a dipeptide based on its SMILES string.
+    A dipeptide is a molecule that contains two amino acid residues connected by peptide bonds.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is a dipeptide variant, False otherwise
+        bool: True if molecule is a dipeptide, False otherwise
         str: Reason for classification
     """
-    
-    # Parse the SMILES string
+
+    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for identifying peptide bonds (-CO-NH- linkage)
-    peptide_bond_pattern = Chem.MolFromSmarts("C(=O)N")
-    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond_pattern)
+    # Define peptide bond pattern (amide bond between two amino acids)
+    peptide_bond_smarts = '[NX3][CX3](=O)'
+    peptide_bond = Chem.MolFromSmarts(peptide_bond_smarts)
 
-    # Allow for one or two peptide bonds to account for variability in structure
-    if len(peptide_bond_matches) < 1:
-        return False, f"Expected at least 1 peptide bond, found {len(peptide_bond_matches)}"
+    # Find all peptide bonds
+    peptide_bond_matches = mol.GetSubstructMatches(peptide_bond)
+    num_peptide_bonds = len(peptide_bond_matches)
 
-    # SMARTS pattern for a more generalized amino acid core
-    amino_acid_core_pattern = Chem.MolFromSmarts("[NX3][CX4]C(=O)")
-    amino_acid_matches = mol.GetSubstructMatches(amino_acid_core_pattern)
-    
-    # Check for at least two amino acid-like structures
-    if len(amino_acid_matches) < 2:
-        return False, f"Expected at least 2 amino acid residues, found {len(amino_acid_matches)}"
+    if num_peptide_bonds != 1:
+        return False, f"Found {num_peptide_bonds} peptide bonds, need exactly 1 for dipeptide"
 
-    return True, "Molecule likely contains two amino acid units that form a dipeptide structure"
+    # Define amino acid residue pattern (alpha amino acid backbone)
+    # N-C(alpha)-C(=O)
+    amino_acid_smarts = '[NX3][CX4H1][CX3](=O)'
+    amino_acid = Chem.MolFromSmarts(amino_acid_smarts)
+
+    # Find all amino acid residues
+    amino_acid_matches = mol.GetSubstructMatches(amino_acid)
+    num_amino_acids = len(amino_acid_matches)
+
+    if num_amino_acids != 2:
+        return False, f"Found {num_amino_acids} amino acid residues, need exactly 2"
+
+    # Check if the amino acids are connected via the peptide bond
+    # Map the atoms involved in peptide bond
+    peptide_bond_atoms = [match for match in peptide_bond_matches[0]]
+    amino_acid_atoms = [list(match) for match in amino_acid_matches]
+
+    # Verify that the peptide bond connects the two amino acid residues
+    connected = False
+    for aa1 in amino_acid_atoms:
+        for aa2 in amino_acid_atoms:
+            if aa1 != aa2:
+                # Check if peptide bond connects aa1 and aa2
+                if (peptide_bond_atoms[0] in aa1 and peptide_bond_atoms[1] in aa2) or \
+                   (peptide_bond_atoms[0] in aa2 and peptide_bond_atoms[1] in aa1):
+                    connected = True
+                    break
+        if connected:
+            break
+
+    if not connected:
+        return False, "Peptide bond does not connect the two amino acid residues"
+
+    return True, "Contains two amino acid residues connected by a peptide bond"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:46761',
@@ -52,171 +78,215 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:46761',
                           'xrefs': ['KEGG:C00107'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               '[H][C@@]12CCCN1C(=O)[C@H](Cc1c([nH]c3ccccc13)C(C)(C)C=C)NC2=O '
-               'NAME: deoxybrevianamide E REASON: MISSED Expected 1 peptide '
-               'bond, found 2\n'
-               ' * SMILES: C[C@@H](N)C(=O)N[C@H](C)C(O)=O NAME: '
-               'D-alanyl-D-alanine REASON: MISSED Expected 2 amino acid '
-               'residues, found 1\n'
-               ' * SMILES: NCC(=O)N[C@@H](CCCNC(N)=N)C(O)=O NAME: Gly-Arg '
-               'REASON: MISSED Expected 2 amino acid residues, found 1\n'
-               ' * SMILES: C([C@H]1NC(CC1)=O)(=O)NCC(O)=O NAME: '
-               'pyroglutamylglycine REASON: MISSED Expected 1 peptide bond, '
-               'found 2\n'
-               ' * SMILES: '
-               'C(N[C@@H](C(C)C)C(=O)N[C@@H](CC(C)C)C(N[C@H](/C=C/C(OCC)=O)C[C@H]1C(NCC1)=O)=O)(OCC2=CC=CC=C2)=O '
-               'NAME: Ethyl '
-               '(E,4S)-4-[[(2S)-4-methyl-2-[[(2S)-3-methyl-2-(phenylmethoxycarbonylamino)butanoyl]amino]pentanoyl]amino]-5-[(3S)-2-oxopyrrolidin-3-yl]pent-2-enoate '
-               'REASON: MISSED Expected 1 peptide bond, found 4\n'
-               ' * SMILES: '
-               'O=C(N1C(CCC1)C(=O)NC2=C(C=CC=C2O)C(O)=O)C(NC(=O)C3=CC=C(O)C=C3)C(C)C '
-               'NAME: '
-               '3-hydroxy-2-[[1-[2-[(4-hydroxybenzoyl)amino]-3-methylbutanoyl]pyrrolidine-2-carbonyl]amino]benzoic '
-               'acid REASON: MISSED Expected 1 peptide bond, found 3\n'
-               ' * SMILES: '
-               'O=C1NCC[C@H](O)C[C@H](NC(=O)[C@@H](NC(=O)/C=C/C=C/CCCCCCCCC)[C@H](O)C)C(N[C@H](C=C1)C)=O '
-               'NAME: Glidobactin C REASON: MISSED Expected 1 peptide bond, '
-               'found 4\n'
-               ' * SMILES: N[C@@H](Cc1c[nH]cn1)C(=O)NCC(O)=O NAME: His-Gly '
-               'REASON: MISSED Expected 2 amino acid residues, found 1\n'
-               ' * SMILES: N[C@H](CCC(=O)N[C@H](CCC(O)=O)C(O)=O)C(O)=O NAME: '
-               'D-gamma-glutamyl-D-glutamic acid REASON: MISSED Expected 2 '
-               'amino acid residues, found 1\n'
-               ' * SMILES: '
-               'S1SC23N(C4C(OC(=O)C)C=COC=C4C2)C(C15N(C6C(OC(=O)C)C=COC=C6C5)C3=O)=O '
-               'NAME: Acetylaranotin REASON: MISSED Expected 1 peptide bond, '
-               'found 2\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'P(OCC(OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)(OCCN(C)C)(O)=O',
-                                     'name': 'Pe-nme2(20:3(5Z,8Z,11Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))',
-                                     'reason': 'Expected at least 1 peptide '
-                                               'bond, found 0'},
-                                 {   'smiles': 'O1[C@]2([C@@H](O)[C@H](O)[C@@H](O)[C@@]1(OCC[C@H](CCC=C(C(OC[C@]3(O)[C@@H](O)[C@@](OC3)(OC2)[H])=O)C)C)[H])[H]',
-                                     'name': 'Urceolide',
-                                     'reason': 'Expected at least 1 peptide '
-                                               'bond, found 0'},
-                                 {   'smiles': 'CC1=CC(=C(C=C1)C)C(=O)CSC2=NN=C(S2)C',
-                                     'name': '1-(2,5-dimethylphenyl)-2-[(5-methyl-1,3,4-thiadiazol-2-yl)thio]ethanone',
-                                     'reason': 'Expected at least 1 peptide '
-                                               'bond, found 0'},
-                                 {   'smiles': 'O=C1C=C([C@@]2(C(C[C@@H](C2)O)(C)C)C)CC[C@@]1(O)C',
-                                     'name': 'Enokipodin H',
-                                     'reason': 'Expected at least 1 peptide '
-                                               'bond, found 0'},
-                                 {   'smiles': 'CCCC[C@](Cn1cncn1)(C#N)c1ccc(Cl)cc1',
-                                     'name': '(S)-myclobutanil',
-                                     'reason': 'Expected at least 1 peptide '
-                                               'bond, found 0'},
-                                 {   'smiles': 'OC(=O)CCCCCCC#CCCCC',
-                                     'name': '8-tridecynoic acid',
-                                     'reason': 'Expected at least 1 peptide '
-                                               'bond, found 0'},
-                                 {   'smiles': 'OC[C@H]1O[C@H](O[C@@H]2[C@@H](CO)O[C@H](O[C@@H]3[C@@H](CO)O[C@H](O[C@@H]4[C@@H](CO)O[C@H](O)[C@H](O)[C@H]4O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@@H]1O',
-                                     'name': 'alpha-maltotetraose',
-                                     'reason': 'Expected at least 1 peptide '
-                                               'bond, found 0'},
-                                 {   'smiles': 'S(C(C)C(O)=O)CC1=CC=CC=C1',
-                                     'name': '2-(Benzylthio)propanoic acid',
-                                     'reason': 'Expected at least 1 peptide '
-                                               'bond, found 0'},
-                                 {   'smiles': 'C[C@@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)NC3=CC=C(C=C3)Cl)C(=O)N(C[C@@H]1OC)C)C)C',
-                                     'name': '1-(4-chlorophenyl)-3-[(4S,7R,8R)-8-methoxy-4,5,7,10-tetramethyl-11-oxo-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]urea',
-                                     'reason': 'Expected at least 2 amino acid '
-                                               'residues, found 0'},
-                                 {   'smiles': 'C1C[C@@H]([C@@H](O[C@@H]1CCNC(=O)C2CCOCC2)CO)NC(=O)NC3=CC(=CC=C3)Cl',
-                                     'name': 'N-[2-[(2S,5S,6R)-5-[[(3-chloroanilino)-oxomethyl]amino]-6-(hydroxymethyl)-2-oxanyl]ethyl]-4-oxanecarboxamide',
-                                     'reason': 'Expected at least 2 amino acid '
-                                               'residues, found 0'}],
-    'sample_false_negatives': [   {   'smiles': 'CC(C)[C@H]([NH2+]C)C(=O)N[C@@H](CC=1C=2C=CC=CC2NC1)CO',
-                                      'name': 'N-methyl-L-valyl-L-tryptophanol(1+)',
-                                      'reason': 'Expected at least 2 amino '
-                                                'acid residues, found 0'},
-                                  {   'smiles': 'O=C\\1N[C@H](C(=O)N/C1=C/C=2C=3C(NC2C(C=C)(C)C)=CC=C(C3)CC=C(C)C)C',
-                                      'name': 'isoechinulin A',
-                                      'reason': 'Expected at least 2 amino '
-                                                'acid residues, found 1'},
-                                  {   'smiles': 'C[C@H](NC(=O)CCN)C(O)=O',
-                                      'name': 'beta-Ala-Ala',
-                                      'reason': 'Expected at least 2 amino '
-                                                'acid residues, found 1'},
-                                  {   'smiles': 'O=C\\1NC(C(=O)N/C1=C/C=2C=3C(NC2C(C=C)(C)C)=CC=C(C3)CC=C(C)C)=C',
-                                      'name': 'isoechinulin B',
-                                      'reason': 'Expected at least 1 peptide '
-                                                'bond, found 0'},
-                                  {   'smiles': 'O=C(NCCC(=O)O)[C@@H](N(C1=CC=C(C=2C1=NON2)[N+]([O-])=O)C)CC(=O)O',
-                                      'name': 'NBD-N(Me)-DbetaA-OH',
-                                      'reason': 'Expected at least 2 amino '
-                                                'acid residues, found 1'},
-                                  {   'smiles': 'O=C\\1NC(C(=O)[N-]/C1=C/C=2C=3C(NC2C(C=C)(C)C)=CC=C(C3)CC=C(C)C)=C',
-                                      'name': 'isoechinulin B anion',
-                                      'reason': 'Expected at least 1 peptide '
-                                                'bond, found 0'},
-                                  {   'smiles': 'N[C@@H](Cc1ccccc1)C(=O)NCCC(O)=O',
+    'code_statistics': {   'lines_of_code': 49,
+                           'log_lines_of_code': 3.8918202981106265,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 2,
+                                                 3,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 5,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem'],
+                           'imports_count': 2,
+                           'methods_called': [   'MolFromSmiles',
+                                                 'MolFromSmarts',
+                                                 'GetSubstructMatches'],
+                           'methods_called_count': 3,
+                           'smarts_strings': [   'peptide_bond_smarts',
+                                                 'amino_acid_smarts'],
+                           'smarts_strings_count': 2,
+                           'defs': ['is_dipeptide(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Found {num_peptide_bonds} '
+                                          'peptide bonds, need exactly 1 for '
+                                          'dipeptide"',
+                                          'False, f"Found {num_amino_acids} '
+                                          'amino acid residues, need exactly '
+                                          '2"',
+                                          'False, "Peptide bond does not '
+                                          'connect the two amino acid '
+                                          'residues"',
+                                          'True, "Contains two amino acid '
+                                          'residues connected by a peptide '
+                                          'bond"'],
+                           'returns_count': 5,
+                           'complexity': 3.5783640596221256},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'CCOC(=O)CC(C1=CC=CC=C1Cl)NC2=NC(=NC(=N2)N3CCOCC3)N4CCOCC4',
+                                     'name': '3-[[4,6-bis(4-morpholinyl)-1,3,5-triazin-2-yl]amino]-3-(2-chlorophenyl)propanoic '
+                                             'acid ethyl ester',
+                                     'reason': 'Found 0 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': 'O([C@@H]1[C@@H](O)[C@H](O)[C@H](O[C@]1(C=2C=3OC(=CC(=O)C3C(O)=CC2O)C4=CC(O)=C(O)C=C4)[H])CO)[C@@H]5O[C@H]([C@@H](O)[C@@H](O)[C@@H]5O)CO',
+                                     'name': "2''-O-beta-L-Galactopyranosylorientin",
+                                     'reason': 'Found 0 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](O[C@@H]2[C@@H](NC(C)=O)[C@@H](O[C@H](CO)[C@H]2O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O)[C@H]2NC(C)=O)O[C@@H]2[C@@H](O)[C@@H](O)O[C@H](CO)[C@@H]2O)[C@@H](O)[C@H](O)[C@@H]1O',
+                                     'name': 'beta-D-GalpNAc-(1->4)-[alpha-L-Fucp-(1->3)]-beta-D-GlcpNAc-(1->3)-alpha-D-Galp',
+                                     'reason': 'Found 2 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': 'C[C@H]1CN(C(=O)CC2=C(C=CC(=C2)NC(=O)CCC(F)(F)F)O[C@H]1CN(C)CC3=CC4=C(C=C3)OCO4)[C@@H](C)CO',
+                                     'name': 'N-[(2R,3S)-2-[[1,3-benzodioxol-5-ylmethyl(methyl)amino]methyl]-5-[(2S)-1-hydroxypropan-2-yl]-3-methyl-6-oxo-2,3,4,7-tetrahydro-1,5-benzoxazonin-9-yl]-4,4,4-trifluorobutanamide',
+                                     'reason': 'Found 2 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': 'C1CC(C1)C(=O)N[C@@H]2C=C[C@H](O[C@H]2CO)CC(=O)NCCCN3CCOCC3',
+                                     'name': 'N-[(2R,3R,6R)-2-(hydroxymethyl)-6-[2-[3-(4-morpholinyl)propylamino]-2-oxoethyl]-3,6-dihydro-2H-pyran-3-yl]cyclobutanecarboxamide',
+                                     'reason': 'Found 2 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': 'O=C1O[C@@H](CC[C@H](O)C=C[C@H](C1)O)C',
+                                     'name': 'Decarestrictine C1',
+                                     'reason': 'Found 0 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': '[H]P(O)(=O)OP([H])(O)=O',
+                                     'name': 'diphosphonic acid',
+                                     'reason': 'Found 0 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': 'C[C@H]1CN(C(=O)CCCN2C(=CN=N2)CO[C@@H]1CN(C)C(=O)C3=NOC(=C3)C4=CC=CC=C4)[C@H](C)CO',
+                                     'name': 'N-[[(8S,9S)-6-[(2R)-1-hydroxypropan-2-yl]-8-methyl-5-oxo-10-oxa-1,6,14,15-tetrazabicyclo[10.3.0]pentadeca-12,14-dien-9-yl]methyl]-N-methyl-5-phenyl-3-isoxazolecarboxamide',
+                                     'reason': 'Found 2 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': 'OCCCCCCC[C@@H](O)CC(O)=O',
+                                     'name': '(3R)-3,10-dihydroxydecanoic acid',
+                                     'reason': 'Found 0 peptide bonds, need '
+                                               'exactly 1 for dipeptide'},
+                                 {   'smiles': 'S(=O)(=O)(CC[C@@H]1NC(=O)[C@H](NC(=O)C(N(C(=O)CC[C@@H](NC([C@H]([C@@H](NC([C@@H](NC(C[C@@H](NC1=O)C(=O)O)=O)CCCN=C(N)N)=O)/C=C/C(=C/[C@@H]([C@@H](OC)CC2=CC=CC=C2)C)/C)C)=O)C(=O)O)C)=C)C)C',
+                                     'name': '[D-Asp3]MC-M(O2)R',
+                                     'reason': 'Found 7 peptide bonds, need '
+                                               'exactly 1 for dipeptide'}],
+    'sample_false_negatives': [   {   'smiles': 'N[C@@H](Cc1ccccc1)C(=O)NCCC(O)=O',
                                       'name': 'Phe-beta-Ala',
-                                      'reason': 'Expected at least 2 amino '
-                                                'acid residues, found 1'},
-                                  {   'smiles': 'CC(=O)NCCC(=O)N[C@@H](Cc1cnc[nH]1)C(O)=O',
-                                      'name': 'N-acetylcarnosine',
-                                      'reason': 'Expected at least 2 amino '
-                                                'acid residues, found 1'},
+                                      'reason': 'Found 1 amino acid residues, '
+                                                'need exactly 2'},
+                                  {   'smiles': '[H][C@@]12CCCN1C(=O)[C@H](Cc1c(CC=C(C)C)[nH]c3ccccc13)NC2=O',
+                                      'name': 'tryprostatin B',
+                                      'reason': 'Found 2 peptide bonds, need '
+                                                'exactly 1 for dipeptide'},
                                   {   'smiles': 'OC(=O)c1ccc(NC(=O)[C@H](Cc2ccc(O)cc2)NC(=O)c2ccccc2)cc1',
                                       'name': 'bentiromide',
-                                      'reason': 'Expected at least 2 amino '
-                                                'acid residues, found 1'},
-                                  {   'smiles': 'O=C(NC(C(CC)C)C([O-])=O)C([NH3+])C(C)C',
-                                      'name': '2-[(2-Azaniumyl-3-methylbutanoyl)amino]-3-methylpentanoate',
-                                      'reason': 'Expected at least 2 amino '
-                                                'acid residues, found 1'}],
-    'attempt': 2,
-    'reasoning': 'To improve the classification of dipeptides based on the '
-                 "SMILES string, let's first analyze the previous program and "
-                 'outcomes:\n'
+                                      'reason': 'Found 2 peptide bonds, need '
+                                                'exactly 1 for dipeptide'},
+                                  {   'smiles': 'O=C(N[C@@H](C(C)(C)C)C(=O)N[C@@H](C)C(=O)NCCN)C(CC(C)C)CC(=O)NO',
+                                      'name': 'N-[2-[2-(Hydroxyamino)-2-oxoethyl]-4-methyl-1-oxopentyl]-3-methyl-L-valyl-N-(2-aminoethyl)-L-alaninamide '
+                                              'Acetic Acid',
+                                      'reason': 'Found 4 peptide bonds, need '
+                                                'exactly 1 for dipeptide'},
+                                  {   'smiles': 'O=C(NCC(O)=O)C[C@H](N)C(O)=O',
+                                      'name': 'L-beta-aspartylglycine',
+                                      'reason': 'Found 1 amino acid residues, '
+                                                'need exactly 2'},
+                                  {   'smiles': 'O=C1O[C@@H](C(=O)N[C@@H]2[C@@H](C[C@H](NC(=O)[C@@H](N)C)C(=O)O)C2)[C@@H]1[C@H](CC)C',
+                                      'name': 'Belactosin A',
+                                      'reason': 'Found 2 peptide bonds, need '
+                                                'exactly 1 for dipeptide'},
+                                  {   'smiles': 'NC(=O)CC[C@H](NC(=O)[C@@H]1CCCN1)C(O)=O',
+                                      'name': 'Pro-Gln',
+                                      'reason': 'Found 2 peptide bonds, need '
+                                                'exactly 1 for dipeptide'},
+                                  {   'smiles': 'O=C1NCC[C@H](O)C[C@H](NC(=O)[C@@H](NC(=O)/C=C/C=C/CC/C=C/CCCCC)[C@H](O)C)C(N[C@H](C=C1)C)=O',
+                                      'name': 'Glidobactin B',
+                                      'reason': 'Found 4 peptide bonds, need '
+                                                'exactly 1 for dipeptide'},
+                                  {   'smiles': 'C[C@H](NC(=O)CC[C@H](N)C(O)=O)C(O)=O',
+                                      'name': 'gamma-Glu-Ala',
+                                      'reason': 'Peptide bond does not connect '
+                                                'the two amino acid residues'},
+                                  {   'smiles': 'S1C(=NC(=C1)C(=O)N[C@@H](CC2=CC=CC=C2)C[C@@H](C(=O)O)C)[C@H](OC(=O)C)C[C@@H](N(C(=O)[C@@H](NC(=O)[C@@H]3N(CCCC3)C)[C@H](CC)C)COC(=O)C)C(C)C',
+                                      'name': 'Tubulysin H',
+                                      'reason': 'Found 3 peptide bonds, need '
+                                                'exactly 1 for dipeptide'}],
+    'attempt': 0,
+    'reasoning': 'To determine if a molecule is a dipeptide, we need to:\n'
                  '\n'
-                 '1. **Issue**: The expectation was a single peptide bond '
-                 '(`-C(=O)N-` linkage pattern), but some molecules have '
-                 'multiple peptide bonds.\n'
-                 '   - **Solution**: Adjust the checker to allow for two '
-                 'peptide bonds, which can occur in cyclic peptides or when '
-                 'two residues are connected via additional peptide bonds.\n'
-                 '   \n'
-                 '2. **Issue**: The program expects exactly two amino acid '
-                 'residues. However, the peptide may sometimes have more '
-                 'complex or cyclic arrangements, needing a more flexible '
-                 'approach.\n'
-                 '   - **Solution**: Check for at least two amino acid '
-                 'patterns and ensure the overall molecular structure aligns '
-                 'with a dipeptide concept.\n'
+                 '1. Parse the SMILES string into an RDKit molecule object.\n'
+                 '2. Identify peptide bonds (amide bonds connecting amino '
+                 'acids).\n'
+                 '3. Detect amino acid residues connected by these peptide '
+                 'bonds.\n'
+                 '4. Ensure that there are exactly two amino acid residues '
+                 'connected via a peptide bond.\n'
                  '\n'
-                 '3. **Issue**: The SMARTS patterns for amino acids were too '
-                 'specific, missing correctly arranged peptides.\n'
-                 '   - **Solution**: Use a more general pattern to capture '
-                 'amino acid-like structures while confirming at least two '
-                 'such structures exist.\n'
+                 'An amino acid residue can be identified by the presence of '
+                 'an alpha carbon connected to:\n'
                  '\n'
-                 "Let's adjust the code considering these insights:",
+                 '- An amino group (`-NH2` or protonated versions)\n'
+                 '- A carboxyl group (`-COOH` or deprotonated versions)\n'
+                 '- A side chain (various R groups)\n'
+                 '\n'
+                 'A peptide bond is an amide linkage formed between the '
+                 'carboxyl group of one amino acid and the amino group of '
+                 'another.\n'
+                 '\n'
+                 "Here's the code implementing this logic:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 924,
-    'num_false_positives': 100,
-    'num_true_negatives': 1052,
-    'num_false_negatives': 45,
+    'num_true_positives': 381,
+    'num_false_positives': 67,
+    'num_true_negatives': 141264,
+    'num_false_negatives': 588,
     'num_negatives': None,
-    'precision': 0.90234375,
-    'recall': 0.9535603715170279,
-    'f1': 0.9272453587556447,
-    'accuracy': 0.9316360207449317,
-    'negative_predictive_value': 0.95897903372835}
+    'precision': 0.8504464285714286,
+    'recall': 0.3931888544891641,
+    'f1': 0.5377558221594919,
+    'accuracy': 0.9953970484891075,
+    'negative_predictive_value': 0.9958548346163607}

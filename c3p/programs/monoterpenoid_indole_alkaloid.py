@@ -1,131 +1,50 @@
 """
 Classifies: CHEBI:65323 monoterpenoid indole alkaloid
 """
-"""
-Classifies: monoterpenoid indole alkaloids
-"""
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import Descriptors
 
 def is_monoterpenoid_indole_alkaloid(smiles: str):
     """
-    Determines if a molecule is a monoterpenoid indole alkaloid based on its SMILES string.
-    These compounds are derived from tryptophan and typically secologanin.
-
+    Determines if a molecule is a monoterpenoid indole alkaloid (MIA) based on its SMILES string.
+    
     Args:
         smiles (str): SMILES string of the molecule
-
+    
     Returns:
-        bool: True if molecule is a monoterpenoid indole alkaloid, False otherwise
+        bool: True if the molecule is an MIA, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 240 or mol_wt > 1000:
-        return False, f"Molecular weight {mol_wt:.1f} outside typical MIA range"
+    # Look for indole substructure: benzene ring fused to a pyrrole (indole)
+    indole_pattern = Chem.MolFromSmarts('c1c[cH]cc2c1[nH]cc2')
+    if not mol.HasSubstructMatch(indole_pattern):
+        return False, "Indole moiety not found"
 
-    # Count basic statistics
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    ring_count = rdMolDescriptors.CalcNumRings(mol)
+    # Look for characteristic terpenoid features (such as cyclized isoprene groups)
+    terpene_pattern = Chem.MolFromSmarts('C(C(=O)O)C(C)C')  # Pseudo pattern for terpene linkage
+    if not mol.HasSubstructMatch(terpene_pattern):
+        return False, "Terpene-like linkage not found"
 
-    # Basic requirements
-    if n_count == 0:
-        return False, "No nitrogen atoms found - required for alkaloid"
-    if c_count < 15:
-        return False, f"Too few carbons ({c_count}) for MIA structure"
-    if ring_count < 3:
-        return False, f"Too few rings ({ring_count}) for MIA structure"
-
-    # Look for indole or modified indole cores
-    indole_patterns = [
-        "c1ccc2[nH]ccc2c1",  # Basic indole
-        "c1ccc2nccc2c1",     # Modified indole
-        "c1ccc2N=CCc2c1",    # Another modified form
-        "c1ccc2NCCc2c1",     # Dihydroindole
-        "C1=CC=C2C(=C1)NC=C2",  # Alternative representation
-        "C1=CC=C2C(=C1)N=CC2",  # Another variant
-        "[#6]1:[#6]:[#6]:[#6]2:[#6]:[#6]:1:[#7]:[#6]:[#6]:2"  # Generic form
-    ]
+    # Examine complexity based on molecular weight and presence of oxygen
+    is_large = Descriptors.MolWt(mol) > 350  # MIAs are generally large
+    has_ester_oxygen = any(atom.GetAtomicNum() == 8 and atom.GetDegree() == 2 for atom in mol.GetAtoms())
     
-    has_indole = False
-    for pattern in indole_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            has_indole = True
-            break
-            
-    if not has_indole:
-        return False, "No indole or modified indole core found"
-
-    # Look for characteristic MIA structural features
-    mia_scaffold_patterns = [
-        # Common MIA ring fusion patterns
-        "[#6]1[#6]2[#7][#6][#6]1[#6][#6]2",  # Basic aspidosperma type
-        "[#6]1[#6]2[#7][#6][#6]1[#6][#6]2[#8,#7]",  # Oxygenated variant
-        "[#6]1[#6]2[#7][#6][#6]([#6]1)[#6][#6]2",  # Strychnos type
-        "[#6]1[#6]2[#7][#6][#6]3[#6]1[#6][#6]2[#6]3",  # Iboga type
-        "[#6]1[#6]2[#7][#6][#6]([#6]1)[#6][#6]2[#6](=O)",  # Carbonyl variant
-        # Bridge patterns
-        "[#6]1[#6]2[#6][#7][#6]1[#6][#6]2",  # Common bridge
-        "[#6]1[#6]2[#6][#7][#6]1[#6][#6]2[#8]",  # Oxygenated bridge
-    ]
+    # Chiral centers indicating complex natural products
+    chiral_centers = Chem.FindMolChiralCenters(mol, includeUnassigned=True)
     
-    mia_pattern_matches = 0
-    for pattern in mia_scaffold_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            mia_pattern_matches += 1
+    if not (is_large and has_ester_oxygen and len(chiral_centers) >= 3):
+        return False, "Does not meet expected structure complexity for MIAs"
 
-    # Check for secologanin-derived features
-    secologanin_patterns = [
-        "[#6]-[#6](=O)-O[#6]",  # Ester group
-        "[#6]=[#6]-[#6]",  # Vinyl group
-        "[#6]-[#6](O)-[#6]",  # Alcohol
-        "[#6]1-[#6]-[#6]-[#8]-[#6]-1",  # Pyran ring
-    ]
-    
-    secologanin_matches = 0
-    for pattern in secologanin_patterns:
-        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
-            secologanin_matches += 1
+    return True, "Contains indole moiety with complex MIA-specific features and ester linkage"
 
-    # Calculate revised complexity score
-    complexity_contributors = [
-        ring_count * 2,          # Rings
-        n_count * 2,             # Nitrogens
-        mia_pattern_matches * 5,  # MIA patterns (increased weight)
-        secologanin_matches * 3,  # Secologanin features
-        (1 if o_count > 0 else 0) * 2  # Presence of oxygen
-    ]
-    complexity_score = sum(complexity_contributors)
-    
-    if complexity_score < 12:
-        return False, f"Complexity score ({complexity_score}) too low for typical MIA"
-
-    # Additional structural requirements
-    if ring_count > 12 and mia_pattern_matches == 0:
-        return False, "Complex structure lacks characteristic MIA patterns"
-
-    # Check C/N ratio (typically between 6-25 for MIAs)
-    cn_ratio = c_count / n_count
-    if cn_ratio < 6 or cn_ratio > 25:
-        return False, f"C/N ratio ({cn_ratio:.1f}) outside typical MIA range"
-
-    features = []
-    if mia_pattern_matches > 0:
-        features.append(f"{mia_pattern_matches} MIA scaffold patterns")
-    if secologanin_matches > 0:
-        features.append(f"{secologanin_matches} secologanin-derived features")
-    
-    feature_str = ", ".join(features) if features else "characteristic structural features"
-    return True, f"Contains indole core, complex ring system ({ring_count} rings), and {feature_str}"
+# Example usage:
+smiles = "C/C=C\1/CN2CC[C@]34C5=CC(C=6C=C7C(=CC6OC)[C@]89CCN%10C/C(=C\C)/[C@](CCC8%10N7C)([C@]9(C(=O)OC)[H])[H])=C(C=C5N(C)[C@]4(C2C[C@@]1([C@@]3(C(=O)OC)[H])[H])[H])OC"
+print(is_monoterpenoid_indole_alkaloid(smiles))
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:65323',
@@ -141,443 +60,484 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:65323',
                                        'PMID:22679912'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 28,
+                           'log_lines_of_code': 3.332204510175204,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 0],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import Descriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetDegree',
+                                                 'FindMolChiralCenters',
+                                                 'GetAtoms',
+                                                 'MolWt',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmiles',
+                                                 'MolFromSmarts',
+                                                 'GetAtomicNum'],
+                           'methods_called_count': 8,
+                           'smarts_strings': [   'C(C(=O)O)C(C)C',
+                                                 'c1c[cH]cc2c1[nH]cc2'],
+                           'smarts_strings_count': 2,
+                           'defs': [   'is_monoterpenoid_indole_alkaloid(smiles: '
+                                       'str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Indole moiety not found"',
+                                          'False, "Terpene-like linkage not '
+                                          'found"',
+                                          'False, "Does not meet expected '
+                                          'structure complexity for MIAs"',
+                                          'True, "Contains indole moiety with '
+                                          'complex MIA-specific features and '
+                                          'ester linkage"'],
+                           'returns_count': 5,
+                           'complexity': 3.8664409020350403},
     'message': '\n'
-               'Attempt failed: F1 score of 0.4922279792746114 is too low.\n'
+               'Attempt failed: F1 score of 0.04901960784313725 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: SMILES: '
-               '[H][C@@]12N3CC[C@]11C(Nc4ccccc14)=C(C[C@]2(CC)C=CC3)C(=O)OC '
-               'NAME: tabersonine REASON: CORRECT Contains indole core, '
-               'complex ring system (5 rings), and ester group, ethyl/vinyl '
-               'group, 3 sp2 carbons\n'
+               'C=C[C@]1(CN2CCC=3C=4C=CC(=C([C@]5(CCCN5C)[H])C4NC3[C@@]2(C[C@@]1(C[C@]6(C7=C(CCN6C)C8=CC=CC=C8N7)[H])[H])[H])O)[H] '
+               'NAME: Strychnopentamine REASON: CORRECT Contains indole moiety '
+               'and exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               'C1[C@@]2(N3CC[C@@]42[C@]5(N(C=6C4=CC=CC6)C(C[C@]7([C@@]5([C@@]1(C(=CCO7)C3)[H])[H])[H])=O)[H])O '
-               'NAME: pseudostrychnine REASON: CORRECT Contains indole core, '
-               'complex ring system (7 rings), and ethyl/vinyl group, 2 sp2 '
-               'carbons\n'
+               'C=C[C@]1(CN2CCC=3C=4C=CC(=CC4NC3[C@@]2(C[C@@]1(C[C@@]5(C6=C(CCN5C)C7=CC=CC=C7N6)[H])[H])[H])O)[H] '
+               'NAME: 11-hydroxyusambarine REASON: CORRECT Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
                ' * SMILES: '
-               'N1[C@@]2([C@@]3(C4=C1C=CC=C4)[C@@H](C5[C@@H]([N+]6([C@]2(C[C@H]5[C@@H]([C@H]6O)CC)[H])C)C3)O)[H] '
-               'NAME: 4-methylnorajmaline REASON: CORRECT Contains indole '
-               'core, complex ring system (7 rings), and ethyl/vinyl group\n'
+               'C=C[C@]1(CN2CC[C@]3(C=4C=CC(=CC4N=C3O)O)[C@@]2(C[C@@]1(C[C@]5(C6=C(CCN5C)C7=CC=CC=C7N6)[H])[H])[H])[H] '
+               'NAME: Strychnofoline REASON: CORRECT Contains indole moiety '
+               'and exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               'CCC1(CC2CC(C3=C(CCN(C2)C1)C4=CC=CC=C4N3)(C5=C(C=C6C(=C5)C78CCN9C7C(C=CC9)(C(C(C8N6C)(C(=O)OC)O)OC(=O)C)CC)OC)C(=O)OC)O '
-               'NAME: LSM-36946 REASON: CORRECT Contains indole core, complex '
-               'ring system (9 rings), and ester group, ethyl/vinyl group, 4 '
-               'sp2 carbons\n'
+               '[H][C@]12CN3CCC4=C(NC5=C4C=CC=C5)[C@]3([H])C[C@]1([H])C(=CO[C@H]2C)C(=O)OC '
+               'NAME: ajmalicine REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               'N1([C@@]2([C@@]3(C4=C1C=CC=C4)[C@@H](C5[C@@H]([N+]6([C@]2(C[C@H]5[C@@H]([C@H]6O)CC)[H])C)C3)O)[H])C '
-               'NAME: 4-methylajmaline REASON: CORRECT Contains indole core, '
-               'complex ring system (7 rings), and ethyl/vinyl group\n'
-               ' * SMILES: '
-               'CC[C@@]1(C[C@@H]2C[C@@](C3=C(CCN(C2)C1)C4=CC=CC=C4N3)(C5=C(C=C6C(=C5)[C@]78CCN9[C@H]7[C@](C=CC9)([C@H]([C@@]([C@@H]8N6C=O)(C(=O)OC)O)OC(=O)C)CC)OC)C(=O)OC)O '
-               'NAME: LSM-15607 REASON: CORRECT Contains indole core, complex '
-               'ring system (9 rings), and ester group, ethyl/vinyl group, 5 '
-               'sp2 carbons\n'
-               ' * SMILES: '
-               'C/C=C\\1/C[N+]2(CC[C@@]34CC=5C=C6C(=CC5O[C@@]74[C@@]2(C[C@@]1([C@@](C(=O)OC)(N7C8=CC=CC=C83)[H])[H])[H])N[C@]9%10CC[C@@]%11(CC)CCC[N@+]%10(CC[C@@]69O)C%11)[O-] '
-               'NAME: goniomedine A N-oxide REASON: CORRECT Contains indole '
-               'core, complex ring system (11 rings), and ester group, '
-               'ethyl/vinyl group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'CC[C@]1(CN2CC[C@@]34C5=CC=CC=C5N6C[C@@]7(C[C@@]8(C[C@](CC)(N9CC[C@@]%10(C%11=CC=CC=C%11N=C7%10)C89)[H])[H])CC([C@]1(CC32)[H])=C46)[H] '
-               'NAME: Leucoridine A REASON: CORRECT Contains indole core, '
-               'complex ring system (11 rings), and ethyl/vinyl group, 2 sp2 '
-               'carbons\n'
-               ' * SMILES: '
-               'C1[C@@]2(N3CC[C@@]42[C@]5(N(C=6C4=CC(=C(C6)OC)OC)C(C[C@]7([C@@]5([C@@]1(C(=CCO7)C3)[H])[H])[H])=O)[H])O '
-               'NAME: pseudobrucine REASON: CORRECT Contains indole core, '
-               'complex ring system (7 rings), and ethyl/vinyl group, 2 sp2 '
-               'carbons\n'
-               ' * SMILES: '
-               'CC[C@@]12CC[C@@]34[C@@](CCN(C[C@@]5([C@]1(O5)[H])[H])[C@@]23[H])(C=6C=C(C=CC6N4)[C@]7([C@@]8([C@]([C@@]9(CC)CC(=C%10[C@]%11(CCN7[C@@]9%11[H])C%12=CC=CC=C%12N%10)C(=O)OC)(O8)[H])[H])[H])[H] '
-               'NAME: Criophylline REASON: CORRECT Contains indole core, '
-               'complex ring system (12 rings), and ester group, ethyl/vinyl '
-               'group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'C/C=C\\1/CN2CC[C@@]34CC=5C=C6C=7CCN8CCC[C@](CC)(CCC7NC6=CC5O[C@@]94[C@]2(C[C@]1([C@@](C(=O)OC)(N9C%10=CC=CC=C%103)[H])[H])[H])C8 '
-               'NAME: Goniomedine B REASON: CORRECT Contains indole core, '
-               'complex ring system (10 rings), and ester group, ethyl/vinyl '
-               'group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'C/C=C\\1/CN2CC[C@@]3(C4=CC=CC=C4N5C=C([C@]1(C[C@]2([C@]35O)[H])[H])C(=O)OC)O '
-               'NAME: 2,7-dihydroxyapogeissoschizine REASON: CORRECT Contains '
-               'indole core, complex ring system (5 rings), and ester group, '
-               'ethyl/vinyl group, 3 sp2 carbons\n'
-               ' * SMILES: '
-               'C=12[C@@]3([C@H]4N(CC3)C\\C(\\[C@@](C1C(=O)OC)(C4)[H])=C\\C)C5=CC=CC=C5N2 '
-               'NAME: akuammicine REASON: CORRECT Contains indole core, '
-               'complex ring system (5 rings), and ester group, ethyl/vinyl '
-               'group, 3 sp2 carbons\n'
-               ' * SMILES: '
-               '[H][C@@]12Nc3cc(OC)ccc3[C@@]11CCN3CC=C[C@@](CC)(C[C@]2(O)C(=O)OC)[C@@]13[H] '
-               'NAME: 3-hydroxy-16-methoxy-2,3-dihydrotabersonine REASON: '
-               'CORRECT Contains indole core, complex ring system (5 rings), '
-               'and ester group, ethyl/vinyl group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'C12=C(C=CC=C1)N=C3[C@]([C@@]4(/C(/C[NH+]5[C@@H](C4)[C@]32CC5)=C\\C)[H])(C(=O)OC)C(O)O '
-               'NAME: 17-dehydropreakuammicine hydrate(1+) REASON: CORRECT '
-               'Contains indole core, complex ring system (5 rings), and ester '
-               'group, ethyl/vinyl group, 3 sp2 carbons\n'
-               ' * SMILES: '
-               'COC([C@@H]1C[C@@]23CCC[N+]4(CCC5(C6=CC=CC=C6N(C(=O)OC)[C@]15CC2)[C@]34[H])[O-])=O '
-               'NAME: Pleiocarpoline REASON: CORRECT Contains indole core, '
-               'complex ring system (7 rings), and ester group, ethyl/vinyl '
-               'group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'CC[C@@]1(O)C[C@H]2C[N@@](C1)CCc1c([nH]c3ccccc13)[C@@](C2)(C(=O)OC)c1cc2c(cc1OC)N(C)[C@@H]1[C@]22CCN3CC=C[C@](CC)([C@@H]23)[C@@H](OC(C)=O)[C@]1(O)C(=O)OC '
-               'NAME: Leurosidine REASON: CORRECT Contains indole core, '
-               'complex ring system (9 rings), and ester group, ethyl/vinyl '
-               'group, 4 sp2 carbons\n'
-               ' * SMILES: '
-               'O=C1N2[C@@]3([C@@]4([C@]5(N(CC4)C\\C(\\[C@](C5)(C3=CC1)[H])=C\\CO)[H])C=6C2=CC=CC6)[H] '
-               'NAME: isostrychnine REASON: CORRECT Contains indole core, '
-               'complex ring system (6 rings), and ethyl/vinyl group, 3 sp2 '
-               'carbons\n'
-               ' * SMILES: '
-               '[C@@]123[C@@H](NC4=C1C=CC=C4)[C@](C[C@]5([C@@H]2N(CC=C5)CC3)CC)(C(=O)OC)O '
-               'NAME: (3R)-3-hydroxy-2,3-dihydrotabersonine REASON: CORRECT '
-               'Contains indole core, complex ring system (5 rings), and ester '
-               'group, ethyl/vinyl group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'C/C=C\\1/CN2CC[C@]34CC5C6CC7(C8=C(CC(C6CO[C@]5(C)O[C@]94[C@@]2(C[C@@]1([C@@](C(=O)OC)(N9C%10=CC=CC=C%103)[H])[H])[H])N7C)C%11=CC=CC=C%11N8C)[H] '
-               'NAME: Villalstonine REASON: CORRECT Contains indole core, '
-               'complex ring system (11 rings), and ester group, ethyl/vinyl '
-               'group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               '[C@@]123[C@@](N(C4=C1C=CC(=C4)O)C)([C@]([C@@H]([C@]5([C@@]2(N(CC=C5)CC3)[H])CC)O)(C(=O)OC)O)[H] '
-               'NAME: 11-O-demethyl-17-O-deacetylvindoline REASON: CORRECT '
-               'Contains indole core, complex ring system (5 rings), and ester '
-               'group, ethyl/vinyl group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'CC(C(C(N1C2=CC=CC=C2[C@]34CCN5C[C@]6([C@@H](C)OC[C@]([C@]6(C[C@@]35O)[H])([C@@]41[H])[H])[H])=O)O)=O '
-               'NAME: Acetyl-splendoline REASON: CORRECT Contains indole core, '
-               'complex ring system (6 rings), and ethyl/vinyl group, 2 sp2 '
-               'carbons\n'
-               ' * SMILES: '
-               'O=C1N2[C@@]3([C@@]4([C@]5([N+](CC4)(C\\C(\\[C@](C5)(C3=CC1)[H])=C\\CO)[O-])[H])C=6C2=CC=CC6)[H] '
-               'NAME: isostrychnine N-oxide REASON: CORRECT Contains indole '
-               'core, complex ring system (6 rings), and ethyl/vinyl group, 3 '
-               'sp2 carbons\n'
-               ' * SMILES: '
-               'CC[C@]12C[N@@]3C[C@@H](C[C@@](C(=O)OC)(c4[nH]c5ccccc5c4CC3)c3cc4c(cc3OC)N(C)[C@@H]3[C@]44CCN5CC=C[C@](CC)([C@@H]45)[C@@H](OC(C)=O)[C@]3(O)C(=O)OC)[C@H]1O2 '
-               'NAME: Leurosine REASON: CORRECT Contains indole core, complex '
-               'ring system (10 rings), and ester group, ethyl/vinyl group, 4 '
-               'sp2 carbons\n'
-               ' * SMILES: '
-               'C/C=C\\1/CN2[C@]3(C[C@@]1(C4([C@@]2(CC5(C6=CC(=CC=C6N(C)[C@]35[H])O)[C@@]4(OC(\\C=C\\C7=CC(=C(C(=C7)OC)OC)OC)=O)[H])[H])C(=O)OC)[H])[H] '
-               'NAME: O-trimethoxy-3,4,5-cinnamate-OH-vincamajine REASON: '
-               'CORRECT Contains indole core, complex ring system (8 rings), '
-               'and ester group, ethyl/vinyl group, 4 sp2 carbons\n'
-               'False positives: SMILES: '
-               '[H][C@@]12CCN3CC[C@@]4(C(Nc5ccccc45)=C1C(=O)OC)[C@@]3([H])[C@H]2CC '
-               'NAME: 20(S)-tubotaiwine REASON: WRONGLY CLASSIFIED Contains '
-               'indole core, complex ring system (5 rings), and ester group, '
-               'ethyl/vinyl group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'CCS(=O)(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)CC5=C(C=CC(=C5)F)F '
+               'CO[C@H]1[C@@H](C[C@@H]2CN3CCC4=C([C@H]3C[C@@H]2[C@@H]1C(=O)OC)NC5=C4C=CC(=C5)OC)OC(=O)C=CC6=CC(=C(C(=C6)OC)OC)OC '
                'NAME: '
-               "[(1R)-2-[(2,5-difluorophenyl)methyl]-1'-ethylsulfonyl-7-methoxy-9-methyl-1-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]yl]methanol "
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (5 rings), and ethyl/vinyl group\n'
+               '(1R,15S,17R,18R,19S,20S)-6,18-dimethoxy-17-[1-oxo-3-(3,4,5-trimethoxyphenyl)prop-2-enoxy]-1,3,11,12,14,15,16,17,18,19,20,21-dodecahydroyohimban-19-carboxylic '
+               'acid methyl ester REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               'COC1=CC2=C(C=C1)C3=C(N2)[C@H](N(CC34CN(C4)C(=O)C5CCC5)CC6=C(C=CC(=C6)F)F)CO '
+               'C=C[C@H]1CN2CCC3(C=4C=CC(=C([C@H]5CCCN5C)C4N=C3O)O)[C@@]2(C[C@@]1(C[C@]6(C7=C(CCN6C)C8=CC=CC=C8N7)[H])[H])[H] '
+               'NAME: Strychnophylline REASON: CORRECT Contains indole moiety '
+               'and exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               'COC(=O)C1[C@H](CC[C@@H]2[C@@H]1C[C@H]3C4=C(CCN3C2)C5=CC=CC=C5N4)O '
                'NAME: '
-               "cyclobutyl-[(1S)-2-[(2,5-difluorophenyl)methyl]-1-(hydroxymethyl)-7-methoxy-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,3'-azetidine]yl]methanone "
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (6 rings), and ethyl/vinyl group, 1 sp2 carbons\n'
+               '(1S,15R,18S,20S)-18-hydroxy-1,3,11,12,14,15,16,17,18,19,20,21-dodecahydroyohimban-19-carboxylic '
+               'acid methyl ester REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               '[H][C@@]12C[C@]3([H])N([C@H]4C[C@@]5([C@H](OC(C)=O)C14)c1ccccc1N[C@@]35[H])[C@H](O)\\C2=C\\C '
-               'NAME: 1,2-dihydrovomilenine REASON: WRONGLY CLASSIFIED '
-               'Contains indole core, complex ring system (7 rings), and ester '
-               'group, ethyl/vinyl group, 2 sp2 carbons\n'
+               'C[C@@H]1[C@@H](C=O)[C@@]2(C[C@]3(C4=C(CCN3C(C2=CO1)=O)C5=CC=CC=C5N4)[H])[H] '
+               'NAME: Naucleidinal REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               'O=C/1NC(C(=O)N\\C1=C/C=2C3=C(C=CC(=C3)CC4OC4(C)C)NC2C(C=C)(C)C)C '
-               'NAME: Epoxyisoechinulin A REASON: WRONGLY CLASSIFIED Contains '
-               'indole core, complex ring system (4 rings), and ethyl/vinyl '
-               'group, 4 sp2 carbons\n'
+               'C=C[C@]1(CN2CCC=3C4=CC=CC=C4NC3[C@@]2(C[C@@]1(/C(=C(\\OC)/[H])/C(=O)OC)[H])[H])[H] '
+               'NAME: Corynantheine REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               'OCC1[C@@]2(N(C=3C([C@@]42[C@]5(N(CC4)C\\C(\\[C@@]1(C5)[H])=C\\C)[H])=CC=CC3)C(=O)C)[H] '
-               'NAME: '
-               '1-[(1R,9S,11R,12E,17S)-12-Ethylidene-10-(hydroxymethyl)-8,14-diazapentacyclo[9.5.2.01,9.02,7.014,17]octadeca-2,4,6-trien-8-yl]ethanone '
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (5 rings), and ethyl/vinyl group, 2 sp2 carbons\n'
+               'CC[C@@]1(CN2CC[C@@]34C5=CC=CC=C5N6[C@]4([C@@](CO[C@]6([C@@]([C@]/7(CC=8C9=C(C=C[N+]8C\\C7=C\\C)C=%10C=CC=CC%10N9)[H])(C(=O)OC)[H])[H])([C@]1(C[C@@]32[H])[H])[H])[H])[H] '
+               "NAME: 3',4',5',6'-tetradehydrogeissospermine REASON: CORRECT "
+               'Contains indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
                ' * SMILES: '
-               'COC(=O)C1=C2Nc3ccccc3[C@@]22CCN3CC=C[C@](C1)(C(C)O)[C@@H]23 '
-               'NAME: 19-Hydroxytabersonine REASON: WRONGLY CLASSIFIED '
-               'Contains indole core, complex ring system (5 rings), and ester '
-               'group, ethyl/vinyl group, 3 sp2 carbons\n'
+               '[H][C@@]12N3CC[C@@]11c4cc(c(OC)cc4N(C)[C@@]1([H])[C@](O)([C@H](O)[C@]2(CC)C=CC3)C(N)=O)[C@]1(C[C@@H]2C[N@](CCc3c1[nH]c1ccccc31)C[C@](O)(CC)C2)C(=O)OC '
+               'NAME: vindesine REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               'O1C2(C(C3(C(C4(C(CC3OC(=O)C)C(OC(=O)C=C4)(C)C)C)CC2)C)CC15C6N(C=7C5=CC=CC7)C(=O)C(N6)C)C '
-               'NAME: Teraspiridole A_130090 REASON: WRONGLY CLASSIFIED '
-               'Contains indole core, complex ring system (7 rings), and ester '
-               'group, ethyl/vinyl group, 4 sp2 carbons\n'
+               'CCC1=C[C@@H]2CN(C1)Cc1c([nH]c3ccccc13)[C@@](C2)(C(=O)OC)c1cc2c(cc1OC)N(C)[C@@H]1[C@]22CCN3CC=C[C@](CC)([C@@H]23)[C@@H](OC(C)=O)[C@]1(O)C(=O)OC '
+               'NAME: vinorelbine REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
-               'CCS(=O)(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)CC5=CC6=C(C=C5)OCO6 '
-               'NAME: '
-               "[(1R)-2-(1,3-benzodioxol-5-ylmethyl)-1'-ethylsulfonyl-7-methoxy-9-methyl-1-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]yl]methanol "
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (6 rings), and ethyl/vinyl group\n'
+               'C=C[C@@](CO)([C@]1(CC[N@@+]2(C)CCC=3C4=CC=CC=C4NC3[C@@]2(C1)[H])[H])[H] '
+               'NAME: N4-methylantirhine REASON: CORRECT Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
                ' * SMILES: '
-               '[H][C@]12C[C@]34C(OC[C@@]1([H])[C@]1([H])C[C@]3([H])N2C\\C1=C\\C)=Nc1c(OC)cc(OC)cc41 '
-               'NAME: 19(E)-9,18-Didemethoxygardneramine REASON: WRONGLY '
-               'CLASSIFIED Contains indole core, complex ring system (7 '
-               'rings), and ethyl/vinyl group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'COC(=O)C1=C2Nc3ccccc3[C@@]22CCN3CC[C@@H]4OC(=O)C[C@]4(C1)[C@@H]23 '
-               'NAME: Apodine REASON: WRONGLY CLASSIFIED Contains indole core, '
-               'complex ring system (6 rings), and ester group, ethyl/vinyl '
-               'group, 3 sp2 carbons\n'
-               ' * SMILES: '
-               'C[C@@H]1CN(C(=O)C2=C(C3=CC=CC=C3CO[C@@H]1CN(C)C(=O)[C@@H]4CCCN4C)C5=CC=CC=C5N2C)[C@@H](C)CO '
-               'NAME: LSM-14052 REASON: WRONGLY CLASSIFIED Contains indole '
-               'core, complex ring system (5 rings), and ethyl/vinyl group, 2 '
-               'sp2 carbons\n'
-               ' * SMILES: '
-               'CC1=CC=C(C=C1)S(=O)(=O)N2CC3(C2)CN([C@@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)CC6=CC=CC=C6 '
-               'NAME: '
-               "[(1S)-7-methoxy-9-methyl-1'-(4-methylphenyl)sulfonyl-2-(phenylmethyl)-1-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]yl]methanol "
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (6 rings), and ethyl/vinyl group\n'
-               ' * SMILES: '
-               'O=C1N2[C@@]3(C(=O)N[C@]14[C@@H](O[C@@]5(NC=6C7=C(OC(C)(C)C=C7)C=CC6C5=O)C([C@@H]4C3)(C)C)O)CCC2 '
-               'NAME: Notoamide O REASON: WRONGLY CLASSIFIED Contains indole '
-               'core, complex ring system (8 rings), and ethyl/vinyl group, 4 '
-               'sp2 carbons\n'
-               ' * SMILES: '
-               'COCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3)C=C(C=C4)OC)CO)CC5=CC=CC=C5F '
-               'NAME: '
-               "1-[(1R)-2-[(2-fluorophenyl)methyl]-1-(hydroxymethyl)-7-methoxy-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,3'-azetidine]yl]-2-methoxyethanone "
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (5 rings), and ethyl/vinyl group, 1 sp2 carbons\n'
-               ' * SMILES: '
-               'O=[N+]([O-])[C@@]12[C@@H](C(C)(C)[C@]3(C1)C(=O)N4C(CC(C=5C4=C3C=CC5OC)=O)(C)C)C[C@@H]6CCCN6C2 '
-               'NAME: Clopiamine C REASON: WRONGLY CLASSIFIED Contains indole '
-               'core, complex ring system (6 rings), and ethyl/vinyl group, 2 '
-               'sp2 carbons\n'
-               ' * SMILES: '
-               'COC(=O)[C@@H]1C[C@]23CCCN2CC[C@]2(C(=O)OC)c4ccccc4N(C(=O)OC)[C@]12CC3 '
-               'NAME: Grandilodine A, (rel)- REASON: WRONGLY CLASSIFIED '
-               'Contains indole core, complex ring system (6 rings), and ester '
-               'group, ethyl/vinyl group, 3 sp2 carbons\n'
-               ' * SMILES: '
-               'C=1(C[C@]2([C@@]3([NH+](C[C@H]4[C@@H]2O4)CC[C@]53C6=C(NC51)C=CC=C6)[H])[C@@H](C)OC(=O)C)C(=O)OC '
-               'NAME: 19-O-acetylhoerhammericine(1+) REASON: WRONGLY '
-               'CLASSIFIED Contains indole core, complex ring system (6 '
-               'rings), and ester group, ethyl/vinyl group, 3 sp2 carbons\n'
-               ' * SMILES: '
-               'C1CCC(=CC1)C#CC2=CC3=C(C=C2)NC(=O)C34C(C5C(=O)OC(C(N5C4C6=CC=CC=C6OCCO)C7=CC=CC=C7)C8=CC=CC=C8)C(=O)NCC(C9=CC=CC=C9)O '
-               'NAME: '
-               "5-[2-(1-cyclohexenyl)ethynyl]-6'-[2-(2-hydroxyethoxy)phenyl]-N-(2-hydroxy-2-phenylethyl)-1',2-dioxo-3',4'-diphenyl-8'-spiro[1H-indole-3,7'-4,6,8,8a-tetrahydro-3H-pyrrolo[2,1-c][1,4]oxazine]carboxamide "
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (9 rings), and ester group, ethyl/vinyl group, 4 sp2 '
-               'carbons\n'
-               ' * SMILES: '
-               'O=C1N[C@@H](CC2=CNC=3C2=C(N[C@H]1C(C)C)C=C4[C@@](C(C)C)(CC[C@@](C34)(C=C)C)C)CO '
-               'NAME: N-Demethylteleocidin B-4 REASON: WRONGLY CLASSIFIED '
-               'Contains indole core, complex ring system (4 rings), and '
-               'ethyl/vinyl group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               '[C@@]123C(=NC4=C1C=CC(=C4)OC)[C@](C[C@]5([C@@]2([NH+](CC=C5)CC3)[H])CC)(C(=O)OC)O '
-               'NAME: '
-               '(3R)-1,2-didehydro-3-hydroxy-16-methoxy-2,3-dihydrotabersoninium '
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (5 rings), and ester group, ethyl/vinyl group, 3 sp2 '
-               'carbons\n'
-               ' * SMILES: '
-               'CCCC(=O)N1CCC2(CC1)CN([C@@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)C '
-               'NAME: '
-               "1-[(1S)-2-acetyl-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]yl]-1-butanone "
-               'REASON: WRONGLY CLASSIFIED Contains indole core, complex ring '
-               'system (4 rings), and ethyl/vinyl group, 2 sp2 carbons\n'
-               ' * SMILES: '
-               'C[C@H]1C[C@@H](C)\\C=C(CO)\\C[C@H](C)C(=O)N[C@@H](C)C(=O)N(C)[C@H](Cc2c(Br)[nH]c3ccccc23)C(=O)N[C@H](CC(=O)O1)c1ccc(O)cc1 '
-               'NAME: jaspamide L REASON: WRONGLY CLASSIFIED Contains indole '
-               'core, complex ring system (4 rings), and ester group, '
-               'ethyl/vinyl group, 5 sp2 carbons\n'
-               ' * SMILES: '
-               'O=C/1N[C@H](C(=O)N\\C1=C/C=2C3=C(C(=CC=C3)CC4OC4(CO)C)NC2C(C=C)(C)C)C '
-               'NAME: Variecolorin N REASON: WRONGLY CLASSIFIED Contains '
-               'indole core, complex ring system (4 rings), and ethyl/vinyl '
-               'group, 4 sp2 carbons\n'
-               ' * SMILES: '
-               'O=C1N2[C@@]3(C(=O)N[C@@]14[C@@H](C(C)(C)[C@@]5(C4)C(=O)NC6=C5C=CC7=C6C=CC(O7)(C)C)C3)CCC2 '
-               'NAME: Taichunamide E REASON: WRONGLY CLASSIFIED Contains '
-               'indole core, complex ring system (8 rings), and ethyl/vinyl '
-               'group, 4 sp2 carbons\n'
-               'False negatives: SMILES: '
-               'COC=1C=CC=2C=3CCN4C[C@@]5(CC[C@@]([C@@]([C@]5(C[C@]4(C3NC2C1)[H])[H])(C(=O)OC)[H])(O)[H])[H] '
-               'NAME: 11-methoxyyohimbine REASON: MISSED Insufficient '
-               'nitrogen-containing rings\n'
-               ' * SMILES: '
-               'CCOC(=O)OC1=C(C=C(C=C1OC)C(=O)O[C@@H]2C[C@@H]3CN4CCC5=C([C@H]4C[C@@H]3[C@@H]([C@H]2OC)C(=O)OC)NC6=C5C=CC(=C6)OC)OC '
-               'NAME: Syrosingopine REASON: MISSED Insufficient '
-               'nitrogen-containing rings\n'
-               ' * SMILES: '
-               'COC(=O)[C@H]1[C@H]2C[C@H]3C4=C(CCN3C[C@@H]2CCC1O)C5=CC=CC=C5N4 '
-               'NAME: '
-               '(1S,15R,19S,20S)-18-hydroxy-1,3,11,12,14,15,16,17,18,19,20,21-dodecahydroyohimban-19-carboxylic '
-               'acid methyl ester REASON: MISSED Insufficient '
-               'nitrogen-containing rings\n'
-               ' * SMILES: '
-               'C/C=C(/C=O)\\[C@@]1(CC2C3=C(CCN2C)C4=CC=CC=C4N3[C@](C1)(O)[H])[H] '
-               'NAME: Akagerine REASON: MISSED Insufficient '
-               'nitrogen-containing rings\n'
-               ' * SMILES: '
-               '[H][C@@]12CCCC[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2 '
-               'NAME: yohimban REASON: MISSED Insufficient nitrogen-containing '
-               'rings\n'
-               ' * SMILES: '
-               'C=C[C@]1(CN2CC[C@]1(C[C@]2(C3=C(CCO)C4=CC=CC=C4N3)[H])[H])[H] '
-               'NAME: Cinchonamine HCl REASON: MISSED Insufficient '
-               'nitrogen-containing rings\n'
-               ' * SMILES: '
-               'C/C=C\\1/CN2CC[C@@]34C5=CC=CC=C5N6[C@]4([C@@](C=C([C@]7(C[C@@]89C%10=CC=CC=C%10N%11C=C%12[C@]/%13(C[C@]%14([C@@]%15(CCN%14C\\C%13=C\\C)C%16=CC=CC=C%16N(C=C([C@]/%17(C[C@@]8(N7C\\C%17=C\\C)[H])[H])[C@@]9%11[H])[C@@]%12%15[H])[H])[H])[H])C6=O)([C@]1(C[C@@]32[H])[H])[H])[H] '
-               'NAME: Strychnohexamine REASON: MISSED Complex structure lacks '
-               'typical MIA ring patterns\n'
-               ' * SMILES: '
-               'CN1C=2C=CC(CC=3C=CC4=C(C3)[C@@]56CCN7CCC[C@@]8(CC([C@@]5(CC8)N4C)C(OC)=O)[C@@H]67)=CC2C9%10CCN%11CCC[C@@]%12(CC(C91CC%12)C(OC)=O)[C@@H]%10%11 '
-               'NAME: Pleiokomenine A REASON: MISSED Complex structure lacks '
-               'typical MIA ring patterns\n'
-               ' * SMILES: '
-               '[H][C@@]12CC[C@H](O)C[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2 '
-               'NAME: 17alpha-yohimbol REASON: MISSED Insufficient '
-               'nitrogen-containing rings\n'
+               '[H][C@@]12CC[C@H](O)[C@]([H])(C(O)=O)[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2 '
+               'NAME: yohimbic acid REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
                ' * SMILES: '
                'CO[C@H]1[C@@H](C[C@@H]2CN3CCc4c([nH]c5ccccc45)[C@H]3C[C@@H]2[C@@H]1C(=O)OC)OC(=O)c1cc(OC)c(OC)c(OC)c1 '
-               'NAME: deserpidine REASON: MISSED Insufficient '
-               'nitrogen-containing rings\n'
+               'NAME: deserpidine REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               'C/C=C\\1/C[N+]=2C=CC=3C=4C=CC=CC4NC3C2C[C@@]1(C5=CN6C7=CC=CC=C7[C@]89CCN%10C\\C(=C\\C)\\[C@](C[C@@]8%10[H])([C@@]([C@@H]5O)([C@@]96[H])[H])[H])[H] '
+               "NAME: 3',4',5',6'-tetradehydrolongicaudatine Y REASON: CORRECT "
+               'Contains indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'C[C@H]1[C@@H]2CN3CCC4=C(C3C[C@@H]2C(=CO1)C(=O)OC)NC5=CC=CC=C45 '
+               'NAME: LSM-6418 REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               'CO[C@H]1[C@@H](C[C@@H]2CN3CCC4=C([C@@H]3C[C@H]2[C@@H]1C(=O)OC)NC5=C4C=CC(=C5)OC)OC(=O)C6=CC(=C(C(=C6)OC)OC)OC '
+               'NAME: '
+               '(1S,15S,17R,18R,19S,20R)-6,18-dimethoxy-17-[oxo-(3,4,5-trimethoxyphenyl)methoxy]-1,3,11,12,14,15,16,17,18,19,20,21-dodecahydroyohimban-19-carboxylic '
+               'acid methyl ester REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               'CC[C@@]1(C[C@@H]2C[C@@](C3=C(CCN(C2)C1)C4=CC=CC=C4N3)(C5=C(C=C6C(=C5)[C@]78CCN9[C@H]7[C@](C=CC9)([C@H]([C@@]([C@@H]8N6C=O)(C(=O)OC)O)OC(=O)C)CC)OC)C(=O)OC)O '
+               'NAME: LSM-15607 REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               '[H][C@]12N(CCC3=C1NC4=C3C=CC=C4)C[C@]5([C@](C2)([C@@H](C(OC)=O)[C@@H](O)CC5)[H])[H] '
+               'NAME: pseudoyohimbine REASON: CORRECT Contains indole moiety '
+               'and exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               'CC[C@@]1(C[C@@]2(C[C@@]3(C4=C(CCN(C2)[C@]13[H])C5=CC(=C(C=C5N4)OC)[C@]6(C[C@]7([C@H](CC)CN(C)[C@@](CC=8C9=CC=CC=C9NC86)(C7C(=O)OC)[H])[H])O)C(=O)OC)[H])[H] '
+               'NAME: 3-R,S-hydroxytabernaelegantine A REASON: CORRECT '
+               'Contains indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               '[H][C@]12C[C@@H](O)[C@H](OC)[C@@H](C(O)=O)[C@@]1([H])C[C@@]1([H])N(CCc3c1[nH]c1cc(OC)ccc31)C2 '
+               'NAME: reserpic acid REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               '[H][C@]12CC[C@H](O)[C@@H](C(=O)OC)[C@@]1([H])C[C@]1([H])N(CCc3c1[nH]c1ccccc31)C2 '
+               'NAME: rauwolscine REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               '[H][C@@]12C[C@@]3([H])C(=CN1CCC1=C2NC2=C1C=CC=C2)[C@H](C)OC=C3C(=O)OC '
+               'NAME: cathenamine REASON: CORRECT Contains indole moiety and '
+               'exhibits complexity indicative of monoterpenoid indole '
+               'alkaloids\n'
+               ' * SMILES: '
+               'COC=1C=CC=2C=3CCN4C[C@@]5(CC[C@@]([C@@]([C@]5(C[C@]4(C3NC2C1)[H])[H])(C(=O)OC)[H])(O)[H])[H] '
+               'NAME: 11-methoxyyohimbine REASON: CORRECT Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               'False positives: SMILES: '
+               'ClC1=C2C(=CC3=C1NC=4C=CC=CC34)[C@@]5([C@H]([C@](C(=O)O)([C@@H](O)CC5)C)CC2)C '
+               'NAME: Chloroxiamycin REASON: WRONGLY CLASSIFIED Contains '
+               'indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'N[C@@H](Cc1c[nH]c2ccccc12)C(=O)N[C@@H](CC(O)=O)C(=O)N[C@@H](CO)C(O)=O '
+               'NAME: Trp-Asp-Ser REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C1C=C2[C@@]3(CC[C@]4([C@H]2CCC5=C4C=C6NC=7C=CC=CC7C6=C5)C)O[C@@H]1C(O3)(C)C '
+               'NAME: Shearilicine REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'C[C@H](CCCC([O-])=O)O[C@@H]1O[C@@H](C)[C@@H](C[C@H]1O)OC(=O)C1=CNC2=C1C=CC=C2 '
+               'NAME: icas#12(1-) REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'S(CC[C@H](NC(=O)[C@@H](N)C(C)C)C(=O)N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(O)=O)C '
+               'NAME: Val-Met-Trp REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C(N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(=O)N[C@@H](C)C(O)=O)[C@@H](N)CC=3C=4C(NC3)=CC=CC4 '
+               'NAME: Trp-Trp-Ala REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O1[C@]23[C@]4([C@@]([C@@]5([C@@](CC4)(CC6=C5NC=7C6=CC=CC7)[H])C)(CC[C@@]3(O[C@@](C[C@@]12[H])(C(O)(C)C)[H])[H])C)[H] '
+               'NAME: Terpendole B REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'C(N[C@H](C(N[C@H](C(N[C@H](C(N[C@H](C(=O)N[C@H](C(N[C@H](C(N[C@H](C(N[C@H](C(=O)N1[C@H](C(=O)O)CCC1)CC(C)C)=O)CCCCN)=O)CC=2C=CC=CC2)=O)CC3=CNC4=C3C=CC=C4)CC(=O)O)=O)CCCNC(=N)N)=O)CC5=CNC6=C5C=CC=C6)=O)C(C)C)([C@H](CCC(=O)N)NC(=O)[C@H]7N(CCC7)C([C@@H](N)C(CC)C)=O)=O '
+               'NAME: IPQVWRDWFKLP REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C1[C@@H]([C@@]2([C@H]([C@]3([C@@H]([C@]([C@H](C)CC3)(CC=4C5=C(C=CC=C5)NC4)C)CC2)C)CC1)C)C '
+               'NAME: Radarin C REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O1[C@@]2(C([C@]3([C@@]([C@@]4([C@@](CC3)(CC5=C4NC=6C5=CC=CC6)[H])C)(CC2)C)[H])=CC(=O)[C@]1(C(O)(C)C)[H])[H] '
+               'NAME: Dehydroxypaxilline REASON: WRONGLY CLASSIFIED Contains '
+               'indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'CCCCCCCCCC(=O)N[C@@H](Cc1c[nH]c2ccccc12)C(=O)N[C@@H](CC(N)=O)C(=O)N[C@@H](CC(O)=O)C(=O)N[C@H]1[C@@H](C)OC(=O)[C@H](CC(=O)c2ccccc2N)NC(=O)[C@@H](NC(=O)[C@@H](CO)NC(=O)CNC(=O)[C@H](CC(O)=O)NC(=O)[C@@H](C)NC(=O)[C@H](CC(O)=O)NC(=O)[C@H](CCCN)NC(=O)CNC1=O)[C@H](C)CC(O)=O '
+               'NAME: daptomycin REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C(N[C@@H]([C@H](O)C)C(O)=O)[C@@H](NC(=O)CN)CC=1C=2C(NC1)=CC=CC2 '
+               'NAME: Gly-Trp-Thr REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C1[C@H](N[C@H](C(=O)O)CC2=CC=C(O)C=C2)CCC(O)=NCCCC[C@@H]3N=C(O)[C@@H](N=C([C@H]([C@H](OC(C[C@H]4C(=N[C@H](C(=N[C@H]1CCC(=O)OC[C@H](N=C(O)[C@H]5N(C(=O)[C@@H](N=C3O)CC6=CC=C(O)C=C6)CCC5)C(O)=N4)O)CC=7C8=C(C=CC=C8)NC7)O)=O)C)N=C(O)[C@@H](N=C(O)[C@@H](N=C(O)C)CC9=CC=C(O)C=C9)CO)O)CC(C)C '
+               'NAME: Microviridin LH1667 REASON: WRONGLY CLASSIFIED Contains '
+               'indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'O=C(N1[C@@H](CCC1)C(O)=O)[C@H]2N(CCC2)C(=O)[C@@H](N)CC=3C=4C(NC3)=CC=CC4 '
+               'NAME: Trp-Pro-Pro REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'C1=CC=CC=2NC=C(C12)CC(O[C@H]3[C@@H]([C@H]([C@@H]([C@H](O3)C(O)=O)O)O)O)=O '
+               'NAME: Indole-3-acetic-acid-O-glucuronide REASON: WRONGLY '
+               'CLASSIFIED Contains indole moiety and exhibits complexity '
+               'indicative of monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'CC(C)C[C@H](NP(O)(=O)O[C@@H]1O[C@@H](C)[C@H](O)[C@@H](O)[C@H]1O)C(=O)N[C@@H](Cc1c[nH]c2ccccc12)C(O)=O '
+               'NAME: phosphoramidon REASON: WRONGLY CLASSIFIED Contains '
+               'indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'N(C([C@@H](N[H])CC(O)=O)=O)[C@@H](CC1=CC=C(OS(=O)(=O)O)C=C1)C(N[C@@H](CCSC)C(NCC(N[C@@H](CC2=CNC3=C2C=CC=C3)C(N[C@@H](CCSC)C(N[C@@H](CC(O)=O)C(N[C@@H](CC4=CC=CC=C4)C(N)=O)=O)=O)=O)=O)=O)=O '
+               'NAME: sincalide REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C1[C@@]23C(=O)NC([C@@H]2C(C)=C([C@H]([C@@H]3C=CC[C@@H](C[C@H]([C@@H](C1)O)O)C)O)C)CC=4C5=C(C=CC=C5)NC4 '
+               'NAME: Cytochalasin Y REASON: WRONGLY CLASSIFIED Contains '
+               'indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'CC[C@H](C)[C@H](N(C)C)C(=O)N[C@@H](C(C)C)C(=O)N[C@@H]1C(=O)N[C@@H](Cc2c[nH]c3ccccc23)C(=O)NCC(=O)c2ccc(OC1(C)C)cc2 '
+               'NAME: Hymenocardine REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'SC[C@H](NC(=O)[C@@H](NC(=O)[C@@H](N)CCCN=C(N)N)CC=1C=2C(NC1)=CC=CC2)C(O)=O '
+               'NAME: Arg-Trp-Cys REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C1N[C@@H]2[C@](O)(NC([C@@H]2OC)=O)CC(=O)N(CC(=O)N[C@@H](C(=O)NCC(NC[C@H](CC(N[C@@H]([C@@H]1O)[C@H](O)[C@@H](O)C/C=C/C=C/C3=CC=CC=C3)=O)O)=O)CC=4C5=C(C=CC=C5)NC4)C '
+               'NAME: Pedein B REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C(N[C@@H]([C@H](CC)C)C(=O)N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(O)=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)[C@@H](N)CC=3NC=NC3)CC(C)C)CC(O)=O)[C@H](CC)C '
+               'NAME: His-leu-asp-ile-ile-trp REASON: WRONGLY CLASSIFIED '
+               'Contains indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'O=C1O[C@@H]([C@H](NC(=O)[C@@H](NC(=O)CCCCC)CC(=O)O)C(=O)N[C@H](C(=O)N[C@H]2CC[C@H](N([C@H](C(N([C@H](C(N[C@H]1C(C)C)=O)CC=3C4=C(C=CC=C4)NC3)C)=O)[C@H](CC)C)C2=O)O)CCCN=C(N)N)C '
+               'NAME: Micropeptin SF995 REASON: WRONGLY CLASSIFIED Contains '
+               'indole moiety and exhibits complexity indicative of '
+               'monoterpenoid indole alkaloids\n'
+               ' * SMILES: '
+               'O=C(N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(O)=O)[C@@H](NC(=O)[C@@H](N)CC=3NC=NC3)CC(O)=O '
+               'NAME: His-Asp-Trp REASON: WRONGLY CLASSIFIED Contains indole '
+               'moiety and exhibits complexity indicative of monoterpenoid '
+               'indole alkaloids\n'
+               ' * SMILES: '
+               'O=C1N2[C@H](C(=O)N[C@H]1CC3=C(NC4=C3C=CC(=C4)OC)C(=O)[C@H]5OC5(C)C)CCC2 '
+               'NAME: 19S,20-epoxy-18-oxotryprostatin A REASON: WRONGLY '
+               'CLASSIFIED Contains indole moiety and exhibits complexity '
+               'indicative of monoterpenoid indole alkaloids\n'
+               'False negatives: SMILES: '
+               'C/C=C\\1/CN2CC[C@]34C5=CC(C=6C=C7C(=CC6OC)[C@]89CCN%10C/C(=C\\C)/[C@](CCC8%10N7C)([C@]9(C(=O)OC)[H])[H])=C(C=C5N(C)[C@]4(C2C[C@@]1([C@@]3(C(=O)OC)[H])[H])[H])OC '
+               'NAME: Desoxycabufiline REASON: MISSED Indole moiety not found\n'
+               ' * SMILES: '
+               'C12=C(C=CC=C1)NC=3[C@]([C@@]4(/C(/CN(CC4)CCC32)=C\\C)[H])(C(=O)OC)COC(C)=O '
+               'NAME: O-acetyl-15alpha-stemmadenine REASON: MISSED Does not '
+               'meet the expected structure complexity of MIAs\n'
+               ' * SMILES: '
+               'C/C=C\\1/CN2CC[C@@]34C5=CC=CC=C5N6[C@]4(C(=CC([C@]7(C[C@@]89C%10=CC=CC=C%10N%11C(C=C[C@@]([C@]/%12(C[C@@]8(N7C\\C%12=C\\C)[H])[H])([C@@]9%11[H])[H])=O)[H])C6=O)[C@]1(C[C@@]32[H])[H])[H] '
+               'NAME: Isosungucine REASON: MISSED Indole moiety not found\n'
+               ' * SMILES: '
+               'CC[C@]1(C[C@]2(C[C@]3(C4=C(CCN(C2)C13)C5=CC(=C(C=C5N4)OC)OC)C(=O)OC)[H])[H] '
+               'NAME: Conopharyngine REASON: MISSED Indole moiety not found\n'
+               ' * SMILES: '
+               '[C@@]123[C@@]4([C@]5([C@@](CC1=O)(C(CN([C@H](C2)O)C)=CCO[C@]5(CC(N4C6=C3C=CC=C6)=O)[H])[H])[H])[H] '
+               'NAME: 5-hydroxyvomicine REASON: MISSED Indole moiety not '
+               'found\n'
+               ' * SMILES: '
+               'C/C=C\\1/C[N@+]2(C)CC[C@@]34C5=CC=CC=C5NC4=C(C=O)[C@]1(C[C@@]32[H])[H] '
+               'NAME: C-fluorocurarine REASON: MISSED Indole moiety not found\n'
+               ' * SMILES: '
+               'COC=1C=CC2=C(C1)[C@@]34CCN5C(C=C[C@@]65CC[C@]4([C@H]3C6)N2C(=O)OC)=O '
+               'NAME: Lundurine A REASON: MISSED Indole moiety not found\n'
+               ' * SMILES: '
+               'C/C=C\\1/CN(C)[C@]2(CC=3C4=CC=CC=C4N(C)C3C(CC1C2C(=O)OC)=O)[H] '
+               'NAME: Ochropamine REASON: MISSED Indole moiety not found\n'
+               ' * SMILES: '
+               'CC[C@@]12C=CCN3CCC=4C5=CC=CC=C5N(C4[C@]13[H])[C@](C2)(C(=O)OC)O '
+               'NAME: 14,15-dehydrovincamine REASON: MISSED Indole moiety not '
+               'found\n'
+               ' * SMILES: '
+               'C=CC1C2C[C@]3([C@@]45C(C6=CC=CC=C6N4)[C@@](CN3)(O[C@@](C25C(=O)OC)(O[C@]1(O[C@@H]7[C@H]([C@@H]([C@H]([C@H](CO)O7)O)O)O)[H])[H])[H])[H] '
+               'NAME: Cymoside REASON: MISSED Indole moiety not found\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'C1C=C(N=C2N1NN=N2)C3=CC=CC=C3',
-                                     'name': '5-phenyl-1,7-dihydrotetrazolo[1,5-a]pyrimidine',
-                                     'reason': 'Molecular weight 199.1 outside '
-                                               'typical MIA range'},
-                                 {   'smiles': 'O(C(=O)CCCCCCCCCCC/C=C\\CCCCCCCC)[C@H](COC(=O)CCCCCCCCC/C=C\\CCCCCC)COC(=O)CCCCCCC/C=C\\CCCC',
-                                     'name': 'TG(14:1(9Z)/22:1(13Z)/18:1(11Z))',
-                                     'reason': 'No nitrogen atoms found - '
-                                               'required for alkaloid'},
-                                 {   'smiles': 'CC(=O)N[C@H]1[C@H](O)O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@@H](O[C@@H]3O[C@H](CO[C@H]4O[C@H](CO[C@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]5O)[C@@H](O)[C@H](O[C@H]5O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]5O)[C@@H]4O)[C@@H](O)[C@H](O[C@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]4O[C@@H]4O[C@H](CO)[C@@H](O)[C@H](O)[C@H]4NC(C)=O)[C@@H]3O)[C@H](O)[C@H]2NC(C)=O)[C@@H]1O',
-                                     'name': 'beta-D-GlcpNAc-(1->2)-alpha-D-Manp-(1->3)-{alpha-D-Manp-(1->3)-[alpha-D-Manp-(1->6)]-alpha-D-Manp-(1->6)}-beta-D-Manp-(1->4)-beta-GlcpNAc-(1->4)-beta-D-GlcpNAc',
-                                     'reason': 'Molecular weight 1437.5 '
-                                               'outside typical MIA range'},
-                                 {   'smiles': '[C@@]12([C@@]([C@]([C@@H](CC1)C)(CCC(CC)C)C)(CCC[C@@H]2C)[H])C',
-                                     'name': 'clerodane',
-                                     'reason': 'No nitrogen atoms found - '
-                                               'required for alkaloid'},
-                                 {   'smiles': 'S(O[C@@H]1[C@H](O)[C@@H](O)[C@H](O[C@@H]([C@@H](O)[C@H](O)CO[C@]2(O[C@H]([C@H](NC(=O)C)[C@@H](O)C2)[C@H](O)[C@H](O)CO)C(O)=O)[C@@H](NC(=O)C)CO)O[C@@H]1CO)(O)(=O)=O',
-                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[(2R,3S,4R,5S)-5-acetamido-4-[(2R,3R,4R,5R,6R)-3,4-dihydroxy-6-(hydroxymethyl)-5-sulfooxyoxan-2-yl]oxy-2,3,6-trihydroxyhexoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
+    'sample_true_negatives': [   {   'smiles': '[H][C@@]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)O[C@@H]1[C@@H](O)[C@@H](O)[C@@H](CO)O[C@H]1OC[C@H]1O[C@@H](OC[C@H]2O[C@@H](OC[C@H](NC(=O)[C@H](O)CCCCCCCCCCCCCCCCCCCCCC)[C@H](O)[C@H](O)CCCCCCCCCCCCCC)[C@H](O)[C@@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
+                                     'name': 'Neurosporaside',
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': '[O-]C(=O)C1=CN(C2CC2)C2=CC(N3CC[NH2+]CC3)=C(F)C=C2C1=O',
+                                     'name': 'ciprofloxacin zwitterion',
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': 'O=C1NC(=CC2=C1O[C@H]([C@@H](O)CC(C)C)O2)C',
+                                     'name': 'Dihydroisoflavipucine',
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': 'O=C1N2C(C(=O)N([C@@]2(OC)C)C[C@@H](O)C3=CC=CC=C3)=CC4=C1N(C=5C=CC=CC45)C',
+                                     'name': 'Marinacarboline K',
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': 'O1[C@@H](O[C@H]2[C@@H](O)[C@H](O)[C@H](O[C@@H]2OC[C@H]3OC(O)[C@@H](O)[C@@H](O)[C@@H]3O)CO)[C@H](NC(=O)C)[C@@H](O)[C@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO[C@]5(O[C@H]([C@H](NC(=O)C)[C@@H](O)C5)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]1CO',
+                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[[(2R,3R,4S,5R,6S)-6-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2S,3S,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-2-[[(2R,3S,4S,5S)-3,4,5,6-tetrahydroxyoxan-2-yl]methoxy]oxan-3-yl]oxy-4-hydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
                                              'acid',
-                                     'reason': 'Too few rings (2) for MIA '
-                                               'structure'},
-                                 {   'smiles': 'O=C(NC(CC(C)C)C(=O)N[C@@H](CCCN=C(N)N)C=O)C(NC(=O)CC)CC(C)C',
-                                     'name': 'Leupeptin Pr-LL',
-                                     'reason': 'Too few rings (0) for MIA '
-                                               'structure'},
-                                 {   'smiles': 'COC1=CC=C(C=C1)CCNC(=O)C(=C2C3=CC=CC=C3C(=N2)NC(=O)C4=CC=CS4)C#N',
-                                     'name': 'N-[3-[1-cyano-2-[2-(4-methoxyphenyl)ethylamino]-2-oxoethylidene]-1-isoindolyl]-2-thiophenecarboxamide',
-                                     'reason': 'No indole or modified indole '
-                                               'core found'},
-                                 {   'smiles': 'O=C1O[C@@H](CC=2C1=C(OC)C(O)=CC2)CCC[C@@H](O)C',
-                                     'name': 'Penicimarin C',
-                                     'reason': 'No nitrogen atoms found - '
-                                               'required for alkaloid'},
-                                 {   'smiles': 'CO[C@@H]1[C@@H]2[C@@H](C[C@@H]3[C@@](O2)([C@H]([C@@H]([C@H](O3)C(=O)OC)O)O)O)OC1N4C=NC5=C4N=CN=C5N',
-                                     'name': 'LSM-4497',
-                                     'reason': 'No indole or modified indole '
-                                               'core found'},
-                                 {   'smiles': 'C[C@@H]1[C@H](O)CCC2=CC[C@H](C[C@]12C)C(C)=C',
-                                     'name': '1-deoxycapsidiol',
-                                     'reason': 'Molecular weight 220.2 outside '
-                                               'typical MIA range'}],
-    'sample_false_negatives': [   {   'smiles': 'C/C=C\\1/CN2CC[C@@]34C5=CC=CC=C5N6[C@]4([C@@](C=C([C@]7(C[C@@]89C%10=CC=CC=C%10N%11C=C%12[C@]/%13(C[C@]%14([C@@]%15(CCN%14C\\C%13=C\\C)C%16=CC=CC=C%16N(C=C([C@]/%17(C[C@@]8(N7C\\C%17=C\\C)[H])[H])[C@@]9%11[H])[C@@]%12%15[H])[H])[H])[H])C6=O)([C@]1(C[C@@]32[H])[H])[H])[H]',
-                                      'name': 'Strychnohexamine',
-                                      'reason': 'Complex structure lacks '
-                                                'characteristic MIA patterns'},
-                                  {   'smiles': 'CN1C=2C=CC(CC=3C=CC4=C(C3)[C@@]56CCN7CCC[C@@]8(CC([C@@]5(CC8)N4C)C(OC)=O)[C@@H]67)=CC2C9%10CCN%11CCC[C@@]%12(CC(C91CC%12)C(OC)=O)[C@@H]%10%11',
-                                      'name': 'Pleiokomenine A',
-                                      'reason': 'Complex structure lacks '
-                                                'characteristic MIA patterns'},
-                                  {   'smiles': 'CC[C@@]12CCCN3C(C=C(C4=CC=CC=C4NC(CC1)=O)[C@@]23O)=O',
-                                      'name': 'Leuconolam',
-                                      'reason': 'No indole or modified indole '
-                                                'core found'},
-                                  {   'smiles': 'C(C)[C@@]12[C@]3([C@]4(C=5C(N(C)[C@]4([C@](C(NNC(OCCSSC[C@H](NC([C@@H](NC([C@@H](NC([C@@H](NC([C@@H](NC(CC[C@H](NC(=O)C6=CC=C(NCC=7N=C8C(=NC(N)=NC8=O)NC7)C=C6)C(O)=O)=O)CC(O)=O)=O)CCCNC(=N)N)=O)CC(O)=O)=O)CC(O)=O)=O)C(O)=O)=O)=O)(O)[C@@H]1O)[H])=CC(OC)=C([C@]9(C(OC)=O)C%10=C(C=%11C(=CC=CC%11)N%10)CCN%12C[C@](C[C@](C%12)(CC)O)([H])C9)C5)CCN3CC=C2)[H]',
-                                      'name': 'vintafolide',
-                                      'reason': 'Molecular weight 1915.7 '
-                                                'outside typical MIA range'},
-                                  {   'smiles': 'C/C=C\\1/CN2[C@](C[C@@]34C5=CC=CC=C5N6C(C=CC([C@]1(C[C@@]32[H])[H])[C@@]46[H])=O)([C@]7([C@]8([C@@]9([C@]%10(C[C@]%11([C@@]%12(CCN%11CC%10=CCO8)C%13=CC=CC=C%13N([C@@]9%12[H])C7=O)[H])[H])[H])[H])[H])[H]',
-                                      'name': 'Strychnogucine C',
-                                      'reason': 'Complex structure lacks '
-                                                'characteristic MIA patterns'},
-                                  {   'smiles': '[H][C@@]12C[C@]3(CN4CC[C@@]56C(Nc7ccccc57)=C(C[C@@]5(CCO[C@@]35[H])[C@]46[H])C(=O)OC)CN3c4c(OC)cccc4[C@@]4(CCN5CC[C@]6([H])OCC[C@]6(C1)[C@@]45[H])[C@]23O',
-                                      'name': 'vobtusine',
-                                      'reason': 'Complex structure lacks '
-                                                'characteristic MIA patterns'},
-                                  {   'smiles': 'C1C[C@]23CC(C4(CC2)C5(CCN(C1)[C@@H]35)C6=CC(=CC=C6N4C)CC7=CC=C8C(=C7)[C@@]9%10CCN%11CCC[C@@]%12(CC([C@@]9(CC%12)N8)C(O)=O)[C@@H]%10%11)C(OC)=O',
-                                      'name': 'Pleiokomenine B',
-                                      'reason': 'Complex structure lacks '
-                                                'characteristic MIA patterns'}],
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': 'O(C(=O)CCCCCCC)CCC1=CC=CC=C1',
+                                     'name': '2-Phenylethyl octanoate',
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': 'P(OCC(OC(=O)CCCCCCC/C=C\\CCCCCCCC)COC(=O)CCC/C=C\\C/C=C\\C/C=C\\CCCCCCCC)(OCCNC)(O)=O',
+                                     'name': 'PE-NMe(20:3(5Z,8Z,11Z)/18:1(9Z))',
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': 'O=C1C2=C(OC=3C1=CC=CN3)C(Cl)=CC(=C2)C=4NN=NN4',
+                                     'name': 'traxanox',
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': 'CCCCC(C)CCCCCC(C)CCCCCCCCCC(C)CC(O)=O',
+                                     'name': '3,13,19-trimethyltricosanoic '
+                                             'acid',
+                                     'reason': 'Indole moiety not found'},
+                                 {   'smiles': 'COC(CC1=CC[C@]2(C)[C@@H](C)CCC[C@]2(C)C1=O)OC',
+                                     'name': 'aignopsane ketal',
+                                     'reason': 'Indole moiety not found'}],
+    'sample_false_negatives': [   {   'smiles': 'C/C=C\\1/CN2CC[C@]34C5=CC(C=6C=C7C(=CC6OC)[C@]89CCN%10C/C(=C\\C)/[C@](CCC8%10N7C)([C@]9(C(=O)OC)[H])[H])=C(C=C5N(C)[C@]4(C2C[C@@]1([C@@]3(C(=O)OC)[H])[H])[H])OC',
+                                      'name': 'Desoxycabufiline',
+                                      'reason': 'Indole moiety not found'},
+                                  {   'smiles': 'C=C[C@]1(CN2CCC=3C=4C=CC(=C([C@]5(CCCN5C)[H])C4NC3[C@@]2(C[C@@]1(C[C@]6(C7=C(CCN6C)C8=CC=CC=C8N7)[H])[H])[H])O)[H]',
+                                      'name': 'Strychnopentamine',
+                                      'reason': 'Terpene-like linkage not '
+                                                'found'},
+                                  {   'smiles': 'C/C=C\\1/CN2CC[C@@]34C5=CC=CC=C5N6[C@]4(C(=CC([C@]7(C[C@@]89C%10=CC=CC=C%10N%11C(C=C[C@@]([C@]/%12(C[C@@]8(N7C\\C%12=C\\C)[H])[H])([C@@]9%11[H])[H])=O)[H])C6=O)[C@]1(C[C@@]32[H])[H])[H]',
+                                      'name': 'Isosungucine',
+                                      'reason': 'Indole moiety not found'},
+                                  {   'smiles': 'CC[C@]1(C[C@]2(C[C@]3(C4=C(CCN(C2)C13)C5=CC(=C(C=C5N4)OC)OC)C(=O)OC)[H])[H]',
+                                      'name': 'Conopharyngine',
+                                      'reason': 'Indole moiety not found'},
+                                  {   'smiles': '[C@@]123[C@@]4([C@]5([C@@](CC1=O)(C(CN([C@H](C2)O)C)=CCO[C@]5(CC(N4C6=C3C=CC=C6)=O)[H])[H])[H])[H]',
+                                      'name': '5-hydroxyvomicine',
+                                      'reason': 'Indole moiety not found'},
+                                  {   'smiles': 'C/C=C\\1/C[N@+]2(C)CC[C@@]34C5=CC=CC=C5NC4=C(C=O)[C@]1(C[C@@]32[H])[H]',
+                                      'name': 'C-fluorocurarine',
+                                      'reason': 'Indole moiety not found'},
+                                  {   'smiles': 'COC=1C=CC2=C(C1)[C@@]34CCN5C(C=C[C@@]65CC[C@]4([C@H]3C6)N2C(=O)OC)=O',
+                                      'name': 'Lundurine A',
+                                      'reason': 'Indole moiety not found'},
+                                  {   'smiles': 'C/C=C\\1/CN(C)[C@]2(CC=3C4=CC=CC=C4N(C)C3C(CC1C2C(=O)OC)=O)[H]',
+                                      'name': 'Ochropamine',
+                                      'reason': 'Indole moiety not found'},
+                                  {   'smiles': 'CC[C@@]12C=CCN3CCC=4C5=CC=CC=C5N(C4[C@]13[H])[C@](C2)(C(=O)OC)O',
+                                      'name': '14,15-dehydrovincamine',
+                                      'reason': 'Indole moiety not found'},
+                                  {   'smiles': 'C=CC1C2C[C@]3([C@@]45C(C6=CC=CC=C6N4)[C@@](CN3)(O[C@@](C25C(=O)OC)(O[C@]1(O[C@@H]7[C@H]([C@@H]([C@H]([C@H](CO)O7)O)O)O)[H])[H])[H])[H]',
+                                      'name': 'Cymoside',
+                                      'reason': 'Indole moiety not found'}],
     'attempt': 3,
-    'reasoning': 'Based on the outcomes analysis, here are the key issues and '
-                 'proposed improvements:\n'
+    'reasoning': 'To improve the classification of monoterpenoid indole '
+                 'alkaloids (MIAs), we need to address the issues from the '
+                 'previous attempt by more accurately identifying the chemical '
+                 'features of MIAs. We faced two main categories of issues:\n'
                  '\n'
-                 '1. False Negatives Analysis:\n'
-                 '- Many legitimate MIAs were rejected due to "Insufficient '
-                 'nitrogen-containing rings"\n'
-                 '- The requirement for 2 nitrogen-containing rings is too '
-                 'strict\n'
-                 '- Some complex structures like Strychnohexamine were '
-                 'rejected for lacking "typical MIA patterns"\n'
-                 '- The pattern matching for nitrogen-containing rings needs '
-                 'to be more flexible\n'
+                 '1. **False Positives**: Compounds without the defining '
+                 'characteristic structure of MIAs were erroneously classified '
+                 'as such. This likely results from overly broad criteria, '
+                 'such as the presence of an indole moiety, which can appear '
+                 'in many molecules not related to MIAs.\n'
                  '\n'
-                 '2. False Positives Analysis:\n'
-                 '- Many compounds with indole cores were wrongly classified\n'
-                 "- The current structural patterns aren't specific enough to "
-                 'MIAs\n'
-                 "- The complexity score isn't effectively distinguishing MIAs "
-                 'from other complex indole-containing molecules\n'
+                 '2. **False Negatives**: Genuine MIAs were incorrectly '
+                 'classified as not being MIAs. This suggests that the '
+                 'criteria for detection were too strict or overlooked key '
+                 'structural features of MIAs.\n'
                  '\n'
-                 "Here's how we can improve the classifier:\n"
+                 'Given these issues, we should enhance our detection approach '
+                 'by including more specific structural features '
+                 'characteristic of MIAs:\n'
                  '\n'
-                 '1. Revise Core Requirements:\n'
-                 '- Relax the nitrogen ring requirement but make other '
-                 'structural patterns more specific\n'
-                 '- Add more specific MIA scaffold patterns based on the true '
-                 'positives\n'
-                 '- Include patterns for the secologanin-derived portion\n'
+                 '- **Indole Moiety**: Check for an indole moiety, which is '
+                 'essential but not sufficient for MIA classification.\n'
+                 '- **Terpenoid Characteristics**: Ensure the presence of '
+                 'structural features akin to a diisoprenoid linkage, such as '
+                 'cyclized structures commonly associated with terpenoids.\n'
+                 '- **Oxygen-containing Functional Groups**: Verify the '
+                 'presence of specific functional groups (e.g., esters) from '
+                 'known metabolic paths like from L-tryptophan and '
+                 'secolaganin.\n'
+                 '- **Chirality**: Consider the specific chiral centers, which '
+                 'could be indicative of MIAs due to their natural '
+                 'biosynthesis.\n'
                  '\n'
-                 '2. Improve Pattern Matching:\n'
-                 '- Add more specific patterns for the terpene portion\n'
-                 '- Include patterns for common MIA ring fusion types\n'
-                 '- Add patterns for characteristic bridged ring systems\n'
-                 '\n'
-                 '3. Adjust Scoring:\n'
-                 '- Increase weight for specific MIA patterns\n'
-                 '- Add penalties for non-MIA structural features\n'
-                 '- Make complexity score thresholds more selective\n'
-                 '\n'
-                 '4. Add New Features:\n'
-                 '- Check for characteristic bridge atoms\n'
-                 '- Look for specific ring fusion patterns common in MIAs\n'
-                 '- Add patterns for common substituent positions\n'
-                 '\n'
-                 "Here's my improved version:",
+                 "We'll update the code as follows to incorporate these "
+                 'detailed checks:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 184,
-    'num_false_positives': 100,
-    'num_true_negatives': 4331,
-    'num_false_negatives': 7,
+    'num_true_positives': 37,
+    'num_false_positives': 81,
+    'num_true_negatives': 142028,
+    'num_false_negatives': 154,
     'num_negatives': None,
-    'precision': 0.647887323943662,
-    'recall': 0.9633507853403142,
-    'f1': 0.7747368421052632,
-    'accuracy': 0.9768498485504111,
-    'negative_predictive_value': 0.9983863531581374}
+    'precision': 0.3135593220338983,
+    'recall': 0.193717277486911,
+    'f1': 0.2394822006472492,
+    'accuracy': 0.9983485593815882,
+    'negative_predictive_value': 0.9989168811804588}

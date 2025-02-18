@@ -1,13 +1,17 @@
 """
 Classifies: CHEBI:16038 phosphatidylethanolamine
 """
+"""
+Classifies: CHEBI:16038 phosphatidylethanolamine
+"""
 from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
 def is_phosphatidylethanolamine(smiles: str):
     """
     Determines if a molecule is a phosphatidylethanolamine based on its SMILES string.
-    A phosphatidylethanolamine is a glycerophospholipid where a phosphatidyl group is esterified to
-    the hydroxy group of ethanolamine.
+    A phosphatidylethanolamine is a glycerophospholipid with a phosphatidyl group esterified to ethanolamine.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,23 +26,84 @@ def is_phosphatidylethanolamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Glycerol backbone with correct stereochemistry (chiral center at C2)
-    glycerol_pattern = Chem.MolFromSmarts("[C@H](CO[P](=O)(O)OCCN)OC(=O)C")
+    # Look for glycerol backbone pattern (C-C-C with two ester groups and one phosphate group)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "No glycerol backbone with correct stereochemistry"
+        return False, "No glycerol backbone found"
+        
+    # Look for 2 ester groups (-O-C(=O)-)
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
 
-    # Look for a second ester linkage on the other carbon of glycerol
-    second_ester_pattern = Chem.MolFromSmarts("OC(=O)C")
-    ester_matches = mol.GetSubstructMatches(second_ester_pattern)
-    if len(ester_matches) < 2:
-        return False, "Missing second ester linkage, found less than 2"
+    # Look for phosphate group (P(=O)(O))
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2])[OX2]")
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found"
 
-    return True, "Structure matches phosphatidylethanolamine class"
+    # Look for ethanolamine group (OCCN)
+    ethanolamine_pattern = Chem.MolFromSmarts("[OX2][CX4][CX4][NX3]")
+    if not mol.HasSubstructMatch(ethanolamine_pattern):
+        return False, "No ethanolamine group found"
 
-# Example usage
-smiles_example = "P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\CCCCCCC)(OCCN)(O)=O"
-result, reason = is_phosphatidylethanolamine(smiles_example)
-print(result, reason)
+    # Check for fatty acid chains (long carbon chains attached to esters)
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]") 
+    fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
+    if len(fatty_acid_matches) < 2:
+        return False, f"Missing fatty acid chains, got {len(fatty_acid_matches)}"
+
+    # Count rotatable bonds to verify long chains
+    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
+    if n_rotatable < 10:
+        return False, "Chains too short to be fatty acids"
+
+    # Check molecular weight - phosphatidylethanolamines typically >600 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 600:
+        return False, "Molecular weight too low for phosphatidylethanolamine"
+
+    # Count carbons and oxygens
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    
+    if c_count < 20:
+        return False, "Too few carbons for phosphatidylethanolamine"
+    if o_count < 6:
+        return False, "Too few oxygens for phosphatidylethanolamine"
+
+    return True, "Contains glycerol backbone with 2 fatty acid chains, a phosphate group, and an ethanolamine group"
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:16038',
+                          'name': 'phosphatidylethanolamine',
+                          'definition': 'A class of glycerophospholipids in which a phosphatidyl group is esterified to the hydroxy group of ethanolamine.',
+                          'parents': ['CHEBI:25641', 'CHEBI:25640']},
+    'config': {   'llm_model_name': 'lbl/claude-sonnet',
+                  'f1_threshold': 0.8,
+                  'max_attempts': 5,
+                  'max_positive_instances': None,
+                  'max_positive_to_test': None,
+                  'max_negative_to_test': None,
+                  'max_positive_in_prompt': 50,
+                  'max_negative_in_prompt': 20,
+                  'max_instances_in_prompt': 100,
+                  'test_proportion': 0.1},
+    'message': None,
+    'attempt': 0,
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 150,
+    'num_false_positives': 4,
+    'num_true_negatives': 182407,
+    'num_false_negatives': 23,
+    'num_negatives': None,
+    'precision': 0.974025974025974,
+    'recall': 0.8670520231213873,
+    'f1': 0.9174311926605504,
+    'accuracy': 0.9998521228585199}
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16038',
@@ -76,153 +141,221 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16038',
                                        'Wikipedia:Phosphatidylethanolamine'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCC/C=C\\CCCCCC)(OCCN)(O)=O '
-               'NAME: PE(18:1(11Z)/16:0) REASON: MISSED No glycerol backbone '
-               'found with correct stereochemistry\n'
-               ' * SMILES: '
-               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\CCCC)(OCCN)(O)=O '
-               'NAME: PE(14:1(9Z)/17:0) REASON: MISSED No glycerol backbone '
-               'found with correct stereochemistry\n'
-               ' * SMILES: '
-               'P(OC[C@H](OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(OCCN)(O)=O '
-               'NAME: PE(18:1(9Z)/22:5(7Z,10Z,13Z,16Z,19Z)) REASON: MISSED No '
-               'glycerol backbone found with correct stereochemistry\n'
-               ' * SMILES: '
-               'P(OC[C@H](OC(=O)CCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC)(OCCN)(O)=O '
-               'NAME: PE(18:2(9Z,12Z)/17:0) REASON: MISSED No glycerol '
-               'backbone found with correct stereochemistry\n'
-               ' * SMILES: '
-               'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCCCC)COC(=O)CCCCCCC/C=C\\CCCCCCC)(OCCN)(O)=O '
-               'NAME: PE(17:1(9Z)/17:1(9Z)) REASON: MISSED No glycerol '
-               'backbone found with correct stereochemistry\n'
-               ' * SMILES: '
-               'P(OC[C@H](OC(=O)CCCC(O)=O)COC(=O)CCCCCCCCCCCCCCC)(OCCN)(O)=O '
-               'NAME: PG-PE REASON: MISSED No glycerol backbone found with '
-               'correct stereochemistry\n'
-               ' * SMILES: '
-               'P(OC[C@H](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC)(OCCN)(O)=O '
-               'NAME: PE(20:1(11Z)/20:5(5Z,8Z,11Z,14Z,17Z)) REASON: MISSED No '
-               'glycerol backbone found with correct stereochemistry\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)OCCN)OC(=O)CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC '
-               'NAME: '
-               '1-octadecanoyl-2-(7Z,10Z,13Z,16Z)-docosatetraenoyl-sn-glycero-3-phosphoethanolamine '
-               'REASON: MISSED No glycerol backbone found with correct '
-               'stereochemistry\n'
-               ' * SMILES: '
-               'P(OCC(OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC)(OCCNC)(O)=O '
-               'NAME: PE-NMe(18:2(9Z,12Z)/18:0) REASON: MISSED No glycerol '
-               'backbone found with correct stereochemistry\n'
-               ' * SMILES: '
-               'P(OC[C@H](OC(=O)CCCCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)(OCCN)(O)=O '
-               'NAME: PE(18:3(9Z,12Z,15Z)/20:2(11Z,14Z)) REASON: MISSED No '
-               'glycerol backbone found with correct stereochemistry\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'C[C@@H]1OC(=O)C=C1',
-                                     'name': '(S)-5-methylfuran-2(5H)-one',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'Cc1cccc(c1)C(O)=O',
-                                     'name': 'm-toluic acid',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'CN(C)CC(=O)NC[C@@H]1[C@@H]([C@@H](N1)CO)C2=CC=C(C=C2)C3=CC=CC(=C3)C#N',
-                                     'name': 'N-[[(2S,3S,4R)-3-[4-(3-cyanophenyl)phenyl]-4-(hydroxymethyl)-2-azetidinyl]methyl]-2-(dimethylamino)acetamide',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'C[C@@H]1O[C@@H](OCCCCCCCCCC(=O)CC(O)=O)[C@H](O)C[C@H]1O',
-                                     'name': 'bkos#20',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'C([C@@](COC(CCCCCCCCC/C=C\\CCCCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O',
-                                     'name': 'PG(18:1(11Z)/18:1(11Z))',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'O=C(N1C(C(=O)NC(C(=O)NC(C(=O)NC(C(=O)NC(C(=O)NC(CO)CC=2C3=C(C=CC=C3)NC2)CCC(=O)N)(C)C)(C)C)(CC)C)CCC1)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C)CC4=CC=CC=C4)(C)C)CO)(C)C)(C)C)CC(C)C)CCC(=O)N)(C)C)(C)C)C)C)(C)C',
-                                     'name': 'Chrysospermin B',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'CC1(C=CC2=C3C(=CC(=C2O1)OC)C(=O)C(=CO3)C4=CC5=C(C=C4OC)OCO5)C',
-                                     'name': '6-methoxy-3-(6-methoxy-1,3-benzodioxol-5-yl)-8,8-dimethyl-4-pyrano[2,3-h][1]benzopyranone',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'O[C@@H]([C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)NCC(O)=O)C',
-                                     'name': 'Glu-Thr-Gly',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'O([C@H]1[C@H](O[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]3[C@@H](O)[C@H](O)[C@H](O[C@@H]3OC[C@H]4O[C@@H](O[C@H]5[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]5CO)O)[C@@H](O)[C@@H](O)[C@@H]4O)CO)[C@@H]6O[C@@H]([C@H](O)[C@H](O[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]6O)CO',
-                                     'name': '(2S,4S,5R,6R)-5-Acetamido-2-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2S,3S,4S,5S,6R)-2-[[(2R,3S,4S,5S,6S)-6-[(2R,3S,4R,5R)-5-acetamido-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]oxy-2-(hydroxymethyl)-4-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-3-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
-                                             'acid',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'},
-                                 {   'smiles': 'COCCOC(C)C(O)=O',
-                                     'name': '2-(2-methoxyethoxy)propanoic '
-                                             'acid',
-                                     'reason': 'No glycerol backbone with '
-                                               'correct stereochemistry'}],
-    'sample_false_negatives': [   {   'smiles': 'CCCCCCCC\\C=C/CCCCCCCC(=O)OCC(O)COP(O)(=O)OCCN',
-                                      'name': '1-oleoyl '
-                                              'phosphatidylethanolamine',
-                                      'reason': 'No glycerol backbone with '
-                                                'correct stereochemistry'},
-                                  {   'smiles': 'P(OCC[N+](C)(C)C)(OC[C@H](O)COC(=O)CCCCCCCC)([O-])=O',
-                                      'name': 'PC(9:0/0:0)',
-                                      'reason': 'No glycerol backbone with '
-                                                'correct stereochemistry'}],
-    'attempt': 1,
-    'reasoning': 'To classify phosphatidylethanolamine (PE) molecules '
-                 'correctly, we need to better analyze the structure of PE. A '
-                 'phosphatidylethanolamine generally consists of:\n'
+    'code_statistics': {   'lines_of_code': 51,
+                           'log_lines_of_code': 3.9318256327243257,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 0,
+                                                 0],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 3,
+                           'methods_called': [   'CalcExactMolWt',
+                                                 'GetAtoms',
+                                                 'GetSubstructMatches',
+                                                 'HasSubstructMatch',
+                                                 'GetAtomicNum',
+                                                 'MolFromSmiles',
+                                                 'MolFromSmarts',
+                                                 'CalcNumRotatableBonds'],
+                           'methods_called_count': 8,
+                           'smarts_strings': [   '[PX4](=[OX1])([OX2])[OX2]',
+                                                 '[OX2][CX3](=[OX1])',
+                                                 '[OX2][CX4][CX4][NX3]',
+                                                 '[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]',
+                                                 '[CH2X4][CHX4][CH2X4]'],
+                           'smarts_strings_count': 5,
+                           'defs': [   'is_phosphatidylethanolamine(smiles: '
+                                       'str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No glycerol backbone found"',
+                                          'False, f"Found {len(ester_matches)} '
+                                          'ester groups, need exactly 2"',
+                                          'False, "No phosphate group found"',
+                                          'False, "No ethanolamine group '
+                                          'found"',
+                                          'False, f"Missing fatty acid chains, '
+                                          'got {len(fatty_acid_matches)}"',
+                                          'False, "Chains too short to be '
+                                          'fatty acids"',
+                                          'False, "Molecular weight too low '
+                                          'for phosphatidylethanolamine"',
+                                          'False, "Too few carbons for '
+                                          'phosphatidylethanolamine"',
+                                          'False, "Too few oxygens for '
+                                          'phosphatidylethanolamine"',
+                                          'True, "Contains glycerol backbone '
+                                          'with 2 fatty acid chains, a '
+                                          'phosphate group, and an '
+                                          'ethanolamine group"'],
+                           'returns_count': 11,
+                           'complexity': 5.186365126544866},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'C1COCCN1C2=C(C=C(C=C2)C(F)(F)F)NC(=O)C3=CC(=CN=C3)Br',
+                                     'name': '5-bromo-N-[2-(4-morpholinyl)-5-(trifluoromethyl)phenyl]-3-pyridinecarboxamide',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'C[C@H]1C[C@@H]2CC[C@@H](O2)[C@@H](C)C(=O)O[C@H](C)C[C@H]2CC[C@H](O2)[C@H](C)C(=O)O[C@@H](C)C[C@@H]2CC[C@@H](O2)[C@@H](C)C(=O)O[C@H](C)C[C@H]2CC[C@H](O2)[C@H](C)C(=O)O1',
+                                     'name': 'Nonactin',
+                                     'reason': 'Found 4 ester groups, need '
+                                               'exactly 2'},
+                                 {   'smiles': 'O1OC23C(C14C(C5C(C(CC5)C(CCC(C(C)C)C)C)(CC4)C)=CC2=O)(CCC(O)C3)C',
+                                     'name': '5,9-Epidioxy-3-hydroxyergost-7-en-6-one',
+                                     'reason': 'Found 0 ester groups, need '
+                                               'exactly 2'},
+                                 {   'smiles': 'CC1=C(SC=C1)C(=O)N2CCCC(C2)CNS(=O)(=O)C3=CC=C(C=C3)OC',
+                                     'name': '4-methoxy-N-[[1-[(3-methyl-2-thiophenyl)-oxomethyl]-3-piperidinyl]methyl]benzenesulfonamide',
+                                     'reason': 'Found 0 ester groups, need '
+                                               'exactly 2'},
+                                 {   'smiles': 'O(C(=O)CCCCCCCCCCCCCCC)C[C@@H](O)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC',
+                                     'name': 'DG(16:0/0:0/20:1n9)',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'Oc1cc2CC3(O)COc4c(O)c(O)ccc4C3c2cc1O',
+                                     'name': 'haematoxylin',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O([C@@H]1[C@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO)O)O[C@@H]([C@H]1O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O)CO)[C@@H]4O)CO[C@H]6O[C@@H]([C@@H](O)[C@H](O)[C@@H]6O[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O)CO)CO)[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)CO',
+                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5R,6R)-4-[(2R,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-4-hydroxy-6-(hydroxymethyl)-5-[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2S,3S,4S,5R,6R)-6-[[(2S,3S,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O([C@@H]1[C@H](O)[C@@H](O)[C@@H](O[C@@H]1CO)O)[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO',
+                                     'name': 'beta-D-Glcp-(1->4)-beta-D-Galp',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O=C(N)C(/C=C/[N+]([O-])=NC(C(O)C)C)CCC',
+                                     'name': 'Maniwamycin F',
+                                     'reason': 'No glycerol backbone found'},
+                                 {   'smiles': 'O1C2=C(C(=O)C(C3=C(O)C=C(O)C=C3)=C1)C(OC)=CC(O)=C2',
+                                     'name': 'Barpisoflavone A',
+                                     'reason': 'No glycerol backbone found'}],
+    'sample_false_negatives': [   {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCC/C=C\\C/C=C\\CCCCC)COC(=O)CCCCCCCCCCCCCCCCCCCCCCC)(OCC[NH3+])([O-])=O',
+                                      'name': '24:0-18:2-PE',
+                                      'reason': 'No ethanolamine group found'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCCC(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(OCCN)(O)=O',
+                                      'name': 'OA-PE',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(OCCN)(O)=O',
+                                      'name': 'OKHdiA-PE',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCC(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(OCCN)(O)=O',
+                                      'name': 'OG-PE',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCC)COC(=O)CCCCCCC)(OCCN)(O)=O',
+                                      'name': 'PE(8:0/8:0)',
+                                      'reason': 'Molecular weight too low for '
+                                                'phosphatidylethanolamine'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCCCCCCCCCC)(OCCN)(O)=O',
+                                      'name': 'PKODiA-PE',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'C(CN)OP(OC[C@@H](COC(CCCCC)=O)OC(=O)CCCCC)(=O)O',
+                                      'name': '1,2-dihexanoyl-sn-glycero-3-phosphoethanolamine',
+                                      'reason': 'Molecular weight too low for '
+                                                'phosphatidylethanolamine'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCC=O)COC(=O)CCCCCCCCCCCCCCC)(OCCN)(O)=O',
+                                      'name': 'POB-PE',
+                                      'reason': 'Molecular weight too low for '
+                                                'phosphatidylethanolamine'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCC(O)=O)COC(=O)CCCCCCCCCCCCCCC)(OCCN)(O)=O',
+                                      'name': 'PG-PE',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'},
+                                  {   'smiles': 'P(OC[C@H](OC(=O)CCCC(=O)/C=C/C(O)=O)COC(=O)CCCCCCC/C=C\\CCCCCCCC)(OCCN)(O)=O',
+                                      'name': 'OKODiA-PE',
+                                      'reason': 'Found 3 ester groups, need '
+                                                'exactly 2'}],
+    'attempt': 0,
+    'reasoning': 'To classify phosphatidylethanolamines, we need to identify '
+                 'the key structural features of this class of molecules. '
+                 'Phosphatidylethanolamines are a type of glycerophospholipid '
+                 'characterized by a glycerol backbone, two fatty acid chains '
+                 'attached via ester bonds, and a phosphate group esterified '
+                 'to ethanolamine. The general structure can be represented '
+                 'as:\n'
                  '\n'
-                 '1. **Glycerol Backbone**: The central core is a glycerol '
-                 'molecule. The correct stereochemistry at the carbon centers '
-                 'should be captured.\n'
+                 '- Glycerol backbone: `C-C-C` with two ester-linked fatty '
+                 'acids and one phosphate group.\n'
+                 '- Phosphate group: `P(=O)(O)`\n'
+                 '- Ethanolamine group: `OCCN`\n'
                  '\n'
-                 '2. **Phosphate Group**: A phosphate group attached to the '
-                 'glycerol backbone.\n'
-                 '\n'
-                 '3. **Ethanolamine Group**: An ethanolamine group is '
-                 'esterified to the phosphate.\n'
-                 '\n'
-                 '4. **Two Fatty Acid Chains**: Typically attached to the '
-                 'glycerol backbone through ester linkage, represented as '
-                 '`[O-C(=O)-C...C]`.\n'
-                 '\n'
-                 'Given the issues with the previous code, the following '
-                 'modifications are necessary:\n'
-                 '\n'
-                 '- Ensure stereochemistry in the glycerol backbone is '
-                 'accurately captured using SMARTS.\n'
-                 '- The phosphate group detection should be integrated into '
-                 "how it's attached to the glycerol.\n"
-                 '- Confirm the presence of ethanolamine.\n'
-                 '- Validate the presence of two fatty acid chains.\n'
-                 '\n'
-                 'With the above considerations, the following code defines '
-                 'the `is_phosphatidylethanolamine` function:',
+                 'The program will check for these features in the SMILES '
+                 "string. Here's the Python code:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 818,
-    'num_false_positives': 100,
-    'num_true_negatives': 12010,
-    'num_false_negatives': 2,
+    'num_true_positives': 792,
+    'num_false_positives': 96,
+    'num_true_negatives': 141384,
+    'num_false_negatives': 28,
     'num_negatives': None,
-    'precision': 0.8910675381263616,
-    'recall': 0.9975609756097561,
-    'f1': 0.9413118527042577,
-    'accuracy': 0.9921113689095128,
-    'negative_predictive_value': 0.9998334998334998}
+    'precision': 0.8918918918918919,
+    'recall': 0.9658536585365853,
+    'f1': 0.927400468384075,
+    'accuracy': 0.9991286015460296,
+    'negative_predictive_value': 0.9998019970016688}

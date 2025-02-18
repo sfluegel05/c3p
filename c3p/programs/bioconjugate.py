@@ -6,7 +6,7 @@ from rdkit import Chem
 def is_bioconjugate(smiles: str):
     """
     Determines if a molecule is a bioconjugate based on its SMILES string.
-    A bioconjugate consists of at least two biological molecules covalently linked together.
+    A bioconjugate consists of at least 2 biological molecules covalently linked together.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -15,40 +15,68 @@ def is_bioconjugate(smiles: str):
         bool: True if molecule is a bioconjugate, False otherwise
         str: Reason for classification
     """
-    
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Expanded patterns for detecting common bioconjugate motifs
-    patterns = {
-        "peptide_bond": Chem.MolFromSmarts("N[C@H](C)C(=O)"),
-        "disulfide_bond": Chem.MolFromSmarts("S-S"),
-        "glutathione_like": Chem.MolFromSmarts("N[C@H](CC(=O)NCCS)C(=O)NCC(=O)O"),
-        "coenzyme_a_linkage": Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)[C@H](O)"),
-        "thioester_bond": Chem.MolFromSmarts("C(=O)S"),
-        "ester_bond": Chem.MolFromSmarts("C(=O)O"),
-        "amide_bond": Chem.MolFromSmarts("C(=O)N"),
-        "heterocyclic_nitrogen": Chem.MolFromSmarts("n")
-    }
-    
-    # Track which patterns we match
-    matched_patterns = set()
-    for name, pattern in patterns.items():
-        if mol.HasSubstructMatch(pattern):
-            matched_patterns.add(name)
+        return None, "Invalid SMILES string"
 
-    # Determine if there are at least two distinctive substructures suggesting bioconjugation
-    if len(matched_patterns) >= 2:
-        return True, f"Contains patterns: {', '.join(matched_patterns)}"
+    try:
+        # Define more comprehensive biological patterns (including more biologically relevant structures)
+        amino_acid_pattern = Chem.MolFromSmarts("[NX3;H2,H1;!$(NC=O)][CX4][CX3](=O)[O,N,R]")
+        peptide_linkage_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[NX3]")
+        sugar_pattern = Chem.MolFromSmarts("OC[C@H]1O[C@@H](O)[C@H]([O,N])[C@H]1O")
+        nucleotide_pattern = Chem.MolFromSmarts("n1cnc2c(ncnc12)")
+        
+        cofactor_patterns = [
+            Chem.MolFromSmarts("CSCCC(=O)O"),  # General cofactor motif
+            Chem.MolFromSmarts("COP(O)(=O)O")   # Phosphate-containing motif e.g., CoA
+        ]
+        
+        # Covalent linkage patterns (e.g., amide, disulfide, thioester)
+        amide_linkage_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[NX3][CX4]")
+        disulfide_linkage_pattern = Chem.MolFromSmarts("[S][S]")
+        thioester_linkage_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
 
-    # For failed cases, provide reasoning based on detected patterns
-    if matched_patterns:
-        return False, f"Partially matched patterns, only found: {', '.join(matched_patterns)}"
+        # Patterns for biological components
+        bio_patterns = {
+            "amino acid": amino_acid_pattern,
+            "sugar": sugar_pattern,
+            "nucleotide": nucleotide_pattern,
+            "cofactor": cofactor_patterns
+        }
 
-    # Provide explanation when no patterns are matched
-    return False, "No definitive bioconjugate patterns found"
+        # Patterns for linkage types
+        linkage_patterns = {
+            "amide linkage": amide_linkage_pattern,
+            "disulfide linkage": disulfide_linkage_pattern,
+            "thioester linkage": thioester_linkage_pattern,
+            "peptide linkage": peptide_linkage_pattern
+        }
+
+        # Checking detected biological components
+        detected_bio_patterns = set()
+        for name, pattern in bio_patterns.items():
+            if isinstance(pattern, list):
+                for p in pattern:
+                    if p and mol.HasSubstructMatch(p):
+                        detected_bio_patterns.add(name)
+                        break
+            elif pattern and mol.HasSubstructMatch(pattern):
+                detected_bio_patterns.add(name)
+
+        # Checking detected linkage types
+        detected_link_patterns = set()
+        for name, pattern in linkage_patterns.items():
+            if pattern and mol.HasSubstructMatch(pattern):
+                detected_link_patterns.add(name)
+
+        # Decision: must have at least 2 biological components and 1 linkage type
+        if len(detected_bio_patterns) >= 2 and len(detected_link_patterns) > 0:
+            return True, f"Contains {len(detected_bio_patterns)} biological structures and {len(detected_link_patterns)} covalent link types"
+        else:
+            return False, f"Contains {len(detected_bio_patterns)} biological structures and {len(detected_link_patterns)} covalent link types. Requires at least 2 biological substructures with 1 linkage."
+
+    except Exception as e:
+        return None, f"Error in pattern matching: {e}"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:64985',
@@ -60,246 +88,424 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:64985',
                           'xrefs': ['Wikipedia:Bioconjugate'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 28,
+                           'log_lines_of_code': 3.332204510175204,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 1,
+                                                 2],
+                           'max_indent': 3,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': ['MolFromSmarts', 'MolFromSmiles'],
+                           'methods_called_count': 2,
+                           'smarts_strings': [   '[CX3](=[OX1])[SX2]',
+                                                 '[NX3][CX3](=O)[NX3]',
+                                                 '[CX3](=[OX1])[NX3][CX4]',
+                                                 'CSCCC(=O)O',
+                                                 'COP(O)(=O)O',
+                                                 '[NX3;H2,H1;!$(NC=O)][CX4][CX3](=O)[O,N,R]',
+                                                 'OC[C@H]1O[C@@H](O)[C@H]([O,N])[C@H]1O',
+                                                 '[S][S]',
+                                                 'n1cnc2c(ncnc12)'],
+                           'smarts_strings_count': 9,
+                           'defs': ['is_bioconjugate(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'None, "Invalid SMILES string"',
+                                          'None, f"Error in pattern matching: '
+                                          '{e}"'],
+                           'returns_count': 2,
+                           'complexity': 2.2664409020350407},
     'message': '\n'
-               'Attempt failed: F1 score of 0.029411764705882353 is too low.\n'
+               'Attempt failed: F1 score of 0.008403361344537815 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: S(SS(O)(=O)=O)C[C@H](N)C(O)=O NAME: '
-               '3-(Sulfodisulfanyl)-L-alanine REASON: CORRECT Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S(SC[C@H](N)C(O)=O)C[C@H](C(=O)N1[C@@H](CCC1)C(O)=O)C NAME: '
-               'Captopril-cysteine disulfide REASON: CORRECT Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               'False positives: SMILES: '
-               'S1SC[C@H](NC(=O)[C@@H](NC(=O)[C@@H](NC(=O)C(NC(=O)[C@@H](NC(=O)CC12CCCCC2)CC3=CC=C(OC)C=C3)[C@H](CC)C)CCC(=O)N)CC(=O)N)C(=O)N4[C@@H](CCC4)C(=O)N[C@@H](CCCN)C(=O)NCC(=O)N '
-               'NAME: Mpomeovt REASON: WRONGLY CLASSIFIED Contains patterns: '
-               'peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'CC(CSSC[C@@H](C)C(=O)N1CCC[C@H]1C(O)=O)C(=O)N1CCC[C@H]1C(O)=O '
-               'NAME: captopril disulfide REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S1SCC(NC(=O)C2NC(=O)C(NC(=O)C(CC3=CC=C(O)C=C3)NC(C(NC(C4(CC(NC(C(C1)NC(=O)C(NC(=O)/C(/NC(=O)C(NC(=O)C(NC(=O)/C(/NC(=O)/C(/NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(N)CC(=O)O)C)C(CC)C)=C/C)=C/C)C(CC)C)C(CC)C)=C/C)C(CC)C)=O)C(=O)NC(C(=O)NC(C(N4)=O)CC(C)C)C(C)C)CSC2)=O)C(C)C)=O)CCCCN)C(=O)O '
-               'NAME: Paenithopeptin C REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'C(N[C@H]1CSSC[C@H](NC([C@H](C(C)C)NC([C@H](CCCCN)NC([C@H](NC([C@@H](NC1=O)CC2=CC=C(O)C=C2)=O)CC3=CNC4=C3C=CC=C4)=O)=O)=O)C(N[C@@H]([C@@H](C)O)C(N)=O)=O)(=O)[C@](N)([H])CC=5C=C6C=CC=CC6=CC5 '
-               'NAME: lanreotide REASON: WRONGLY CLASSIFIED Contains patterns: '
-               'peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S(SCCNC(=O)[C@@H](NC(=O)CN)C)CCNC(=O)[C@@H](NC(=O)CN)C.FC(F)(F)C(O)=O.FC(F)(F)C(O)=O '
-               'NAME: L-Alaninamide, glycyl-N-(2-mercaptoethyl)-, '
-               "2,2'-disulfide bis(trifluoroacetate) REASON: WRONGLY "
-               'CLASSIFIED Contains patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: C(C(CCSSCCC(C(=O)O)N)N)(O)=O NAME: homocystine '
-               'REASON: WRONGLY CLASSIFIED Contains patterns: peptide_bond, '
-               'disulfide_bond\n'
-               ' * SMILES: C([C@H](N)C(=O)O)SS NAME: 3-disulfanyl-L-alanine '
-               'REASON: WRONGLY CLASSIFIED Contains patterns: peptide_bond, '
-               'disulfide_bond\n'
-               ' * SMILES: '
-               '[H][C@]1(CSSC[C@]2([H])NC(=O)[C@H](Cc3ccc(O)cc3)NC(=O)[C@H](CCC(O)=O)NC(=O)[C@@H]3CSSC[C@H](NC(=O)[C@H](C)NC(=O)[C@@H]4CCCN4C(=O)[C@H](CC(N)=O)NC(=O)[C@H](CSSC[C@H](N)C(=O)N3)NC2=O)C(=O)N[C@@]([H])([C@@H](C)O)C(=O)NCC(=O)N1)C(=O)N[C@@H](Cc1ccc(O)cc1)C(O)=O '
-               'NAME: linaclotide REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: N[C@@H](CSSC[C@H](N)C([O-])=O)C([O-])=O NAME: '
-               'L-cystine anion REASON: WRONGLY CLASSIFIED Contains patterns: '
-               'peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'C[C@@H](O)[C@@H]1NC(=O)[C@H](CCCCN)NC(=O)[C@H](Cc2c[nH]c3ccccc23)NC(=O)[C@H](Cc2ccccc2)NC(=O)[C@H](Cc2ccccc2)NC(=O)[C@H](CC(N)=O)NC(=O)[C@H](CCCCN)NC(=O)[C@H](CSSC[C@H](NC(=O)[C@H](CO)NC(=O)[C@@H](NC(=O)[C@H](Cc2ccccc2)NC1=O)[C@@H](C)O)C(O)=O)NC(=O)CNC(=O)[C@H](C)N '
-               'NAME: somatostatin REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'N[C@@H](CCC(=O)N[C@H]1CSSC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(=O)NCCCNCCCCNC(=O)CNC1=O)C(O)=O '
-               'NAME: trypanothione disulfide REASON: WRONGLY CLASSIFIED '
-               'Contains patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S1SC[C@@H]2N(C(=O)CNC(=O)[C@H](NC(=O)C3=NC=4C(=CC=CC4)C=C3)CSC([C@@H](N(C([C@H](C1)N(C(=O)CNC(=O)[C@H](NC(=O)C5=NC=6C(=CC=CC6)C=C5O)CSC(C(N(C2=O)C)CSC)=O)C)=O)C)CSC)=O)C '
-               "NAME: 22'-Deoxythiocoraline REASON: WRONGLY CLASSIFIED "
-               'Contains patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: [NH3+][C@@H](CSS)C([O-])=O NAME: '
-               '3-disulfanyl-L-alanine zwitterion REASON: WRONGLY CLASSIFIED '
-               'Contains patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S(=O)(C[C@@H]1N(C(=O)[C@H]2N(C(=O)CNC(=O)[C@H](NC(=O)C3=NC=4C(=CC=CC4)C=C3O)CSC(=O)[C@@H](N(C([C@H](CSSC2)N(C)C(CNC([C@@H](CSC1=O)NC(=O)C5=NC=6C(=CC=CC6)C=C5O)=O)=O)=O)C)CSC)C)C)C '
-               'NAME: 12′-sulfoxythiocoraline REASON: WRONGLY CLASSIFIED '
-               'Contains patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: N[C@@H](CCCCNC(=O)CCCCC1CCSS1)C(O)=O NAME: '
-               'N(6)-lipoyl-L-lysine REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               '[H]N[C@H]1CSSC[C@H](NC([C@@H](NC([C@@H](NC([C@@H](NC([C@@H](NC1=O)CC2=CC=C(O)C=C2)=O)CC3=CC=CC=C3)=O)CCC(N)=O)=O)CC(N)=O)=O)C(N4CCC[C@H]4C(N[C@@H](CCCN)C(NCC(N)=O)=O)=O)=O '
-               'NAME: ornipressin REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S1SC[C@H](N(C(=O)CNC([C@@H](C1)NC(=O)C2=NC=3C(=CC=CC3)C=C2O)=O)C)C(=O)N([C@H](C(=O)OC)CSC)C '
-               'NAME: Thiochondrilline C REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'CC1CC11N(C)C(=O)C2CSSCC(N(C)C(=O)C(C)NC(=O)C(COC1=O)NC(=O)c1nc3ccccc3cc1O)C(=O)N(C)C1(CC1C)C(=O)OCC(NC(=O)c1nc3ccccc3cc1O)C(=O)NC(C)C(=O)N2C '
-               'NAME: SW 163C REASON: WRONGLY CLASSIFIED Contains patterns: '
-               'peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S1SCC(NC(=O)C2NC(=O)C(NC(=O)C(CC3=CC=C(O)C=C3)NC(C(NC(C4(CC(NC(C(C1)NC(=O)C(NC(=O)/C(/NC(=O)C(NC(=O)C(NC(=O)/C(/NC(=O)/C(/NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(N)C)C)CC(=O)O)C)C(CC)C)=C/C)=C/C)C(CC)C)C(CC)C)=C/C)C(CC)C)=O)C(=O)NC(C(=O)NC(C(N4)=O)CC(C)C)C(C)C)CSC2)=O)C(C)C)=O)CCCCN)C(=O)O '
-               'NAME: Paenithopeptin E REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S1SC[C@H]2NC(=O)[C@@H](NC(=O)[C@H](NC([C@@H](NC([C@@H](C1)NC2=O)=O)C(C)C)=O)CC(C)C)[C@H](CC)C '
-               'NAME: Malformin A1 REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S1SCC2N(C(=O)C(NC(=O)C(NC(=O)C=3C=NC4=CC=CC=C4C3)COC(C(N(C(C(C1)N(C(=O)C(NC(=O)C(NC(=O)C=5C=NC6=CC=CC=C6C5)COC(C(N(C2=O)C)C(C)C)=O)C)C)=O)C)C(C)C)=O)C)C '
-               'NAME: QN-Triostin A REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S(SCCNC(=O)CC[C@H](N)C(O)=O)CCNC=1C(=O)C=2[C@H]([C@]3(OC)N(C[C@@H]4N[C@H]34)C2C(=O)C1C)COC(=O)N '
-               'NAME: '
-               '7-N-(2-((2-(gamma-L-Glutamylamino)ethyl)dithio)ethyl)mitomycin '
-               'C REASON: WRONGLY CLASSIFIED Contains patterns: peptide_bond, '
-               'disulfide_bond\n'
-               ' * SMILES: '
-               'N[C@@H](CCC(=O)N[C@@H](CSSC[C@H](N)C(O)=O)C(=O)NCC(O)=O)C(O)=O '
-               'NAME: L-cysteine glutathione disulfide REASON: WRONGLY '
-               'CLASSIFIED Contains patterns: peptide_bond, disulfide_bond\n'
-               ' * SMILES: '
-               'S1SC[C@@H]2NC(=O)CNC(=O)[C@@H](NC(=O)[C@H]3N(C(=O)[C@@H](NC(=O)CNC(C[C@H](NC([C@@H](NC([C@H]4N(C2=O)CCC4)=O)CO)=O)C(=O)N[C@H](C(=O)N5[C@H](C(=O)NCC(=O)N[C@H](C(N[C@H](C(N[C@H](C(N6[C@H](C(N[C@H](C(N[C@H](C(N[C@@H](C1)C(=O)O)=O)C)=O)CC=7C8=C(C=CC=C8)NC7)=O)CCC6)=O)[C@H](O)C)=O)CC(=O)N)=O)CC=9C%10=C(C=CC=C%10)NC9)CCC5)[C@H](CC)C)=O)CC(C)C)CCC3)CC=%11C%12=C(C=CC=C%12)NC%11 '
-               'NAME: BI-32169 REASON: WRONGLY CLASSIFIED Contains patterns: '
-               'peptide_bond, disulfide_bond\n'
-               ' * SMILES: S(SC(C(N)C(O)=O)(C)C)C(C(N)C(O)=O)(C)C NAME: '
-               'Penicillamine disulfide REASON: WRONGLY CLASSIFIED Contains '
-               'patterns: peptide_bond, disulfide_bond\n'
-               'False negatives: SMILES: '
-               'N[C@@H](CSC(C#N)c1c[nH]c2ccccc12)C(O)=O NAME: L-Cys(IAN) '
-               'REASON: MISSED Partially matched patterns, only found: '
-               'peptide_bond\n'
-               ' * SMILES: '
-               'N[C@@H](CCC(=O)N[C@@H](CSC(C#N)c1c[nH]c2ccccc12)C(=O)NCC(O)=O)C(O)=O '
-               'NAME: gammaGluCys(IAN)Gly REASON: MISSED Partially matched '
-               'patterns, only found: peptide_bond\n'
-               ' * SMILES: '
+               'True positives: SMILES: '
                'N[C@@H](CCC(=O)N[C@@H](CSC(C#N)c1c[nH]c2ccccc12)C(O)=O)C(O)=O '
-               'NAME: gammaGluCys(IAN) REASON: MISSED Partially matched '
-               'patterns, only found: peptide_bond\n'
+               'NAME: gammaGluCys(IAN) REASON: CORRECT Contains 2 biological '
+               'structures and 1 covalent link types\n'
+               'False positives: SMILES: '
+               'NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(=O)(O)O)[C@@H](OC(=O)[C@@H](N)CS)[C@H]3O '
+               "NAME: 3'-L-cysteinyl-AMP REASON: WRONGLY CLASSIFIED Contains 2 "
+               'biological structures and 1 covalent link types\n'
                ' * SMILES: '
-               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)N1C=NC2=C1N=CN=C2N '
-               'NAME: (5Z,8Z,11Z,14Z,17Z)-icosapentaenoyl-CoA REASON: MISSED '
-               'No definitive bioconjugate patterns found\n'
+               '[H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)[C@H](N)C1=CC=CC=C1)C(=O)OCC1=C(C)OC(=O)O1 '
+               'NAME: lenampicillin REASON: WRONGLY CLASSIFIED Contains 2 '
+               'biological structures and 2 covalent link types\n'
                ' * SMILES: '
-               '[C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC(C)([C@H](C(NCCC(NCCSC(CCCCCCCCCCCCCCC)=O)=O)=O)O)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O '
-               'NAME: palmitoyl-CoA REASON: MISSED No definitive bioconjugate '
-               'patterns found\n'
+               'S(C[C@H](N)C(=O)N(C(=O)CC[C@H](N)C(O)=O)CC(O)=O)C(CC(O)=O)C(O)=O '
+               'NAME: S-(1,2-dicarboxyethyl)glutathione REASON: WRONGLY '
+               'CLASSIFIED Contains 2 biological structures and 1 covalent '
+               'link types\n'
                ' * SMILES: '
-               '[C@H](C(NCC(=O)O)=O)(NC(CC[C@@H](C(=O)O)N)=O)CSC(CC(=O)[H])C '
-               'NAME: S-(4-oxobutan-2-yl)glutathione REASON: MISSED Partially '
-               'matched patterns, only found: peptide_bond\n'
+               '[H+].Cc1ccc(cc1)S([O-])(=O)=O.[H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)[C@H](N)c1ccccc1)C(=O)OCOC(=O)[C@@H]1N2C(=O)C[C@@]2([H])S(=O)(=O)C1(C)C '
+               'NAME: sultamicillin tosylate REASON: WRONGLY CLASSIFIED '
+               'Contains 2 biological structures and 2 covalent link types\n'
+               ' * SMILES: S(CC(NC(=O)CCC(N)C(O)=O)C(O)=O)CC=C NAME: '
+               'N-gamma-Glutamyl-S-allylcysteine REASON: WRONGLY CLASSIFIED '
+               'Contains 2 biological structures and 1 covalent link types\n'
                ' * SMILES: '
-               '[C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\\CCCC(=O)O '
-               'NAME: (S)-PGA2-S-glutathione conjugate REASON: MISSED '
-               'Partially matched patterns, only found: peptide_bond\n'
+               'S([C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC)C[C@H](N)C(O[C@@H](COP(OCC[N+](C)(C)C)([O-])=O)CO\\C=C\\CCCCCCCCCCCCCCCC)=O '
+               'NAME: PC(P-18:0/LTE4) REASON: WRONGLY CLASSIFIED Contains 2 '
+               'biological structures and 1 covalent link types\n'
+               ' * SMILES: '
+               'NC1=NC=NC2=C1N=CN2[C@@H]3O[C@H](COP(=O)(O)O)[C@@H](OC([C@H](CC(C)C)N)=O)[C@H]3O '
+               "NAME: 3'-L-leucyl-AMP REASON: WRONGLY CLASSIFIED Contains 2 "
+               'biological structures and 1 covalent link types\n'
+               ' * SMILES: '
+               'S(C[C@H](N)C(O[C@@H]1CC=2[C@@]([C@@H]3[C@H]([C@H]4[C@@]([C@H](CC4)[C@@H](CCCC(C)C)C)(CC3)C)CC2)(CC1)C)=O)[C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC '
+               'NAME: CE(LTE4) REASON: WRONGLY CLASSIFIED Contains 2 '
+               'biological structures and 1 covalent link types\n'
+               ' * SMILES: '
+               'NC[C@H]1O[C@H](O[C@@H]2[C@@H](N)C[C@@H](NC(=O)[C@@H](O)CCNC(=O)CC[C@H](N)C(O)=O)[C@H](O)[C@H]2O[C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)[C@H](N)[C@@H](O)[C@@H]1O '
+               'NAME: gamma-L-glutamylbutirosin B REASON: WRONGLY CLASSIFIED '
+               'Contains 2 biological structures and 1 covalent link types\n'
+               ' * SMILES: '
+               '[H][C@]1(N[C@@H](C(O)=O)C(C)(C)S1)[C@H](NC(=O)[C@H](N)c1ccccc1)C(=O)NCCCC '
+               'NAME: ampicilloyl-butylamine REASON: WRONGLY CLASSIFIED '
+               'Contains 2 biological structures and 1 covalent link types\n'
+               ' * SMILES: S1C(NC(C1)C(=O)O)CCSCC(OCC)=O NAME: letosteine '
+               'REASON: WRONGLY CLASSIFIED Contains 2 biological structures '
+               'and 1 covalent link types\n'
+               ' * SMILES: '
+               'O1C(OC(C)=O)[C@H](O)[C@H](O)[C@H]1COP(OP(OC[C@@H]2[C@H]([C@H]([C@H](N3C4=NC=NC(=C4N=C3)N)O2)O)O)(=O)[O-])(=O)[O-] '
+               "NAME: 1''-O-acetyl-ADP-D-ribose(2-) REASON: WRONGLY CLASSIFIED "
+               'Contains 2 biological structures and 1 covalent link types\n'
+               ' * SMILES: '
+               'CN(C)C1=NC=NC2=C1N=CN2C3[C@@H]([C@@H]([C@H](O3)CO)NC(=O)[C@H](CC4=CC=C(C=C4)OC)N)O '
+               'NAME: '
+               '(2S)-2-amino-N-[(2S,3S,4R)-5-[6-(dimethylamino)-9-purinyl]-4-hydroxy-2-(hydroxymethyl)-3-oxolanyl]-3-(4-methoxyphenyl)propanamide '
+               'REASON: WRONGLY CLASSIFIED Contains 2 biological structures '
+               'and 1 covalent link types\n'
+               ' * SMILES: '
+               'COc1cc2c(CCN[C@]22CS[C@H]3[C@H]4[C@@H]5N(C)[C@@H](Cc6cc(C)c(OC)c(O)c56)[C@H](O)N4[C@@H](COC2=O)c2c4OCOc4c(C)c(OC(C)=O)c32)cc1O '
+               'NAME: trabectedin REASON: WRONGLY CLASSIFIED Contains 2 '
+               'biological structures and 1 covalent link types\n'
+               ' * SMILES: '
+               'O1C(O)[C@H](OC(CCC(=O)O)=O)[C@H](O)[C@H]1COP(OP(OC[C@@H]2[C@H]([C@H]([C@H](N3C4=NC=NC(=C4N=C3)N)O2)O)O)(=O)O)(=O)O '
+               "NAME: 2''-O-succinyl-ADP-D-ribose REASON: WRONGLY CLASSIFIED "
+               'Contains 2 biological structures and 1 covalent link types\n'
+               ' * SMILES: '
+               'S(C(CSCC(NC(=O)CCC(N)C(O)=O)C(O)=O)C)CC(NC(=O)CCC(N)C(O)=O)C(O)=O '
+               "NAME: N,N'-Bis(g-glutamyl)-3,3'-(1,2-propylenedithio)dialanine "
+               'REASON: WRONGLY CLASSIFIED Contains 2 biological structures '
+               'and 1 covalent link types\n'
+               ' * SMILES: S(CC(NC(=O)CCC(N)C(O)=O)C(O)=O)/C=C/C NAME: '
+               'N-gamma-Glutamyl-S-(1-propenyl)cysteine REASON: WRONGLY '
+               'CLASSIFIED Contains 2 biological structures and 1 covalent '
+               'link types\n'
+               ' * SMILES: '
+               'CC[C@@H](C([O-])=O)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
+               'NAME: (S)-ethylmalonyl-CoA(5-) REASON: WRONGLY CLASSIFIED '
+               'Contains 2 biological structures and 2 covalent link types\n'
+               ' * SMILES: '
+               'N1=CN=C2C(=C1N)N=CN2C[C@H](OC[P@](N[C@H](C(OC(C)C)=O)C)(=O)OC3=CC=CC=C3)C '
+               'NAME: tenofovir alafenamide REASON: WRONGLY CLASSIFIED '
+               'Contains 2 biological structures and 1 covalent link types\n'
+               ' * SMILES: NCC(=O)SC[C@H](N)C(O)=O NAME: S-glycyl-L-cysteine '
+               'REASON: WRONGLY CLASSIFIED Contains 2 biological structures '
+               'and 1 covalent link types\n'
+               ' * SMILES: '
+               'O1C(O)[C@H](OC([C@H](C)O)=O)[C@H](O)[C@H]1COP(OP(OC[C@@H]2[C@H]([C@H]([C@H](N3C4=NC=NC(=C4N=C3)N)O2)O)O)(=O)[O-])(=O)[O-] '
+               "NAME: 2''-O-(S)-lactoyl-ADP-D-ribose(2-) REASON: WRONGLY "
+               'CLASSIFIED Contains 2 biological structures and 1 covalent '
+               'link types\n'
+               ' * SMILES: '
+               'S(C[C@H](N)C(O[C@@H](COP(OC1[C@H](O)[C@H](O)C(O)[C@H](O)[C@H]1O)(O)=O)COC(=O)CCCCCCC/C=C\\C/C=C\\CCC)=O)[C@@H]([C@@H](O)CCCC(O)=O)/C=C/C=C/C=C\\C/C=C\\CCCCC '
+               'NAME: PI(16:2(9Z,12Z)/LTE4) REASON: WRONGLY CLASSIFIED '
+               'Contains 2 biological structures and 1 covalent link types\n'
+               ' * SMILES: S(=O)(CC(NC(=O)CCC(N)C(O)=O)C(O)=O)C NAME: '
+               'gamma-Glutamyl-S-methylcysteine sulfoxide REASON: WRONGLY '
+               'CLASSIFIED Contains 2 biological structures and 1 covalent '
+               'link types\n'
+               ' * SMILES: '
+               'C([C@H](NC(CC[C@H](N)C(=O)O)=O)C(O)=O)S[C@H](\\C=C\\C=C\\C=C/C/C=C\\CCCCC)[C@@H](O)CCCC(=O)O '
+               'NAME: leukotriene F4 REASON: WRONGLY CLASSIFIED Contains 2 '
+               'biological structures and 1 covalent link types\n'
+               ' * SMILES: S(CC(NC(=O)CCC(N)C(O)=O)C(O)=O)C NAME: '
+               'gamma-Glutamyl-S-methylcysteine REASON: WRONGLY CLASSIFIED '
+               'Contains 2 biological structures and 1 covalent link types\n'
+               'False negatives: SMILES: S(SS(O)(=O)=O)C[C@H](N)C(O)=O NAME: '
+               '3-(Sulfodisulfanyl)-L-alanine REASON: MISSED Contains 1 '
+               'biological structures and 1 covalent link types. Requires at '
+               'least 2 biological substructures with 1 linkage.\n'
                ' * SMILES: '
                'COc1cccc2[nH]cc(CSC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(O)=O)c12 '
-               'NAME: gammaGluCys(4MeOI3M)Gly REASON: MISSED Partially matched '
-               'patterns, only found: peptide_bond\n'
-               ' * SMILES: '
-               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12 '
-               'NAME: (6Z,9Z,12Z,15Z)-octadecatetraenoyl-CoA REASON: MISSED No '
-               'definitive bioconjugate patterns found\n'
+               'NAME: gammaGluCys(4MeOI3M)Gly REASON: MISSED Contains 1 '
+               'biological structures and 1 covalent link types. Requires at '
+               'least 2 biological substructures with 1 linkage.\n'
                ' * SMILES: S(=O)(CCCCNC(SC[C@H](N)C(O)=O)=S)C NAME: '
-               'sulforaphane-cysteine REASON: MISSED Partially matched '
-               'patterns, only found: peptide_bond\n'
+               'sulforaphane-cysteine REASON: MISSED Contains 2 biological '
+               'structures and 0 covalent link types. Requires at least 2 '
+               'biological substructures with 1 linkage.\n'
+               ' * SMILES: N[C@@H](CSC(C#N)c1c[nH]c2ccccc12)C(O)=O NAME: '
+               'L-Cys(IAN) REASON: MISSED Contains 2 biological structures and '
+               '0 covalent link types. Requires at least 2 biological '
+               'substructures with 1 linkage.\n'
+               ' * SMILES: S(C[C@H](N)C(O)=O)C=1C=C(NC(=O)C)C=CC1O NAME: '
+               '3-Cysteinylacetaminophen REASON: MISSED Contains 1 biological '
+               'structures and 0 covalent link types. Requires at least 2 '
+               'biological substructures with 1 linkage.\n'
+               ' * SMILES: '
+               'C(\\CC=CC=CC=C[C@@H]([C@@H](C/C=C\\CC)O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)=C\\C/C=C\\CCC(O)=O '
+               'NAME: '
+               '16(S)-glutathionyl-17(R)-hydroxy-(4Z,7Z,10,12,14,19Z)-docosahexaenoic '
+               'acid REASON: MISSED Contains 1 biological structures and 1 '
+               'covalent link types. Requires at least 2 biological '
+               'substructures with 1 linkage.\n'
+               ' * SMILES: '
+               'N[C@@H](CCC(=O)N[C@@H](CSC(C#N)c1c[nH]c2ccccc12)C(=O)NCC(O)=O)C(O)=O '
+               'NAME: gammaGluCys(IAN)Gly REASON: MISSED Contains 1 biological '
+               'structures and 1 covalent link types. Requires at least 2 '
+               'biological substructures with 1 linkage.\n'
+               ' * SMILES: S(C[C@H](N)C(O)=O)C=C NAME: S-vinylcysteine REASON: '
+               'MISSED Contains 2 biological structures and 0 covalent link '
+               'types. Requires at least 2 biological substructures with 1 '
+               'linkage.\n'
+               ' * SMILES: '
+               'CC\\C=C/C\\C=C/C\\C=C/CCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12 '
+               'NAME: alpha-linolenoyl-CoA REASON: MISSED Contains 1 '
+               'biological structures and 2 covalent link types. Requires at '
+               'least 2 biological substructures with 1 linkage.\n'
+               ' * SMILES: '
+               '[C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC(C)([C@H](C(NCCC(NCCSC(CCCCCCCCCCCCCCC)=O)=O)=O)O)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O '
+               'NAME: palmitoyl-CoA REASON: MISSED Contains 1 biological '
+               'structures and 2 covalent link types. Requires at least 2 '
+               'biological substructures with 1 linkage.\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O=C1C2=C(OC(=C1)C)C3=C(OC)C=C(OC)C=C3C(=C2O)C4=C5OC(=CC(C5=C(O)C=6C4=CC(OC)=CC6OC)=O)C',
-                                     'name': 'Isonigerone',
-                                     'reason': 'No definitive bioconjugate '
-                                               'patterns found'},
-                                 {   'smiles': 'CCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@@H](O)CO)OC(=O)CCCCCCC\\C=C/CCCCCCCC',
-                                     'name': '1-myristoyl-2-oleoyl-sn-glycero-3-phosphatidylglycerol(1-)',
-                                     'reason': 'Partially matched patterns, '
-                                               'only found: ester_bond'},
-                                 {   'smiles': 'C(=C\\C/C=C\\CCCC(NC)=O)\\C/C=C\\C/C=C\\CCCCC',
-                                     'name': 'N-methyl arachidonoyl amine',
-                                     'reason': 'Partially matched patterns, '
-                                               'only found: amide_bond'},
-                                 {   'smiles': 'OC1(O)[C@]23N(CC1)C(N(O)[C@H]([C@@]3(N=C(N2)N)[H])CO)=N',
-                                     'name': 'Decarbamoylneosaxitoxin',
-                                     'reason': 'No definitive bioconjugate '
-                                               'patterns found'},
-                                 {   'smiles': 'S([C@H]1N(C(=O)/C(=C\\C2=CC=C(OCC=C(C)C)C=C2)/N(C1=O)C)C)C',
-                                     'name': 'Fusaperazine F',
-                                     'reason': 'Partially matched patterns, '
-                                               'only found: amide_bond'},
-                                 {   'smiles': 'Oc1ccccc1I',
-                                     'name': '2-iodophenol',
-                                     'reason': 'No definitive bioconjugate '
-                                               'patterns found'},
-                                 {   'smiles': 'O(C1=C(OC)C=C(C2=C(O)C(OC)=C(C3=CC=CC=C3)C=C2OC)C=C1)C/C=C(/CO)\\C',
-                                     'name': 'Prenylterphenyllin F',
-                                     'reason': 'No definitive bioconjugate '
-                                               'patterns found'},
-                                 {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@@H](O)[C@@H]1OC[C@H]3O[C@@H](OC[C@H]4O[C@@H](O)[C@H](O)[C@@H](O)[C@@H]4O)[C@H](O)[C@@H](O)[C@@H]3O)CO[C@@H]5O[C@@H]([C@@H](O)[C@H](O[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)CO)[C@H]5O)CO[C@@H]7O[C@@H]([C@@H](O)[C@H](O)[C@H]7O)CO',
-                                     'name': '(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4S,5R,6R)-6-[[(2R,3R,4S,5R,6R)-3,5-Dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]oxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxymethyl]oxane-2,3,4,5-tetrol',
-                                     'reason': 'No definitive bioconjugate '
-                                               'patterns found'},
-                                 {   'smiles': 'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO[C@@H]3O[C@H]([C@@H](O)[C@@H](O)[C@@H]3O)C)O)[C@@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O[C@@H]6O[C@@H]([C@@H](O[C@@H]7O[C@@H]([C@H](O)[C@H](O)[C@H]7O)CO)[C@H](O)[C@@H]6NC(=O)C)CO)CO)[C@@H]4O)CO[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)CO',
-                                     'name': 'Gal2GlcNAc2Man3GlcNAcFucGlcNAc',
-                                     'reason': 'Partially matched patterns, '
-                                               'only found: amide_bond'},
-                                 {   'smiles': 'CN1CC2(CCN(CC2)S(=O)(=O)C3=CN(C=N3)C)C4=C([C@@H]1CO)NC5=C4C=CC(=C5)OC',
-                                     'name': "[(1R)-7-methoxy-2-methyl-1'-[(1-methyl-4-imidazolyl)sulfonyl]-1-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,4'-piperidine]yl]methanol",
-                                     'reason': 'Partially matched patterns, '
-                                               'only found: '
-                                               'heterocyclic_nitrogen'}],
-    'sample_false_negatives': [],
-    'attempt': 2,
-    'reasoning': 'The previous program attempted to classify bioconjugates '
-                 'using a set of predefined substructure patterns, such as '
-                 'peptide bonds and disulfide bonds, and required the presence '
-                 'of at least two distinct biological unit patterns to '
-                 'classify a compound as a bioconjugate. However, the '
-                 "program's F1 score was very low, indicating that it often "
-                 'misclassified compounds.\n'
+    'sample_true_negatives': [   {   'smiles': 'O1C=2C(=C(O)C(CC=C(C)C)=C(OC)C2)C(=O)C(C3=CC=C(O)C=C3)=C1',
+                                     'name': 'Gancaonin G',
+                                     'reason': 'Contains 0 biological '
+                                               'structures and 0 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'S(CC[C@H](N)C(=O)N[C@@H](CCC(=O)N)C(=O)N[C@@H](C(C)C)C(O)=O)C',
+                                     'name': 'Met-Gln-Val',
+                                     'reason': 'Contains 1 biological '
+                                               'structures and 1 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'CC(=O)N[C@H]1[C@@H](O)O[C@H](CO)[C@H](O)[C@@H]1O[C@@H]1O[C@H](CO)[C@H](O)[C@H](OS(O)(=O)=O)[C@H]1O',
+                                     'name': 'beta-D-Galp3S-(1->3-)-alpha-D-GalpNAc',
+                                     'reason': 'Contains 0 biological '
+                                               'structures and 1 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'CN(C)C(=O)C[C@H]1CC[C@@H]2[C@@H](O1)COC[C@@H](CN2C(=O)NC3=CC(=CC=C3)OC)O',
+                                     'name': '(3R,6aR,8R,10aR)-8-[2-(dimethylamino)-2-oxoethyl]-3-hydroxy-N-(3-methoxyphenyl)-3,4,6,6a,8,9,10,10a-octahydro-2H-pyrano[2,3-c][1,5]oxazocine-1-carboxamide',
+                                     'reason': 'Contains 0 biological '
+                                               'structures and 2 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'C[C@H]1CN(C(=O)C2=C(C3=CC=CC=C3CO[C@H]1CN(C)S(=O)(=O)C4=CC=CC=C4C#N)C5=CC=CC=C5N2C)[C@@H](C)CO',
+                                     'name': 'LSM-9464',
+                                     'reason': 'Contains 0 biological '
+                                               'structures and 1 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'CC1=CC=CC=C1S(=O)(=O)N2C[C@@H](COC[C@H]3[C@H]2CC[C@@H](O3)CC(=O)NCC4=CC=CC=C4Cl)O',
+                                     'name': '2-[(3S,6aR,8R,10aR)-3-hydroxy-1-(2-methylphenyl)sulfonyl-3,4,6,6a,8,9,10,10a-octahydro-2H-pyrano[2,3-c][1,5]oxazocin-8-yl]-N-[(2-chlorophenyl)methyl]acetamide',
+                                     'reason': 'Contains 0 biological '
+                                               'structures and 1 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'C[C@H]1CN([C@H](COC2=C(C=C(C=C2)NC(=O)C)C(=O)N(C[C@H]1OC)C)C)C(=O)C3=NC=CN=C3',
+                                     'name': 'N-[(4S,7S,8S)-8-methoxy-4,7,10-trimethyl-11-oxo-5-[oxo(2-pyrazinyl)methyl]-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]acetamide',
+                                     'reason': 'Contains 0 biological '
+                                               'structures and 1 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'C1CCN(CC1)CCNC(=O)C[C@@H]2CC[C@H]3[C@H](O2)COC[C@H](CN3S(=O)(=O)C4=CC=CC=C4)O',
+                                     'name': '2-[(3S,6aS,8S,10aS)-1-(benzenesulfonyl)-3-hydroxy-3,4,6,6a,8,9,10,10a-octahydro-2H-pyrano[2,3-c][1,5]oxazocin-8-yl]-N-[2-(1-piperidinyl)ethyl]acetamide',
+                                     'reason': 'Contains 0 biological '
+                                               'structures and 1 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'OC1CC(N(C1)C(=O)C(N)CC2=CC=CC=C2)C(O)=O',
+                                     'name': 'Phenylalanyl-Hydroxyproline',
+                                     'reason': 'Contains 1 biological '
+                                               'structures and 1 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'},
+                                 {   'smiles': 'O([C@H]1O[C@@H]([C@H]([C@@H]([C@@H]1O)O)O)CO)CCC(CCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C)=O',
+                                     'name': '1-(alpha-D-mannosyl)-3-keto-(1,27R)-octacosanediol',
+                                     'reason': 'Contains 0 biological '
+                                               'structures and 0 covalent link '
+                                               'types. Requires at least 2 '
+                                               'biological substructures with '
+                                               '1 linkage.'}],
+    'sample_false_negatives': [   {   'smiles': 'S(SS(O)(=O)=O)C[C@H](N)C(O)=O',
+                                      'name': '3-(Sulfodisulfanyl)-L-alanine',
+                                      'reason': 'Contains 1 biological '
+                                                'structures and 1 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': 'COc1cccc2[nH]cc(CSC[C@H](NC(=O)CC[C@H](N)C(O)=O)C(=O)NCC(O)=O)c12',
+                                      'name': 'gammaGluCys(4MeOI3M)Gly',
+                                      'reason': 'Contains 1 biological '
+                                                'structures and 1 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': 'S(=O)(CCCCNC(SC[C@H](N)C(O)=O)=S)C',
+                                      'name': 'sulforaphane-cysteine',
+                                      'reason': 'Contains 2 biological '
+                                                'structures and 0 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': 'N[C@@H](CSC(C#N)c1c[nH]c2ccccc12)C(O)=O',
+                                      'name': 'L-Cys(IAN)',
+                                      'reason': 'Contains 2 biological '
+                                                'structures and 0 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': 'S(C[C@H](N)C(O)=O)C=1C=C(NC(=O)C)C=CC1O',
+                                      'name': '3-Cysteinylacetaminophen',
+                                      'reason': 'Contains 1 biological '
+                                                'structures and 0 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': 'C(\\CC=CC=CC=C[C@@H]([C@@H](C/C=C\\CC)O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)=C\\C/C=C\\CCC(O)=O',
+                                      'name': '16(S)-glutathionyl-17(R)-hydroxy-(4Z,7Z,10,12,14,19Z)-docosahexaenoic '
+                                              'acid',
+                                      'reason': 'Contains 1 biological '
+                                                'structures and 1 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': 'N[C@@H](CCC(=O)N[C@@H](CSC(C#N)c1c[nH]c2ccccc12)C(=O)NCC(O)=O)C(O)=O',
+                                      'name': 'gammaGluCys(IAN)Gly',
+                                      'reason': 'Contains 1 biological '
+                                                'structures and 1 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': 'S(C[C@H](N)C(O)=O)C=C',
+                                      'name': 'S-vinylcysteine',
+                                      'reason': 'Contains 2 biological '
+                                                'structures and 0 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': 'C(CCCC)[C@@H]([C@@H](\\C=C\\[C@H](C/C=C\\C/C=C\\CCCC(O)=O)O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)O',
+                                      'name': '11(S),15(S)-dihydroxy-14(R)-(S-glutathionyl)-5(Z),8(Z),12(E)-icosatrienoic '
+                                              'acid',
+                                      'reason': 'Contains 1 biological '
+                                                'structures and 1 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'},
+                                  {   'smiles': '[C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\\CCCC(=O)O',
+                                      'name': '(S)-PGA2-S-glutathione '
+                                              'conjugate',
+                                      'reason': 'Contains 1 biological '
+                                                'structures and 1 covalent '
+                                                'link types. Requires at least '
+                                                '2 biological substructures '
+                                                'with 1 linkage.'}],
+    'attempt': 5,
+    'reasoning': 'In the previous program, the main challenge was to correctly '
+                 'identify bioconjugates based on their SMILES strings by '
+                 'detecting biological substructures and linkage types. The F1 '
+                 'score and specific outcomes indicated issues with false '
+                 'positives and false negatives. Here are some hypotheses '
+                 'about what might have gone wrong and how improvements can be '
+                 'made:\n'
                  '\n'
-                 'To improve the classification, we need to understand the '
-                 'common structural motifs in the given examples. '
-                 'Bioconjugates typically involve connections like peptide '
-                 'bonds, disulfide bonds, and other specific linkages such as '
-                 'ester or thioester bonds between distinct biopolymers or '
-                 'biological units.\n'
+                 '1. **SMILES Parsing and Pattern Matching:**\n'
+                 '   - Ensure all provided SMILES are correctly parsed to '
+                 'molecules.\n'
+                 '   - Improve SMARTS patterns for specific biological '
+                 'components.\n'
+                 '   - Expand SMARTS patterns to cover more diverse biological '
+                 'motifs.\n'
                  '\n'
-                 'The issues with the previous implementation likely stem '
-                 'from:\n'
-                 '1. Over-reliance on a small set of patterns that might not '
-                 'cover the diversity of bioconjugates.\n'
-                 '2. Insufficient recognition of unique linkages that '
-                 'characterize bioconjugates.\n'
+                 '2. **Detection Logic for Biological Units:**\n'
+                 '   - Refine the definition and detection of biological '
+                 'entities.\n'
+                 '   - Consider proteins/peptides, nucleic acids, and '
+                 'cofactors as separate classes.\n'
+                 '   - Include other biological substructures like lipids and '
+                 'complex carbohydrates.\n'
                  '\n'
-                 'To address these issues, we can:\n'
-                 '- Expand the set of substructure patterns to include more '
-                 'specific linkages or structures commonly found in '
-                 'bioconjugates.\n'
-                 '- Consider not just the presence of multiple patterns but '
-                 'also the context that indicates distinct biological units '
-                 '(e.g., large scaffold elements connected by specific '
-                 'linkages).\n'
+                 '3. **Covalent Linkage Types:**\n'
+                 '   - Expand the types of covalent linkages recognized by the '
+                 'program.\n'
+                 '   - Adjust criteria such that multiple linkages match more '
+                 'realistic bioconjugates.\n'
                  '\n'
-                 "Here's an updated version of the program that includes "
-                 'additional patterns and checks for more diverse linkages:',
+                 '4. **Feedback from False Positives/Negatives:**\n'
+                 '   - Analyze specific cases of false positives/negatives to '
+                 'refine SMARTS patterns.\n'
+                 '   - Create new patterns or refine existing ones to reduce '
+                 'mismatches.\n'
+                 '\n'
+                 'Given this understanding, here is an improved attempt at the '
+                 'program:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 34,
-    'num_false_positives': 100,
-    'num_true_negatives': 215,
-    'num_false_negatives': 0,
+    'num_true_positives': 9,
+    'num_false_positives': 1663,
+    'num_true_negatives': 140603,
+    'num_false_negatives': 25,
     'num_negatives': None,
-    'precision': 0.2537313432835821,
-    'recall': 1.0,
-    'f1': 0.40476190476190477,
-    'accuracy': 0.7134670487106017,
-    'negative_predictive_value': 1.0}
+    'precision': 0.005382775119617225,
+    'recall': 0.2647058823529412,
+    'f1': 0.010550996483001172,
+    'accuracy': 0.9881377371749824,
+    'negative_predictive_value': 0.9998222260147339}

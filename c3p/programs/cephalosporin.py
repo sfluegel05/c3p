@@ -116,6 +116,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23066',
                                        'Wikipedia:Cephalosporin'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'

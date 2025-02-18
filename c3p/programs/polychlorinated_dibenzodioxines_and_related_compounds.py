@@ -1,58 +1,64 @@
 """
 Classifies: CHEBI:134045 polychlorinated dibenzodioxines and related compounds
 """
+"""
+Classifies: polychlorinated dibenzodioxines and related compounds (persistent organic pollutants)
+"""
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: str):
     """
-    Classifies a molecule as a polychlorinated dibenzodioxin or structurally related compound based on its SMILES string.
-    
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule belongs to the class, False otherwise
-        str: Reason for classification
+    Determines if a molecule belongs to polychlorinated dibenzodioxines and related compounds.
+    These are organochlorine/bromine compounds with dioxin, dibenzofuran, or biphenyl cores,
+    where ALL substituents on the core rings are halogens (Cl/Br).
     """
-    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return False, "Invalid SMILES"
 
-    # Check for sufficient number of chlorine or bromine atoms
-    halogen_count = sum(atom.GetSymbol() in ['Cl', 'Br'] for atom in mol.GetAtoms())
-    if halogen_count < 3:  # Lowered to capture more true positives
-        return False, "Insufficient halogen atoms for a likely related compound."
+    # Must contain at least two chlorine or bromine atoms
+    halogen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() in [17, 35])
+    if halogen_count < 2:
+        return False, f"Insufficient halogens ({halogen_count} found, minimum 2)"
 
-    # SMARTS pattern for polychlorinated biphenyls (PCBs)
-    biphenyl_pattern = Chem.MolFromSmarts('c1cc(c(cc1)-c2ccccc2)[Cl,Br]')
-    
-    # SMARTS patterns for polychlorinated dibenzodioxins (PCDDs)
-    dioxin_patterns = [
-        Chem.MolFromSmarts('Oc1cc2Oc3ccccc3Oc2cc1'),  # Allow variability in Cl positions
-        Chem.MolFromSmarts('c1cc2Oc3ccc(Cl)cc3cc2cc1')
-    ]
-    
-    # SMARTS patterns for polychlorinated dibenzofurans (PCDFs)
-    furan_patterns = [
-        Chem.MolFromSmarts('c1cc2oc3cc(Cl)ccc3c2cc1'),
-        Chem.MolFromSmarts('c1cc2oc3ccc(Cl)c2cc3cc1')
-    ]
-    
-    # Check for presence of these patterns
-    matches_dioxin_furan = any(mol.HasSubstructMatch(pattern) for pattern in dioxin_patterns + furan_patterns)
-    matches_biphenyl = mol.HasSubstructMatch(biphenyl_pattern)
+    # Core structure patterns
+    dioxin_core = Chem.MolFromSmarts('O1c2ccccc2Oc2ccccc12')  # Dibenzodioxin
+    furan_core = Chem.MolFromSmarts('c1ccc2c(c1)oc1ccccc12')  # Dibenzofuran
+    biphenyl_core = Chem.MolFromSmarts('c1ccccc1-c2ccccc2')   # Biphenyl
 
-    # Exclude common false patterns
-    common_false_patterns = [
-        Chem.MolFromSmarts('[OH]'),  # Hydroxy groups are not typical in PCBs, PCDD/Fs
-    ]
-    false_positive_match = any(mol.HasSubstructMatch(pattern) for pattern in common_false_patterns)
+    # Check each core pattern for valid substitution
+    for core in [dioxin_core, furan_core, biphenyl_core]:
+        matches = mol.GetSubstructMatches(core)
+        for match in matches:
+            core_atoms = set(match)
+            valid = True
+            
+            # Check all substituents on core's aromatic atoms are Cl/Br
+            for atom_idx in match:
+                atom = mol.GetAtomWithIdx(atom_idx)
+                if not atom.GetIsAromatic():
+                    continue  # Only check aromatic positions
+                    
+                for neighbor in atom.GetNeighbors():
+                    # Skip core-internal bonds
+                    if neighbor.GetIdx() in core_atoms:
+                        continue
+                        
+                    # Substituents must be Cl/Br
+                    if neighbor.GetAtomicNum() not in [17, 35]:
+                        valid = False
+                        break
+                
+                if not valid:
+                    break
+            
+            if valid:
+                core_type = "dioxin" if core == dioxin_core else \
+                            "dibenzofuran" if core == furan_core else "biphenyl"
+                return True, f"Halogenated {core_type} core with all substituents as Cl/Br"
 
-    if (matches_dioxin_furan or matches_biphenyl) and not false_positive_match:
-        return True, "Matches polychlorinated dibenzodioxin or related compound pattern."
-
-    return False, "Does not match polychlorinated dibenzodioxin or related compound pattern."
+    return False, "No valid dioxin/dibenzofuran/biphenyl core with halogen-only substituents"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:134045',
@@ -73,264 +79,461 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:134045',
                           'xrefs': [   'Wikipedia:Dioxins_and_dioxin-like_compounds'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 42,
+                           'log_lines_of_code': 3.7376696182833684,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 6,
+                                                 6,
+                                                 5,
+                                                 5,
+                                                 6,
+                                                 6,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 4,
+                                                 0,
+                                                 1],
+                           'max_indent': 6,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetIdx',
+                                                 'MolFromSmiles',
+                                                 'MolFromSmarts',
+                                                 'GetAtomicNum',
+                                                 'GetIsAromatic',
+                                                 'GetSubstructMatches',
+                                                 'GetAtomWithIdx',
+                                                 'GetNeighbors',
+                                                 'GetAtoms'],
+                           'methods_called_count': 9,
+                           'smarts_strings': [   'c1ccc2c(c1)oc1ccccc12',
+                                                 'O1c2ccccc2Oc2ccccc12',
+                                                 'c1ccccc1-c2ccccc2'],
+                           'smarts_strings_count': 3,
+                           'defs': [   'is_polychlorinated_dibenzodioxines_and_related_compounds(smiles: '
+                                       'str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES"',
+                                          'False, f"Insufficient halogens '
+                                          '({halogen_count} found, minimum 2)"',
+                                          'True, f"Halogenated {core_type} '
+                                          'core with all substituents as '
+                                          'Cl/Br"',
+                                          'False, "No valid '
+                                          'dioxin/dibenzofuran/biphenyl core '
+                                          'with halogen-only substituents"'],
+                           'returns_count': 4,
+                           'complexity': 4.747533923656674},
     'message': '\n'
-               'Attempt failed: F1 score of 0.55 is too low.\n'
+               'Attempt failed: F1 score of 0.6490066225165563 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: '
-               'Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2c(Cl)c1Cl NAME: '
-               '1,2,3,4,6,7,8-Heptachlorodibenzodioxin REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1c(Cl)c(Cl)c2Oc3ccccc3Oc2c1Cl NAME: '
-               '1,2,3,4-tetrachlorodibenzodioxine REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2oc3c(Cl)c(Cl)c(Cl)c(Cl)c3c2c(Cl)c1Cl NAME: '
-               '1,2,3,4,7,8,9-Heptachlorodibenzofuran REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2cc1Cl NAME: '
-               '1,2,3,4,7,8-Hexachlorodibenzodioxin REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2oc3cc(Cl)c(Cl)c(Cl)c3c2c(Cl)c1Cl NAME: '
-               '1,2,3,7,8,9-Hexachlorodibenzofuran REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2c(oc3c(Cl)c(Cl)c(Cl)c(Cl)c23)c(Cl)c1Cl NAME: '
-               '1,2,3,4,6,7,8-Heptachlorodibenzofuran REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2Oc3c(Oc2c(Cl)c1Cl)cc(Cl)c(Cl)c3Cl NAME: '
-               '1,2,3,6,7,8-Hexachlorodibenzodioxin REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc(Cl)c(cc1Cl)-c1cc(Cl)c(Cl)cc1Cl NAME: '
-               "2,2',4,4',5,5'-hexachlorobiphenyl REASON: CORRECT Matches "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2oc3c(Cl)c(Cl)c(Cl)c(Cl)c3c2cc1Cl NAME: '
-               '1,2,3,4,7,8-Hexachlorodibenzofuran REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1ccc(-c2cc(Cl)c(Cl)c(Cl)c2)c(Cl)c1Cl NAME: '
-               "2,3,3',4,4',5'-Hexachlorobiphenyl REASON: CORRECT Matches "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1ccc(cc1Cl)-c1cc(Cl)c(Cl)cc1Cl NAME: '
-               "2,3',4,4',5-Pentachlorobiphenyl REASON: CORRECT Matches "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2oc3cc(Cl)c(Cl)c(Cl)c3c2cc1Cl NAME: '
-               '1,2,3,7,8-Pentachlorodibenzofuran REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: ClC=1C(C=2C(Cl)=CC(Cl)=C(Cl)C2)=CC(Cl)=C(Cl)C1Cl '
-               'NAME: PCB180 REASON: CORRECT Matches polychlorinated '
-               'dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2Oc3cc(Cl)c(Cl)c(Cl)c3Oc2c(Cl)c1Cl NAME: '
-               '1,2,3,7,8,9-Hexachlorodibenzodioxin REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2Oc3cc(Cl)c(Cl)cc3Oc2cc1Cl NAME: '
-               '2,3,7,8-tetrachlorodibenzodioxine REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1ccc(c(Cl)c1)-c1cc(Cl)c(Cl)c(Cl)c1 NAME: '
-               "2,3',4,4',5'-Pentachlorobiphenyl REASON: CORRECT Matches "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1ccc(cc1Cl)-c1ccc(Cl)c(Cl)c1Cl NAME: '
-               "2,3,4,3',4'-Pentachlorobiphenyl REASON: CORRECT Matches "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1c(Cl)c(Cl)c2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2c1Cl '
-               'NAME: 1,2,3,4,6,7,8,9-Octachlorodibenzo-p-dioxin REASON: '
-               'CORRECT Matches polychlorinated dibenzodioxin or related '
-               'compound pattern.\n'
-               ' * SMILES: ClC1=C(C=2C(Cl)=CC(Cl)=C(Cl)C2)C=CC(Cl)=C1Cl NAME: '
-               'PCB138 REASON: CORRECT Matches polychlorinated dibenzodioxin '
-               'or related compound pattern.\n'
-               ' * SMILES: Clc1ccc(cc1Cl)-c1cc(Cl)c(Cl)c(Cl)c1Cl NAME: '
-               "2,3,3',4,4',5-Hexachlorobiphenyl REASON: CORRECT Matches "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc(Cl)c2Oc3cc(Cl)cc(Cl)c3Oc2c1 NAME: '
-               '1,3,6,8-tetrachlorodibenzodioxine REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc2Oc3cc(Cl)c(Cl)c(Cl)c3Oc2cc1Cl NAME: '
-               '1,2,3,7,8-Pentachlorodibenzodioxin REASON: CORRECT Matches '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               'False positives: SMILES: '
-               'Oc1c(Cl)c(Cl)cc(c1Cl)-c1cc(Cl)c(Cl)c(Cl)c1Cl NAME: '
-               "2,2',3',4,4',5,5'-Heptachloro-3-biphenylol REASON: WRONGLY "
-               'CLASSIFIED Matches polychlorinated dibenzodioxin or related '
-               'compound pattern.\n'
-               ' * SMILES: Oc1c(Cl)cc2c(oc3cc(Cl)c(Cl)c(Cl)c23)c1Cl NAME: '
-               '7-hydroxy-1,2,3,6,8-pentachlorodibenzofuran REASON: WRONGLY '
-               'CLASSIFIED Matches polychlorinated dibenzodioxin or related '
-               'compound pattern.\n'
-               'False negatives: SMILES: Clc1ccc(cc1)-c1cc(Cl)c(Cl)c(Cl)c1Cl '
-               "NAME: 2,3,4,4',5-Pentachlorobiphenyl REASON: MISSED Does not "
-               'match polychlorinated dibenzodioxin or related compound '
-               'pattern.\n'
-               ' * SMILES: Clc1cccc(c1)-c1cc(Cl)c(Cl)c(Cl)c1Cl NAME: '
-               "2,3,3',4,5-pentachlorobiphenyl REASON: MISSED Does not match "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
+               'True positives: SMILES: Clc1cccc(c1)-c1cc(Cl)c(Cl)c(Cl)c1Cl '
+               "NAME: 2,3,3',4,5-pentachlorobiphenyl REASON: CORRECT "
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: Clc1cc2c3cc(Cl)c(Cl)c(Cl)c3oc2c(Cl)c1Cl NAME: '
+               '2,3,4,6,7,8-Hexachlorodibenzofuran REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
                ' * SMILES: Clc1cc(Cl)cc(c1)-c1cc(Cl)cc(Cl)c1 NAME: '
-               "3,3',5,5'-tetrachlorobiphenyl REASON: MISSED Does not match "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: '
-               'ClC1=C(O)C=2C(=O)[C@]3(O)C(=O)C4=C(C5=C(OC)C=C(OC)C(=C5C)Cl)C=C(OC)C(=C4C[C@@H]3C(C2C=C1O)(C)C)Cl '
-               'NAME: Formicamycin F REASON: MISSED Insufficient halogen atoms '
-               'for a likely related compound.\n'
+               "3,3',5,5'-tetrachlorobiphenyl REASON: CORRECT Halogenated "
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1ccccc1-c1cc(Cl)c(Cl)cc1Cl NAME: '
+               "2,2',4,5-tetrachlorobiphenyl REASON: CORRECT Halogenated "
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: ClC=1C(C=2C(Cl)=CC(Cl)=C(Cl)C2)=CC(Cl)=C(Cl)C1Cl '
+               'NAME: PCB180 REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1cc2oc3cc(Cl)c(Cl)cc3c2cc1Cl NAME: '
+               '2,3,7,8-Tetrachlorodibenzofuran REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
                ' * SMILES: Clc1c(Cl)c(Cl)c(-c2ccccc2)c(Cl)c1Cl NAME: '
-               '2,3,4,5,6-pentachlorobiphenyl REASON: MISSED Does not match '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cc(Cl)cc(c1)-c1ccccc1 NAME: '
-               '3,5-dichlorobiphenyl REASON: MISSED Insufficient halogen atoms '
-               'for a likely related compound.\n'
-               ' * SMILES: Clc1ccc(cc1)-c1c(Cl)cc(Cl)cc1Cl NAME: '
-               "2,4,4',6-tetrachlorobiphenyl REASON: MISSED Does not match "
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cccc(Cl)c1-c1ccccc1 NAME: 2,6-dichlorobiphenyl '
-               'REASON: MISSED Insufficient halogen atoms for a likely related '
-               'compound.\n'
+               '2,3,4,5,6-pentachlorobiphenyl REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1ccc(Cl)c(c1Cl)-c1c(Cl)ccc(Cl)c1Cl NAME: '
+               "2,2',3,3',6,6'-hexachlorobiphenyl REASON: CORRECT Halogenated "
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1ccc(cc1)-c1cc(Cl)c(Cl)c(Cl)c1Cl NAME: '
+               "2,3,4,4',5-Pentachlorobiphenyl REASON: CORRECT Halogenated "
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               'ClC1=C(OC2=C(Cl)C=C(Cl)C=C2)C(C3=C(O)C(Cl)=CC(=C3)Cl)=CC(=C1O)Cl '
+               'NAME: Ambigol E REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1cc2c(oc3c(Cl)c(Cl)c(Cl)c(Cl)c23)c(Cl)c1Cl NAME: '
+               '1,2,3,4,6,7,8-Heptachlorodibenzofuran REASON: CORRECT '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'ClC1=C(O)C(Cl)=C2C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C(C2=C1O)=O)O)=O)C5=C(OC)C=C(OC)C(=C5C)Cl)(C)C '
+               'NAME: Formicamycin J REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
                ' * SMILES: '
                'ClC1=C(O)C(Cl)=C2C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C(C2=C1O)=O)O)=O)C5=C(O)C=C(OC)C(=C5C)Cl)(C)C '
-               'NAME: Formicamycin I REASON: MISSED Does not match '
-               'polychlorinated dibenzodioxin or related compound pattern.\n'
-               ' * SMILES: Clc1cccc(c1)-c1cc(Cl)ccc1Cl NAME: '
-               "2,3',5-trichlorobiphenyl REASON: MISSED Insufficient halogen "
-               'atoms for a likely related compound.\n'
+               'NAME: Formicamycin I REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               'ClC1=C(OC2=C(Cl)C=C(Cl)C=C2)C(O)=CC(=C1C3=C(O)C(Cl)=CC(=C3)Cl)Cl '
+               'NAME: Ambigol D REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1ccc(cc1Cl)-c1cc(Cl)c(Cl)c(Cl)c1 NAME: '
+               "3,3',4,4',5-pentachlorobiphenyl REASON: CORRECT Halogenated "
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1cc2oc3c(Cl)c(Cl)c(Cl)c(Cl)c3c2c(Cl)c1Cl NAME: '
+               '1,2,3,4,7,8,9-Heptachlorodibenzofuran REASON: CORRECT '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: Clc1ccc(cc1Cl)-c1ccc(Cl)c(Cl)c1Cl NAME: '
+               "2,3,4,3',4'-Pentachlorobiphenyl REASON: CORRECT Halogenated "
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1cc2Oc3cc(Cl)c(Cl)cc3Oc2cc1Cl NAME: '
+               '2,3,7,8-tetrachlorodibenzodioxine REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: ClC1=C(C=2C(Cl)=CC(Cl)=C(Cl)C2)C=CC(Cl)=C1Cl NAME: '
+               'PCB138 REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2c(Cl)c1Cl NAME: '
+               '1,2,3,4,6,7,8-Heptachlorodibenzodioxin REASON: CORRECT '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: Clc1cc(Cl)c(Cl)c(c1)-c1cc(Cl)cc(Cl)c1Cl NAME: '
+               "2,2',3,3',5,5'-hexachlorobiphenyl REASON: CORRECT Halogenated "
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1cc(Cl)c(Cl)c(-c2ccccc2)c1Cl NAME: '
+               '2,3,5,6-tetrachlorobiphenyl REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               'ClC1=C(O)C=C(O)C2=C1C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C2=O)O)=O)C5=C(O)C=C(OC)C(=C5C)Cl)(C)C '
+               'NAME: Formicamycin D REASON: CORRECT Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2cc1Cl NAME: '
+               '1,2,3,4,7,8-Hexachlorodibenzodioxin REASON: CORRECT '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: Clc1c(Cl)c(Cl)c2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2c1Cl '
+               'NAME: 1,2,3,4,6,7,8,9-Octachlorodibenzo-p-dioxin REASON: '
+               'CORRECT Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               'False positives: SMILES: '
+               'Oc1c(Cl)cc(c(Cl)c1Cl)-c1cc(Cl)c(Cl)cc1Cl NAME: '
+               "2,2',3,4',5,5'-Hexachloro-4-biphenylol REASON: WRONGLY "
+               'CLASSIFIED Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: Oc1ccc(c(Cl)c1)-c1c(Cl)cc(Cl)cc1Cl NAME: '
+               "4-Hydroxy-2,2',4',6'-tetrachlorobiphenyl REASON: WRONGLY "
+               'CLASSIFIED Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'CN[C@H](CC(C)C)C(=O)N[C@@H]1[C@H](O)c2ccc(Oc3cc4cc(Oc5ccc(cc5Cl)[C@@H](O)[C@@H]5NC(=O)[C@H](NC(=O)[C@@H]4NC(=O)[C@H](CC(N)=O)NC1=O)c1ccc(O)c(c1)-c1c(O)cc(O)cc1[C@H](NC5=O)C(O)=O)c3O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O[C@H]1C[C@](C)(NCc3ccc(cc3)-c3ccc(Cl)cc3)[C@H](O)[C@H](C)O1)c(Cl)c2 '
+               'NAME: Chlorobiphenyl-vancomycin REASON: WRONGLY CLASSIFIED '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: Oc1c(Br)cc(Br)cc1-c1cc(Br)cc(Br)c1OP(O)(O)=O NAME: '
+               'Bromofenofos REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               'ClC1=C(O)C(Cl)=C2C([C@H]3CC=4C=C(OC)C=C(C4C([C@]3(C(C2=C1O)=O)O)=O)C5=C(OC)C=C(OC)C(=C5C)Cl)(C)C '
+               'NAME: Formicamycin H REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               '[NH3+][C@@H]1c2ccc(OS([O-])(=O)=O)c(Oc3cc(O)cc(c3)[C@@H]3NC(=O)[C@H](Cc4ccc(Oc5cc6cc(Oc7ccc(cc7Cl)[C@@H](O)[C@@H]7NC(=O)[C@H](NC(=O)[C@@H]6NC3=O)c3cc(Cl)c(O)c(c3)-c3c(O)cc(O)cc3[C@@H](NC7=O)C([O-])=O)c5[O-])c(Cl)c4)NC1=O)c2 '
+               'NAME: A47934(2-) REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               'ClC1=C(O)C=C2OC3=C(O)C=CC(=C3)[C@H](NC)C(N[C@@H]4C(N[C@@H](C1=C2)C(=O)N[C@@H]5C(=O)N[C@H]6C(=O)N[C@H](C(=O)N[C@H](C(=O)O)C=7C(C8=CC6=CC(Cl)=C8O[C@H]9O[C@@H]([C@H](O)[C@H]([C@H]9O)O)CO)=C(O)C=C(O)C7)[C@H](O[C@@H]%10O[C@@H](C(=O)O)[C@H](O)[C@H]([C@H]%10NC(=O)CCCCCC(C)C)O)C%11=CC(=C(OC=%12C=C5C=C(OC%13=C(C=C([C@H]4O)C=C%13)Cl)C%12O[C@H]%14O[C@H]([C@H](O)[C@H]([C@H]%14O)O)CO)C(Cl)=C%11)Cl)=O)=O '
+               'NAME: MM 55266 REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Oc1ccc(cc1)-c1c(Cl)c(Cl)c(O)c(Cl)c1Cl NAME: '
+               "2,3,5,6-tetrachloro-1,1'-biphenyl-4,4'-diol REASON: WRONGLY "
+               'CLASSIFIED Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'CN1[C@@H](Cc2ccc(Oc3cc4cc(-c5ccc6c(NC(=O)C6(O)C[C@@H](NC(=O)C(=O)c6cc(Cl)c(O)c(Cl)c6)C(=O)N[C@@H](C(=O)N[C@H]4C(=O)N[C@@H](C1=O)c1cc(Cl)c(O)c(Cl)c1)c1cc(Cl)c(O)c(Cl)c1)c5)c3O)cc2)C(=O)N[C@@H](C(O)=O)c1ccc(O)cc1 '
+               'NAME: complestatin B REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               '[H][C@]1(Cc2ccc(Oc3cc4cc(-c5ccc6C(C[C@@H](NC(=O)C(=O)c7cc(Cl)c(O)c(Cl)c7)C(=O)N[C@@H](C(=O)N[C@@]4([H])C(=O)N[C@@H](C(=O)N1C)c1cc(Cl)c(O)c(Cl)c1)c1cc(Cl)c(O)c(Cl)c1)C(=O)Nc6c5)c3O)cc2)C(=O)N[C@@H](C(O)=O)c1ccc(O)cc1 '
+               'NAME: complestatin A REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               'CCCCN(CCCC)CC(O)c1cc(Cl)cc2\\C(=C/c3ccc(Cl)cc3)c3cc(Cl)ccc3-c12 '
+               'NAME: lumefantrine REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Oc1c(Cl)c(Cl)c(c(Cl)c1Cl)-c1cc(Cl)c(Cl)cc1Cl NAME: '
+               "4-Hydroxy-2,2',3,4',5,5',6-heptachlorobiphenyl REASON: WRONGLY "
+               'CLASSIFIED Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'OP(O)(O)=O.OP(O)(O)=O.CN[C@H](CC(C)C)C(=O)N[C@@H]1[C@H](O)c2ccc(Oc3cc4cc(Oc5ccc(cc5Cl)[C@@H](O[C@H]5C[C@](C)(N)[C@@H](O)[C@H](C)O5)[C@@H]5NC(=O)[C@H](NC(=O)[C@@H]4NC(=O)[C@H](CC(N)=O)NC1=O)c1ccc(O)c(c1)-c1c(O)cc(O)cc1[C@H](NC5=O)C(O)=O)c3O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O[C@H]1C[C@](C)(NCc3ccc(cc3)-c3ccc(Cl)cc3)[C@@H](O)[C@H](C)O1)c(Cl)c2 '
+               'NAME: oritavancin bisphosphate REASON: WRONGLY CLASSIFIED '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: Oc1c(Cl)cc(cc1Cl)-c1ccc(Cl)cc1 NAME: '
+               "4,3',5'-Trichloro-4'-biphenol REASON: WRONGLY CLASSIFIED "
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'C[C@@H]1O[C@H](C[C@](C)(NCc2ccc(cc2)-c2ccc(Cl)cc2)[C@@H]1O)O[C@@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1Oc1c2Oc3ccc(cc3Cl)[C@@H](O)[C@@H](N)C(=O)N[C@@H](CC(N)=O)C(=O)N[C@@H]3c(c2)cc1Oc1ccc(cc1Cl)[C@@H](O)[C@@H]1NC(=O)[C@H](NC3=O)c2ccc(O)c(c2)-c2c(O)cc(O)cc2[C@H](NC1=O)C(O)=O '
+               'NAME: Chlorobiphenyl-desleucyl-vancomycin REASON: WRONGLY '
+               'CLASSIFIED Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'N[C@@H]1c2ccc(O)c(Oc3cc(O)cc(c3)[C@@H]3NC(=O)[C@H](Cc4ccc(Oc5cc6cc(Oc7ccc(cc7Cl)[C@@H](O)[C@@H]7NC(=O)[C@H](NC(=O)[C@@H]6NC3=O)c3cc(Cl)c(O)c(c3)-c3c(O)cc(O)cc3[C@@H](NC7=O)C(O)=O)c5O)c(Cl)c4)NC1=O)c2 '
+               'NAME: A41030A REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               'ClC1=C(O)C(Cl)=C(C)C(=C1O)C=2C3=C(O)C=4C(=O)C5=C(O)C(Cl)=C(OC)C=C5C(C4C=C3C(Cl)=C(C2)O)(C)C '
+               'NAME: Streptovertimycin H REASON: WRONGLY CLASSIFIED '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'CS(=O)(=O)c1cc(Cl)c(cc1Cl)-c1cc(Cl)c(cc1Cl)S(C)(=O)=O NAME: '
+               "2,2',5,5'-tetrachloro-4,4'-bis(methylsulfonyl)biphenyl REASON: "
+               'WRONGLY CLASSIFIED Halogenated dioxin/dibenzofuran/biphenyl '
+               'core with aromatic-bound halogens\n'
+               ' * SMILES: '
+               'ClC1=C(O)C(Cl)=C(C)C(=C1O)C=2C3=C(O)C=4C(=O)C5=C(O)C(Cl)=C(OC)C=C5C(C4C=C3C=C(C2)O)(C)C '
+               'NAME: Streptovertimycin F REASON: WRONGLY CLASSIFIED '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'CN[C@H](CC(C)C)C(=O)N[C@@H]1[C@H](O)c2ccc(Oc3cc4cc(Oc5ccc(cc5Cl)[C@@H](O[C@H]5C[C@](C)(N)[C@@H](O)[C@H](C)O5)[C@@H]5NC(=O)[C@H](NC(=O)[C@@H]4NC(=O)[C@H](CC(N)=O)NC1=O)c1ccc(O)c(c1)-c1c(O)cc(O)cc1[C@H](NC5=O)C(O)=O)c3O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O[C@H]1C[C@](C)(NCc3ccc(cc3)-c3ccc(Cl)cc3)[C@@H](O)[C@H](C)O1)c(Cl)c2 '
+               'NAME: oritavancin REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Oc1c(Cl)cc(cc1Cl)-c1cc(Cl)ccc1Cl NAME: '
+               "4-hydroxy-2',3,5,5'-tetrachlorobiphenyl REASON: WRONGLY "
+               'CLASSIFIED Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               '[H][C@@]12NC(=O)[C@H](NC(=O)[C@@H](Cc3c[nH]c4cc(ccc34)-c3cc1cc(Oc1ccc(C[C@H](N(C)C(=O)[C@H](NC2=O)c2cc(Cl)c(O)c(Cl)c2)C(=O)N[C@@H](C(O)=O)c2ccc(O)cc2)cc1)c3O)NC(=O)C(=O)c1cc(Cl)c(O)c(Cl)c1)c1cc(Cl)c(O)c(Cl)c1 '
+               'NAME: chloropeptin II REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: '
+               'CN1[C@@H](Cc2ccc(Oc3cc4cc(-c5ccc6c(C[C@@H](NC(=O)C(=O)c7cc(Cl)c(O)c(Cl)c7)C(=O)N[C@@H](C(=O)N[C@H]4C(=O)N[C@@H](C1=O)c1cc(Cl)c(O)c(Cl)c1)c1cc(Cl)c(O)c(Cl)c1)c[nH]c6c5)c3O)cc2)C(=O)N[C@@H](C(O)=O)c1ccc(O)cc1 '
+               'NAME: isocomplestatin REASON: WRONGLY CLASSIFIED Halogenated '
+               'dioxin/dibenzofuran/biphenyl core with aromatic-bound '
+               'halogens\n'
+               ' * SMILES: Oc1cc(Cl)c(cc1Cl)-c1cc(Cl)c(Cl)cc1Cl NAME: '
+               "4-Hydroxy-2,2',4',5,5'-pentachlorobiphenyl REASON: WRONGLY "
+               'CLASSIFIED Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               ' * SMILES: '
+               'ClC1=C(O)C(Cl)=C2C(C3=CC4=C(Cl)C(O)=CC(=C4C(=C3C(C2=C1O)=O)O)C5=C(OC)C=C(O)C(=C5C)Cl)(C)C '
+               'NAME: Naphthacemycin B12 REASON: WRONGLY CLASSIFIED '
+               'Halogenated dioxin/dibenzofuran/biphenyl core with '
+               'aromatic-bound halogens\n'
+               'False negatives: SMILES: Clc1ccc(cc1)-c1ccc(Cl)cc1 NAME: '
+               "4,4'-dichlorobiphenyl REASON: MISSED Insufficient halogens (2 "
+               'found, minimum 3)\n'
+               ' * SMILES: Clc1cc(Cl)cc(c1)-c1ccccc1 NAME: '
+               '3,5-dichlorobiphenyl REASON: MISSED Insufficient halogens (2 '
+               'found, minimum 3)\n'
+               " * SMILES: Clc1ccc(cc1)-c1ccccc1Cl NAME: 2,4'-dichlorobiphenyl "
+               'REASON: MISSED Insufficient halogens (2 found, minimum 3)\n'
+               ' * SMILES: Clc1cccc(Cl)c1-c1ccccc1 NAME: 2,6-dichlorobiphenyl '
+               'REASON: MISSED Insufficient halogens (2 found, minimum 3)\n'
+               ' * SMILES: '
+               'ClC1=C(OC)C=C(C2=C(OC)C=C(OC)C(=C2C)Cl)C3=C1C[C@@H]4C(C=5C=C(O)C=C(C5C([C@@]4(C3=O)O)=O)O)(C)C '
+               'NAME: Formicamycin Q REASON: MISSED Insufficient halogens (2 '
+               'found, minimum 3)\n'
+               ' * SMILES: Clc1ccc(Cl)c(c1)-c1ccccc1 NAME: '
+               '2,5-dichlorobiphenyl REASON: MISSED Insufficient halogens (2 '
+               'found, minimum 3)\n'
+               ' * SMILES: '
+               'OC1=C(C=C(C=C1[N+]([O-])=O)Cl)C2=C(O)C([N+](=O)[O-])=CC(=C2)Cl '
+               'NAME: niclofolan REASON: MISSED Insufficient halogens (2 '
+               'found, minimum 3)\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'C[C@@H]1OC(=O)C=C1',
-                                     'name': '(S)-5-methylfuran-2(5H)-one',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'Cc1cccc(c1)C(O)=O',
-                                     'name': 'm-toluic acid',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'CN(C)CC(=O)NC[C@@H]1[C@@H]([C@@H](N1)CO)C2=CC=C(C=C2)C3=CC=CC(=C3)C#N',
-                                     'name': 'N-[[(2S,3S,4R)-3-[4-(3-cyanophenyl)phenyl]-4-(hydroxymethyl)-2-azetidinyl]methyl]-2-(dimethylamino)acetamide',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'C[C@@H]1O[C@@H](OCCCCCCCCCC(=O)CC(O)=O)[C@H](O)C[C@H]1O',
-                                     'name': 'bkos#20',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'C([C@@](COC(CCCCCCCCC/C=C\\CCCCCC)=O)(OC(CCCCCCCCC/C=C\\CCCCCC)=O)[H])OP(=O)(O)OC[C@@](CO)([H])O',
-                                     'name': 'PG(18:1(11Z)/18:1(11Z))',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'O=C(N1C(C(=O)NC(C(=O)NC(C(=O)NC(C(=O)NC(C(=O)NC(CO)CC=2C3=C(C=CC=C3)NC2)CCC(=O)N)(C)C)(C)C)(CC)C)CCC1)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)CNC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C(NC(=O)C)CC4=CC=CC=C4)(C)C)CO)(C)C)(C)C)CC(C)C)CCC(=O)N)(C)C)(C)C)C)C)(C)C',
-                                     'name': 'Chrysospermin B',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'CC1(C=CC2=C3C(=CC(=C2O1)OC)C(=O)C(=CO3)C4=CC5=C(C=C4OC)OCO5)C',
-                                     'name': '6-methoxy-3-(6-methoxy-1,3-benzodioxol-5-yl)-8,8-dimethyl-4-pyrano[2,3-h][1]benzopyranone',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'O[C@@H]([C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)NCC(O)=O)C',
-                                     'name': 'Glu-Thr-Gly',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'O([C@H]1[C@H](O[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]3[C@@H](O)[C@H](O)[C@H](O[C@@H]3OC[C@H]4O[C@@H](O[C@H]5[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]5CO)O)[C@@H](O)[C@@H](O)[C@@H]4O)CO)[C@@H]6O[C@@H]([C@H](O)[C@H](O[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]6O)CO',
-                                     'name': '(2S,4S,5R,6R)-5-Acetamido-2-[(2S,3R,4S,5S,6R)-2-[(2R,3S,4R,5R,6S)-5-acetamido-6-[(2S,3S,4S,5S,6R)-2-[[(2R,3S,4S,5S,6S)-6-[(2R,3S,4R,5R)-5-acetamido-4,6-dihydroxy-2-(hydroxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]oxy-2-(hydroxymethyl)-4-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-3-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-4-yl]oxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
+    'sample_true_negatives': [   {   'smiles': 'CCO[C@@H]1[C@H]([C@@H](C=C(O1)C(=O)NCC#C)C2CC2)CCCO',
+                                     'name': '(2S,3S,4R)-4-cyclopropyl-2-ethoxy-3-(3-hydroxypropyl)-N-prop-2-ynyl-3,4-dihydro-2H-pyran-6-carboxamide',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'CCN(CC)CCCN1C(C(C(=O)C1=O)C(=O)C2=CC3=C(O2)C(=CC=C3)OC)C4=CC=NC=C4',
+                                     'name': 'LSM-33458',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'C1=CC=NC(=C1)CC(=O)N[C@H]2C=C[C@@H](O[C@H]2CO)CC(=O)NCCC3=CC=NC=C3',
+                                     'name': '2-[(2R,3S,6S)-2-(hydroxymethyl)-3-[[1-oxo-2-(2-pyridinyl)ethyl]amino]-3,6-dihydro-2H-pyran-6-yl]-N-(2-pyridin-4-ylethyl)acetamide',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'O=C(O)C1=C(NC(=O)CN(C(=O)[C@@H](N(C(=O)[C@@H](NC(=O)[C@@H](N(C(=O)[C@@H](N(C(=O)[C@@H](N(C(=O)[C@@H](NC(=O)[C@@H](N(C(=O)[C@@H](N(C(=O)[C@@H](NC(=O)[C@@H](N)C)[C@@H](O)C)C)[C@@H](O)C)C)C(C)C)C(C)C)C)C(C)C)C)C(C)C)C)C(C)C)C(CC)C)C)C(C)C)C)C=CC=C1',
+                                     'name': 'Dictyonamide A',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'SC[C@H](NC(=O)[C@@H](N)CCCCN)C(=O)N[C@@H](CCC(=O)N)C(O)=O',
+                                     'name': 'Lys-Cys-Gln',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'O=C1N[C@@H](C(=O)N[C@H](C(=O)N[C@@H](C(=O)O)[C@@H](C(=O)N[C@@H](CCCN=C(N)N)C(N[C@H]([C@@H](C(N[C@H](CCC(N(C1=C)C)=O)C(=O)O)=O)C)C=CC(=C[C@@H]([C@@H](OC)CC2=CC=CC=C2)C)C)=O)C)CCCC3=CC=C(O)C=C3)C',
+                                     'name': '(5R,8S,11R,12S,15S,18S,19S,22R)-15-[3-(diaminomethylideneamino)propyl]-8-[3-(4-hydroxyphenyl)propyl]-18-[(5S,6S)-6-methoxy-3,5-dimethyl-7-phenylhepta-1,3-dienyl]-1,5,12,19-tetramethyl-2-methylidene-3,6,9,13,16,20,25-heptaoxo-1,4,7,10,14,17,21-heptazacyclopentacosane-11,22-dicarboxylic '
                                              'acid',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'},
-                                 {   'smiles': 'COCCOC(C)C(O)=O',
-                                     'name': '2-(2-methoxyethoxy)propanoic '
-                                             'acid',
-                                     'reason': 'Insufficient halogen atoms for '
-                                               'a likely related compound.'}],
-    'sample_false_negatives': [   {   'smiles': 'Clc1cc(Cl)cc(c1)-c1cc(Cl)cc(Cl)c1',
-                                      'name': "3,3',5,5'-tetrachlorobiphenyl",
-                                      'reason': 'Does not match '
-                                                'polychlorinated dibenzodioxin '
-                                                'or related compound pattern.'},
-                                  {   'smiles': 'Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2c(Cl)c1Cl',
-                                      'name': '1,2,3,4,6,7,8-Heptachlorodibenzodioxin',
-                                      'reason': 'Does not match '
-                                                'polychlorinated dibenzodioxin '
-                                                'or related compound pattern.'},
-                                  {   'smiles': 'ClC1=C(O)C=2C(=O)[C@]3(O)C(=O)C4=C(C5=C(OC)C=C(OC)C(=C5C)Cl)C=C(OC)C(=C4C[C@@H]3C(C2C=C1O)(C)C)Cl',
-                                      'name': 'Formicamycin F',
-                                      'reason': 'Does not match '
-                                                'polychlorinated dibenzodioxin '
-                                                'or related compound pattern.'},
-                                  {   'smiles': 'Clc1c(Cl)c(Cl)c2Oc3ccccc3Oc2c1Cl',
-                                      'name': '1,2,3,4-tetrachlorodibenzodioxine',
-                                      'reason': 'Does not match '
-                                                'polychlorinated dibenzodioxin '
-                                                'or related compound pattern.'},
-                                  {   'smiles': 'Clc1cc(Cl)cc(c1)-c1ccccc1',
-                                      'name': '3,5-dichlorobiphenyl',
-                                      'reason': 'Insufficient halogen atoms '
-                                                'for a likely related '
-                                                'compound.'},
-                                  {   'smiles': 'Clc1cccc(Cl)c1-c1ccccc1',
-                                      'name': '2,6-dichlorobiphenyl',
-                                      'reason': 'Insufficient halogen atoms '
-                                                'for a likely related '
-                                                'compound.'},
-                                  {   'smiles': 'Clc1cc2Oc3c(Cl)c(Cl)c(Cl)c(Cl)c3Oc2cc1Cl',
-                                      'name': '1,2,3,4,7,8-Hexachlorodibenzodioxin',
-                                      'reason': 'Does not match '
-                                                'polychlorinated dibenzodioxin '
-                                                'or related compound pattern.'},
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'C1CCN(C1)CC(=O)NC2=CC=C(C=C2)OC3=CC=C(C=C3)NC(=O)CN4CCCC4',
+                                     'name': 'N-[4-[4-[[1-oxo-2-(1-pyrrolidinyl)ethyl]amino]phenoxy]phenyl]-2-(1-pyrrolidinyl)acetamide',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'S(CC[C@H](NC(=O)[C@@H](NC(=O)[C@@H](N)CC1=CC=C(O)C=C1)CC(=O)N)C(O)=O)C',
+                                     'name': 'Tyr-Asn-Met',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'CCC(=O)N[C@H]1CC[C@@H](O[C@@H]1CO)CC(=O)OC',
+                                     'name': '2-[(2R,5S,6S)-6-(hydroxymethyl)-5-(1-oxopropylamino)-2-oxanyl]acetic '
+                                             'acid methyl ester',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'},
+                                 {   'smiles': 'C[C@@H]1CCCCO[C@@H]([C@H](CN(C(=O)C2=C(O1)C=CC(=C2)NC(=O)CC3=CC=CC=C3)[C@H](C)CO)C)CN(C)C(=O)NC(C)C',
+                                     'name': 'N-[(3R,9S,10S)-12-[(2R)-1-hydroxypropan-2-yl]-3,10-dimethyl-9-[[methyl-[oxo-(propan-2-ylamino)methyl]amino]methyl]-13-oxo-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-16-yl]-2-phenylacetamide',
+                                     'reason': 'Insufficient halogens (0 '
+                                               'found, minimum 2)'}],
+    'sample_false_negatives': [   {   'smiles': 'ClC1=C(OC2=C(Cl)C=C(Cl)C=C2)C(C3=C(O)C(Cl)=CC(=C3)Cl)=CC(=C1O)Cl',
+                                      'name': 'Ambigol E',
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
+                                  {   'smiles': 'ClC1=C(O)C(Cl)=C2C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C(C2=C1O)=O)O)=O)C5=C(OC)C=C(OC)C(=C5C)Cl)(C)C',
+                                      'name': 'Formicamycin J',
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
                                   {   'smiles': 'ClC1=C(O)C(Cl)=C2C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C(C2=C1O)=O)O)=O)C5=C(O)C=C(OC)C(=C5C)Cl)(C)C',
                                       'name': 'Formicamycin I',
-                                      'reason': 'Does not match '
-                                                'polychlorinated dibenzodioxin '
-                                                'or related compound pattern.'},
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
+                                  {   'smiles': 'ClC1=C(OC2=C(Cl)C=C(Cl)C=C2)C(O)=CC(=C1C3=C(O)C(Cl)=CC(=C3)Cl)Cl',
+                                      'name': 'Ambigol D',
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
+                                  {   'smiles': 'ClC1=C(O)C=C(O)C2=C1C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C2=O)O)=O)C5=C(O)C=C(OC)C(=C5C)Cl)(C)C',
+                                      'name': 'Formicamycin D',
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
+                                  {   'smiles': 'ClC1=C(OC)C=C(C2=C(OC)C=C(OC)C(=C2C)Cl)C3=C1C[C@@H]4C(C=5C=C(O)C=C(C5C([C@@]4(C3=O)O)=O)O)(C)C',
+                                      'name': 'Formicamycin Q',
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
+                                  {   'smiles': 'ClC1=C(O)C=2C(=O)[C@]3(O)C(=O)C4=C(C5=C(OC)C=C(OC)C(=C5C)Cl)C=C(OC)C(=C4C[C@@H]3C(C2C=C1O)(C)C)Cl',
+                                      'name': 'Formicamycin F',
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
+                                  {   'smiles': 'BrC1=C(O)C(Cl)=C(O)C2=C1C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C2=O)O)=O)C5=C(OC)C=C(OC)C(=C5C)Cl)(C)C',
+                                      'name': 'Formicamycin L',
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
                                   {   'smiles': 'OC1=C(C=C(C=C1[N+]([O-])=O)Cl)C2=C(O)C([N+](=O)[O-])=CC(=C2)Cl',
                                       'name': 'niclofolan',
-                                      'reason': 'Insufficient halogen atoms '
-                                                'for a likely related '
-                                                'compound.'},
-                                  {   'smiles': 'Clc1cc2Oc3c(Oc2c(Cl)c1Cl)cc(Cl)c(Cl)c3Cl',
-                                      'name': '1,2,3,6,7,8-Hexachlorodibenzodioxin',
-                                      'reason': 'Does not match '
-                                                'polychlorinated dibenzodioxin '
-                                                'or related compound '
-                                                'pattern.'}],
-    'attempt': 4,
-    'reasoning': 'Based on the outcomes of the previous attempt, there are '
-                 'several issues contributing to the low F1 score. Let’s '
-                 'examine and address these:\n'
-                 '\n'
-                 '1. **False Positives**: The program misclassified molecules '
-                 "as belonging to the target class when they shouldn't. The "
-                 'presence of hydroxy groups (like -OH) seems to confuse the '
-                 'pattern matching. We should ensure that SMARTS patterns '
-                 'exclude molecules with functional groups that would '
-                 'typically not belong in these types of compounds.\n'
-                 '\n'
-                 '2. **False Negatives**: The program failed to identify '
-                 'several compounds that should belong to the target class. '
-                 'This might indicate inadequate or overly specific SMARTS '
-                 'patterns, or failure to encompass the variability within the '
-                 'class (like insufficient bromine or chlorine atoms being too '
-                 'strictly enforced).\n'
-                 '\n'
-                 '3. **SMARTS Pattern Flexibility**: The existing SMARTS '
-                 'patterns are potentially too rigid. These compounds are '
-                 'quite diverse, and patterns should be generalized to capture '
-                 'this diversity without setting unrealistic constraints.\n'
-                 '\n'
-                 'To improve:\n'
-                 '- Broaden the existing SMARTS patterns to catch the class '
-                 'diversity.\n'
-                 '- Add checks for high substitution of chlorine or bromine '
-                 'atoms but relax the absolute threshold slightly to capture '
-                 'more true positives.\n'
-                 '- Combine specific substructural checks to exclude common '
-                 'false positive confounders efficiently.\n'
-                 '\n'
-                 "Let's implement these improvements:",
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'},
+                                  {   'smiles': 'ClC1=C(O)C=C(O)C2=C1C([C@H]3CC=4C(Cl)=C(OC)C=C(C4C([C@]3(C2=O)O)=O)C5=C(OC)C=C(OC)C(=C5C)Cl)(C)C',
+                                      'name': 'Formicamycin E',
+                                      'reason': 'No valid '
+                                                'dioxin/dibenzofuran/biphenyl '
+                                                'core with halogen-only '
+                                                'substituents'}],
+    'attempt': 2,
+    'reasoning': '',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 28,
-    'num_false_positives': 2,
-    'num_true_negatives': 142242,
-    'num_false_negatives': 28,
+    'num_true_positives': 46,
+    'num_false_positives': 0,
+    'num_true_negatives': 142244,
+    'num_false_negatives': 10,
     'num_negatives': None,
-    'precision': 0.9333333333333333,
-    'recall': 0.5,
-    'f1': 0.6511627906976745,
-    'accuracy': 0.9997891777933943,
-    'negative_predictive_value': 0.9998031911154847}
+    'precision': 1.0,
+    'recall': 0.8214285714285714,
+    'f1': 0.9019607843137255,
+    'accuracy': 0.9999297259311314,
+    'negative_predictive_value': 0.9999297032069397}

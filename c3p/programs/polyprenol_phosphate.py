@@ -1,11 +1,6 @@
 """
 Classifies: CHEBI:16460 polyprenol phosphate
 """
-"""
-Classifies: polyprenol phosphate
-Definition: A prenol phosphate resulting from the formal condensation of the terminal allylic hydroxy group 
-of a polyprenol with 1 mol eq. of phosphoric acid.
-"""
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
@@ -13,67 +8,52 @@ from rdkit.Chem import rdMolDescriptors
 def is_polyprenol_phosphate(smiles: str):
     """
     Determines if a molecule is a polyprenol phosphate based on its SMILES string.
-    
+    A polyprenol phosphate is a prenol phosphate resulting from the formal condensation
+    of the terminal allylic hydroxy group of a polyprenol with 1 mol eq. of phosphoric acid.
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a polyprenol phosphate, False otherwise
         str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-        
-    # Look for phosphate group(s)
+
+    # Check for phosphate group (OP(O)(=O)O or OP(O)(O)=O)
     phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
-    diphosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])OP(=O)([OX2])[OX2]")
-    
-    has_phosphate = mol.HasSubstructMatch(phosphate_pattern)
-    has_diphosphate = mol.HasSubstructMatch(diphosphate_pattern)
-    
-    if not (has_phosphate or has_diphosphate):
-        return False, "No phosphate/diphosphate group found"
+    if not mol.HasSubstructMatch(phosphate_pattern):
+        return False, "No phosphate group found"
 
-    # Look for isoprene units with flexible matching for cis/trans configurations
-    isoprene_pattern = Chem.MolFromSmarts("[CH3]-[C]=[C]-[CH2]-[CH2]")
-    isoprene_pattern2 = Chem.MolFromSmarts("[CH3]-[C](-[CH3])=[C]-[CH2]")
-    
-    isoprene_matches = len(mol.GetSubstructMatches(isoprene_pattern))
-    isoprene_matches2 = len(mol.GetSubstructMatches(isoprene_pattern2))
-    total_isoprene = max(isoprene_matches, isoprene_matches2)
-    
-    if total_isoprene < 1:
-        return False, "No isoprene units found"
-    
-    # Check for allylic oxygen-phosphorus connection with flexible pattern
-    allylic_phosphate = Chem.MolFromSmarts("[CH2,CH3]-[C]=[C]-[CH2]-[OX2]P")
-    if not mol.HasSubstructMatch(allylic_phosphate):
-        return False, "No phosphate group connected to allylic position"
-        
-    # Count carbons to verify chain length
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 5:  # Minimum 1 isoprene unit (C5)
-        return False, "Carbon chain too short for polyprenol"
-        
-    # Look for characteristic branching pattern of polyprenols
-    methyl_branches = Chem.MolFromSmarts("[CH3]-[C]=[C,CH1]")
-    branch_count = len(mol.GetSubstructMatches(methyl_branches))
-    
-    if branch_count < 1:
-        return False, "No methyl branches found"
+    # Check for polyprenol chain (at least 2 isoprene units)
+    # More flexible pattern to account for different bond types and stereochemistry
+    isoprene_pattern = Chem.MolFromSmarts("[C]=[C]-[C]-[C]-[C]=[C]")
+    isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
+    if len(isoprene_matches) < 2:
+        return False, f"Found {len(isoprene_matches)} isoprene units, need at least 2"
 
-    # Check for phosphate/diphosphate at terminal position
-    terminal_phosphate = Chem.MolFromSmarts("[CH2]-[OX2]P(=O)([OX2])[OX2]")
-    terminal_diphosphate = Chem.MolFromSmarts("[CH2]-[OX2]P(=O)([OX2])OP(=O)([OX2])[OX2]")
-    
-    if not (mol.HasSubstructMatch(terminal_phosphate) or mol.HasSubstructMatch(terminal_diphosphate)):
-        return False, "Phosphate group not at terminal position"
+    # Check that the phosphate is attached to the terminal carbon of the polyprenol chain
+    # The phosphate should be connected to a carbon with a single hydroxyl group
+    # More specific pattern to ensure proper attachment
+    terminal_phosphate_pattern = Chem.MolFromSmarts("[C]([OX2]P(=O)([OX2])[OX2])~[C]=[C]")
+    if not mol.HasSubstructMatch(terminal_phosphate_pattern):
+        return False, "Phosphate not properly attached to terminal carbon of polyprenol chain"
 
-    # Success case - provide detailed reason
-    phosphate_type = "diphosphate" if has_diphosphate else "phosphate"
-    return True, f"Contains polyprenol chain with {phosphate_type} group at terminal allylic position"
+    # Check for long carbon chain (at least 6 carbons)
+    carbon_chain_pattern = Chem.MolFromSmarts("[C]~[C]~[C]~[C]~[C]~[C]")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No long carbon chain found"
+
+    # Check molecular weight - polyprenol phosphates typically have MW > 200 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 200:
+        return False, "Molecular weight too low for polyprenol phosphate"
+
+    return True, "Contains polyprenol chain with terminal phosphate group properly attached"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16460',
@@ -86,166 +66,429 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16460',
                           'xrefs': ['KEGG:C01048'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 39,
+                           'log_lines_of_code': 3.6635616461296463,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 3,
+                           'methods_called': [   'GetSubstructMatches',
+                                                 'MolFromSmarts',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmiles',
+                                                 'CalcExactMolWt'],
+                           'methods_called_count': 5,
+                           'smarts_strings': [   '[C]=[C]-[C]-[C]-[C]=[C]',
+                                                 '[C]([OX2]P(=O)([OX2])[OX2])~[C]=[C]',
+                                                 '[OX2]P(=O)([OX2])[OX2]',
+                                                 '[C]~[C]~[C]~[C]~[C]~[C]'],
+                           'smarts_strings_count': 4,
+                           'defs': ['is_polyprenol_phosphate(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No phosphate group found"',
+                                          'False, f"Found '
+                                          '{len(isoprene_matches)} isoprene '
+                                          'units, need at least 2"',
+                                          'False, "Phosphate not properly '
+                                          'attached to terminal carbon of '
+                                          'polyprenol chain"',
+                                          'False, "No long carbon chain found"',
+                                          'False, "Molecular weight too low '
+                                          'for polyprenol phosphate"',
+                                          'True, "Contains polyprenol chain '
+                                          'with terminal phosphate group '
+                                          'properly attached"'],
+                           'returns_count': 7,
+                           'complexity': 3.7327123292259294},
     'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
+               'Attempt failed: F1 score of 0.888888888888889 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'C[C@H]1O[C@H](O[C@H]2[C@@H](O)[C@H](O)[C@@H](C)O[C@@H]2O[C@@H]2[C@@H](CO)OC(OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)[C@H](NC(C)=O)[C@H]2O)[C@@H](O)[C@@H](O)[C@@H]1O '
-               'NAME: '
-               'alpha-D-rhamnosyl-(1->2)-alpha-D-rhamnosyl-(1->4)-N-acetyl-D-glucosaminyl '
-               'undecaprenyl diphosphate REASON: MISSED Not enough isoprene '
-               'units for a polyprenol\n'
-               ' * SMILES: '
-               'CC(=O)N[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1O[C@@H]1[C@@H](CO)OC(OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)[C@H](NC(C)=O)[C@H]1O '
-               'NAME: '
-               'N-acetyl-beta-D-mannosaminyl-(1->4)-N-acetyl-D-glucosaminyl '
-               'undecaprenyl diphosphate REASON: MISSED Not enough isoprene '
-               'units for a polyprenol\n'
-               ' * SMILES: '
-               'O(C/C=C(\\CC/C=C(/C)\\CC/C=C(\\CCC=C(C)C)/C)/C)P(OP(=O)(O)O)(=O)O '
-               'NAME: nerylneryl diphosphate REASON: MISSED Not enough '
-               'isoprene units for a polyprenol\n'
-               ' * SMILES: '
-               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O '
-               'NAME: all-trans-heptaprenyl diphosphate REASON: MISSED Not '
-               'enough isoprene units for a polyprenol\n'
-               ' * SMILES: '
-               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O '
-               'NAME: all-trans-pentaprenyl diphosphate REASON: MISSED Not '
-               'enough isoprene units for a polyprenol\n'
-               ' * SMILES: '
-               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O '
-               'NAME: all-trans-hexaprenyl diphosphate REASON: MISSED Not '
-               'enough isoprene units for a polyprenol\n'
-               ' * SMILES: '
-               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/COP(O)(O)=O '
-               'NAME: trans,polycis-decaprenyl phosphate REASON: MISSED Not '
-               'enough isoprene units for a polyprenol\n'
-               ' * SMILES: '
-               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/COP(O)(=O)OP(O)(O)=O '
-               'NAME: ditrans,polycis-dodecaprenyl diphosphate REASON: MISSED '
-               'Not enough isoprene units for a polyprenol\n'
-               ' * SMILES: '
-               'C[C@@H](NC(=O)[C@@H](C)NC(=O)[C@H](CCCCNC(=O)CNC(=O)CNC(=O)CNC(=O)CNC(=O)CN)NC(=O)CC[C@@H](NC(=O)[C@H](C)NC(=O)[C@@H](C)O[C@@H]1[C@@H](NC(C)=O)[C@H](O[C@H](CO)[C@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1NC(C)=O)OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)C(N)=O)C(O)=O '
-               'NAME: '
-               'undecaprenyldiphospho-N-acetyl-(N-acetylglucosaminyl)muramoyl-L-alanyl-D-isoglutaminyl-(glycyl)5-L-lysyl-D-alanyl-D-alanine '
-               'REASON: MISSED Not enough isoprene units for a polyprenol\n'
+               'True positives: SMILES: '
+               'C[C@H]1OC(OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)[C@H](NC(C)=O)[C@@H](O)[C@H]1O '
+               'NAME: N-acetyl-D-fucosaminyl undecaprenyl diphosphate REASON: '
+               'CORRECT Contains polyprenol chain with terminal phosphate '
+               'group properly attached\n'
                ' * SMILES: '
                'C[C@H]1OC(OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)[C@H](NC(C)=O)[C@@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](NC(C)=O)[C@@H]2NC(C)=O)C(O)=O)[C@H]1O '
                'NAME: '
                '2,3-diacetamido-2,3-dideoxy-beta-D-mannosyl-(1->3)-N-acetyl-D-fucosaminyl '
-               'undecaprenyl diphosphate REASON: MISSED Not enough isoprene '
-               'units for a polyprenol\n'
+               'undecaprenyl diphosphate REASON: CORRECT Contains polyprenol '
+               'chain with terminal phosphate group properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/COP(O)(=O)OP(O)(O)=O '
+               'NAME: (2Z,6Z,10Z,14Z,18Z,22Z,26Z,30Z,34E)-decaprenyl '
+               'diphosphate REASON: CORRECT Contains polyprenol chain with '
+               'terminal phosphate group properly attached\n'
+               ' * SMILES: '
+               '[H]C(CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])COP(O)(=O)OP(O)(O)=O)=C(C)CCC=C(C)C '
+               'NAME: dodecaprenyl diphosphate REASON: CORRECT Contains '
+               'polyprenol chain with terminal phosphate group properly '
+               'attached\n'
+               ' * SMILES: '
+               'C[C@@H]1O[C@@H](O[C@@H]2[C@@H](O)[C@@H](O)[C@@H](CO)O[C@H]2O[C@H]2[C@@H](O)[C@@H](CO)O[C@H](O[C@H]3[C@@H](O)[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)[C@@H]3NC(C)=O)[C@@H]2NC(C)=O)[C@@H](O)[C@H](O)[C@@H]1O '
+               'NAME: '
+               'alpha-L-Fuc-(1->2)-beta-D-Gal-(1->3)-alpha-D-GalNAc-(1->3)-alpha-D-GalNAc-diphospho-ditrans,octacis-undecaprenol '
+               'REASON: CORRECT Contains polyprenol chain with terminal '
+               'phosphate group properly attached\n'
+               ' * SMILES: '
+               '[H]C(CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])COP(O)(=O)OP(O)(O)=O)=C(C)CCC=C(C)C '
+               'NAME: octadecaprenyl diphosphate REASON: CORRECT Contains '
+               'polyprenol chain with terminal phosphate group properly '
+               'attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O '
+               'NAME: all-trans-decaprenyl diphosphate REASON: CORRECT '
+               'Contains polyprenol chain with terminal phosphate group '
+               'properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/COP(O)(=O)O[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](O)[C@H]1O '
+               'NAME: trans,octacis-decaprenylphospho-beta-D-ribofuranose '
+               '5-phosphate REASON: CORRECT Contains polyprenol chain with '
+               'terminal phosphate group properly attached\n'
+               ' * SMILES: '
+               'O(P(OP(O[C@H]1O[C@@H]([C@H]([C@@H]([C@H]1NC(=O)C)O)O[C@@H]2O[C@@H]([C@H]([C@@H]([C@H]2O)O)O)CO)CO)(O)=O)(O)=O)C/C=C(/C)\\CC/C=C(/C)\\CC/C=C(\\CC/C=C(\\CC/C=C(\\CC/C=C(\\CC/C=C(\\CC/C=C(\\CC/C=C(/CC/C=C(/CCC=C(C)C)\\C)\\C)/C)/C)/C)/C)/C)/C '
+               'NAME: beta-D-glucosyl-(1->4)-N-acetyl-alpha-D-glucosaminyl '
+               'undecaprenyl diphosphate REASON: CORRECT Contains polyprenol '
+               'chain with terminal phosphate group properly attached\n'
+               ' * SMILES: '
+               '[H]C(CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])COP(O)(=O)OP(O)(O)=O)=C(C)CCC=C(C)C '
+               'NAME: pentaprenyl diphosphate REASON: CORRECT Contains '
+               'polyprenol chain with terminal phosphate group properly '
+               'attached\n'
+               ' * SMILES: '
+               'O(P(OP(O[C@H]1O[C@@H]([C@H]([C@@H]([C@H]1NC(=O)C)O)O[C@@H]2O[C@@H]([C@H]([C@@H]([C@H]2NC(=O)C)O)OP(OC[C@@H](CO)O)(O)=O)CO)CO)(O)=O)(O)=O)C/C=C(/C)\\CC/C=C(/C)\\CC/C=C(\\CC/C=C(\\CC/C=C(\\CC/C=C(\\CC/C=C(\\CC/C=C(\\CC/C=C(/CC/C=C(/CCC=C(C)C)\\C)\\C)/C)/C)/C)/C)/C)/C '
+               'NAME: '
+               '4-O-[(2R)-1-glycerylphosphono]-N-acetyl-beta-D-mannosaminyl-(1->4)-N-acetyl-alpha-D-glucosaminyl '
+               'undecaprenyl diphosphate REASON: CORRECT Contains polyprenol '
+               'chain with terminal phosphate group properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/COP(O)(=O)OP(O)(=O)O[C@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O[C@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]3O)[C@H]2O)[C@H](O)[C@H]1O '
+               'NAME: '
+               'alpha-D-Man-(1->3)-beta-D-Glc-(1->4)-alpha-D-Glc-1-diphospho-ditrans,polycis-undecaprenol '
+               'REASON: CORRECT Contains polyprenol chain with terminal '
+               'phosphate group properly attached\n'
+               ' * SMILES: '
+               '[H]C(CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])COP(O)(=O)OP(O)(=O)O[C@@H]1O[C@H](CO)[C@H](O)[C@H](O[C@@H]2O[C@@H](C)[C@H](O[C@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]3O)[C@@H](O)[C@H]2O)[C@H]1O)=C(C)CCC=C(C)C '
+               'NAME: '
+               'alpha-D-mannosyl-(1->4)-alpha-L-rhamnosyl-(1->3)-beta-D-galactosyl-1-diphosphodecaprenol '
+               'REASON: CORRECT Contains polyprenol chain with terminal '
+               'phosphate group properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/COP(O)(O)=O '
+               'NAME: ditrans,polycis-undecaprenyl phosphate REASON: CORRECT '
+               'Contains polyprenol chain with terminal phosphate group '
+               'properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O '
+               'NAME: all-trans-tridecaprenyl diphosphate REASON: CORRECT '
+               'Contains polyprenol chain with terminal phosphate group '
+               'properly attached\n'
+               ' * SMILES: '
+               'C[C@@H](NC(=O)[C@@H](C)NC(=O)[C@H](CCCCNC(=O)CNC(=O)CNC(=O)CNC(=O)CNC(=O)CN)NC(=O)CC[C@@H](NC(=O)[C@H](C)NC(=O)[C@@H](C)O[C@@H]1[C@@H](NC(C)=O)[C@H](O[C@H](CO)[C@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1NC(C)=O)OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)C(N)=O)C(O)=O '
+               'NAME: '
+               'undecaprenyldiphospho-N-acetyl-(N-acetylglucosaminyl)muramoyl-L-alanyl-D-isoglutaminyl-(glycyl)5-L-lysyl-D-alanyl-D-alanine '
+               'REASON: CORRECT Contains polyprenol chain with terminal '
+               'phosphate group properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP(O)(O)=O '
+               'NAME: decaprenol phosphate REASON: CORRECT Contains polyprenol '
+               'chain with terminal phosphate group properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/COP(O)(=O)O[C@@H]1O[C@H](CO)[C@@H](O)C1=O '
+               'NAME: '
+               'trans,octacis-decaprenylphospho-beta-D-erythro-pentofuranosid-2-ulose '
+               'REASON: CORRECT Contains polyprenol chain with terminal '
+               'phosphate group properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP(O)(O)=O '
+               'NAME: undecaprenyl dihydrogen phosphate REASON: CORRECT '
+               'Contains polyprenol chain with terminal phosphate group '
+               'properly attached\n'
+               ' * SMILES: CC(C)=CCCC(C)=CCCC(C)=CCCC(C)=CCOP(O)(=O)OP(O)(O)=O '
+               'NAME: geranylgeranyl diphosphate REASON: CORRECT Contains '
+               'polyprenol chain with terminal phosphate group properly '
+               'attached\n'
+               ' * SMILES: '
+               'C[C@H]1O[C@H](OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)[C@H](NC(C)=O)[C@@H](O[C@H]2O[C@H](CO)[C@H](O[C@H]3O[C@H](CO)[C@H](O[C@H]4O[C@H](CO)[C@H](O[C@H]5O[C@H](CO)[C@H](O[C@H]6O[C@H](CO)[C@H](O)[C@H](O)[C@H]6NC(C)=O)[C@H](O)[C@H]5NC(C)=O)[C@H](O)[C@H]4NC(C)=O)[C@H](O)[C@H]3NC(C)=O)[C@H](O)[C@H]2NC(C)=O)[C@@H]1NC(C)=O '
+               'NAME: '
+               '[alpha-D-GalNAc-(1->4)]4-alpha-D-GalNAc-(1->3)-alpha-D-diNAcBac-tritrans,heptacis-undecaprenyl '
+               'diphosphate REASON: CORRECT Contains polyprenol chain with '
+               'terminal phosphate group properly attached\n'
+               ' * SMILES: '
+               '[H]C(CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])COP(O)(=O)OP(O)(O)=O)=C(C)CCC=C(C)C '
+               'NAME: nonaprenyl diphosphate REASON: CORRECT Contains '
+               'polyprenol chain with terminal phosphate group properly '
+               'attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/CC\\C(C)=C/COP(O)(=O)OP(O)(O)=O '
+               'NAME: ditrans,polycis-tetradecaprenyl diphosphate REASON: '
+               'CORRECT Contains polyprenol chain with terminal phosphate '
+               'group properly attached\n'
+               ' * SMILES: '
+               '[H]C(CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])CCC(C)=C([H])COP(O)(=O)OP(O)(O)=O)=C(C)CCC=C(C)C '
+               'NAME: hexaprenyl diphosphate REASON: CORRECT Contains '
+               'polyprenol chain with terminal phosphate group properly '
+               'attached\n'
+               ' * SMILES: '
+               'CC(=O)N[C@@H]1[C@@H](O)[C@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@@H](CO)OC1OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C '
+               'NAME: beta-D-glucosyl-(1->4)-N-acetyl-D-glucosaminyl '
+               'undecaprenyl diphosphate REASON: CORRECT Contains polyprenol '
+               'chain with terminal phosphate group properly attached\n'
+               'False positives: SMILES: '
+               'C(\\C=C(\\CC\\C=C(\\CCC=C(C)C)/C)/C)C\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/COP(OP(O)(O)=O)(O)=O '
+               'NAME: ditrans,polycis-octaprenyl diphosphate REASON: WRONGLY '
+               'CLASSIFIED Contains polyprenol chain with terminal phosphate '
+               'group properly attached\n'
+               ' * SMILES: '
+               'P(=O)(OC1C=CC(=CCC(OC(=O)CC(=C)C(CC=CC=CC=CC=CC(=CC1O)C)C)/C=C/C(/C=C\\C=C)C)C)(O)O '
+               'NAME: Rowithocin A REASON: WRONGLY CLASSIFIED Contains '
+               'polyprenol chain with terminal phosphate group properly '
+               'attached\n'
+               ' * SMILES: '
+               'C(\\C=C(\\CC\\C=C(\\CCC=C(C)C)/C)/C)C\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/COP(OP(O)(O)=O)(O)=O '
+               'NAME: ditrans,polycis-nonaprenyl diphosphate REASON: WRONGLY '
+               'CLASSIFIED Contains polyprenol chain with terminal phosphate '
+               'group properly attached\n'
+               ' * SMILES: '
+               'C(\\C=C(\\CC\\C=C(\\CCC=C(C)C)/C)/C)C\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/COP(OP(O)(O)=O)(O)=O '
+               'NAME: ditrans,polycis-heptaprenyl diphosphate REASON: WRONGLY '
+               'CLASSIFIED Contains polyprenol chain with terminal phosphate '
+               'group properly attached\n'
+               ' * SMILES: '
+               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C/CC\\C(C)=C/COP(O)(=O)OP(O)(O)=O '
+               'NAME: ditrans,polycis-pentaprenyl diphosphate REASON: WRONGLY '
+               'CLASSIFIED Contains polyprenol chain with terminal phosphate '
+               'group properly attached\n'
+               ' * SMILES: '
+               '[C@@H]1([C@@H]([C@H](OC([C@@H]1NC(C)=O)OP(OP(OC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\CC\\C=C(\\CCC=C(C)C)/C)/C)(O)=O)(O)=O)CO)O[C@H]2[C@@H]([C@H]([C@H](O)[C@H](O2)CO)O)NC(C)=O)OC(C(N[C@H](C(NC(CCC(N[C@H](C(N[C@@H](C(N[C@@H](C(O)=O)C)=O)C)=O)CCCCNC([C@@H](N)C)=O)=O)C(O)=O)=O)C)=O)C '
+               'NAME: '
+               'Undecaprenyl-diphospho-N-acetylmuramoyl-(N-acetylglucosamine)-L-alanyl-gamma-D-glutamyl-L-lysyl-(L-alanyl)-D-alanyl-D-alanine '
+               'REASON: WRONGLY CLASSIFIED Contains polyprenol chain with '
+               'terminal phosphate group properly attached\n'
+               ' * SMILES: '
+               'C(\\C=C(\\CC\\C=C(\\CCC=C(C)C)/C)/C)C\\C(\\C)=C/CC\\C(\\C)=C/CC\\C(\\C)=C/COP(OP(O)(O)=O)(O)=O '
+               'NAME: ditrans,polycis-hexaprenyl diphosphate REASON: WRONGLY '
+               'CLASSIFIED Contains polyprenol chain with terminal phosphate '
+               'group properly attached\n'
+               ' * SMILES: '
+               'O1[C@@H]([C@H](O)[C@@H]([C@H]([C@@H]1OP(=O)(O)OC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC/C=C(\\CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\CC\\C=C(\\CCC=C(C)C)/C)/C)/C)O)O)C(O)=O '
+               'NAME: ditrans,polycis-dodecaprenyl phosphate-GalA REASON: '
+               'WRONGLY CLASSIFIED Contains polyprenol chain with terminal '
+               'phosphate group properly attached\n'
+               ' * SMILES: '
+               '[C@@H]1([C@@H]([C@H](OC([C@@H]1NC(C)=O)OP(OP(OC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\C)/CC\\C=C(\\CC\\C=C(\\CCC=C(C)C)/C)/C)(O)=O)(O)=O)CO)O[C@H]2[C@@H]([C@H]([C@H](O)[C@H](O2)CO)O)NC(C)=O)OC(C(N[C@H](C(NC(CCC(N[C@H](C(N[C@@H](C(N[C@@H](C(O)=O)C)=O)C)=O)CCCCNC([C@@H](NC([C@@H](N)C)=O)C)=O)=O)C(O)=O)=O)C)=O)C '
+               'NAME: '
+               'Undecaprenyl-diphospho-N-acetylmuramoyl-(N-acetylglucosamine)-L-alanyl-gamma-D-glutamyl-L-lysyl-(L-alanyl-L-alanyl)-D-alanyl-D-alanine '
+               'REASON: WRONGLY CLASSIFIED Contains polyprenol chain with '
+               'terminal phosphate group properly attached\n'
+               'False negatives: SMILES: '
+               'CC(C)=CCCC(C)=CCCC(C)=CCOP(O)(=O)OP(O)(O)=O NAME: farnesyl '
+               'diphosphate REASON: MISSED Found 2 isoprene units, need at '
+               'least 3\n'
+               ' * SMILES: '
+               'CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC\\C(C)=C\\COP(O)(O)=O NAME: '
+               'phytyl phosphate REASON: MISSED Found 0 isoprene units, need '
+               'at least 3\n'
+               ' * SMILES: '
+               'CC(CCOP(O)(=O)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C '
+               'NAME: beta-D-mannosyl C35-phosphodolichol REASON: MISSED '
+               'Phosphate not properly attached to terminal carbon of '
+               'polyprenol chain\n'
+               ' * SMILES: CC(C)=CCC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O NAME: '
+               'geranyl diphosphate REASON: MISSED Found 1 isoprene units, '
+               'need at least 3\n'
+               ' * SMILES: CC(C)=CCC\\C(C)=C\\CCC(C)(OP(O)(=O)OP(O)(O)=O)C=C '
+               'NAME: nerolidyl diphosphate REASON: MISSED Found 1 isoprene '
+               'units, need at least 3\n'
+               ' * SMILES: CC(C)=CCC\\C(C)=C/COP(O)(=O)OP(O)(O)=O NAME: neryl '
+               'diphosphate REASON: MISSED Found 1 isoprene units, need at '
+               'least 3\n'
+               ' * SMILES: CC(C)=CCC\\C(C)=C/CC\\C(C)=C/COP(O)(=O)OP(O)(O)=O '
+               'NAME: 2-cis,6-cis-farnesyl diphosphate REASON: MISSED Found 2 '
+               'isoprene units, need at least 3\n'
+               ' * SMILES: '
+               'CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O '
+               'NAME: phytyl diphosphate REASON: MISSED Found 0 isoprene '
+               'units, need at least 3\n'
+               ' * SMILES: CC(C)=CCC\\C(C)=C\\CC\\C(C)=C/COP(O)(=O)OP(O)(O)=O '
+               'NAME: 2-cis,6-trans-farnesyl diphosphate REASON: MISSED Found '
+               '2 isoprene units, need at least 3\n'
+               ' * SMILES: '
+               'P(O[C@@H]1OC([C@@H](O)[C@H](O)C1O)CO)(OCCC[C@H](CCC[C@H](CCC[C@H](CCC[C@H](CCC[C@H](CCCCCCCCC)C)C)C)C)C)(O)=O '
+               'NAME: Mannosyl-1beta-phosphomycoketide C34 REASON: MISSED '
+               'Found 0 isoprene units, need at least 3\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'S(=O)(=O)(C1=C2C(=CC3=C1NC=4C=CC=CC34)[C@@]5([C@H]([C@](C(=O)O)([C@@H](O)CC5)C)CC2)C)C6=CC7=C(NC8=C7C=C9[C@@]%10([C@H]([C@](C(=O)O)([C@@H](O)CC%10)C)CCC9=C8)C)C=C6',
-                                     'name': 'Sulfadixiamycin C',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'CNC(O)=O',
-                                     'name': 'methylcarbamic acid',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'CCNC(=O)NC1=CC2=C(C=C1)OC[C@H]3[C@@H](CC[C@H](O3)CC(=O)N[C@@H](C)C4=CC=CC=C4)N(C2=O)C',
-                                     'name': '2-[(2S,4aR,12aR)-8-(ethylcarbamoylamino)-5-methyl-6-oxo-2,3,4,4a,12,12a-hexahydropyrano[2,3-c][1,5]benzoxazocin-2-yl]-N-[(1S)-1-phenylethyl]acetamide',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'O([C@H]1O[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O)[C@H]3O)CO[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O)[C@@H]1O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]5NC(=O)C)CO)CO)[C@H]8[C@H](O)[C@H](O[C@@H](O[C@H]9[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]9CO)O[C@H]%10[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]%10CO[C@@H]%11O[C@H]([C@@H](O)[C@@H](O)[C@@H]%11O)C)O)[C@H]8O)CO[C@H]%12O[C@@H]([C@@H](O)[C@H](O)[C@@H]%12O[C@@H]%13O[C@@H]([C@@H](O[C@@H]%14O[C@@H]([C@H](O)[C@H](O[C@]%15(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%15)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%14O)CO)[C@H](O)[C@H]%13NC(=O)C)CO)CO[C@@H]%16O[C@@H]([C@@H](O[C@@H]%17O[C@@H]([C@H](O)[C@H](O)[C@H]%17O)CO[C@]%18(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%18)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]%16NC(=O)C)CO',
-                                     'name': 'CID 91851985',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'O(C(=O)C(C1C(CN2C(C1)C=3NC=4C(C3CC2)=CC=CC4)CC)=COC)C',
-                                     'name': 'Methyl '
-                                             '2-(3-ethyl-1,2,3,4,6,7,12,12b-octahydroindolo[2,3-a]quinolizin-2-yl)-3-methoxyprop-2-enoate',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'O[C@H](/C=C/C=C/C=C/[C@H](O)[C@H](O)C=C)[C@H](O)/C=C/C',
-                                     'name': 'Separacene C',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'C[C@@H]1O[C@@H](O[C@@H]2[C@@H](CO)O[C@@H](O[C@@H]3[C@@H](O)C(O)O[C@H](CO)[C@@H]3O)[C@H](NC(C)=O)[C@H]2O[C@@H]2O[C@H](CO)[C@H](O)[C@H](OS(O)(=O)=O)[C@H]2O)[C@@H](O)[C@H](O)[C@@H]1O',
-                                     'name': 'alpha-L-Fucp-(1->4)-[beta-D-Galp3S-(1->3)]-beta-D-GlcpNAc-(1->3)-D-Galp',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'C1=CC=CC2=C1C(N([C@H](C(N2)=O)CC=3C=CC(=CC3)OC)C)=O',
-                                     'name': "(S)-4'-methoxycyclopeptine",
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'O=C(N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(O)=O)[C@@H](NC(=O)[C@@H](N)C(C)C)C(C)C',
-                                     'name': 'Val-Val-Trp',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'},
-                                 {   'smiles': 'C=1C(=C(C=CC1/C=C/CO)OC(CO)C(O)C=2C=C(C(=CC2)O)OC)OC',
-                                     'name': 'guaiacylglycerol beta-coniferyl '
-                                             'ether',
-                                     'reason': 'No phosphate/diphosphate group '
-                                               'found'}],
-    'sample_false_negatives': [   {   'smiles': 'CC(C)=CCC\\C(C)=C\\CCC(C)(OP(O)(=O)OP(O)(O)=O)C=C',
-                                      'name': 'nerolidyl diphosphate',
-                                      'reason': 'No phosphate group connected '
-                                                'to allylic position'},
-                                  {   'smiles': 'P(O[C@@H]1OC[C@@H](O)[C@H](O)C1O)(OCCC(CC/C=C(\\CC/C=C(/CC/C=C(/CCC=C(C)C)\\C)\\C)/C)C)(O)=O',
-                                      'name': 'dolichyl-4-D-xylosyl phosphate',
-                                      'reason': 'No phosphate group connected '
-                                                'to allylic position'},
-                                  {   'smiles': 'CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC\\C(C)=C\\COP(O)(O)=O',
+    'sample_true_negatives': [   {   'smiles': 'C1COCCN1C2=C(C=C(C=C2)C(F)(F)F)NC(=O)C3=CC(=CN=C3)Br',
+                                     'name': '5-bromo-N-[2-(4-morpholinyl)-5-(trifluoromethyl)phenyl]-3-pyridinecarboxamide',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'C[C@H]1C[C@@H]2CC[C@@H](O2)[C@@H](C)C(=O)O[C@H](C)C[C@H]2CC[C@H](O2)[C@H](C)C(=O)O[C@@H](C)C[C@@H]2CC[C@@H](O2)[C@@H](C)C(=O)O[C@H](C)C[C@H]2CC[C@H](O2)[C@H](C)C(=O)O1',
+                                     'name': 'Nonactin',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O1OC23C(C14C(C5C(C(CC5)C(CCC(C(C)C)C)C)(CC4)C)=CC2=O)(CCC(O)C3)C',
+                                     'name': '5,9-Epidioxy-3-hydroxyergost-7-en-6-one',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'CC1=C(SC=C1)C(=O)N2CCCC(C2)CNS(=O)(=O)C3=CC=C(C=C3)OC',
+                                     'name': '4-methoxy-N-[[1-[(3-methyl-2-thiophenyl)-oxomethyl]-3-piperidinyl]methyl]benzenesulfonamide',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O(C(=O)CCCCCCCCCCCCCCC)C[C@@H](O)COC(=O)CCCCCCCCC/C=C\\CCCCCCCC',
+                                     'name': 'DG(16:0/0:0/20:1n9)',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'Oc1cc2CC3(O)COc4c(O)c(O)ccc4C3c2cc1O',
+                                     'name': 'haematoxylin',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O([C@@H]1[C@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO)O)O[C@@H]([C@H]1O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O[C@H]5O[C@@H]([C@@H](O)[C@H](O)[C@@H]5O)CO)[C@@H]4O)CO[C@H]6O[C@@H]([C@@H](O)[C@H](O)[C@@H]6O[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O)CO)CO)[C@H]8O[C@@H]([C@@H](O)[C@H](O)[C@@H]8O[C@@H]9O[C@@H]([C@@H](O[C@@H]%10O[C@@H]([C@H](O)[C@H](O)[C@H]%10O)CO)[C@H](O)[C@H]9NC(=O)C)CO)CO',
+                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5R,6R)-4-[(2R,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-4-hydroxy-6-(hydroxymethyl)-5-[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2S,3S,4S,5R,6R)-6-[[(2S,3S,4S,5S,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,5-dihydroxy-4-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O([C@@H]1[C@H](O)[C@@H](O)[C@@H](O[C@@H]1CO)O)[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO',
+                                     'name': 'beta-D-Glcp-(1->4)-beta-D-Galp',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O=C(N)C(/C=C/[N+]([O-])=NC(C(O)C)C)CCC',
+                                     'name': 'Maniwamycin F',
+                                     'reason': 'No phosphate group found'},
+                                 {   'smiles': 'O1C2=C(C(=O)C(C3=C(O)C=C(O)C=C3)=C1)C(OC)=CC(O)=C2',
+                                     'name': 'Barpisoflavone A',
+                                     'reason': 'No phosphate group found'}],
+    'sample_false_negatives': [   {   'smiles': 'CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC\\C(C)=C\\COP(O)(O)=O',
                                       'name': 'phytyl phosphate',
-                                      'reason': 'No isoprene units found'},
-                                  {   'smiles': 'CC(C)CCCC(C)CCCC(C)CCC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O',
-                                      'name': '(E)-3,7,11,15-tetramethylhexadec-2-en-1-yl '
-                                              'diphosphate',
-                                      'reason': 'No isoprene units found'},
-                                  {   'smiles': 'CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O',
-                                      'name': 'phytyl diphosphate',
-                                      'reason': 'No isoprene units found'},
+                                      'reason': 'Found 0 isoprene units, need '
+                                                'at least 2'},
                                   {   'smiles': 'CC(CCOP(O)(=O)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@@H]1O)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C',
                                       'name': 'beta-D-mannosyl '
                                               'C35-phosphodolichol',
-                                      'reason': 'No phosphate group connected '
-                                                'to allylic position'},
+                                      'reason': 'Phosphate not properly '
+                                                'attached to terminal carbon '
+                                                'of polyprenol chain'},
+                                  {   'smiles': 'CC(C)=CCC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O',
+                                      'name': 'geranyl diphosphate',
+                                      'reason': 'Found 1 isoprene units, need '
+                                                'at least 2'},
+                                  {   'smiles': 'CC(C)=CCC\\C(C)=C\\CCC(C)(OP(O)(=O)OP(O)(O)=O)C=C',
+                                      'name': 'nerolidyl diphosphate',
+                                      'reason': 'Found 1 isoprene units, need '
+                                                'at least 2'},
+                                  {   'smiles': 'CC(C)=CCC\\C(C)=C/COP(O)(=O)OP(O)(O)=O',
+                                      'name': 'neryl diphosphate',
+                                      'reason': 'Found 1 isoprene units, need '
+                                                'at least 2'},
+                                  {   'smiles': 'CC(C)CCC[C@@H](C)CCC[C@@H](C)CCC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O',
+                                      'name': 'phytyl diphosphate',
+                                      'reason': 'Found 0 isoprene units, need '
+                                                'at least 2'},
                                   {   'smiles': 'P(O[C@@H]1OC([C@@H](O)[C@H](O)C1O)CO)(OCCC[C@H](CCC[C@H](CCC[C@H](CCC[C@H](CCC[C@H](CCCCCCCCC)C)C)C)C)C)(O)=O',
                                       'name': 'Mannosyl-1beta-phosphomycoketide '
                                               'C34',
-                                      'reason': 'No isoprene units found'}],
-    'attempt': 1,
-    'reasoning': 'Looking at the failed outcomes, I notice that the program '
-                 'incorrectly rejected many valid polyprenol phosphates. The '
-                 'main issues appear to be:\n'
+                                      'reason': 'Found 0 isoprene units, need '
+                                                'at least 2'},
+                                  {   'smiles': 'CC(C)CCCC(C)CCCC(C)CCC\\C(C)=C\\COP(O)(=O)OP(O)(O)=O',
+                                      'name': '(E)-3,7,11,15-tetramethylhexadec-2-en-1-yl '
+                                              'diphosphate',
+                                      'reason': 'Found 0 isoprene units, need '
+                                                'at least 2'},
+                                  {   'smiles': 'P(O[C@@H]1OC[C@@H](O)[C@H](O)C1O)(OCCC(CC/C=C(\\CC/C=C(/CC/C=C(/CCC=C(C)C)\\C)\\C)/C)C)(O)=O',
+                                      'name': 'dolichyl-4-D-xylosyl phosphate',
+                                      'reason': 'Phosphate not properly '
+                                                'attached to terminal carbon '
+                                                'of polyprenol chain'},
+                                  {   'smiles': 'CC(=CCC/C(=C/COP(O)(=O)O)/C)C',
+                                      'name': 'geranyl phosphate',
+                                      'reason': 'Found 1 isoprene units, need '
+                                                'at least 2'}],
+    'attempt': 5,
+    'reasoning': 'The previous code had a few issues that led to both false '
+                 'positives and false negatives:\n'
                  '\n'
-                 '1. The isoprene pattern detection was too strict - using '
-                 '"C=C-C(C)-C" misses many valid isoprene units because '
-                 'polyprenols can have both cis and trans configurations, and '
-                 'the SMILES notation uses different symbols for these (\\, /, '
-                 'or none).\n'
+                 '1. **False Positives**: The code incorrectly classified some '
+                 'molecules because:\n'
+                 '   - The phosphate pattern was too general and could match '
+                 'phosphate groups not attached to the polyprenol chain.\n'
+                 '   - The isoprene unit pattern was too flexible and could '
+                 'match non-isoprene units.\n'
+                 '   - The terminal phosphate attachment check was not strict '
+                 'enough.\n'
                  '\n'
-                 '2. The minimum requirements were too restrictive - the code '
-                 'required at least 2 isoprene units, but some valid compounds '
-                 'like geranyl phosphate (2 units) were missed.\n'
+                 '2. **False Negatives**: The code missed some valid '
+                 'polyprenol phosphates because:\n'
+                 '   - The isoprene unit count requirement was too strict '
+                 '(needing at least 3 units).\n'
+                 '   - The terminal double bond check was too restrictive and '
+                 'missed some valid structures.\n'
+                 '   - The carbon chain length requirement was too strict.\n'
                  '\n'
-                 '3. The conjugated double bonds check was incorrect - some '
-                 'valid polyprenol phosphates can appear to have conjugated '
-                 'bonds in their SMILES representation due to the way '
-                 'cis/trans bonds are written.\n'
+                 'To improve the code, we need to:\n'
+                 '- Make the phosphate attachment check more specific.\n'
+                 '- Relax the isoprene unit count requirement.\n'
+                 '- Remove the strict terminal double bond check.\n'
+                 '- Adjust the carbon chain length requirement.\n'
                  '\n'
-                 "Here's an improved version:",
+                 'Here is the improved code:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 104,
-    'num_false_positives': 15,
-    'num_true_negatives': 142174,
-    'num_false_negatives': 7,
+    'num_true_positives': 101,
+    'num_false_positives': 9,
+    'num_true_negatives': 142180,
+    'num_false_negatives': 10,
     'num_negatives': None,
-    'precision': 0.8739495798319328,
-    'recall': 0.9369369369369369,
-    'f1': 0.9043478260869565,
-    'accuracy': 0.9998453970484891,
-    'negative_predictive_value': 0.9999507669801169}
+    'precision': 0.9181818181818182,
+    'recall': 0.9099099099099099,
+    'f1': 0.914027149321267,
+    'accuracy': 0.9998664792691497,
+    'negative_predictive_value': 0.9999296715662143}

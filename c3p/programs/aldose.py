@@ -120,6 +120,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:15693',
                           'xrefs': ['KEGG:C01370', 'Wikipedia:Aldose'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Attempt failed: F1 score of 0.7792207792207793 is too low.\n'
                'Outcomes:\n'

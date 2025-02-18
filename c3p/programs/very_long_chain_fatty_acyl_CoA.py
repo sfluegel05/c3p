@@ -104,6 +104,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:61910',
                                        'PMID:20798351'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                "Error: 'Mol' object has no attribute 'HasSubstructMatches'\n"
                'Attempt failed: F1 score of 0 is too low.\n'

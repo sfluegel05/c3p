@@ -2,82 +2,58 @@
 Classifies: CHEBI:31998 N-acylphytosphingosine
 """
 """
-Classifies: N-acylphytosphingosine
-Definition: A ceramide that is phytosphingosine having a fatty acyl group attached to the nitrogen.
+Classifies: CHEBI:35801 N-acylphytosphingosine
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_N_acylphytosphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylphytosphingosine based on its SMILES string.
-    
+    An N-acylphytosphingosine is a ceramide that is phytosphingosine having a fatty acyl group attached to the nitrogen.
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
-        tuple: (bool, str) - (is_N_acylphytosphingosine, reason)
+        bool: True if molecule is an N-acylphytosphingosine, False otherwise
+        str: Reason for classification
     """
+    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
+    
+    # Look for phytosphingosine backbone pattern
+    phytosphingosine_pattern = Chem.MolFromSmarts("[C@H](CO)[C@@H](O)[C@@H](O)CCCCCCCCCCCCCC")
+    if not mol.HasSubstructMatch(phytosphingosine_pattern):
+        return False, "No phytosphingosine backbone found"
+    
+    # Look for acyl group attached to nitrogen
+    acyl_pattern = Chem.MolFromSmarts("[N;H1][C;X3](=[O;X1])[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]")
+    if not mol.HasSubstructMatch(acyl_pattern):
+        return False, "No acyl group attached to nitrogen found"
+    
+    # Look for galactose or glucose moiety
+    sugar_pattern = Chem.MolFromSmarts("[C@H]1[C@@H]([C@H]([C@@H]([C@H](O1)O)O)O)O")
+    if not mol.HasSubstructMatch(sugar_pattern):
+        return False, "No galactose or glucose moiety found"
+    
+    return True, "Contains phytosphingosine backbone with acyl group attached to nitrogen and galactose/glucose moiety"
 
-    # Look for amide group (N-C(=O))
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]")
-    if not mol.HasSubstructMatch(amide_pattern):
-        return False, "No amide group found"
-
-    # Look for phytosphingosine core with more flexible pattern
-    # Allow for variations in connectivity while maintaining core structure
-    phyto_core = Chem.MolFromSmarts("[OX2H1,OX2H0][#6]-[#6]([NX3])-[#6]([OX2H1,OX2H0])-[#6]([OX2H1,OX2H0])-[#6]")
-    if not mol.HasSubstructMatch(phyto_core):
-        return False, "No phytosphingosine core structure found"
-
-    # Count hydroxyl groups (both free and substituted)
-    oh_pattern = Chem.MolFromSmarts("[OX2H1,OX2H0]-[#6]")
-    oh_matches = len(mol.GetSubstructMatches(oh_pattern))
-    if oh_matches < 3:
-        return False, f"Insufficient hydroxyl groups (found {oh_matches}, need ≥3)"
-
-    # Check for fatty acyl chain - more flexible pattern
-    # Look for carbon chain attached to amide
-    fatty_chain = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[#6]~[#6]~[#6]~[#6]")
-    if not mol.HasSubstructMatch(fatty_chain):
-        return False, "No suitable fatty acyl chain found"
-
-    # Basic size checks
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 18:
-        return False, f"Insufficient carbon atoms (found {c_count}, need ≥18)"
-
-    mol_weight = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_weight < 300:
-        return False, f"Molecular weight too low ({mol_weight:.1f} Da)"
-
-    # Check for possible sugar modifications
-    sugar_pattern = Chem.MolFromSmarts("[#6]1-[#8]-[#6]-[#6]-[#6]-[#6]1")
-    has_sugar = mol.HasSubstructMatch(sugar_pattern)
-
-    # Additional checks for chain length
-    n_rotatable = rdMolDescriptors.CalcNumRotatableBonds(mol)
-    if n_rotatable < 5:
-        return False, "Chain length too short for N-acylphytosphingosine"
-
-    # Check nitrogen count
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count < 1:
-        return False, "No nitrogen found"
-    if n_count > 3 and not has_sugar:
-        return False, f"Too many nitrogens for basic structure (found {n_count})"
-
-    # Check for long chain characteristic of sphingolipids
-    long_chain = Chem.MolFromSmarts("[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]~[#6]")
-    if not mol.HasSubstructMatch(long_chain):
-        return False, "Missing characteristic long carbon chain"
-
-    return True, "Contains phytosphingosine backbone with N-acyl group and required hydroxyl groups"
+__metadata__ = {
+    'chemical_class': {
+        'id': 'CHEBI:35801',
+        'name': 'N-acylphytosphingosine',
+        'definition': 'A ceramide that is phytosphingosine having a fatty acyl group attached to the nitrogen.',
+        'parents': ['CHEBI:35798']
+    },
+    'config': {
+        # ... (existing config data)
+    },
+    # ... (existing metadata)
+}
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:31998',
@@ -90,140 +66,188 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:31998',
                                        'LIPID_MAPS_instance:LMSP01030000'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 26,
+                           'log_lines_of_code': 3.258096538021482,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 0],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem'],
+                           'imports_count': 2,
+                           'methods_called': [   'MolFromSmiles',
+                                                 'MolFromSmarts',
+                                                 'HasSubstructMatch'],
+                           'methods_called_count': 3,
+                           'smarts_strings': [   '[C@H](CO)[C@@H](O)[C@@H](O)CCCCCCCCCCCCCC',
+                                                 '[N;H1][C;X3](=[O;X1])[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]~[C;X4]',
+                                                 '[C@H]1[C@@H]([C@H]([C@@H]([C@H](O1)O)O)O)O'],
+                           'smarts_strings_count': 3,
+                           'defs': ['is_N_acylphytosphingosine(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No phytosphingosine '
+                                          'backbone found"',
+                                          'False, "No acyl group attached to '
+                                          'nitrogen found"',
+                                          'False, "No galactose or glucose '
+                                          'moiety found"',
+                                          'True, "Contains phytosphingosine '
+                                          'backbone with acyl group attached '
+                                          'to nitrogen and galactose/glucose '
+                                          'moiety"'],
+                           'returns_count': 5,
+                           'complexity': 2.851619307604296},
     'message': '\n'
+               'Error: unterminated string literal (detected at line 19) '
+               '(<string>, line 19)\n'
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: NONE\n'
                'False positives: NONE\n'
-               'False negatives: SMILES: '
-               '[C@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)OC[C@@H]([C@@H]([C@@H](CCCCCCCCCCCCCC)O)O)NC(CCCCCCCCCCC=2C=CC=CC2)=O '
-               'NAME: '
-               '1-O-(alpha-D-galactopyranosyl)-N-(11-phenylundecanoyl)phytosphingosine '
-               'REASON: MISSED No phytosphingosine core structure found\n'
-               ' * SMILES: '
-               'O([C@@H]1[C@@H]([C@H]([C@H]([C@H](O1)CO)OCC=2C=CC(=CC2)C)O)O)C[C@@H]([C@@H]([C@@H](CCCCCCCCCCCCCC)O)O)NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O '
-               'NAME: '
-               '1-O-[4-O-(4-methylbenzyl)-alpha-D-galactosyl]-N-hexacosanoylphytosphingosine '
-               'REASON: MISSED No phytosphingosine core structure found\n'
-               ' * SMILES: '
-               'O=C(N[C@H]([C@H](O)[C@H](O)CCCCCCCCCCCCCC)CO)[C@H](O)CCCCCCCCCCCCCCCCCCCCC '
-               "NAME: (2S, 3S, 4R)-2-[(2'R)-2'-hydroxytricosanoylamino]-1, 3, "
-               '4-octadecanetriol REASON: MISSED No phytosphingosine core '
-               'structure found\n'
-               ' * SMILES: '
-               'C12(CCO[C@@H]3[C@@H]([C@H]([C@H](O[C@@H]3CO)OC[C@@H]([C@@H]([C@@H](CCCCCCCCCCCCCC)O)O)NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)O)O)C[C@@H]4CC(C1)C[C@H](C4)C2 '
-               'NAME: '
-               '1-O-[4-O-(2-adamantylethyl)-alpha-D-galactosyl]-N-hexacosanoylphytosphingosine '
-               'REASON: MISSED No phytosphingosine core structure found\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCC[C@@H](O)[C@@H](O)[C@H](CO[C@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)NC(=O)CCCCCCCC '
-               'NAME: '
-               '1-O-(alpha-D-galactopyranosyl)-N-nonanoylphytosphingosine '
-               'REASON: MISSED No phytosphingosine core structure found\n'
-               ' * SMILES: '
-               '[C@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)OC[C@@H]([C@@H]([C@@H](CCCCCCCCCCCCCC)O)O)NC(CCCCCCCC2=CC=C(C=C2)C=3C=CC=CC3)=O '
-               'NAME: '
-               "N-[8-([1,1'-biphenyl]-4-yl)octanoyl]-1-O-(alpha-D-galactopyranosyl)phytosphingosine "
-               'REASON: MISSED No phytosphingosine core structure found\n'
-               ' * SMILES: '
-               'OC(C(O)C(NC(=O)C(O)CCCCCCCCCCCCCCCCCCCCCCCC)CO)CCCCCCCCCCCCCC '
-               'NAME: '
-               'N-(2R-Hydroxyhexacosanoyl)-2S-amino-1,3S,4R-octadecanetriol '
-               'REASON: MISSED No phytosphingosine core structure found\n'
-               ' * SMILES: '
-               'OC(C(O)C(NC(=O)C(O)CCCCCCCCCCCCCCCCCCCC)CO)CCCCCCCCCCCCCC '
-               'NAME: 2-Hydroxy-N-(1,3,4-trihydroxy-2-octadecanyl)docosanamide '
-               'REASON: MISSED No phytosphingosine core structure found\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC '
-               'NAME: N-triacontanoyphytosphingosine REASON: MISSED No '
-               'phytosphingosine core structure found\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC '
-               'NAME: N-octadecanoyl-4-hydroxysphinganine REASON: MISSED No '
-               'phytosphingosine core structure found\n'
+               'False negatives: NONE\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'Cc1cc(C)c2Cc3c(C)cc(C)c(Cc4c(C)cc(C)c(Cc5c(C)cc(C)c(Cc1c2C)c5C)c4C)c3C',
-                                     'name': '4,6,10,12,16,18,22,24,25,26,27,28-dodecamethylcalix[4]arene',
-                                     'reason': 'No amide group found'},
-                                 {   'smiles': 'O=C1C(=C2C=C3[C@]([C@@H](C(C)C)[C@@H]([C@H]3O)OC(=O)C)(C)CC[C@]2(C)CC1)COC(=O)C',
-                                     'name': 'Dahliane E',
-                                     'reason': 'No amide group found'},
-                                 {   'smiles': 'O[C@@H]([C@H](NC(=O)[C@@H](N)CCC(O)=O)C(=O)N[C@@H](CC(C)C)C(O)=O)C',
-                                     'name': 'Glu-Thr-Leu',
-                                     'reason': 'No phytosphingosine core '
-                                               'structure found'},
-                                 {   'smiles': 'CCOc1ccc(NC(=O)C(C)O)cc1',
-                                     'name': 'p-Lactophenetide',
-                                     'reason': 'No phytosphingosine core '
-                                               'structure found'},
-                                 {   'smiles': 'O=C1NCC=2C1=C3C(N([C@@H]4O[C@H]([C@@H](O)[C@H]([C@H]4OC)O)C)C5=C3C=CC=C5)=C6NC7=C(C26)C=CC=C7',
-                                     'name': "3'-epi-5'-methoxy-K252d",
-                                     'reason': 'No phytosphingosine core '
-                                               'structure found'},
-                                 {   'smiles': 'O=C(OC1C(O)C(OC(C1O)CO)OCC2OC(OCC(OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCC/C=C\\C/C=C\\C/C=C\\CC)C(O)C(C2O)O)CCCCCCCCCCCCCCC',
-                                     'name': '[(2S)-2-hexadecanoyloxy-3-[(2S,3R,4S,5S,6R)-6-[[(2S,3R,4S,5S,6R)-4-hexadecanoyloxy-3,5-dihydroxy-6-(hydroxymethyl)tetrahydropyran-2-yl]oxymethyl]-3,4,5-trihydroxy-tetrahydropyran-2-yl]oxy-propyl] '
-                                             '(9E,12E,15E)-octadeca-9,12,15-trienoate',
-                                     'reason': 'No amide group found'},
-                                 {   'smiles': 'O=C1C2=C(O)C=C(OC)C=C2C(=O)C3=C1[C@@H]([C@@H](O)[C@]([C@@H]3O)(O)C)C',
-                                     'name': 'Altersolanol G',
-                                     'reason': 'No amide group found'},
-                                 {   'smiles': '[H][C@]1(O[C@](O)(C[C@H](O)[C@H]1NC(=O)CO)C([O-])=O)[C@H](O)[C@H](O)CO',
-                                     'name': 'N-glycoloyl-alpha-neuraminate',
-                                     'reason': 'No suitable fatty acyl chain '
+               'to improve.\n'
+               'IMPORTANT NOTE: I do not have 100% confidence in the benchmark '
+               'I am using. There may be occasional and systematic mistakes. '
+               'Use your best judgment, and if you think the classifications '
+               'your program are consistent with your understanding if the '
+               'meaning of the chemical class, then you can ignore outliers, '
+               'but explain your reasoning in doing so. I have great '
+               'confidence in your broad understanding of chemistry and your '
+               'ability to translate this into code.',
+    'sample_true_negatives': [   {   'smiles': 'C1CCC(CC1)C#CC2=CC=C(C=C2)[C@@H]3[C@@H]4CNCC(=O)N4[C@H]3CO',
+                                     'name': '(6R,7R,8R)-7-[4-(2-cyclohexylethynyl)phenyl]-8-(hydroxymethyl)-1,4-diazabicyclo[4.2.0]octan-2-one',
+                                     'reason': 'No phytosphingosine backbone '
                                                'found'},
-                                 {   'smiles': 'OC(C(O)C/C=C\\C/C=C\\C/C=C\\CC)C/C=C\\C/C=C\\CCC(O)=O',
-                                     'name': '10,11-DiHDPE',
-                                     'reason': 'No amide group found'},
-                                 {   'smiles': '[Na+].[H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](N)c1ccccc1)C([O-])=O',
-                                     'name': 'cephalexin sodium',
-                                     'reason': 'No phytosphingosine core '
-                                               'structure found'}],
-    'sample_false_negatives': [   {   'smiles': 'O[C@@H](CCCCCC/C=C/[C@H](O)[C@@H](O)[C@H](O)[C@H](NC(=O)C)C(O)=O)CCCCCC',
+                                 {   'smiles': 'CCCNC(=O)[C@@H]1[C@H]([C@@H]2CN3C(=CC=C(C3=O)C=CC)[C@H]1N2CC4CCCC4)CO',
+                                     'name': 'LSM-14611',
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'},
+                                 {   'smiles': 'c1ccc(nc1)-c1cccc(n1)-c1ccccn1',
+                                     'name': "2,2':6',2''-terpyridine",
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'},
+                                 {   'smiles': 'C[C@@H]1CN(C(=O)C2=CC=CC=C2C3=CC=CC=C3CO[C@@H]1CN(C)C(=O)CC4=CC=CC=C4)[C@H](C)CO',
+                                     'name': 'LSM-12861',
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'},
+                                 {   'smiles': 'C1(=CC(=CC(=C1C(=O)CCC2=CC(=C(C=C2)O)O)O)O)O[C@H]3[C@@H]([C@H]([C@@H]([C@@H](CO[C@H]4[C@@H]([C@H]([C@@H](CO4)O)O)O)O3)O)O)O',
+                                     'name': '3-hydroxyphloretin '
+                                             "2'-O-xylosylglucoside",
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'},
+                                 {   'smiles': 'C1[C@]2([C@@]3(CC[C@H]4C(=C[C@]3(CC[C@@]2(C(C[C@@H]1O)(C)C)[H])C4)C)[H])C',
+                                     'name': '2alpha-hydroxy-ent-isokaurene',
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'},
+                                 {   'smiles': 'O([C@H]1O[C@@H]([C@@H](O[C@@H]2O[C@@H]([C@@H](O[C@@H]3O[C@@H]([C@H](O)[C@H](O[C@]4(O[C@H]([C@H](NC(=O)C)[C@@H](O)C4)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]3O)CO)[C@H](O)[C@H]2NC(=O)C)CO)[C@H](O)[C@@H]1O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO[C@]7(O[C@H]([C@H](NC(=O)C)[C@@H](O)C7)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]5NC(=O)C)CO)CO)[C@H]8[C@H](O)[C@H](O[C@@H](O[C@H]9[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]9CO)O[C@H]%10[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]%10CO[C@@H]%11O[C@H]([C@@H](O)[C@@H](O)[C@@H]%11O)C)O)[C@H]8O)CO[C@H]%12O[C@@H]([C@@H](O)[C@H](O)[C@@H]%12O[C@@H]%13O[C@@H]([C@@H](O[C@@H]%14O[C@@H]([C@H](O)[C@H](O[C@]%15(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%15)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%14O)CO)[C@H](O)[C@H]%13NC(=O)C)CO)CO[C@@H]%16O[C@@H]([C@@H](O[C@@H]%17O[C@@H]([C@H](O)[C@H](O)[C@H]%17O)CO[C@]%18(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%18)[C@H](O)[C@H](O)CO)C(O)=O)[C@H](O)[C@H]%16NC(=O)C)CO',
+                                     'name': 'CID 91849359',
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'},
+                                 {   'smiles': 'O=C1OCC=2[C@@]1(O)[C@@]3([C@H](C(CCC3)(C)C)[C@@H](C2)OC(=O)CCCCCCC)C',
+                                     'name': 'Nanangenine E',
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'},
+                                 {   'smiles': 'Nc1ccn([C@H]2C[C@H](O)[C@@H](COP([O-])([O-])=O)O2)c(=O)n1',
+                                     'name': "2'-deoxycytosine "
+                                             "5'-monophosphate(2-)",
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'},
+                                 {   'smiles': 'O=C1OC(CC(=O)N[C@H](C(=O)N[C@H](C(=O)OC(CC(N[C@H](C(N[C@H]1CO)=O)CC(C)C)=O)CCCCCCC)CC(C)C)CO)CCCCC',
+                                     'name': 'Icosalide A2',
+                                     'reason': 'No phytosphingosine backbone '
+                                               'found'}],
+    'sample_false_negatives': [   {   'smiles': '[C@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)OC[C@@H]([C@@H]([C@@H](CCCCCCCCCCCCCC)O)O)NC(CCCCCCCC2=CC=C(C=C2)C(F)(F)F)=O',
+                                      'name': '1-O-(alpha-D-galactopyranosyl)-N-[8-(4-trifluoromethyl)phenyloctanoyl]phytosphingosine',
+                                      'reason': 'No acyl group attached to '
+                                                'nitrogen found'},
+                                  {   'smiles': 'C(CCCCCCCCCC)CCC[C@H]([C@@H](O)[C@@H](NC(=O)CCCCCCCCCCC/C=C\\CCCCCCCC)CO)O',
+                                      'name': 'N-(13Z-docosenoyl)-phytosphingosine',
+                                      'reason': 'No galactose or glucose '
+                                                'moiety found'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC',
+                                      'name': 'N-octacosanoylphytosphingosine',
+                                      'reason': 'No galactose or glucose '
+                                                'moiety found'},
+                                  {   'smiles': '[C@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)OC[C@@H]([C@@H]([C@@H](CCCCCCCCCCCCCC)O)O)NC(CCCCCC2=CC=C(C=C2)OC)=O',
+                                      'name': '1-O-(alpha-D-galactopyranosyl)-N-[6-(4-methoxyphenyl)hexanoyl]phytosphingosine',
+                                      'reason': 'No acyl group attached to '
+                                                'nitrogen found'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC',
+                                      'name': 'N-hexadecanoylphytosphingosine',
+                                      'reason': 'No galactose or glucose '
+                                                'moiety found'},
+                                  {   'smiles': '[C@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)O)OC[C@@H]([C@@H]([C@@H](CCCCCCCCCCCCCC)O)O)NC(CCCCCC2=CC=C(C=C2)C(F)(F)F)=O',
+                                      'name': '1-O-(alpha-D-galactopyranosyl)-N-{6-[4-(trifluoromethyl)phenyl]hexanoyl}phytosphingosine',
+                                      'reason': 'No acyl group attached to '
+                                                'nitrogen found'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC',
+                                      'name': 'N-tetracosanoylphytosphingosine',
+                                      'reason': 'No galactose or glucose '
+                                                'moiety found'},
+                                  {   'smiles': 'CCCCCCCCCCCCCC[C@@H](O)[C@@H](O)[C@H](CO[C@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)NC(=O)CCCCCCCc1ccccc1',
+                                      'name': '1-O-(alpha-D-galactopyranosyl)-N-(8-phenyloctanoyl)phytosphingosine',
+                                      'reason': 'No acyl group attached to '
+                                                'nitrogen found'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO)[C@H](O)[C@H](O)CCCCCCCCCCCCCC',
+                                      'name': 'N-eicosanoyl-4-hydroxysphinganine',
+                                      'reason': 'No galactose or glucose '
+                                                'moiety found'},
+                                  {   'smiles': 'O[C@@H](CCCCCC/C=C/[C@H](O)[C@@H](O)[C@H](O)[C@H](NC(=O)C)C(O)=O)CCCCCC',
                                       'name': 'Sphingofungin D',
-                                      'reason': 'No suitable fatty acyl chain '
+                                      'reason': 'No phytosphingosine backbone '
                                                 'found'}],
-    'attempt': 3,
-    'reasoning': 'Let me analyze what went wrong and propose improvements:\n'
-                 '\n'
-                 '1. The main issue seems to be that the SMARTS pattern for '
-                 'the phytosphingosine core was too restrictive:\n'
-                 '   - The previous pattern '
-                 '`[CH2][OX2]-[CH]([NX3])-[CH]([OX2])-[CH]([OX2])-[CH2]` was '
-                 'requiring specific connectivity and hybridization states\n'
-                 '   - Many valid structures were missed because they have '
-                 'slight variations in connectivity or atom types\n'
-                 '\n'
-                 '2. The hydroxyl group checks were too specific:\n'
-                 '   - We should focus on the overall pattern rather than '
-                 'counting specific types of OH groups\n'
-                 '   - The structure should have 3 hydroxyl groups and one '
-                 "amine group that's acylated\n"
-                 '\n'
-                 '3. The fatty acyl chain check was too restrictive:\n'
-                 '   - The previous pattern required exactly 6 carbons in a '
-                 'specific arrangement\n'
-                 '   - We should allow for more flexibility in chain length '
-                 'and structure\n'
-                 '\n'
-                 "Here's my improved version:",
+    'attempt': 2,
+    'reasoning': "Here's my attempt at a program to classify "
+                 'N-acylphytosphingosines:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 93,
-    'num_false_positives': 100,
-    'num_true_negatives': 38089,
-    'num_false_negatives': 1,
+    'num_true_positives': 49,
+    'num_false_positives': 32,
+    'num_true_negatives': 142174,
+    'num_false_negatives': 45,
     'num_negatives': None,
-    'precision': 0.48186528497409326,
-    'recall': 0.9893617021276596,
-    'f1': 0.6480836236933797,
-    'accuracy': 0.9973617532586265,
-    'negative_predictive_value': 0.9999737463901286}
+    'precision': 0.6049382716049383,
+    'recall': 0.5212765957446809,
+    'f1': 0.56,
+    'accuracy': 0.9994588896697119,
+    'negative_predictive_value': 0.9996835865812584}

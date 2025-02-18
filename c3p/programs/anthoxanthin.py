@@ -1,16 +1,14 @@
 """
 Classifies: CHEBI:192499 anthoxanthin
 """
-"""
-Classifies: anthoxanthin
-"""
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_anthoxanthin(smiles: str):
     """
     Determines if a molecule is an anthoxanthin based on its SMILES string.
-    Anthoxanthins are a type of flavonoid pigments in plants, including flavones and flavonols.
+    Anthoxanthins are a type of flavonoid pigments, with a benzopyran-4-one core.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -19,62 +17,43 @@ def is_anthoxanthin(smiles: str):
         bool: True if molecule is an anthoxanthin, False otherwise
         str: Reason for classification
     """
-
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Aromaticity perception (ensure correct handling of aromatic rings)
-    Chem.SanitizeMol(mol)
+    # 1. Core benzopyran-4-one structure (flavone or flavonol)
+    # Flavone (C=O at position 4):
+    flavone_core_pattern = Chem.MolFromSmarts("c1ccc(-c2cc(=O)c3ccccc3o2)cc1") # more precise
+    # Flavonol (C=O at position 4, and OH at position 3):
+    flavonol_core_pattern = Chem.MolFromSmarts("c1ccc(-c2c(O)cc(=O)c3ccccc3o2)cc1")
 
-    # Define SMARTS patterns for flavone and flavonol cores
-    # Flavone core: 2-phenylchromen-4-one
-    flavone_pattern = Chem.MolFromSmarts('c1cc(-c2oc3ccccc3c(=O)c2)ccc1')
+    if not (mol.HasSubstructMatch(flavone_core_pattern) or mol.HasSubstructMatch(flavonol_core_pattern)):
+        return False, "No benzopyran-4-one core structure found"
+    
+    # 2. Check for Hydroxyl and Methoxy groups. Count how many. At least one of each
+    num_hydroxyls = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[OH]")))
+    num_methoxys = len(mol.GetSubstructMatches(Chem.MolFromSmarts("OC")))
 
-    # Flavonol core: 3-hydroxyflavone
-    flavonol_pattern = Chem.MolFromSmarts('c1cc(-c2oc3ccccc3c(=O)c2O)ccc1')
+    if num_hydroxyls == 0 and num_methoxys == 0:
+        return False, "No hydroxyl or methoxy groups found"
 
-    # Check for flavone core
-    if mol.HasSubstructMatch(flavone_pattern):
-        return True, "Contains flavone core structure"
+    # 3. Check for glycosylation (O-C-O outside of the core pattern)
+    glycoside_pattern = Chem.MolFromSmarts("O-C-O")
+    core_match = mol.GetSubstructMatch(flavone_core_pattern) if mol.HasSubstructMatch(flavone_core_pattern) else mol.GetSubstructMatch(flavonol_core_pattern)
+    if core_match:
+      core_atoms = set(core_match)
+      glycoside_matches = [match for match in mol.GetSubstructMatches(glycoside_pattern) if not set(match) <= core_atoms]
+      if len(glycoside_matches) > 0:
+         return True, "Benzopyran-4-one core structure with hydroxyl and/or methoxy, and possible glycosylation found"
 
-    # Check for flavonol core
-    if mol.HasSubstructMatch(flavonol_pattern):
-        return True, "Contains flavonol core structure"
+    # 4. Check if additional aromatic rings are present
+    aromatic_rings = Chem.MolFromSmarts("c1ccccc1")
+    num_aromatic_rings = len(mol.GetSubstructMatches(aromatic_rings))
 
-    # Define patterns for glycosylated flavones/flavonols (O-glycosides)
-    # Simplified pattern: flavone or flavonol core with any sugar attached via oxygen
-    o_glycoside_pattern = Chem.MolFromSmarts('[$([cO][CX4H]),$([cO][CX4H][CX4H]),$([cO][CX4H][CX4H][CX4H])]')
-    flavone_oglycoside_pattern = Chem.CombineMols(flavone_pattern, o_glycoside_pattern)
-    flavonol_oglycoside_pattern = Chem.CombineMols(flavonol_pattern, o_glycoside_pattern)
-
-    if mol.HasSubstructMatch(flavone_oglycoside_pattern):
-        return True, "Contains flavone O-glycoside structure"
-
-    if mol.HasSubstructMatch(flavonol_oglycoside_pattern):
-        return True, "Contains flavonol O-glycoside structure"
-
-    # Check for C-glycosides (sugar attached directly to carbon)
-    # C-glycoside pattern: flavone or flavonol core with sugar attached to C6 or C8
-    c_glycoside_pattern = Chem.MolFromSmarts('c1cc(-c2oc3ccccc3c(=O)c2[c,C])ccc1')
-    if mol.HasSubstructMatch(c_glycoside_pattern):
-        return True, "Contains flavone or flavonol C-glycoside structure"
-
-    # Check for methylated derivatives (methoxy groups)
-    methoxy_pattern = Chem.MolFromSmarts('c-oc')
-    if mol.HasSubstructMatch(flavone_pattern) or mol.HasSubstructMatch(flavonol_pattern):
-        if mol.HasSubstructMatch(methoxy_pattern):
-            return True, "Contains methylated flavone or flavonol core"
-
-    # Check for sulfonated derivatives (sulfo groups)
-    sulfo_pattern = Chem.MolFromSmarts('S(=O)(=O)[O-]')
-    if mol.HasSubstructMatch(sulfo_pattern):
-        if mol.HasSubstructMatch(flavone_pattern) or mol.HasSubstructMatch(flavonol_pattern):
-            return True, "Contains sulfonated flavone or flavonol"
-
-    # No anthoxanthin core structure found
-    return False, "Does not contain anthoxanthin core structure"
+    if num_aromatic_rings >= 2:
+        return True, "Benzopyran-4-one core structure with hydroxyl and/or methoxy and additional aromatic ring found"
+    
+    return True, "Benzopyran-4-one core structure with hydroxyl and/or methoxy found"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:192499',
@@ -89,179 +68,214 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:192499',
                           'xrefs': [   'Wikipedia:https://en.wikipedia.org/wiki/Anthoxanthin'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC=2C(=O)C=3C(OC2C4=CC=C(O)C(=C4)O)=CC(O[C@H]5O[C@H]([C@H](O)[C@@H](O)[C@H]5O)C)=CC3O)CO '
-               'NAME: quercetin '
-               '3-O-beta-D-glucopyranosyl-7-O-alpha-L-rhamnopyranoside REASON: '
-               'MISSED Does not contain anthoxanthin core structure\n'
-               ' * SMILES: '
-               'OC[C@@H]1O[C@H](Oc2c(oc3cc(O)cc(O)c3c2=O)-c2ccc(O)cc2)[C@@H](O)[C@H](O)[C@H]1O '
-               'NAME: kaempferol 3-O-beta-L-glucopyranoside REASON: MISSED '
-               'Does not contain anthoxanthin core structure\n'
-               ' * SMILES: '
-               'O[C@H]1[C@H](Oc2cc(O)cc3oc(cc(=O)c23)-c2ccc(O)c(O)c2)O[C@@H]([C@@H](O)[C@@H]1O)C(O)=O '
-               'NAME: luteolin 5-O-glucuronide REASON: MISSED Does not contain '
-               'anthoxanthin core structure\n'
-               ' * SMILES: COc1cc2oc(cc(=O)c2c(OC)c1OC)-c1ccc(O)cc1 NAME: '
-               '2-(4-hydroxyphenyl)-5,6,7-trimethoxy-4H-1-benzopyran-4-one '
-               'REASON: MISSED Does not contain anthoxanthin core structure\n'
-               ' * SMILES: COc1c(OC)c(OC)c2c(oc(cc2=O)-c2ccc(OC(C)=O)cc2)c1OC '
-               'NAME: '
-               '2-[4-(acetyloxy)phenyl]-5,6,7,8-tetramethoxy-4H-1-benzopyran-4-one '
-               'REASON: MISSED Does not contain anthoxanthin core structure\n'
-               ' * SMILES: '
-               'OC[C@H]1O[C@@H](Oc2cc(O)cc3oc(-c4ccc(O)cc4)c(O)c(=O)c23)[C@H](O)[C@@H](O)[C@@H]1O '
-               'NAME: kaempferol 5-O-beta-D-glucopyranoside REASON: MISSED '
-               'Does not contain anthoxanthin core structure\n'
-               ' * SMILES: '
-               'CC(=O)OC1=CC=C(C=C1)C2=CC(=O)C3=C(C=C(C=C3O2)OC(=O)C)OC(=O)C '
-               'NAME: acetic acid '
-               '[4-(5,7-diacetyloxy-4-oxo-1-benzopyran-2-yl)phenyl] ester '
-               'REASON: MISSED Does not contain anthoxanthin core structure\n'
-               ' * SMILES: '
-               'O1C=2C(=C(O)C=C(OC(=O)C3=CC=CC=C3)C2)C(=O)C=C1C4=CC=CC=C4 '
-               'NAME: 5,7-Dihydroxyflavone 7-benzoate REASON: MISSED Does not '
-               'contain anthoxanthin core structure\n'
-               ' * SMILES: '
-               'C=12C(=C(C=C(C1C(C=C(O2)C3=CC=C(C(=C3)O)O)=O)O)O)[C@H]4[C@@H]([C@H]([C@@H]([C@H](O4)CO)O)O)OC5O[C@H]([C@@H]([C@H]([C@H]5O)O)O)C '
-               "NAME: orientin 2''-O-rhamnoside REASON: MISSED Does not "
-               'contain anthoxanthin core structure\n'
-               ' * SMILES: '
-               'OC[C@H]1O[C@H]([C@H](O)[C@@H](O)[C@@H]1O)c1c(O)cc2oc(cc(=O)c2c1O)-c1ccc(O)cc1 '
-               'NAME: isovitexin REASON: MISSED Does not contain anthoxanthin '
-               'core structure\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'C[C@@H]1CN(S(=O)(=O)C2=C(C=C(C=C2)C3=CC=C(C=C3)C(=O)N(C)C)O[C@@H]1CN(C)C(=O)NC4=CC=CC=C4F)[C@H](C)CO',
-                                     'name': '4-[(4R,5S)-5-[[[(2-fluoroanilino)-oxomethyl]-methylamino]methyl]-2-[(2R)-1-hydroxypropan-2-yl]-4-methyl-1,1-dioxo-4,5-dihydro-3H-6,1$l^{6},2-benzoxathiazocin-8-yl]-N,N-dimethylbenzamide',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': 'C[C@H]1[C@H](CN(C(=O)C2=C(C=CC(=C2)C#N)OC[C@H]3[C@H](CC[C@@H](O3)CCN(C1=O)C)OC)C)OC',
-                                     'name': 'LSM-10564',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': 'CCC(C(=O)NC1=NN=C(S1)SCC)(C(F)(F)F)C(F)(F)F',
-                                     'name': 'N-[5-(ethylthio)-1,3,4-thiadiazol-2-yl]-2,2-bis(trifluoromethyl)butanamide',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': 'O=C(N[C@@H](CCC(=O)N)C(O)=O)[C@@H](NC(=O)[C@@H](N)CC1=CC=C(O)C=C1)CC(=O)N',
-                                     'name': 'Tyr-Asn-Gln',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': 'OC[C@H]1OC(O)[C@@H](O)[C@@H]1O',
-                                     'name': 'D-arabinofuranose',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': 'O[C@@H]([C@H]([C@@]1([C@@]2([C@@](CC1)(/C(/CCC2)=C/C=C\\3/C[C@@H](O)CCC3=C)[H])C)[H])C)C',
-                                     'name': '(5Z,7E)-(3S,22R)- '
-                                             '24-nor-9,10-seco-5,7,10(19)-cholatriene-3,22-diol',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': 'O1C(C(CC1=O)C)CCCCCC',
-                                     'name': '5-Hexyldihydro-4-methyl-2(3H)-furanone',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': 'O=C1O[C@]23C(=O)N[C@H]([C@@H]2[C@H](C)C(=C[C@@H]3C=CC[C@@H]([C@H]([C@H](C=C1)C)O)C)C)CC4=CC=CC=C4',
-                                     'name': '7-deoxy-cytochalasin Z7',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': '[C@]123[C@H](O1)[C@](C(C=C2[C@]4([C@](CC3)(C([C@@H](C(C4)=O)O)(C)C)[H])C)=O)(C=C)C',
-                                     'name': 'yucalexin P8',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'},
-                                 {   'smiles': '[H][C@]12CC[C@@]3([H])[C@]4([H])CC[C@]([H])([C@H](C)CCC(O)=O)[C@@]4(C)[C@@H](O)C[C@]3([H])[C@@]1(C)CC[C@@H](O)C2',
-                                     'name': 'deoxycholic acid',
-                                     'reason': 'Does not contain anthoxanthin '
-                                               'core structure'}],
-    'sample_false_negatives': [   {   'smiles': 'Oc1ccc(cc1)[C@H]1Oc2cc(O)cc(O)c2C(=O)[C@@H]1[C@H]1[C@@H](Oc2cc(O)cc(O)c2C1=O)c1ccc(O)cc1',
-                                      'name': 'isochamaejasmin',
-                                      'reason': 'Does not contain anthoxanthin '
-                                                'core structure'},
-                                  {   'smiles': 'C1(OC2=CC(O)=C3C(OC=C(C3=O)C4=CC=C(O)C=C4)=C2)OC(COC(C)=O)C(O)C(O)C1O',
+    'code_statistics': {   'lines_of_code': 38,
+                           'log_lines_of_code': 3.6375861597263857,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1],
+                           'max_indent': 2,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 3,
+                           'methods_called': [   'GetSubstructMatches',
+                                                 'MolFromSmarts',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmiles',
+                                                 'GetSubstructMatch'],
+                           'methods_called_count': 5,
+                           'smarts_strings': [   '"OC"))',
+                                                 '"[OH]"))',
+                                                 'c1ccccc1',
+                                                 'O-C-O',
+                                                 'c1ccc(-c2c(O)cc(=O)c3ccccc3o2)cc1',
+                                                 'c1ccc(-c2cc(=O)c3ccccc3o2)cc1'],
+                           'smarts_strings_count': 6,
+                           'defs': ['is_anthoxanthin(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "No benzopyran-4-one core '
+                                          'structure found"',
+                                          'False, "No hydroxyl or methoxy '
+                                          'groups found"',
+                                          'True, "Benzopyran-4-one core '
+                                          'structure with hydroxyl and/or '
+                                          'methoxy, and possible glycosylation '
+                                          'found"',
+                                          'True, "Benzopyran-4-one core '
+                                          'structure with hydroxyl and/or '
+                                          'methoxy and additional aromatic '
+                                          'ring found"',
+                                          'True, "Benzopyran-4-one core '
+                                          'structure with hydroxyl and/or '
+                                          'methoxy found"'],
+                           'returns_count': 6,
+                           'complexity': 3.527517231945277},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'CCN1N=C(N=N1)C2=CC=CC=C2NC(=O)C3=CC=C(C=C3)N4C=NN=N4',
+                                     'name': 'N-[2-(2-ethyl-5-tetrazolyl)phenyl]-4-(1-tetrazolyl)benzamide',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'CCS(=O)(=O)N1CC2(C1)[C@@H]([C@@H](N2C(=O)C3CCCC3)CO)C4=CC=C(C=C4)C=CC',
+                                     'name': 'LSM-38092',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'O=C/1N/C(/C(=O)N\\C1=C\\C2=CC=CC=C2)=C\\C=3N=CNC3C(C=C)(C)C',
+                                     'name': 'DeltaPLH',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'C1CCN(CC1)C(=O)C[C@H]2C[C@@H]3[C@H]([C@@H](O2)CO)OC4=C3C=C(C=C4)NC(=O)CC5CC5',
+                                     'name': 'N-[(1S,3R,4aS,9aR)-1-(hydroxymethyl)-3-[2-oxo-2-(1-piperidinyl)ethyl]-3,4,4a,9a-tetrahydro-1H-pyrano[3,4-b]benzofuran-6-yl]-2-cyclopropylacetamide',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'C[C@H]1C[C@@]2(OC(=O)c3ccccc3)[C@H]([C@H]1OC(C)=O)[C@@H](O)\\C(C)=C/C[C@H]1[C@@H](\\C=C(C)\\C2=O)C1(C)C',
+                                     'name': '(-)-(6Z,12E,2S,3S,4R,5R,9S,11S,15R)-3-acetoxy-15-benzoyloxylathyra-6,12-dien-5-ol-14-one',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'O=C1C(O)=CC=2O[C@]3([C@H](O)C[C@@H]4[C@](OC=5C=C(O)C(C=C(C5C4)C)=O)(CC=CC(C[C@H]3CC2C(=C1)C)(C)C)C)C',
+                                     'name': 'Eupenifeldin',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'O1[C@@H](O[C@@H]2[C@@H](OC[C@H]3O[C@@H](O[C@H]4[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]4CO)O[C@H]5[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]5CO[C@@H]6O[C@H]([C@@H](O)[C@@H](O)[C@@H]6O)C)O)[C@@H](O)[C@@H](O[C@H]7O[C@@H]([C@@H](O)[C@H](O)[C@@H]7O[C@@H]8O[C@@H]([C@@H](O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9NC(=O)C)CO)[C@H](O)[C@H]8NC(=O)C)CO)CO)[C@@H]3O)O[C@@H]([C@@H](O)[C@@H]2O)CO)[C@H](NC(=O)C)[C@@H](O[C@@H]%10O[C@H]([C@@H](O)[C@@H](O)[C@@H]%10O)C)[C@H](O[C@@H]%11O[C@@H]([C@H](O)[C@H](O)[C@H]%11NC(=O)C)CO)[C@H]1CO',
+                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5R,6R)-4-[(2R,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4R,5R,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4R,5R,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-6-(hydroxymethyl)-4-[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-3,5-dihydroxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-[[(2R,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxymethyl]oxan-3-yl]acetamide',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'CN1C[C@@H]2C[C@H](Cn3c2cccc3=O)[C@H]1CC=C',
+                                     'name': 'Tinctorine',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'CCC1=C2COC(CC2=C3C(=C(OC3=N1)C(=O)C4=CC=CC=C4)N)(C)C',
+                                     'name': 'LSM-4563',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'},
+                                 {   'smiles': 'CN1CCN(CC1)C(=O)C[C@@H]2CC[C@H]3[C@H](O2)COC[C@@H](CN3C(=O)NC4=CC5=C(C=C4)OCO5)O',
+                                     'name': '(3R,6aS,8S,10aS)-N-(1,3-benzodioxol-5-yl)-3-hydroxy-8-[2-(4-methyl-1-piperazinyl)-2-oxoethyl]-3,4,6,6a,8,9,10,10a-octahydro-2H-pyrano[2,3-c][1,5]oxazocine-1-carboxamide',
+                                     'reason': 'No benzopyran-4-one core '
+                                               'structure found'}],
+    'sample_false_negatives': [   {   'smiles': 'C1(OC2=CC(O)=C3C(OC=C(C3=O)C4=CC=C(O)C=C4)=C2)OC(COC(C)=O)C(O)C(O)C1O',
                                       'name': "6''-O-acetylgenistin",
-                                      'reason': 'Does not contain anthoxanthin '
-                                                'core structure'},
+                                      'reason': 'No benzopyran-4-one core '
+                                                'structure found'},
+                                  {   'smiles': 'OC[C@@]1(O)CO[C@@H](OC[C@H]2O[C@H]([C@H](O)[C@@H](O)[C@@H]2O)c2c(O)ccc3c2occ(-c2ccc(O)cc2)c3=O)[C@@H]1O',
+                                      'name': 'mirificin',
+                                      'reason': 'No benzopyran-4-one core '
+                                                'structure found'},
                                   {   'smiles': 'O[C@@H]1[C@@H](O)[C@@H](O[C@@H]([C@H]1O)C(O)=O)Oc1cc(O)c2C(=O)C[C@@H](Oc2c1)c1ccc(O)c(O)c1',
                                       'name': '(2R)-eriodictoyl-7-O-beta-D-glucopyranosiduronic '
                                               'acid',
-                                      'reason': 'Does not contain anthoxanthin '
-                                                'core structure'},
-                                  {   'smiles': 'OC[C@@]1(O)CO[C@@H](OC[C@H]2O[C@H]([C@H](O)[C@@H](O)[C@@H]2O)c2c(O)ccc3c2occ(-c2ccc(O)cc2)c3=O)[C@@H]1O',
-                                      'name': 'mirificin',
-                                      'reason': 'Does not contain anthoxanthin '
-                                                'core structure'},
+                                      'reason': 'No benzopyran-4-one core '
+                                                'structure found'},
+                                  {   'smiles': 'O=c1cc(oc2ccccc12)-c1ccccc1',
+                                      'name': 'flavone',
+                                      'reason': 'No hydroxyl or methoxy groups '
+                                                'found'},
+                                  {   'smiles': 'OC[C@H]1O[C@@H](Oc2cc(O)c3C(=O)C[C@H](Oc3c2[C@@H]2OC[C@H](O)[C@H](O)[C@H]2O)c2ccc(O)cc2)[C@H](O)[C@@H](O)[C@@H]1O',
+                                      'name': '8-C-alpha-L-arabinopyranosyl-7-O-beta-D-glucopyranosylnaringenin',
+                                      'reason': 'No benzopyran-4-one core '
+                                                'structure found'},
                                   {   'smiles': 'COC1=CC2OC(=CC(=O)C2C(O)=C1[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)c1ccc(O)c(O)c1',
                                       'name': 'swertiajaponin',
-                                      'reason': 'Does not contain anthoxanthin '
-                                                'core structure'},
+                                      'reason': 'No benzopyran-4-one core '
+                                                'structure found'},
+                                  {   'smiles': 'Oc1ccc(cc1)[C@H]1Oc2cc(O)cc(O)c2C(=O)[C@@H]1[C@H]1[C@@H](Oc2cc(O)cc(O)c2C1=O)c1ccc(O)cc1',
+                                      'name': 'isochamaejasmin',
+                                      'reason': 'No benzopyran-4-one core '
+                                                'structure found'},
                                   {   'smiles': 'C[C@@H]1O[C@H](O[C@@H]2[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]2Oc2ccc3C(=O)CC(Oc3c2)c2ccccc2)[C@H](O)[C@H](O)[C@H]1O',
                                       'name': '7-hydroxyflavanone '
                                               '7-O-[beta-L-rhamnosyl-(1->2)-beta-D-glucoside]',
-                                      'reason': 'Does not contain anthoxanthin '
-                                                'core structure'},
-                                  {   'smiles': 'OC[C@H]1O[C@@H](Oc2cc(O)c3C(=O)C[C@H](Oc3c2[C@@H]2OC[C@H](O)[C@H](O)[C@H]2O)c2ccc(O)cc2)[C@H](O)[C@@H](O)[C@@H]1O',
-                                      'name': '8-C-alpha-L-arabinopyranosyl-7-O-beta-D-glucopyranosylnaringenin',
-                                      'reason': 'Does not contain anthoxanthin '
-                                                'core structure'},
+                                      'reason': 'No benzopyran-4-one core '
+                                                'structure found'},
                                   {   'smiles': '[C@H]1(C=2C3=C(C(C(C4=CC=C(O)C=C4)=CO3)=O)C=CC2[O-])[C@@H]([C@H]([C@H](O)[C@@H](CO)O1)O)O',
                                       'name': 'puerarin(1-)',
-                                      'reason': 'Does not contain anthoxanthin '
-                                                'core structure'}],
-    'attempt': 1,
-    'reasoning': 'Upon analyzing the previous code and the outcomes, it '
-                 'appears that the SMARTS patterns used to identify '
-                 'anthoxanthins were too narrow and did not account for the '
-                 'structural diversity of anthoxanthins. Anthoxanthins '
-                 'encompass a broad class of flavonoid pigments, including '
-                 'flavones, flavonols, and their derivatives such as '
-                 'glycosides, methoxylated, and sulfonated forms.\n'
+                                      'reason': 'No benzopyran-4-one core '
+                                                'structure found'}],
+    'attempt': 0,
+    'reasoning': "Okay, let's outline a plan to classify anthoxanthins using "
+                 'their SMILES strings.\n'
                  '\n'
-                 'The previous code only checks for specific flavone and '
-                 'flavonol core structures, which may not match the actual '
-                 'structures of the provided molecules. Additionally, the '
-                 'patterns may not have properly accounted for aromaticity and '
-                 'substituents in RDKit.\n'
+                 'Anthoxanthins are a subclass of flavonoids, characterized by '
+                 'a flavone or flavonol (benzopyran-4-one) core structure. '
+                 'They typically have hydroxyl groups (-OH) and methoxy groups '
+                 '(-OCH3) substitutions, and can be glycosylated.\n'
+                 "Here's the strategy:\n"
                  '\n'
-                 'To improve the classification, we need to:\n'
+                 '1.  **Core Structure:** Identify the benzopyran-4-one '
+                 '(flavone/flavonol) skeleton. We can use SMARTS patterns for '
+                 'this. This will be the most important step.\n'
+                 '2.  **Hydroxyl and Methoxy Groups:** Check for the presence '
+                 'of multiple -OH and -OCH3 groups. While not strictly unique, '
+                 "they're common in anthoxanthins.\n"
+                 '3.  **Glycosylation:** Anthoxanthins are frequently found as '
+                 'glycosides. Look for sugar moieties connected to the core '
+                 'structure. This might be difficult to be very precise, so we '
+                 'will try to search for a O-C-O pattern outside of the '
+                 'flavone core.\n'
+                 '4. **Additional aromatic rings:** Some of the examples show '
+                 'additional aromatic rings attached to the main flavone '
+                 'scaffold\n'
+                 '5.  **Reasoning:** Provide a clear reason for classification '
+                 'based on whether the core structure and other characteristic '
+                 'features were identified.\n'
                  '\n'
-                 '1. **Define more comprehensive SMARTS patterns** that '
-                 'accurately represent the flavone and flavonol cores, '
-                 'including variations in substituents like hydroxyl and '
-                 'methoxy groups.\n'
-                 '2. **Account for glycosylated forms** by allowing sugars '
-                 'attached at various positions on the core structure.\n'
-                 '3. **Ensure correct representation of aromaticity** in the '
-                 "SMARTS patterns to match RDKit's handling of aromatic atoms "
-                 'and bonds.\n'
-                 '4. **Include patterns for other anthoxanthin subclasses**, '
-                 'such as flavanones and chalcones, if necessary.\n'
-                 '\n'
-                 'By broadening the SMARTS patterns and making them more '
-                 'flexible, we can improve the detection of anthoxanthins in '
-                 'the provided examples.\n'
-                 '\n'
-                 "Now, here's the updated code:",
+                 "Let's put this into code.",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 509,
-    'num_false_positives': 100,
-    'num_true_negatives': 12102,
-    'num_false_negatives': 8,
+    'num_true_positives': 508,
+    'num_false_positives': 1070,
+    'num_true_negatives': 140713,
+    'num_false_negatives': 9,
     'num_negatives': None,
-    'precision': 0.8357963875205254,
-    'recall': 0.9845261121856866,
-    'f1': 0.9040852575488456,
-    'accuracy': 0.9915087664124538,
-    'negative_predictive_value': 0.9993393889347647}
+    'precision': 0.32192648922686945,
+    'recall': 0.9825918762088974,
+    'f1': 0.48496420047732697,
+    'accuracy': 0.9924174279690794,
+    'negative_predictive_value': 0.999936044115348}

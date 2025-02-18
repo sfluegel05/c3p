@@ -2,58 +2,44 @@
 Classifies: CHEBI:87658 decanoate ester
 """
 """
-Classifies: decanoate ester
-Definition: A fatty acid ester resulting from the formal condensation of the carboxy group 
-of decanoic acid (capric acid) with the hydroxy group of an alcohol or phenol.
+Classifies: Decanoate ester
+A decanoate ester is defined as a fatty acid ester resulting from the formal condensation 
+of the carboxy group of decanoic (capric) acid with the hydroxy group of an alcohol or phenol.
+Decanoic acid is CH3-(CH2)8-C(=O)OH and thus the ester moiety will contain the acyl fragment:
+CH3-(CH2)8-C(=O)O (or its deprotonated form).
 """
 from rdkit import Chem
-from rdkit.Chem import AllChem
 
 def is_decanoate_ester(smiles: str):
     """
     Determines if a molecule is a decanoate ester based on its SMILES string.
+    The method searches for a decanoate acyl fragment:
+      CH3-(CH2)8-C(=O)O  (or with a negatively charged oxygen instead of O)
     
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
         
     Returns:
-        bool: True if molecule is a decanoate ester, False otherwise
-        str: Reason for classification
+        bool: True if the decanoate ester substructure is found, False otherwise.
+        str: Explanation or reason for the classification.
     """
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Look for ester group pattern (-O-C(=O)-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if not ester_matches:
-        return False, "No ester group found"
-    
-    # Pattern for decanoyl group (10-carbon chain with carbonyl)
-    # Note: The pattern looks for C(=O)-CCCCCCCCC
-    decanoyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
-    decanoyl_matches = mol.GetSubstructMatches(decanoyl_pattern)
-    
-    if not decanoyl_matches:
-        return False, "No decanoyl group found"
-    
-    # Check if any decanoyl group is part of an ester
-    found_decanoate_ester = False
-    for ester_match in ester_matches:
-        for decanoyl_match in decanoyl_matches:
-            # Check if the carbonyl carbon of the ester matches the carbonyl carbon of the decanoyl
-            if ester_match[1] == decanoyl_match[0]:
-                found_decanoate_ester = True
-                break
-        if found_decanoate_ester:
-            break
-            
-    if not found_decanoate_ester:
-        return False, "Decanoyl group not connected via ester linkage"
-    
-    return True, "Contains decanoyl group connected via ester linkage"
+
+    # Define SMARTS patterns for decanoate ester acyl fragment.
+    # The first pattern matches CH3-CH2-CH2-CH2-CH2-CH2-CH2-CH2-CH2-C(=O)O
+    # (note: 1 CH3 followed by eight CH2 groups gives 9 carbons; the carbonyl carbon is the 10th).
+    decanoate_pattern1 = Chem.MolFromSmarts("[CH3][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]C(=O)O")
+    # The second pattern allows for the ester oxygen being deprotonated: [O-]
+    decanoate_pattern2 = Chem.MolFromSmarts("[CH3][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]C(=O)[O-]")
+
+    # Check if either pattern is present in the molecule
+    if mol.HasSubstructMatch(decanoate_pattern1) or mol.HasSubstructMatch(decanoate_pattern2):
+        return True, "Contains decanoate ester moiety (decanoic acyl group detected)"
+    else:
+        return False, "Decanoate ester fragment not found in the molecule"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:87658',
@@ -67,61 +53,131 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:87658',
                           'xrefs': ['PMID:23383323'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 25,
+                           'log_lines_of_code': 3.2188758248682006,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 2],
+                           'max_indent': 2,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'HasSubstructMatch',
+                                                 'MolFromSmarts',
+                                                 'MolFromSmiles'],
+                           'methods_called_count': 3,
+                           'smarts_strings': [   '[CH3][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]C(=O)[O-]',
+                                                 '[CH3][CH2][CH2][CH2][CH2][CH2][CH2][CH2][CH2]C(=O)O'],
+                           'smarts_strings_count': 2,
+                           'defs': ['is_decanoate_ester(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'True, "Contains decanoate ester '
+                                          'moiety (decanoic acyl group '
+                                          'detected)"',
+                                          'False, "Decanoate ester fragment '
+                                          'not found in the molecule"'],
+                           'returns_count': 3,
+                           'complexity': 2.44377516497364},
     'message': None,
-    'sample_true_negatives': [   {   'smiles': 'O1[C@H](CC2=C(C=3C=4C(C(O)=C5C3C[C@H](C)OC5)=C(OC)C=C(C4)OC)C6=CC(OC)=CC(=C6C(=C2C1)O)OC)C',
-                                     'name': '(3S)-5-[(3S)-10-hydroxy-7,9-dimethoxy-3-methyl-3,4-dihydro-1H-benzo[g]isochromen-5-yl]-7,9-dimethoxy-3-methyl-3,4-dihydro-1H-benzo[g]isochromen-10-ol',
-                                     'reason': 'No ester group found'},
-                                 {   'smiles': 'C[C@H]1CN([C@@H](COC2=C(C=CC(=C2)NC(=O)C)C(=O)N(C[C@@H]1OC)C)C)C(=O)C3CCC3',
-                                     'name': 'N-[(5R,6S,9R)-8-[cyclobutyl(oxo)methyl]-5-methoxy-3,6,9-trimethyl-2-oxo-11-oxa-3,8-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]acetamide',
-                                     'reason': 'No ester group found'},
-                                 {   'smiles': '[C@@]12(CCCC[C@@]1(C=C[C@@H]([C@@H]2CC[C@H](C[C@H](CC(=O)[O-])O)O)C)[H])[H]',
-                                     'name': '4a,5-dihydro-ML-236C carboxylate',
-                                     'reason': 'No ester group found'},
-                                 {   'smiles': 'S(=O)(CC1OC(N2C3=NC=NC(N)=C3N=C2)C(O)C1O)C',
-                                     'name': "(S)-5'-Deoxy-5'-(methylsulfinyl)adenosine",
-                                     'reason': 'No ester group found'},
-                                 {   'smiles': 'OC=1C(=C(C=2C=3C(NC2)=CC=CC3)C(=O)C(=O)C1C=4C=5C(NC4)=CC=CC5)CC=C(C)C',
-                                     'name': 'Ochrindole D',
-                                     'reason': 'No ester group found'},
-                                 {   'smiles': 'O(C1C(O)C(OC1OC2=C(OC=3C(C2=O)=C(O)C=C(OC4OC(C(O)C(O)C4O)C)C3)C5=CC=C(O)C=C5)CO)C6OCC(O)(C6O)CO',
-                                     'name': 'Kaempferol '
-                                             '3-apiosyl-(1->2)-alpha-L-arabinofuranoside-7-rhamnoside',
-                                     'reason': 'No ester group found'},
-                                 {   'smiles': '[O-]C(=O)OON=O',
-                                     'name': 'nitrosoperoxycarbonate(1-)',
-                                     'reason': 'No decanoyl group found'},
-                                 {   'smiles': 'O=C1C=2C(=O)OC34C2OC(C(O)C3C=CC(C(CC1C)C)=O)C(C)C4',
-                                     'name': 'Atrop-Abybetaomicin C',
-                                     'reason': 'No decanoyl group found'},
-                                 {   'smiles': 'OC(CC(C)C)/C=C/C',
-                                     'name': 'Rhynchophorol.',
-                                     'reason': 'No ester group found'},
-                                 {   'smiles': 'O=C1C2=C(OC3=C1C=NC(=C3)C)C(OC(=O)C)=C(OC)C=C2C(=O)OC',
-                                     'name': 'Diaporphasine C',
-                                     'reason': 'No decanoyl group found'}],
+    'sample_true_negatives': [   {   'smiles': 'O=C(N1[C@H](CCC1)C(O)=O)[C@@H](NC(=O)[C@@H](N)CC(O)=O)CCC(=O)N',
+                                     'name': 'Asp-Gln-Pro',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': 'O1C=2C(C(O)=C(CC3=C(O)C=4C(OC3=O)=CC=CC4C)C1=O)=C(C=CC2)C',
+                                     'name': 'Gerberinol',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': 'O=C(O)/C(=C/[C@H]1C=C(CC[C@@H]1C(C)C)CO)/COC(=O)C',
+                                     'name': '3-acetylgliocladic acid',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': 'O=C(CCCCCCCCC)C=1C=CC(=NC1)CCCCCCCCC',
+                                     'name': '1-(6-Nonylpyridin-3-yl)decan-1-one',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': 'CCC(=O)O[C@H]1[C@H](C)O[C@H](C[C@@]1(C)O)O[C@@H]1[C@@H](C)O[C@@H](O[C@H]2[C@@H](CC=O)C[C@@H](C)[C@@H](O)\\C=C\\C=C\\C[C@@H](C)OC(=O)C[C@@H](O)[C@@H]2OC)[C@H](O)[C@H]1N(C)C',
+                                     'name': 'Leucomycin A7',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': 'C[C@H]1O[C@H](C[C@@H](O)[C@@H]1O)c1ccc2C(=O)C3=C([C@H](O)C[C@]4(O)C[C@@](C)(O)CC(=O)[C@]34O)C(=O)c2c1O',
+                                     'name': 'Urdamycinone F',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': 'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP([O-])(=O)OP([O-])([O-])=O',
+                                     'name': 'all-trans-dodecaprenyl '
+                                             'diphosphate(3-)',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': '[O-][N+](=O)N1CN(CN(CN(C1)[N+]([O-])=O)[N+]([O-])=O)[N+]([O-])=O',
+                                     'name': 'octogen',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': 'CC(=O)NCCC[NH2+]CCCC[NH2+]CCCNC(C)=O',
+                                     'name': 'N(1),N(12)-diacetylsperminium(2+)',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'},
+                                 {   'smiles': 'C[C@@H]([C@H]1CC[C@H]2[C@H](CCc3cc(O)ccc3C)C(=O)CC[C@]12C)C(O)=O',
+                                     'name': '3-hydroxy-9-oxo-9,10-seco-23,24-bisnorchola-1,3,5(10)-trien-22-oic '
+                                             'acid',
+                                     'reason': 'Decanoate ester fragment not '
+                                               'found in the molecule'}],
     'sample_false_negatives': [],
     'attempt': 0,
-    'reasoning': 'Let me create a program to classify decanoate esters. The '
-                 'key characteristics to check for are:\n'
+    'reasoning': 'Below is our reasoning before the code:\n'
                  '\n'
-                 '1. Presence of a decanoyl group (10-carbon chain with a '
-                 'carbonyl)\n'
-                 '2. An ester linkage (-C(=O)O-)\n'
-                 '3. The decanoyl group must be connected via the ester '
-                 'linkage\n'
+                 'To define a decanoate ester we focus on detecting the ester '
+                 'substructure that comes specifically from decanoic (capric) '
+                 'acid. Decanoic acid has a linear 10‐carbon chain '
+                 '(CH3–(CH2)8–C(=O)OH) so the acyl fragment in an ester will '
+                 'be “CH3–(CH2)8–C(=O)O” (or the deprotonated form '
+                 '“…C(=O)[O-]”). Our approach is to parse the input SMILES '
+                 'using RDKit and then search for this acyl chain substructure '
+                 'by using a SMARTS pattern that encodes exactly nine '
+                 'contiguous carbon atoms (with the first being a CH3 and the '
+                 'next eight as CH2 groups) followed by a carbonyl and an '
+                 'ester oxygen. In the code we build two SMARTS patterns (one '
+                 'for an –OH and one for an –O- form) and if either of these '
+                 'substructure matches is found we classify the molecule as a '
+                 'decanoate ester.\n'
                  '\n'
-                 "Here's the implementation:",
+                 'Below is the complete Python code.',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
     'num_true_positives': 32,
-    'num_false_positives': 100,
-    'num_true_negatives': 1545,
+    'num_false_positives': 149,
+    'num_true_negatives': 142119,
     'num_false_negatives': 0,
     'num_negatives': None,
-    'precision': 0.24242424242424243,
+    'precision': 0.17679558011049723,
     'recall': 1.0,
-    'f1': 0.3902439024390244,
-    'accuracy': 0.9403697078115683,
+    'f1': 0.3004694835680751,
+    'accuracy': 0.9989529163738581,
     'negative_predictive_value': 1.0}

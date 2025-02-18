@@ -74,6 +74,7 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:167164',
                           'xrefs': ['Wikipedia:Mineral_(nutrient)'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': None,
     'message': '\n'
                'Error: Python argument types in\n'
                '    Mol.HasSubstructMatch(Mol, NoneType)\n'

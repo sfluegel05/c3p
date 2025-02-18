@@ -1,94 +1,93 @@
 """
 Classifies: CHEBI:33856 aromatic amino acid
 """
+#!/usr/bin/env python3
 """
-Classifies: CHEBI:33857 aromatic amino acid
+Classifies: Aromatic Amino Acid
+Definition: An amino acid whose structure includes an aromatic ring.
+Improved criteria:
+  - Must contain a carboxyl (or carboxylate) group in the amino acid backbone.
+  - Must contain an amino group (which may be N‐substituted) attached at the α–carbon.
+  - Must contain at least one aromatic ring.
+  - Must be a small molecule (heavy atom count <= 30) to avoid peptides and larger molecules.
+The approach uses a backbone SMARTS that looks for the fragment:
+   [NX3;!$(NC(=O))][C;H1](C(=O)[O;H1,-])
+which captures the connectivity of most (non–glycine) amino acids.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 
 def is_aromatic_amino_acid(smiles: str):
     """
-    Determines if a molecule is an aromatic amino acid based on its SMILES string.
-    An aromatic amino acid is defined as an amino acid whose structure includes an aromatic ring.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is an aromatic amino acid, False otherwise
-        str: Reason for classification
-    """
+    Determines if a molecule is an aromatic amino acid.
     
-    # Parse SMILES
+    To be classified as an aromatic amino acid, the molecule must:
+      - Have an amino acid backbone with a nitrogen directly bound to an α–carbon
+        that carries a carboxyl (or carboxylate) group.
+      - Contain at least one aromatic ring.
+      - Not be too large (heavy atom count <= 30).
+    
+    This method uses a backbone SMARTS pattern:
+      [NX3;!$(NC(=O))][C;H1](C(=O)[O;H1,-])
+    which will match both free and N–substituted amino groups.
+    
+    Args:
+        smiles (str): SMILES string of the molecule.
+        
+    Returns:
+        bool: True if the molecule meets criteria for an aromatic amino acid, False otherwise.
+        str: Explanation for the decision.
+    """
+    # Parse the SMILES string into an RDKit molecule.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Check for amino acid pattern: at least one amino group (NH2, NH, or N) and one carboxyl group (COOH, COOR, or CONH)
-    amino_pattern = Chem.MolFromSmarts("[NH2,NH,N]")
-    carboxyl_pattern = Chem.MolFromSmarts("C(=O)[OH,OR,NH2,NH]")
     
-    if not mol.HasSubstructMatch(amino_pattern):
-        return False, "No amino group found"
-    if not mol.HasSubstructMatch(carboxyl_pattern):
-        return False, "No carboxyl group found"
-
-    # Check for aromatic rings
-    aromatic_rings = mol.GetSubstructMatches(Chem.MolFromSmarts("[a]"))
-    if not aromatic_rings:
+    # Add explicit hydrogens so that hydrogen counts are correct.
+    mol = Chem.AddHs(mol)
+    
+    # Check molecular size to avoid peptides and larger biomolecules.
+    heavy_atoms = mol.GetNumHeavyAtoms()
+    if heavy_atoms > 30:
+        return False, f"Molecule is too large (has {heavy_atoms} heavy atoms) to be a single amino acid"
+    
+    # Check for at least one aromatic ring.
+    ring_info = mol.GetRingInfo()
+    aromatic_ring_found = False
+    for ring in ring_info.AtomRings():
+        if len(ring) < 5:
+            continue
+        # Verify every atom in the ring is aromatic.
+        if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+            aromatic_ring_found = True
+            break
+    if not aromatic_ring_found:
         return False, "No aromatic ring found"
+    
+    # SMARTS pattern to capture the amino acid backbone:
+    # [NX3;!$(NC(=O))] : A trivalent nitrogen not attached to a carbonyl (thus not an amide).
+    # [C;H1]         : An α–carbon carrying exactly one hydrogen (typical for non–glycine residues).
+    # (C(=O)[O;H1,-]) : A carboxyl group (which can be protonated or deprotonated).
+    amino_acid_smarts = "[NX3;!$(NC(=O))][C;H1](C(=O)[O;H1,-])"
+    aa_pattern = Chem.MolFromSmarts(amino_acid_smarts)
+    if aa_pattern is None:
+        return False, "Error in parsing amino acid SMARTS pattern"
+    
+    if not mol.HasSubstructMatch(aa_pattern):
+        return False, "No amino acid backbone (N–α–C–(C=O)[O]) fragment found"
+    
+    return True, "Molecule contains an amino acid backbone and an aromatic ring, with appropriate size."
 
-    # Ensure the aromatic ring is part of the amino acid structure
-    for ring in aromatic_rings:
-        for atom_idx in ring:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            # Check if the aromatic ring is connected to the amino acid backbone or side chain
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == "C":
-                    # Check if the carbon is part of the amino acid structure
-                    for neighbor_neighbor in neighbor.GetNeighbors():
-                        if neighbor_neighbor.GetSymbol() in ["N", "O"]:
-                            return True, "Contains amino acid functional groups and an aromatic ring integrated into the structure"
-
-    return False, "Aromatic ring not integrated into amino acid structure"
-
-
-__metadata__ = {
-    'chemical_class': {
-        'id': 'CHEBI:33857',
-        'name': 'aromatic amino acid',
-        'definition': 'An amino acid whose structure includes an aromatic ring.',
-        'parents': ['CHEBI:33704', 'CHEBI:33857']
-    },
-    'config': {
-        'llm_model_name': 'lbl/claude-sonnet',
-        'f1_threshold': 0.8,
-        'max_attempts': 5,
-        'max_positive_instances': None,
-        'max_positive_to_test': None,
-        'max_negative_to_test': None,
-        'max_positive_in_prompt': 50,
-        'max_negative_in_prompt': 20,
-        'max_instances_in_prompt': 100,
-        'test_proportion': 0.1
-    },
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199
-}
+# Example usage (this example can be removed or commented out if using as a module)
+if __name__ == "__main__":
+    # Test examples: You can try with N-methyl-D-dopa and D-phenylalanine
+    examples = {
+        "N-methyl-D-dopa": "CN[C@H](CC1=CC=C(O)C(O)=C1)C(O)=O",
+        "D-phenylalanine": "N[C@H](Cc1ccccc1)C(O)=O"
+    }
+    for name, smi in examples.items():
+        result, reason = is_aromatic_amino_acid(smi)
+        print(f"{name}: {result}\n  Reason: {reason}\n")
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:33856',
@@ -100,374 +99,291 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:33856',
                                        'Wikipedia:Aromatic_amino_acid'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 57,
+                           'log_lines_of_code': 4.04305126783455,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2],
+                           'max_indent': 3,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'items',
+                                                 'GetNumHeavyAtoms',
+                                                 'GetRingInfo',
+                                                 'AtomRings',
+                                                 'HasSubstructMatch',
+                                                 'MolFromSmarts',
+                                                 'AddHs',
+                                                 'GetIsAromatic',
+                                                 'GetAtomWithIdx',
+                                                 'MolFromSmiles'],
+                           'methods_called_count': 10,
+                           'smarts_strings': ['amino_acid_smarts'],
+                           'smarts_strings_count': 1,
+                           'defs': ['is_aromatic_amino_acid(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Molecule is too large (has '
+                                          '{heavy_atoms} heavy atoms) to be a '
+                                          'single amino acid"',
+                                          'False, "No aromatic ring found"',
+                                          'False, "Error in parsing amino acid '
+                                          'SMARTS pattern"',
+                                          'False, "No amino acid backbone '
+                                          '(N–α–C–(C=O)[O]) fragment found"',
+                                          'True, "Molecule contains an amino '
+                                          'acid backbone and an aromatic ring, '
+                                          'with appropriate size."'],
+                           'returns_count': 6,
+                           'complexity': 4.8086102535669095},
     'message': '\n'
-               'Attempt failed: F1 score of 0.5703422053231938 is too low.\n'
+               'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: O=C(O)C1=C(NCCO)C=CC=C1 NAME: '
-               '2-((2-hydroxyethyl)amino)benzoic acid REASON: CORRECT Contains '
-               'amino acid functional groups and an aromatic ring integrated '
-               'into the backbone\n'
-               ' * SMILES: CN[C@H](CC1=CC=C(O)C(O)=C1)C(O)=O NAME: '
-               'N-methyl-D-dopa REASON: CORRECT Contains amino acid functional '
-               'groups and an aromatic ring integrated into the backbone\n'
-               ' * SMILES: C1(C(O)=O)=CC=C(N)C=C1 NAME: 4-aminobenzoic acid '
-               'REASON: CORRECT Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               ' * SMILES: CC(=O)Nc1c(I)cc(I)c(C(O)=O)c1I NAME: Acetrizoic '
-               'acid REASON: CORRECT Contains amino acid functional groups and '
-               'an aromatic ring integrated into the backbone\n'
-               ' * SMILES: Nc1ccc(cn1)C(O)=O NAME: 6-aminonicotinic acid '
-               'REASON: CORRECT Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               ' * SMILES: C1=CC=CC2=C1NC=3[C@@H](C=CCC3N2)C(=O)O NAME: '
-               '(1R)-1,4,5,10-tetrahydrophenazine-1-carboxylic acid REASON: '
-               'CORRECT Contains amino acid functional groups and an aromatic '
-               'ring integrated into the backbone\n'
-               ' * SMILES: O=C(O)C1=C(N[C@@H](C(=O)C)C)C=CC=C1 NAME: '
-               '(R)-2-(1-methyl-2-oxopropylamino)-benzoic acid REASON: CORRECT '
-               'Contains amino acid functional groups and an aromatic ring '
-               'integrated into the backbone\n'
-               ' * SMILES: N[C@H](CC1=CC=C(CC(O)=O)C=C1)C(O)=O NAME: '
-               '4-(carboxymethyl)-D-phenylalanine REASON: CORRECT Contains '
-               'amino acid functional groups and an aromatic ring integrated '
-               'into the backbone\n'
-               ' * SMILES: N[C@@H](Cc1cc(Cl)c(O)c(Cl)c1)C(O)=O NAME: '
-               '3,5-dichloro-L-tyrosine REASON: CORRECT Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: C1=CC=CC2=C1N[C@]3(C(=CC=CC3=N2)C(=O)O)[H] NAME: '
-               '(10aS)-10,10a-dihydrophenazine-1-carboxylic acid REASON: '
-               'CORRECT Contains amino acid functional groups and an aromatic '
-               'ring integrated into the backbone\n'
-               ' * SMILES: Cc1c(Cl)cccc1Nc1ccccc1C(O)=O NAME: tolfenamic acid '
-               'REASON: CORRECT Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               ' * SMILES: CCCCNc1ccc(cc1)C(O)=O NAME: 4-(butylamino)benzoic '
-               'acid REASON: CORRECT Contains amino acid functional groups and '
-               'an aromatic ring integrated into the backbone\n'
-               ' * SMILES: '
-               'O=C1C=2O[C@@H]3O[C@H](C)[C@@H]([C@@H]([C@@]3(C2C(=O)C=C4C1=C5C(=C(N(C6=C(C(=O)O)C=CC=C6)C(=C5)C)CCC)C4=O)O)O)O '
-               'NAME: Rubrulone B REASON: CORRECT Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: Cc1ccc(Cl)c(Nc2ccccc2C(O)=O)c1Cl NAME: meclofenamic '
-               'acid REASON: CORRECT Contains amino acid functional groups and '
-               'an aromatic ring integrated into the backbone\n'
-               ' * SMILES: COc1cccc(C(O)=O)c1N NAME: 3-methoxyanthranilic acid '
-               'REASON: CORRECT Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               ' * SMILES: NC(CC1=CC=C(C=C1)N=[N+]=[N-])C(O)=O NAME: '
-               '4-azidophenylalanine REASON: CORRECT Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: Cc1cccc(Nc2ccccc2C(O)=O)c1C NAME: mefenamic acid '
-               'REASON: CORRECT Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               ' * SMILES: N[C@H](Cc1c[nH]cn1)C(O)=O NAME: D-histidine REASON: '
-               'CORRECT Contains amino acid functional groups and an aromatic '
-               'ring integrated into the backbone\n'
-               ' * SMILES: Nc1ccccc1C(O)=O NAME: anthranilic acid REASON: '
-               'CORRECT Contains amino acid functional groups and an aromatic '
-               'ring integrated into the backbone\n'
-               ' * SMILES: N(C1=C(C(O)=O)C=CC(=C1)Cl)C2=C(C(O)=O)C=CC=C2 NAME: '
-               'lobenzarit REASON: CORRECT Contains amino acid functional '
-               'groups and an aromatic ring integrated into the backbone\n'
-               ' * SMILES: Nc1ccc(C(O)=O)c(Cl)c1 NAME: 4-amino-2-chlorobenzoic '
-               'acid REASON: CORRECT Contains amino acid functional groups and '
-               'an aromatic ring integrated into the backbone\n'
-               ' * SMILES: CNc1ccccc1C(O)=O NAME: N-methylanthranilic acid '
-               'REASON: CORRECT Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               ' * SMILES: NC(Cc1ccc(O)c(O)c1)C(O)=O NAME: dopa REASON: '
-               'CORRECT Contains amino acid functional groups and an aromatic '
-               'ring integrated into the backbone\n'
-               ' * SMILES: '
-               'CNc1ccc2oc(C[C@@H]3OC4(CC[C@@H]3C)O[C@H](C(C)C(=O)c3ccc[nH]3)[C@H](C)C[C@H]4C)nc2c1C(O)=O '
-               'NAME: Calcimycin REASON: CORRECT Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: N[C@@H](Cc1c[nH]cn1)C(O)=O NAME: L-histidine '
-               'REASON: CORRECT Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               'False positives: SMILES: '
-               'O=C(O)CC=1N=C2[C@H](NC(=O)C)[C@H](O)[C@@H]([C@H](N2C1)CO)O '
-               'NAME: Nagstatin REASON: WRONGLY CLASSIFIED Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: '
-               'ClC1=C(OC)C=CC(=C1)C[C@H](NC(=O)/C=C/C[C@H](O)[C@@H]([C@@H](O)[C@@H](O)C2=CC=CC=C2)C)C(=O)O '
-               'NAME: Cryptophycin G REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: '
-               'O=C1O[C@H]([C@H](CCCC)C)CC(=O)N[C@@H](CC2=CC=CC=C2)C(N[C@H](C(N[C@@H]1[C@@H](CC)C)=O)C)=O '
-               'NAME: Beauveriolide III REASON: WRONGLY CLASSIFIED Contains '
-               'amino acid functional groups and an aromatic ring integrated '
-               'into the backbone\n'
-               ' * SMILES: C1CCC(C(C1)C(=O)NC2=CC3=C(C=C2)OCCO3)C(=O)O NAME: '
-               '2-[(2,3-dihydro-1,4-benzodioxin-6-ylamino)-oxomethyl]-1-cyclohexanecarboxylic '
-               'acid REASON: WRONGLY CLASSIFIED Contains amino acid functional '
-               'groups and an aromatic ring integrated into the backbone\n'
-               ' * SMILES: '
-               'O1C(C(CCCCC(O)C)C)CC(O)C(C(=O)N[C@@H](C(=O)N2[C@@](CCC2)(C1=O)[H])CC3=CC=CC=C3)C '
-               'NAME: Acremolide A REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: '
-               'OC(=O)\\C=C/C(O)=O.[H][C@@]12CN(C)C[C@@]1([H])c1cc(Cl)ccc1Oc1ccccc21 '
-               'NAME: (R,R)-asenapine maleate REASON: WRONGLY CLASSIFIED '
-               'Contains amino acid functional groups and an aromatic ring '
-               'integrated into the backbone\n'
-               ' * SMILES: '
-               'O=C1N(C=CC(N1)=O)[C@@H]2O[C@H]([C@@H](O[C@@H]3O[C@H](CN)[C@H]([C@H]3OC)O)[C@H](NCCCNC(=O)[C@@H](NC(=O)[C@@H](NC(=O)N[C@H](C(=O)O)C(C)C)[C@H]4NC(=NCC4)N)[C@@H](OC(=O)CCCCCC(C)C)C(C)C)C(=O)O)[C@H]([C@H]2O)O '
-               'NAME: Muraymycin B4 REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: '
-               'BrC1=C(O)C=CC(=C1)C[C@H]2N(C(=O)[C@@H](NC(=O)C[C@H](O)CC=C(CC[C@@H](OC(\\C(\\NC2=O)=C(/OC)\\C3=CC=CC=C3)=O)C)C)C)C '
-               'NAME: Miuraenamide F REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: '
-               'OC[C@H]1O[C@@H](Oc2cc3C[C@H](Nc3cc2O)C(O)=O)[C@H](O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)C(O)=O)[C@@H](O)[C@@H]1O '
-               'NAME: cyclo-Dopa-glucuronylglucoside REASON: WRONGLY '
-               'CLASSIFIED Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               ' * SMILES: '
-               'COc1cc2C(=O)O[C@@H]3[C@@H](O)C=C4CCN(C)[C@H]4[C@@H]3c2cc1O '
-               'NAME: 9-O-Demethyl-2alpha-hydroxyhomolycorine REASON: WRONGLY '
-               'CLASSIFIED Contains amino acid functional groups and an '
-               'aromatic ring integrated into the backbone\n'
-               ' * SMILES: '
-               'O=C(N[C@@H](CC(=O)N)C(O)=O)[C@@H](NC(=O)CN)CC=1C=2C(NC1)=CC=CC2 '
-               'NAME: Gly-Trp-Asn REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: CC(C(=O)O)OC1=CC=C(C=C1)C(=O)NC2=CC(=C(C=C2)OC)Cl '
-               'NAME: '
-               '2-[4-[(3-chloro-4-methoxyanilino)-oxomethyl]phenoxy]propanoic '
-               'acid REASON: WRONGLY CLASSIFIED Contains amino acid functional '
-               'groups and an aromatic ring integrated into the backbone\n'
-               ' * SMILES: '
-               'S(CC[C@H](N)C(=O)NCC(=O)N[C@@H](CC1=CC=C(O)C=C1)C(O)=O)C NAME: '
-               'Met-Gly-Tyr REASON: WRONGLY CLASSIFIED Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: '
-               'O=C1NC(=NC=2NCC(N(C21)C=O)CNC3=CC=C(C=C3)C(=O)N[C@H](CCC(O)=O)C(O)=O)N '
-               'NAME: Pteroyl-D-glutamic acid REASON: WRONGLY CLASSIFIED '
-               'Contains amino acid functional groups and an aromatic ring '
-               'integrated into the backbone\n'
-               ' * SMILES: '
-               'O=C1O[C@H]([C@@H](NC(=O)[C@H](NC(=O)[C@@H](NC(=O)[C@H]2N(C(=O)[C@@H](NC(=O)C=3NC=CC3)[C@H](O)C)CCC2)C(C)C)C(C)C)C(=O)N[C@H]([C@@H](O)C)C(N[C@H](C(N[C@H]1CC4=CC=C(O)C=C4)=O)CC5=CC=C(O)C=C5)=O)C '
-               'NAME: Endopyrrole C REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: O1C(N2C=3N=C(N=C(OCC(O)=O)C3N=C2)N)CC(O)C1CO NAME: '
-               'O6-CM-dG REASON: WRONGLY CLASSIFIED Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: '
-               'O=C(N[C@@H](CCC(=O)N)C(O)=O)[C@@H](NC(=O)[C@@H](N)C)CC=1C=2C(NC1)=CC=CC2 '
-               'NAME: Ala-Trp-Gln REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: '
-               'O=C(N1[C@@H](CCC1)C(=O)N[C@@H](CC(O)=O)C(O)=O)[C@@H](N)CC2=CC=C(O)C=C2 '
-               'NAME: Tyr-Pro-Asp REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: '
-               'O=C(NCC(=O)N[C@@H](CCC(O)=O)C(O)=O)[C@@H](N)CC1=CC=CC=C1 NAME: '
-               'Phe-Gly-Glu REASON: WRONGLY CLASSIFIED Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: C1(=CNC2=C1C=C(C=C2)Cl)C[C@@H](C(=O)O)N NAME: '
-               '5-chloro-L-tryptophan REASON: WRONGLY CLASSIFIED Contains '
-               'amino acid functional groups and an aromatic ring integrated '
-               'into the backbone\n'
-               ' * SMILES: '
-               'O=C1OC(CC(=O)OC(C=CC(C(=CCC=2C1=C(O)C=CC2)C)O)C)C/C=C/NC(=O)/C=C\\C=N/OC '
-               'NAME: YM-75518 REASON: WRONGLY CLASSIFIED Contains amino acid '
-               'functional groups and an aromatic ring integrated into the '
-               'backbone\n'
-               ' * SMILES: '
-               '[H][C@]12SCC(C[N+]3(C)CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\\c1csc(N)n1)C(O)=O '
-               'NAME: cefepime(1+) REASON: WRONGLY CLASSIFIED Contains amino '
-               'acid functional groups and an aromatic ring integrated into '
-               'the backbone\n'
-               ' * SMILES: '
-               'OC(=O)C(F)(F)F.[H][C@@]12CC[C@H](O)[C@H](O)[C@]11CCN2Cc2cc3OCOc3cc12 '
-               'NAME: 4a-dehydroxycrinamabine Trifluoroacetic acid REASON: '
-               'WRONGLY CLASSIFIED Contains amino acid functional groups and '
-               'an aromatic ring integrated into the backbone\n'
-               ' * SMILES: '
-               'O=C1N(C(C(=O)NC(C(=O)NCCCCC(C(NC(C(NC1CCC2=CC=CC=C2)=O)C(CC)C)=O)NC(=O)NC(C(=O)O)CCCCN)CC3=CC=CC=C3)CC(=O)N)C '
-               'NAME: Anabaenopeptin 850 REASON: WRONGLY CLASSIFIED Contains '
-               'amino acid functional groups and an aromatic ring integrated '
-               'into the backbone\n'
-               ' * SMILES: C[C@](N)(CC1=CN=CN1)C(O)=O NAME: '
-               'alpha-methyl-L-histidine REASON: WRONGLY CLASSIFIED Contains '
-               'amino acid functional groups and an aromatic ring integrated '
-               'into the backbone\n'
-               'False negatives: SMILES: C1=COC(=C1)NC(=O)C2=CC=C(C=C2)N NAME: '
-               '4-amino-N-(2-furanyl)benzamide REASON: MISSED No carboxyl '
-               'group found\n'
-               ' * SMILES: CNC(=O)c1ccccc1N NAME: N-Methylanthranilamide '
-               'REASON: MISSED No carboxyl group found\n'
-               ' * SMILES: '
-               'CC1=NC(=CC=C1)NC(=O)C2=CC(=C(C=C2)N(C)C3CCCCC3)[N+](=O)[O-] '
-               'NAME: '
-               '4-[cyclohexyl(methyl)amino]-N-(6-methyl-2-pyridinyl)-3-nitrobenzamide '
-               'REASON: MISSED No carboxyl group found\n'
-               ' * SMILES: '
-               'O(N1C(=O)CCC1=O)C(=O)C2=C(C(=C(N(C([2H])([2H])[2H])C([2H])([2H])[2H])C(=C2[2H])[2H])[2H])[2H] '
-               'NAME: DMABA-d10 NHS ester REASON: MISSED No carboxyl group '
-               'found\n'
-               ' * SMILES: CC(=NNC(=O)C1=CC=CC=C1N)CC(=O)NC2=CC3=C(C=C2)OCO3 '
-               'NAME: '
-               '2-amino-N-[[4-(1,3-benzodioxol-5-ylamino)-4-oxobutan-2-ylidene]amino]benzamide '
-               'REASON: MISSED No carboxyl group found\n'
-               ' * SMILES: CC1=C(C=CC(=C1)I)NC2=C(C(=C(C=C2C(=O)NOCC3CC3)F)F)F '
-               'NAME: '
-               'N-(cyclopropylmethoxy)-3,4,5-trifluoro-2-(4-iodo-2-methylanilino)benzamide '
-               'REASON: MISSED No carboxyl group found\n'
-               ' * SMILES: '
-               'O(N1C(=O)CCC1=O)C(=O)C2=C(C(=C(N(C)C)C(=C2[2H])[2H])[2H])[2H] '
-               'NAME: DMABA-d4 NHS ester REASON: MISSED No carboxyl group '
-               'found\n'
-               ' * SMILES: O=C(ON1C(CC(OC(=O)C)CC1(C)C)(C)C)C2=CC=C(N)C=C2 '
-               'NAME: Benzoic acid, 4-amino-, '
-               '4-acetoxy-2,2,6,6-tetramethyl-1-piperidinyl ester REASON: '
-               'MISSED No carboxyl group found\n'
-               ' * SMILES: CC(=NNC(=O)C1=CC=C(C=C1)N(C)C)C2=CC(=CC=C2)OC NAME: '
-               '4-(dimethylamino)-N-[1-(3-methoxyphenyl)ethylideneamino]benzamide '
-               'REASON: MISSED No carboxyl group found\n'
+               'True positives: NONE\n'
+               'False positives: NONE\n'
+               'False negatives: SMILES: CN[C@H](CC1=CC=C(O)C(O)=C1)C(O)=O '
+               'NAME: N-methyl-D-dopa REASON: MISSED No free amino group (or '
+               'N-H moiety) found\n'
                ' * SMILES: C1=CC(=C(C=C1I)F)NC2=C(C=CC(=C2F)F)C(=O)NOCC(CO)O '
                'NAME: '
                'N-(2,3-dihydroxypropoxy)-3,4-difluoro-2-(2-fluoro-4-iodoanilino)benzamide '
-               'REASON: MISSED No carboxyl group found\n'
+               'REASON: MISSED No carboxylic acid (or carboxylate) group '
+               'found\n'
+               ' * SMILES: N[C@H](Cc1ccccc1)C(O)=O NAME: D-phenylalanine '
+               'REASON: MISSED No free amino group (or N-H moiety) found\n'
+               ' * SMILES: CC(=O)Nc1c(I)cc(I)c(C(O)=O)c1I NAME: Acetrizoic '
+               'acid REASON: MISSED No free amino group (or N-H moiety) found\n'
+               ' * SMILES: Nc1cccc(c1)C(O)=O NAME: 3-aminobenzoic acid REASON: '
+               'MISSED No free amino group (or N-H moiety) found\n'
+               ' * SMILES: '
+               'C(=C1C(N=C(S1)NC=2C=C(C(=CC2)Cl)C(=O)O)=O)(C=3OC(=CC3)C4=CC(=C(C=C4[N+]([O-])=O)C)C)[H] '
+               'NAME: AMPK activator PT 1 REASON: MISSED Molecule is too large '
+               '(has 34 heavy atoms) to be a single amino acid\n'
+               ' * SMILES: N[C@@H](Cc1ccc(O)c(O)c1)C(O)=O NAME: L-dopa REASON: '
+               'MISSED No free amino group (or N-H moiety) found\n'
+               ' * SMILES: NC(Cc1ccc(OP(O)(O)=O)cc1)C(O)=O NAME: '
+               'O(4)-phosphotyrosine REASON: MISSED No free amino group (or '
+               'N-H moiety) found\n'
+               ' * SMILES: Cc1cccc(Nc2ccccc2C(O)=O)c1C NAME: mefenamic acid '
+               'REASON: MISSED No free amino group (or N-H moiety) found\n'
+               ' * SMILES: Cc1cccc(C(O)=O)c1N NAME: 2-Amino-3-methylbenzoate '
+               'REASON: MISSED No free amino group (or N-H moiety) found\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'OC[C@H]1O[C@H](C[C@@H]1O)N1C=NC2=C1N=CNC[C@H]2O',
-                                     'name': 'pentostatin',
-                                     'reason': 'No carboxyl group found'},
-                                 {   'smiles': 'O1C(CCC=2C1=CC(OC3OC(C(O)C(O)C3O)C(O)=O)=C(C2OC)C=4C(=O)C=5C(OC4)=CC(O)=C(O)C5)(C)C',
-                                     'name': '6-{[6-(6,7-dihydroxy-4-oxo-4H-chromen-3-yl)-5-methoxy-2,2-dimethyl-3,4-dihydro-2H-1-benzopyran-7-yl]oxy}-3,4,5-trihydroxyoxane-2-carboxylic '
+    'sample_true_negatives': [   {   'smiles': 'O=C(N1[C@H](CCC1)C(O)=O)[C@@H](NC(=O)[C@@H](N)CC(O)=O)CCC(=O)N',
+                                     'name': 'Asp-Gln-Pro',
+                                     'reason': 'No aromatic ring found'},
+                                 {   'smiles': 'O1C=2C(C(O)=C(CC3=C(O)C=4C(OC3=O)=CC=CC4C)C1=O)=C(C=CC2)C',
+                                     'name': 'Gerberinol',
+                                     'reason': 'No amino acid backbone '
+                                               '(N–α–C–(C=O)[O]) fragment '
+                                               'found'},
+                                 {   'smiles': 'O=C(O)/C(=C/[C@H]1C=C(CC[C@@H]1C(C)C)CO)/COC(=O)C',
+                                     'name': '3-acetylgliocladic acid',
+                                     'reason': 'No aromatic ring found'},
+                                 {   'smiles': 'O=C(CCCCCCCCC)C=1C=CC(=NC1)CCCCCCCCC',
+                                     'name': '1-(6-Nonylpyridin-3-yl)decan-1-one',
+                                     'reason': 'No amino acid backbone '
+                                               '(N–α–C–(C=O)[O]) fragment '
+                                               'found'},
+                                 {   'smiles': 'CCC(=O)O[C@H]1[C@H](C)O[C@H](C[C@@]1(C)O)O[C@@H]1[C@@H](C)O[C@@H](O[C@H]2[C@@H](CC=O)C[C@@H](C)[C@@H](O)\\C=C\\C=C\\C[C@@H](C)OC(=O)C[C@@H](O)[C@@H]2OC)[C@H](O)[C@H]1N(C)C',
+                                     'name': 'Leucomycin A7',
+                                     'reason': 'Molecule is too large (has 53 '
+                                               'heavy atoms) to be a single '
+                                               'amino acid'},
+                                 {   'smiles': 'C[C@H]1O[C@H](C[C@@H](O)[C@@H]1O)c1ccc2C(=O)C3=C([C@H](O)C[C@]4(O)C[C@@](C)(O)CC(=O)[C@]34O)C(=O)c2c1O',
+                                     'name': 'Urdamycinone F',
+                                     'reason': 'Molecule is too large (has 36 '
+                                               'heavy atoms) to be a single '
+                                               'amino acid'},
+                                 {   'smiles': 'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\COP([O-])(=O)OP([O-])([O-])=O',
+                                     'name': 'all-trans-dodecaprenyl '
+                                             'diphosphate(3-)',
+                                     'reason': 'Molecule is too large (has 69 '
+                                               'heavy atoms) to be a single '
+                                               'amino acid'},
+                                 {   'smiles': '[O-][N+](=O)N1CN(CN(CN(C1)[N+]([O-])=O)[N+]([O-])=O)[N+]([O-])=O',
+                                     'name': 'octogen',
+                                     'reason': 'No aromatic ring found'},
+                                 {   'smiles': 'CC(=O)NCCC[NH2+]CCCC[NH2+]CCCNC(C)=O',
+                                     'name': 'N(1),N(12)-diacetylsperminium(2+)',
+                                     'reason': 'No aromatic ring found'},
+                                 {   'smiles': 'C[C@@H]([C@H]1CC[C@H]2[C@H](CCc3cc(O)ccc3C)C(=O)CC[C@]12C)C(O)=O',
+                                     'name': '3-hydroxy-9-oxo-9,10-seco-23,24-bisnorchola-1,3,5(10)-trien-22-oic '
                                              'acid',
-                                     'reason': 'No amino group found'},
-                                 {   'smiles': 'O=C1O[C@@H]([C@@H](OC)C=CC=C(C[C@@H](C)[C@@H]([C@@H]([C@@H]([C@@H](C=C(C=C1OC)C)C)O)C)O)C)[C@H]([C@@H](O)[C@@H]([C@@]2(O[C@H](/C=C/C)[C@@H](C)[C@@H](C2)OC3OC(C(O)C(C3)O)C)O)C)C',
-                                     'name': 'Concanamycin D',
-                                     'reason': 'No amino group found'},
-                                 {   'smiles': 'O1[C@@H](O[C@@H]2[C@@H](O)[C@@H](O[C@@H]([C@@H]2O)CO)O[C@H]3[C@H](O)[C@@H](NC(=O)C)C(O[C@@H]3CO)O)[C@H](NC(=O)C)[C@@H](O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H](O[C@@H]5O[C@H]([C@@H](O)[C@@H](O)[C@@H]5O)C)[C@H]1CO',
-                                     'name': 'N-[(3R,4R,5S,6R)-5-[(2S,3R,4S,5S,6R)-4-[(2S,3R,4R,5S,6R)-3-Acetamido-6-(hydroxymethyl)-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-5-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-3,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
-                                     'reason': 'No aromatic ring found'},
-                                 {   'smiles': 'O=C(O)[C@]1([C@H]2[C@@](OC=3C=C4C5=C(C=CC=C5)NC4=CC3CC2)(CC[C@@H]1O)C)C',
-                                     'name': 'Oxiamycin',
-                                     'reason': 'No amino group found'},
-                                 {   'smiles': 'C1CCC(C1)CC#CC2=CC=C(C=C2)[C@@H]3[C@@H]4CN(CC(=O)N4[C@@H]3CO)C(=O)C5=CC=C(C=C5)F',
-                                     'name': '(6R,7R,8S)-7-[4-(3-cyclopentylprop-1-ynyl)phenyl]-4-[(4-fluorophenyl)-oxomethyl]-8-(hydroxymethyl)-1,4-diazabicyclo[4.2.0]octan-2-one',
-                                     'reason': 'No carboxyl group found'},
-                                 {   'smiles': 'S(=O)(C(SSCCC)CC)CCC',
-                                     'name': 'Propyl 1-(propylsulfinyl)propyl '
-                                             'disulfide',
-                                     'reason': 'No amino group found'},
-                                 {   'smiles': 'ClC=1C(=O)[C@@H]([C@@](O)(C/C=C\\CCCCC)C1)C[C@H](OC(=O)C)[C@@H](OC(=O)C)CCCC(OC)=O',
-                                     'name': 'punaglandin 6',
-                                     'reason': 'No amino group found'},
-                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H](O)C(=O)N[C@@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O)[C@H](O)[C@@H](O)CCCCCCCCCCCCCC',
-                                     'name': 'Ins-1-P-Cer(t18:0/2-OH-26:0)',
-                                     'reason': 'No aromatic ring found'},
-                                 {   'smiles': 'CCC(C)(C)C(=O)OC1CC(C=C2C1[C@H]([C@H](C=C2)C)CC[C@@H]3CC(CC(=O)O3)O)C',
-                                     'name': '2,2-dimethylbutanoic acid '
-                                             '[(7S,8S)-8-[2-[(2R)-4-hydroxy-6-oxo-2-oxanyl]ethyl]-3,7-dimethyl-1,2,3,7,8,8a-hexahydronaphthalen-1-yl] '
-                                             'ester',
-                                     'reason': 'No amino group found'}],
-    'sample_false_negatives': [   {   'smiles': 'N[C@H](CC1=CC=C(CC(O)=O)C=C1)C(O)=O',
-                                      'name': '4-(carboxymethyl)-D-phenylalanine',
-                                      'reason': 'Aromatic ring not integrated '
-                                                'into amino acid structure'},
-                                  {   'smiles': 'O(N1C(=O)CCC1=O)C(=O)C2=C(C(=C(N(C([2H])([2H])[2H])C([2H])([2H])[2H])C(=C2[2H])[2H])[2H])[2H]',
-                                      'name': 'DMABA-d10 NHS ester',
-                                      'reason': 'No carboxyl group found'},
-                                  {   'smiles': 'OC(=O)[C@@H](N)CC1=C(C(=C(C(=C1[2H])[2H])[2H])[2H])[2H]',
-                                      'name': 'L-phenylalanine-d5',
-                                      'reason': 'Aromatic ring not integrated '
-                                                'into amino acid structure'},
-                                  {   'smiles': 'N[C@H](Cc1ccccc1)C(O)=O',
-                                      'name': 'D-phenylalanine',
-                                      'reason': 'Aromatic ring not integrated '
-                                                'into amino acid structure'},
-                                  {   'smiles': 'NC(CC1=CC=C(CC(O)=O)C=C1)C(O)=O',
-                                      'name': '4-(carboxymethyl)phenylalanine',
-                                      'reason': 'Aromatic ring not integrated '
-                                                'into amino acid structure'},
-                                  {   'smiles': 'N[C@@H](CC1=CC=C(CC(O)=O)C=C1)C(O)=O',
-                                      'name': '4-(carboxymethyl)-L-phenylalanine',
-                                      'reason': 'Aromatic ring not integrated '
-                                                'into amino acid structure'},
-                                  {   'smiles': 'NC(Cc1ccccc1)C(O)=O',
-                                      'name': 'phenylalanine',
-                                      'reason': 'Aromatic ring not integrated '
-                                                'into amino acid structure'},
-                                  {   'smiles': 'O(N1C(=O)CCC1=O)C(=O)C2=C(C(=C(N(C)C)C(=C2[2H])[2H])[2H])[2H]',
-                                      'name': 'DMABA-d4 NHS ester',
-                                      'reason': 'No carboxyl group found'},
-                                  {   'smiles': 'O=C(ON1C(CC(OC(=O)C)CC1(C)C)(C)C)C2=CC=C(N)C=C2',
-                                      'name': 'Benzoic acid, 4-amino-, '
-                                              '4-acetoxy-2,2,6,6-tetramethyl-1-piperidinyl '
-                                              'ester',
-                                      'reason': 'No carboxyl group found'},
-                                  {   'smiles': 'C=1C(=C(C=C(Cl)C1)NC2=CC=CC=C2C(=O)[O-])C([O-])=O.[Na+].[Na+]',
-                                      'name': 'Lobenzarit disodium',
-                                      'reason': 'No carboxyl group found'}],
+                                     'reason': 'No amino acid backbone '
+                                               '(N–α–C–(C=O)[O]) fragment '
+                                               'found'}],
+    'sample_false_negatives': [   {   'smiles': 'C1=CC(=C(C=C1I)F)NC2=C(C=CC(=C2F)F)C(=O)NOCC(CO)O',
+                                      'name': 'N-(2,3-dihydroxypropoxy)-3,4-difluoro-2-(2-fluoro-4-iodoanilino)benzamide',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'},
+                                  {   'smiles': 'CC(=O)Nc1c(I)cc(I)c(C(O)=O)c1I',
+                                      'name': 'Acetrizoic acid',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'},
+                                  {   'smiles': 'Nc1cccc(c1)C(O)=O',
+                                      'name': '3-aminobenzoic acid',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'},
+                                  {   'smiles': 'C(=C1C(N=C(S1)NC=2C=C(C(=CC2)Cl)C(=O)O)=O)(C=3OC(=CC3)C4=CC(=C(C=C4[N+]([O-])=O)C)C)[H]',
+                                      'name': 'AMPK activator PT 1',
+                                      'reason': 'Molecule is too large (has 34 '
+                                                'heavy atoms) to be a single '
+                                                'amino acid'},
+                                  {   'smiles': 'Cc1cccc(Nc2ccccc2C(O)=O)c1C',
+                                      'name': 'mefenamic acid',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'},
+                                  {   'smiles': 'Cc1cccc(C(O)=O)c1N',
+                                      'name': '2-Amino-3-methylbenzoate',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'},
+                                  {   'smiles': 'CC(=O)NC1=CC=C(O)C(=C1)C(O)=O',
+                                      'name': 'N-acetyl-5-aminosalicylic acid',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'},
+                                  {   'smiles': 'C1=COC(=C1)NC(=O)C2=CC=C(C=C2)N',
+                                      'name': '4-amino-N-(2-furanyl)benzamide',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'},
+                                  {   'smiles': 'Cc1ccc(Cl)c(Nc2ccccc2C(O)=O)c1Cl',
+                                      'name': 'meclofenamic acid',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'},
+                                  {   'smiles': 'CC1=NC(=CC=C1)NC(=O)C2=CC(=C(C=C2)N(C)C3CCCCC3)[N+](=O)[O-]',
+                                      'name': '4-[cyclohexyl(methyl)amino]-N-(6-methyl-2-pyridinyl)-3-nitrobenzamide',
+                                      'reason': 'No amino acid backbone '
+                                                '(N–α–C–(C=O)[O]) fragment '
+                                                'found'}],
     'attempt': 2,
-    'reasoning': 'The previous code had a few issues that led to false '
-                 'positives and false negatives:\n'
+    'reasoning': 'Below is our reasoning before presenting the complete Python '
+                 'code:\n'
                  '\n'
-                 '1. **False Positives**: The code incorrectly classified some '
-                 'molecules as aromatic amino acids because it only checked '
-                 'for the presence of an aromatic ring and amino/carboxyl '
-                 'groups, without ensuring that the aromatic ring was properly '
-                 'integrated into the amino acid backbone. This led to '
-                 'molecules with separate aromatic rings and amino acid groups '
-                 'being misclassified.\n'
+                 'Our previous attempt tried to check separately for a free '
+                 'amino group, a carboxyl (or carboxylate) group, and an '
+                 'aromatic ring. However, some structures commonly regarded as '
+                 'aromatic amino acids (for example, N‐methyl‐D‐dopa) were '
+                 'missed because the amino group was N‐alkylated (thus lacking '
+                 'a free N–H) and the prior check looked only for a free (N–H) '
+                 'moiety. In addition, a check on size as heavy atom count '
+                 '(using a threshold of 30) helps rule out larger compounds '
+                 'like peptides.\n'
                  '\n'
-                 '2. **False Negatives**: The code missed some aromatic amino '
-                 'acids because it required the aromatic ring to be directly '
-                 'connected to the amino acid backbone. This excluded cases '
-                 'where the aromatic ring was part of a side chain or where '
-                 'the carboxyl group was not in the expected form (e.g., '
-                 'esters or amides).\n'
+                 'An improved approach is to look for an amino acid “backbone” '
+                 'substructure. In a typical amino acid (except glycine, which '
+                 'is not aromatic) the nitrogen (which may be substituted) is '
+                 'attached directly to an α–carbon that in turn is attached to '
+                 'a carboxyl group. We can encapsulate this connectivity in a '
+                 'SMARTS pattern. For our purposes we use a pattern such as\n'
                  '\n'
-                 '### Improvements:\n'
-                 '1. **Aromatic Ring Integration**: We need to ensure that the '
-                 'aromatic ring is part of the amino acid structure, either in '
-                 'the backbone or in a side chain.\n'
-                 '2. **Carboxyl Group Flexibility**: We should allow for more '
-                 'flexible carboxyl group patterns, including esters and '
-                 'amides, which are common in amino acids.\n'
-                 '3. **Amino Group Flexibility**: Similarly, we should allow '
-                 'for more flexible amino group patterns, including secondary '
-                 'and tertiary amines.\n'
+                 '  [NX3;!$(NC(=O))][C;H1](C(=O)[O;H1,-])\n'
                  '\n'
-                 'Here is the improved code:',
+                 'This pattern means:\n'
+                 '\u2003• a trivalent nitrogen that is not directly bonded to '
+                 'a carbonyl (thereby avoiding amide nitrogens),\n'
+                 '\u2003• attached to a carbon that has exactly one hydrogen '
+                 '(the α–carbon in natural (non–glycine) amino acids)\n'
+                 '\u2003• and then that carbon is bound to a carboxyl group '
+                 '(which can be protonated or deprotonated).\n'
+                 '\n'
+                 'We then also check that there is at least one aromatic ring '
+                 '(of at least five atoms where every ring atom is aromatic). '
+                 'Also, we enforce an upper bound on heavy atom count so that '
+                 'larger biomolecules (e.g. peptides) do not pass the test.\n'
+                 '\n'
+                 'Below is the complete single Python code block.',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 76,
-    'num_false_positives': 100,
-    'num_true_negatives': 434,
-    'num_false_negatives': 12,
+    'num_true_positives': 28,
+    'num_false_positives': 492,
+    'num_true_negatives': 141720,
+    'num_false_negatives': 60,
     'num_negatives': None,
-    'precision': 0.4318181818181818,
-    'recall': 0.8636363636363636,
-    'f1': 0.5757575757575758,
-    'accuracy': 0.819935691318328,
-    'negative_predictive_value': 0.9730941704035875}
+    'precision': 0.05384615384615385,
+    'recall': 0.3181818181818182,
+    'f1': 0.09210526315789475,
+    'accuracy': 0.996120871398454,
+    'negative_predictive_value': 0.9995768091409225}

@@ -2,115 +2,125 @@
 Classifies: CHEBI:16412 lipopolysaccharide
 """
 """
-Classifies: CHEBI:16852 lipopolysaccharide
+Classifies: A lipopolysaccharide (LPS)
+
+Heuristic definition:
+  - The SMILES string must parse correctly.
+  - The molecular weight must be above ~350 Da.
+  - The presence of several sugar-like rings. Here we define a sugar-like ring as:
+      • a ring whose size is 5–7 atoms,
+      • that contains exactly one oxygen atom in the ring.
+    We require at least 2 such rings (a loose indication of a trisaccharide/oligosaccharide core).
+  - The presence of at least one fatty acid–like fragment. We define this fragment as a substructure
+    corresponding to a carboxylic acid attached to CH2–CH(OH)–CH2 followed by a long aliphatic chain.
+    Once we seed a match via SMARTS, we check that the chain appended to the terminal CH2 is at least 7 carbons long.
+  
+Note: This heuristic is approximate and may yield some false positives or negatives.
 """
+
 from rdkit import Chem
-from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_lipopolysaccharide(smiles: str):
     """
-    Determines if a molecule is a lipopolysaccharide based on its SMILES string.
-    Lipopolysaccharides contain:
-    - Core oligosaccharide structure
-    - Specific sugar units including KDO and heptose
-    - Characteristic fatty acid chains
-    - Phosphate groups in many cases
-    
+    Determines if a molecule is a lipopolysaccharide (LPS) based on its SMILES string.
+
+    The heuristic checks: 
+      - Valid SMILES parsing and molecular weight > 350 Da.
+      - At least 2 sugar-like rings. A sugar-like ring is defined by a ring of size 5–7
+        that contains exactly one ring oxygen.
+      - At least one fatty acid-like fragment resembling a 3-hydroxytetradecanoic acid unit.
+        We detect a seed substructure (O=C(O)[CH2][CH](O)[CH2]) then search for an attached aliphatic chain
+        of at least 7 contiguous sp3 carbons.
+
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a lipopolysaccharide, False otherwise
-        str: Reason for classification
+        bool: True if the molecule is likely a lipopolysaccharide; otherwise False.
+        str: Explanation of the classification result.
     """
-    
-    # Parse SMILES
+    # Parse SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Molecular weight filter
+    # Check molecular weight.
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 300:  # LPS components are typically large molecules
-        return False, "Molecular weight too low for LPS"
+    if mol_wt < 350:
+        return False, f"Molecular weight too low for a lipopolysaccharide (wt = {mol_wt:.1f} Da)"
 
-    # Count key atoms
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
-    
-    if o_count < 6:  # Need multiple oxygen atoms for glycosidic bonds and hydroxyl groups
-        return False, "Too few oxygen atoms for LPS"
-    
-    if c_count < 15:  # Need sufficient carbons for sugar and lipid components
-        return False, "Too few carbon atoms for LPS"
-
-    # Look for sugar patterns more specifically
-    pyranose_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1]([OR0])[CR1]([OR0])[CR1]([OR0])[CR1]")
-    furanose_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1]([OR0])[CR1]([OR0])[CR1]")
-    sugar_matches = len(mol.GetSubstructMatches(pyranose_pattern)) + len(mol.GetSubstructMatches(furanose_pattern))
-
-    # Look for glycosidic linkages more specifically
-    glycosidic_pattern = Chem.MolFromSmarts("[CR1][OR1][CR1]")
-    glycosidic_matches = len(mol.GetSubstructMatches(glycosidic_pattern))
-
-    # Look for fatty acid chains with hydroxyl groups
-    hydroxy_fatty_acid = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4][OX2H1]")
-    fatty_acid_matches = len(mol.GetSubstructMatches(hydroxy_fatty_acid))
-
-    # Look for carboxylic acid groups
-    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    acid_matches = len(mol.GetSubstructMatches(acid_pattern))
-
-    # Calculate score based on structural features
-    score = 0
-    
-    # Sugar content
-    if sugar_matches >= 2:
-        score += 2
-    elif sugar_matches == 1:
-        score += 1
-
-    # Glycosidic linkages
-    if glycosidic_matches >= 2:
-        score += 2
-    elif glycosidic_matches == 1:
-        score += 1
-
-    # Fatty acid components
-    if fatty_acid_matches >= 1:
-        score += 2
-
-    # Acid groups
-    if acid_matches >= 1:
-        score += 1
-
-    # Phosphate groups
-    if p_count >= 1:
-        score += 1
-
-    # Ring count
+    # Detect sugar-like rings.
+    # We use ring information to check rings of size 5, 6, or 7 that contain exactly one oxygen.
+    sugar_count = 0
     ring_info = mol.GetRingInfo()
-    ring_count = ring_info.NumRings()
-    if ring_count >= 3:
-        score += 2
-    elif ring_count >= 1:
-        score += 1
+    for ring in ring_info.AtomRings():
+        if len(ring) not in (5, 6, 7):
+            continue
+        # Count number of oxygen atoms that lie in the ring.
+        oxy_in_ring = sum(1 for idx in ring if mol.GetAtomWithIdx(idx).GetSymbol() == "O")
+        if oxy_in_ring == 1:
+            sugar_count += 1
 
-    # Hydroxyl groups (characteristic of sugars)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H1]")
-    hydroxyl_matches = len(mol.GetSubstructMatches(hydroxyl_pattern))
-    if hydroxyl_matches >= 4:
-        score += 2
-    elif hydroxyl_matches >= 2:
-        score += 1
+    if sugar_count < 2:
+        return False, f"Only {sugar_count} sugar-like ring(s) detected; at least 2 expected based on a trisaccharide core and side-chains"
 
-    # Final classification
-    if score >= 7:  # Require high confidence for classification
-        return True, "Contains characteristic lipopolysaccharide features including sugar units and appropriate linkages"
-    else:
-        return False, f"Insufficient LPS characteristics (score: {score})"
+    # Define a SMARTS pattern for a fatty acid-like fragment.
+    # The pattern corresponds to a carboxylic acid (O=C(O)) linked to CH2-CH(OH)-CH2.
+    fa_smarts = "O=C(O)[CH2][CH](O)[CH2]"
+    fa_pattern = Chem.MolFromSmarts(fa_smarts)
+    if fa_pattern is None:
+        return False, "Error in parsing fatty acid SMARTS pattern (internal error)"
+    
+    fa_matches = mol.GetSubstructMatches(fa_pattern)
+    if not fa_matches:
+        return False, "No 3-hydroxytetradecanoic acid-like seed fragment detected"
+
+    # Define a helper function to compute the maximum contiguous chain length from a starting carbon.
+    def get_chain_length(start_idx):
+        max_length = 0
+        visited = set()
+
+        def dfs(atom_idx, length):
+            nonlocal max_length
+            visited.add(atom_idx)
+            # Look only for neighboring sp3 carbons (atomic number 6) not already visited.
+            for nbr in mol.GetAtomWithIdx(atom_idx).GetNeighbors():
+                if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited:
+                    # Check that the neighbor is sp3 (and not aromatic).
+                    if nbr.GetHybridization() == Chem.rdchem.HybridizationType.SP3:
+                        dfs(nbr.GetIdx(), length + 1)
+            if length > max_length:
+                max_length = length
+            visited.remove(atom_idx)
+
+        dfs(start_idx, 0)
+        return max_length
+
+    # Look for an attached fatty acid chain.
+    fatty_acid_found = False
+    for match in fa_matches:
+        # The SMARTS match returns indices in order:
+        # [carboxylic C, CH2, CH(OH), CH2]. We take the last CH2 atom as the attachment point.
+        attach_idx = match[-1]
+        # Get maximum contiguous chain length from the attachment point.
+        chain_len = get_chain_length(attach_idx)
+        if chain_len >= 7:
+            fatty_acid_found = True
+            break
+
+    if not fatty_acid_found:
+        return False, "No attached fatty acid chain of sufficient length (>=7 carbons) detected"
+
+    return True, "Molecule has features consistent with a lipopolysaccharide structure"
+
+
+# For testing purposes – you may remove or comment out the code below when using this as a module.
+if __name__ == "__main__":
+    # Example test SMILES: you can test with any of the provided examples.
+    test_smiles = "O1[C@H](O[C@H]2OC([C@@H](O)C(O)[C@H]2O)CO)C(O)C(O)[C@H](OC(=O)CCCCCCCCCCCCCCCCC)C1COC(=O)CCCCCCCCCCCCCCCCC"
+    result, reason = is_lipopolysaccharide(test_smiles)
+    print(result, reason)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16412',
@@ -133,443 +143,341 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:16412',
                                        'PMID:24659348'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 67,
+                           'log_lines_of_code': 4.204692619390966,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 0,
+                                                 0,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 0,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1],
+                           'max_indent': 3,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetAtomWithIdx',
+                                                 'MolFromSmiles',
+                                                 'GetSymbol',
+                                                 'MolFromSmarts',
+                                                 'GetSubstructMatches',
+                                                 'GetRingInfo',
+                                                 'CalcExactMolWt',
+                                                 'AtomRings'],
+                           'methods_called_count': 8,
+                           'smarts_strings': ['fa_smarts'],
+                           'smarts_strings_count': 1,
+                           'defs': [   'is_lipopolysaccharide(smiles: str):',
+                                       'get_chain_length(start_idx):'],
+                           'defs_count': 2,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Molecular weight too low '
+                                          'for a lipopolysaccharide (wt = '
+                                          '{mol_wt:.1f} Da)"',
+                                          'False, f"Only {sugar_count} '
+                                          'sugar-like ring(s) detected; at '
+                                          'least 2 expected based on a '
+                                          'trisaccharide core and side-chains"',
+                                          'False, "Error in parsing fatty acid '
+                                          'SMARTS pattern (internal error)"',
+                                          'False, "No 3-hydroxytetradecanoic '
+                                          'acid-like seed fragment detected"',
+                                          'False, "No attached fatty acid '
+                                          'chain of sufficient length (>=7 '
+                                          'carbons) detected"',
+                                          'True, "Molecule has features '
+                                          'consistent with a '
+                                          'lipopolysaccharide structure"'],
+                           'returns_count': 7,
+                           'complexity': 4.840938523878193},
     'message': '\n'
-               'Attempt failed: F1 score of 0.2192982456140351 is too low.\n'
+               'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
-               'True positives: SMILES: '
-               'O=C(O)C(O)CCCCCCCCCCCCC(O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)COC(=O)C '
-               'NAME: Ustilagic acid C REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
+               'True positives: NONE\n'
+               'False positives: NONE\n'
+               'False negatives: SMILES: '
+               'CC(C)(C(\\C=C\\C1=CC=C(C=C1)OC)=O)OC2C(C(C(C(C(=O)O)O2)O)O)O '
+               'NAME: '
+               '3,4,5-trihydroxy-6-{[5-(4-methoxyphenyl)-2-methyl-3-oxopent-4-en-2-yl]oxy}oxane-2-carboxylic '
+               'acid REASON: MISSED Only 0 sugar-like ring(s) detected; at '
+               'least 2 expected based on a trisaccharide core and '
+               'side-chains\n'
                ' * SMILES: '
-               'O=C1OCC2OC(OC(CC(=O)OCC3OC(OC(C1)CCCCCCCCCCCC(OC4OC(C(O)C(C4O)O)CO)CCCCCCCC(O)C)C(O)C(O)C3O)CCCCCCCCCCCCCC(OC5OC(C(O)C(C5O)O)CO)CCCCCCCC(O)C)C(O)C(C2O)O '
-               'NAME: Fattiviracin FV-10 REASON: CORRECT Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
+               'O([C@H]1O[C@@H]([C@H](O)[C@H](O)[C@@H]1O)C(O)=O)[C@H]([C@@H](O)CCCCC)C/C=C\\CCCCCCCC(O)=O '
+               'NAME: 12-Hydroxy-13-O-D-glucuronoside-octadec-9Z-enoate '
+               'REASON: MISSED Only 0 sugar-like ring(s) detected; at least 2 '
+               'expected based on a trisaccharide core and side-chains\n'
                ' * SMILES: '
-               'O1[C@H](O[C@H]2OC([C@@H](O)C(O)[C@H]2O)CO)C(O)C(O)[C@H](OC(=O)CCCCCCCCCCCCCCCCC)C1COC(=O)CCCCCCCCCCCCCCCCC '
-               "NAME: alpha,alpha'-Trehalose 4,6-dioleate REASON: CORRECT "
-               'Contains characteristic lipopolysaccharide features including '
-               'sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'O=C1OCC2OC(OC(CC(=O)OCC3OC(OC(C1)CCCCCCCCCCCC(OC4OC(C(O)C(C4O)O)CO)CCCCCC(O)C)C(O)C(O)C3O)CCCCCCCCCCCCCC(OC5OC(C(O)C(C5O)O)CO)CCCCCC(O)C)C(O)C(C2O)O '
-               'NAME: Fattiviracin FV-8 REASON: CORRECT Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'O1C2(C3(C(C4(C(CC3=O)C(OC4)(C)C)C(O)CC(O)=O)CCC2(C(OC5OC(C(O)C(O)C5O)CO)C=6C=COC6)C)C)C1C(O)=O '
-               'NAME: Isolimonic acid glucoside REASON: CORRECT Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'O1C2(C3(C(C(C(CC3=O)C(O)(C)C)(C(OC(=O)C)CC(O)=O)C)CCC2(C(OC4OC(C(O)C(O)C4O)CO)C=5C=COC5)C)C)C1C(O)=O '
-               'NAME: Nomilinic acid 17-glucoside REASON: CORRECT Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]1[C@H](OC(=O)CCC)[C@@H](O[C@@H]([C@H]1OC(=O)C)COC(=O)C)OC[C@@H](O)[C@@H](O)CO)CCCCCCCCCCCCCCC '
-               'NAME: Ustilipid B REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'P(=O)(O[C@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1NC(=O)C[C@H](OC(=O)CCCCCCCCCCC)CCCCCCCCCCC)OC(=O)C[C@H](O)CCCCCCC)CO[C@@H]2O[C@@H]([C@@H](OP(=O)(O)O)[C@@H]([C@H]2NC(=O)CC(=O)CCCCCCCCCCC)OC(=O)C[C@H](O)CCCCCCC)CO)(O)O '
-               'NAME: S. salinus M19-40T lipid A REASON: CORRECT Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
+               'CCCCCCCCCC(=O)O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1O[C@@H](C[C@H](OC(C)=O)C(\\C)=C\\CO[C@H]([C@H](O)CO)[C@H](O)[C@H](O)CO)[C@](C)(O)CCC=C(C)C '
+               'NAME: Cosmosporaside D, (rel)- REASON: MISSED Only 0 '
+               'sugar-like ring(s) detected; at least 2 expected based on a '
+               'trisaccharide core and side-chains\n'
+               ' * SMILES: O1C(OC(CC)C(O)=O)C(O)C(O)C(O)C1C(O)=O NAME: '
+               '6-(1-carboxypropoxy)-3,4,5-trihydroxyoxane-2-carboxylic acid '
+               'REASON: MISSED Molecular weight too low for a '
+               'lipopolysaccharide (wt = 280.1 Da)\n'
                ' * SMILES: '
                'O=C(OC[C@H]1O[C@H](O[C@H]2O[C@@H]([C@@H](O)[C@@H]([C@H]2O)O)COC(=O)[C@@H]([C@H](O)CCCCCCCCCCCCCCC)CCCCCCCCCCCCCC)[C@H](O)[C@H]([C@@H]1O)O)[C@@H]([C@H](O)CCCCCCCCCCCCCCC)CCCCCCCCCCCCCC '
-               "NAME: Trehalose-6,6'-dicorynomycolate REASON: CORRECT Contains "
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
+               "NAME: Trehalose-6,6'-dicorynomycolate REASON: MISSED Only 0 "
+               'sugar-like ring(s) detected; at least 2 expected based on a '
+               'trisaccharide core and side-chains\n'
                ' * SMILES: '
-               '[H][C@]1(O[C@@H](C)[C@H](OC(=O)C(\\C)=C/C)[C@@H](O)[C@H]1OC(=O)[C@@H](C)[C@@H](C)O)O[C@@H]1[C@H]2O[C@]3([H])O[C@H](CO)[C@@H](O)[C@H](OC(=O)[C@@H](C)CC)[C@H]3OC(=O)CCCCCCCCC[C@H](CCCCC)O[C@@H]3O[C@H](C)[C@@H](O)[C@H](O)[C@H]3O[C@]1([H])O[C@H](CO)[C@H]2O '
-               'NAME: soldanelline B REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C(OC(CCCCCCCCCCCCCCCC(=O)O[C@@H]1[C@@H](O)[C@H](O[C@@H]([C@H]1O)CO)O[C@H]2O[C@@H]([C@H](O)[C@@H]([C@H]2O)O)CO)CCCCC)C(=O)O '
-               'NAME: Emmyguyacin A REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]1[C@H](OC(=O)CC)[C@@H](O[C@@H]([C@H]1OC(=O)C)COC(=O)C)OC[C@@H](O)[C@@H](O)CO)CCCCCCCCCCCCCCC '
-               'NAME: Ustilipid E1 REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
+               'O1[C@H](O[C@H]2OC([C@@H](O)C(O)[C@H]2O)CO)C(O)C(O)[C@H](OC(=O)CCCCCCCCCCCCCCCCC)C1COC(=O)CCCCCCCCCCCCCCCCC '
+               "NAME: alpha,alpha'-Trehalose 4,6-dioleate REASON: MISSED Only "
+               '0 sugar-like ring(s) detected; at least 2 expected based on a '
+               'trisaccharide core and side-chains\n'
                ' * SMILES: '
                'O=C(O[C@@H]1[C@@H](O[C@H](COC(=O)C)[C@H]([C@@H]1OC(=O)CCCCCCCCCCCCCCC)OC(=O)C)OC[C@@H](O)[C@@H](O)CO)C(C)C '
-               'NAME: Ustilipid E3 REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C1O[C@H]2[C@H](O[C@H]3[C@H](O[C@H](CCCCCCCCCCCCC[C@H]4[C@H]1[C@@H](C(=O)O4)C)C)O[C@H](CO)[C@H]([C@@H]3O)O)O[C@H](CO)[C@H]([C@@H]2O[C@@H]5O[C@H]([C@H](O)[C@H]([C@H]5O)O)C)O '
-               'NAME: Gobienine C REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C1OCC2OC(OC(CC(=O)OCC3OC(OC(C1)CCCCCCCCCCCCCC(OC4OC(C(O)C(C4OC)O)CO)CCCCCC(=O)C)C(O)C(O)C3O)CCCCCCCCCCCCCCCC(OC5OC(C(O)C(C5OC)O)CO)CCCCCC(OC6OC(C(O)C(C6OC)O)CO)C)C(O)C(C2O)O '
-               'NAME: Cycloviracin B2 REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C(O)[C@@H](NC(=O)CCCCCCCCCCCC[C@H](O[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)COC(=O)CCC(=O)O)CC)C '
-               'NAME: Ieodoglucomide C REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]1[C@H](OC(=O)C)[C@@H](O[C@@H]([C@H]1OC(=O)C)COC(=O)C)OC[C@@H](O)[C@@H](O)CO)CCCCCCCCCCCCCCC '
-               'NAME: Ustilipid E2 REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C1OCC2OC(OC(CC(=O)OCC3OC(OC(C1)CCCCCCCCCCCC(OC4OC(C(O)C(C4O)O)CO)CCCCCC(O)C)C(O)C(O)C3O)CCCCCCCCCCCC(OC5OC(C(O)C(C5O)O)CO)CCCCCC(O)C)C(O)C(C2O)O '
-               'NAME: Fattiviracin FV-4 REASON: CORRECT Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
+               'NAME: Ustilipid E3 REASON: MISSED Only 0 sugar-like ring(s) '
+               'detected; at least 2 expected based on a trisaccharide core '
+               'and side-chains\n'
                ' * SMILES: '
                'O(C1[C@@H](O)[C@H](O)C(O[C@H]1OCCCC)COC(=O)CCCCCCCCCCCCCCC)[C@@H]2OC([C@H](OC(=O)CCC)[C@H](O)C2O)C '
                "NAME: Butyl 4'-O-butanoyl-6-O-hexadecanoyl-neohesperidoside "
-               'REASON: CORRECT Contains characteristic lipopolysaccharide '
-               'features including sugar units and appropriate linkages\n'
+               'REASON: MISSED Only 0 sugar-like ring(s) detected; at least 2 '
+               'expected based on a trisaccharide core and side-chains\n'
                ' * SMILES: '
-               'O=C(O[C@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO[C@H]2O[C@@H]([C@@H](O)[C@@H]([C@H]2O)O)COC(=O)CCCCCCCCCCCCCC)CCCCCCCCCCCCCC '
-               'NAME: '
-               '6-O-(6-O-pentadecanoyl-alpha-D-glucopyranosyl)-1-O-pentadecanoyl-alpha-D-glucopyranose '
-               'REASON: CORRECT Contains characteristic lipopolysaccharide '
-               'features including sugar units and appropriate linkages\n'
+               'O=C(O)CCCCC/C=C/C=C/C(O[C@@H]1O[C@@H]([C@@H](OC)[C@@H]([C@H]1O)O)CO)CCCCCCC '
+               'NAME: Cordyglycoside A REASON: MISSED Only 0 sugar-like '
+               'ring(s) detected; at least 2 expected based on a trisaccharide '
+               'core and side-chains\n'
                ' * SMILES: '
-               'O([C@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)COC(=O)CCCCCCCCCCCCCCC)[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO '
-               "NAME: alpha,alpha'-Trehalose 6-palmitate REASON: CORRECT "
-               'Contains characteristic lipopolysaccharide features including '
-               'sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]1[C@@H](O[C@H](COC(=O)C)[C@H]([C@@H]1OC(=O)CCCCCCCCCCCCCCC)OC(=O)C)OC[C@@H](O)[C@@H](O)CO)CCCCC '
-               'NAME: Ustilipid A REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O1C([C@@H](O)C(O)[C@H](O)[C@H]1OCC(OC(=O)CCCCCCCCCCCCCCC)CCCCCCCCCCCCCCCCCC)CO '
-               'NAME: '
-               '1-O-alpha-D-glucopyranosyl-(2-hexadecanoyloxy)-eicosan-1-ol '
-               'REASON: CORRECT Contains characteristic lipopolysaccharide '
-               'features including sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'O([C@H]1[C@H](O)C(O)[C@@H](OC1COC(=O)C)OCC(O)CCCCCCCCCCCCC(O)C(O)=O)[C@@H]2OC([C@@H](O)[C@H](O)C2OC(=O)CC(O)CCC)CO '
-               'NAME: Ustilagic acid REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]1[C@@H](O[C@H](CO)[C@H]([C@@H]1OC(=O)CCCCCCCCCCCCCCC)OC(=O)C)OC[C@@H](O)[C@@H](O)CO)C(C)C '
-               'NAME: Ustilipid D1 REASON: CORRECT Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               'False positives: SMILES: '
-               'O1C23OC(CCC2(O)C)CC(CCCC4=NCC(C(CC54C(C(=C(CC5)C6OC(=O)C(=C6)C)C)C=C(C(O)CC7OC1(CC3)CC7)C)C)C)=C '
-               'NAME: 13-Demethylspirolide C REASON: WRONGLY CLASSIFIED '
-               'Contains characteristic lipopolysaccharide features including '
-               'sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'O=C1C2(OC(CC(O)CC(O)CC(O)CCCC(O)C=CC(C(C(C(O)C(C(O)C(C(OC3OC(C(OC4OC(C(OC(=O)C(C(OC5OC(C(O)CC5)C)C6=CC=7C(=O)C=C(C)C(C7C=C6)=O)C)CC4)C)C(C3)(O)C)C)CC)C)C)C)OC(CCC(C(CC(CCCC(CCC(C1O)C)O)O)O)C)=O)C)CC(C2)O)O '
-               'NAME: Iseolide B REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'O=C1O[C@@H]([C@H]([C@H](O)C[C@H](O)[C@@H]([C@@H](OC)C[C@H]2O[C@@H](C=CC2)C[C@@H](O)CC=C(C(=O)O[C@@H]([C@H]([C@@H](C[C@@H]([C@@H]([C@H](C[C@H]3O[C@H](C[C@H](CC=C1C)O)C=CC3)OC)C)O)O)C)[C@H]([C@@H](O)[C@H](CC[C@@H]4O[C@H](C[C@H](C4)OC)C)C)C)C)C)C)[C@H]([C@@H](O)[C@H](CC[C@@H]5O[C@H](C[C@H](C5)OC)C)C)C '
-               'NAME: Misakinolide A REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](OS(O)(=O)=O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCCCCC '
-               'NAME: '
-               '1-(3-O-sulfo-beta-D-galactosyl)-N-[(2R)-2-hydroxystearoyl]sphingosine '
-               'REASON: WRONGLY CLASSIFIED Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'OC12C3C(C4(C(CC3)CC(OC5OC(C(O)C(O)C5OC6OC(C(O)C(O)C6O)CO)CO)CC4)C)CCC1(C(CC2)C=7COC(=O)C7)C '
-               'NAME: '
-               '3-[3-[4,5-Dihydroxy-6-(hydroxymethyl)-3-[3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-14-hydroxy-10,13-dimethyl-1,2,3,4,5,6,7,8,9,11,12,15,16,17-tetradecahydrocyclopenta[a]phenanthren-17-yl]-2H-furan-5-one '
-               'REASON: WRONGLY CLASSIFIED Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O=C(O[C@H]1[C@H](O[C@H](COC(=O)C)[C@H]([C@@H]1O)O)O[C@@H]2O[C@H]([C@H](O)[C@H]([C@@H]2O)O)CO)CCCCCCCCCCCCCCCCC '
-               'NAME: 6-0-acetyl2-0-octadecanoy 1-alpha ,alpha-D-trehalose '
-               'REASON: WRONGLY CLASSIFIED Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'C[C@@H]1O[C@@H](OCCCCCCCCCCCCCCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]2O[C@H]([C@H](O)[C@@H]2OP(O)(O)=O)N3C=NC4=C(N)N=CN=C34)[C@H](O)C[C@H]1O '
-               'NAME: bhos#32-CoA REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'C1[C@@]2([C@]3(CC[C@]4([C@]([C@@]3(CC[C@@]2(C[C@@H](C1)O[C@@H]5O[C@@H]([C@H]([C@@H]([C@H]5O)O)O)C([O-])=O)[H])[H])(CC[C@]4([H])[C@@H](O)C)[H])C)[H])C '
-               'NAME: 5beta-pregnane 3alpha,20alpha-diol '
-               '3-O-(beta-D-glucuronide)(1-) REASON: WRONGLY CLASSIFIED '
-               'Contains characteristic lipopolysaccharide features including '
-               'sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCC(C)C '
-               'NAME: '
-               'N-(2-hydroxydocosanoyl)-1-O-beta-D-glucosyl-15-methylhexadecasphing-4-enine '
-               'REASON: WRONGLY CLASSIFIED Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'S(CCNC(CCNC(=O)[C@@H](C(COP(OP(OC[C@H]1O[C@@H](N2C3=C(C(=NC=N3)N)N=C2)[C@@H]([C@@H]1OP(O)(O)=O)O)(=O)O)(=O)O)(C)C)O)=O)C(\\C=C\\CCCCCCCCCCCCCCCO[C@H]4[C@@H](C[C@H]([C@@H](O4)C)O)O)=O '
-               'NAME: oscr#31-CoA REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'O1C(OC2C(O)C(O)C(OC2CO)OCC(NC(=O)CCCCCCCCCCCCCCC)C(O)/C=C/CCCCCCCCCCCCC)C(O)C(O)C(OC3OC(C(O)C(O)C3O)CO)C1CO '
-               'NAME: Trihexosylceramide (d18:1/16:0) REASON: WRONGLY '
-               'CLASSIFIED Contains characteristic lipopolysaccharide features '
-               'including sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'C1[C@](OC(C[C@@H](C(C([C@@H]([C@H]([C@H](CCC[C@@]2([C@]1(O2)[H])C)C)O)C)=O)(C)C)O)=O)(/C(=C/C=3N=C(SC3)C)/C)[H] '
-               'NAME: epothilone B REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@@H](O[C@@H]2O[C@H](CO)[C@H](O)[C@H](O[C@@]3(C[C@H](O)[C@@H](NC(C)=O)[C@@H](O3)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]2O)[C@H](O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCCCCC '
-               'NAME: '
-               "alpha-Neu5Ac-(2->3)-beta-D-Gal-(1->4)-beta-D-Glc-(1<->1')-Cer(d18:1/24:0) "
-               'REASON: WRONGLY CLASSIFIED Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O[C@@]12[C@]3([C@@]([C@@]4([C@](O)(CC3)C[C@@H](O[C@@H]5O[C@H]([C@H](O)[C@@H](O)[C@H]5O)C)C[C@H]4O)CO)([C@H](O)C[C@@]1([C@H](CC2)C=6COC(=O)C6)C)[H])[H].O '
-               'NAME: 11,15>]Heptadec-14-yl]-5-hydrofuran-2-one, hydrate '
-               'REASON: WRONGLY CLASSIFIED Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               '[H][C@@]12CC=C3C[C@H](CC[C@]3(C)[C@@]1([H])CC[C@]1(C)C(=O)CC[C@@]21[H])O[C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(O)=O '
-               'NAME: dehydroisoandrosterone 3-glucuronide REASON: WRONGLY '
-               'CLASSIFIED Contains characteristic lipopolysaccharide features '
-               'including sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'C1[C@]2([C@]3([C@@](C4=C(C=C(O)C=C4)CC3)(CC[C@@]2(C(=O)[C@@H]1O[C@@H]5O[C@@H]([C@H]([C@@H]([C@H]5O)O)O)C(O)=O)C)[H])[H])[H] '
-               'NAME: 16alpha-hydroxyestrone 16-O-(beta-D-glucuronide) REASON: '
-               'WRONGLY CLASSIFIED Contains characteristic lipopolysaccharide '
-               'features including sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'O1C(O[C@@H]2[C@H](O)[C@H](O[C@@H]([C@H]2O)CO)OCC(O)COCCCCCCCCCCCC(CC)C)[C@H](O)[C@@H](O)[C@@H]([C@H]1CO)O '
-               'NAME: GGL 2 REASON: WRONGLY CLASSIFIED Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'O1C2C(C3(C(C4C(CC3)C5(C(=CC4)CC(OC6OC(C(OC7OC(C(O)C(OC8OC(C(O)C(O)C8O)CO)C7O)CO)C(O)C6OC9OC(C(O)C(O)C9O)C)CO)CC5)C)C2)C)C(C1(O)CCC(COC%10OC(C(O)C(O)C%10O)CO)C)C '
-               'NAME: Trigoneoside XIIIa REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'O=C1[C@@H](OC)[C@@](O)([C@@](O)(COC(=O)[C@H](O)C[C@@]23O[C@@](C=CC=C(C)C)(C)[C@@H](C2)C(CC3)=C)CC1)[C@]4(O[C@H]4CC=C(C)C)C '
-               'NAME: Pseudallicin A REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](OS([O-])(=O)=O)[C@H]1O)[C@H](O)\\C=C\\CCCCCCCCCCCCC '
-               'NAME: N-docosanoyl-(3-O-sulfo-D-galactosyl)sphingosine(1-) '
-               'REASON: WRONGLY CLASSIFIED Contains characteristic '
-               'lipopolysaccharide features including sugar units and '
-               'appropriate linkages\n'
-               ' * SMILES: '
-               'C[C@H](CCCCCCCCCCCCCC\\C=C\\C(O)=O)O[C@@H]1O[C@@H](C)[C@H](O)C[C@H]1O '
-               'NAME: ascr#33 REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'O1[C@@H]([C@H](O)[C@H](O)[C@@H](O)[C@@H]1OCC(NC(=O)CCCCCCCCCCCCCCCCCCC)C(O)/C=C\\CCCCCCCCCCCCC)CO '
-               'NAME: Galactosylceramide (d18:1/20:0) REASON: WRONGLY '
-               'CLASSIFIED Contains characteristic lipopolysaccharide features '
-               'including sugar units and appropriate linkages\n'
-               ' * SMILES: '
-               'CC[C@H]1OC(=O)[C@H](C)[C@@H](O[C@H]2C[C@@](C)(O)[C@@H](O)[C@H](C)O2)[C@H](C)[C@@H](O[C@@H]2O[C@H](C)C[C@@H]([C@H]2O)[NH+](C)C)[C@](C)(O)C[C@@H](C)C(=O)[C@H](C)[C@@H](O)[C@H]1C '
-               'NAME: erythromycin D(1+) REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'O(C1C(C2C(C3C(C4(C(C5C(CC4)(C(O)CC(C5)(C)C)C)=CC3)C)(CC2)C)(CC1)C)(C)C)C6OC(C(O)C(O)C6OC7OC(C(O)C(O)C7O)CO)C(O)=O '
-               'NAME: Azukisaponin I REASON: WRONGLY CLASSIFIED Contains '
-               'characteristic lipopolysaccharide features including sugar '
-               'units and appropriate linkages\n'
-               ' * SMILES: '
-               'CC(=O)OC(C)(C)[C@H]1CC[C@](O1)(C)[C@H](CC[C@@](C)([C@]2(CC[C@@]3([C@@](O2)(CC[C@@](O3)([C@@]4(CC[C@H](C(O4)(C)C)Br)C)[H])C)[H])[H])O)O '
-               'NAME: thyrsiferyl 23-acetate REASON: WRONGLY CLASSIFIED '
-               'Contains characteristic lipopolysaccharide features including '
-               'sugar units and appropriate linkages\n'
-               'False negatives: SMILES: '
-               'O1[C@H](O[C@H]([C@H](O)[C@@H](O)C=O)[C@H](O)C(O)=O)[C@H](O)[C@@H](O)[C@@H](O)[C@H]1C(O)=O '
-               'NAME: 4-O-alpha-Galactopyranuronosyl-galacturonic acid REASON: '
-               'MISSED Insufficient characteristic LPS features\n'
-               ' * SMILES: '
-               'CCCCCCCCCC(=O)O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1O[C@@H](C[C@H](OC(C)=O)C(\\C)=C\\CO[C@H]([C@H](O)CO)[C@H](O)[C@H](O)CO)[C@](C)(O)CCC=C(C)C '
-               'NAME: Cosmosporaside D, (rel)- REASON: MISSED Insufficient '
-               'characteristic LPS features\n'
-               ' * SMILES: '
-               'CC(C)O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](OC(=O)CC(C)(O)CC(=O)O[C@H](COc2c3ccoc3cc3oc(=O)ccc23)C(C)(C)O)[C@H]1O '
-               'NAME: citrusoside D REASON: MISSED Insufficient characteristic '
-               'LPS features\n'
-               ' * SMILES: '
-               'O([C@H]1O[C@@H]([C@H](O)[C@H](O)[C@@H]1O)C(O)=O)[C@H]([C@@H](O)CCCCCCCC(O)=O)C/C=C\\CCCCC '
-               'NAME: 9-Hydroxy-10-O-D-glucuronoside-12Z-octadecenoate REASON: '
-               'MISSED Insufficient characteristic LPS features\n'
-               ' * SMILES: '
-               'O1[C@](O[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)([C@@]3(OC(=O)C4C(C(C=5C4=CC(O)=C(O[C@@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6O)COC(=O)CC7C=8C(NC7=O)=CC=CC8)C5)C9=CC(OC)=C(O)C=C9)C(OC[C@]1([C@@H]3O)[H])=O)[H])CO '
-               'NAME: Secaloside A REASON: MISSED Insufficient characteristic '
-               'LPS features\n'
-               ' * SMILES: '
-               'CC(C)O[C@@H]1O[C@H](COC(=O)CC(C)(O)CC(=O)O[C@H](CC\\C(C)=C\\COc2c3ccoc3cc3oc(=O)ccc23)C(C)(C)O)[C@@H](O)[C@H](O)[C@H]1O '
-               'NAME: citrusoside B REASON: MISSED Insufficient characteristic '
-               'LPS features\n'
-               ' * SMILES: '
-               'CC(C)O[C@@H]1O[C@H](COC(=O)CC(C)(O)CC(=O)O[C@H](COc2c3ccoc3cc3oc(=O)ccc23)C(C)(C)O)[C@@H](O)[C@H](O)[C@H]1O '
-               'NAME: citrusoside C REASON: MISSED Insufficient characteristic '
-               'LPS features\n'
-               ' * SMILES: '
-               'O1C(OC2=C(O)C=C(CC(O)CCC(O)=O)C=C2)C(O)C(O)C(O)C1C(O)=O NAME: '
-               '6-[4-(4-carboxy-2-hydroxybutyl)-2-hydroxyphenoxy]-3,4,5-trihydroxyoxane-2-carboxylic '
-               'acid REASON: MISSED Insufficient characteristic LPS features\n'
-               ' * SMILES: '
-               'O=C(O[C@@H]1[C@H](OC(=O)C)[C@@H](O[C@@H]([C@H]1OC(=O)C)CO)OC[C@@H](O)[C@@H](O)CO)CCCCCCCCCCCCC '
-               'NAME: Ustilipid F3 REASON: MISSED Insufficient characteristic '
-               'LPS features\n'
-               ' * SMILES: O1C(C(O)C(OC(=O)CCCCC)C(OC(=O)CCCCC)C1O)CO NAME: '
-               '2,3-di-0-hexanoyl-alpha-glucopyranose REASON: MISSED '
-               'Insufficient characteristic LPS features\n'
+               'O([C@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)COC(=O)C(CC)C)[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO '
+               'NAME: 6-O-(2-methylbutanoyl)-alpha-D-glucopyranosyl '
+               'alpha-D-glucopyranoside REASON: MISSED Only 0 sugar-like '
+               'ring(s) detected; at least 2 expected based on a trisaccharide '
+               'core and side-chains\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'S(=O)(=O)(C1=C2C(=CC3=C1NC=4C=CC=CC34)[C@@]5([C@H]([C@](C(=O)O)([C@@H](O)CC5)C)CC2)C)C6=CC7=C(NC8=C7C=C9[C@@]%10([C@H]([C@](C(=O)O)([C@@H](O)CC%10)C)CCC9=C8)C)C=C6',
-                                     'name': 'Sulfadixiamycin C',
-                                     'reason': 'Insufficient LPS '
-                                               'characteristics (score: 5)'},
-                                 {   'smiles': 'CNC(O)=O',
-                                     'name': 'methylcarbamic acid',
-                                     'reason': 'Molecular weight too low for '
-                                               'LPS'},
-                                 {   'smiles': 'CCNC(=O)NC1=CC2=C(C=C1)OC[C@H]3[C@@H](CC[C@H](O3)CC(=O)N[C@@H](C)C4=CC=CC=C4)N(C2=O)C',
-                                     'name': '2-[(2S,4aR,12aR)-8-(ethylcarbamoylamino)-5-methyl-6-oxo-2,3,4,4a,12,12a-hexahydropyrano[2,3-c][1,5]benzoxazocin-2-yl]-N-[(1S)-1-phenylethyl]acetamide',
-                                     'reason': 'Too few oxygen atoms for LPS'},
-                                 {   'smiles': 'O(C(=O)C(C1C(CN2C(C1)C=3NC=4C(C3CC2)=CC=CC4)CC)=COC)C',
-                                     'name': 'Methyl '
-                                             '2-(3-ethyl-1,2,3,4,6,7,12,12b-octahydroindolo[2,3-a]quinolizin-2-yl)-3-methoxyprop-2-enoate',
-                                     'reason': 'Too few oxygen atoms for LPS'},
-                                 {   'smiles': 'O[C@H](/C=C/C=C/C=C/[C@H](O)[C@H](O)C=C)[C@H](O)/C=C/C',
-                                     'name': 'Separacene C',
-                                     'reason': 'Molecular weight too low for '
-                                               'LPS'},
-                                 {   'smiles': 'C1=CC=CC2=C1C(N([C@H](C(N2)=O)CC=3C=CC(=CC3)OC)C)=O',
-                                     'name': "(S)-4'-methoxycyclopeptine",
-                                     'reason': 'Too few oxygen atoms for LPS'},
-                                 {   'smiles': 'O=C(N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(O)=O)[C@@H](NC(=O)[C@@H](N)C(C)C)C(C)C',
-                                     'name': 'Val-Val-Trp',
-                                     'reason': 'Too few oxygen atoms for LPS'},
-                                 {   'smiles': 'C=1C(=C(C=CC1/C=C/CO)OC(CO)C(O)C=2C=C(C(=CC2)O)OC)OC',
-                                     'name': 'guaiacylglycerol beta-coniferyl '
-                                             'ether',
-                                     'reason': 'Insufficient LPS '
-                                               'characteristics (score: 3)'},
-                                 {   'smiles': 'OC([C@@H](O)CC1=CC=2NC=C(C2C=C1)CC#N)(C)C',
-                                     'name': 'Streptoprenylindole A',
-                                     'reason': 'Molecular weight too low for '
-                                               'LPS'},
-                                 {   'smiles': 'C[C@H]1[C@H]2[C@H](C[C@@H]3[C@@]2(CC[C@H]4[C@H]3CC[C@@H]5[C@@]4(CC[C@@H](C5)O)C)C)O[C@@]16CCC(CN6)C',
-                                     'name': 'LSM-6471',
-                                     'reason': 'Too few oxygen atoms for LPS'}],
-    'sample_false_negatives': [   {   'smiles': 'O1[C@H](O[C@H]([C@H](O)[C@@H](O)C=O)[C@H](O)C(O)=O)[C@H](O)[C@@H](O)[C@@H](O)[C@H]1C(O)=O',
-                                      'name': '4-O-alpha-Galactopyranuronosyl-galacturonic '
+    'sample_true_negatives': [   {   'smiles': '[H][C@@]12CCC3=C(C(=O)C[C@]4(C)[C@]([H])(CC[C@@]34[H])[C@H](C)CCC(=C)C(C)C)[C@@]1(C)CCC(=O)[C@H]2C',
+                                     'name': 'Camphoratin H',
+                                     'reason': 'Only 0 sugar-like ring(s) '
+                                               'detected; at least 2 expected '
+                                               'based on a trisaccharide core '
+                                               'and side-chains'},
+                                 {   'smiles': 'OC1CC=2C(C3C(C4C(C(CC4)C(C)/C=C\\C(C)C)(CC3)C)CC2)(CC1)C',
+                                     'name': '(3beta,22E)-26,27-Dinorergosta-5,22-dien-3-ol',
+                                     'reason': 'Only 0 sugar-like ring(s) '
+                                               'detected; at least 2 expected '
+                                               'based on a trisaccharide core '
+                                               'and side-chains'},
+                                 {   'smiles': 'COc1ccc(cc1)[C@@H]1CC(=O)c2c(O)c(C)c(O)c(C)c2O1',
+                                     'name': 'matteucinol',
+                                     'reason': 'Molecular weight too low for a '
+                                               'lipopolysaccharide (wt = 314.1 '
+                                               'Da)'},
+                                 {   'smiles': 'O=C(N[C@@H](CC=1C=2C(NC1)=CC=CC2)C(=O)N[C@@H](C)C(O)=O)[C@@H](N)C(C)C',
+                                     'name': 'Val-Trp-Ala',
+                                     'reason': 'Only 0 sugar-like ring(s) '
+                                               'detected; at least 2 expected '
+                                               'based on a trisaccharide core '
+                                               'and side-chains'},
+                                 {   'smiles': 'C[C@@H]1O[C@@H](OCCCCCCCC[C@@H](O)CC(O)=O)[C@H](O)C[C@H]1OC(=O)c1c[nH]c2ccccc12',
+                                     'name': 'ibho#18',
+                                     'reason': 'Only 1 sugar-like ring(s) '
+                                               'detected; at least 2 expected '
+                                               'based on a trisaccharide core '
+                                               'and side-chains'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]1CO)O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]2CO)O)[C@@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O)CO[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O[C@@H]5O[C@@H]([C@@H](O[C@@H]6O[C@@H]([C@H](O)[C@H](O)[C@H]6O)CO)[C@H](O)[C@H]5NC(=O)C)CO)CO',
+                                     'name': 'N-[(2R,3R,4R,5S,6R)-5-[(2S,3R,4R,5S,6R)-3-Acetamido-5-[(2S,3S,4S,5S,6R)-6-[[(2S,3S,4S,5S,6R)-3-[(2S,3R,4R,5S,6R)-3-acetamido-4-hydroxy-6-(hydroxymethyl)-5-[(2S,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-3,4,5-trihydroxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-2,4-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'No 3-hydroxytetradecanoic '
+                                               'acid-like seed fragment '
+                                               'detected'},
+                                 {   'smiles': 'OC=1C=2N=C(C=CC2C=CC1)C',
+                                     'name': '2-Methylquinolin-8-ol',
+                                     'reason': 'Molecular weight too low for a '
+                                               'lipopolysaccharide (wt = 159.1 '
+                                               'Da)'},
+                                 {   'smiles': 'O([C@@H]1O[C@@H]([C@H](O)[C@H](O)[C@H]1O[C@@H]2O[C@H]([C@@H](O)[C@@H](O)[C@@H]2O)C)CO)[C@@H]3C[C@@H](NC(=O)C)C(O[C@@H]3CO)O',
+                                     'name': 'N-[(3R,5R,6R)-5-[(2R,3R,4S,5R,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-3-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-2-hydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'No 3-hydroxytetradecanoic '
+                                               'acid-like seed fragment '
+                                               'detected'},
+                                 {   'smiles': 'O([C@H]1[C@@H](O)[C@H](O[C@@H](O[C@@H]2[C@@H](NC(=O)C)C(O[C@@H]([C@@H]2O)CO[C@@H]3O[C@@H]([C@@H](O)[C@H](O)[C@H]3NC(=O)C)CO)O)[C@@H]1O)CO[C@@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@H](O[C@H]6O[C@@H]([C@@H](O)[C@H](O)[C@H]6NC(=O)C)CO)[C@H](O)[C@H]5O)CO)[C@H](O)[C@H]4NC(=O)C)CO)[C@@H]7O[C@@H]([C@@H](O[C@@H]8O[C@@H]([C@H](O)[C@H](O)[C@H]8O[C@@H]9O[C@H]([C@@H](O)[C@@H](O)[C@@H]9O)C)CO)[C@H](O)[C@H]7NC(=O)C)CO',
+                                     'name': 'N-[(2R,3R,4R,5S,6R)-2-[[(2R,3R,4R,5R)-5-Acetamido-4-[(2R,3R,4S,5S,6R)-6-[[(2R,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4R,5R,6R)-5-[(2R,3R,4R,5S,6R)-3-acetamido-4,5-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3,4-dihydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-4-[(2S,3R,4R,5S,6R)-3-acetamido-5-[(2S,3R,4S,5R,6R)-4,5-dihydroxy-6-(hydroxymethyl)-3-[(2S,3S,4R,5S,6S)-3,4,5-trihydroxy-6-methyloxan-2-yl]oxyoxan-2-yl]oxy-4-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxy-3,5-dihydroxyoxan-2-yl]oxy-3,6-dihydroxyoxan-2-yl]methoxy]-4,5-dihydroxy-6-(hydroxymethyl)oxan-3-yl]acetamide',
+                                     'reason': 'No 3-hydroxytetradecanoic '
+                                               'acid-like seed fragment '
+                                               'detected'},
+                                 {   'smiles': 'S(CC[C@H](NC(=O)[C@@H](NC(=O)[C@@H](N)CCSC)CC=1C=2C(NC1)=CC=CC2)C(O)=O)C',
+                                     'name': 'Met-Trp-Met',
+                                     'reason': 'Only 0 sugar-like ring(s) '
+                                               'detected; at least 2 expected '
+                                               'based on a trisaccharide core '
+                                               'and side-chains'}],
+    'sample_false_negatives': [   {   'smiles': 'CC(C)(C(\\C=C\\C1=CC=C(C=C1)OC)=O)OC2C(C(C(C(C(=O)O)O2)O)O)O',
+                                      'name': '3,4,5-trihydroxy-6-{[5-(4-methoxyphenyl)-2-methyl-3-oxopent-4-en-2-yl]oxy}oxane-2-carboxylic '
                                               'acid',
-                                      'reason': 'Too few carbon atoms for LPS'},
+                                      'reason': 'Only 1 sugar-like ring(s) '
+                                                'detected; at least 2 expected '
+                                                'based on a trisaccharide core '
+                                                'and side-chains'},
+                                  {   'smiles': 'O([C@H]1O[C@@H]([C@H](O)[C@H](O)[C@@H]1O)C(O)=O)[C@H]([C@@H](O)CCCCC)C/C=C\\CCCCCCCC(O)=O',
+                                      'name': '12-Hydroxy-13-O-D-glucuronoside-octadec-9Z-enoate',
+                                      'reason': 'Only 1 sugar-like ring(s) '
+                                                'detected; at least 2 expected '
+                                                'based on a trisaccharide core '
+                                                'and side-chains'},
                                   {   'smiles': 'CCCCCCCCCC(=O)O[C@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@H]1O[C@@H](C[C@H](OC(C)=O)C(\\C)=C\\CO[C@H]([C@H](O)CO)[C@H](O)[C@H](O)CO)[C@](C)(O)CCC=C(C)C',
                                       'name': 'Cosmosporaside D, (rel)-',
-                                      'reason': 'Insufficient LPS '
-                                                'characteristics (score: 6)'},
-                                  {   'smiles': 'O=C(O[C@@H]1[C@H](OC(=O)C)[C@@H](O[C@@H]([C@H]1OC(=O)C)CO)OC[C@@H](O)[C@@H](O)CO)CCCCCCCCCCCCC',
-                                      'name': 'Ustilipid F3',
-                                      'reason': 'Insufficient LPS '
-                                                'characteristics (score: 6)'},
-                                  {   'smiles': 'O1C(C(O)C(OC(=O)CCCCC)C(OC(=O)CCCCC)C1O)CO',
-                                      'name': '2,3-di-0-hexanoyl-alpha-glucopyranose',
-                                      'reason': 'Insufficient LPS '
-                                                'characteristics (score: 5)'},
-                                  {   'smiles': 'O1C([C@@H](O)C(O)C(O)[C@@H]1O)COC(=O)C([C@@H](O)CO)=C',
-                                      'name': '6-O-(3R,4-dihydroxy-2-methylene-butanoyl)-beta-D-glucopyranose',
-                                      'reason': 'Molecular weight too low for '
-                                                'LPS'},
-                                  {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OCCC(C(O)=O)=C)CO',
-                                      'name': '2-methylidene-4-[(2r,3r,4s,5s,6r)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxybutanoic '
+                                      'reason': 'Only 1 sugar-like ring(s) '
+                                                'detected; at least 2 expected '
+                                                'based on a trisaccharide core '
+                                                'and side-chains'},
+                                  {   'smiles': 'O1C(OC(CC)C(O)=O)C(O)C(O)C(O)C1C(O)=O',
+                                      'name': '6-(1-carboxypropoxy)-3,4,5-trihydroxyoxane-2-carboxylic '
                                               'acid',
                                       'reason': 'Molecular weight too low for '
-                                                'LPS'},
-                                  {   'smiles': 'O=C(O[C@@H]1[C@@H](O[C@H](CO)[C@H]([C@@H]1O)O)OC(C(O)(CCC=C(C)C)C)CC(OC(=O)C)C(=CCO[C@@H]([C@H](O)[C@H](O)CO)[C@H](O)CO)C)CCCCCCCCC',
-                                      'name': 'Cosmosporaside D',
-                                      'reason': 'Insufficient LPS '
-                                                'characteristics (score: 6)'},
-                                  {   'smiles': 'CCOC(=O)[C@H]1CC=CC[C@@H](C(=O)O[C@@H]2[C@H]([C@@H]([C@H](O[C@@H]2OC)CO)OC(=O)NC3=CC=C(C=C3)Br)OC1=O)C(=O)OCC',
-                                      'name': 'LSM-36740',
-                                      'reason': 'Insufficient LPS '
-                                                'characteristics (score: 3)'},
-                                  {   'smiles': 'CCOC(=O)[C@H]1CC=CC[C@@H](C(=O)O[C@@H]2[C@H]([C@@H]([C@H](O[C@@H]2OC)CO)OC(=O)NC3=CC=C(C=C3)OC)OC1=O)C(=O)OCC',
-                                      'name': 'LSM-36728',
-                                      'reason': 'Insufficient LPS '
-                                                'characteristics (score: 3)'},
-                                  {   'smiles': 'O1[C@@H]([C@@H](O)[C@H](O)[C@@H](O)[C@@H]1OC(=O)/C=C/C2=CC=CC=C2)COC(=O)C(C(O)CO)=C',
-                                      'name': '[(2R,3S,4S,5R,6S)-3,4,5-trihydroxy-6-[(E)-3-phenylprop-2-enoyl]oxyoxan-2-yl]methyl '
-                                              '3,4-dihydroxy-2-methylidenebutanoate',
-                                      'reason': 'Insufficient LPS '
-                                                'characteristics (score: 6)'}],
-    'attempt': 2,
-    'reasoning': 'Let me analyze the previous outcomes and suggest '
-                 'improvements:\n'
+                                                'a lipopolysaccharide (wt = '
+                                                '280.1 Da)'},
+                                  {   'smiles': 'O=C(OC[C@H]1O[C@H](O[C@H]2O[C@@H]([C@@H](O)[C@@H]([C@H]2O)O)COC(=O)[C@@H]([C@H](O)CCCCCCCCCCCCCCC)CCCCCCCCCCCCCC)[C@H](O)[C@H]([C@@H]1O)O)[C@@H]([C@H](O)CCCCCCCCCCCCCCC)CCCCCCCCCCCCCC',
+                                      'name': "Trehalose-6,6'-dicorynomycolate",
+                                      'reason': 'No 3-hydroxytetradecanoic '
+                                                'acid-like seed fragment '
+                                                'detected'},
+                                  {   'smiles': 'O1[C@H](O[C@H]2OC([C@@H](O)C(O)[C@H]2O)CO)C(O)C(O)[C@H](OC(=O)CCCCCCCCCCCCCCCCC)C1COC(=O)CCCCCCCCCCCCCCCCC',
+                                      'name': "alpha,alpha'-Trehalose "
+                                              '4,6-dioleate',
+                                      'reason': 'No 3-hydroxytetradecanoic '
+                                                'acid-like seed fragment '
+                                                'detected'},
+                                  {   'smiles': 'O=C(O[C@@H]1[C@@H](O[C@H](COC(=O)C)[C@H]([C@@H]1OC(=O)CCCCCCCCCCCCCCC)OC(=O)C)OC[C@@H](O)[C@@H](O)CO)C(C)C',
+                                      'name': 'Ustilipid E3',
+                                      'reason': 'Only 1 sugar-like ring(s) '
+                                                'detected; at least 2 expected '
+                                                'based on a trisaccharide core '
+                                                'and side-chains'},
+                                  {   'smiles': 'O(C1[C@@H](O)[C@H](O)C(O[C@H]1OCCCC)COC(=O)CCCCCCCCCCCCCCC)[C@@H]2OC([C@H](OC(=O)CCC)[C@H](O)C2O)C',
+                                      'name': 'Butyl '
+                                              "4'-O-butanoyl-6-O-hexadecanoyl-neohesperidoside",
+                                      'reason': 'No 3-hydroxytetradecanoic '
+                                                'acid-like seed fragment '
+                                                'detected'},
+                                  {   'smiles': 'O=C(O)CCCCC/C=C/C=C/C(O[C@@H]1O[C@@H]([C@@H](OC)[C@@H]([C@H]1O)O)CO)CCCCCCC',
+                                      'name': 'Cordyglycoside A',
+                                      'reason': 'Only 1 sugar-like ring(s) '
+                                                'detected; at least 2 expected '
+                                                'based on a trisaccharide core '
+                                                'and side-chains'},
+                                  {   'smiles': 'O([C@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)COC(=O)C(CC)C)[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO',
+                                      'name': '6-O-(2-methylbutanoyl)-alpha-D-glucopyranosyl '
+                                              'alpha-D-glucopyranoside',
+                                      'reason': 'No 3-hydroxytetradecanoic '
+                                                'acid-like seed fragment '
+                                                'detected'}],
+    'attempt': 3,
+    'reasoning': 'Below is our revised solution. In our reasoning we noticed '
+                 'that the previous strategy was too strict for detecting '
+                 '“sugar‐like” rings (looking for at least two hydroxyl '
+                 'substituents on the ring atoms) so that none of the provided '
+                 'lipopolysaccharide examples ever yielded a match. In our new '
+                 'version we relax that requirement. Instead we consider any '
+                 'ring of size 5–7 that contains exactly one oxygen (a '
+                 'hallmark of many cyclic sugars) as evidence for a sugar '
+                 'ring. Also, for the fatty acid fragment we use a SMARTS to '
+                 '“seed” a match for a 3‐hydroxytetradecanoic acid–like unit '
+                 'and then we measure the continuity of an attached aliphatic '
+                 'chain by doing a depth‐first search from the last atom of '
+                 'that match. If we find a chain of at least 7 connected sp^3 '
+                 'carbons (outside the matched fragment) we treat that as a '
+                 'positive hit. This combined (though still heuristic) '
+                 'approach improved on the previous method.\n'
                  '\n'
-                 '1. False Positives Analysis:\n'
-                 '- Many complex glycosides and glycoconjugates were '
-                 'incorrectly classified as LPS\n'
-                 '- The program was too lenient in its classification, mainly '
-                 'looking for sugar units and fatty acid chains\n'
-                 '- Many steroid glycosides and other glycoconjugates have '
-                 "similar patterns but aren't LPS\n"
+                 'Below is our complete Python code:\n'
                  '\n'
-                 '2. False Negatives Analysis:\n'
-                 '- Several legitimate LPS components were missed\n'
-                 '- The criteria for KDO (keto-deoxy-octulosonic acid) was too '
-                 'strict\n'
-                 '- The requirement for heptose units was too rigid\n'
-                 '\n'
-                 '3. Key Issues:\n'
-                 '- The structural requirements were not specific enough\n'
-                 '- The scoring system (`lps_features`) was too simple\n'
-                 '- The fatty acid pattern matching was too general\n'
-                 '\n'
-                 '4. Proposed Improvements:\n'
-                 '- Make pattern matching more specific to LPS core '
-                 'structures\n'
-                 '- Add better distinction between LPS and other '
-                 'glycoconjugates\n'
-                 '- Implement more precise sugar unit identification\n'
-                 '- Add molecular weight constraints\n'
-                 '- Consider the presence of phosphate groups\n'
-                 '- Look for specific linkage patterns characteristic of LPS\n'
-                 '\n'
-                 "Here's the improved code:",
+                 '------------------------------------------------',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 71,
-    'num_false_positives': 100,
-    'num_true_negatives': 823,
-    'num_false_negatives': 32,
+    'num_true_positives': 6,
+    'num_false_positives': 128,
+    'num_true_negatives': 142069,
+    'num_false_negatives': 97,
     'num_negatives': None,
-    'precision': 0.4152046783625731,
-    'recall': 0.6893203883495146,
-    'f1': 0.5182481751824818,
-    'accuracy': 0.8713450292397661,
-    'negative_predictive_value': 0.9625730994152046}
+    'precision': 0.04477611940298507,
+    'recall': 0.05825242718446602,
+    'f1': 0.05063291139240506,
+    'accuracy': 0.9984188334504568,
+    'negative_predictive_value': 0.9993176990278969}

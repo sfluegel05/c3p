@@ -1,12 +1,16 @@
 """
 Classifies: CHEBI:62499 methyl-branched fatty acid
 """
+"""
+Classifies: CHEBI:27718 Methyl-branched fatty acid
+"""
 from rdkit import Chem
+from rdkit.Chem import AllChem
 
 def is_methyl_branched_fatty_acid(smiles: str):
     """
     Determines if a molecule is a methyl-branched fatty acid based on its SMILES string.
-    A methyl-branched fatty acid must have a carboxylic acid group and only methyl branches.
+    A methyl-branched fatty acid is a branched-chain fatty acid containing methyl branches only.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,22 +25,37 @@ def is_methyl_branched_fatty_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for the carboxylic acid group (must be terminal, C(=O)O must not have further connections)
-    terminal_carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O;H1]")
-    if not mol.HasSubstructMatch(terminal_carboxylic_pattern):
-        return False, "No terminal carboxylic acid group found"
-    
-    # Look for non-methyl branching
-    for atom in mol.GetAtoms():
-        # If a carbon atom has more than one non-hydrogen neighbor, it could be a branching point
-        if atom.GetSymbol() == 'C' and atom.GetDegree() > 3:
-            # Count how many of the neighbors are methyl-type carbons (CH3)
-            methyl_branches = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetSymbol() == 'C' and neighbor.GetDegree() == 1)
-            # If there is a branch that is not a methyl group, return False
-            if atom.GetDegree() - methyl_branches > 2:
-                return False, "Non-methyl branches detected"
+    # Check if molecule contains only C, H, and O atoms
+    allowed_atoms = [6, 1, 8]  # C, H, O
+    if any(atom.GetAtomicNum() not in allowed_atoms for atom in mol.GetAtoms()):
+        return False, "Molecule contains atoms other than C, H, and O"
 
-    return True, "Contains only methyl branches with a terminal carboxylic acid group"
+    # Check for carboxylic acid group
+    carboxyl_pattern = Chem.MolFromSmarts("C(=O)O")
+    carboxyl_match = mol.GetSubstructMatch(carboxyl_pattern)
+    if not carboxyl_match:
+        return False, "No carboxylic acid group found"
+
+    # Check for linear carbon chain
+    linear_chain_pattern = Chem.MolFromSmarts("CC(C)CCCC")
+    linear_chain_match = mol.GetSubstructMatches(linear_chain_pattern)
+    if not linear_chain_match:
+        return False, "No linear carbon chain found"
+
+    # Check for methyl branches
+    methyl_branch_pattern = Chem.MolFromSmarts("CC")
+    methyl_branch_matches = mol.GetSubstructMatches(methyl_branch_pattern)
+    if not methyl_branch_matches:
+        return False, "No methyl branches found"
+
+    # Check if all branches are methyl groups
+    for match in methyl_branch_matches:
+        atom = mol.GetAtomWithIdx(match[0])
+        neighbors = [mol.GetAtomWithIdx(n.GetIdx()) for n in atom.GetNeighbors()]
+        if any(n.GetAtomicNum() != 6 for n in neighbors):
+            return False, "Found non-methyl branching groups"
+
+    return True, "Contains a linear carbon chain with methyl branches and a carboxylic acid group"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:62499',
@@ -49,231 +68,210 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:62499',
                                        'PMID:19933331'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 39,
+                           'log_lines_of_code': 3.6635616461296463,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 0,
+                                                 1],
+                           'max_indent': 3,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import AllChem'],
+                           'imports_count': 2,
+                           'methods_called': [   'GetSubstructMatches',
+                                                 'MolFromSmarts',
+                                                 'GetIdx',
+                                                 'GetAtoms',
+                                                 'GetSubstructMatch',
+                                                 'GetNeighbors',
+                                                 'GetAtomWithIdx',
+                                                 'GetAtomicNum',
+                                                 'MolFromSmiles'],
+                           'methods_called_count': 9,
+                           'smarts_strings': ['CC', 'CC(C)CCCC', 'C(=O)O'],
+                           'smarts_strings_count': 3,
+                           'defs': [   'is_methyl_branched_fatty_acid(smiles: '
+                                       'str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Molecule contains atoms '
+                                          'other than C, H, and O"',
+                                          'False, "No carboxylic acid group '
+                                          'found"',
+                                          'False, "No linear carbon chain '
+                                          'found"',
+                                          'False, "No methyl branches found"',
+                                          'False, "Found non-methyl branching '
+                                          'groups"',
+                                          'True, "Contains a linear carbon '
+                                          'chain with methyl branches and a '
+                                          'carboxylic acid group"'],
+                           'returns_count': 7,
+                           'complexity': 4.732712329225929},
     'message': '\n'
+               'Error: Error executing '
+               "is_methyl_branched_fatty_acid('CCC\\\\C(=C/CC)C(O)=O'):\n"
+               " 'Atom' object has no attribute 'GetDegreeWithPattern'\n"
                'Attempt failed: F1 score of 0 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: NONE\n'
-               'False positives: SMILES: O(C(CC(CC(CC(CCC)C)C)C)C)C=O NAME: '
-               '1,3,5,7-Tetramethyldecyl formate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCC)C=O NAME: Hexyl formate REASON: WRONGLY '
-               'CLASSIFIED Contains methyl branches only with a carboxylic '
-               'acid group\n'
-               ' * SMILES: O(CCCCCC/C=C\\CC/C=C\\CCCC)C(=O)C NAME: '
-               '7Z,11Z-Hexadecadienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CC/C=C\\CCCCCCCC)C(=O)C NAME: 3Z-Dodecenyl '
-               'acetate REASON: WRONGLY CLASSIFIED Contains methyl branches '
-               'only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCC/C=C/C=C\\C=C)C(=O)C NAME: '
-               '7E,9Z,11-Dodecatrienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CCC/C=C/C=C\\CC/C=C\\CCCCC)C(=O)C NAME: '
-               '4E,6Z,10Z-Hexadecatrienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCC#C/C=C\\CC)C(=O)C NAME: 9Z-Dodecen-7-ynyl '
-               'acetate REASON: WRONGLY CLASSIFIED Contains methyl branches '
-               'only with a carboxylic acid group\n'
-               ' * SMILES: O(C\\C=C\\CCC)C=O NAME: 2-Hexenyl formate REASON: '
-               'WRONGLY CLASSIFIED Contains methyl branches only with a '
-               'carboxylic acid group\n'
-               ' * SMILES: O(CCCCC/C=C/CC)C(=O)C NAME: 6E-Nonenyl acetate '
-               'REASON: WRONGLY CLASSIFIED Contains methyl branches only with '
-               'a carboxylic acid group\n'
-               ' * SMILES: C(=C\\COC(C)=O)(\\CCC=C(C)C)/C NAME: neryl acetate '
-               'REASON: WRONGLY CLASSIFIED Contains methyl branches only with '
-               'a carboxylic acid group\n'
-               ' * SMILES: O(CC/C=C\\CCCCCCCC/C=C\\CCCC)C(=O)C NAME: '
-               '3Z,13Z-Octadecadienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(C/C=C\\CC/C=C\\CC)C(=O)C NAME: '
-               '(2E,6Z)-2,6-Nonadien-1-Yl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCCCCCCCCCC)C(=O)C NAME: Pentadecyl acetate '
-               'REASON: WRONGLY CLASSIFIED Contains methyl branches only with '
-               'a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCC\\C=C/C=C/C=C)C(=O)C NAME: '
-               '7Z,9E,11-Dodecatrienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CC\\C=C\\CCCCCCCC/C=C\\CCCC)C(=O)C NAME: '
-               '3E,13Z-Octadecadienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCC\\C=C/C=C\\C)C(=O)C NAME: '
-               '8Z,10Z-Dodecadienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCCCCC/C=C\\C/C=C/C)C(=O)C NAME: '
-               '11Z,14E-Hexadecadienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CC\\C=C\\CCCCCCCC)C(=O)C NAME: 3E-Dodecenyl '
-               'acetate REASON: WRONGLY CLASSIFIED Contains methyl branches '
-               'only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCC/C=C\\CCCCCC)C(=O)C NAME: 8Z-Pentadecenyl '
-               'acetate REASON: WRONGLY CLASSIFIED Contains methyl branches '
-               'only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCCCCC/C=C\\CCCCC)C(=O)C NAME: '
-               '11Z-Heptadecenyl acetate REASON: WRONGLY CLASSIFIED Contains '
-               'methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCCCC/C=C/C=C\\C)C(=O)C NAME: '
-               '10E,12Z-Tetradecadienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: CCCCCCOC(C)=O NAME: hexyl acetate REASON: WRONGLY '
-               'CLASSIFIED Contains methyl branches only with a carboxylic '
-               'acid group\n'
-               ' * SMILES: O(CCC\\C=C\\CCCCCCC)C(=O)C NAME: 4E-Dodecenyl '
-               'acetate REASON: WRONGLY CLASSIFIED Contains methyl branches '
-               'only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCCCCCCC/C=C/CCCC)C(=O)C NAME: '
-               '13E-Octadecenyl acetate REASON: WRONGLY CLASSIFIED Contains '
-               'methyl branches only with a carboxylic acid group\n'
-               ' * SMILES: O(CCCCCCCCCC\\C=C/C=C\\CC)C(=O)C NAME: '
-               '11Z,13Z-Hexadecadienyl acetate REASON: WRONGLY CLASSIFIED '
-               'Contains methyl branches only with a carboxylic acid group\n'
-               'False negatives: SMILES: CC(C)CCCC(C)CCCC(C)CCCC(C)C(O)=O '
-               'NAME: pristanic acid REASON: MISSED Non-methyl branches '
-               'detected\n'
-               ' * SMILES: CC(C)(C)CC(O)=O NAME: 3,3-dimethylbutyric acid '
-               'REASON: MISSED Non-methyl branches detected\n'
-               ' * SMILES: CC(CO)CCCCCCCCCCCCCC(O)=O NAME: '
-               'omega-hydroxy-15-methylpalmitic acid REASON: MISSED Non-methyl '
-               'branches detected\n'
-               ' * SMILES: OC(=O)C(CCC)CC NAME: alpha-ethyl valeric acid '
-               'REASON: MISSED Non-methyl branches detected\n'
-               ' * SMILES: CC(C)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
-               '26-methylheptacosanoic acid REASON: MISSED Non-methyl branches '
-               'detected\n'
-               ' * SMILES: CC(C)CCCCCCCCC(O)=O NAME: 10-methylundecanoic acid '
-               'REASON: MISSED Non-methyl branches detected\n'
-               ' * SMILES: '
-               'C\\C(CO)=C/CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\C(O)=O NAME: '
-               '(2E,6E,10E,14E)-omega-hydroxygeranylgeranic acid REASON: '
-               'MISSED Non-methyl branches detected\n'
-               ' * SMILES: CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\C(O)=O '
-               'NAME: (2E,6E,10E)-geranylgeranic acid REASON: MISSED '
-               'Non-methyl branches detected\n'
-               ' * SMILES: C([C@@H](CCC[C@H](CCC[C@H](CCCC(C)C)C)C)C)(=O)O '
-               'NAME: (2R,6S,10S)-2,6,10,14-pristanic acid REASON: MISSED '
-               'Non-methyl branches detected\n'
-               ' * SMILES: OC(=O)\\C=C\\C(C)C NAME: 4-Methyl-2-pentenoic acid '
-               'REASON: MISSED Non-methyl branches detected\n'
+               'False positives: NONE\n'
+               'False negatives: NONE\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)CO)[C@H]3[C@@H](O)[C@H](OC(O)[C@@H]3O)CO',
-                                     'name': 'beta-D-Glcp-(1->2)-beta-D-Glcp-(1->3)-D-Galp',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': 'CCS(=O)(=O)NCC[C@@H]1CC[C@@H]([C@H](O1)CO)NC(=O)NC2=CC(=CC(=C2)Cl)Cl',
-                                     'name': '1-(3,5-dichlorophenyl)-3-[(2S,3S,6S)-6-[2-(ethylsulfonylamino)ethyl]-2-(hydroxymethyl)-3-oxanyl]urea',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': 'OC[C@H]1O[C@H](O[C@H]2[C@@H](CO)O[C@@H](O[C@@H]3[C@@H](CO)O[C@@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
-                                     'name': 'alpha-D-Galp-(1->4)-beta-D-Galp-(1->4)-beta-D-Glcp',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': '[Li+].[Br-]',
-                                     'name': 'lithium bromide',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': 'C=1(OC)C2=C(C=C3C[C@H]([C@](CC=4C=C(OC)C(OC)=C(C4C13)OC)(C)O)C)OCO2',
-                                     'name': 'Besigomsin',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': 'C1=CC=C(C(=C1)C=CC(=O)C2=CC=CN2)Cl',
-                                     'name': '3-(2-chlorophenyl)-1-(1H-pyrrol-2-yl)-2-propen-1-one',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': 'O=C1OC(O)C(=C1C(O)C(C)C)C',
-                                     'name': '5-Hydroxy-3-(1-hydroxy-2-methylpropyl)-4-methyl-2(5H)-furanone',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': '[H][C@@]1(COC(C)(C)[C@@]1([H])OC(=O)\\C=C\\c1ccccc1)c1c(O)ccc2C(=O)C[C@H](Oc12)c1ccccc1',
-                                     'name': '(+)-tephrorin B',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': 'FC(F)(F)c1nc2c(Cl)c(Cl)c(Cl)c(Cl)c2[nH]1',
-                                     'name': '4,5,6,7-Tetrachloro-2-trifluoromethylbenzimidazole',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'},
-                                 {   'smiles': 'Cl.OC[C@H]1O[C@@H]2[C@@H](Oc3nc(=N)ccn23)[C@@H]1O',
-                                     'name': 'ancitabine hydrochloride',
-                                     'reason': 'No terminal carboxylic acid '
-                                               'group found'}],
-    'sample_false_negatives': [   {   'smiles': 'OC(=O)C(CC)(CC)C',
-                                      'name': '2-ethyl-2-methyl-butanoic acid',
-                                      'reason': 'Non-methyl branches detected'},
-                                  {   'smiles': 'C(C(=CC(=O)[O-])C)CC=C(C)C',
-                                      'name': '3,7-dimethylocta-2,6-dienoate(1-)',
-                                      'reason': 'No terminal carboxylic acid '
-                                                'group found'},
-                                  {   'smiles': '[O-]C(=O)CCC([N+](C)(C)C)C',
-                                      'name': '4-aminovaleric acid betaine',
-                                      'reason': 'No terminal carboxylic acid '
-                                                'group found'},
+    'sample_true_negatives': [   {   'smiles': 'CC1=CC=CC=C1S(=O)(=O)N[C@@H]2CC[C@@H](O[C@H]2CO)CCN3C=C(N=N3)C4=CC=C(C=C4)F',
+                                     'name': 'N-[(2R,3R,6R)-6-[2-[4-(4-fluorophenyl)-1-triazolyl]ethyl]-2-(hydroxymethyl)-3-oxanyl]-2-methylbenzenesulfonamide',
+                                     'reason': 'Molecule contains atoms other '
+                                               'than C, H, and O'},
+                                 {   'smiles': 'CC(=NNC(=O)C1=CC=CC=C1N)CC(=O)NC2=CC3=C(C=C2)OCO3',
+                                     'name': '2-amino-N-[[4-(1,3-benzodioxol-5-ylamino)-4-oxobutan-2-ylidene]amino]benzamide',
+                                     'reason': 'Molecule contains atoms other '
+                                               'than C, H, and O'},
+                                 {   'smiles': 'O=C(NS(CC=1C=CC=CC1C(OC)=O)(=O)=O)NC2=NC(=CC(=N2)OC)OC',
+                                     'name': 'bensulfuron-methyl',
+                                     'reason': 'Molecule contains atoms other '
+                                               'than C, H, and O'},
+                                 {   'smiles': '[H]C(C(=O)C(Cl)C(O)=O)=C(Cl)C(O)=O',
+                                     'name': '2,5-dichloro-4-oxohex-2-enedioic '
+                                             'acid',
+                                     'reason': 'Molecule contains atoms other '
+                                               'than C, H, and O'},
+                                 {   'smiles': 'CC1(C)O[C@]2(C)CC[C@H]1C[C@H]2O',
+                                     'name': '2-endo-hydroxy-1,8-cineole',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'O=C1O[C@@H](C[C@H]2[C@@H]1[C@@H](O)CCC2)C',
+                                     'name': '(3R,4aS,8S,8aR)-8-hydroxy-3-rnethyl-3,4,4a,5,6,7,8,8a-octahydro-1H-2-benzopyran-1-one',
+                                     'reason': 'Found non-methyl branching '
+                                               'groups'},
+                                 {   'smiles': 'CCCCCCCCCCCCCC(C)=O',
+                                     'name': '2-Pentadecanone',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'O=C1C=2C(OC(=C1)C)=C(C3=C4O[C@](O)(CC(C4=C(O)C=5C3=CC(OC)=CC5OC)=O)C)C6=CC(OC)=CC(=C6C2O)OC',
+                                     'name': '2-hydroxydihydronigerone',
+                                     'reason': 'No carboxylic acid group '
+                                               'found'},
+                                 {   'smiles': 'C[C@H]1CN([C@@H](COC2=C(C=C(C=C2)NC(=O)C3CC3)C(=O)N(C[C@H]1OC)C)C)CC4=CC=CC=C4',
+                                     'name': 'N-[(4R,7S,8S)-8-methoxy-4,7,10-trimethyl-11-oxo-5-(phenylmethyl)-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]cyclopropanecarboxamide',
+                                     'reason': 'Molecule contains atoms other '
+                                               'than C, H, and O'},
+                                 {   'smiles': 'C[C@@H]1CN([C@@H](COC2=C(C=C(C=C2)NC(=O)C3CCCCC3)C(=O)N(C[C@@H]1OC)C)C)CC4=NC=CS4',
+                                     'name': 'N-[(4R,7R,8R)-8-methoxy-4,7,10-trimethyl-11-oxo-5-(2-thiazolylmethyl)-2-oxa-5,10-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]cyclohexanecarboxamide',
+                                     'reason': 'Molecule contains atoms other '
+                                               'than C, H, and O'}],
+    'sample_false_negatives': [   {   'smiles': 'CCC\\C(=C/CC)C(O)=O',
+                                      'name': '2-n-Propyl-2-pentenoic acid',
+                                      'reason': 'No linear carbon chain found'},
+                                  {   'smiles': 'CC(C)CCCC(C)CCCC(C)CCC(=O)C(C)C(O)=O',
+                                      'name': '3-oxopristanic acid',
+                                      'reason': 'Found non-methyl branching '
+                                                'groups'},
                                   {   'smiles': '[H][C@@]12[C@H](CCN1CC=C2COC(=O)[C@](O)([C@H](C)O)C(C)(C)O)OC(=O)C(\\C)=C/C',
                                       'name': 'heliosupine',
-                                      'reason': 'No terminal carboxylic acid '
-                                                'group found'}],
-    'attempt': 1,
-    'reasoning': 'To address the failures in classifying methyl-branched fatty '
-                 'acids, we need to carefully revise the program with the goal '
-                 'of differentiating these molecules accurately. The initial '
-                 'approach correctly identified the presence of a carboxylic '
-                 'acid group and checked for methyl branches, but it failed in '
-                 'two aspects: identifying non-methyl branches wrongly and '
-                 'classifying esters as methyl-branched fatty acids '
-                 'mistakenly.\n'
+                                      'reason': 'Molecule contains atoms other '
+                                                'than C, H, and O'},
+                                  {   'smiles': 'OC(=O)C(CCCC(C)C)C',
+                                      'name': '2,6-dimethylheptanoic acid',
+                                      'reason': 'Found non-methyl branching '
+                                                'groups'},
+                                  {   'smiles': '[H]C(C)=C(C)C(O)=O',
+                                      'name': '2-methylbut-2-enoic acid',
+                                      'reason': 'No linear carbon chain found'},
+                                  {   'smiles': 'CCCC(CC=C)C(O)=O',
+                                      'name': '2-n-Propyl-4-pentenoic acid',
+                                      'reason': 'No linear carbon chain found'},
+                                  {   'smiles': 'CC(C)=CCC\\C(C)=C\\C(O)=O',
+                                      'name': 'geranic acid',
+                                      'reason': 'No linear carbon chain found'},
+                                  {   'smiles': 'OC(=O)/C=C\\C(C)(C)C',
+                                      'name': '4,4-dimethyl-2Z-pentenoic acid',
+                                      'reason': 'No linear carbon chain found'},
+                                  {   'smiles': 'O=C(O)[C@H](C(=C)C)CCC(=O)OC',
+                                      'name': 'Pentanedioic acid '
+                                              '2-(1-methylethenyl)-5-methyl '
+                                              'ester',
+                                      'reason': 'No linear carbon chain found'},
+                                  {   'smiles': 'OC(=O)CC(CC(O)=O)C(C)=C',
+                                      'name': '3-Isopropenylpentanedioic acid',
+                                      'reason': 'No linear carbon chain '
+                                                'found'}],
+    'attempt': 3,
+    'reasoning': 'The previous code attempted to classify methyl-branched '
+                 'fatty acids by checking for the presence of a carboxylic '
+                 'acid group, methyl branches, and ensuring that all branching '
+                 'groups are methyl groups. However, the error message '
+                 'suggests that the issue lies with the `GetDegreeWithPattern` '
+                 'method, which is not a valid method for the `Atom` class in '
+                 'RDKit.\n'
                  '\n'
-                 '### Hypotheses and Proposed Improvements:\n'
-                 '1. **False Positives**: \n'
-                 '   - The method classified esters as methyl-branched fatty '
-                 'acids because having a carbonyl connected to an alkoxy group '
-                 '(`O`) pattern was not properly distinguished from a '
-                 'carboxylic acid group. This happened because of the broad '
-                 'matching for carboxylic acid-like structures (e.g., '
-                 'esters).\n'
-                 '   - ***Improvement***: Ensure that the carbon in the '
-                 'carboxylic group is terminal (or only has the carboxyl '
-                 "branching), which doesn't typically leave the molecule open "
-                 'for reclassification as esters.\n'
+                 'To improve the program, we can take a different approach to '
+                 'identify methyl-branched fatty acids. Instead of checking '
+                 'for the degree of each atom with a specific pattern, we can '
+                 'look for the presence of a linear carbon chain with methyl '
+                 'branches and a carboxylic acid group at one end.\n'
                  '\n'
-                 '2. **True/False Negatives**: \n'
-                 '   - Misclassifying structures without adequate '
-                 'differentiation of backbone or placement of methyl branches '
-                 'demonstrates there might be an oversight in detection. The '
-                 'function seems overly restrictive when classifying '
-                 'non-terminal carbons with methyl groups.\n'
-                 '   - ***Improvement***: Check that the branches are indeed '
-                 'exclusively methyl groups and ensure these groups are '
-                 'accurately identified as branches from the main carbon '
-                 'chain, not mistaken.\n'
-                 '\n'
-                 '3. **Implementation Details**:\n'
-                 '   - Modify the program to look for the specific conditions '
-                 'that define a "methyl-branched fatty acid," making sure the '
-                 'branching carbons are attached directly to the backbone or '
-                 'main chain, not forming secondary structures (like esters or '
-                 'unrelated branching).\n'
-                 '   - Improve the SMARTS patterns to correctly recognize '
-                 'these features, and check correctly for the presence of '
-                 'exactly one carboxylic acid end group (the terminal acid '
-                 'functionality).\n'
-                 '\n'
-                 "Let's write the corrected program with these improvements:",
+                 "Here's the updated program:",
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 90,
-    'num_false_positives': 100,
-    'num_true_negatives': 553,
-    'num_false_negatives': 4,
+    'num_true_positives': 33,
+    'num_false_positives': 214,
+    'num_true_negatives': 141992,
+    'num_false_negatives': 61,
     'num_negatives': None,
-    'precision': 0.47368421052631576,
-    'recall': 0.9574468085106383,
-    'f1': 0.6338028169014084,
-    'accuracy': 0.8607764390896921,
-    'negative_predictive_value': 0.992818671454219}
+    'precision': 0.13360323886639677,
+    'recall': 0.35106382978723405,
+    'f1': 0.1935483870967742,
+    'accuracy': 0.9980674631061138,
+    'negative_predictive_value': 0.9995705828106412}

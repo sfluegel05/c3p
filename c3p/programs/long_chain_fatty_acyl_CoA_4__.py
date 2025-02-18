@@ -1,55 +1,114 @@
 """
 Classifies: CHEBI:83139 long-chain fatty acyl-CoA(4-)
 """
+#!/usr/bin/env python
+"""
+Classifies: long-chain fatty acyl-CoA(4-)
+Definition: A fatty acyl-CoA(4-) arising from deprotonation of the phosphate and diphosphate OH groups 
+of any long-chain fatty acyl-CoA; major species at pH 7.3.
+This program uses simple substructure searches to detect a CoA moiety and a thioester group from which
+the acyl chain is identified. The fatty acyl chain is assumed to be “long‐chain” if it contains at least 
+12 contiguous carbon atoms.
+"""
+
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     """
-    Determines if a molecule is a long-chain fatty acyl-CoA(4-) based on its SMILES string.
-    The compound should have a long-chain fatty acid linked to Coenzyme A via a thioester bond,
-    with deprotonated phosphate groups.
+    Determines if a molecule (given as a SMILES string) belongs to the class
+    long-chain fatty acyl-CoA(4-).
+
+    We check for three features:
+      1. The presence of a CoA moiety (using a characteristic fragment of CoA).
+      2. A thioester group (C(=O)S) which links the fatty acyl chain with the CoA.
+      3. A long fatty acyl chain: we count the number of contiguous carbons attached 
+         to the carbonyl carbon (threshold: at least 12 carbons).
+      4. Overall formal charge of -4 (as expected for CoA(4-)).
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a long-chain fatty acyl-CoA(4-), False otherwise
-        str: Reason for classification
+        bool: True if molecule is classified as long-chain fatty acyl-CoA(4-), False otherwise.
+        str: Reason for the classification decision.
     """
-    
-    # Parse SMILES
+    # Parse the SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the CoA thioester linkage pattern
-    # The pattern for the thioester linkage of CoA to the fatty acid chain
-    thioester_patterns = [
-        Chem.MolFromSmarts("C(=O)SCCNC(=O)CCNC(=O)C"),
-        Chem.MolFromSmarts("C(=O)SCCNC(=O)CCN")
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in thioester_patterns):
-        return False, "No CoA thioester linkage found"
+    # Check overall formal charge (expecting -4 for the deprotonated CoA species)
+    total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    if total_charge != -4:
+        return False, f"Formal charge is {total_charge} (expected -4 for CoA(4-))"
+    
+    # Check for the CoA moiety using a recognizable fragment.
+    # Here we use a fragment pattern from the pantetheine and nucleotide parts: "SCCNC(=O)CCNC(=O)"
+    coa_pattern = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)")
+    if not mol.HasSubstructMatch(coa_pattern):
+        return False, "CoA moiety not found"
 
-    # Check for a long fatty acid chain, allowing for both straight and unsaturated chains
-    long_chain_patterns = [
-        Chem.MolFromSmarts("C(=O)SCCC[C;R0]"),  # Long chain allowing flexibility
-        Chem.MolFromSmarts("[C;R0]C(=O)SCCNC(=O)CCN")  # Include variations in long chain lengths
-    ]
-    if not any(mol.HasSubstructMatch(pattern) for pattern in long_chain_patterns):
-        return False, "Insufficient carbon chain length or structure in the fatty acid"
+    # Look for a thioester group: pattern for a carbonyl carbon (with degree 3) bound to a sulfur.
+    # The SMARTS "[C;D3](=O)[S]" should capture the thioester group.
+    thioester_pattern = Chem.MolFromSmarts("[C;D3](=O)[S]")
+    thioester_matches = mol.GetSubstructMatches(thioester_pattern)
+    if not thioester_matches:
+        return False, "No thioester group (fatty acid linkage) found"
 
-    # Look for the CoA backbone with deprotonated phosphate groups
-    coa_diphosphate_pattern = Chem.MolFromSmarts("COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)")
-    if not mol.HasSubstructMatch(coa_diphosphate_pattern):
-        return False, "CoA backbone or deprotonated phosphate groups not found"
+    # Define a recursive function to count the length of a contiguous carbon chain.
+    # We only travel along carbon atoms and do not branch (if branching is encountered, we take the longest route).
+    def count_chain_length(atom, from_idx, visited):
+        # Count current atom (note: visited is used to avoid loops)
+        length = 1
+        for nbr in atom.GetNeighbors():
+            if nbr.GetIdx() == from_idx or nbr.GetIdx() in visited:
+                continue
+            # We only continue if the neighbor is a carbon
+            if nbr.GetAtomicNum() == 6:
+                visited.add(nbr.GetIdx())
+                branch_length = 1 + count_chain_length(nbr, atom.GetIdx(), visited)
+                if branch_length > length:
+                    length = branch_length
+        return length
 
-    return True, "Matches long-chain fatty acyl-CoA(4-) structure with deprotonated phosphate groups"
+    # Try each thioester match to find a fatty acyl chain
+    # In the pattern "[C;D3](=O)[S]", match[0] is the carbonyl carbon and match[1] is the sulfur.
+    chain_found = False
+    acyl_chain_length = 0
+    for match in thioester_matches:
+        carbonyl_idx = match[0]
+        carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
+        # Look among the neighbors of the carbonyl carbon for a carbon that is not the S from the thioester.
+        fatty_start = None
+        for nbr in carbonyl_atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() != match[1]:
+                fatty_start = nbr
+                break
+        if fatty_start is None:
+            continue  # no attached carbon found; try next match
+        
+        # Count the acyl chain length. We start from fatty_start.
+        # We assume the chain is linear so we take the maximal contiguous carbon count.
+        chain_length = count_chain_length(fatty_start, carbonyl_idx, {fatty_start.GetIdx()})
+        if chain_length >= 12:
+            chain_found = True
+            acyl_chain_length = chain_length
+            break
 
-# Example usage
-smiles_example = "CC(C)(COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12)[C@@H](O)C(=O)NCCC(=O)NCCSC(=O)CCCCCCC\C=C/C\C=C/CC=C"
-result, reason = is_long_chain_fatty_acyl_CoA_4__(smiles_example)
-print(result, reason)
+    if not chain_found:
+        return False, "Fatty acyl chain not long enough (requires at least 12 contiguous carbons)"
+
+    return True, (
+        f"Contains CoA moiety, thioester group with a fatty acyl chain of length {acyl_chain_length} carbons, "
+        "and overall charge -4"
+    )
+
+# Example usage:
+if __name__ == "__main__":
+    test_smiles = "CCCC\\C=C/C\\C=C/CCCCCCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12"
+    result, reason = is_long_chain_fatty_acyl_CoA_4__(test_smiles)
+    print(result, reason)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:83139',
@@ -63,151 +122,213 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:83139',
                           'xrefs': ['MetaCyc:Long-Chain-Acyl-CoAs'],
                           'all_positive_examples': []},
     'config': None,
-    'message': '\n'
-               'Attempt failed: F1 score of 0 is too low.\n'
-               'Outcomes:\n'
-               '------\n'
-               '\n'
-               'True positives: NONE\n'
-               'False positives: NONE\n'
-               'False negatives: SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C=C/CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: (3E,5Z,8Z,11Z,14Z)-icosapentaenoyl-CoA(4-) REASON: '
-               'MISSED Insufficient carbon chain length in the fatty acid\n'
-               ' * SMILES: '
-               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: (4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoyl-CoA(4-) REASON: '
-               'MISSED Insufficient carbon chain length in the fatty acid\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCC[C@@H](O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: (3R,7Z,10Z,13Z,16Z)-3-hydroxydocosatetraenoyl-CoA(4-) '
-               'REASON: MISSED Insufficient carbon chain length in the fatty '
-               'acid\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: pentadecanoyl-CoA(4-) REASON: MISSED Insufficient carbon '
-               'chain length in the fatty acid\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCC(O)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: 2-hydroxypalmitoyl-CoA(4-) REASON: MISSED Insufficient '
-               'carbon chain length in the fatty acid\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCC(O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: 3-hydroxytetradecanoyl-CoA(4-) REASON: MISSED '
-               'Insufficient carbon chain length in the fatty acid\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/CCCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: (10Z,13Z,16Z)-docosatrienoyl-CoA(4-) REASON: MISSED '
-               'Insufficient carbon chain length in the fatty acid\n'
-               ' * SMILES: '
-               'CCCCCC\\C=C\\C=C/CCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: (9Z,11E)-octadecadienoyl-CoA(4-) REASON: MISSED '
-               'Insufficient carbon chain length in the fatty acid\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/CCCCCCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: (9Z)-pentadecenoyl-CoA(4-) REASON: MISSED Insufficient '
-               'carbon chain length in the fatty acid\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCC(=O)CC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12 '
-               'NAME: (7Z,10Z,13Z,16Z)-3-oxodocosatetraenoyl-CoA(4-) REASON: '
-               'MISSED Insufficient carbon chain length in the fatty acid\n'
-               '------\n'
-               '\n'
-               'In your reasoning step, analyze the previous program and the '
-               'above outcomes, hypothesizing about what went wrong, and how '
-               'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O[C@@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)CO)[C@H]3[C@@H](O)[C@H](OC(O)[C@@H]3O)CO',
-                                     'name': 'beta-D-Glcp-(1->2)-beta-D-Glcp-(1->3)-D-Galp',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': 'CCS(=O)(=O)NCC[C@@H]1CC[C@@H]([C@H](O1)CO)NC(=O)NC2=CC(=CC(=C2)Cl)Cl',
-                                     'name': '1-(3,5-dichlorophenyl)-3-[(2S,3S,6S)-6-[2-(ethylsulfonylamino)ethyl]-2-(hydroxymethyl)-3-oxanyl]urea',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': 'C(C(O)=O)C/C=C\\C/C=C\\C\\C=C/C=C/C=C/[C@H]1[C@H](C/C=C\\CC)O1',
-                                     'name': '(16S,17S)-epoxy-(4Z,7Z,10Z,12E,14E,19Z)-docosahexaenoic '
+    'code_statistics': {   'lines_of_code': 80,
+                           'log_lines_of_code': 4.382026634673881,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1],
+                           'max_indent': 5,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors'],
+                           'imports_count': 2,
+                           'methods_called': [   'add',
+                                                 'GetFormalCharge',
+                                                 'MolFromSmarts',
+                                                 'HasSubstructMatch',
+                                                 'GetAtoms',
+                                                 'GetAtomWithIdx',
+                                                 'GetSubstructMatches',
+                                                 'GetAtomicNum',
+                                                 'GetNeighbors',
+                                                 'MolFromSmiles',
+                                                 'GetIdx'],
+                           'methods_called_count': 11,
+                           'smarts_strings': [   'SCCNC(=O)CCNC(=O)',
+                                                 '[C;D3](=O)[S]'],
+                           'smarts_strings_count': 2,
+                           'defs': [   'is_long_chain_fatty_acyl_CoA_4__(smiles: '
+                                       'str):',
+                                       'count_chain_length(atom, from_idx, '
+                                       'visited):'],
+                           'defs_count': 2,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Formal charge is '
+                                          '{total_charge} (expected -4 for '
+                                          'CoA(4-))"',
+                                          'False, "CoA moiety not found"',
+                                          'False, "No thioester group (fatty '
+                                          'acid linkage) found"',
+                                          'length',
+                                          'False, "Fatty acyl chain not long '
+                                          'enough (requires at least 12 '
+                                          'contiguous carbons)"',
+                                          'True, ('],
+                           'returns_count': 7,
+                           'complexity': 5.876405326934776},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'O1C2=C(O)C=C(COC)C=C2C[C@@H](C1(C)C)O',
+                                     'name': 'Conoideochromane B',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'P(OC[C@H](OC(=O)CCCCCCC/C=C\\CCCCC)CO/C=C\\CCCCCCCCCCCCCC)(OCCN)(O)=O',
+                                     'name': 'PE(P-16:0/15:1(9Z))',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'O=C1C=2C(OC(=C1)C)=C(C3=C4O[C@](O)(CC(C4=C(O)C=5C3=CC(OC)=CC5OC)=O)C)C6=CC(OC)=CC(=C6C2O)OC',
+                                     'name': '2-hydroxydihydronigerone',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'O([C@@H]1[C@@H](NC(=O)C)[C@@H](O[C@@H]([C@H]1O)CO)OC[C@H]2O[C@@H](O)[C@H](NC(=O)C)[C@@H](O)[C@H]2O)[C@@H]3O[C@@H]([C@H](O)[C@H](O[C@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO)[C@H]3O)CO',
+                                     'name': 'N-[(2R,3R,4R,5R,6R)-6-[[(2R,3R,4R,5S,6R)-3-Acetamido-4-[(2R,3R,4S,5S,6R)-3,5-dihydroxy-6-(hydroxymethyl)-4-[(2R,3R,4S,5R,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-5-hydroxy-6-(hydroxymethyl)oxan-2-yl]oxymethyl]-2,4,5-trihydroxyoxan-3-yl]acetamide',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'O1C(C(O)C(O)C(O)C1OC=2C(O)=C(O)C=C(C2)C=O)COC(=O)C3=CC(O)=C(O)C(O)=C3',
+                                     'name': 'Castamollissin',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'S(OC[C@H]1O[C@@H](OC[C@H]2O[C@@H](O[C@@H]([C@@H](O)[C@H](O)CO[C@]3(O[C@H]([C@H](NC(=O)C)[C@@H](O)C3)[C@H](O)[C@H](O)CO)C(O)=O)[C@@H](NC(=O)C)CO)[C@H](O)[C@@H](O)[C@H]2O)[C@H](NC(=O)C)[C@@H](O)[C@@H]1O[C@@H]4O[C@@H]([C@H](O)[C@H](O)[C@H]4O)CO[C@]5(O[C@H]([C@H](NC(=O)C)[C@@H](O)C5)[C@H](O)[C@H](O)CO)C(O)=O)(O)(=O)=O',
+                                     'name': '(2R,4S,5R,6R)-5-Acetamido-2-[[(2R,3R,4S,5R,6S)-6-[(2R,3S,4R,5R,6R)-5-acetamido-6-[[(2R,3R,4S,5R,6R)-6-[(2S,3R,4S,5R)-2-acetamido-6-[(2R,4S,5R,6R)-5-acetamido-2-carboxy-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxan-2-yl]oxy-1,4,5-trihydroxyhexan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-2-(sulfooxymethyl)oxan-3-yl]oxy-3,4,5-trihydroxyoxan-2-yl]methoxy]-4-hydroxy-6-[(1R,2R)-1,2,3-trihydroxypropyl]oxane-2-carboxylic '
                                              'acid',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': 'OC[C@H]1O[C@H](O[C@H]2[C@@H](CO)O[C@@H](O[C@@H]3[C@@H](CO)O[C@@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
-                                     'name': 'alpha-D-Galp-(1->4)-beta-D-Galp-(1->4)-beta-D-Glcp',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': '[Li+].[Br-]',
-                                     'name': 'lithium bromide',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': 'C=1(OC)C2=C(C=C3C[C@H]([C@](CC=4C=C(OC)C(OC)=C(C4C13)OC)(C)O)C)OCO2',
-                                     'name': 'Besigomsin',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': 'C1=CC=C(C(=C1)C=CC(=O)C2=CC=CN2)Cl',
-                                     'name': '3-(2-chlorophenyl)-1-(1H-pyrrol-2-yl)-2-propen-1-one',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': 'O=C1OC(O)C(=C1C(O)C(C)C)C',
-                                     'name': '5-Hydroxy-3-(1-hydroxy-2-methylpropyl)-4-methyl-2(5H)-furanone',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': '[H][C@@]1(COC(C)(C)[C@@]1([H])OC(=O)\\C=C\\c1ccccc1)c1c(O)ccc2C(=O)C[C@H](Oc12)c1ccccc1',
-                                     'name': '(+)-tephrorin B',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'},
-                                 {   'smiles': 'C[C@@H]1CN(C(=O)C2=C(C3=CC=CC=C3CO[C@@H]1CN(C)CC4=CC=CC(=C4)C(=O)O)C5=CC=CC=C5N2C)[C@@H](C)CO',
-                                     'name': 'LSM-9341',
-                                     'reason': 'No CoA thioester linkage '
-                                               'found'}],
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'FC(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F',
+                                     'name': 'perfluorohexane',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'CC(C)(O)CCC(=O)[C@](C)(O)[C@H]1[C@H](O)C[C@@]2(C)[C@@H]3CC=C4[C@@H](C[C@@H](O)[C@@H](O)C4(C)C)[C@]3(C)C(=O)C[C@]12C',
+                                     'name': 'Cucurbitacin P',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'CCCCCCCc1cc(O)cc(=O)o1',
+                                     'name': '4-hydroxy-6-heptylpyran-2-one',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'},
+                                 {   'smiles': 'S(O[C@@H]1[C@@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](NC(=O)C)[C@H](O[C@H]3[C@@H](O)[C@H](O[C@@H]4O[C@@H]([C@@H](O[C@@H]5O[C@@H]([C@H](O)[C@H](OS(O)(=O)=O)[C@H]5O)CO)[C@H](O)[C@H]4NC(=O)C)CO)[C@H](O[C@@H]3O[C@H]6[C@H](O)[C@H](O[C@@H](O[C@H]7[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]7CO)O[C@H]8[C@H](O)[C@@H](NC(=O)C)[C@@H](O[C@@H]8CO[C@@H]9O[C@H]([C@@H](O)[C@@H](O)[C@@H]9O)C)O)[C@H]6O)CO[C@H]%10O[C@@H]([C@@H](O)[C@H](O)[C@@H]%10O[C@@H]%11O[C@@H]([C@@H](O[C@@H]%12O[C@@H]([C@H](O[C@@H]%13O[C@@H]([C@H](O)[C@H](O)[C@H]%13NC(=O)C)CO)[C@H](O[C@]%14(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%14)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%12O)CO)[C@H](O)[C@H]%11NC(=O)C)CO)CO[C@@H]%15O[C@@H]([C@@H](O[C@@H]%16O[C@@H]([C@H](O)[C@H](O[C@]%17(O[C@H]([C@H](NC(=O)C)[C@@H](O)C%17)[C@H](O)[C@H](O)CO)C(O)=O)[C@H]%16O)CO)[C@H](O)[C@H]%15NC(=O)C)CO)CO)O[C@@H]2CO)O[C@@H]([C@@H]1O)CO)(O)(=O)=O',
+                                     'name': 'CID 146017241',
+                                     'reason': 'Formal charge is 0 (expected '
+                                               '-4 for CoA(4-))'}],
     'sample_false_negatives': [   {   'smiles': '[C@@H]1(N2C3=C(C(=NC=N3)N)N=C2)O[C@H](COP(OP(OCC([C@H](C(NCCC(NCCSC(=O)C[C@@H](O)CCC/C=C\\CCCCCC)=O)=O)O)(C)C)(=O)O)(=O)O)[C@H]([C@H]1O)OP(O)(O)=O',
                                       'name': '(3S,7Z)-3-hydroxytetradec-7-enoyl-CoA(4-)',
-                                      'reason': 'CoA backbone or deprotonated '
-                                                'phosphate groups not found'}],
-    'attempt': 4,
-    'reasoning': 'To address the issues identified in the previous '
-                 "implementation, let's analyze and refine our approach for "
-                 'detecting long-chain fatty acyl-CoA(4-) compounds based on '
-                 "their SMILES representation. Here's a breakdown of what was "
-                 'likely missed and how we can improve:\n'
+                                      'reason': 'Formal charge is 0 (expected '
+                                                '-4 for CoA(4-))'}],
+    'attempt': 0,
+    'reasoning': 'Below is one possible solution. In our approach we first '
+                 'parse the SMILES and then look for two key aspects: (1) a '
+                 'characteristic CoA substructure (here we require a short '
+                 'fragment common to CoA, namely "SCCNC(=O)CCNC(=O)") and (2) '
+                 'a thioester group (i.e. a [C;D3](=O)S fragment) from which '
+                 'we “extract” the fatty acyl chain. For the latter we find '
+                 'the carbonyl carbon and then follow along the acyl chain '
+                 '(limited to carbon atoms only) to get a crude estimate of '
+                 'its (linear) chain length. Finally, we check that the '
+                 'molecule’s overall formal charge is –4 (as expected for a '
+                 'deprotonated acyl‐CoA(4–) under physiological conditions). '
+                 '(Note that this is a heuristic algorithm; in practice these '
+                 'molecules are large and flexible, and more sophisticated '
+                 'approaches might be required.) \n'
                  '\n'
-                 '### Problem Analysis\n'
-                 '1. **Chain Length Detection**: The previous implementation '
-                 'checked for a long chain of at least 12 carbons but failed '
-                 'to recognize valid compounds due to incorrect SMILES pattern '
-                 'recognition or checking the wrong entry point of the chain.\n'
-                 '\n'
-                 '2. **Phosphate Group Detection**: The SMARTS pattern for '
-                 'recognizing the deprotonated phosphate groups was possibly '
-                 'too stringent or incorrect, leading to missed detections. We '
-                 "need to ensure we're capturing a broad and adaptable "
-                 "representation that aligns with the compounds' common "
-                 'patterns.\n'
-                 '\n'
-                 '3. **Flexibility and Variability**: Long-chain fatty '
-                 'acyl-CoAs might have variations in their structures, such as '
-                 'unsaturated bonds or specific branching, not covered in the '
-                 'initial implementation.\n'
-                 '\n'
-                 '### Solutions\n'
-                 '1. **Flexible SMARTS**: Allow some variability in the '
-                 'patterns for carbon chains and identify ester or thioester '
-                 'patterns more effectively.\n'
-                 '   \n'
-                 '2. **Review Patterns**: Ensure the SMARTS patterns for both '
-                 'the CoA linkage and phosphate groups capture the typical '
-                 'core structure while allowing for variations in the chain '
-                 'length and unsaturation levels.\n'
-                 '\n'
-                 "Here's the revised implementation with these considerations:",
+                 'Below is the complete Python code in a single code block:',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
     'num_true_positives': 136,
-    'num_false_positives': 100,
-    'num_true_negatives': 29749,
+    'num_false_positives': 248,
+    'num_true_negatives': 141915,
     'num_false_negatives': 1,
     'num_negatives': None,
-    'precision': 0.576271186440678,
+    'precision': 0.3541666666666667,
     'recall': 0.9927007299270073,
-    'f1': 0.7292225201072386,
-    'accuracy': 0.9966317614886947,
-    'negative_predictive_value': 0.9999663865546219}
+    'f1': 0.5220729366602688,
+    'accuracy': 0.9982501756851722,
+    'negative_predictive_value': 0.999992953578173}

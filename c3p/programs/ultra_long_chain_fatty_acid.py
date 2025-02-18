@@ -1,67 +1,145 @@
 """
 Classifies: CHEBI:143004 ultra-long-chain fatty acid
 """
+#!/usr/bin/env python
 """
-Classifies: CHEBI:XXXXX ultra-long-chain fatty acid
+Classifies: ultra-long-chain fatty acid
+Definition: A very long-chain fatty acid is defined as one where the fatty acid portion – that is, the carbon chain attached to the carboxylic acid (-COOH) group – 
+consists largely of a single, continuous (acyclic and mostly unbranched) chain whose total number of carbons (including the carboxyl carbon) is greater than 27.
+We further require that the molecule contains exactly one carboxylic acid group, that the carboxyl carbon is terminal (attached to only a single alkyl carbon),
+and that aside from an optionally allowed hydroxyl at the alpha carbon the main chain is not substituted with extra heteroatoms.
 """
+
 from rdkit import Chem
 
 def is_ultra_long_chain_fatty_acid(smiles: str):
     """
-    Determines if a molecule is an ultra-long-chain fatty acid based on its SMILES string.
-    An ultra-long-chain fatty acid is defined as having a carbon chain length greater than C27.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is an ultra-long-chain fatty acid, False otherwise
-        str: Reason for classification
-    """
+    Determines if a molecule is an ultra-long-chain fatty acid.
     
-    # Parse SMILES
+    Strategy:
+      1. Parse the SMILES and check that exactly one carboxylic acid group (SMARTS "[CX3](=O)[OX2H1]") is present.
+      2. Ensure that the acid carbon (the first atom in the match) is terminal – meaning it has only one carbon neighbor.
+      3. From that neighbor (the alpha carbon), perform a DFS across carbon atoms (only considering acyclic atoms) 
+         to find the longest simple (non-repeating) carbon path. (Branching is allowed in the search but not in the final “main chain”.)
+      4. Compute the total chain length = (1 for carboxyl carbon + length of longest carbon path).
+         The chain must have >27 carbons.
+      5. Check that almost all carbon atoms in the molecule are on that main chain (no extensive extra fragments).
+      6. Finally, check that the main chain is “clean”: aside from a possible hydroxyl substitution on the alpha carbon,
+         no other chain carbons are substituted by oxygen (for example, the terminal carbon must be a plain CH3).
+         
+    Args:
+      smiles (str): SMILES string for the molecule.
+      
+    Returns:
+      bool: True if the molecule qualifies as an ultra-long-chain fatty acid, otherwise False.
+      str: Explanation for the classification decision.
+      
+    If the task cannot be done unambiguously the function may return (None, None).
+    """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for carboxylic acid group (-C(=O)OH)
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
-    carboxylic_acid_matches = mol.GetSubstructMatches(carboxylic_acid_pattern)
-    if not carboxylic_acid_matches:
-        return False, "No carboxylic acid group found"
+    # Step 1. Find carboxylic acid groups using SMARTS.
+    carboxyl_smarts = "[CX3](=O)[OX2H1]"
+    carboxyl_query = Chem.MolFromSmarts(carboxyl_smarts)
+    carboxyl_matches = mol.GetSubstructMatches(carboxyl_query)
+    if len(carboxyl_matches) != 1:
+        return False, f"Expected exactly one carboxylic acid group; found {len(carboxyl_matches)}"
 
-    # Find the longest carbon chain
-    longest_chain_length = 0
-    best_chain = []
+    # Assume first (and only) match:
+    # In the SMARTS, the first atom is the carboxyl (carbonyl) carbon.
+    carboxyl_idx = carboxyl_matches[0][0]
+    carboxyl_atom = mol.GetAtomWithIdx(carboxyl_idx)
+
+    # Step 2. Check that the carboxyl carbon is terminal (should have exactly one carbon neighbor)
+    carbon_neighbors = [nbr for nbr in carboxyl_atom.GetNeighbors() if nbr.GetAtomicNum() == 6]
+    if len(carbon_neighbors) != 1:
+        return False, "Carboxyl carbon is not terminal (expected one carbon neighbor)"
+    alpha_atom = carbon_neighbors[0]
+    alpha_idx = alpha_atom.GetIdx()
+
+    # Step 3. Traverse the carbon chain (only atomic number 6) starting from the alpha carbon.
+    # We do a DFS that finds the longest simple path. We allow a branch but we return only the longest chain.
+    def dfs(current_idx, visited):
+        current_atom = mol.GetAtomWithIdx(current_idx)
+        max_length = 1
+        max_path = [current_idx]
+        # Consider neighbors that are carbons – we allow unsaturation.
+        for nbr in current_atom.GetNeighbors():
+            if nbr.GetAtomicNum() != 6:
+                continue
+            n_idx = nbr.GetIdx()
+            if n_idx in visited:
+                continue
+            # Only consider if the atom is acyclic (we skip those in rings) to be sure we get a fatty acid chain
+            if nbr.IsInRing():
+                continue
+            new_visited = visited.copy()
+            new_visited.add(n_idx)
+            rec_length, rec_path = dfs(n_idx, new_visited)
+            if 1 + rec_length > max_length:
+                max_length = 1 + rec_length
+                max_path = [current_idx] + rec_path
+        return max_length, max_path
+
+    # Start DFS from the alpha carbon; include the carboxyl carbon in visited so we do not go back.
+    visited = set([carboxyl_idx, alpha_idx])
+    chain_length_from_alpha, best_path = dfs(alpha_idx, visited)
+    # Our total chain includes the carboxyl carbon at the head.
+    total_chain_length = 1 + chain_length_from_alpha  # carboxyl carbon + chain
     
-    # Iterate through all carboxylic acid groups
-    for match in carboxylic_acid_matches:
-        # Start from the carbon in the carboxylic acid group
-        start_atom = mol.GetAtomWithIdx(match[0])
-        visited = set()
-        stack = [(start_atom, 1, [start_atom.GetIdx()])]  # (current_atom, current_length, current_chain)
-        
-        while stack:
-            current_atom, current_length, current_chain = stack.pop()
-            visited.add(current_atom.GetIdx())
-            
-            # Update longest chain if necessary
-            if current_length > longest_chain_length:
-                longest_chain_length = current_length
-                best_chain = current_chain
-            
-            # Explore neighbors
-            for neighbor in current_atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
-                    # Only continue if the neighbor is not part of a ring and not already in the chain
-                    if not neighbor.IsInRing() and neighbor.GetIdx() not in current_chain:
-                        stack.append((neighbor, current_length + 1, current_chain + [neighbor.GetIdx()]))
+    if total_chain_length <= 27:
+        return False, f"Chain length is {total_chain_length} carbons, which is not greater than C27"
+    
+    # The main chain we propose is: [carboxyl_atom] + best_path (which begins with alpha)
+    main_chain = [carboxyl_idx] + best_path
 
-    # Check if the longest chain is greater than C27
-    if longest_chain_length > 27:
-        return True, f"Longest carbon chain length is {longest_chain_length} (greater than C27)"
-    else:
-        return False, f"Longest carbon chain length is {longest_chain_length} (not greater than C27)"
+    # Step 4. Check that most (or all) carbon atoms belong to this chain.
+    # Allow at most one extra carbon (to allow e.g. a terminal methyl branch in a genuine fatty acid)
+    total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if total_carbons - len(main_chain) > 1:
+        return False, (f"Chain length is {len(main_chain)} carbons but molecule has {total_carbons} carbons. "
+                       "Extra carbon fragments suggest it is not a simple fatty acid.")
+    
+    # Step 5. Examine the main chain for extra (non-allowed) substitutions.
+    # Allowed: the carboxyl carbon (head) and the alpha carbon may have a hydroxyl substituent.
+    # All other carbons in the main chain should not have any additional oxygen neighbors.
+    # Also the terminal carbon must be a plain CH3 (i.e. no oxygen attached).
+    for pos, atom_idx in enumerate(main_chain):
+        atom = mol.GetAtomWithIdx(atom_idx)
+        # Gather oxygen neighbors that are not in the main chain.
+        oxy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in main_chain]
+        # Allow oxygen at the alpha carbon (position 1 in main_chain after carboxyl) only.
+        if pos == 0:
+            # carboxyl carbon: already engaged in acid group
+            continue
+        elif pos == 1:
+            # alpha carbon: allowed to have one OH substituent.
+            if len(oxy_neighbors) > 1:
+                return False, f"Alpha carbon has too many oxygen substituents"
+        else:
+            # Other positions: no extra oxygen allowed.
+            if oxy_neighbors:
+                return False, f"Extra oxygen substituent found at chain position {pos+1}"
+    # Check that the terminal carbon (last in main_chain) is a CH3 (i.e. no oxygen neighbors)
+    terminal_atom = mol.GetAtomWithIdx(main_chain[-1])
+    term_oxy = [nbr for nbr in terminal_atom.GetNeighbors() if nbr.GetAtomicNum()==8]
+    if term_oxy:
+        return False, "Terminal carbon is substituted with oxygen (should be a terminal CH3)"
+    
+    # If all checks pass, qualify as an ultra-long-chain fatty acid.
+    return True, f"Chain length is {total_chain_length} carbons, qualifies as ultra-long-chain fatty acid"
+
+# Example usage (if run as script, uncomment below):
+# if __name__=="__main__":
+#     examples = [
+#         "CCCCCC\\C=C/CCCCCCCCCC(O)C(O)=O",  # Example: (12Z,15Z,18Z,21Z,24Z)-2-hydroxytriacontapentaenoic acid-like
+#         "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O",  # A simple unbranched fatty acid (check chain length)
+#     ]
+#     for smi in examples:
+#         res, reason = is_ultra_long_chain_fatty_acid(smi)
+#         print(smi, res, reason)
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:143004',
@@ -72,360 +150,592 @@ __metadata__ = {   'chemical_class': {   'id': 'CHEBI:143004',
                           'xrefs': ['PMID:27257090'],
                           'all_positive_examples': []},
     'config': None,
+    'code_statistics': {   'lines_of_code': 103,
+                           'log_lines_of_code': 4.634728988229636,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0],
+                           'max_indent': 4,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'GetAtoms',
+                                                 'GetNeighbors',
+                                                 'MolFromSmiles',
+                                                 'copy',
+                                                 'GetSubstructMatches',
+                                                 'IsInRing',
+                                                 'GetAtomWithIdx',
+                                                 'MolFromSmarts',
+                                                 'GetIdx',
+                                                 'GetAtomicNum',
+                                                 'add'],
+                           'methods_called_count': 11,
+                           'smarts_strings': ['carboxyl_smarts'],
+                           'smarts_strings_count': 1,
+                           'defs': [   'is_ultra_long_chain_fatty_acid(smiles: '
+                                       'str):',
+                                       'dfs(current_idx, visited):'],
+                           'defs_count': 2,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, f"Expected exactly one '
+                                          'carboxylic acid group; found '
+                                          '{len(carboxyl_matches)}"',
+                                          'False, "Carboxyl carbon is not '
+                                          'terminal (expected one carbon '
+                                          'neighbor)"',
+                                          'max_length, max_path',
+                                          'False, f"Chain length is '
+                                          '{total_chain_length} carbons, which '
+                                          'is not greater than C27"',
+                                          'False, (f"Chain length is '
+                                          '{len(main_chain)} carbons but '
+                                          'molecule has {total_carbons} '
+                                          'carbons. "',
+                                          'False, f"Alpha carbon has too many '
+                                          'oxygen substituents"',
+                                          'False, f"Extra oxygen substituent '
+                                          'found at chain position {pos+1}"',
+                                          'False, "Terminal carbon is '
+                                          'substituted with oxygen (should be '
+                                          'a terminal CH3)"',
+                                          'True, f"Chain length is '
+                                          '{total_chain_length} carbons, '
+                                          'qualifies as ultra-long-chain fatty '
+                                          'acid"'],
+                           'returns_count': 10,
+                           'complexity': 6.326945797645927},
     'message': '\n'
-               'Attempt failed: F1 score of 0.46808510638297873 is too low.\n'
+               'Attempt failed: F1 score of 0.5473684210526317 is too low.\n'
                'Outcomes:\n'
                '------\n'
                '\n'
                'True positives: SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCCC(O)=O '
-               'NAME: (18Z,21Z,24Z,27Z,30Z)-hexatriacontapentaenoic acid '
-               'REASON: CORRECT Longest carbon chain length is 36 (greater '
-               'than C27)\n'
+               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCC(O)C(O)=O '
+               'NAME: (12Z,15Z,18Z,21Z,24Z)-2-hydroxytriacontapentaenoic acid '
+               'REASON: CORRECT Chain length is 30 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
                ' * SMILES: '
                'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCC(O)C(O)=O NAME: '
                '(13Z,16Z,19Z,22Z)-2-hydroxyoctacosatetraenoic acid REASON: '
-               'CORRECT Longest carbon chain length is 28 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1[C@H](C)CCCCCCCCCCCCCCCC[C@H](OC)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O '
-               'NAME: '
-               '(2R)-2-[(1R)-1-hydroxy-19-{(1R,2R)-2-[(2R,19S,20S)-19-methoxy-20-methyloctatriacontan-2-yl]cyclopropyl}nonadecyl]hexacosanoic '
-               'acid REASON: CORRECT Longest carbon chain length is 83 '
-               '(greater than C27)\n'
-               ' * SMILES: CCC(C)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
-               '28-methyltriacontanoic acid REASON: CORRECT Longest carbon '
-               'chain length is 30 (greater than C27)\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
-               'dotriacontanoic acid REASON: CORRECT Longest carbon chain '
-               'length is 32 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCC(O)=O NAME: '
-               '(17Z,20Z,23Z,26Z)-dotriacontatetraenoic acid REASON: CORRECT '
-               'Longest carbon chain length is 32 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCC(O)=O NAME: '
-               '(12Z,15Z,18Z,21Z,24Z)-triacontapentaenoic acid REASON: CORRECT '
-               'Longest carbon chain length is 30 (greater than C27)\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
-               'triacontanoic acid REASON: CORRECT Longest carbon chain length '
-               'is 30 (greater than C27)\n'
+               'CORRECT Chain length is 28 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
                ' * SMILES: '
                'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCCC(O)=O '
                'NAME: (18Z,21Z,24Z,27Z,30Z,33Z)-hexatriacontahexaenoic acid '
-               'REASON: CORRECT Longest carbon chain length is 36 (greater '
-               'than C27)\n'
+               'REASON: CORRECT Chain length is 36 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
                ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCCCC)C(O)=O '
-               'NAME: '
-               '(2R)-2-{(1R)-1-hydroxy-12-[(1S,2R)-2-{14-[(1S,2R)-2-icosylcyclopropyl]tetradecyl}cyclopropyl]dodecyl}hexacosanoic '
-               'acid REASON: CORRECT Longest carbon chain length is 75 '
-               '(greater than C27)\n'
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCC(O)=O '
+               'NAME: (12Z,15Z,18Z,21Z,24Z,27Z)-triacontahexaenoic acid '
+               'REASON: CORRECT Chain length is 30 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC[C@@H](O)C(O)=O NAME: '
+               '(R)-2-hydroxyoctacosanoic acid REASON: CORRECT Chain length is '
+               '28 carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCC(O)=O '
+               'NAME: (15Z,18Z,21Z,24Z)-triacontatetraenoic acid REASON: '
+               'CORRECT Chain length is 30 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCC(O)=O NAME: '
+               '(17Z,20Z,23Z,26Z)-dotriacontatetraenoic acid REASON: CORRECT '
+               'Chain length is 32 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               '(19Z,22Z,25Z,28Z)-tetratriacontatetraenoic acid REASON: '
+               'CORRECT Chain length is 34 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'dotriacontanoic acid REASON: CORRECT Chain length is 32 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCC(O)=O '
+               'NAME: (16Z,19Z,22Z,25Z,28Z,31Z)-tetratriacontahexaenoic acid '
+               'REASON: CORRECT Chain length is 34 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
                ' * SMILES: '
                'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCC(O)=O NAME: '
                '(15Z,18Z,21Z,24Z,27Z)-triacontapentaenoic acid REASON: CORRECT '
-               'Longest carbon chain length is 30 (greater than C27)\n'
-               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCC[C@@H](O)C(O)=O NAME: '
-               '(R)-2-hydroxyoctacosanoic acid REASON: CORRECT Longest carbon '
-               'chain length is 28 (greater than C27)\n'
+               'Chain length is 30 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
                ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCCCC)C(O)=O '
-               'NAME: '
-               '(2R)-2-{(1R)-1-hydroxy-12-[(1R,2S)-2-{14-[(1R,2S)-2-icosylcyclopropyl]tetradecyl}cyclopropyl]dodecyl}hexacosanoic '
-               'acid REASON: CORRECT Longest carbon chain length is 75 '
-               '(greater than C27)\n'
-               ' * SMILES: '
-               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCC(O)=O '
-               'NAME: (10Z,13Z,16Z,19Z,22Z,25Z)-octacosahexaenoic acid REASON: '
-               'CORRECT Longest carbon chain length is 28 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1[C@H](C)CCCCCCCCCCCCCCCCCCC(=O)C(C)CCCCCCCCCCCCCCCCCC)C(O)=O '
-               'NAME: '
-               '(2R)-2-[(1R)-1-hydroxy-17-{(1R,2R)-2-[(2R)-22-methyl-21-oxotetracontan-2-yl]cyclopropyl}heptadecyl]hexacosanoic '
-               'acid REASON: CORRECT Longest carbon chain length is 83 '
-               '(greater than C27)\n'
-               ' * SMILES: '
-               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCC(O)=O '
-               'NAME: (17Z,20Z,23Z,26Z,29Z)-dotriacontapentaenoic acid REASON: '
-               'CORRECT Longest carbon chain length is 32 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCCC(=O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O '
-               'NAME: '
-               '(2R)-2-[(1R)-1-hydroxy-16-{(1S,2R)-2-[(20S)-20-methyl-19-oxooctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
-               'acid REASON: CORRECT Longest carbon chain length is 81 '
-               '(greater than C27)\n'
-               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCC(O)=O '
-               'NAME: (15Z,18Z,21Z,24Z)-triacontatetraenoic acid REASON: '
-               'CORRECT Longest carbon chain length is 30 (greater than C27)\n'
-               ' * SMILES: '
-               'C(CCCCCCCCC(C)C(O)CCCCCCCCCCCCCCCCC1C(CCCCCCCCCCCCCCCCCC(O)C(C(O)=O)CCCCCCCCCCCCCCCCCCCCCC)C1)CCCCCCCCC '
-               'NAME: dihydroxy mycolic acid REASON: CORRECT Longest carbon '
-               'chain length is 80 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCC[C@H](O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O '
-               'NAME: '
-               '(2R)-2-[(1R)-1-hydroxy-16-{(1R,2S)-2-[(20S)-20-methyl-19-oxooctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
-               'acid REASON: CORRECT Longest carbon chain length is 81 '
-               '(greater than C27)\n'
-               ' * SMILES: C(CCCCCCCCCCCCCCCC)CCCCCCCCCCC(O)=O NAME: '
-               'octacosanoic acid REASON: CORRECT Longest carbon chain length '
-               'is 28 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCC(O)C(O)=O '
-               'NAME: (12Z,15Z,18Z,21Z,24Z)-2-hydroxytriacontapentaenoic acid '
-               'REASON: CORRECT Longest carbon chain length is 30 (greater '
-               'than C27)\n'
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCC(O)=O '
+               'NAME: (14Z,17Z,20Z,23Z,26Z,29Z)-dotriacontahexaenoic acid '
+               'REASON: CORRECT Chain length is 32 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCC(O)=O '
+               'NAME: (13Z,16Z,19Z,22Z)-octacosatetraenoic acid REASON: '
+               'CORRECT Chain length is 28 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
                ' * SMILES: '
                'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCCCCCCCC(O)=O '
                'NAME: (23Z,26Z,29Z,32Z)-octatriacontatetraenoic acid REASON: '
-               'CORRECT Longest carbon chain length is 38 (greater than C27)\n'
+               'CORRECT Chain length is 38 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
                ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCCC(=O)C(C)CCCCCCCCCCCCCCCCCC)C(O)=O '
+               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCC(O)=O NAME: '
+               '(12Z,15Z,18Z,21Z,24Z)-triacontapentaenoic acid REASON: CORRECT '
+               'Chain length is 30 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
+               ' * SMILES: '
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCC(O)=O '
+               'NAME: (10Z,13Z,16Z,19Z,22Z,25Z)-octacosahexaenoic acid REASON: '
+               'CORRECT Chain length is 28 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCC(O)=O '
+               'NAME: (17Z,20Z,23Z,26Z,29Z)-dotriacontapentaenoic acid REASON: '
+               'CORRECT Chain length is 32 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCC(O)=O NAME: '
+               '(13Z,16Z,19Z,22Z,25Z)-octacosapentaenoic acid REASON: CORRECT '
+               'Chain length is 28 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
+               ' * SMILES: '
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCCCC(O)=O '
+               'NAME: (19Z,22Z,25Z,28Z,31Z)-tetratriacontapentaenoic acid '
+               'REASON: CORRECT Chain length is 34 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'CC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCCCCCCCCCC(O)=O '
+               'NAME: (21Z,24Z,27Z,30Z,33Z)-hexatriacontapentaenoic acid '
+               'REASON: CORRECT Chain length is 36 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCC(O)=O NAME: '
+               '(10Z,13Z,16Z,19Z,22Z)-octacosapentaenoic acid REASON: CORRECT '
+               'Chain length is 28 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)C(O)=O NAME: '
+               '2-hydroxyoctacosanoic acid REASON: CORRECT Chain length is 28 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'triacontanoic acid REASON: CORRECT Chain length is 30 carbons, '
+               'qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'CCCCC\\C=C/C\\C=C/C\\C=C/C\\C=C/C\\C=C/CCCCCCCCCCCC(O)C(O)=O '
+               'NAME: (14Z,17Z,20Z,23Z,26Z)-2-hydroxydotriacontapentaenoic '
+               'acid REASON: CORRECT Chain length is 32 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: C(CCCCCCCCCCCCCCCC)CCCCCCCCCCC(O)=O NAME: '
+               'octacosanoic acid REASON: CORRECT Chain length is 28 carbons, '
+               'qualifies as ultra-long-chain fatty acid\n'
+               'False positives: SMILES: '
+               'OC(CCCCCCCCCCCCCC(O)/C=C/CCCCCC(=O)CCCCC#CC(O)C#CC(O)C(O)CCCC(O)/C=C/C(O)C#C)C(O)C#CC(O)=O '
+               'NAME: Fulvyne G REASON: WRONGLY CLASSIFIED Chain length is 47 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'OC(CCCCCCCCCCCCC(O)/C=C/CCCCCC(=O)CCCCC#CC(O)C#CCC(O)CCCC(O)/C=C/C(O)C#C)C(O)C(O)C#CC(O)=O '
+               'NAME: Fulvyne E REASON: WRONGLY CLASSIFIED Chain length is 47 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxynonacosanoic acid REASON: WRONGLY CLASSIFIED '
+               'Chain length is 29 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
+               ' * SMILES: '
+               'OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC '
+               'NAME: 4Z,7Z,10Z,13Z,16Z,19Z,22Z,25Z-octacosaoctaenoic acid '
+               'REASON: WRONGLY CLASSIFIED Chain length is 28 carbons, '
+               'qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxydotriacontanoic acid REASON: WRONGLY CLASSIFIED '
+               'Chain length is 32 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
+               ' * SMILES: '
+               'OC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CCCCC '
+               'NAME: 28:7(n-6) REASON: WRONGLY CLASSIFIED Chain length is 28 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'nonacosanoic acid REASON: WRONGLY CLASSIFIED Chain length is '
+               '29 carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'O=C(O)CCCCCCCC(O)C(O)CC(O)C(O)CC(O)C(O)C/C=C/CCCCCCCCC NAME: '
+               '(E)-9,10,12,13,15,16-hexahydroxyoctacos-18-enoic acid REASON: '
+               'WRONGLY CLASSIFIED Chain length is 28 carbons, qualifies as '
+               'ultra-long-chain fatty acid\n'
+               ' * SMILES: OC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC NAME: '
+               'Hexatriacontylic acid REASON: WRONGLY CLASSIFIED Chain length '
+               'is 36 carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OC(CCCCCCCCCCCCCCCCCC/C=C\\C/C=C\\CCCCCC)=O NAME: '
+               'Progigneic acid REASON: WRONGLY CLASSIFIED Chain length is 30 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OC(CCCCCCCCCCCCCCCCCC/C=C\\CCCCCCCCC)=O NAME: '
+               'Patroneic acid REASON: WRONGLY CLASSIFIED Chain length is 30 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'OC(CCCCCCCCCCCCCC(=O)CCCCC/C=C/C(O)CCCC#CC(O)C#CC(O)C(O)CCCC(O)/C=C/C(O)C#C)C(O)C(O)C#CC(O)=O '
+               'NAME: Fulvyne B REASON: WRONGLY CLASSIFIED Chain length is 47 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: O=C(CCCCCCCCCCCCCCCCC)CCCCCCCCCC(O)=O NAME: '
+               '11-keto-Octacosanoic acid REASON: WRONGLY CLASSIFIED Chain '
+               'length is 28 carbons, qualifies as ultra-long-chain fatty '
+               'acid\n'
+               ' * SMILES: OC(=O)CCCCCCC/C=C\\CCCCCCCCCC/C=C\\CCCCCC NAME: '
+               '28:2(9Z,21Z) REASON: WRONGLY CLASSIFIED Chain length is 28 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'OC(CCCCCCCCCCCCCC(=O)CCCCC/C=C/C(O)CCCC#CC(O)C#CCC(O)CCCC(O)/C=C/C(O)C#C)C(O)C(O)C#CC(O)=O '
+               'NAME: Fulvyne D REASON: WRONGLY CLASSIFIED Chain length is 47 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OC(=O)CCCCCCCCCCCCCCCCCCCCC/C=C\\CCCCCCCC NAME: '
+               '23Z-dotriacontenoic acid REASON: WRONGLY CLASSIFIED Chain '
+               'length is 32 carbons, qualifies as ultra-long-chain fatty '
+               'acid\n'
+               ' * SMILES: OC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC NAME: '
+               'Hentriacontanoic acid REASON: WRONGLY CLASSIFIED Chain length '
+               'is 31 carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OC(=O)CCC/C=C\\CC/C=C\\CCCCCCCCCC/C=C\\CCCCCC NAME: '
+               '28:3(5Z,9Z,21Z) REASON: WRONGLY CLASSIFIED Chain length is 28 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxytritriacontanoic acid REASON: WRONGLY CLASSIFIED '
+               'Chain length is 33 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
+               ' * SMILES: OCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'omega-hydroxytriacontanoic acid REASON: WRONGLY CLASSIFIED '
+               'Chain length is 30 carbons, qualifies as ultra-long-chain '
+               'fatty acid\n'
+               ' * SMILES: '
+               'OC(CCCCCCCCCCCCC(O)/C=C/CCCCCC(=O)CCCC(O)C#CC(O)C#CCC(O)CCCC(O)/C=C/C(O)C#C)C(O)C(O)C#CC(O)=O '
+               'NAME: Fulvyne A REASON: WRONGLY CLASSIFIED Chain length is 47 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: '
+               'OC(CCCCCCCCCCCCC(O)/C=C/CCCCCC(=O)CCCCC#CC(O)C#CC(O)C(O)CCCC(O)/C=C/C(O)C#C)C(O)C(O)C#CC(O)=O '
+               'NAME: Fulvyne C REASON: WRONGLY CLASSIFIED Chain length is 47 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OC(=O)\\C=C\\C=C\\C=C\\CCCCCCCCCCCCCCCCCCCCCC NAME: '
+               'Nonacosa-trienoic acid REASON: WRONGLY CLASSIFIED Chain length '
+               'is 29 carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC NAME: '
+               'Ceroplastic acid REASON: WRONGLY CLASSIFIED Chain length is 35 '
+               'carbons, qualifies as ultra-long-chain fatty acid\n'
+               ' * SMILES: OC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               'Triacontanedioic acid REASON: WRONGLY CLASSIFIED Chain length '
+               'is 30 carbons, qualifies as ultra-long-chain fatty acid\n'
+               'False negatives: SMILES: '
+               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCC[C@H](OC)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O '
                'NAME: '
-               '(2R)-2-{(1R)-1-hydroxy-16-[(1R,2S)-2-(20-methyl-19-oxooctatriacontyl)cyclopropyl]hexadecyl}hexacosanoic '
-               'acid REASON: CORRECT Longest carbon chain length is 81 '
-               '(greater than C27)\n'
+               '(2R)-2-[(1R)-1-hydroxy-18-{(1R,2S)-2-[(17S,18S)-17-methoxy-18-methylhexatriacontyl]cyclopropyl}octadecyl]hexacosanoic '
+               'acid REASON: MISSED Chain is branched. Found branching in the '
+               'chain\n'
+               ' * SMILES: CCC(C)CCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               '26-methyloctacosanoic acid REASON: MISSED Chain is branched. '
+               'Found branching in the chain\n'
+               ' * SMILES: CCC(C)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               '28-methyltriacontanoic acid REASON: MISSED Chain is branched. '
+               'Found branching in the chain\n'
                ' * SMILES: '
                'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCC[C@H](O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O '
                'NAME: '
                '(2R)-2-[(1R)-1-hydroxy-16-{(1S,2R)-2-[(19S,20S)-19-hydroxy-20-methyloctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
-               'acid REASON: CORRECT Longest carbon chain length is 81 '
-               '(greater than C27)\n'
-               'False positives: SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCC(C(O)CCCCCCCCCCCCCCCC\\C=C\\CCCCCCCCCCCCCCCCCC(=O)OC(C)CCCCCCCCCCCCCCCCC)C(O)=O '
+               'acid REASON: MISSED Chain is branched. Found branching in the '
+               'chain\n'
+               ' * SMILES: '
+               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCCC(=O)C(C)CCCCCCCCCCCCCCCCCC)C(O)=O '
                'NAME: '
-               '(20E)-2-docosyl-3-hydroxy-39-(nonadecan-2-yloxy)-39-oxononatriacont-20-enoic '
-               'acid REASON: WRONGLY CLASSIFIED Longest carbon chain length is '
-               '60 (greater than C27)\n'
+               '(2R)-2-{(1R)-1-hydroxy-16-[(1R,2S)-2-(20-methyl-19-oxooctatriacontyl)cyclopropyl]hexadecyl}hexacosanoic '
+               'acid REASON: MISSED Chain is branched. Found branching in the '
+               'chain\n'
                ' * SMILES: '
-               'OC(=O)[C@H](C[C@H](C[C@H](C[C@H](C[C@H](C[C@H](C[C@H](C[C@H](C[C@H](CCCCCCCCCCCCCCCC)C)C)C)C)C)C)C)C)C '
-               'NAME: Phthioceranic acid (C43) REASON: WRONGLY CLASSIFIED '
-               'Longest carbon chain length is 34 (greater than C27)\n'
-               ' * SMILES: '
-               'O1C2(OC(CC1(CC2)C)C3OC(CC3=O)(C(O)C4OC5(OC(CCC5)C(C)C(O)=O)CC4)C)C6OC(CC6)(CC(C)/C=C(/C=C/C7OC(C8(OCCC(C8O)C)O)CC7O)\\C)C '
-               'NAME: Pectenotoxin 2 secoacid REASON: WRONGLY CLASSIFIED '
-               'Longest carbon chain length is 40 (greater than C27)\n'
-               ' * SMILES: '
-               'CC(=O)N[C@H]1[C@@H](O)[C@H](O)[C@H](O[C@H]1O[C@@H]1[C@@H](CO)O[C@H](OP(O)(=O)OP(O)(=O)OC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(\\C)CC\\C=C(/C)CC\\C=C(/C)CCC=C(C)C)[C@H](NC(C)=O)[C@H]1O)C(O)=O '
+               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCC[C@H](O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O '
                'NAME: '
-               'beta-D-ManNAcA-(1->4)-alpha-D-GlcNAc-1-diphospho-ditrans,polycis-undecaprenol '
-               'REASON: WRONGLY CLASSIFIED Longest carbon chain length is 44 '
-               '(greater than C27)\n'
+               '(2R)-2-[(1R)-1-hydroxy-16-{(1R,2S)-2-[(20S)-20-methyl-19-oxooctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
+               'acid REASON: MISSED Chain is branched. Found branching in the '
+               'chain\n'
+               ' * SMILES: CC(C)CCCCCCCCCCCCCCCCCCCCCCCCCCC(O)=O NAME: '
+               '28-methylnonacosanoic acid REASON: MISSED Chain is branched. '
+               'Found branching in the chain\n'
                ' * SMILES: '
-               'CC(C)=CCC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\CC\\C(C)=C\\Cc1cc(cc(O)c1O)C(O)=O '
-               'NAME: 3-decaprenyl-4,5-dihydroxybenzoic acid REASON: WRONGLY '
-               'CLASSIFIED Longest carbon chain length is 46 (greater than '
-               'C27)\n'
-               ' * SMILES: OC(=O)\\C=C\\C=C\\C=C\\CCCCCCCCCCCCCCCCCCCCCC NAME: '
-               'Nonacosa-trienoic acid REASON: WRONGLY CLASSIFIED Longest '
-               'carbon chain length is 29 (greater than C27)\n'
+               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCC[C@@H](OC)[C@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O '
+               'NAME: '
+               '(2R)-2-[(1R)-1-hydroxy-18-{(1S,2R)-2-[(17R,18R)-17-methoxy-18-methylhexatriacontyl]cyclopropyl}octadecyl]hexacosanoic '
+               'acid REASON: MISSED Chain is branched. Found branching in the '
+               'chain\n'
                ' * SMILES: '
-               'CC[C@@H]1O[C@H](CC[C@@]1(C)O)[C@]1(C)C[C@@H](C)[C@@](O)(O1)[C@]1(C)CC[C@H](O1)[C@@H](O)[C@]1(O)O[C@H](C[C@@]2(O)O[C@H](CC[C@@H]2C)[C@@H](C)[C@H](O)C[C@@H]2O[C@H]([C@@H](C)C(O)=O)[C@@H](C)C[C@H]2C)[C@@H](C)C[C@H]1C '
-               'NAME: alborixin REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 37 (greater than C27)\n'
+               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCCCC)C(O)=O '
+               'NAME: '
+               '(2R)-2-{(1R)-1-hydroxy-12-[(1S,2R)-2-{14-[(1S,2R)-2-icosylcyclopropyl]tetradecyl}cyclopropyl]dodecyl}hexacosanoic '
+               'acid REASON: MISSED Chain is branched. Found branching in the '
+               'chain\n'
                ' * SMILES: '
-               'O1/C(/C(O)=C(C=2C3=C(C=CC(=C3)C4=C(O)\\C(\\OC4=O)=C(\\C5=CC=C(O)C=C5)/C(O)=O)C(=O)C(=O)C2)C1=O)=C(\\C6=CC=C(O)C=C6)/C(O)=O '
-               'NAME: Bisnorbadioquinone A REASON: WRONGLY CLASSIFIED Longest '
-               'carbon chain length is 28 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C1OC(=O)C2C(C(C(C)=CC3C2CCC(C3O[C@H]4O[C@H]([C@H](O)C([C@@H]4O)=O)C)C)/C=C/C=C/C=C(/CC(CC(O)C(C(=O)O)C)C)\\C)=C5C(=C1C)CC(O)C5C '
-               'NAME: Aurantinin B REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 30 (greater than C27)\n'
-               ' * SMILES: '
-               'C1=2N3C(C=C4N5=C(C=C6N7C(=CC8=N(C(=C1)C(=C8CCC(O)=O)C([H])=O)[Fe]735)C(=C6C)CCC(O)=O)C(=C4C)C=C)=C(C2C)[C@H](CC/C=C(\\C)/CC/C=C(/CCC=C(C)C)\\C)O '
-               'NAME: ferroheme a REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 35 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C(O)[C@H](C[C@H](C[C@@H](C[C@@H](C(=O)C=C(O)[C@@H](C[C@@H](C/C=C/[C@@H]([C@@H](O)CC1OC(C2OC([C@H](O)C)(C)CC2)(C)CC1)C)C)C)CC)C)C)C '
-               'NAME: Campechic acid A REASON: WRONGLY CLASSIFIED Longest '
-               'carbon chain length is 30 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C1O[C@@H]([C@H](CCC[C@@H](C=C(C)[C@H](C[C@H]([C@@H]([C@@H](CC=C1C)O)C)O)O)C)C)[C@@H](CCCCC(O)CCCCC(=O)O)C '
-               'NAME: Sorangiolide B REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 28 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C(O)[C@H]([C@]1(O[C@H]([C@H](C)[C@@H]([C@H]1C)OC)[C@@H]([C@@H]2O[C@]3(O[C@@]([C@@H]4O[C@@]([C@@H]5O[C@@H]([C@H]6O[C@](O)([C@H](C)[C@H]([C@@H]6C)OC)C)[C@@H]([C@@H]5C)OC)(C)CC4)(C)CC3)C[C@@H]([C@H]2C)OC)C)O)C '
-               'NAME: Lonomycin B REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 30 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(=O)N[C@H](Cc1ccccc1)C(=O)N[C@H]([C@@H](C)OC1O[C@@H](C)[C@@H](O)[C@@H](O)[C@H]1O[C@@H]1O[C@@H](C)[C@H](O)[C@@H](O[C@@H]2O[C@@H](C)[C@@H](O[C@@H]3O[C@@H]([C@@H](O[C@@H]4O[C@@H](C)[C@@H](OC)[C@@H](O)[C@@H]4OC)[C@H](O)[C@H]3O)C(O)=O)[C@@H](O)[C@@H]2OC)[C@H]1O)C(=O)N[C@H](C)C(=O)N[C@@H](C)COC1O[C@@H](C)[C@H](OC)[C@@H](OC)[C@H]1O '
-               'NAME: GPL-26 REASON: WRONGLY CLASSIFIED Longest carbon chain '
-               'length is 32 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C1O[C@H]([C@@H](C=CC=CC=CC=CC=CC=CC=C[C@H](O[C@H]2O[C@@H]([C@H](O)[C@H]([C@H]2O)N)C)C[C@@H]3O[C@@](C[C@@H](C[C@@H](C[C@@H](C[C@@H](CC(C[C@H](C1)O)=O)O)O)O)O)(O)C[C@H](O)[C@H]3C(=O)O)C)[C@@H](CC[C@@H](O)CC(=O)C4=CC=C(N)C=C4)C '
-               'NAME: Partricin B REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 49 (greater than C27)\n'
-               ' * SMILES: '
-               '[C@]12(O[C@@](CC(=C1)C)([C@@H](/C=C/[C@@]3(O[C@@]4(O[C@@]5([C@](O[C@]([C@H](C[C@@H]([C@]6(O[C@]7(CC[C@H]6C)[C@@H](CCCO7)C)[H])C)O)(C([C@H]5O)=C)[H])(CC4)[H])[H])CC3)[H])C)[H])O[C@@H](CC[C@H]2O)C[C@@](C(O)=O)(C)O '
-               'NAME: dinophysistoxin 1 REASON: WRONGLY CLASSIFIED Longest '
-               'carbon chain length is 38 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C(O)[C@H]([C@@]1(O[C@@H]([C@H](C)[C@@H]([C@H]1C)OC)[C@@H]([C@H]2O[C@]3(O[C@@]([C@@H]4O[C@@]([C@@H]5O[C@@H]([C@H]6O[C@](O)([C@H](C)C([C@@H]6C)OC)C)C[C@@H]5C)(C)CC4)(C)CC3)C[C@@H]([C@H]2C)OC)C)O)C '
-               'NAME: Promomycin REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 30 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C(O)C[C@H](OC)\\C=C/C=C\\C=C/C=C/C=C\\[C@@H]([C@H](O)[C@@H]([C@H]1O[C@]2(O[C@@H]([C@H](C)[C@@H](C2)OC)[C@@H]([C@@H](O)[C@H](C/C(=C/C)/C)C)C)[C@@H](O)C[C@@H]1C)C)C '
-               'NAME: Spirangien L REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 32 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C(OC[C@@H](O)C(O)(CC/C=C(/CCCC(O)(CCCC(O)(CCCC(O)(CCCC(O)(CCCC(O)(CCCC(O)(CCCC(O)(CCCC(O)(CCC=C(C)C)C)C)C)C)C)C)C)C)\\C)C)CC(O)(CC(=O)O)C '
-               'NAME: Gymnopilin B11 REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 44 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C1C=CC(=C[C@H]2[C@H](C(=C[C@@H]3[C@@H]2C(C[C@]3(O)C)(C)C)C)\\C=C/C=C/C=C\\[C@@H](O)[C@@H]([C@H](O)C/C=C(/C=C/C(=O)O)\\C)C)C=C1 '
-               'NAME: Elansolid A3 REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 31 (greater than C27)\n'
-               ' * SMILES: '
-               'CC[C@H]1[C@H](O)CC(=O)CCC[C@H](O)C[C@]2(O)C[C@H](O)[C@H]([C@H](C[C@@H](O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\C=C\\C=C\\C=C\\C=C\\C[C@@H](C)OC1=O)O2)C(O)=O '
-               'NAME: CE-108 REASON: WRONGLY CLASSIFIED Longest carbon chain '
-               'length is 29 (greater than C27)\n'
-               ' * SMILES: '
-               'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC(O)CC(=O)N[C@H](Cc1ccccc1)C(=O)N[C@H]([C@@H](C)OC1O[C@@H](C)[C@@H](O)[C@@H](O)[C@H]1O[C@@H]1O[C@@H](C)[C@H](O)[C@@H](O[C@@H]2O[C@@H]3CO[C@@](C)(O[C@H]3[C@H](OC)[C@H]2O)C(O)=O)[C@H]1O)C(=O)N[C@H](C)C(=O)N[C@@H](C)COC1O[C@@H](C)[C@H](OC)[C@@H](OC)[C@H]1O '
-               'NAME: GPL-8 REASON: WRONGLY CLASSIFIED Longest carbon chain '
-               'length is 32 (greater than C27)\n'
-               ' * SMILES: '
-               'O=C1OC(C(C=CC=CC=CC=CC=CC=CC=CC(OC2O[C@@H]([C@@H](O)[C@@H]([C@@H]2O)N)C)CC3OC(CC(CC(CC(CCCC(CC(C1)O)O)O)O)O)(O)CC(O)C3C(=O)O)C)C(CCC(O)CC(=O)C4=CC=C(N)C=C4)C '
-               'NAME: 3874 H1 REASON: WRONGLY CLASSIFIED Longest carbon chain '
-               'length is 49 (greater than C27)\n'
-               ' * SMILES: O=C(CCCCCCCCCCCCCCCCC)CCCCCCCCCC(O)=O NAME: '
-               '11-keto-Octacosanoic acid REASON: WRONGLY CLASSIFIED Longest '
-               'carbon chain length is 28 (greater than C27)\n'
-               ' * SMILES: '
-               '[H][C@]12C[C@@H](O[C@@H]3O[C@H](C)[C@@H](O)[C@H](N)[C@@H]3O)\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C\\C=C\\[C@H](C)[C@@H](O)[C@@H](C)[C@H](C)OC(=O)C[C@H](O)C[C@H](O)CC[C@@H](O)[C@H](O)C[C@H](O)C[C@](O)(C[C@H](O)[C@H]1C(O)=O)O2 '
-               'NAME: amphotericin B REASON: WRONGLY CLASSIFIED Longest carbon '
-               'chain length is 38 (greater than C27)\n'
-               'False negatives: NONE\n'
+               'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCCCC)C(O)=O '
+               'NAME: '
+               '(2R)-2-{(1R)-1-hydroxy-12-[(1R,2S)-2-{14-[(1R,2S)-2-icosylcyclopropyl]tetradecyl}cyclopropyl]dodecyl}hexacosanoic '
+               'acid REASON: MISSED Chain is branched. Found branching in the '
+               'chain\n'
                '------\n'
                '\n'
                'In your reasoning step, analyze the previous program and the '
                'above outcomes, hypothesizing about what went wrong, and how '
                'to improve.\n',
-    'sample_true_negatives': [   {   'smiles': 'O(C(=O)CCCCCCCCCCC/C=C\\CCCCCCCC)C[C@H](OC(=O)CCCCCCC/C=C\\CCCCCC)COC(=O)CCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\CC',
-                                     'name': 'TG(22:1(13Z)/16:1(9Z)/18:4(6Z,9Z,12Z,15Z))',
-                                     'reason': 'No carboxylic acid group '
-                                               'found'},
-                                 {   'smiles': 'O1C2C(C3(C(C4C(C5(C(CC4)CC(OC6OC(C(OC7OC(C(O)C(O)C7O)C)C(O)C6O)COC8OC(C(O)C(O)C8O)CO)CC5)C)CC3)C2)C)C(C19OCC(CC9)C)C',
-                                     'name': 'Desglucoparillin',
-                                     'reason': 'No carboxylic acid group '
-                                               'found'},
-                                 {   'smiles': '[C@H]1(O)C(O)O[C@H](C=O)[C@H]([C@@H]1O)O',
-                                     'name': '6-dehydro-D-glucose',
-                                     'reason': 'No carboxylic acid group '
-                                               'found'},
-                                 {   'smiles': 'C1=CC(=CC=C1NC2=C(C=NC=C2)S(=O)(=O)N)Cl',
-                                     'name': '4-(4-chloroanilino)-3-pyridinesulfonamide',
-                                     'reason': 'No carboxylic acid group '
-                                               'found'},
-                                 {   'smiles': 'C=1([NH+]=C(C=C(N1)NCC=2ON=C(N2)C(N)=O)C(C)C)N',
-                                     'name': '2-amino-4-{[(3-carbamoyl-1,2,4-oxadiazol-5-yl)methyl]amino}-6-isopropylpyrimidin-1-ium',
-                                     'reason': 'No carboxylic acid group '
-                                               'found'},
-                                 {   'smiles': 'O([C@@H]1[C@@H](O[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@H]2O)CO)[C@H](O[C@@H]([C@@H]1O)CO)O)[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O)CO',
-                                     'name': '(2R,3S,4S,5S,6R)-2-[(2S,3R,4S,5S,6R)-2,5-Dihydroxy-6-(hydroxymethyl)-3-[(2R,3R,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-4-yl]oxy-6-(hydroxymethyl)oxane-3,4,5-triol',
-                                     'reason': 'No carboxylic acid group '
-                                               'found'},
-                                 {   'smiles': 'COC1=CC=C(C=C1)S(=O)(=O)NC2=CC3=C(C=C2)O[C@@H]4[C@H]3C[C@@H](O[C@@H]4CO)CC(=O)O',
-                                     'name': '2-[(1R,3R,4aS,9aR)-1-(hydroxymethyl)-6-[(4-methoxyphenyl)sulfonylamino]-3,4,4a,9a-tetrahydro-1H-pyrano[3,4-b]benzofuran-3-yl]acetic '
+    'sample_true_negatives': [   {   'smiles': 'O=C1OC[C@@H]2O[C@@H](O[C@@H]3[C@@H](OC(=O)CCCCCCCCCCCCCCC)[C@H](C=CCCCC1)[C@H](CCCCC)[C@@H](C3)O)[C@H](O)[C@H]([C@@H]2O)O',
+                                     'name': 'Mucorolactone',
+                                     'reason': 'Expected exactly one '
+                                               'carboxylic acid group; found '
+                                               '0'},
+                                 {   'smiles': 'C[C@@H]1CN[C@H](COC2=C(C=CC(=C2)NC(=O)C3=NC4=CC=CC=C4S3)C(=O)N(C[C@H]1OC)C)C',
+                                     'name': 'N-[(5S,6R,9S)-5-methoxy-3,6,9-trimethyl-2-oxo-11-oxa-3,8-diazabicyclo[10.4.0]hexadeca-1(12),13,15-trien-14-yl]-1,3-benzothiazole-2-carboxamide',
+                                     'reason': 'Expected exactly one '
+                                               'carboxylic acid group; found '
+                                               '0'},
+                                 {   'smiles': 'COC1=CC=CC(=C1)C2=CC=C(C=C2)[C@@H]3[C@@H]4CN(CC(=O)N4[C@@H]3CO)C(=O)C5=CN=CC=C5',
+                                     'name': '(6R,7R,8S)-8-(hydroxymethyl)-7-[4-(3-methoxyphenyl)phenyl]-4-[oxo(3-pyridinyl)methyl]-1,4-diazabicyclo[4.2.0]octan-2-one',
+                                     'reason': 'Expected exactly one '
+                                               'carboxylic acid group; found '
+                                               '0'},
+                                 {   'smiles': 'C(C(/C=C/C=C/C=C/[C@H](CCCC(O)=O)O)=O)/C=C\\CCCCC',
+                                     'name': '12-oxo-6-trans-leukotriene B4',
+                                     'reason': 'Chain length is 20 carbons, '
+                                               'which is not greater than C27'},
+                                 {   'smiles': 'O=C1OC(=C(C#C[C@H](COC(=O)C)C)CO)C=C1',
+                                     'name': "5'-O-acetylaporpinone A",
+                                     'reason': 'Expected exactly one '
+                                               'carboxylic acid group; found '
+                                               '0'},
+                                 {   'smiles': 'O=C(N1[C@@H](CCC1)C(=O)N[C@@H](CCC(=O)N)C(O)=O)[C@@H](N)[C@H](CC)C',
+                                     'name': 'Ile-Pro-Gln',
+                                     'reason': 'Chain length is 5 carbons, '
+                                               'which is not greater than C27'},
+                                 {   'smiles': 'O[C@@H]1C=CC=C(CCC(O)=O)[C@@H]1O',
+                                     'name': '3-[(5R,6S)-5,6-dihydroxycyclohexa-1,3-dienyl]propanoic '
                                              'acid',
-                                     'reason': 'Longest carbon chain length is '
-                                               '2 (not greater than C27)'},
-                                 {   'smiles': 'O=C(C=1NC=CC1)[C@@H]2[C@@H](C=C[C@H]3[C@H]2CCC3)C=CC=C([C@@H]4O[C@@H]([C@H](C(=O)O)C)CC[C@@H]4C)CC',
-                                     'name': 'A83094A',
-                                     'reason': 'Longest carbon chain length is '
-                                               '3 (not greater than C27)'},
-                                 {   'smiles': 'C[C@H](O)[C@H](O)[C@@H](O)C(=O)COP(O)(O)=O',
-                                     'name': 'L-rhamnulose 1-phosphate',
-                                     'reason': 'No carboxylic acid group '
-                                               'found'},
-                                 {   'smiles': 'COc1ccc(\\C=C\\C(=O)N[C@H](CCCNC(N)=N)C(O)=O)cc1Br',
-                                     'name': 'subereamine A',
-                                     'reason': 'Longest carbon chain length is '
-                                               '5 (not greater than C27)'}],
-    'sample_false_negatives': [   {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1[C@H](C)CCCCCCCCCCCCCCCC[C@H](OC)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
-                                      'name': '(2R)-2-[(1R)-1-hydroxy-19-{(1R,2R)-2-[(2R,19S,20S)-19-methoxy-20-methyloctatriacontan-2-yl]cyclopropyl}nonadecyl]hexacosanoic '
+                                     'reason': 'Chain length is 3 carbons, '
+                                               'which is not greater than C27'},
+                                 {   'smiles': 'O=C(OC)/C=C/C(C)(C)C',
+                                     'name': '4,4-Dimethyl-pentenoic acid '
+                                             'methyl ester',
+                                     'reason': 'Expected exactly one '
+                                               'carboxylic acid group; found '
+                                               '0'},
+                                 {   'smiles': 'CCCCOc1ccc(OCCCN2CCOCC2)cc1',
+                                     'name': 'pramocaine',
+                                     'reason': 'Expected exactly one '
+                                               'carboxylic acid group; found '
+                                               '0'},
+                                 {   'smiles': 'OC[C@@H](O)C(=O)[C@H](O)[C@H](O)COP(O)(O)=O',
+                                     'name': 'D-arabino-hex-3-ulose '
+                                             '6-phosphate',
+                                     'reason': 'Expected exactly one '
+                                               'carboxylic acid group; found '
+                                               '0'}],
+    'sample_false_negatives': [   {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCC[C@H](OC)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-[(1R)-1-hydroxy-18-{(1R,2S)-2-[(17S,18S)-17-methoxy-18-methylhexatriacontyl]cyclopropyl}octadecyl]hexacosanoic '
                                               'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than C27)'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCCCC)C(O)=O',
-                                      'name': '(2R)-2-{(1R)-1-hydroxy-12-[(1S,2R)-2-{14-[(1S,2R)-2-icosylcyclopropyl]tetradecyl}cyclopropyl]dodecyl}hexacosanoic '
-                                              'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than C27)'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCCCC)C(O)=O',
-                                      'name': '(2R)-2-{(1R)-1-hydroxy-12-[(1R,2S)-2-{14-[(1R,2S)-2-icosylcyclopropyl]tetradecyl}cyclopropyl]dodecyl}hexacosanoic '
-                                              'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than C27)'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1[C@H](C)CCCCCCCCCCCCCCCCCCC(=O)C(C)CCCCCCCCCCCCCCCCCC)C(O)=O',
-                                      'name': '(2R)-2-[(1R)-1-hydroxy-17-{(1R,2R)-2-[(2R)-22-methyl-21-oxotetracontan-2-yl]cyclopropyl}heptadecyl]hexacosanoic '
-                                              'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than C27)'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCCC(=O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
-                                      'name': '(2R)-2-[(1R)-1-hydroxy-16-{(1S,2R)-2-[(20S)-20-methyl-19-oxooctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
-                                              'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than C27)'},
-                                  {   'smiles': 'C(CCCCCCCCC(C)C(O)CCCCCCCCCCCCCCCCC1C(CCCCCCCCCCCCCCCCCC(O)C(C(O)=O)CCCCCCCCCCCCCCCCCCCCCC)C1)CCCCCCCCC',
-                                      'name': 'dihydroxy mycolic acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 24 (not greater than C27)'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCC[C@H](O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
-                                      'name': '(2R)-2-[(1R)-1-hydroxy-16-{(1R,2S)-2-[(20S)-20-methyl-19-oxooctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
-                                              'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than C27)'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCCC(=O)C(C)CCCCCCCCCCCCCCCCCC)C(O)=O',
-                                      'name': '(2R)-2-{(1R)-1-hydroxy-16-[(1R,2S)-2-(20-methyl-19-oxooctatriacontyl)cyclopropyl]hexadecyl}hexacosanoic '
-                                              'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than C27)'},
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
                                   {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCC[C@H](O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
                                       'name': '(2R)-2-[(1R)-1-hydroxy-16-{(1S,2R)-2-[(19S,20S)-19-hydroxy-20-methyloctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
                                               'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than C27)'},
-                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCC[C@H](OC)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
-                                      'name': '(2R)-2-[(1R)-1-hydroxy-18-{(1R,2S)-2-[(17S,18S)-17-methoxy-18-methylhexatriacontyl]cyclopropyl}octadecyl]hexacosanoic '
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCCC(=O)C(C)CCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-{(1R)-1-hydroxy-16-[(1R,2S)-2-(20-methyl-19-oxooctatriacontyl)cyclopropyl]hexadecyl}hexacosanoic '
                                               'acid',
-                                      'reason': 'Longest carbon chain length '
-                                                'is 26 (not greater than '
-                                                'C27)'}],
-    'attempt': 2,
-    'reasoning': 'The previous code had a few issues that led to incorrect '
-                 'classifications:\n'
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCC[C@H](O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-[(1R)-1-hydroxy-16-{(1R,2S)-2-[(20S)-20-methyl-19-oxooctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
+                                              'acid',
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCC[C@@H](OC)[C@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-[(1R)-1-hydroxy-18-{(1S,2R)-2-[(17R,18R)-17-methoxy-18-methylhexatriacontyl]cyclopropyl}octadecyl]hexacosanoic '
+                                              'acid',
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-{(1R)-1-hydroxy-12-[(1S,2R)-2-{14-[(1S,2R)-2-icosylcyclopropyl]tetradecyl}cyclopropyl]dodecyl}hexacosanoic '
+                                              'acid',
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCC[C@@H]1C[C@@H]1CCCCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-{(1R)-1-hydroxy-12-[(1R,2S)-2-{14-[(1R,2S)-2-icosylcyclopropyl]tetradecyl}cyclopropyl]dodecyl}hexacosanoic '
+                                              'acid',
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1[C@H](C)CCCCCCCCCCCCCCCC[C@H](OC)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-[(1R)-1-hydroxy-19-{(1R,2R)-2-[(2R,19S,20S)-19-methoxy-20-methyloctatriacontan-2-yl]cyclopropyl}nonadecyl]hexacosanoic '
+                                              'acid',
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCCC[C@@H]1C[C@@H]1[C@H](C)CCCCCCCCCCCCCCCCCCC(=O)C(C)CCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-[(1R)-1-hydroxy-17-{(1R,2R)-2-[(2R)-22-methyl-21-oxotetracontan-2-yl]cyclopropyl}heptadecyl]hexacosanoic '
+                                              'acid',
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'},
+                                  {   'smiles': 'CCCCCCCCCCCCCCCCCCCCCCCC[C@H]([C@H](O)CCCCCCCCCCCCCCC[C@H]1C[C@H]1CCCCCCCCCCCCCCCCCCC(=O)[C@@H](C)CCCCCCCCCCCCCCCCCC)C(O)=O',
+                                      'name': '(2R)-2-[(1R)-1-hydroxy-16-{(1S,2R)-2-[(20S)-20-methyl-19-oxooctatriacontyl]cyclopropyl}hexadecyl]hexacosanoic '
+                                              'acid',
+                                      'reason': 'Chain length is 26 carbons, '
+                                                'which is not greater than '
+                                                'C27'}],
+    'attempt': 5,
+    'reasoning': 'Below is our revised solution. In our reasoning we noted '
+                 'that the previous “linear‐chain” algorithm was too strict '
+                 'about branches (thus missing genuine branched fatty acids) '
+                 'yet too “loose” in that some large molecules with one long '
+                 'acyclic chain are not simple fatty acids. To improve the '
+                 'classification we now (1) insist that the molecule has '
+                 'exactly one carboxylic acid group and that the acid “head” '
+                 '(the carbonyl carbon) is terminal (attached to exactly one '
+                 'carbon); (2) from that head we search for the longest simple '
+                 'carbon‐chain (allowing branching in the DFS but then picking '
+                 'the longest path); (3) we require the total chain length '
+                 '(including the carboxyl carbon) is >27; (4) we then check '
+                 'that, apart from an allowed hydroxyl on the alpha carbon (if '
+                 'present), no “extra” oxygen substitution is found along the '
+                 'main chain (and in particular the terminal carbon must be a '
+                 'plain –CH3) and also that almost every carbon atom of the '
+                 'molecule is included in that chain. (This last “extra‐atoms” '
+                 'filter helps weed out complex molecules whose only long '
+                 'fragment is incidental.) \n'
                  '\n'
-                 '1. **Chain Length Calculation**: The code was counting all '
-                 'carbon atoms in the molecule, including those in branches '
-                 'and rings, rather than just the longest continuous carbon '
-                 'chain. This led to overcounting and false positives.\n'
+                 'Note that these criteria are heuristic, but when tested '
+                 'against the many outcomes provided (with 20+ true‐positives, '
+                 '20+ false‐positives and some false‐negatives) we obtain a '
+                 'marked improvement in F1 score. (If the task is too '
+                 'ambiguous the program may return (None, None).)\n'
                  '\n'
-                 '2. **Carboxylic Acid Detection**: The code only checked for '
-                 "the presence of a carboxylic acid group but didn't ensure it "
-                 'was at the end of the longest carbon chain.\n'
+                 'Below is the complete Python code:\n'
                  '\n'
-                 "3. **Branching and Rings**: The code didn't properly handle "
-                 'molecules with complex branching or rings, which could lead '
-                 'to incorrect chain length calculations.\n'
-                 '\n'
-                 'To improve the code, we need to:\n'
-                 "- Ensure we're only counting the longest continuous carbon "
-                 'chain.\n'
-                 '- Verify that the carboxylic acid group is at the end of '
-                 'this chain.\n'
-                 '- Handle branching and rings more carefully.\n'
-                 '\n'
-                 "Here's the improved code:",
+                 '------------------------------------------------',
     'success': True,
     'best': True,
     'error': '',
     'stdout': None,
-    'num_true_positives': 30,
-    'num_false_positives': 46,
-    'num_true_negatives': 142210,
-    'num_false_negatives': 14,
+    'num_true_positives': 29,
+    'num_false_positives': 12,
+    'num_true_negatives': 142244,
+    'num_false_negatives': 15,
     'num_negatives': None,
-    'precision': 0.39473684210526316,
-    'recall': 0.6818181818181818,
-    'f1': 0.5,
-    'accuracy': 0.9995783555867884,
-    'negative_predictive_value': 0.9999015637304534}
+    'precision': 0.7073170731707317,
+    'recall': 0.6590909090909091,
+    'f1': 0.6823529411764706,
+    'accuracy': 0.9998102600140548,
+    'negative_predictive_value': 0.9998945585165087}
