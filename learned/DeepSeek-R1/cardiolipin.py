@@ -30,22 +30,20 @@ def is_cardiolipin(smiles: str):
     if p_count != 2:
         return False, f"Found {p_count} phosphorus atoms, need exactly 2"
 
-    # Check for four ester groups (from four fatty acid chains)
-    ester_pattern = Chem.MolFromSmarts("[OX2]C(=O)O[#6]")
+    # Corrected ester group detection (R-O-C=O)
+    ester_pattern = Chem.MolFromSmarts("[OX2]C(=O)[#6]")  # Matches O-C(=O)-C
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     if len(ester_matches) != 4:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 4"
 
-    # Check for three glycerol backbones (central + two from phosphatidic acids)
-    glycerol_pattern = Chem.MolFromSmarts("[CH2](-O)-[CH](-O)-[CH2](-O)")
+    # Generalized glycerol backbone pattern (3 carbons with oxygen substituents)
+    glycerol_pattern = Chem.MolFromSmarts("[CH2][O]-[CH][O]-[CH2][O]")
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
     if len(glycerol_matches) < 3:
         return False, f"Found {len(glycerol_matches)} glycerol backbones, need at least 3"
 
-    # Check phosphate connectivity to glycerols
-    # Central glycerol should have two phosphate connections
-    # Each phosphatidic acid glycerol should have one phosphate connection
-    phosphate_pattern = Chem.MolFromSmarts("[O]P(=O)(O)O")
+    # Check phosphate group presence
+    phosphate_pattern = Chem.MolFromSmarts("[O]P(=O)([O])[O]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if len(phosphate_matches) < 2:
         return False, "Insufficient phosphate groups"
@@ -56,16 +54,22 @@ def is_cardiolipin(smiles: str):
         return False, f"Molecular weight too low ({mol_wt:.1f} Da)"
 
     # Check for long carbon chains (at least 12 carbons in each fatty acid)
-    chain_pattern = Chem.MolFromSmarts("[CH2]C(=O)O")
+    chain_pattern = Chem.MolFromSmarts("[#6]C(=O)O[#6]")  # Carbon adjacent to ester carbonyl
     for match in mol.GetSubstructMatches(chain_pattern):
+        chain_start = match[0]
+        atom = mol.GetAtomWithIdx(chain_start)
         chain_length = 0
-        atom = mol.GetAtomWithIdx(match[0])
+        
+        # Traverse the chain backwards (away from carbonyl)
         while True:
-            neighbors = [n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]
+            neighbors = [n for n in atom.GetNeighbors() 
+                        if n.GetAtomicNum() == 6 
+                        and n.GetIdx() != match[1]]  # Avoid going back to carbonyl
             if len(neighbors) != 1:
                 break
             chain_length += 1
             atom = neighbors[0]
+            
         if chain_length < 12:
             return False, f"Fatty acid chain too short ({chain_length} carbons)"
 
