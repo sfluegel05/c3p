@@ -10,7 +10,7 @@ from rdkit.Chem import rdCIPLabeler
 def is_O_acyl_L_carnitine(smiles: str):
     """
     Determines if a molecule is an O-acyl-L-carnitine based on its SMILES string.
-    An O-acyl-L-carnitine has a carnitine backbone with L-configuration (R configuration)
+    An O-acyl-L-carnitine has a carnitine backbone with L-configuration (R configuration) 
     and an O-acyl group attached via ester bond.
 
     Args:
@@ -25,12 +25,12 @@ def is_O_acyl_L_carnitine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for core structure (quaternary ammonium, ester, carboxylate)
-    # [N+X4] connected to a carbon, which is connected to another carbon (chiral center)
-    # Chiral center has:
-    # - O-C(=O) (ester group)
-    # - CC(=O)[O-] (carboxylate)
-    core_smarts = Chem.MolFromSmarts('[N+X4]-[CX4]-[CX4](OC(=O))CC(=O)[O-]')
+    # Define SMARTS pattern for core structure (without stereochemistry)
+    # [N+] connected to any four groups (quaternary ammonium)
+    # Connected to a carbon that has:
+    # - Ester group (OC(=O)...)
+    # - Carboxylate group (CC(=O)[O-])
+    core_smarts = Chem.MolFromSmarts('[N+X4]-[C]-[C](OC(=O))-CC(=O)[O-]')
     matches = mol.GetSubstructMatches(core_smarts)
     
     if not matches:
