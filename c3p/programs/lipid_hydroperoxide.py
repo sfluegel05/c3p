@@ -2,13 +2,13 @@
 Classifies: CHEBI:61051 lipid hydroperoxide
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_lipid_hydroperoxide(smiles: str):
     """
     Determines if a molecule is a lipid hydroperoxide based on its SMILES string.
     A lipid hydroperoxide is characterized by the presence of hydroperoxy groups (-OOH) 
-    attached to a lipid-like structure.
+    attached to a lipid-like structure, typically devoid of structural complexities like 
+    charged groups or extensive cyclic elements.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -28,20 +28,25 @@ def is_lipid_hydroperoxide(smiles: str):
     hydroperoxy_matches = mol.GetSubstructMatches(hydroperoxy_pattern)
     if not hydroperoxy_matches:
         return False, "No hydroperoxy groups found"
-    
-    # Count carbon atoms to verify lipid-like structure (heuristic: must have at least 12 carbon atoms)
+
+    # Consider minimum reasonable carbon atoms threshold to define a lipid
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 12:
-        return False, f"Only {c_count} carbon atoms found, not enough for typical lipid structure"
+    if c_count < 16:  # Increased to 16 for better alignment with lipid length
+        return False, f"Only {c_count} carbon atoms found, potentially too few for lipid structure"
 
-    # Check for presence of carboxylic group or long-chain fatty-acid like structures
-    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[OH]")
+    # Check for presence of carboxylic group and avoid negative charges
+    carboxylic_pattern = Chem.MolFromSmarts("C(=O)[O]")
     carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
+    if not carboxylic_matches:
+        return False, "No carboxylic structures found"
+    
+    # Exclude charged species
+    if any(atom.GetFormalCharge() != 0 for atom in mol.GetAtoms()):
+        return False, "Charged species present, excluding for lipid hydroperoxide"
 
-    ester_pattern = Chem.MolFromSmarts("C(=O)O")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-
-    if not carboxylic_matches and not ester_matches:
-        return False, "No carboxylic or long-chain ester structures found"
+    # Avoid extensive cyclic structures or complex multi-oxygen linkages (heuristically)
+    # Such features commonly denote deviation from lipid hydroperoxides
+    if mol.GetRingInfo().NumRings() > 1:
+        return False, "Multiple rings detected, uncharacteristic of typical lipid hydroperoxides"
 
     return True, f"Contains {len(hydroperoxy_matches)} hydroperoxy group(s) and lipid-like structure with {c_count} carbon atoms"
