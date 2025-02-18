@@ -1,154 +1,46 @@
 """
 Classifies: CHEBI:17334 penicillin
 """
- - (2S,5S,6R)-6-[[(2R)-2-amino-2-phenylacetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)[C@@H](C3=CC=CC=C3)N)C(=O)O)C
- - 3,3-dimethyl-7-oxo-6-[(phenylacetyl)amino]-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1(C(N2C(S1)C(C2=O)NC(=O)CC3=CC=CC=C3)C(=O)O)C
- - penicillin V: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)COc1ccccc1)C(O)=O
- - ciclacillin: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)C1CCCC1)C(O)=O
- - hetacillin: SMILES: CC1(C(N2C(S1)C(C2=O)NC(=O)C(C3=CC=CC=C3)(C(=O)O)NC(=O)OC(C)(C)C)C(=O)O)C
- - 6beta-[(4-hydroxyphenyl)acetamido]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc1ccc(O)cc1)C(O)=O
- - penicillin X: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc1ccc(O)cc1)C(O)=O
- - (2S,5S,6R)-6-[[(2R)-2-amino-2-(4-hydroxyphenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)[C@@H](C3=CC=C(O)C=C3)N)C(=O)O)C
- - (2S,5S,6R)-6-[(2-furanylcarbonyl)amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)c1ccco1)C(=O)O)C
- - 6beta-[(2-furanylcarbonyl)amino]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)c1ccco1)C(O)=O
- - 6beta-[(1-oxo-2-phenoxyethyl)amino]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)COc1ccccc1)C(O)=O
- - 6beta-[(2-thienylacetyl)amino]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)CCc1cccs1)C(O)=O
- - (2S,5S,6R)-6-[(2-thienylacetyl)amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CCc1cccs1)C(=O)O)C
- - 6beta-[(4-ethyl-2,3-dioxopiperazine-1-carbonyl)amino]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)N3C(=O)C(=O)N(CC)CC3)C(O)=O
- - 6beta-[(hexahydro-1H-azepin-1-ylcarbonyl)amino]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)N1CCCCCC1)C(O)=O
- - 6beta-[(1-oxo-3-phenylpropyl)amino]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)CCc1ccccc1)C(O)=O
- - (2S,5S,6R)-6-[[(2R)-2-amino-2-(1,4-cyclohexadien-1-yl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)[C@@H](C3=CC=CC=C3)N)C(=O)O)C
- - 6beta-[(1H-tetrazol-1-ylacetyl)amino]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cn1nnnc1)C(O)=O
- - (2S,5S,6R)-6-[(5-methyl-3-phenyl-4-isoxazolylcarbonyl)amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1=C(C(=NO1)C2=CC=CC=C2)C(=O)N[C@H]3[C@H]4N(C3=O)[C@H](C(S4)(C)C)C(=O)O
- - 6beta-[(5-methyl-3-phenyl-4-isoxazolylcarbonyl)amino]penicillanic acid: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)c1c(C)onc1c1ccccc1)C(O)=O
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[(3-o-chlorophenyl-5-methyl-4-isoxazolylcarbonyl)amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1=C(C(=NO1)C2=CC=CC=C2Cl)C(=O)N[C@H]3[C@H]4N(C3=O)[C@H](C(S4)(C)C)C(=O)O
- - (2S,5S,6R)-6-[(3-o-chlorophenyl-5-methyl-4-isoxazolylcarbonyl)amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1=C(C(=NO1)C2=CC=CC=C2Cl)C(=O)N[C@H]3[C@H]4N(C3=O)[C@H](C(S4)(C)C)C(=O)O
- - (2S,5S,6R)-6-[(3-(2,6-dichlorophenyl)-5-methyl-4-isoxazolylcarbonyl)amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1=C(C(=NO1)C2=C(C=CC=C2Cl)Cl)C(=O)N[C@H]3[C@H]4N(C3=O)[C@H](C(S4)(C)C)C(=O)O
- - (2S,5S,6R)-6-[(3-(2,6-dichlorophenyl)-5-methyl-4-isoxazolylcarbonyl)amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1=C(C(=NO1)C2=C(C=CC=C2Cl)Cl)C(=O)N[C@H]3[C@H]4N(C3=O)[C@H](C(S4)(C)C)C(=O)O
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES: CC1([C@@H](N2[C@@H](S1)[C@@H](C2=O)NC(=O)CC3=CC(=C(C=C3)Cl)Cl)C(=O)O)C
- - (2S,5S,6R)-6-[[(3,4-dichlorophenyl)acetyl]amino]-3,3-dimethyl-7-oxo-4-thia-1-azabicyclo[3.2.0]heptane-2-carboxylic acid: SMILES
+"""
+Classifies: Penicillin (CHEBI:17334)
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_penicillin(smiles: str):
+    """
+    Determines if a molecule is a penicillin based on its SMILES string.
+    Penicillin has a penam core with two methyl groups at position 2,
+    a carboxylate at position 3, and a carboxamido group at position 6.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a penicillin, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+
+    # Define the core penam structure with key substituents
+    penam_core = Chem.MolFromSmarts("[*]C1([CH3])[CH3][S][C@@H]2[C@@H](NC(=O)[*])[C@](=O)(O)N12")
+    if not mol.HasSubstructMatch(penam_core):
+        return False, "Missing penam core with two methyl groups and carboxylate"
+
+    # Check for carboxamido group (R-N-C(=O)-R') attached to the beta-lactam nitrogen
+    carboxamido = Chem.MolFromSmarts("[NX3][C](=O)")
+    matches = mol.GetSubstructMatches(carboxamido)
+    if not matches:
+        return False, "No carboxamido group found"
+
+    # Ensure the carboxamido is attached to the beta-lactam nitrogen in the core
+    core_matches = mol.GetSubstructMatches(penam_core)
+    for cm in core_matches:
+        beta_lactam_n_idx = cm[4]  # Index of the beta-lactam nitrogen in the core match
+        for (n_idx, c_idx) in matches:
+            if n_idx == beta_lactam_n_idx:
+                return True, "Penicillin core with carboxamido group found"
+
+    return False, "Carboxamido group not attached to beta-lactam nitrogen"
