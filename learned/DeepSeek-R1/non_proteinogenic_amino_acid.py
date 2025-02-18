@@ -5,65 +5,83 @@ Classifies: CHEBI:83820 non-proteinogenic amino acid
 Classifies: CHEBI_83820 non-proteinogenic amino acid
 """
 from rdkit import Chem
+from rdkit.Chem import Mol, MolFromSmiles, MolFromSmarts
+from rdkit.Chem.rdmolops import GetFormalCharge
 
 def is_non_proteinogenic_amino_acid(smiles: str):
     """
-    Determines if a molecule is a non-proteinogenic amino acid based on its SMILES string.
-    Non-proteinogenic amino acids are those not naturally encoded in the genetic code.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a non-proteinogenic amino acid, False otherwise
-        str: Reason for classification
+    Determines if a molecule is a non-proteinogenic amino acid.
     """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
+    mol = MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Check alpha-amino acid structure: amine adjacent to carboxyl group
-    alpha_amino_pattern = Chem.MolFromSmarts('[#7]C-C(=O)O')
-    if not mol.HasSubstructMatch(alpha_amino_pattern):
-        return False, "Not an alpha-amino acid"
+    # Check for at least one amino and one carboxyl group
+    amino_pattern = MolFromSmarts('[NH2,NX3H,NX4H2]')
+    carboxyl_pattern = MolFromSmarts('C(=O)[OH]')
+    if not mol.HasSubstructMatch(amino_pattern) or not mol.HasSubstructMatch(carboxyl_pattern):
+        return False, "Missing amino or carboxyl group"
     
-    # Generate canonical SMILES with stereochemistry
-    input_canonical = Chem.MolToSmiles(mol, isomericSmiles=True)
+    # Check for peptide bonds (amide linkages between amino acids)
+    peptide_pattern = MolFromSmarts('[CX3](=O)-[NX3H]-[CX4]')
+    if mol.HasSubstructMatch(peptide_pattern):
+        return False, "Contains peptide bond"
     
-    # Predefined standard L-amino acids (canonical SMILES with stereochemistry)
-    standard_amino_smiles = [
-        'C(C(=O)O)N',  # Glycine
-        'C[C@H](N)C(=O)O',  # L-Alanine
-        'CC(C)[C@H](N)C(=O)O',  # L-Valine
-        'CC(C)CC[C@H](N)C(=O)O',  # L-Leucine
-        'CCC[C@H](C)[C@H](N)C(=O)O',  # L-Isoleucine
-        'N1[C@H](CCC1)C(=O)O',  # L-Proline
-        'C([C@H](N)C(=O)O)O',  # L-Serine
-        'C[C@H](O)[C@H](N)C(=O)O',  # L-Threonine
-        'C([C@H](N)C(=O)O)S',  # L-Cysteine
-        'CSCC[C@H](N)C(=O)O',  # L-Methionine
-        'C([C@H](N)C(=O)O)C(=O)N',  # L-Asparagine
-        'C(CC(=O)N)[C@H](N)C(=O)O',  # L-Glutamine
-        'C(CCCCN)[C@H](N)C(=O)O',  # L-Lysine
-        'C(CCCNC(=N)N)[C@H](N)C(=O)O',  # L-Arginine
-        'C1=C(NC=N1)C[C@H](N)C(=O)O',  # L-Histidine
-        'C([C@H](N)C(=O)O)C(=O)O',  # L-Aspartic acid
-        'C(CC(=O)O)[C@H](N)C(=O)O',  # L-Glutamic acid
-        'C1=CC=CC=C1C[C@H](N)C(=O)O',  # L-Phenylalanine
-        'C1=CC(=CC=C1C[C@H](N)C(=O)O)O',  # L-Tyrosine
-        'C1=CC=C2C(=C1)C(=CN2)C[C@H](N)C(=O)O'  # L-Tryptophan
+    # Standard amino acid core structures (SMARTS patterns)
+    standard_amino_smarts = [
+        # Glycine
+        '[NH2]C([H])(C(=O)O)',
+        # L-Alanine
+        'C[C@H]([NH2])C(=O)O',
+        # L-Valine
+        'CC(C)[C@H]([NH2])C(=O)O',
+        # L-Leucine
+        'CC(C)CC[C@H]([NH2])C(=O)O',
+        # L-Isoleucine
+        'CCC[C@H](C)[C@H]([NH2])C(=O)O',
+        # L-Proline (cyclic)
+        'N1C([CH2][CH2]C1)C(=O)O',
+        # L-Serine
+        'C([C@H]([NH2])C(=O)O)O',
+        # L-Threonine
+        'C[C@H](O)[C@H]([NH2])C(=O)O',
+        # L-Cysteine
+        'C([C@H]([NH2])C(=O)O)S',
+        # L-Methionine
+        'CSCC[C@H]([NH2])C(=O)O',
+        # L-Asparagine
+        'C([C@H]([NH2])C(=O)O)C(=O)N',
+        # L-Glutamine
+        'C(CC(=O)N)[C@H]([NH2])C(=O)O',
+        # L-Lysine
+        'C(CCCCN)[C@H]([NH2])C(=O)O',
+        # L-Arginine
+        'C(CCCNC(=N)N)[C@H]([NH2])C(=O)O',
+        # L-Histidine
+        'C1=C(NC=N1)C[C@H]([NH2])C(=O)O',
+        # L-Aspartic acid
+        'C([C@H]([NH2])C(=O)O)C(=O)O',
+        # L-Glutamic acid
+        'C(CC(=O)O)[C@H]([NH2])C(=O)O',
+        # L-Phenylalanine
+        'C1=CC=CC=C1C[C@H]([NH2])C(=O)O',
+        # L-Tyrosine
+        'C1=CC(=CC=C1C[C@H]([NH2])C(=O)O)O',
+        # L-Tryptophan
+        'C1=CC=C2C(=C1)C(=CN2)C[C@H]([NH2])C(=O)O'
     ]
     
-    # Generate canonical SMILES for each standard amino acid
-    standard_canonical = set()
-    for s in standard_amino_smiles:
-        m = Chem.MolFromSmiles(s)
-        if m is not None:
-            canonical = Chem.MolToSmiles(m, isomericSmiles=True)
-            standard_canonical.add(canonical)
+    # Check if matches any standard amino acid core
+    for smarts in standard_amino_smarts:
+        pattern = MolFromSmarts(smarts)
+        if pattern is not None and mol.HasSubstructMatch(pattern):
+            return False, "Matches standard amino acid core"
     
-    if input_canonical in standard_canonical:
-        return False, "Standard proteinogenic amino acid"
-    else:
-        return True, "Non-standard alpha-amino acid structure"
+    # Check for zwitterionic forms of standard amino acids
+    # Example: glycine zwitterion is [NH3+]CC(=O)[O-]
+    zwitterion_pattern = MolFromSmarts('[NH3+]C([H])(C(=O)[O-])')
+    if mol.HasSubstructMatch(zwitterion_pattern):
+        return False, "Standard amino acid zwitterion"
+    
+    # If passed all checks, likely non-proteinogenic
+    return True, "Non-standard amino acid structure"
