@@ -33,12 +33,14 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
         return False, "No thioester bond (CoA linkage) found"
 
     # Check for 3-hydroxy group (hydroxy group on the third carbon of the fatty acid chain)
-    hydroxy_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OX2H])")
+    # The pattern ensures the hydroxy group is on the third carbon from the thioester bond
+    hydroxy_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OX2H])[CX4]C(=O)[SX2]")
     if not mol.HasSubstructMatch(hydroxy_pattern):
-        return False, "No 3-hydroxy group found"
+        return False, "No 3-hydroxy group found on the third carbon from the thioester bond"
 
     # Check for fatty acid chain (long carbon chain)
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    # The pattern ensures the chain is connected to the thioester bond
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
     if len(fatty_acid_matches) < 3:
         return False, "Fatty acid chain too short or missing"
@@ -48,4 +50,10 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
     if mol_wt < 500:
         return False, "Molecular weight too low for 3-hydroxy fatty acyl-CoA"
 
-    return True, "Contains thioester bond, 3-hydroxy group, and fatty acid chain"
+    # Additional check to ensure the molecule is a 3-hydroxy fatty acyl-CoA
+    # The pattern ensures the 3-hydroxy group is on the third carbon of the fatty acid chain
+    specific_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4]([OX2H])[CX4]C(=O)[SX2]")
+    if not mol.HasSubstructMatch(specific_pattern):
+        return False, "Molecule does not match the specific pattern for 3-hydroxy fatty acyl-CoA"
+
+    return True, "Contains thioester bond, 3-hydroxy group on the third carbon, and fatty acid chain"
