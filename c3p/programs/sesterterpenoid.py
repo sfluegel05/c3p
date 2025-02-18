@@ -21,40 +21,40 @@ def is_sesterterpenoid(smiles: str):
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
-
+        return False, "Invalid SMILES string."
+    
     # Count carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
     # Widely allow for structural variability in sesterterpenoids
     if c_count < 20 or c_count > 40:
-        return False, f"Carbon count of {c_count} is outside the expanded range typical for sesterterpenoids"
+        return False, f"Carbon count of {c_count} is outside the expanded range typical for sesterterpenoids."
 
     # Check for rings; sesterterpenoids frequently have multiple rings
     ring_count = mol.GetRingInfo().NumRings()
     if ring_count < 1:
-        return False, "Contains less than 1 ring, uncommon for sesterterpenoids"
+        return False, "Contains less than 1 ring, uncommon for sesterterpenoids."
 
     # Check for modified isoprene-like structures or large frameworks
-    modified_structure_count = 0
     isoprene_pattern = Chem.MolFromSmarts("C=C(C)C")
-    for match in mol.GetSubstructMatches(isoprene_pattern):
-        modified_structure_count += 1
+    modified_structure_count = len(mol.GetSubstructMatches(isoprene_pattern))
 
     if modified_structure_count < 2:
-        return False, "Lacks enough recognized isoprene-like structural units for sesterterpenoids"
+        return False, "Lacks enough recognized isoprene-like structural units for sesterterpenoids."
 
-    # Look for specific terpenoid-like motifs: cyclohexane or cyclopentane units
-    cyclic_motif_pattern = Chem.MolFromSmarts("C1CCCCC1 | C1CCCC1")
-    if len(mol.GetSubstructMatches(cyclic_motif_pattern)) < 1:
-        return False, "Missing key cyclic motifs common in terpenoids"
+    # Check cyclic motifs separately
+    cyclohexane_pattern = Chem.MolFromSmarts("C1CCCCC1")
+    cyclopentane_pattern = Chem.MolFromSmarts("C1CCCC1")
+
+    if len(mol.GetSubstructMatches(cyclohexane_pattern)) < 1 and len(mol.GetSubstructMatches(cyclopentane_pattern)) < 1:
+        return False, "Missing key cyclic motifs common in terpenoids."
 
     # Functional group diversity; check for common sesterterpenoid traits
-    oxygen_pattern = Chem.MolFromSmarts("[OH]")
+    oxygen_pattern = Chem.MolFromSmarts("[OX2H]")
     oxygen_matches = len(mol.GetSubstructMatches(oxygen_pattern))
     
     if oxygen_matches == 0:
-        return False, "No hydroxyl groups which are often present in sesterterpenoid moieties"
+        return False, "No hydroxyl groups which are often present in sesterterpenoid moieties."
 
     # If all checks are satisfied, classify as sesterterpenoid
     return True, "Molecule exhibits a modified terpenoid backbone with requisite structural diversity typical of a sesterterpenoid."
