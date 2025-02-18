@@ -10,7 +10,7 @@ from rdkit.Chem import AllChem
 def is_phosphatidylinositol_phosphate(smiles: str):
     """
     Determines if a molecule is a phosphatidylinositol phosphate based on its SMILES.
-    These molecules have a glycerol backbone with two fatty acids, a phosphate group,
+    These molecules have a glycerol backbone with two fatty acid esters, a phosphate group,
     and a myo-inositol ring with at least one phosphate group.
 
     Args:
@@ -24,37 +24,41 @@ def is_phosphatidylinositol_phosphate(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for glycerol backbone with two ester groups and one phosphate
-    # Glycerol pattern: C-O-C(=O) (two esters) and C-O-P (phosphate)
+    # Improved glycerol pattern: three carbons with two esters and one phosphate
+    # Allows any chain configuration and stereochemistry
     glycerol_pattern = Chem.MolFromSmarts(
-        "[CH2]OC(=O)[!O][CH](OC(=O)[!O])[CH2]OP(=O)([OX2])[OX2]"
+        "[CH2]OC(=O)-[CH](-OC(=O)-)-[CH2]OP(=O)(O)"
     )
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone with two esters and phosphate not found"
 
-    # Find myo-inositol ring (six-membered carbon ring with multiple hydroxyls)
-    inositol_rings = []
-    for ring in Chem.GetSymmSSSR(mol):
-        if len(ring) == 6 and all(mol.GetAtomWithIdx(i).GetAtomicNum() == 6 for i in ring):
-            inositol_rings.append(ring)
-    if not inositol_rings:
-        return False, "No inositol ring found"
+    # Find phosphate connected to glycerol
+    phosphate_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[CH2]OP(=O)(O)"))
+    if not phosphate_matches:
+        return False, "No phosphate group on glycerol"
 
-    # Check for at least one phosphate group attached to inositol ring
-    phosphate_pattern = Chem.MolFromSmarts("[C][OX2]P(=O)([OX2])[OX2]")
-    phosphate_found = any(mol.HasSubstructMatch(phosphate_pattern) for _ in inositol_rings)
-    if not phosphate_found:
-        return False, "Inositol lacks phosphate groups"
+    # Track inositol connection through phosphate oxygen
+    for p_match in phosphate_matches:
+        p_atom = mol.GetAtomWithIdx(p_match[2])  # P atom in CH2-OP group
+        # Find oxygen connecting to inositol
+        for o_atom in p_atom.GetNeighbors():
+            if o_atom.GetAtomicNum() == 8 and o_atom.GetDegree() == 2:
+                # Follow connection to inositol ring
+                inositol_atom = next((a for a in o_atom.GetNeighbors() if a.GetIdx() != p_match[2]), None)
+                if inositol_atom and inositol_atom.GetAtomicNum() == 6:
+                    # Check if part of a six-membered carbon ring
+                    ring_info = mol.GetRingInfo()
+                    for ring in ring_info.AtomRings():
+                        if len(ring) == 6 and inositol_atom.GetIdx() in ring:
+                            # Verify inositol has at least one phosphate group (not the connecting one)
+                            for atom_idx in ring:
+                                atom = mol.GetAtomWithIdx(atom_idx)
+                                for bond in atom.GetBonds():
+                                    if bond.GetBondType() == Chem.BondType.SINGLE:
+                                        neighbor = bond.GetOtherAtom(atom)
+                                        if neighbor.GetAtomicNum() == 15:  # Phosphorus
+                                            # Check for phosphate group (P=O)
+                                            if any(b.GetBondType() == Chem.BondType.DOUBLE for b in neighbor.GetBonds()):
+                                                return True, "Contains glycerol backbone with two esters, phosphate-linked myo-inositol with phosphates"
 
-    # Verify minimum hydroxyl count on inositol (at least 4)
-    for ring in inositol_rings:
-        hydroxyl_count = 0
-        for atom_idx in ring:
-            atom = mol.GetAtomWithIdx(atom_idx)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() >= 1:
-                    hydroxyl_count += 1
-        if hydroxyl_count >= 4:
-            return True, "Contains glycerol backbone with two esters, phosphate-linked myo-inositol with phosphates"
-
-    return False, "Inositol lacks sufficient hydroxyl groups"
+    return False, "No phosphorylated myo-inositol ring found"
