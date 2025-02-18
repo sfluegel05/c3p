@@ -1,215 +1,70 @@
 """
 Classifies: CHEBI:87658 decanoate ester
 """
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1,2-didecanoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1-hexadecanoyl-2-decanoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1,3-didecanoylglycerol: SMILES: CCCCCCCCCC(=O)OCCOC(=O)CCCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-octadecanoyl-2-decanoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphocholine: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoserine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC(N)C(=O)O)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoserine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoserine: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoserine: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoserine: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoserine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoserine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoserine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoglycerol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H](O)CO)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoglycerol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H](O)CO)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoglycerol: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H](O)CO)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoglycerol: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H](O)CO)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoglycerol: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H](O)CO)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoglycerol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H](O)CO)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoglycerol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H](O)CO)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoglycerol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OC[C@H](O)CO)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoinositol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoinositol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoinositol: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoinositol: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoinositol: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoinositol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoinositol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoinositol: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@H]1O)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphatidic acid: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphatidic acid: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphatidic acid: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphatidic acid: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphatidic acid: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphatidic acid: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphatidic acid: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphatidic acid: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCC(=O)OC[C@H](COP(O)(O)=O)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phospho-L-serine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC(N)C(=O)O)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phospho-L-serine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phospho-L-serine: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phospho-L-serine: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phospho-L-serine: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phospho-L-serine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phospho-L-serine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phospho-L-serine: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-methyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-methyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-methyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-methyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-methyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-methyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-methyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-methyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N,N-dimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N,N-dimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N,N-dimethyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N,N-dimethyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N,N-dimethyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N,N-dimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N,N-dimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N,N-dimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N,N,N-trimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N,N,N-trimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N,N,N-trimethyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N,N,N-trimethyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N,N,N-trimethyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N,N,N-trimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N,N,N-trimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N,N,N-trimethyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCC[N+](C)(C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-acetyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C)=O)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-acetyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C)=O)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-acetyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-acetyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-acetyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-acetyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C)=O)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-acetyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C)=O)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-acetyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C)=O)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-lactoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C(=O)CO)C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-lactoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C(=O)CO)C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-lactoyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C(=O)CO)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-lactoyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C(=O)CO)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-lactoyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C(=O)CO)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-lactoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C(=O)CO)C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-lactoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C(=O)CO)C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-lactoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(C(=O)CO)C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-palmitoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-palmitoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-palmitoyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-palmitoyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-palmitoyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-palmitoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCC)=O)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-palmitoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-palmitoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-stearoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-stearoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-stearoyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-stearoyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-stearoyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-stearoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCCCC)=O)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-stearoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-stearoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-arachidonoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCC\C=C/C\C=C/C\C=C/C\C=C/CC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-arachidonoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCC\C=C/C\C=C/C\C=C/C\C=C/CC)=O)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-arachidonoyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCC\C=C/C\C=C/C\C=C/C\C=C/CC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-arachidonoyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCC\C=C/C\C=C/C\C=C/C\C=C/CC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-arachidonoyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCC\C=C/C\C=C/C\C=C/C\C=C/CC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-arachidonoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCC\C=C/C\C=C/C\C=C/C\C=C/CC)=O)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-arachidonoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCC\C=C/C\C=C/C\C=C/C\C=C/CC)=O)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-arachidonoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCC\C=C/C\C=C/C\C=C/C\C=C/CC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-linoleoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCC\C=C/C\C=C/CCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-linoleoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCC\C=C/C\C=C/CCCCCCCC)=O)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-linoleoyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCC\C=C/C\C=C/CCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-linoleoyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCC\C=C/C\C=C/CCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-linoleoyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCC\C=C/C\C=C/CCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-linoleoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCC\C=C/C\C=C/CCCCCCCC)=O)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-linoleoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCC\C=C/C\C=C/CCCCCCCC)=O)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-linoleoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCC\C=C/C\C=C/CCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-myristoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-myristoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-myristoyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-myristoyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-myristoyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-myristoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCC)=O)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-myristoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCC)=O)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-myristoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-decanoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-decanoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCC)=O)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-decanoyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-decanoyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-decanoyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-decanoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCC)=O)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-decanoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCC)=O)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-decanoyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-lauroyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-lauroyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCC)=O)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-lauroyl: SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-lauroyl: SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-lauroyl: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCC)=O)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-lauroyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCC)=O)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-lauroyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCC)=O)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-lauroyl: SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCCCCCCCCC)=O)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-(2-hydroxyethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCO)C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-(2-hydroxyethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCO)C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-(2-hydroxyethyl): SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCO)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-(2-hydroxyethyl): SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCO)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-(2-hydroxyethyl): SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCO)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-(2-hydroxyethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCO)C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-(2-hydroxyethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCO)C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-(2-hydroxyethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCO)C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-(carboxymethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CC(=O)O)C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-(carboxymethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CC(=O)O)C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-(carboxymethyl): SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CC(=O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-(carboxymethyl): SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CC(=O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-(carboxymethyl): SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CC(=O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-(carboxymethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CC(=O)O)C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-(carboxymethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CC(=O)O)C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-(carboxymethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CC(=O)O)C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-(phosphonomethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CP(=O)(O)O)C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-(phosphonomethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CP(=O)(O)O)C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-(phosphonomethyl): SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CP(=O)(O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-(phosphonomethyl): SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CP(=O)(O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-(phosphonomethyl): SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CP(=O)(O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-(phosphonomethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CP(=O)(O)O)C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-(phosphonomethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CP(=O)(O)O)C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-(phosphonomethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CP(=O)(O)O)C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-(sulfoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCS(=O)(=O)O)C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-(sulfoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCS(=O)(=O)O)C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-(sulfoethyl): SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCS(=O)(=O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-(sulfoethyl): SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCS(=O)(=O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-(sulfoethyl): SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCS(=O)(=O)O)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-(sulfoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCS(=O)(=O)O)C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-(sulfoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCS(=O)(=O)O)C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-(sulfoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCS(=O)(=O)O)C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-(methylsulfonyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(S(=O)(=O)C)C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-(methylsulfonyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(S(=O)(=O)C)C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-(methylsulfonyl): SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(S(=O)(=O)C)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-(methylsulfonyl): SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(S(=O)(=O)C)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-(methylsulfonyl): SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(S(=O)(=O)C)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-(methylsulfonyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(S(=O)(=O)C)C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-(methylsulfonyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(S(=O)(=O)C)C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-(methylsulfonyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(S(=O)(=O)C)C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 1-decanoyl-2-oleoyl-sn-glycero-3-phosphoethanolamine-N-(2-aminoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCN)C)C)OC(=O)CCCCCCC\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoyl-sn-glycero-3-phosphoethanolamine-N-(2-aminoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCN)C)C)OC(=O)CCCCCCCCCCCCCCCC
- - 1-decanoyl-2-lauroyl-sn-glycero-3-phosphoethanolamine-N-(2-aminoethyl): SMILES: CCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCN)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-myristoyl-sn-glycero-3-phosphoethanolamine-N-(2-aminoethyl): SMILES: CCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCN)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-stearoyl-sn-glycero-3-phosphoethanolamine-N-(2-aminoethyl): SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCN)C)C)OC(=O)CCCCCCCCC
- - 1-decanoyl-2-arachidonoyl-sn-glycero-3-phosphoethanolamine-N-(2-aminoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCN)C)C)OC(=O)CCCC\C=C/C\C=C/C\C=C/C\C=C/CC
- - 1-decanoyl-2-linoleoyl-sn-glycero-3-phosphoethanolamine-N-(2-aminoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCN)C)C)OC(=O)CCCCCC\C=C/C\C=C/CCCCCCCC
- - 1-decanoyl-2-palmitoleoyl-sn-glycero-3-phosphoethanolamine-N-(2-aminoethyl): SMILES: CCCCCCCCCC(=O)OC[C@H](COP([O-])(=O)OCCN(C(CCN)C)C)OC(=O)CCCCCCC\C=C/CCCCCC
- - 
+"""
+Classifies: CHEBI:134741 decanoate ester
+"""
+from rdkit import Chem
+
+def is_decanoate_ester(smiles: str):
+    """
+    Determines if a molecule is a decanoate ester based on its SMILES string.
+    A decanoate ester is formed by the condensation of decanoic acid with an alcohol/phenol.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a decanoate ester, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # SMARTS pattern for ester group: [OX2][CX3](=[OX1])
+    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    
+    if not ester_matches:
+        return False, "No ester group found"
+    
+    # Check each ester group for decanoate (10-carbon chain on the acid side)
+    for match in ester_matches:
+        # Get the carbonyl carbon (index 1 in the SMARTS pattern)
+        carbonyl_carbon = match[1]
+        
+        # Traverse the chain attached to the carbonyl carbon
+        # Exclude the oxygen and the rest of the ester
+        chain = []
+        stack = [(carbonyl_carbon, 0)]  # (atom index, chain length)
+        visited = set()
+        
+        while stack:
+            atom_idx, length = stack.pop()
+            if atom_idx in visited:
+                continue
+            visited.add(atom_idx)
+            atom = mol.GetAtomWithIdx(atom_idx)
+            
+            # Stop at branching or non-carbon atoms
+            if atom.GetDegree() > 2 or atom.GetAtomicNum() != 6:
+                continue
+            
+            # Add neighbors (excluding the carbonyl oxygen)
+            for neighbor in atom.GetNeighbors():
+                neighbor_idx = neighbor.GetIdx()
+                if neighbor_idx == match[0]:  # Skip the ester oxygen
+                    continue
+                if neighbor.GetAtomicNum() == 6:
+                    stack.append((neighbor_idx, length + 1))
+            
+            chain.append(length)
+        
+        max_chain_length = max(chain) if chain else 0
+        
+        # Check if the chain length is 9 (since the carbonyl is the 10th carbon)
+        if max_chain_length >= 9:
+            return True, "Contains a decanoate ester group"
+    
+    return False, "No decanoate chain found in ester groups"
