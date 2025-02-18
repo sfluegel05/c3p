@@ -1,178 +1,53 @@
 """
 Classifies: CHEBI:26195 polyphenol
 """
- - 3-O-caffeoylshikimic acid: SMILES: O=C(O)[C@@H](O)C1=CC(O[C@@H](O)[C@H](O)C1)C(=O)\C=C\c1ccc(O)c(O)c1
- - 3,5-dihydroxy-2-(4-hydroxybenzoyloxy)benzoic acid: SMILES: O=C(O)c1cc(O)c(O)c(c1)OC(=O)c1ccccc1O
- - 3-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](O)[C@@H](CO)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](O)[C@@H](CO)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](O)[C@@H](CO)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](CO)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](CO)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](CO)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](CO)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](O)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](O)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](O)[C@@H](COC)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](O)[C@@H](COC)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4,5-di-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4,5-di-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4,5-di-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4,5-di-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-methyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC(=O)c2cc(OC)c(OC)cc2/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-methyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC(=O)c2cc(OC)c(OC)cc2/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-methyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC(=O)c2cc(OC)c(OC)cc2/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-methyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC(=O)c2cc(OC)c(OC)cc2/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-methyl-5-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC(=O)c2cc(OC)c(cc2)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-methyl-5-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC(=O)c2cc(OC)c(cc2)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-methyl-5-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC(=O)c2cc(OC)c(cc2)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-methyl-5-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC)[C@@H](COC(=O)c2cc(OC)c(cc2)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-methylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-feruloylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-sinapoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-caffeoylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/G)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-feruloyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-feruloyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-feruloyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-feruloyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-sinapoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-caffeoyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-feruloyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-feruloyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-feruloyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-feruloyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3cc(OC)c(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-sinapoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3cc(OC)c(OC)cc3/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-feruloyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-feruloyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-caffeoyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-caffeoyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-caffeoyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-caffeoyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-p-coumaroyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-p-coumaroyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-p-coumaroyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-p-coumaroyl-5-O-caffeoyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2ccc(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-sinapoyl-5-O-p-coumaroyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-sinapoyl-5-O-p-coumaroyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-feruloyl-4-O-sinapoyl-5-O-p-coumaroyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(cc1)/C=C/C
- - 3-O-sinapoyl-4-O-sinapoyl-5-O-p-coumaroyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(OC)cc2/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1cc(OC)c(OC)cc1/C=C/C
- - 3-O-caffeoyl-4-O-feruloyl-5-O-p-coumaroyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]1[C@H](O)C[C@H](OC(=O)c2cc(OC)c(cc2)/C=C/C)[C@@H](COC(=O)c3ccc(cc3)/C=C/C)O1)c1ccc(cc1)/C=C/C
- - 3-O-p-coumaroyl-4-O-feruloyl-5-O-p-coumaroyl-p-coumaroyl-p-coumaroylquinic acid: SMILES: O=C(O[C@@H]
+"""
+Classifies: CHEBI:26195 polyphenol
+"""
+from rdkit import Chem
+
+def is_polyphenol(smiles: str):
+    """
+    Determines if a molecule is a polyphenol based on its SMILES string.
+    A polyphenol has at least two benzene rings, each substituted with at least one hydroxyl group.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a polyphenol, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Find all benzene rings (6-membered aromatic rings)
+    benzene_rings = []
+    rings = mol.GetRingInfo().AtomRings()
+    for ring in rings:
+        if len(ring) == 6:
+            is_aromatic = all(mol.GetAtomWithIdx(atom).GetIsAromatic() for atom in ring)
+            if is_aromatic:
+                benzene_rings.append(ring)
+
+    if len(benzene_rings) < 2:
+        return False, f"Found {len(benzene_rings)} benzene rings, need at least 2"
+
+    # Find hydroxyl groups attached to aromatic carbons
+    hydroxyl_pattern = Chem.MolFromSmarts('[c]-[OH1]')  # Matches -OH on aromatic carbons
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    hydroxyl_carbons = {match[0] for match in hydroxyl_matches}
+
+    # Check each benzene ring for at least one hydroxyl substituent
+    valid_rings = 0
+    for ring in benzene_rings:
+        for atom in ring:
+            if atom in hydroxyl_carbons:
+                valid_rings += 1
+                break  # Only one hydroxyl needed per ring
+
+    if valid_rings >= 2:
+        return True, f"Found {valid_rings} benzene rings with hydroxyl groups"
+    else:
+        return False, f"Only {valid_rings} benzene rings with hydroxyl groups"
