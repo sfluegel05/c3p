@@ -23,14 +23,14 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Verify CoA core structure components
+    # More flexible CoA core pattern (ignores stereochemistry and exact connectivity)
     coa_core = Chem.MolFromSmarts(
-        "[NH]C(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OCC1OC([C@H]([C@@H]1O)O)n1cnc2c(N)ncnc12"
+        "[NH]C(=O)CCNC(=O)C(O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OCC1OC(C(O)C1O)n1cnc2c(N)ncnc12"
     )
     if not mol.HasSubstructMatch(coa_core):
         return False, "Missing CoA core structure"
 
-    # Check for thioester-linked acyl group (S-C(=O)-R)
+    # Find thioester group (S-C(=O)-R)
     thioester = Chem.MolFromSmarts("[SX2][CX3](=O)")
     thioester_matches = mol.GetSubstructMatches(thioester)
     if not thioester_matches:
@@ -39,49 +39,39 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     # Get the sulfur and carbonyl atoms from the first thioester match
     sulfur_idx = thioester_matches[0][0]
     carbonyl_idx = thioester_matches[0][1]
-    sulfur = mol.GetAtomWithIdx(sulfur_idx)
-    carbonyl = mol.GetAtomWithIdx(carbonyl_idx)
+    carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
 
-    # Traverse the acyl chain starting from the carbonyl carbon
-    chain_carbons = set()
-    stack = [carbonyl]
-    visited = set()
+    # Function to calculate longest carbon chain from starting atom
+    def find_longest_chain(atom, visited=None):
+        if visited is None:
+            visited = set()
+        if atom.GetIdx() in visited or atom.GetAtomicNum() != 6:
+            return 0
+        visited.add(atom.GetIdx())
+        max_length = 0
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() == sulfur_idx:  # Skip back to CoA
+                continue
+            # Skip oxygen/nitrogen neighbors (stay in hydrocarbon chain)
+            if neighbor.GetAtomicNum() not in {6, 1}:
+                continue
+            # Avoid double-counting with bond type check
+            bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+            if bond.GetBondType() == Chem.BondType.DOUBLE and neighbor.GetAtomicNum() != 6:
+                continue
+            length = find_longest_chain(neighbor, visited.copy())
+            if length > max_length:
+                max_length = length
+        return 1 + max_length
 
-    while stack:
-        current = stack.pop()
-        if current.GetIdx() in visited:
-            continue
-        visited.add(current.GetIdx())
-        if current.GetAtomicNum() != 6:  # Only consider carbon atoms
-            continue
-        chain_carbons.add(current.GetIdx())
-        # Traverse all neighbors except sulfur and carbonyl oxygen
-        for neighbor in current.GetNeighbors():
-            neighbor_idx = neighbor.GetIdx()
-            # Skip sulfur and carbonyl oxygen
-            if neighbor_idx == sulfur.GetIdx():
-                continue
-            # Skip oxygen double-bonded to carbonyl (part of thioester)
-            if neighbor.GetAtomicNum() == 8 and mol.GetBondBetweenAtoms(current.GetIdx(), neighbor_idx).GetBondType() == Chem.BondType.DOUBLE:
-                continue
-            # Skip hydrogens
-            if neighbor.GetAtomicNum() == 1:
-                continue
-            if neighbor_idx not in visited:
-                stack.append(neighbor)
-
-    chain_length = len(chain_carbons)
+    # Calculate chain length starting from carbonyl carbon (subtract 1 to exclude carbonyl itself)
+    chain_length = find_longest_chain(carbonyl_atom) - 1
     if not (6 <= chain_length <= 12):
-        return False, f"Acyl chain length {chain_length} not in medium range (6-12)"
+        return False, f"Main acyl chain length {chain_length} not in medium range (6-12)"
 
-    # Check for four deprotonated phosphate oxygens
-    phosphate_neg = 0
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 15:  # Phosphorus
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8 and neighbor.GetFormalCharge() == -1:
-                    phosphate_neg += 1
-    if phosphate_neg != 4:
-        return False, f"Found {phosphate_neg} deprotonated phosphate oxygens, need 4"
+    # Check total molecular charge is -4
+    total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+    if total_charge != -4:
+        return False, f"Total charge {total_charge} ≠ -4"
 
     return True, "Medium-chain fatty acyl-CoA(4-) with correct structure and charge"
