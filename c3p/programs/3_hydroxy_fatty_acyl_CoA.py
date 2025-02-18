@@ -40,9 +40,9 @@ def is_3_hydroxy_fatty_acyl_CoA(smiles: str):
 
     # Check for fatty acid chain (long carbon chain)
     # The pattern ensures the chain is connected to the thioester bond
-    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
+    fatty_acid_pattern = Chem.MolFromSmarts("[CX4,CX3]~[CX4,CX3]~[CX4,CX3]~[CX4,CX3]")
     fatty_acid_matches = mol.GetSubstructMatches(fatty_acid_pattern)
-    if len(fatty_acid_matches) < 3:
+    if len(fatty_acid_matches) < 2:
         return False, "Fatty acid chain too short or missing"
 
     # Check molecular weight - 3-hydroxy fatty acyl-CoA typically >500 Da
