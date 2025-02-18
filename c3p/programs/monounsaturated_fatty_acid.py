@@ -24,38 +24,46 @@ def is_monounsaturated_fatty_acid(smiles: str):
     carboxyl_pattern = Chem.MolFromSmarts("C(=O)[O,OH]")
     if not mol.HasSubstructMatch(carboxyl_pattern):
         return False, "No carboxylic acid group found"
-
-    # Find the carbon chain connected to the carboxyl group
-    chain_pattern = Chem.MolFromSmarts("[CX4](=O)[O,OH]-[*;!H0]") # Carbon connected to carboxyl group
-    matches = mol.GetSubstructMatches(chain_pattern)
-
+    
+    # Find the carbon atoms connected to the carboxyl group
+    matches = mol.GetSubstructMatches(carboxyl_pattern)
+    
     if not matches:
-        return False, "No carbon chain attached to the carboxyl group"
-
-    # Get the first carbon atom connected to the carboxyl group
-    start_atom_index = matches[0][0]  # Get index of the carbon in the carboxyl
+        return False, "No carboxylic acid group found"
     
-    # Initialize an empty list to store the atoms in the chain
-    chain_atoms = [start_atom_index]
+    carboxyl_atom_idx = matches[0][0] #Get first atom of first match
+    carboxyl_carbon = mol.GetAtomWithIdx(carboxyl_atom_idx)
 
-    # Recursively follow the chain from the start atom
-    def find_chain(atom_index, visited_atoms, chain_atoms):
-      atom = mol.GetAtomWithIdx(atom_index)
-      neighbors = atom.GetNeighbors()
-      for neighbor in neighbors:
-        neighbor_index = neighbor.GetIdx()
-        if neighbor_index not in visited_atoms:
-            visited_atoms.add(neighbor_index)
-            bond = mol.GetBondBetweenAtoms(atom_index, neighbor_index)
-            if bond.GetBondType() == Chem.BondType.SINGLE and neighbor.GetAtomicNum() == 6:
-                  chain_atoms.append(neighbor_index)
-                  find_chain(neighbor_index,visited_atoms,chain_atoms)
+    
+    # Get the carbon connected to carboxyl group (first neighbor not oxygen)
+    first_chain_carbon = None
+    for neighbor in carboxyl_carbon.GetNeighbors():
+        if neighbor.GetAtomicNum() == 6:
+            first_chain_carbon = neighbor
+            break
 
-    visited_atoms = set([start_atom_index])
-    find_chain(start_atom_index, visited_atoms, chain_atoms)
+    if first_chain_carbon is None:
+        return False, "No carbon chain found connected to carboxyl group"
 
+    # Initialize the chain with the first carbon connected to carboxyl group
+    chain_atoms = [first_chain_carbon.GetIdx()]
+    visited_atoms = {first_chain_carbon.GetIdx()}
+    
+    
+    # Now look for chain of carbons
+    stack = [first_chain_carbon.GetIdx()]
+
+    while stack:
+        current_idx = stack.pop()
+        current_atom = mol.GetAtomWithIdx(current_idx)
+        for neighbor in current_atom.GetNeighbors():
+             if neighbor.GetAtomicNum() == 6 and mol.GetBondBetweenAtoms(current_idx, neighbor.GetIdx()).GetBondType() == Chem.BondType.SINGLE and neighbor.GetIdx() not in visited_atoms:
+                 chain_atoms.append(neighbor.GetIdx())
+                 visited_atoms.add(neighbor.GetIdx())
+                 stack.append(neighbor.GetIdx())
+                 
     chain_mol = Chem.PathToSubmol(mol, chain_atoms)
-    
+
     # Count double and triple bonds within the chain
     num_double_bonds = len(chain_mol.GetSubstructMatches(Chem.MolFromSmarts("C=C")))
     num_triple_bonds = len(chain_mol.GetSubstructMatches(Chem.MolFromSmarts("C#C")))
@@ -64,11 +72,12 @@ def is_monounsaturated_fatty_acid(smiles: str):
     if total_unsaturations != 1:
         return False, f"Molecule has {total_unsaturations} double/triple bonds in the fatty acid chain, should have exactly 1"
 
-     # Count the number of carbons in the chain
+    # Count the number of carbons in the chain
     c_count = len(chain_atoms)
 
     # Check for fatty acid chain length (at least 4 carbons in the chain, as smallest MUFA is butenoic acid)
     if c_count < 4:
-      return False, f"Carbon chain length ({c_count}) is too short for a fatty acid"
-    
+        return False, f"Carbon chain length ({c_count}) is too short for a fatty acid"
+
+
     return True, "Monounsaturated fatty acid identified"
