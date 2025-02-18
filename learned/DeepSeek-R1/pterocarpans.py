@@ -22,27 +22,26 @@ def is_pterocarpans(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Updated SMARTS pattern for benzofuro[3,2-c]chromene core without stereochemistry
-    # Matches two benzene rings fused via oxygen-containing bridges
-    pterocarpan_core = Chem.MolFromSmarts(
-        "[O]1C2C3=C(C1)C=CC=C3COC4=C2C=CC=C4"
+    # Core pattern matching the benzofuro[3,2-c]chromene skeleton
+    # Accounts for fused benzene rings with oxygen bridge and dihydro arrangement
+    core_pattern = Chem.MolFromSmarts(
+        "[#6]12[#6](:[#6]:[#6]:[#6](:[#6]:[#6]:1)-[#8]-[#6]-[#6]-1)[#8][#6](:[#6]:[#6]:[#6]:[#6]:[#6]:21)"
     )
     
-    # Alternative pattern accounting for aromatic bonds and possible substitutions
+    # Alternative pattern using aromatic notation for better matching
     alt_core = Chem.MolFromSmarts(
-        "c12c(ccc3c1OCC1c3cccc1)CO2"
+        "c12c3c(ccc4c3OCCc3c4cccc3)COc1cccc2"
     )
     
     # Check for core structure presence
-    if mol.HasSubstructMatch(pterocarpan_core) or mol.HasSubstructMatch(alt_core):
+    if mol.HasSubstructMatch(core_pattern) or mol.HasSubstructMatch(alt_core):
         return True, "Contains benzofurochromene skeleton"
     
-    # Additional check for fused ring system with oxygen bridges
-    # This pattern looks for the fused benzofuro[3,2-c]chromene system
-    fused_core = Chem.MolFromSmarts(
-        "[O]1C2C3=C1C=CC=C3C4=C2COC=C4"
+    # Final check with relaxed pattern focusing on oxygen bridges
+    relaxed_core = Chem.MolFromSmarts(
+        "c1ccc2c3c1OCCc1c3cccc1CO2"
     )
-    if mol.HasSubstructMatch(fused_core):
+    if mol.HasSubstructMatch(relaxed_core):
         return True, "Contains fused benzofurochromene structure"
     
     return False, "Lacks pterocarpan core structure"
