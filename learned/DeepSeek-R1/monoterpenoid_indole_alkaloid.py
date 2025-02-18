@@ -5,12 +5,12 @@ Classifies: CHEBI:65323 monoterpenoid indole alkaloid
 Classifies: CHEBI:65312 monoterpenoid indole alkaloid
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors, rdMolDescriptors
+from rdkit.Chem import Descriptors
 
 def is_monoterpenoid_indole_alkaloid(smiles: str):
     """
     Determines if a molecule is a monoterpenoid indole alkaloid based on its SMILES string.
-    Must contain an indole moiety and structural features from a monoterpenoid (diisoprenoid).
+    The molecule should contain an indole moiety and structural features from a monoterpenoid (diisoprenoid).
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,32 +23,24 @@ def is_monoterpenoid_indole_alkaloid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Corrected indole detection: fused benzene and pyrrole (nH in 5-membered ring)
-    indole_pattern = Chem.MolFromSmarts("[nH]1ccc2ccccc12")
+    # Check for indole substructure (nH in the five-membered ring)
+    indole_pattern = Chem.MolFromSmarts("[nH]1c2ccccc2cc1")
     if not mol.HasSubstructMatch(indole_pattern):
-        return False, "No indole moiety detected"
+        return False, "No indole moiety found"
     
-    # Check for monoterpenoid features (approximate C10 skeleton with branching)
-    # Look for at least two methyl groups attached to non-terminal carbons as proxy for isoprenoid
-    methyl_branch = Chem.MolFromSmarts("[CH3;!$(C[OH,O,NH1,NH2])]")
-    methyl_matches = len(mol.GetSubstructMatches(methyl_branch))
-    if methyl_matches < 2:
-        return False, "Insufficient methyl groups for monoterpenoid"
-    
-    # Check for typical linkage between indole and terpenoid (e.g., C-C bridge)
-    # Pattern matches a chain of at least 3 carbons connecting two rings
-    linker_pattern = Chem.MolFromSmarts("[*]!@[CX4]!@[CX4]!@[CX4]!@[*]")
-    if not mol.HasSubstructMatch(linker_pattern):
-        return False, "Missing indole-terpenoid linkage"
-    
-    # Adjusted carbon count (monoterpene C10 + indole C9 ~19, allow higher)
+    # Check for at least 20 carbons (approximate for monoterpenoid + indole)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if c_count < 19:
-        return False, f"Insufficient carbons ({c_count}) for monoterpenoid indole alkaloid"
+    if c_count < 20:
+        return False, f"Only {c_count} carbons, expected >=20"
     
-    # Check for nitrogen presence (alkaloid characteristic)
-    n_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7)
-    if n_count < 1:
-        return False, "No nitrogen atoms (not an alkaloid)"
+    # Check for multiple rings (indole + terpenoid-derived structure)
+    sssr = Chem.GetSSSR(mol)
+    if len(sssr) < 2:
+        return False, f"Only {len(sssr)} rings, expected multiple"
     
-    return True, "Contains indole moiety with monoterpenoid features and alkaloid characteristics"
+    # Check for at least one oxygen (common in terpenoid parts)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 1:
+        return False, "No oxygen atoms found"
+    
+    return True, "Contains indole moiety with terpenoid features"
