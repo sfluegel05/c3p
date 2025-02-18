@@ -24,34 +24,35 @@ def is_proanthocyanidin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Basic flavonoid check - look for characteristic C6-C3-C6 skeleton
-    flavonoid_pattern = Chem.MolFromSmarts("[c]1[c][c][c]([OH])[c][c]1-[CX4]-[CX4]-[c]1[c][c][c]([OH])[c][c]1")
-    if not mol.HasSubstructMatch(flavonoid_pattern):
-        return False, "No basic flavonoid skeleton found"
+    # Basic flavan unit check - look for benzopyran structure with hydroxyls
+    # Flavan pattern: benzene ring (A) connected to dihydropyran (C) with oxygen
+    flavan_core = Chem.MolFromSmarts("[c]1[c][c][c]([OH])[c][c]1-C1-C(-O-)C-C-C1")
+    if not mol.HasSubstructMatch(flavan_core):
+        return False, "No flavan core structure found"
 
-    # Look for multiple flavan units (at least 2)
-    # Flavan unit pattern: hydroxyflavan core with C-ring (pyran oxygen)
+    # Find all flavan units (benzopyran with at least two hydroxyls)
+    # A-ring: at least two hydroxyls; C-ring: pyran oxygen
     flavan_pattern = Chem.MolFromSmarts(
-        "[OH]c1ccc(cc1)-[CX4]1[C@H](O)[CX4][CX4][CX4]O1")
+        "[OH]c1c([OH])ccc2C(C)(O)CCCC12")
     flavan_matches = mol.GetSubstructMatches(flavan_pattern)
     
     if len(flavan_matches) < 2:
         return False, f"Found {len(flavan_matches)} flavan units, need at least 2"
 
-    # Check for interflavan linkages (C-C bonds between units)
-    # Look for carbons connecting aromatic systems through single bonds
-    linkage_pattern = Chem.MolFromSmarts("[c]-[CX4;H1,H2]-[CX4;H1,H2]-[c]")
+    # Check for interflavan linkages (direct C-C bonds between aromatic carbons)
+    # Look for two aromatic carbons connected by a single bond (C4-C8 type)
+    linkage_pattern = Chem.MolFromSmarts("[c]-[CX4;H0]-[c]")
     if not mol.HasSubstructMatch(linkage_pattern):
-        return False, "No interflavan linkage pattern found"
+        return False, "No interflavan C-C linkages detected"
 
-    # Verify oligomer characteristics through molecular weight
+    # Verify oligomer characteristics through molecular weight (dimers start ~500)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 500:
+    if mol_wt < 400:
         return False, f"Molecular weight {mol_wt:.1f} too low for oligomer"
 
-    # Count hydroxyl groups - proanthocyanidins typically have many -OH
-    hydroxyl_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1)
-    if hydroxyl_count < 4:
-        return False, f"Only {hydroxyl_count} hydroxyl groups, expected ≥4"
+    # Check for presence of galloyl groups (common but not mandatory)
+    galloyl = Chem.MolFromSmarts("c1c(O)c(O)c(O)cc1C(=O)O")
+    if galloyl and mol.HasSubstructMatch(galloyl):
+        return True, "Contains flavan oligomer with galloyl group"
 
-    return True, "Contains multiple flavan units with interflavan linkages and characteristic hydroxylation"
+    return True, "Contains multiple flavan units with C-C interflavan linkages"
