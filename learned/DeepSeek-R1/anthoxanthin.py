@@ -1,305 +1,79 @@
 """
 Classifies: CHEBI:192499 anthoxanthin
 """
- - 6-C-beta-D-glucopyranosyl-8-C-beta-D-glucopyranosylluteolin: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O[C@H]2[C@H](O)[C@@H](O)[C@H](O)[C@@H](CO)O2)O[C@H]1CO[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1Oc1c(O)ccc2c1oc(cc2=O)-c1ccc(O)c(O)c1
- - 3,5,7,3',4'-pentahydroxyflavone 3-O-beta-D-glucuronide: SMILES: OC1C(O)C(OC2C(OC3=CC(=O)C4=C(O)C(O)=C(O)C=C4C3=O)C(O)C(O)C2O)C(O)C1O
- - quercetin 3-O-[alpha-L-rhamnopyranosyl-(1->6)-beta-D-glucopyranoside]: SMILES: C[C@@H]1O[C@H](O[C@H]2[C@H](O)[C@H](O)[C@@H](CO)O[C@H]2Oc2cc(O)c3c(c2)oc(-c2ccc(O)c(O)c2)c(O)c3=O)[C@H](O)[C@H](O)[C@H]1O
- - 5,7,3',4'-tetrahydroxy-3-methoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1ccc(O)c(O)c1
- - 3,5,7-trihydroxyflavone 3-O-beta-D-glucoside: SMILES: OC1C(OC2C(OC3=CC(=O)C4=C(O)C=C(O)C=C4C3=O)C(O)C(O)C2O)COC1O
- - 3-O-methylquercetin: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1ccc(O)c(O)c1
- - 5,7,4'-trihydroxy-3',5'-dimethoxyflavone: SMILES: COc1cc(ccc1O)-c1oc2cc(O)cc(O)c2c(=O)c1OC
- - 7-O-methylapigenin: SMILES: COc1cc2oc(cc(=O)c2c(O)c1)c1ccc(O)cc1
- - 3-O-methylkaempferol: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1ccc(O)cc1
- - 3,7-di-O-methylquercetin: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1ccc(O)c(OC)c1
- - 5,7-dihydroxy-3,6,4'-trimethoxyflavone: SMILES: COc1cc(ccc1OC)-c1oc2cc(O)cc(O)c2c(=O)c1OC
- - 3,5,7-trihydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1ccccc1)c(O)c2=O
- - 5,7,4'-trihydroxy-3,6-dimethoxyflavone: SMILES: COc1cc(OC)c2c(c1)oc(-c1ccc(O)cc1)c(=O)c2O
- - 3,5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4'-tetrahydroxy-3-methoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(O)c(O)cc1
- - 5,7,3',4'-tetrahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,4'-trihydroxy-3,3'-dimethoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(OC)c(O)cc1
- - 5,7,4'-trihydroxy-3,5'-dimethoxyflavone: SMILES: COc1cc(ccc1O)-c1oc2cc(O)cc(O)c2c(=O)c1OC
- - 5,7,3',4',5'-pentahydroxy-3-methoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(O)c(O)cc1
- - 5,7,3',4',5'-hexahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4'-tetrahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentahydroxy-3-methoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(O)c(O)cc1
- - 5,7,3',4'-tetrahydroxy-3-methoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(O)c(O)cc1
- - 5,7,4'-trihydroxy-3,3',5'-trimethoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(OC)c(O)cc1
- - 5,7,3',4',5'-hexahydroxy-3-methoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(O)c(O)cc1
- - 5,7,4'-trihydroxy-3,5',3'-trimethoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(OC)c(O)cc1
- - 5,7,3',4',5'-pentahydroxy-3,3'-dimethoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(OC)c(O)cc1
- - 5,7,3',4',5'-hexahydroxy-3,3'-dimethoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(OC)c(O)cc1
- - 5,7,3',4',5'-heptahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexahydroxy-3,3',4'-trimethoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(OC)c(O)cc1
- - 5,7,3',4',5'-heptahydroxy-3-methoxyflavone: SMILES: COc1c(oc2cc(O)cc(O)c2c1=O)-c1cc(O)c(O)cc1
- - 5,7,3',4',5'-octahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-decahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-undecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dodecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tridecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetradecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-eicosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heneicosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-docosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tricosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetracosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-triacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hentriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dotriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tritriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetratriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-doetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tritetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetratetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henpentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dopentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tripentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henhexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dohexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trihexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-doheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-triheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetraheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dooctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trioctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetraoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hennonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dononacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trinnonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrinnonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henhectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dohectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trihectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-undecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dodecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tridecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetradecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-eicosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heneicosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-docosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tricosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetracosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-triacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hentriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dotriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tritriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetratriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-doetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tritetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetratetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henpentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dopentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tripentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henhexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dohexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trihexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-doheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-triheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetraheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dooctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trioctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetraoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonaoctacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hennonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dononacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trinnonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrinnonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonannonacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henhectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dohectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trihectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonahectahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-undecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dodecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tridecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetradecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonadecahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-eicosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heneicosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-docosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tricosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetracosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonacosahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-triacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hentriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dotriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tritriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetratriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonatriacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-doetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tritetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetratetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonatetracontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henpentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dopentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tripentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonapentacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henhexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-dohexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-trihexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetrahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonahexacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-henheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-doheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-triheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-tetraheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-pentaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-hexaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-heptaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-octaheptacontahydroxyflavone: SMILES: Oc1cc(O)c2c(c1)oc(-c1cc(O)c(O)cc1)c(O)c2=O
- - 5,7,3',4',5'-nonahe
+</think>
+
+Okay, let's try to figure out how to create a function to detect anthoxanthins. From the problem statement, anthoxanthins are a type of flavonoid that are water-soluble and range from white to yellow. The examples given are mostly flavonoid glycosides, like kaempferol and quercetin derivatives with sugar groups attached.
+
+First, I need to recall that flavonoids typically have a 15-carbon skeleton structure, consisting of two aromatic rings (A and B) connected by a three-carbon bridge (C). The presence of hydroxyl groups and glycosylation (sugar attachments) can influence solubility and color. Anthoxanthins are usually flavones or flavonols with hydroxyl groups and often O-glycosylation or C-glycosylation, which increases water solubility.
+
+So the plan is:
+1. Check if the molecule is a flavonoid. This involves finding the flavone/flavonol backbone. Flavones have a double bond between C2 and C3, and a ketone at C4. Flavonols have a hydroxyl group on C3.
+2. Look for glycosylation (sugar attachments) which would increase solubility. These are often O-linked or C-linked sugars.
+3. Check the hydroxylation pattern. Anthoxanthins might have multiple hydroxyl groups on the aromatic rings, contributing to their color and solubility.
+4. Exclude anthocyanins, which are another class of flavonoids but are red/blue and typically have a different structure (anthocyanidins with a positive charge). But maybe that's not necessary here.
+
+Possible steps in code:
+- Use RDKit to parse the SMILES.
+- Check for the flavone/flavonol core structure using SMARTS patterns.
+- Detect glycosidic attachments (sugar groups) either via oxygen (O-glycosides) or carbon (C-glycosides).
+- Count hydroxyl groups to ensure sufficient solubility.
+- Check molecular weight to ensure it's not too large, but glycosides can be bigger. However, anthoxanthins are water-soluble, so maybe they have multiple polar groups.
+
+Let me draft some SMARTS patterns. The flavone core could be something like:
+c1c(=O)c2cc(O)ccc2oc1c3ccccc3
+
+But maybe more general. Flavonoids have the benzopyran structure. For flavones, the C ring is a chromone (oxygen in the ring and a ketone). For flavonols, there's a hydroxyl on the C ring.
+
+Another approach: look for the 2-phenylchromen-4-one structure. A SMARTS pattern for that might be:
+c1c(=[O])c2c(oc1)ccc(c2)-c3ccccc3
+
+But perhaps better to split into two aromatic rings connected via a ketone and oxygen.
+
+Alternatively, using a more precise SMARTS for the flavone skeleton:
+[O;R]=[C;R]([a;R])[a;R] 
+
+Wait, maybe a better way is to find the chromone part (ring with oxygen and ketone) connected to a phenyl group.
+
+For example, the chromone part is a benzene ring fused to a pyrone (which has a ketone). The SMARTS for chromone could be:
+c1c(=O)c2ccccc2oc1
+
+Then attached to another benzene ring (the B ring) via a single bond. So the full flavone pattern would be:
+c1c(=O)c2ccccc2oc1-c3ccccc3
+
+But maybe allowing substitutions. So in SMARTS, something like:
+[#6]1:[#6](=[#8]):[#6]2:[#6](:[#6]:[#6]:[#6]:2)-[#8]:1-[#6]3:[#6]:[#6]:[#6]:[#6]:[#6]:3
+
+But perhaps a more flexible approach. Let me check RDKit's SMARTS syntax.
+
+Alternatively, using:
+c1c(=O)c2ccccc2oc1-c3ccccc3
+
+But allowing any substitution on the rings. Maybe the exact structure isn't necessary, but the presence of the flavone core.
+
+Once the core is identified, check for glycosylation. Glycosides have a sugar moiety attached via an oxygen (O-glycoside) or directly to a carbon (C-glycoside). So looking for substructures where a hydroxyl oxygen is connected to a sugar (like glucose, rhamnose, etc.), which might be represented as a chain of multiple oxygen-containing groups.
+
+But detecting all possible glycosides is tricky. Maybe look for any occurrence of a glycosidic bond, which is an oxygen connected to a carbon that's part of a sugar ring. Alternatively, check for the presence of a carbohydrate-like structure attached via O or C.
+
+Alternatively, count the number of hydroxyl groups and sugar moieties. Anthoxanthins are often glycosylated, which adds hydroxyls from the sugar, increasing solubility.
+
+Also, check the number of hydroxyl groups on the flavone core. For example, flavonols like quercetin have multiple hydroxyls.
+
+So steps in code:
+1. Check if the molecule has a flavone/flavonol core.
+2. Check for the presence of sugar substituents (glycosylation).
+3. Ensure sufficient hydroxylation for solubility.
+4. Maybe exclude structures with certain features (like anthocyanidins, but perhaps not necessary here).
+
+Potential issues:
+- Some anthoxanthins might not be glycosylated (like simple flavones), but the examples provided are mostly glycosides. Need to check the class definition.
+- The presence of methoxy groups might reduce solubility, but some examples have methoxy groups (like xanthomicrol has OCH3). However, the class description says they are water-soluble, so maybe methoxy groups are less common or compensated by glycosylation.
+
+Possible code outline:
+- Use SMARTS to find the flavone core.
+- Check for glycosidic bonds (O- or C-linked sugars).
+- Count hydroxyl groups and check molecular weight for solubility.
+
+Testing with the example SMILES strings. For example, kaempferol 3-O-beta-D-allopyranoside has a flavone core (kaempferol) with a sugar attached. The code should detect the core and the glycoside.
+
+So the function is_anthoxanthin would return
