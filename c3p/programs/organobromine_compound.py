@@ -29,11 +29,16 @@ def is_organobromine_compound(smiles: str):
     if not bromine_atoms:
         return False, "No bromine atoms found"
 
-    # Check if any bromine atom is bonded to a carbon atom
+    # Check if any bromine atom is bonded to a carbon atom, directly or indirectly
     for bromine_atom in bromine_atoms:
-        neighbors = bromine_atom.GetNeighbors()
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 6:  # Atomic number of carbon is 6
-                return True, "Contains at least one carbon-bromine bond"
+        # Get all atoms connected to the bromine atom, directly or indirectly
+        connected_atoms = Chem.GetMolFrags(mol, asMols=False, sanitizeFrags=False)
+        for fragment in connected_atoms:
+            if bromine_atom.GetIdx() in fragment:
+                # Check if any carbon atom is in the same fragment as the bromine atom
+                for atom_idx in fragment:
+                    atom = mol.GetAtomWithIdx(atom_idx)
+                    if atom.GetAtomicNum() == 6:  # Atomic number of carbon is 6
+                        return True, "Contains at least one carbon-bromine bond"
 
     return False, "No carbon-bromine bonds found"
