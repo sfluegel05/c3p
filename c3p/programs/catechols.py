@@ -5,23 +5,21 @@ Classifies: CHEBI:33566 catechols
 """
 Classifies: Catechols (Any compound containing an o-diphenol component)
 
-A catechol is defined as a molecule containing a benzene ring with two hydroxyl (-OH)
-substituents in adjacent (ortho) positions. In this implementation we use a SMARTS pattern
-that represents 1,2-dihydroxybenzene. Note that this pattern will match a benzene ring
-with adjacent –OH groups even if there are extra substituents on the ring.
+A catechol is defined as a molecule containing a benzene ring (6-membered aromatic ring)
+with two adjacent hydroxyl (-OH) substituents. This implementation scans all aromatic rings,
+and for each six-membered ring it looks for two adjacent atoms that are substituted with –OH.
 """
 
 from rdkit import Chem
 
 def is_catechols(smiles: str):
     """
-    Determines if a molecule is a catechol (contains an o-diphenol component)
-    based on its SMILES string. Here a catechol is taken to be any benzene ring
-    carrying two adjacent hydroxyl substituents.
-
+    Determines if a molecule is a catechol (contains an o-diphenol component) based on its SMILES string.
+    A catechol is identified as any benzene ring (six-membered aromatic ring) that bears two adjacent -OH substituents.
+    
     Args:
         smiles (str): SMILES string of the molecule.
-
+        
     Returns:
         bool: True if the molecule contains a catechol moiety, False otherwise.
         str: Reason for the classification.
@@ -31,27 +29,52 @@ def is_catechols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # For substructure searches it is best if all hydrogens are explicit.
+    # Make all hydrogens explicit to better detect -OH groups.
     mol = Chem.AddHs(mol)
-    
-    # Define a SMARTS pattern for a catechol substructure.
-    # This pattern looks for a benzene ring (6-membered aromatic ring) that has
-    # two adjacent -OH substituents. (The pattern "c1c(O)c(O)cc1" means that
-    # on a ring numbered 1, atom 1 is aromatic (c) then atom 2 is aromatic and
-    # carries an -OH, then atom 3 is aromatic and carries an -OH, followed by two more aromatic atoms,
-    # closing the ring.)
-    catechol_smarts = "c1c(O)c(O)cc1"
-    catechol_query = Chem.MolFromSmarts(catechol_smarts)
-    if catechol_query is None:
-        return False, "Error in generating catechol SMARTS pattern"
-    
-    # Use the SMARTS substructure search to detect a catechol moiety.
-    if mol.HasSubstructMatch(catechol_query):
-        return True, "Contains o-diphenol (catechol) moiety on a benzene ring"
-    else:
-        return False, "No adjacent hydroxyl groups on a benzene ring found"
 
-# Example testing (uncomment when running standalone):
+    # Obtain information about all rings in the molecule.
+    ring_info = mol.GetRingInfo()
+    atom_rings = ring_info.AtomRings()  # returns tuples of atom indices
+    
+    # Function to check if an atom in a ring has a hydroxyl (-OH) group attached.
+    def has_hydroxyl(atom, ring_indices):
+        # Look at neighbors that are not part of the ring (i.e. substituents)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetIdx() not in ring_indices:
+                # Check if neighbor is oxygen.
+                if neighbor.GetAtomicNum() == 8:
+                    # Check if this oxygen has at least one hydrogen bonded.
+                    # With explicit hydrogens added, hydrogens appear as atoms with atomic number 1.
+                    for sub in neighbor.GetNeighbors():
+                        if sub.GetAtomicNum() == 1:
+                            return True
+        return False
+
+    # Loop over all rings
+    for ring in atom_rings:
+        # We are interested only in six-membered rings.
+        if len(ring) != 6:
+            continue
+
+        # Check that every atom in the ring is aromatic (benzene ring)
+        if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+            continue
+
+        # For each atom in the ring, record whether it carries an -OH substituent
+        hydroxyl_flags = []
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            hydroxyl_flags.append(has_hydroxyl(atom, ring))
+        
+        # Since the ring is cyclic, check each pair of adjacent atoms.
+        n = len(hydroxyl_flags)
+        for i in range(n):
+            if hydroxyl_flags[i] and hydroxyl_flags[(i+1) % n]:
+                return True, "Contains o-diphenol (catechol) moiety on an aromatic ring"
+    
+    return False, "No adjacent hydroxyl groups on an aromatic ring found"
+
+# Example testing when running standalone:
 # examples = [
 #     ("[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)O)O[C@H]2/C(/[C@](C(=CO2)C(=O)OC)([H])CC(=O)OCCC=3C=CC(=C(C3)O)O)=C/C", "oleuropein"),
 #     ("C1=CC(=C(C(=C1O)O)[N+]([O-])=O)C", "4-methyl-3-nitrocatechol"),
