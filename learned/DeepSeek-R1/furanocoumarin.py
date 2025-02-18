@@ -24,31 +24,31 @@ def is_furanocoumarin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define coumarin substructure (benzene fused to pyrone)
-    coumarin_pattern = Chem.MolFromSmarts('[#6]1[#6][#6][#6][#6][#6]1-[#6]2[#6](=[#8])-[#8][#6]=[#6]2')
-    if not mol.HasSubstructMatch(coumarin_pattern):
+    # Define coumarin substructure (benzene fused to pyrone: c1ccc2oc(=O)cc2c1)
+    coumarin_pattern = Chem.MolFromSmarts('c12c(ccccc1)oc(=O)cc2')
+    coumarin_matches = mol.GetSubstructMatches(coumarin_pattern)
+    if not coumarin_matches:
         return False, "No coumarin substructure found"
 
-    # Define furan substructure (o1cccc1)
-    furan_pattern = Chem.MolFromSmarts('[#8]1-,=[#6]-[#6]-,=[#6]-[#6]-,=1')
+    # Define furan substructure (o1cccc1 with aromatic bonds)
+    furan_pattern = Chem.MolFromSmarts('o1:c:c:c:c1')
     furan_matches = mol.GetSubstructMatches(furan_pattern)
     if not furan_matches:
         return False, "No furan ring found"
 
-    # Check if any furan is fused to the coumarin
-    coumarin_matches = mol.GetSubstructMatches(coumarin_pattern)
+    # Check fusion between any coumarin and furan rings
     for cm in coumarin_matches:
-        cm_atoms = set(cm)
+        coumarin_atoms = set(cm)
         for fm in furan_matches:
-            # Check adjacent atoms in furan that are part of coumarin
-            furan_submol = Chem.MolFromSmarts('[#8]1-,=[#6]-[#6]-,=[#6]-[#6]-,=1')
-            furan_bonds = furan_submol.GetBonds()
-            for bond in furan_bonds:
-                begin_idx = bond.GetBeginAtomIdx()
-                end_idx = bond.GetEndAtomIdx()
-                actual_begin = fm[begin_idx]
-                actual_end = fm[end_idx]
-                if actual_begin in cm_atoms and actual_end in cm_atoms:
-                    return True, "Furan ring fused to coumarin structure"
+            furan_atoms = set(fm)
+            # Check for shared adjacent atoms (fusion requires at least two shared adjacent atoms)
+            shared = coumarin_atoms & furan_atoms
+            if len(shared) >= 2:
+                # Verify adjacency in the furan ring
+                furan_ring = [fm[i] for i in range(5)]  # furan atom indices
+                adjacent_pairs = [(furan_ring[i], furan_ring[(i+1)%5]) for i in range(5)]
+                for a1, a2 in adjacent_pairs:
+                    if a1 in shared and a2 in shared:
+                        return True, "Furan ring fused to coumarin structure"
 
     return False, "Furan not fused to coumarin"
