@@ -5,6 +5,7 @@ Classifies: CHEBI:31488 N-acylsphinganine
 Classifies: CHEBI:89998 N-acylsphinganine
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_N_acylsphinganine(smiles: str):
     """
@@ -23,12 +24,14 @@ def is_N_acylsphinganine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define core structure pattern using SMARTS:
-    # [NH] connected to carbonyl, followed by two adjacent carbons with hydroxyl groups
-    # Stereochemistry-aware pattern for sphinganine backbone:
-    # N-C(=O)-C(CO)-C(OH)- (with specific stereochemistry)
-    pattern = Chem.MolFromSmarts('[NH1]C(=O)[C@@H](CO)[C@H](O)')
-    if not mol.HasSubstructMatch(pattern):
+    # Define two possible core patterns without stereochemistry constraints
+    # Pattern 1: N-C(=O)-C(CO)-C(O)
+    pattern1 = Chem.MolFromSmarts('[NH1]C(=O)C(CO)C(O)')
+    # Pattern 2: N-C(=O)-C(O)-C(CO)
+    pattern2 = Chem.MolFromSmarts('[NH1]C(=O)C(O)C(CO)')
+    
+    # Check for either pattern
+    if not (mol.HasSubstructMatch(pattern1) or mol.HasSubstructMatch(pattern2)):
         return False, "Missing core sphinganine backbone with acyl group"
 
     # Verify the fatty acyl chain has at least 2 carbons (acetyl is minimal example)
