@@ -9,26 +9,28 @@ from rdkit import Chem
 def is_7_hydroxyisoflavones(smiles: str):
     """
     Determines if a molecule is a 7-hydroxyisoflavone based on its SMILES string.
-    Must have:
-    1. Isoflavone core (benzopyran-4-one system)
-    2. Hydroxyl group at position 7 (on the A ring adjacent to the pyrone oxygen)
+    A 7-hydroxyisoflavone has a hydroxy group at the 7-position of the isoflavone core structure.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a 7-hydroxyisoflavone, False otherwise
+        str: Reason for classification
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
-
-    # Define SMARTS pattern for 7-hydroxyisoflavone core:
-    # - Benzopyran-4-one system (benzene fused to pyrone with ketone at position 4)
-    # - Hydroxyl group on the benzene ring (A ring) adjacent to pyrone oxygen
-    iso_pattern = Chem.MolFromSmarts("[OH]c1c2oc(=O)cc2ccc1")
     
-    # Check if the pattern matches
-    if mol.HasSubstructMatch(iso_pattern):
-        return True, "7-hydroxy group on isoflavone core"
+    # SMARTS pattern for 7-hydroxyisoflavone core:
+    # Hydroxyl attached to benzene ring (position 7) fused to pyrone with oxygen-linked substituent
+    pattern = Chem.MolFromSmarts("[OH]-c1ccc2c(c1)oc(-*)cc2=O")
+    if mol.HasSubstructMatch(pattern):
+        return True, "7-hydroxy group present on isoflavone core"
     
-    # Alternative pattern allowing for possible substituents on the B ring
-    alt_pattern = Chem.MolFromSmarts("[OH]c1ccc2c(c1)c(=O)oc-*")
-    if mol.HasSubstructMatch(alt_pattern):
-        return True, "7-hydroxy group on isoflavone core with B-ring substituent"
+    # Alternative check for different substituents on the B ring
+    # Broader pattern allowing any substitution on the B ring
+    # Check if any hydroxyl is attached to the A ring at position 7
+    # This approach may require more complex atom mapping
     
-    return False, "Does not match 7-hydroxyisoflavone structural requirements"
+    return False, "No 7-hydroxy group detected on isoflavone core"
