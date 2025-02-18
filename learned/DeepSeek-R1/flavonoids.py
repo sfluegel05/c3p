@@ -2,16 +2,16 @@
 Classifies: CHEBI:72544 flavonoids
 """
 """
-Classifies: CHEBI:CHEBI_00000 flavonoids
+Classifies: CHEBI:47916 flavonoids
 """
 from rdkit import Chem
-from rdkit.Chem import Descriptors
+from rdkit.Chem import rdMolDescriptors, rdmolops
 
 def is_flavonoids(smiles: str):
     """
     Determines if a molecule is a flavonoid based on its SMILES string.
-    Flavonoids are characterized by a C15 skeleton of two aromatic rings (A and B) connected by a three-carbon bridge.
-    Includes subclasses like flavones, isoflavones, chalcones, etc.
+    Flavonoids are characterized by two aromatic rings connected via a three-carbon bridge,
+    which may be part of a heterocyclic ring. Includes subclasses like flavones, chalcones, etc.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,35 +24,45 @@ def is_flavonoids(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Define core flavonoid patterns with more specificity
-    # Pattern 1: Benzopyran core (flavones/flavonols) - two aromatic rings connected via oxygen-containing bridge
-    benzopyran = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[#6]=[#6]-[#6](-[#8])=[#8]")
-    
-    # Pattern 2: Chalcone structure (open chain)
-    chalcone = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[#6]=[#6]-[#6](=O)-[c]")
-    
-    # Pattern 3: Flavanone structure (saturated 3-carbon bridge)
-    flavanone = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[#6]-[#6](-[#8])-[#6]-[c]")
+    # Define core flavonoid patterns with specific SMARTS
+    patterns = {
+        "flavone": Chem.MolFromSmarts("[c]1[c,c-,c=,c#][c,c-,c=,c#][c,c-,c=,c#][c,c-,c=,c#]1-[#6]@[#6](-[#8])=[#8]"),  # Benzopyrone core
+        "chalcone": Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[#6]=[#6]-[#6](=[#8])-[c]"),  # Enone linker
+        "isoflavone": Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[#6]1:[#6]:[#6]-[#8]-[#6]1=[#8]"),  # B-ring at position 3
+        "flavanone": Chem.MolFromSmarts("[C&!a]1[C&!a][C&!a](=[O])[O][C&!a]1-[c]"),  # Saturated C-ring
+        "aurone": Chem.MolFromSmarts("[O]=[C]1[C](=[O])[c][c][c][c]1-[O]-[c]")  # Benzofuranone
+    }
     
     # Check for any core pattern match
-    core_match = any(mol.HasSubstructMatch(p) for p in [benzopyran, chalcone, flavanone])
+    for name, pattern in patterns.items():
+        if mol.HasSubstructMatch(pattern):
+            return True, f"Contains {name} core structure"
     
-    if not core_match:
-        return False, "No flavonoid core structure detected"
+    # Fallback: Check aromatic rings and bridge connectivity
+    aromatic_rings = [ring for ring in mol.GetRingInfo().AtomRings() 
+                      if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
     
-    # Verify presence of two aromatic rings connected via bridge
-    # Get all aromatic rings
-    aromatic_rings = [ring for ring in Chem.GetSymmSSSR(mol) if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
     if len(aromatic_rings) < 2:
         return False, "Insufficient aromatic rings"
     
-    # Check if rings are connected through a 3-carbon bridge (including possible oxygen)
-    # Find paths between aromatic rings that are 3-5 atoms long (allowing for O in bridge)
-    ring_atoms = [set(ring) for ring in aromatic_rings]
-    for i in range(len(ring_atoms)):
-        for j in range(i+1, len(ring_atoms)):
-            paths = Chem.GetShortestPaths(mol, ring_atoms[i].pop(), ring_atoms[j].pop(), maxLength=5)
-            if any(3 <= len(path) <=5 for path in paths):
-                return True, "Contains flavonoid core structure with two aromatic rings connected by three-carbon bridge"
+    # Check all pairs of aromatic rings for bridge connectivity
+    for i in range(len(aromatic_rings)):
+        for j in range(i+1, len(aromatic_rings)):
+            ring_a = set(aromatic_rings[i])
+            ring_b = set(aromatic_rings[j])
+            
+            # Check shortest path between any two atoms from different rings
+            for a1 in ring_a:
+                for a2 in ring_b:
+                    try:
+                        path = rdmolops.GetShortestPath(mol, a1, a2)
+                    except:
+                        continue
+                    if 3 <= len(path) <= 5:  # Allow 3-5 atom bridge (including possible ring bonds)
+                        return True, "Two aromatic rings connected via three-carbon bridge"
     
-    return False, "Aromatic rings not properly connected"
+    # Verify minimum size (C15 skeleton + substitutions)
+    if rdMolDescriptors.CalcNumAtoms(mol) < 15:
+        return False, "Too small for flavonoid skeleton"
+    
+    return False, "No characteristic flavonoid features detected"
