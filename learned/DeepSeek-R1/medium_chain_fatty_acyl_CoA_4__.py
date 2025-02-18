@@ -6,7 +6,6 @@ Classifies: CHEBI:XXXXX medium-chain fatty acyl-CoA(4-)
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import Descriptors
 
 def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     """
@@ -23,9 +22,9 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # More flexible CoA core pattern (ignores stereochemistry and exact connectivity)
+    # Match CoA core structure with stereochemistry
     coa_core = Chem.MolFromSmarts(
-        "[NH]C(=O)CCNC(=O)C(O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OCC1OC(C(O)C1O)n1cnc2c(N)ncnc12"
+        "[NH]C(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OP(=O)([O-])OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)n1cnc2c(N)ncnc12"
     )
     if not mol.HasSubstructMatch(coa_core):
         return False, "Missing CoA core structure"
@@ -36,40 +35,42 @@ def is_medium_chain_fatty_acyl_CoA_4__(smiles: str):
     if not thioester_matches:
         return False, "No thioester bond found"
 
-    # Get the sulfur and carbonyl atoms from the first thioester match
     sulfur_idx = thioester_matches[0][0]
-    carbonyl_idx = thioester_matches[0][1]
-    carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
+    carbonyl_atom = mol.GetAtomWithIdx(thioester_matches[0][1])
 
-    # Function to calculate longest carbon chain from starting atom
-    def find_longest_chain(atom, visited=None):
+    def find_aliphatic_chain(atom, visited=None):
         if visited is None:
             visited = set()
         if atom.GetIdx() in visited or atom.GetAtomicNum() != 6:
             return 0
+        if atom.IsInRing():
+            return 0
         visited.add(atom.GetIdx())
+        
         max_length = 0
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetIdx() == sulfur_idx:  # Skip back to CoA
+            # Prevent backtracking to CoA through sulfur
+            if neighbor.GetIdx() == sulfur_idx:
                 continue
-            # Skip oxygen/nitrogen neighbors (stay in hydrocarbon chain)
-            if neighbor.GetAtomicNum() not in {6, 1}:
+            # Only follow aliphatic carbon chains
+            if neighbor.GetAtomicNum() != 6 or neighbor.IsInRing():
                 continue
-            # Avoid double-counting with bond type check
+            
             bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
-            if bond.GetBondType() == Chem.BondType.DOUBLE and neighbor.GetAtomicNum() != 6:
+            # Allow single or double bonds between carbons
+            if bond.GetBondType() not in (Chem.BondType.SINGLE, Chem.BondType.DOUBLE):
                 continue
-            length = find_longest_chain(neighbor, visited.copy())
-            if length > max_length:
-                max_length = length
+            
+            length = find_aliphatic_chain(neighbor, visited.copy())
+            max_length = max(max_length, length)
+            
         return 1 + max_length
 
-    # Calculate chain length starting from carbonyl carbon (subtract 1 to exclude carbonyl itself)
-    chain_length = find_longest_chain(carbonyl_atom) - 1
+    chain_length = find_aliphatic_chain(carbonyl_atom)
     if not (6 <= chain_length <= 12):
-        return False, f"Main acyl chain length {chain_length} not in medium range (6-12)"
+        return False, f"Aliphatic acyl chain length {chain_length} not in medium range (6-12)"
 
-    # Check total molecular charge is -4
+    # Verify total charge is -4 (3 phosphate groups deprotonated + thioester)
     total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
     if total_charge != -4:
         return False, f"Total charge {total_charge} ≠ -4"
