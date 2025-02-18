@@ -57,10 +57,4 @@ def is_fatty_alcohol(smiles: str):
     if mol.HasSubstructMatch(other_functional_groups):
         return False, "Molecule contains carboxylic acid groups, not a fatty alcohol"
 
-    # Check if the molecule is primarily a hydrocarbon chain with alcohol groups
-    # This is a heuristic and may need refinement
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
-    if h_count < 2 * c_count - 2:  # Rough check for hydrocarbon-like structure
-        return False, "Molecule does not have a hydrocarbon-like structure"
-
-    return True, f"Aliphatic alcohol with {c_count} carbon atoms and {o_count} alcohol groups"
+    return True, f"Aliphatic alcohol with {c_count} carbon atoms and {o_count} oxygen atoms"
