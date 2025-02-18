@@ -1,266 +1,43 @@
 """
 Classifies: CHEBI:73754 thiosugar
 """
- - 4-hydroxy-3-indolylmethyl glucosinolate: SMILES: [C@H]1(SC(=NOS(O)(=O)=O)CC=2C3=CC=CC=C3N=C2O)[C@H](O)[C@H]([C@@H]([C@H](O1)CO)O)O
- - glucoalyssin: SMILES: [C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\OS(O)(=O)=O)/CCCCCSC
- - glucotropaeolin: SMILES: [C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\OS(O)(=O)=O)/CC=2C=CC=CC2
- - 1-thio-beta-D-glucose: SMILES: [C@@H]1([C@H]([C@@H]([C@H]([C@H](O1)CS)O)O)O)O
- - 4-methylthiobutylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCSC
- - 1-thio-beta-D-galactose: SMILES: [C@@H]1([C@H]([C@@H]([C@H]([C@H](O1)CS)O)O)O)O
- - 1-thio-beta-D-mannose: SMILES: [C@@H]1([C@H]([C@@H]([C@H]([C@H](O1)CS)O)O)O)O
- - 6-(methylsulfanyl)hexyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCCCSC
- - 3-methylthiopropylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCSC
- - 4-methylthio-3-butenyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CC(C=C)SC
- - glucobarbarin: SMILES: [C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\OS(O)(=O)=O)/CCCC(O)C#C
- - 4-methylthiobutylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCSC
- - 3-methylsulfinylpropylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCS(=O)C
- - glucosinalbin: SMILES: [C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\OS(O)(=O)=O)/CC=2C=CC(O)=CC2
- - glucobrassicin: SMILES: [C@H]1(SC(=NOS(O)(=O)=O)CC=2C3=CC=CC=C3NC2)[C@H](O)[C@H]([C@@H]([C@H](O1)CO)O)O
- - 1-thio-beta-D-glucopyranose: SMILES: [C@@H]1([C@H]([C@@H]([C@H]([C@H](O1)CS)O)O)O)O
- - 1-thio-beta-D-fructose: SMILES: [C@H]1(O[C@](CO)([C@@H]([C@@H]1O)O)CS)O
- - 6-thio-beta-D-glucose: SMILES: [C@@H]1([C@@H]([C@H]([C@H]([C@H](O1)CO)O)O)S)O
- - glucoerysolin: SMILES: [C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\OS(O)(=O)=O)/CCCCS(=O)C
- - 4-methylsulfinylbutylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCS(=O)C
- - glucosativin: SMILES: [C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\OS(O)(=O)=O)/CCCCCC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 6-sinapoyldesulfoglucoraphenin: SMILES: [C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)COC(\C=C\C2=CC(=C(C(=C2)OC)O)OC)=O)S/C(=N\O)/CCC=CS(=O)C
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - glucoalyssin: SMILES: [C@H]1(O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO)S/C(=N\OS(O)(=O)=O)/CCCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCSC
- - 4-methylsulfanylbutyldesulfoglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NO)CCCCSC
- - 6-(methylsulfanyl)hexylglucosinolate: SMILES: S([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)CO)C(=NOS(O)(=O)=O)CCCCCCSC
- - 3-methylsulfanylpropyldesulfoglucosinolate: SMILES
+"""
+Classifies: CHEBI:79126 thiosugar
+"""
+from rdkit import Chem
+
+def is_thiosugar(smiles: str):
+    """
+    Determines if a molecule is a thiosugar based on its SMILES string.
+    A thiosugar has one or more oxygen/hydroxyl groups replaced by sulfur or -SR groups.
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        bool: True if molecule is a thiosugar, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+        
+    # Basic carbohydrate check: look for pyranose/furanose ring with multiple hydroxyls
+    pyranose_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@H](O)[C@H](O)[C@H](O)S1")
+    furanose_pattern = Chem.MolFromSmarts("[C@H]1(O)[C@H](O)[C@H](O)[C@H](O)S1")
+    if not (mol.HasSubstructMatch(pyranose_pattern) or mol.HasSubstructMatch(furanose_pattern)):
+        return False, "No carbohydrate backbone detected"
+    
+    # Check for sulfur substitutions (S attached to sugar backbone)
+    sulfur_pattern = Chem.MolFromSmarts("[C,S]-[SX2]")
+    sulfur_matches = mol.GetSubstructMatches(sulfur_pattern)
+    if not sulfur_matches:
+        return False, "No sulfur substitutions found"
+    
+    # Check for thiol groups (-SH) or thioethers (-S-R)
+    thiol_pattern = Chem.MolFromSmarts("[SH]")
+    thioether_pattern = Chem.MolFromSmarts("[SX2]-[#6]")
+    if not (mol.HasSubstructMatch(thiol_pattern) or mol.HasSubstructMatch(thioether_pattern)):
+        return False, "No thiol/thioether groups present"
+    
+    return True, "Sulfur substitution detected in carbohydrate structure"
