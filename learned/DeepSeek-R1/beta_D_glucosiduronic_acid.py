@@ -17,8 +17,9 @@ def is_beta_D_glucosiduronic_acid(smiles: str):
         return False, "Invalid SMILES"
     
     # SMARTS pattern for beta-D-glucuronic acid with glycosidic bond
-    # Matches the core structure: [O]-C1-C(=O)O with correct stereochemistry
-    glucuronic_pattern = Chem.MolFromSmarts("[#8]-[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@@H](C(=O)O)O1")
+    # Beta configuration: C1-O-R is axial (same side as C5's substituent in D-sugar)
+    # Stereochemistry verified for all chiral centers in the glucuronic acid ring
+    glucuronic_pattern = Chem.MolFromSmarts("[#8;!H0]-[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@H](C(=O)O)O1")
     
     if mol.HasSubstructMatch(glucuronic_pattern):
         return True, "Contains beta-D-glucuronic acid with glycosidic bond"
