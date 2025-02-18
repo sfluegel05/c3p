@@ -21,18 +21,12 @@ def is_dihydroflavonols(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the dihydroflavonol pattern: bicyclic core with specific hydroxylation
-    # Representative pattern for dihydroflavonol structural backbone with hydroxyl on position 3
-    core_pattern = "[C@H]1([O])C(=O)CC2C(C=CC=C2O)O1"  # Simplified pattern focusing on key features
+    # Define refined SMARTS pattern for dihydroflavonol
+    # This pattern captures the chromanone-like core with hydroxyl group at C3
+    dihydroflavonol_pattern = Chem.MolFromSmarts("O[C@H]1[C@@H](O)C(=O)Cc2c1cccc2")
 
-    # Compile SMARTS pattern to match dihydroflavonol core
-    dihydroflavonol_pattern = Chem.MolFromSmarts(core_pattern)
-    
     # Check if the molecule has a match
     if mol.HasSubstructMatch(dihydroflavonol_pattern):
         return True, "Contains dihydroflavonol structure"
 
     return False, "Does not fit dihydroflavonol pattern adequately"
-
-# Note: This is an example pattern for educational purposes. Real-world applications
-# would refine the pattern based on precise stereochemistry and functional group placement.
