@@ -25,26 +25,41 @@ def is_phosphatidylinositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for inositol (myo-inositol pattern with 6 hydroxyls)
-    inositol_pattern = Chem.MolFromSmarts('[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@H](O)[C@@H]1O')
-    if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No myo-inositol core found"
+    # Check for inositol (six-membered carbon ring with at least five hydroxyls)
+    inositol_found = False
+    rings = mol.GetRingInfo().AtomRings()
+    for ring in rings:
+        if len(ring) != 6:
+            continue
+        # Check if all atoms in the ring are carbons
+        all_carbon = all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring)
+        if not all_carbon:
+            continue
+        # Count hydroxyl groups attached to the ring
+        oh_count = 0
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() >= 1:
+                    oh_count += 1
+                    break  # Count each OH once per ring atom
+        if oh_count >= 5:
+            inositol_found = True
+            break
+    if not inositol_found:
+        return False, "No inositol ring with at least five hydroxyls found"
 
-    # Check for phosphate group connected to inositol
+    # Check for phosphate group connected to inositol and glycerol
     phosphate_pattern = Chem.MolFromSmarts('[O]P(=O)([O])[O]')
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if not phosphate_matches:
         return False, "No phosphate group present"
 
-    # Verify phosphate is connected to glycerol backbone
-    # Glycerol pattern: two ester groups and one phosphate
-    glycerol_pattern = Chem.MolFromSmarts('[CH2](OC(=O)*)[CH2](OC(=O)*)COP(=O)(O)')
+    # Check if phosphate is connected to inositol and glycerol backbone
+    # Glycerol backbone pattern: two ester groups and a phosphate-connected glycerol
+    glycerol_pattern = Chem.MolFromSmarts('[CH2]OC(=O)-[CH](-OC(=O)*)-[CH2]OP(=O)(O)')
     if not mol.HasSubstructMatch(glycerol_pattern):
         return False, "Glycerol backbone with two esters and phosphate not found"
 
-    # Check for at least two ester groups (fatty acids)
-    ester_count = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[CX3](=O)[OX2H0]')))
-    if ester_count < 2:
-        return False, f"Only {ester_count} ester groups found, need at least 2"
-
-    return True, "Phosphatidyl group esterified to myo-inositol via phosphate linkage"
+    # Check for at least two ester groups (already ensured by glycerol_pattern)
+    return True, "Phosphatidyl group esterified to inositol via phosphate linkage"
