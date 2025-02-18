@@ -19,20 +19,19 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find an amine (N with attached hydrogens possibly attached to C, excluding amides)
-    amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O)]")
+    # Find amine (N) connected to carbon.
+    amine_pattern = Chem.MolFromSmarts("[NX3;!$(NC=O)]")
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No primary, secondary, or tertiary amine group found"
 
-    # Identify aromatic atoms
-    aromatic_atoms = [atom.GetIdx() for atom in mol.GetAromaticAtoms()]
-    if not aromatic_atoms:
-        return False, "No aromatic group found"
+    # Look for aromatic groups directly bonded to an alkyl carbon and connected to an amine.
+    aralkylamine_pattern = Chem.MolFromSmarts("[CX4][a]")  # Alkyl carbon attached directly to an aromatic
+    if not mol.HasSubstructMatch(aralkylamine_pattern):
+        return False, "No alkyl group directly substituted by aromatic group found"
 
-    # Look for connections: Amine to alkyl chain to aromatic group
-    # A simple aromatic group connected through a flexible alkyl chain to an amine
-    aralkylamine_pattern = Chem.MolFromSmarts("[NX3][C,c][C,c]*[a]")  # Broad N-C-C-aromatic pattern
-    if mol.HasSubstructMatch(aralkylamine_pattern):
-        return True, "Molecule is an aralkylamine"
+    # Now ensure connection pattern like N-C-C (to ensure we consider the broad range of alkyl connections)
+    extended_pattern = Chem.MolFromSmarts("[NX3][CX4][a]")  # N connected to alkyl, then aromatic
+    if mol.HasSubstructMatch(extended_pattern):
+        return True, "Molecule is an aralkylamine with aromatic substitution on the alkyl side chain"
 
-    return False, "No alkyl group substituted by aromatic group found attached to amine."
+    return False, "Structure does not match an aralkylamine pattern"
