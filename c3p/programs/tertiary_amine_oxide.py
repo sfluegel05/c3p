@@ -16,21 +16,15 @@ def is_tertiary_amine_oxide(smiles: str):
         bool: True if molecule is a tertiary amine oxide, False otherwise
         str: Reason for classification
     """
-    
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for nitrogen atom with three organic attachments and a positive charge with adjacent N-oxide
-    # Updated pattern considers broad organic groups and N-oxide
-    tertiary_amine_oxide_pattern = Chem.MolFromSmarts("[N+](C)(C)(C)[O-]")  # Initial pattern expanded
-    # Additional SMARTS to capture configurations with aromatic groups
-    alt_pattern = Chem.MolFromSmarts("[N+](a)(a)a[O-]")  
-
+    # Refined pattern to match a nitrogen with a positive charge bonded to three carbons and one oxygen with negatively charged oxygen (N+ with C and O-)
+    tertiary_amine_oxide_pattern = Chem.MolFromSmarts("[N+X4]([CX4,a])([CX4,a])([CX4,a])[OX1-]")
+    
     if mol.HasSubstructMatch(tertiary_amine_oxide_pattern):
         return True, "Molecule contains a tertiary amine oxide group"
-    elif mol.HasSubstructMatch(alt_pattern):
-        return True, "Molecule contains a tertiary amine oxide group with diverse substituents"
-    
+
     return False, "Molecule does not contain a tertiary amine oxide group"
