@@ -1,97 +1,40 @@
 """
 Classifies: CHEBI:134251 guaiacols
 """
- - 4-hydroxy-3-methoxycinnamyl alcohol: SMILES: COc1cc(\C=C/CO)ccc1O
- - (E)-coniferyl alcohol: SMILES: COc1cc(\C=C/CO)ccc1O
- - 4-hydroxy-3-methoxycinnamic acid: SMILES: COc1cc(\C=C\C(=O)O)ccc1O
- - 3-O-methylgallic acid: SMILES: COc1cc(O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-sulfate: SMILES: COc1cc(O)c(OS(O)(=O)=O)c(OC)c1
- - 3-O-methylgallic acid 3-sulfate: SMILES: COc1cc(OS(O)(=O)=O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-beta-D-glucopyranoside: SMILES: COc1cc(O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-galloyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3cc(O)c(O)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-sinapoyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3cc(OC)c(OC)cc3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-feruloyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-p-coumaroyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3ccc(O)cc3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-caffeoyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3ccc(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(E)-feruloyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)/C=C/c3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(E)-p-coumaroyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)/C=C/c3ccc(O)cc3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(E)-caffeoyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)/C=C/c3ccc(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(Z)-feruloyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C/c3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(Z)-p-coumaroyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C/c3ccc(O)cc3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(Z)-caffeoyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C/c3ccc(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-syringoyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-vanilloyl-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3ccc(O)cc3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3ccc(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trihydroxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3cc(O)c(O)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)c3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxycinnamoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxycinnamoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3ccc(O)cc3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxycinnamoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3ccc(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxycinnamoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxycinnamoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxycinnamoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxycinnamoyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COC(=O)\C=C\c3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trihydroxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(O)c(O)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3ccc(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(4-hydroxy-3,5-dimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4-dihydroxy-5-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)c(O)c3)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,5-dihydroxy-4-methoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(O)cc3O)[C@@H](O)[C@H](O)[C@H]2O)c(O)c(OC)c1
- - 3-O-methylgallic acid 4-O-(6'-O-(3,4,5-trimethoxybenzyl)-beta-D-glucopyranoside): SMILES: COc1cc(O[C@@H]2O[C@H](COCc3cc(OC)c(OC)c(OC)c3)[C@@H](O)[C
+"""
+Classifies: guaiacols (CHEBI:49211)
+Definition: Any phenol carrying an additional methoxy substituent at the ortho-position.
+"""
+from rdkit import Chem
+
+def is_guaiacols(smiles: str):
+    """
+    Determines if a molecule is a guaiacol based on its SMILES string.
+    A guaiacol is a phenol (aromatic ring with hydroxyl group) that has a methoxy group (-OCH3)
+    in the ortho position (adjacent to the hydroxyl-bearing carbon).
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a guaiacol, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # SMARTS pattern for phenol (hydroxyl attached to aromatic carbon)
+    phenol_pattern = Chem.MolFromSmarts("[OH]-[c]")
+    if not mol.HasSubstructMatch(phenol_pattern):
+        return False, "No phenolic hydroxyl group found"
+
+    # SMARTS pattern for ortho methoxy substituent
+    # Looks for: hydroxyl attached to aromatic carbon, adjacent to another aromatic carbon with methoxy (-O-CH3)
+    ortho_methoxy_pattern = Chem.MolFromSmarts("[OH]-[c]@[c]-[OX2]-[CH3]")
+    
+    if mol.HasSubstructMatch(ortho_methoxy_pattern):
+        return True, "Phenol with methoxy group in ortho position"
+    else:
+        return False, "No ortho methoxy substituent found on phenolic ring"
