@@ -28,10 +28,6 @@ def is_polyamine(smiles: str):
     
     mol = rdMolStandardize.Uncharger().uncharge(mol)
     
-    # Check if compound is organic
-    if not Chem.MolFromSmiles(smiles).GetIsOrganic():
-        return False, "Compound is not organic"
-    
     # Count amino groups
     amino_pattern = Chem.MolFromSmarts("[NH2]")
     amino_groups = len(mol.GetSubstructMatches(amino_pattern))
@@ -45,6 +41,8 @@ def is_polyamine(smiles: str):
         Chem.MolFromSmarts("[NH2]-[CH2]-[CH2]-[CH2]-[NH2]"),  # Alkyl chain with amino groups
         Chem.MolFromSmarts("[NH2]-[c]-[c]-[c]-[NH2]"),  # Aromatic ring with amino groups
         Chem.MolFromSmarts("[NH2]-[c]-[c]-[NH2]"),  # Aromatic ring with amino groups
+        Chem.MolFromSmarts("[NH2]-[CH2]-[CH2]-[NH2]"),  # Ethylenediamine
+        Chem.MolFromSmarts("[NH2]-[CH2]-[NH]-[CH2]-[NH2]"),  # Triazine with amino groups
         # Add more patterns as needed
     ]
     
@@ -57,6 +55,10 @@ def is_polyamine(smiles: str):
         Chem.MolFromSmarts("[N+]"),  # Quaternary amines
         Chem.MolFromSmarts("[N-]"),  # Anionic amines
         Chem.MolFromSmarts("[N+]=[N-]"),  # Azo compounds
+        Chem.MolFromSmarts("[N-]=[N+]=[N-]"),  # Azide compounds
+        Chem.MolFromSmarts("[N]=[N]"),  # Azo compounds
+        Chem.MolFromSmarts("[N]#[C]"),  # Nitriles
+        Chem.MolFromSmarts("[N]=[C]"),  # Amides
         # Add more patterns as needed
     ]
     
