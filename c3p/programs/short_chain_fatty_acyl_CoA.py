@@ -19,32 +19,42 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+
     # Look for thioester linkage: S-C(=O)
-    thioester_pattern = Chem.MolFromSmarts("S-C(=O)")
+    thioester_pattern = Chem.MolFromSmarts("SC(=O)C")
     if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester linkage found"
-    
-    # Look for Coenzyme A specific fragments (pattern recognition)
-    coA_pattern = Chem.MolFromSmarts("O=C(O)CCNC(=O)C[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)O")  # Simplified CoA part
+        return False, "No thioester linkage found" 
+
+    # Look for Coenzyme A specific fragments with improved pattern
+    # CoA includes a phosphopantetheine chain and adenine linked through a ribose phosphodiester.
+    coA_pattern = Chem.MolFromSmarts("NC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(=O)([O-])OCC1OC(n2cnc3c(ncnc23)N)C(O)C1OP(=O)([O-])O")
     if not mol.HasSubstructMatch(coA_pattern):
         return False, "Coenzyme A structure not found"
-    
-    # Check for short-chain acyl group (e.g., 2 to 6 carbons in acyl chain)
-    acyl_chain_pattern = Chem.MolFromSmarts("CC(=O)S")
-    matches = mol.GetSubstructMatches(acyl_chain_pattern)
-    
-    for match in matches:
-        # Check the length of carbon chain directly attached to the S=C(=O) group
-        acyl_chain_len = 0
-        atom_indices = [atom_idx for atom_idx in match]
-        sulfur_idx, carbon_idx, o_carbon_idx = atom_indices[0], atom_indices[1], atom_indices[2]
-        
-        for bond in mol.GetBondWithIdx(mol.GetBondBetweenAtoms(sulfur_idx, carbon_idx).GetIdx()).GetConnectedAtoms():
-            if bond.GetAtomicNum() == 6:
-                acyl_chain_len += 1
-        
-        if 2 <= acyl_chain_len <= 6:
-            return True, "Contains Coenzyme A with short-chain fatty acid"
-    
+
+    # Check for acyl chain length from 2 to 6
+    # Finds short-chain length after the thioester linkage
+    for match in mol.GetSubstructMatches(thioester_pattern):
+        acyl_begin = match[2]  # Carbon in SC(=O)C chain likely to be part of acyl
+        chain_length = 0
+        queue = [acyl_begin]
+        visited = set(queue)
+
+        while queue:
+            atom_idx = queue.pop(0)
+            atom = mol.GetAtomWithIdx(atom_idx)
+
+            # Traverse chain initiated by match through carbons
+            if atom.GetAtomicNum() == 6:  # Carbon
+                chain_length += 1
+            
+            for neighbor in atom.GetNeighbors():
+                n_idx = neighbor.GetIdx()
+                if n_idx not in visited:
+                    visited.add(n_idx)
+                    queue.append(n_idx)
+
+        # Validate short chain length
+        if 2 <= chain_length <= 6:
+            return True, "Contains Coenzyme A linked with short-chain fatty acid"
+
     return False, "No short-chain fatty acid attached to CoA"
