@@ -10,13 +10,13 @@ from rdkit.Chem import BondType
 def is_trichlorobenzene(smiles: str):
     """
     Determines if a molecule is a trichlorobenzene based on its SMILES string.
-    A trichlorobenzene has at least one benzene ring with exactly three chlorine substituents.
+    A trichlorobenzene has a benzene ring with exactly three chlorine substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule contains a benzene ring with three chlorines, False otherwise
+        bool: True if molecule is a trichlorobenzene, False otherwise
         str: Reason for classification
     """
     # Parse SMILES
@@ -50,6 +50,7 @@ def is_trichlorobenzene(smiles: str):
         cl_count = 0
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
+            # Check all neighbors of this ring atom
             for neighbor in atom.GetNeighbors():
                 # Ensure the bond is single (substituent, not part of a fused ring)
                 bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
