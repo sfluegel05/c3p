@@ -26,8 +26,8 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more general naphthoquinone pattern (matches both 1,2 and 1,4-naphthoquinones)
-    naphthoquinone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)C(=O)C=C2|c1ccc2c(c1)C(=O)C=C(C2=O)")
+    # Define a more flexible naphthoquinone pattern that matches both 1,2 and 1,4-naphthoquinones
+    naphthoquinone_pattern = Chem.MolFromSmarts("[#6]1[#6]=[#6][#6]=[#6][#6]=1[C](=O)[#6]=[#6][C](=O)")
     if naphthoquinone_pattern is None:
         return False, "Invalid naphthoquinone pattern"
     
