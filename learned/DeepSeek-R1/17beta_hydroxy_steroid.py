@@ -1,4 +1,212 @@
 """
 Classifies: CHEBI:35343 17beta-hydroxy steroid
 """
-[C@H]1CC[C@H]2[C@@H]3CC[C@H]4C[C@H](O)CC[C@]4(C)[C@H]3CC[C@]12C
+ - 17beta-hydroxy-5alpha-androstan-3-one: SMILES: [H][C@@]12CC[C@@]3([H])[C@]4([H])CC[C@H](O)[C@@]4(C)CC[C@]3([H])[C@@]1(C)CCC(=O)C2
+ - 17beta-hydroxy-5beta-androstan-3-one: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O
+ - 17beta-hydroxy-5alpha-androstan-3beta-yl sulfate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@H]4C[C@@H](O)CC[C@]34C)[C@@H]1CC[C@@H]2OS(O)(=O)=O
+ - 17beta-hydroxy-5alpha-androstan-3-one oxime: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2ON
+ - 17beta-hydroxy-5alpha-androstan-3-one (E)-oxime: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O/N=C\C
+ - 17beta-hydroxy-5alpha-androstan-3-one (Z)-oxime: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O/NC=C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-cyclopentanecarboxylate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C5CCCC5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-cyclopentanepropionate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCC5CCCC5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-hexanoate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-propionate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-valerate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-undecanoate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-palmitate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-stearate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-oleate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCCCC\C=C\C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-linoleate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCC\C=C\C\C=C\C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-arachidonate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCC\C=C/C\C=C/C\C=C/C\C=C/CC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-benzoate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C5=CC=CC=C5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-acetate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-butyrate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-isobutyrate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-phenylpropionate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCC5=CC=CC=C5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-adamantane-1-carboxylate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C12C3CC(C1)CC(C3)C2
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-cyclopentylacetate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CC5CCCC5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-cyclohexylpropionate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCC1CCCCC1
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(2-ethylhexanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C(CC)CCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(3,5,5-trimethylhexanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C(C)CC(C)(C)CC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(4-tert-butylcyclohexyl)acetate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CC1(CCCCC1)C(C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(2-phenylacetate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CC5=CC=CC=C5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(3-phenylpropionate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCC5=CC=CC=C5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(4-phenylbutyrate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCC6=CC=CC=C6
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(2-naphthyl)acetate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CC7=CC=CC8=CC=CC=C87
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(1-adamantyl)acetate: SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CC9C1CC2CC(C1)CC2C9
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(dihydrotestosterone enanthate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone cypionate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCC5CCCCC5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone undecanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone propionate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone enanthate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone isocaproate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCC(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone phenylpropionate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCC6=CC=CC=C6
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone decanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone acetate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone buciclate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C7(C8CCCC8)CCCCC7
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone ketolaurate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCC(=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone heptanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone caproate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone isobutyrate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone valerate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone hexanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone octanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone nonanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone dodecanoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone laurate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone myristate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone palmitate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone stearate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone oleate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCCCCCCCC\C=C\C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone linoleate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCCCC\C=C\C\C=C\C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone arachidonate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)CCCCCC\C=C/C\C=C/C\C=C/C\C=C/CC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone benzoate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C5=CC=CC=C5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone cyclopropanecarboxylate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C6CC6
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone cyclohexanecarboxylate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C7CCCCC7
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone adamantate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C8C9CC(C8)CC(C9)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone pivalate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)C(C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone formate): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone hemiacetal): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(O)CO
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone hemiketal): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(O)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone methyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone ethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone propyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone butyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone pentyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone hexyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone heptyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone octyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone nonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone decyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone dodecyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCCCCCCCCCCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone benzyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC5=CC=CC=C5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone phenethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCC6=CC=CC=C6
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone cyclopropylmethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC7CC7
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone cyclobutylmethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC8CCC8
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone cyclopentylmethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC9CCCC9
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone cyclohexylmethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCCAACCCCAA
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone norbornyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC1C2CCC(C1)C2
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone adamantylmethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC1C2CC(C1)CC(C2)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone trityl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(C1=CC=CC=C1)(C2=CC=CC=C2)C3=CC=CC=C3
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tert-butyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone allyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC=C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone propargyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC#C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone crotyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC=CC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone methallyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC(C)=C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone cinnamyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC=CC1=CC=CC=C1
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone furfuryl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC5=CC=CO5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tetrahydropyranyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC6CCOCC6
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tetrahydrofuranyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCC7CCOC7
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone silyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Si](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone trimethylsilyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Si](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone triethylsilyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Si](CC)(CC)CC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tert-butyldimethylsilyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Si](C)(C)(C(C)(C)C)
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone triisopropylsilyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Si](C(C)C)(C(C)C)C(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone thexyldimethylsilyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Si](C)(C)C(C)(C)CC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone methoxymethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone ethoxyethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone benzyloxymethyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOCC8CC=CC=C8
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tetrahydropyranyloxy ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOC9CCOCC9
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone allyloxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOC=C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone benzyloxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOCC=CC=CC=C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone 9-fluorenylmethyloxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOC(C1=CC=CC2=C1C3=CC=CC=C3C2)=O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tert-butoxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOC(C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone methoxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOC=O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone ethoxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOC(=O)OCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone benzoyloxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OCOC(=O)C5=CC=CC=C5
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone phthalimido ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2ON6C(=O)C7=CC=CC=C7C6=O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tosyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)C8=CC=CC=C8C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone mesyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone triflyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)C(F)(F)F
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone nosyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)C9=CC=C([N+](C)(C)C)C=C9
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone brosyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)C%10=CC=C(Br)C=C%10
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone nosyloxy ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OOS(=O)(=O)C%11=CC=C([N+](C)(C)C)C=C%11
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone dansyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)C%12=CC=C(C(C)C)C=C%12N(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone phosphoryl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=O)(O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone thiophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=S)(O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone phosphoramidate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=O)(N)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone phosphonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=O)(O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone sulfonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone sulfinate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone sulfamate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone sulfonamide ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OS(=O)(=O)N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone carbamate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone thiocarbamate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=S)N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone dithiocarbamate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=S)S
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone xanthate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=S)SCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone trithiocarbonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=S)SSC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone dithiophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=S)(S)S
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone dithiophosphonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=S)(S)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone thioether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2SC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone disulfide ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2SSC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone thioester ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2SC(=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone thionoester ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2SC(=S)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenoether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2SeC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2TeC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenoxide ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2[Se](=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenone ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2[Se](=O)(=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroxide ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2[Te](=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurone ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2[Te](=O)(=O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenocyanate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2SeC#N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone thiocyanate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2SC#N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone isothiocyanate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2N=C=S
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone seloxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)Se
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroxycarbonyl ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=O)Te
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenocarbamate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Se)N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurocarbamate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Te)N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenothiocarbamate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Se)S
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurothiocarbamate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Te)S
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenoxanthate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Se)SCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroxanthate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Te)SCC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenodithiocarbonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Se)SSC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurodithiocarbonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Te)SSC
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenotrithiocarbonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Se)SSS
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurotrithiocarbonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OC(=Te)SSS
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Se)(O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Te)(O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenophosphonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Se)(O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurophosphonate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Te)(O)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenothiophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Se)(S)S
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurothiophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Te)(S)S
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenodithiophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Se)(S)SS
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurodithiophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Te)(S)SS
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenotrithiophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Se)(S)SSS
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurotrithiophosphate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2OP(=Te)(S)SSS
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenocarborane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se]C5(B6)C7B8C9B%10C%11B%12C5C6C7C8C9%10%11%12
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurocarborane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te]C5(B6)C7B8C9B%10C%11B%12C5C6C7C8C9%10%11%12
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenoborane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se]B(C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroborane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te]B(C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenostannane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][Sn](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurostannane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][Sn](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenosilane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][Si](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurosilane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][Si](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenogermane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][Ge](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurogermane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][Ge](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenoplumbane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][Pb](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroplumbane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][Pb](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenoarsane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][As](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroarsane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][As](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenoantimonane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][Sb](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroantimonane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][Sb](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenobismuthane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][Bi](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurobismuthane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][Bi](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenopolonane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][Po](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluropolonane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][Po](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenastatane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se][At](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurostatane ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te][At](C)(C)C
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenide ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se]
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluride ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te]
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se](=O)(=O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te](=O)(=O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenite ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se](=O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurite ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te](=O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenious acid ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se](O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurous acid ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te](O)O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenic acid ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se](O)(=O)=O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluric acid ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te](O)(=O)=O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenocyanate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se]C#N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone tellurocyanate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te]C#N
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenoisocyanate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se]N=C=O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone telluroisocyanate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Te]N=C=O
+ - 17beta-hydroxy-5alpha-androstan-3-one 17-(testosterone selenocyanate ether): SMILES: C[C@]12CC[C@H]3[C@@H](CC[C@@H]4CC(=O)CC[C@]34)[C@@H]1CC[C@@H]2O[Se]C#N
+ - 17beta-hydroxy-
