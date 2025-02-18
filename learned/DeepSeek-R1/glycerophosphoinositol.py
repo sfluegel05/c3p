@@ -24,43 +24,32 @@ def is_glycerophosphoinositol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphate group connected to glycerol and inositol
-    # Phosphate pattern: P(=O)(O)(O)O connected to two different groups
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2]-[!P])[OX2]-[!P][OX2]")
-    if not phosphate_pattern:
-        return False, "Invalid phosphate pattern"
+    # Check for phosphate group (at least two oxygen substituents)
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
     if not phosphate_matches:
         return False, "No phosphate group found"
 
     # Check glycerol backbone: three carbons with two ester groups and one phosphate
-    glycerol_pattern = Chem.MolFromSmarts("[CH2]-[CH](-[OX2]-C(=O))-[CH2]-[OX2]-[P]")
-    if not glycerol_pattern:
-        return False, "Invalid glycerol pattern"
+    # Glycerol pattern: C1-C2-C3 where C3 is connected to phosphate via O
+    glycerol_pattern = Chem.MolFromSmarts("[CH2]-[CH](-[OX2]C(=O))-[CH2]-[OX2]-[PX4]")
     glycerol_match = mol.GetSubstructMatch(glycerol_pattern)
     if not glycerol_match:
         return False, "Glycerol backbone with two esters and phosphate not found"
 
-    # Verify phosphate is at sn-3 position (third carbon in glycerol)
-    # Assuming the glycerol pattern is C1-C2-C3 where C3 is connected to phosphate
-    c3_idx = glycerol_match[-3]  # Last three atoms in match are C3, O, P?
-    phosphate_atom = mol.GetAtomWithIdx(glycerol_match[-1])
-    if phosphate_atom.GetSymbol() != 'P':
-        return False, "Phosphate not correctly attached to glycerol"
-
-    # Check inositol (cyclohexane with >=4 hydroxyls) connected to phosphate
+    # Verify phosphate is connected to inositol (cyclohexane with >=4 hydroxyls)
     inositol_found = False
     for p_match in phosphate_matches:
-        p_idx = p_match[0]
-        # Check oxygens connected to P
-        for neighbor in mol.GetAtomWithIdx(p_idx).GetNeighbors():
+        p_atom = mol.GetAtomWithIdx(p_match[0])
+        # Check oxygen neighbors of phosphate for connection to inositol
+        for neighbor in p_atom.GetNeighbors():
             if neighbor.GetSymbol() == 'O':
-                # Follow O to check if connected to inositol ring
-                next_atom = [a for a in neighbor.GetNeighbors() if a.GetIdx() != p_idx]
-                if not next_atom:
+                # Follow O to check if part of inositol ring
+                next_atoms = [a for a in neighbor.GetNeighbors() if a.GetIdx() != p_match[0]]
+                if not next_atoms:
                     continue
-                next_atom = next_atom[0]
-                # Check if part of a 6-membered ring with multiple OH groups
+                next_atom = next_atoms[0]
+                # Check if part of a 6-membered ring with multiple OHs
                 ring_info = mol.GetRingInfo()
                 for ring in ring_info.AtomRings():
                     if len(ring) == 6 and next_atom.GetIdx() in ring:
@@ -79,8 +68,8 @@ def is_glycerophosphoinositol(smiles: str):
     if not inositol_found:
         return False, "Inositol ring not found connected to phosphate"
 
-    # Check for exactly two ester groups (from fatty acids)
-    ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2][CX3](=O)"))
+    # Check for exactly two ester groups (from fatty acids) on glycerol
+    ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[OX2]C(=O)"))
     if len(ester_matches) < 2:
         return False, f"Found {len(ester_matches)} ester groups, need at least 2"
 
