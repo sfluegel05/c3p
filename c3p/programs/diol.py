@@ -34,7 +34,14 @@ def is_diol(smiles: str):
     hydroxyl_count = len(hydroxyl_matches)
 
     # Check if there are exactly two hydroxyl groups
-    if hydroxyl_count == 2:
-        return True, "Contains exactly two hydroxyl groups"
-    else:
+    if hydroxyl_count != 2:
         return False, f"Contains {hydroxyl_count} hydroxyl groups, need exactly 2"
+
+    # Ensure that the hydroxyl groups are not part of carboxylic acids or esters
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")
+
+    if mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(ester_pattern):
+        return False, "Hydroxyl groups are part of carboxylic acids or esters"
+
+    return True, "Contains exactly two hydroxyl groups and no disqualifying functional groups"
