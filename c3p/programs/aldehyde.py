@@ -32,9 +32,20 @@ def is_aldehyde(smiles: str):
         # Additional check to ensure it's not part of a carboxylic acid or ester
         carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
         ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][CX4]")
+        amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3]")
         
-        if mol.HasSubstructMatch(carboxylic_acid_pattern) or mol.HasSubstructMatch(ester_pattern):
-            return False, "Contains carbonyl group but is part of a carboxylic acid or ester"
+        # Check if the aldehyde carbon is part of a carboxylic acid, ester, or amide
+        aldehyde_matches = mol.GetSubstructMatches(aldehyde_pattern)
+        for match in aldehyde_matches:
+            aldehyde_carbon = match[0]
+            # Check if the aldehyde carbon is part of a carboxylic acid, ester, or amide
+            if (mol.HasSubstructMatch(carboxylic_acid_pattern) and 
+                any(atom.GetIdx() == aldehyde_carbon for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)) or \
+               (mol.HasSubstructMatch(ester_pattern) and 
+                any(atom.GetIdx() == aldehyde_carbon for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)) or \
+               (mol.HasSubstructMatch(amide_pattern) and 
+                any(atom.GetIdx() == aldehyde_carbon for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)):
+                return False, "Contains carbonyl group but is part of a carboxylic acid, ester, or amide"
         
         return True, "Contains the aldehyde functional group (RC(=O)H)"
     else:
