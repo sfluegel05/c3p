@@ -47,6 +47,9 @@ def is_beta_D_glucoside(smiles: str):
                 # We can use RDKit's stereochemistry tools to check this
                 bond = mol.GetBondBetweenAtoms(anomeric_carbon, neighbor.GetIdx())
                 if bond.GetStereo() == Chem.BondStereo.STEREOE:
-                    return True, "Contains beta-D-glucose moiety with beta-configuration glycosidic bond"
+                    # Further check the relative stereochemistry of C1 and C2
+                    c2_atom = mol.GetAtomWithIdx(match[1])  # C2 of the glucose moiety
+                    if anomeric_atom.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW and c2_atom.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CW:
+                        return True, "Contains beta-D-glucose moiety with beta-configuration glycosidic bond"
     
     return False, "No beta-configuration glycosidic bond found"
