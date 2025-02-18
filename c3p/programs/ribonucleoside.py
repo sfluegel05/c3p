@@ -3,113 +3,132 @@ Classifies: CHEBI:18254 ribonucleoside
 """
 """
 Classifies: any nucleoside where the sugar component is D-ribose (ribonucleoside)
-Definition: A ribonucleoside has a nucleobase linked via a glycosidic bond to a D-ribofuranose unit.
-This implementation first excludes compounds with phosphorus (to avoid nucleotides), then searches
-for common ribose SMARTS patterns, making sure that at least one atom in the matched sugar is bonded
-to an aromatic nitrogen (as a proxy for the nucleobase attachment). Finally, if SMARTS do not match,
-a heuristic is used to find a five-membered ring (1 oxygen, 4 carbons) that is directly linked to an aromatic N.
+Definition: A ribonucleoside is a nucleoside having its nucleobase linked
+             via an N-glycosidic bond to a D-ribofuranose (a five-membered ring
+             containing 1 oxygen and 4 carbons, plus an exocyclic CH2OH group at the 5'-position).
+Improvements:
+  1. Reject compounds containing phosphorus.
+  2. Look for five-membered rings that have exactly 1 oxygen and 4 carbons.
+  3. For each such ring, check that at least one ring carbon has an exocyclic CH2OH substituent.
+  4. Also require that at least one ring carbon is directly bonded (outside the ring) to
+     an aromatic nitrogen – taken as a proxy for a nucleobase linkage.
+If all these conditions are met, then the molecule is classified as a ribonucleoside.
 """
+
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 def is_ribonucleoside(smiles: str):
     """
-    Determines if a molecule is a ribonucleoside (i.e. a nucleoside with a D-ribose sugar)
-    based on its SMILES string.
-
-    Approaches:
-      1. Reject molecules containing phosphorus (to avoid nucleotides and phosphorylated species).
-      2. Attempt to match common SMARTS patterns of ribose providers and verify that at least one atom 
-         in the matched substructure is directly bonded to an aromatic nitrogen (nucleobase signature).
-      3. If SMARTS matching fails, search the molecule for any five-membered ring with 1 oxygen & 4 carbons,
-         then check for a direct bond from one of the ring carbons to a nitrogen (with aromatic character).
+    Determines if a molecule is a ribonucleoside (nucleoside with D-ribose sugar)
+    by checking for (i) the absence of phosphorus, (ii) the presence of a five-membered ring
+    with exactly one oxygen and four carbons, (iii) existence of an exocyclic CH2OH group (the 5'-substituent),
+    and (iv) attachment of the sugar ring to an aromatic nitrogen (i.e. nucleobase linkage).
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if the molecule is classified as a ribonucleoside, False otherwise.
-        str: Explanation/reason for the classification.
+        bool: True if the molecule is classified as a ribonucleoside, else False.
+        str: Explanation for the classification decision.
     """
-    # Parse the SMILES string.
+    # 1. Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Reject if molecule contains phosphorus (P, atomic number 15), likely part of a nucleotide.
+    # 2. Reject molecules that contain phosphorus (to avoid nucleotides)
     if any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms()):
         return False, "Molecule contains phosphorus; likely a nucleotide rather than a nucleoside"
     
-    # First approach: use common SMARTS for a ribose substructure.
-    # Pattern 1: common unmodified ribofuranose unit.
-    ribose_smarts1 = "[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O"
-    pattern1 = Chem.MolFromSmarts(ribose_smarts1)
-    if pattern1 is None:
-        return False, "Error creating SMARTS pattern for ribose (pattern1)"
-    # Pattern 2: variant (e.g., for 2'-O-methyl nucleosides).
-    ribose_smarts2 = "CO[C@@H]1[C@H](O)[C@@H](CO)O[C@H]1"
-    pattern2 = Chem.MolFromSmarts(ribose_smarts2)
-    if pattern2 is None:
-        return False, "Error creating SMARTS pattern for ribose (pattern2)"
+    # For better perception of substituents, add hydrogens.
+    molH = Chem.AddHs(mol)
+    ring_info = molH.GetRingInfo()
     
-    # Helper function to check if a substruct match is linked to an aromatic nitrogen (nucleobase).
-    def sugar_attached_to_nucleobase(match):
-        for idx in match:
-            atom = mol.GetAtomWithIdx(idx)
-            for nbr in atom.GetNeighbors():
-                # Only consider neighbors not in the sugar match.
-                if nbr.GetIdx() not in match and nbr.GetAtomicNum() == 7 and nbr.GetIsAromatic():
+    # Helper: Check if a candidate exocyclic substituent is a CH2OH group.
+    def is_CH2OH(atom):
+        # We expect atom to be carbon (sp3) with exactly two hydrogens [CH2] and an -OH group.
+        if atom.GetAtomicNum() != 6:
+            return False
+        # Count the total number of hydrogens explicitly present.
+        # (Using GetTotalNumHs() gives the total implicit+explicit H count.)
+        if atom.GetTotalNumHs() < 2:
+            return False
+        # Now, look for an oxygen neighbor (outside the sugar ring) that itself has at least one hydrogen.
+        for nbr in atom.GetNeighbors():
+            if nbr.GetAtomicNum() == 8:
+                # Check if this oxygen is an OH (attached to at least one hydrogen)
+                if nbr.GetTotalNumHs() >= 1:
                     return True
         return False
-
-    # Check pattern 1.
-    matches1 = mol.GetSubstructMatches(pattern1)
-    for match in matches1:
-        if sugar_attached_to_nucleobase(match):
-            return True, "Matched common D-ribose pattern (unmodified ribofuranose) attached to a nucleobase"
-    # Check pattern 2.
-    matches2 = mol.GetSubstructMatches(pattern2)
-    for match in matches2:
-        if sugar_attached_to_nucleobase(match):
-            return True, "Matched common D-ribose pattern with 2'-O-methyl modification attached to a nucleobase"
     
-    # Second approach: heuristic search for five-membered ribofuranose rings.
-    # Use an explicit hydrogen-added molecule for better perception.
-    mol_with_H = Chem.AddHs(mol)
-    ring_info = mol_with_H.GetRingInfo()
+    # For each five-membered ring, try to detect a ribofuranose unit.
     for ring in ring_info.AtomRings():
-        if len(ring) == 5:
-            # Count the number of oxygen and carbon atoms.
-            oxygen_idxs = []
-            carbon_idxs = []
-            for idx in ring:
-                atom = mol_with_H.GetAtomWithIdx(idx)
-                if atom.GetAtomicNum() == 8:
-                    oxygen_idxs.append(idx)
-                elif atom.GetAtomicNum() == 6:
-                    carbon_idxs.append(idx)
-            # Ribofuranose: exactly one oxygen, four carbons.
-            if len(oxygen_idxs) == 1 and len(carbon_idxs) == 4:
-                # For each carbon in the ring, check if it is bonded to an external aromatic nitrogen.
-                for idx in carbon_idxs:
-                    atom = mol_with_H.GetAtomWithIdx(idx)
-                    for nbr in atom.GetNeighbors():
-                        # Verify the neighboring atom is outside the ring.
-                        if nbr.GetIdx() not in ring and nbr.GetAtomicNum() == 7 and nbr.GetIsAromatic():
-                            return True, "Found five-membered ribofuranose ring attached to a nucleobase nitrogen"
-    return False, "No ribose moiety attached to a nucleobase found"
+        if len(ring) != 5:
+            continue
+        # Count oxygen and carbon atoms in this ring.
+        ring_atoms = [molH.GetAtomWithIdx(idx) for idx in ring]
+        oxygens = [atom for atom in ring_atoms if atom.GetAtomicNum() == 8]
+        carbons = [atom for atom in ring_atoms if atom.GetAtomicNum() == 6]
+        if len(oxygens) != 1 or len(carbons) != 4:
+            continue  # not a furanose pattern
+        
+        # Check for the typical 5'-CH2OH substituent.
+        # In a D-ribofuranose, one of the ring carbons (usually C4') is attached outside the ring
+        # to a CH2OH group.
+        ch2oh_found = False
+        for idx in ring:
+            atom = molH.GetAtomWithIdx(idx)
+            # Look at neighbors that are NOT part of the ring:
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() in ring:
+                    continue
+                # We want a carbon that qualifies as CH2OH.
+                if is_CH2OH(nbr):
+                    ch2oh_found = True
+                    break
+            if ch2oh_found:
+                break
+        if not ch2oh_found:
+            # This ring does not display the CH2OH substituent; skip it.
+            continue
+        
+        # Check for attachment of the sugar ring to a nucleobase:
+        # Look for any ring carbon (candidate for the anomeric carbon) that
+        # is bonded (outside the ring) to an aromatic nitrogen.
+        nucleobase_attached = False
+        for idx in ring:
+            atom = molH.GetAtomWithIdx(idx)
+            if atom.GetAtomicNum() != 6:
+                continue  # only consider carbons
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() in ring:
+                    continue
+                if nbr.GetAtomicNum() == 7 and nbr.GetIsAromatic():
+                    nucleobase_attached = True
+                    break
+            if nucleobase_attached:
+                break
+        
+        if nucleobase_attached:
+            return True, ("Found five-membered ribofuranose ring (1 O, 4 C) with a CH2OH substituent "
+                          "and a ring carbon attached to an aromatic nitrogen (nucleobase linkage)")
+    
+    return False, "No ribose moiety (with CH2OH and nucleobase linkage) found"
 
-# Example usage:
+# Example usage and testing:
 if __name__ == "__main__":
-    # Test a few examples:
+    # Example SMILES strings and expected outcomes (per provided list)
     examples = {
         "1-methyladenosine": "Cn1cnc2n(cnc2c1=N)[C@@H]1O[C@H](CO)[C@@H](O)[C@H]1O",
         "3,4-dihydrozebularine": "OC[C@H]1O[C@H]([C@H](O)[C@@H]1O)N1C=CCNC1=O",
         "nucleocidin": "NC1=C2N=CN([C@@H]3O[C@](F)(COS(N)(=O)=O)[C@@H](O)[C@H]3O)C2=NC=N1",
         "cytidine": "Nc1ccn([C@@H]2O[C@H](CO)[C@@H](O)[C@H]2O)c(=O)n1",
-        "5'-deoxyadenosine": "C[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12",  # should be false as deoxy sugar
-        "ATP (should be rejected)": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](COP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O"
+        "aminodeoxyfutalosine": "Nc1ncnc2n(cnc12)[C@@H]1O[C@H](CCC(=O)c2cccc(c2)C(O)=O)[C@@H](O)[C@H]1O",
+        "5'-deoxyadenosine (should fail ribonucleoside)": "C[C@H]1O[C@H]([C@H](O)[C@@H]1O)n1cnc2c(N)ncnc12",
+        "Adenosylcobinamide phosphate (should be rejected)": "C[C@H](CNC(=O)CC[C@]1(C)[C@@H](CC(N)=O)[C@H]2N3C1=C(C)C1=[N+]4C(=CC5=[N+]6C(=C(C)C7=[N+]([C@]2(C)[C@@](C)(CC(N)=O)[C@@H]7CCC(N)=O)[Co--]346C[C@H]2O[C@H]([C@H](O)[C@@H]2O)n2cnc3c(N)ncnc23)[C@@](C)(CC(N)=O)[C@@H]5CCC(N)=O)C(C)(C)[C@@H]1CCC(N)=O)OP(O)(O)=O"
     }
+    
     for name, smi in examples.items():
-        result, reason = is_ribonucleoside(smi)
-        print(f"{name}: {result} ({reason})")
+        res, reason = is_ribonucleoside(smi)
+        print(f"{name}: {res} ({reason})")
