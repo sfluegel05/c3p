@@ -6,8 +6,8 @@ from rdkit import Chem
 def is_glycosaminoglycan(smiles: str):
     """
     Determines if a molecule is a glycosaminoglycan based on its SMILES string.
-    Glycosaminoglycans are characterized by repeating disaccharide units consisting of an amino sugar 
-    and a uronic acid, often with sulfate groups.
+    Glycosaminoglycans are characterized by containing repeat units of sugars 
+    with substantial amino (NH2) modifications.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -21,29 +21,19 @@ def is_glycosaminoglycan(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Define more specific patterns for common GAG substructure components
-    # Amino sugar patterns: N-acetylglucosamine or N-acetylgalactosamine
-    amino_sugar_pattern1 = Chem.MolFromSmarts("NC([C@H]1CO[C@H](O)[C@@H](O)[C@H]1O)C=O")
-    amino_sugar_pattern2 = Chem.MolFromSmarts("NC([C@@H]1CO[C@H](O)[C@@H](O)[C@H]1O)C=O")
-    # Uronic acid pattern: a sugar with a carboxylic acid
-    uronic_acid_pattern = Chem.MolFromSmarts("[C@H]1(C(O)=O)O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")
-    # Sulfate pattern
-    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)O")
-
-    # Check for the presence of amino sugars and uronic acid units
-    amino_matches1 = mol.GetSubstructMatches(amino_sugar_pattern1)
-    amino_matches2 = mol.GetSubstructMatches(amino_sugar_pattern2)
-    uronic_matches = mol.GetSubstructMatches(uronic_acid_pattern)
     
-    # Check for sulfate groups (optional)
-    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
-
-    # Evaluate if the structure corresponds to a GAG
-    if (len(amino_matches1) >= 1 or len(amino_matches2) >= 1) and len(uronic_matches) >= 1:
-        reason = "Contains repeating units of amino sugars and uronic acids"
-        if len(sulfate_matches) > 0:
-            reason += " with sulfation"
-        return True, reason
+    # Consider generalized sugar-like patterns: simply a 5 or 6 member ring with multiple hydroxyls
+    sugar_pattern = Chem.MolFromSmarts("C1([OH])[CH2][CH2][OH][CH][OH][CH1]1")
     
+    # Consider an amino group in place of one of the hydroxyls, without rigid specificity
+    aminosugar_pattern = Chem.MolFromSmarts("C1([OH])[CH2][CH2]([NH2])[CH][OH][CH1]1")
+    
+    # Check for these key substructures
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    aminosugar_matches = mol.GetSubstructMatches(aminosugar_pattern)
+
+    # Assume it's a glycosaminoglycan if we detect amino-sugars in reasonable quantity
+    if len(aminosugar_matches) >= 2:
+        return True, "Contains a substantial proportion of aminomonosaccharide residues"
+
     return False, "Does not contain recognizable glycosaminoglycan features"
