@@ -1,146 +1,46 @@
 """
 Classifies: CHEBI:33855 arenecarbaldehyde
 """
- - 2,3,4-trihydroxybenzaldehyde: SMILES: [H]C(=O)c1c(O)c(O)ccc1O
- - 2,4,6-trihydroxybenzaldehyde: SMILES: [H]C(=O)c1c(O)cc(O)cc1O
- - 4-hydroxy-3-nitrobenzaldehyde: SMILES: O=CC1=CC(=O)c(O)cc1[N+]([O-])=O
- - 3,4-dihydroxybenzaldehyde: SMILES: [H]C(=O)c1cc(O)c(O)cc1
- - 3,5-dihydroxybenzaldehyde: SMILES: [H]C(=O)c1cc(O)cc(O)c1
- - 4-hydroxybenzaldehyde: SMILES: [H]C(=O)c1ccc(O)cc1
- - 3,4,5-trihydroxybenzaldehyde: SMILES: [H]C(=O)c1cc(O)c(O)c(O)c1
- - 3,4-dihydroxy-5-methoxybenzaldehyde: SMILES: [H]C(=O)c1cc(O)c(OC)cc1O
- - 3,4-dihydroxy-5-nitrobenzaldehyde: SMILES: [H]C(=O)c1cc(O)c([N+]([O-])=O)cc1O
- - 3,5-dihydroxy-4-methoxybenzaldehyde: SMILES: [H]C(=O)c1cc(O)c(OC)c(O)c1
- - 3,4-dihydroxy-5-nitrobenzaldehyde: SMILES: [H]C(=O)c1cc(O)c([N+]([O-])=O)cc1O
- - 4-hydroxy-3,5-dimethoxybenzaldehyde: SMILES: [H]C(=O)c1cc(OC)c(O)c(OC)c1
- - 4-hydroxy-3-methoxybenzaldehyde (vanillin): SMILES: COc1cc(C=O)ccc1O
- - 3,5-di-tert-butyl-4-hydroxybenzaldehyde: SMILES: CC(C)(C)c1cc(C=O)c(O)c(c1)C(C)(C)C
- - 4-hydroxy-3,5-dinitrobenzaldehyde: SMILES: O=CC1=CC(O)=C([N+]([O-])=O)C([N+]([O-])=O)=C1
- - 4-hydroxy-3-iodo-5-nitrobenzaldehyde: SMILES: O=CC1=CC(O)=C(I)C([N+]([O-])=O)=C1
- - 4-hydroxy-3-nitro-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(O)=C([N+]([O-])=O)C(C(F)(F)F)=C1
- - 3,4-dihydroxy-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(O)=C(C(F)(F)F)C(O)=C1
- - 3,4-dihydroxy-5-iodobenzaldehyde: SMILES: O=CC1=CC(O)=C(I)C(O)=C1
- - 3,4-dihydroxy-5-(methylsulfonyl)benzaldehyde: SMILES: O=CC1=CC(O)=C(S(=O)(=O)C)C(O)=C1
- - 3,4-dihydroxy-5-(methylthio)benzaldehyde: SMILES: O=CC1=CC(O)=C(S)C(O)=C1
- - 3,4-dihydroxy-5-(phenylsulfonyl)benzaldehyde: SMILES: O=CC1=CC(O)=C(S(=O)(=O)C2=CC=CC=C2)C(O)=C1
- - 3,4-dihydroxy-5-(trifluoromethoxy)benzaldehyde: SMILES: O=CC1=CC(O)=C(OC(F)(F)F)C(O)=C1
- - 3,4-dihydroxy-5-(trifluoromethyl)benzaldehyde: SMILES: O=CC1=CC(O)=C(C(F)(F)F)C(O)=C1
- - 3,4-dihydroxy-5-(trimethylsilyl)benzaldehyde: SMILES: O=CC1=CC(O)=C([Si](C)(C)C)C(O)=C1
- - 3,4-dihydroxy-5-(dimethylamino)benzaldehyde: SMILES: O=CC1=CC(O)=C(N(C)C)C(O)=C1
- - 3,4-dihydroxy-5-(diethylamino)benzaldehyde: SMILES: O=CC1=CC(O)=C(N(CC)CC)C(O)=C1
- - 3,4-dihydroxy-5-(pyrrolidin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCCC2)C(O)=C1
- - 3,4-dihydroxy-5-(piperidin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCCCC2)C(O)=C1
- - 3,4-dihydroxy-5-(morpholin-4-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCOCC2)C(O)=C1
- - 3,4-dihydroxy-5-(thiomorpholin-4-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCSCC2)C(O)=C1
- - 3,4-dihydroxy-5-(piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCNCC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-methylpiperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CC)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-phenylpiperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(C3=CC=CC=C3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-benzylpiperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CC3=CC=CC=C3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-hydroxyethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCO)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-methoxyethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCOC)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-cyanoethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCC#N)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-aminoethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(dimethylamino)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN(C)C)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(diethylamino)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN(CC)CC)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(pyrrolidin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCCC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(piperidin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCCCC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(morpholin-4-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCOCC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(thiomorpholin-4-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCSCC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCNCC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-methylpiperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CC)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-phenylpiperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(C4=CC=CC=C4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-benzylpiperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CC4=CC=CC=C4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-hydroxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCO)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-methoxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCOC)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-cyanoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCC#N)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-aminoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(dimethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN(C)C)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(diethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN(CC)CC)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(pyrrolidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCCC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(piperidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCCCC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(morpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCOCC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(thiomorpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCSCC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCNCC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-methylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CC)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-phenylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(C5=CC=CC=C5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-benzylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CC5=CC=CC=C5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-hydroxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCO)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-methoxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCOC)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-cyanoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCC#N)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-aminoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(dimethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN(C)C)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(diethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN(CC)CC)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(pyrrolidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCCC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(piperidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCCCC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(morpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCOCC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(thiomorpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCSCC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCNCC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-methylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CC)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-phenylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(C6=CC=CC=C6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-benzylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CC6=CC=CC=C6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-hydroxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCO)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-methoxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCOC)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-cyanoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCC#N)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-aminoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(dimethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN(C)C)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(diethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN(CC)CC)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(pyrrolidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCCC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(piperidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCCCC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(morpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCOCC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(thiomorpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCSCC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCNCC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-methylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CC)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-phenylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(C7=CC=CC=C7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-benzylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CC7=CC=CC=C7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-hydroxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCO)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-methoxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCOC)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-cyanoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCC#N)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-aminoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(dimethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN(C)C)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(diethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN(CC)CC)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(pyrrolidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCCC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(piperidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCCCC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(morpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCOCC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(thiomorpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCSCC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCNCC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-methylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CC)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-phenylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(C8=CC=CC=C8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-benzylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CC8=CC=CC=C8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-hydroxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCO)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-methoxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCOC)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-cyanoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCC#N)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-aminoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(dimethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN(C)C)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(diethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN(CC)CC)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(pyrrolidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCCC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(piperidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCCCC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(morpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCOCC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(thiomorpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCSCC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCNCC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-methylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CC)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-phenylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(C9=CC=CC=C9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-benzylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CC9=CC=CC=C9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-hydroxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCO)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-methoxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCOC)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-cyanoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCC#N)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-aminoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(dimethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN(C)C)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(diethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN(CC)CC)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(pyrrolidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCCC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(piperidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCCCC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(morpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCOCC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(thiomorpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCSCC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCNCC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-methylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CC)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-phenylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(C%10=CC=CC=C9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-benzylpiperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CC%10=CC=CC=C9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-hydroxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCO)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-methoxyethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCOC)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-cyanoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCC#N)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-aminoethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCN)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(dimethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCN(C)C)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(diethylamino)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCN(CC)CC)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(pyrrolidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCN%10CCCC%10)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(piperidin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCN%10CCCCC%10)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(morpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN(CCN6CCN(CCN7CCN(CCN8CCN(CCN9CCN(CCN%10CCOCC%10)CC9)CC8)CC7)CC6)CC5)CC4)CC3)CC2)C(O)=C1
- - 3,4-dihydroxy-5-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(4-(2-(thiomorpholin-4-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)ethyl)piperazin-1-yl)benzaldehyde: SMILES: O=CC1=CC(O)=C(N2CCN(CCN3CCN(CCN4CCN(CCN5CCN
+"""
+Classifies: arenecarbaldehyde (CHEBI:22697)
+"""
+from rdkit import Chem
+
+def is_arenecarbaldehyde(smiles: str):
+    """
+    Determines if a molecule is an arenecarbaldehyde based on its SMILES string.
+    An arenecarbaldehyde is an aldehyde where the carbonyl group is directly attached to an aromatic ring.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an arenecarbaldehyde, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Define the aldehyde group pattern (C=O)
+    aldehyde_pattern = Chem.MolFromSmarts('[CX3]=O')
+    matches = mol.GetSubstructMatches(aldehyde_pattern)
+    
+    for match in matches:
+        aldehyde_carbon_idx = match[0]
+        aldehyde_carbon = mol.GetAtomWithIdx(aldehyde_carbon_idx)
+        
+        # Get neighboring atoms excluding the oxygen
+        neighbors = [neighbor for neighbor in aldehyde_carbon.GetNeighbors() if neighbor.GetSymbol() != 'O']
+        
+        # Aldehyde should have exactly one non-oxygen neighbor (the aromatic carbon)
+        if len(neighbors) != 1:
+            continue
+        
+        neighbor_atom = neighbors[0]
+        # Check if the neighbor is part of an aromatic ring
+        if neighbor_atom.GetIsAromatic():
+            return True, "Aldehyde group attached to aromatic ring"
+    
+    return False, "No aldehyde group attached to aromatic ring"
