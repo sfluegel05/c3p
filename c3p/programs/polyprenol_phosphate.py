@@ -47,4 +47,9 @@ def is_polyprenol_phosphate(smiles: str):
     if mol_wt < 500:
         return False, "Molecular weight too low for polyprenol phosphate"
 
+    # Additional check for long carbon chain
+    carbon_chain_pattern = Chem.MolFromSmarts("[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]~[CX4]")
+    if not mol.HasSubstructMatch(carbon_chain_pattern):
+        return False, "No long carbon chain found"
+
     return True, "Contains polyprenol chain with terminal phosphate group"
