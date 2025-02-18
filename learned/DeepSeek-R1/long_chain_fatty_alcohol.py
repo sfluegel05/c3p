@@ -10,42 +10,40 @@ from rdkit.Chem import rdMolDescriptors
 def is_long_chain_fatty_alcohol(smiles: str):
     """
     Determines if a molecule is a long-chain fatty alcohol (C13-C22 chain) based on its SMILES string.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a long-chain fatty alcohol, False otherwise
-        str: Reason for classification
+    A fatty alcohol has a hydroxyl group attached to an aliphatic carbon chain of 13-22 carbons.
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return False, "Invalid SMILES"
 
-    # Check for at least one hydroxyl group (-OH)
-    hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl group found"
+    # Must have at least one hydroxyl group
+    if not any(atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() == 1 for atom in mol.GetAtoms()):
+        return False, "No hydroxyl group"
 
-    # Function to compute the longest carbon chain length
-    def get_longest_carbon_chain(mol):
-        # Create a copy with only carbons and single bonds
-        emol = Chem.RWMol(mol)
-        # Remove non-carbon atoms
-        atoms_to_remove = [atom.GetIdx() for atom in emol.GetAtoms() if atom.GetAtomicNum() != 6]
-        for idx in sorted(atoms_to_remove, reverse=True):
-            emol.RemoveAtom(idx)
-        # Convert all bonds to single to consider only single bonds for chain length
-        for bond in emol.GetBonds():
-            bond.SetBondType(Chem.BondType.SINGLE)
-        mol_carbons = emol.GetMol()
-        return rdMolDescriptors.CalcLongestChainLength(mol_carbons)
+    # Create carbon-only structure with single bonds for chain analysis
+    emol = Chem.RWMol()
+    carbon_map = {}
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon only
+            new_atom = Chem.Atom(6)
+            idx = emol.AddAtom(new_atom)
+            carbon_map[atom.GetIdx()] = idx
 
-    longest_chain = get_longest_carbon_chain(mol)
+    # Add single bonds between carbons
+    for bond in mol.GetBonds():
+        if bond.GetBeginAtom().GetAtomicNum() == 6 and bond.GetEndAtom().GetAtomicNum() == 6:
+            i = carbon_map[bond.GetBeginAtom().GetIdx()]
+            j = carbon_map[bond.GetEndAtom().GetIdx()]
+            emol.AddBond(i, j, Chem.BondType.SINGLE)
 
-    # Check chain length is between 13 and 22
-    if longest_chain < 13 or longest_chain > 22:
-        return False, f"Longest carbon chain is {longest_chain}, not in 13-22"
+    # Calculate longest chain in carbon skeleton
+    mol_carbons = emol.GetMol()
+    if mol_carbons.GetNumAtoms() == 0:
+        return False, "No carbon chain"
+    
+    longest_chain = rdMolDescriptors.CalcLongestChain(mol_carbons)
 
-    return True, f"Long-chain fatty alcohol with C{longest_chain} chain"
+    # Verify chain length requirement
+    if 13 <= longest_chain <= 22:
+        return True, f"Contains C{longest_chain} chain with hydroxyl group"
+    return False, f"Chain length {longest_chain} not in 13-22 range"
