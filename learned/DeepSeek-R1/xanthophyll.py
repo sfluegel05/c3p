@@ -1,155 +1,44 @@
 """
 Classifies: CHEBI:27325 xanthophyll
 """
- - 1'-Hydroxy-gamma-carotene: SMILES: CC(\C=C\C=C(C)\C=C\[C@H]1C(C)=C[C@H](O)CC1(C)C)=C/C=C/C=C(C)/C=C/C=C(C)/C=C/C1=C(C)CCCC1(C)C
- - (3R,3'S,5R,6S,5'R,6'R)-5,6:5',6'-diepoxy-5,6,5',6'-tetrahydro-b,b-carotene-3,3'-diol: SMILES: O[C@H]1CC[C@H](O1)C(=C/C=C/C(=C/C=C/C(=C/C=C/C=C(/C=C/C=C(/C=C/C2=C(C[C@H](O[C@H]3C[C@H](O)[C@@H](O3)C2(C)C)CC2(C)C)\C)\C)/C)/C)/C)(C)C
- - (3R,3'R,6'R)-3-Hydroxy-4',5'-didehydro-5,6-epoxy-b,b-caroten-3'-ol: SMILES: O[C@H]1CC[C@H](O1)C(=C/C=C/C(=C/C=C/C(=C/C=C/C=C(/C=C/C=C(/C=C/C2=C(C[C@H](O)CC2(C)C)\C)\C)/C)/C)/C)(C)C
- - 7,8,7',8'-tetrahydrolycopene: SMILES: CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\CC(C)(C)C
- - 3,4-didehydrolycopene: SMILES: CC(C)=CCC\C(C)=C\C=C\C(C)=C\C=C\C(C)=C\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\CC(C)(C)C
- - 3,4-didehydrolycopene 16-aldehyde: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - 7,8,11,12,7',8',11',12'-octahydrolycopene: SMILES: CC(C)=CCC\C(C)=C\CC\C(C)=C\CC\C(C)=C\CC\C=C(/C)\CC\C=C(/C)\CC\C=C(/C)CC(C)(C)C
- - (all-E)-3-Hydroxy-3',4'-didehydro-beta-carotene: SMILES: O[C@@]1(C(C[C@@H](CC1(C)C)\C=C\C(\C)=C\C=C\C(\C)=C\C=C\C=C(\C=C\C=C(\C=C\C=2C(C=CC(CC2C)(C)C)\C)/C)/C)(C)C)C
- - 3',4'-didehydrolycopene: SMILES: CC(C)=CCC\C(C)=C\C=C\C(C)=C\C=C\C(C)=C\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - (3R,3'S,5R,6S)-5,6-epoxy-3-hydroxy-5,6-dihydro-10'-apo-beta-caroten-3',10'-diol 3'-sulfate: SMILES: S(O[C@H]1CC(C(=C(C1)C)/C=C/C(/C)=C/C=C/C(/C)=C/C=C/C=C(/C=C/C=C(/C=C/C2=C(C[C@H](O[C@H]3C[C@H](O)[C@@H](O3)C2(C)C)CC2(C)C)\C)\C)/C)(C)C)(O)(=O)=O
- - 3,1'-Dihydroxy-gamma-carotene: SMILES: O[C@H]1CC(C(=C(C1)C)/C=C/C(/C)=C/C=C/C(/C)=C/C=C/C=C(/C=C/C=C(/C=C/C2=C(C[C@@H](O)CC2(C)C)\C)\C)/C)(C)C
- - (3R,3'R,6'R)-3,3'-Dihydroxy-e,e-caroten-12'-al: SMILES: O=CC\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]1C(C[C@H](O)CC1(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - (3R,3'R,6'R)-3,3'-Dihydroxy-b,b-caroten-19'-al: SMILES: O=CC\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]1C(C[C@H](O)CC1(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-b,b-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C@H](O1)[C@H](C)\C=C\C=C(\C)/C=C/C=C(\C)/C=C/C=C(\C)/C=C/[C@H]2C(C[C@H](O)CC2(C)C)(C)C
- - 3,4-didehydrolycopene 16-al: SMILES: O=CC\C=C(/C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)\C=C\C=C(C)CC(C)(C)C
- - (3R,3'R,5'R,6'R)-5',6'-epoxy-3,3',5'-trihydroxy-6',7'-didehydro-5,6,7,8,5',6'-hexahydro-beta,beta-caroten-19'-al: SMILES: O=CC[C@@H]1[C@H](O)CC[C
+"""
+Classifies: CHEBI:27345 xanthophyll
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+
+def is_xanthophyll(smiles: str):
+    """
+    Determines if a molecule is a xanthophyll based on its SMILES string.
+    Xanthophylls are oxygenated carotenoids, characterized by the presence of oxygen atoms and a conjugated double bond system.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a xanthophyll, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+    
+    # Check for presence of oxygen atoms
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count == 0:
+        return False, "No oxygen atoms found"
+    
+    # Check for conjugated double bonds system indicative of carotenoids
+    conjugated_systems = Chem.GetConjugatedSystems(mol)
+    max_conj_length = 0
+    for system in conjugated_systems:
+        # Calculate the length of the conjugated system (number of atoms)
+        system_length = len(system)
+        if system_length > max_conj_length:
+            max_conj_length = system_length
+    
+    # Carotenoids typically have long conjugated systems (e.g., >= 18 atoms for ~9 double bonds)
+    if max_conj_length < 18:
+        return False, f"Conjugated system too short ({max_conj_length} atoms)"
+    
+    return True, "Oxygenated carotenoid with conjugated double bond system"
