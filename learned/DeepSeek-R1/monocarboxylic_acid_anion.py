@@ -30,15 +30,19 @@ def is_monocarboxylic_acid_anion(smiles: str):
         return False, f"Found {len(carboxylate_matches)} carboxylate groups (expected 1)"
     
     # Check for other acidic groups that could donate protons (carboxylic acids, phenols, sulfonic/phosphoric acids)
-    acidic_smarts = Chem.MolFromSmarts(
-        "[CX3](=O)[OH] | c[OH] | [S,P](=O)(O)[OH] | [NX3](=O)[OH]"
-    )
-    if mol.HasSubstructMatch(acidic_smarts):
-        return False, "Contains other acidic protons"
+    acidic_patterns = [
+        ("[CX3](=O)[OH]", "carboxylic acid (-COOH)"),
+        ("[c;!$(c-[OX2])][OH]", "phenolic -OH"),  # Phenol where O is not part of a carboxylate
+        ("[SX4](=O)(=O)([OH])", "sulfonic acid (-SO3H)"),
+        ("[PX4](=O)([OH])([OH])", "phosphoric acid (-PO(OH)2)"),
+        ("[NX3](=O)[OH]", "nitro group with -OH")
+    ]
     
-    # Verify formal charge is exactly -1
-    charge = Chem.GetFormalCharge(mol)
-    if charge != -1:
-        return False, f"Formal charge {charge} does not equal -1"
+    for smarts, desc in acidic_patterns:
+        pattern = Chem.MolFromSmarts(smarts)
+        if pattern is None:
+            continue  # Skip invalid patterns (unlikely if SMARTS is correct)
+        if mol.HasSubstructMatch(pattern):
+            return False, f"Contains acidic group: {desc}"
     
     return True, "Single carboxylate group with no other acidic protons"
