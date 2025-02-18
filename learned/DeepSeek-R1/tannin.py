@@ -1,71 +1,58 @@
 """
 Classifies: CHEBI:26848 tannin
 """
-"""
-Classifies: CHEBI:26848 tannin
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+</think>
 
-def is_tannin(smiles: str):
-    """
-    Determines if a molecule is a tannin based on its SMILES string.
-    Tannins are polyphenolic compounds with multiple galloyl groups, ellagitannin features,
-    or condensed flavan-3-ol structures.
+Okay, let's see why the previous code didn't work well. The F1 score was really low, so there were a lot of false positives and negatives. Let me look at the outcomes.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+The false positives included molecules like complex glycans and other hydroxylated compounds that aren't tannins. The previous code checked for high hydroxylation and molecular weight, which probably let in those sugars. For example, some false positives had many OH groups but were carbohydrates, not polyphenolic tannins.
 
-    Returns:
-        bool: True if molecule is a tannin, False otherwise
-        str: Reason for classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES"
+False negatives included molecules like Isogomisin O and Ellagic acid pentoside. The code might have missed them because it relied too much on specific patterns like galloyl groups or flavan-3-ol subunits. Maybe those structures have different arrangements of phenolic groups that weren't captured by the existing SMARTS patterns.
 
-    # Improved galloyl group detection (3,4,5-trihydroxybenzoate ester)
-    galloyl_pattern = Chem.MolFromSmarts('[OX2]C(=O)c1c(O)c(O)c(O)cc1')  # Corrected positions
-    galloyl_count = len(mol.GetSubstructMatches(galloyl_pattern))
-    if galloyl_count >= 1:
-        # Check for multiple galloyl esters or presence with other phenolic groups
-        ester_pattern = Chem.MolFromSmarts('[OX2]C(=O)')  # General ester count
-        ester_count = len(mol.GetSubstructMatches(ester_pattern))
-        if ester_count >= 2 and galloyl_count >= 1:
-            return True, f"Contains {galloyl_count} galloyl groups and {ester_count} esters"
-        if galloyl_count >= 2:
-            return True, f"Contains {galloyl_count} galloyl groups"
+So, what's wrong with the previous approach? Let's break it down:
 
-    # Check for hexahydroxydiphenoyl (HHDP) groups (characteristic of ellagitannins)
-    hhdp_pattern = Chem.MolFromSmarts('c1c(O)c(O)c(-c2c(O)c(O)c(O)cc2)c(O)c1')
-    if mol.HasSubstructMatch(hhdp_pattern):
-        return True, "Contains hexahydroxydiphenoyl (HHDP) group"
+1. **Galloyl Detection**: The galloyl pattern was looking for 3,4,5-trihydroxybenzoate esters. But maybe the SMARTS pattern wasn't accurate. Also, some tannins have galloyl groups attached in different ways, or other polyphenolic structures like ellagic acid derivatives.
 
-    # Detect flavan-3-ol oligomers (condensed tannins)
-    # Basic flavan-3-ol pattern with multiple hydroxyls
-    flavan_pattern = Chem.MolFromSmarts('[C@H]1Oc2cc(O)cc(O)c2C[C@H](O)C1')
-    flavan_matches = len(mol.GetSubstructMatches(flavan_pattern))
-    if flavan_matches >= 2:
-        return True, f"Contains {flavan_matches} flavan-3-ol subunits"
+2. **HHDP Group**: The hexahydroxydiphenoyl (HHDP) pattern might not have been correctly defined. The SMARTS for HHDP might need adjustment to capture the correct connectivity.
 
-    # Enhanced phenolic group detection with positional requirements
-    pyrogallol = Chem.MolFromSmarts('c1c(O)c(O)c(O)cc1')  # Three adjacent OH
-    catechol = Chem.MolFromSmarts('c1c(O)c(O)ccc1')       # Two adjacent OH
-    
-    phenolic_count = len(mol.GetSubstructMatches(pyrogallol)) * 3 + len(mol.GetSubstructMatches(catechol)) * 2
-    total_oh = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1)
-    
-    # Check for high hydroxylation and molecular weight
-    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if (phenolic_count >= 6 or total_oh >= 8) and mol_wt > 500:
-        return True, f"Highly hydroxylated ({total_oh} OH) with MW {mol_wt:.1f}"
+3. **Flavan-3-ol Detection**: The pattern for condensed tannins (flavan-3-ol oligomers) might not be comprehensive enough. Maybe it missed some variations in the structure, like different substitution patterns or linkages.
 
-    # Check for glucose core with multiple substituents (common in hydrolyzable tannins)
-    glucose_core = Chem.MolFromSmarts('[C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O')
-    if mol.HasSubstructMatch(glucose_core):
-        # Look for at least 3 ester groups attached to glucose
-        ester_attachments = len(mol.GetSubstructMatches(Chem.MolFromSmarts('[OX2]C(=O)-[#6]@;-[OX2][C@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O')))
-        if ester_attachments >= 3:
-            return True, f"Glucose core with {ester_attachments} ester groups"
+4. **Hydroxylation Check**: The code considered total hydroxyls and molecular weight, but this led to false positives from non-tannin hydroxylated compounds (like sugars). Need a better way to ensure the hydroxyls are part of polyphenolic systems.
 
-    return False, "Does not meet tannin criteria"
+5. **Glucose Core Check**: The ester count on glucose might not have been accurate. Some hydrolyzable tannins have multiple galloyl or ellagic acid groups attached, but the code's ester detection might not have captured that correctly.
+
+**Improvements to Try:**
+
+- **Revise Galloyl Detection**: Use a more precise SMARTS for galloyl groups. Galloyl is 3,4,5-trihydroxybenzoic acid ester. The pattern should ensure the three OH groups are on the benzene ring in the correct positions.
+
+- **Improve HHDP Detection**: The HHDP group is two galloyl units linked by a C-C bond. The SMARTS should check for two benzene rings each with three OH groups, connected appropriately.
+
+- **Better Flavan-3-ol Patterns**: The previous pattern might not account for different substitution positions or oligomer linkages. Maybe look for the flavan backbone with multiple hydroxyls and check for oligomerization via substructure matches.
+
+- **Polyphenolic Check**: Instead of just counting OHs, ensure they are part of aromatic rings (phenolic groups). Use SMARTS to count the number of phenolic hydroxyls (OH attached to aromatic carbons) and require a minimum.
+
+- **Adjust Molecular Weight Threshold**: Some tannins are smaller, but maybe the cutoff was too high. However, the examples show MWs around 500+, so maybe keep but combine with other features.
+
+- **Check for Multiple Aromatic Rings with Hydroxyls**: Tannins are polyphenolic, so having multiple aromatic rings each with several hydroxyls is key. Use SMARTS to find rings with at least two adjacent OHs (catechol) or three (pyrogallol) and count them.
+
+- **Reduce Reliance on Glucose Core**: Some tannins like ellagitannins might not have a glucose core. So, the glucose check should be one of several criteria, not a must-have.
+
+**Implementing Changes:**
+
+1. **Galloyl SMARTS**: Use `[OX2]C(=O)c1c(O)c(O)c(O)cc1` to match the ester of 3,4,5-trihydroxybenzoic acid.
+
+2. **HHDP SMARTS**: Look for two galloyl groups connected by a bond. Maybe `c1c(O)c(O)c(-c2c(O)c(O)c(O)cc2)c(O)c1`.
+
+3. **Flavan-3-ol**: Use a more general pattern for the flavan unit, perhaps with hydroxyls in typical positions.
+
+4. **Polyphenolic Check**: Count the number of aromatic rings with at least two hydroxyls. Require a minimum number (like 3 or more).
+
+5. **Combine Features**: Require either galloyl/HHDP groups, flavan oligomers, or sufficient polyphenolic rings with high hydroxylation and MW.
+
+Let me adjust the code with these improvements. Also, ensure that the checks for hydroxyls are on aromatic rings to avoid counting sugars' OHs. Add a check for the presence of multiple phenolic groups (catechol/pyrogallol) and combine with molecular weight. Also, refine the glucose core check to look for specific ester attachments related to tannins.
+
+Another thing: the previous code returned true if there was high hydroxylation and MW >500, which caused sugars to be false positives. Instead, require that the hydroxyls are part of aromatic systems (phenolic OH) and have a certain count.
+
+Let's structure the code to first check for specific tannin features (galloyl, HHDP, flavan-3-ol oligomers), then check for general polyphenolic characteristics with sufficient phenolic OHs and MW.
+
+Also, the false negatives like Ellagic acid pentoside might have been missed because the HH
