@@ -39,7 +39,7 @@ def is_diglyceride(smiles: str):
 
     # Find the third oxygen in the glycerol (not part of ester groups)
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
-    backbone_indices = glycerol_matches[0]
+    backbone_indices = glycerol_matches[0]  # Take first match
     backbone_carbons = [mol.GetAtomWithIdx(idx) for idx in backbone_indices]
 
     # Collect all oxygens attached to the backbone carbons
@@ -49,8 +49,10 @@ def is_diglyceride(smiles: str):
             if neighbor.GetAtomicNum() == 8:
                 glycerol_oxygens.append(neighbor)
 
+    # Get oxygen indices from ester groups (match[1] is the ester oxygen in our SMARTS pattern)
+    ester_oxygen_indices = {match[1] for match in ester_attached_matches}
+    
     # Identify the third oxygen not part of the ester groups
-    ester_oxygen_indices = {o.GetIdx() for match in ester_attached_matches for o in match if o.GetAtomicNum() == 8}
     third_oxygens = [o for o in glycerol_oxygens if o.GetIdx() not in ester_oxygen_indices]
     if len(third_oxygens) != 1:
         return False, "Could not identify third oxygen in glycerol"
@@ -67,7 +69,7 @@ def is_diglyceride(smiles: str):
     else:
         return False, "Third oxygen has invalid bonding"
 
-    # Check oxygen count (glycerol 3 O + 2 from ester carbonyls)
+    # Check oxygen count (3 from glycerol + 2 from ester carbonyls)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count != 5:
         return False, f"Expected 5 oxygens, found {o_count}"
