@@ -26,29 +26,23 @@ def is_catechin(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the flavan-3-ol core structure
-    flavan_3_ol_core = Chem.MolFromSmarts("[C@@H]1[C@H](O)Cc2c(O)cc(O)cc2O1")
+    # Define a more general flavan-3-ol core structure pattern
+    flavan_3_ol_core = Chem.MolFromSmarts("[C@H]1[C@H](O)Cc2c(O)cc(O)cc2O1")
     if not mol.HasSubstructMatch(flavan_3_ol_core):
         return False, "No flavan-3-ol core structure found"
 
-    # Check for at least 3 hydroxyl groups (OH) on the aromatic rings
+    # Check for at least 3 hydroxyl groups (OH) in the molecule
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
     hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
     if len(hydroxyl_matches) < 3:
         return False, f"Found {len(hydroxyl_matches)} hydroxyl groups, need at least 3"
 
-    # Check for the presence of aromatic rings
-    aromatic_pattern = Chem.MolFromSmarts("a")
-    aromatic_matches = mol.GetSubstructMatches(aromatic_pattern)
-    if len(aromatic_matches) < 2:
-        return False, f"Found {len(aromatic_matches)} aromatic rings, need at least 2"
+    # Check for the presence of a chroman ring
+    chroman_ring_pattern = Chem.MolFromSmarts("C1CCc2c(O)cc(O)cc2O1")
+    if not mol.HasSubstructMatch(chroman_ring_pattern):
+        return False, "No chroman ring found"
 
-    # Check for the presence of a 3-hydroxy group on the chroman ring
-    chroman_3_oh_pattern = Chem.MolFromSmarts("[C@@H]1[C@H](O)Cc2c(O)cc(O)cc2O1")
-    if not mol.HasSubstructMatch(chroman_3_oh_pattern):
-        return False, "No 3-hydroxy group on the chroman ring"
-
-    return True, "Contains flavan-3-ol core structure with at least 3 hydroxyl groups on aromatic rings"
+    return True, "Contains flavan-3-ol core structure with at least 3 hydroxyl groups"
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23053',
                           'name': 'catechin',
