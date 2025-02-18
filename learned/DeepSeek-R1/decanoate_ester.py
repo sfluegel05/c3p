@@ -9,14 +9,8 @@ from rdkit import Chem
 def is_decanoate_ester(smiles: str):
     """
     Determines if a molecule is a decanoate ester based on its SMILES string.
-    A decanoate ester is formed by the condensation of decanoic acid with an alcohol/phenol.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a decanoate ester, False otherwise
-        str: Reason for classification
+    A decanoate ester is formed by the condensation of decanoic acid (10 carbons including carbonyl)
+    with an alcohol/phenol. The acid part must have a straight 10-carbon chain (9 in R group).
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -29,32 +23,49 @@ def is_decanoate_ester(smiles: str):
     if not ester_matches:
         return False, "No ester group found"
     
-    # Check each ester group for decanoate (10 carbons in acid part including carbonyl)
     for match in ester_matches:
-        carbonyl_carbon = match[1]
-        visited = set([match[0]])  # Exclude ester oxygen from traversal
-        stack = [carbonyl_carbon]
-        carbon_count = 0
+        # Match structure: [O]-C(=O)-[O from alcohol]
+        carbonyl_idx = match[1]  # Central carbon in ester group
         
-        while stack:
-            atom_idx = stack.pop()
-            if atom_idx in visited:
-                continue
-            visited.add(atom_idx)
-            
-            atom = mol.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() != 6:
-                continue  # Only count carbons
-            
-            carbon_count += 1
-            
-            # Add all adjacent atoms except ester oxygen
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() not in visited and neighbor.GetIdx() != match[0]:
-                    stack.append(neighbor.GetIdx())
+        # Find R' carbon (non-oxygen neighbor of carbonyl)
+        carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
+        r_prime_candidates = []
+        for neighbor in carbonyl_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in (match[0], match[2]):
+                r_prime_candidates.append(neighbor.GetIdx())
         
-        # Need at least 10 carbons in acid chain (carbonyl + 9 more)
-        if carbon_count >= 10:
-            return True, "Contains decanoate chain in ester group"
+        for r_prime_idx in r_prime_candidates:
+            # Track chain length and check for straight 9-carbon chain
+            current_idx = r_prime_idx
+            prev_idx = carbonyl_idx
+            chain_length = 1  # Start counting at R' carbon
+            valid_chain = True
+            
+            # Need exactly 9 carbons in straight chain
+            for _ in range(8):  # Add 8 more carbons to reach total 9
+                current_atom = mol.GetAtomWithIdx(current_idx)
+                next_carbons = []
+                
+                # Find next carbons (non-branching)
+                for neighbor in current_atom.GetNeighbors():
+                    n_idx = neighbor.GetIdx()
+                    if n_idx != prev_idx and neighbor.GetAtomicNum() == 6:
+                        next_carbons.append(n_idx)
+                
+                if len(next_carbons) != 1:
+                    valid_chain = False
+                    break
+                
+                prev_idx = current_idx
+                current_idx = next_carbons[0]
+                chain_length += 1
+            
+            # Final check: chain length must be exactly 9 and no further carbons
+            if valid_chain and chain_length == 9:
+                # Verify no additional carbons after 9th
+                last_atom = mol.GetAtomWithIdx(current_idx)
+                if all(neighbor.GetAtomicNum() != 6 or neighbor.GetIdx() == prev_idx 
+                       for neighbor in last_atom.GetNeighbors()):
+                    return True, "Straight 10-carbon acid chain (9 in R group)"
     
-    return False, "No ester group with 10-carbon acid chain found"
+    return False, "No ester with 10-carbon straight-chain acid"
