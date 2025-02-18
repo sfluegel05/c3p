@@ -28,40 +28,40 @@ def is_quinone(smiles: str):
     if len(ketone_matches) < 2:
         return False, f"Found {len(ketone_matches)} ketone groups, need at least 2"
     
-    # Check for conjugated cyclic dione structure using multiple SMARTS patterns
+    # Check for conjugated cyclic dione structure using SMARTS patterns
     patterns = [
-        # Benzoquinone-like (6-membered ring)
+        # Benzoquinone (6-membered)
         Chem.MolFromSmarts('[O]=C1C=CC(=O)C=C1'),
-        # Anthraquinone-like (fused rings)
-        Chem.MolFromSmarts('[O]=C1C2=C(C(=O)C=C1)C=CC=C2'),
-        # Naphthoquinone-like (two fused rings)
+        # Naphthoquinone (two fused rings)
         Chem.MolFromSmarts('[O]=C1C(=O)C2=CC=CC=C2C=C1'),
-        # General conjugated cyclic dione (any ring size)
-        Chem.MolFromSmarts('[O]=C1~*~*~*~*~*1'),  # Adjust as needed
+        # Anthraquinone (three fused rings)
+        Chem.MolFromSmarts('[O]=C1C2=C(C(=O)C=C1)C=CC=C2'),
+        # General conjugated cyclic dione (any even-membered ring)
+        Chem.MolFromSmarts('[O]=C1C(=O)C=CC=C1'),  # 6-membered variant
+        Chem.MolFromSmarts('[O]=C1C(=O)CC=C1'),     # 5-membered (if exists)
     ]
     
     for pattern in patterns:
-        if pattern is not None and mol.HasSubstructMatch(pattern):
+        if pattern and mol.HasSubstructMatch(pattern):
             return True, "Contains conjugated cyclic dione structure"
     
-    # Additional check for conjugated systems not captured by SMARTS
-    # Get all rings containing at least two ketones
+    # Additional check for rings with at least two ketones in conjugation
     rings = mol.GetRingInfo().AtomRings()
-    ketone_atoms = {match.GetAtomIdx() for match in mol.GetSubstructMatches(Chem.MolFromSmarts('[#6]=O'))}
+    ketone_atoms = {match[0] for match in ketone_matches}  # Fix: extract first atom from each match tuple
+    
     for ring in rings:
         ring_ketones = [atom for atom in ring if atom in ketone_atoms]
         if len(ring_ketones) >= 2:
-            # Check if the path between any two ketones in the ring is conjugated
+            # Check all pairs of ketones in the ring for conjugated path
             for i in range(len(ring_ketones)):
                 for j in range(i+1, len(ring_ketones)):
-                    path = Chem.GetShortestPath(mol, ring_ketones[i], ring_ketones[j])
-                    conjugated = True
-                    for k in range(len(path)-1):
-                        bond = mol.GetBondBetweenAtoms(path[k], path[k+1])
-                        if not bond.GetIsConjugated():
-                            conjugated = False
-                            break
+                    a1, a2 = ring_ketones[i], ring_ketones[j]
+                    path = Chem.GetShortestPath(mol, a1, a2)
+                    if not path:
+                        continue
+                    conjugated = all(mol.GetBondBetweenAtoms(path[k], path[k+1]).GetIsConjugated() 
+                                    for k in range(len(path)-1))
                     if conjugated:
-                        return True, "Contains conjugated cyclic dione structure"
+                        return True, "Conjugated dione in cyclic system"
     
     return False, "No conjugated cyclic dione structure found"
