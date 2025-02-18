@@ -24,35 +24,36 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for thioester group (C(=O)S-C) connected to CoA's sulfur
-    thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2][CX4]")
+    # Check for thioester group (C(=O)S)
+    thioester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[SX2]")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester group found"
 
-    # Verify CoA structure presence (adenine with amino group and multiple phosphates)
-    # Adenine pattern matches 6-aminopurine core
-    adenine_pattern = Chem.MolFromSmarts("n1c(N)nc2c1ncn2")
-    # Phosphate pattern matches any P with double bond to O and at least two O neighbors
-    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2]")
-    
+    # Verify CoA structure: adenine, phosphopantetheine, and phosphates
+    # Adenine pattern (6-aminopurine)
+    adenine_pattern = Chem.MolFromSmarts("n1c(nc2c1ncn2)N")
     if not mol.HasSubstructMatch(adenine_pattern):
         return False, "Missing adenine component"
-    
+
+    # CoA typically has 3 phosphate groups (diphosphate bridge + phosphopantetheine)
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2]")
     phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 2:
-        return False, f"Found {len(phosphate_matches)} phosphate groups, need at least 2"
+    if len(phosphate_matches) < 3:
+        return False, f"Found {len(phosphate_matches)} phosphate groups, need at least 3"
 
     # Identify the fatty acid chain attached to the thioester
     try:
-        # Get carbonyl carbon (attached to sulfur via thioester)
+        # Get sulfur atom from thioester
         sulfur_idx = thioester_matches[0][2]
-        carbonyl_carbon = [a.GetIdx() for a in mol.GetAtomWithIdx(sulfur_idx).GetNeighbors() 
-                         if a.GetSymbol() == "C" and a.GetBondToAtomIdx(sulfur_idx).GetBondType() == Chem.BondType.SINGLE][0]
-    except IndexError:
+        # Get carbonyl carbon (attached to sulfur)
+        carbonyl_carbon = [n.GetIdx() for n in mol.GetAtomWithIdx(sulfur_idx).GetNeighbors() 
+                          if n.GetSymbol() == "C" and 
+                          mol.GetBondBetweenAtoms(n.GetIdx(), sulfur_idx).GetBondType() == Chem.BondType.SINGLE][0]
+    except (IndexError, AttributeError):
         return False, "Invalid thioester connectivity"
 
-    # Traverse the carbon chain from the carbonyl carbon (excluding CoA part)
+    # Traverse the carbon chain from carbonyl carbon (excluding CoA part)
     chain = []
     visited = set()
     
@@ -61,20 +62,20 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
             return
         visited.add(atom_idx)
         atom = mol.GetAtomWithIdx(atom_idx)
-        # Follow carbons and oxygen (for possible branching with ester groups)
-        if atom.GetSymbol() in ["C", "O"]:
-            if atom.GetSymbol() == "C":
-                chain.append(atom_idx)
+        if atom.GetSymbol() == "C":
+            chain.append(atom_idx)
             for neighbor in atom.GetNeighbors():
                 if neighbor.GetIdx() != prev_idx:
                     traverse(neighbor.GetIdx(), atom_idx)
     
     traverse(carbonyl_carbon, sulfur_idx)
 
-    # Calculate chain length (including carbonyl carbon)
-    chain_length = len([a for a in chain if mol.GetAtomWithIdx(a).GetSymbol() == "C"])
+    # Calculate chain length (number of carbons in fatty acid R group)
+    # Add 1 to include the carbonyl carbon in total fatty acid length
+    chain_length = len(chain)
+    total_fa_length = chain_length + 1  # R group carbons + carbonyl
     
-    if not (6 <= chain_length <= 12):
-        return False, f"Fatty acid chain length {chain_length} not in 6-12 range"
+    if not (6 <= total_fa_length <= 12):
+        return False, f"Fatty acid chain length {total_fa_length} not in 6-12 range"
 
-    return True, f"Medium-chain ({chain_length} carbons) fatty acyl-CoA with valid CoA structure"
+    return True, f"Medium-chain ({total_fa_length} carbons) fatty acyl-CoA with valid CoA structure"
