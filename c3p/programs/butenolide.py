@@ -1,20 +1,41 @@
 """
 Classifies: CHEBI:50523 butenolide
 """
-After analyzing the previous program and the outcomes, it seems that the main issue lies in the specificity of the classification criteria. The program correctly identifies the presence of a 2-furanone skeleton and various substitution patterns; however, it lacks the ability to distinguish between butenolides and other classes of compounds that may also possess these features.
+"""
+Classifies: CHEBI:30810 butenolide
+A gamma-lactone that consists of a 2-furanone skeleton and its substituted derivatives.
+"""
 
-Butenolides are a specific class of gamma-lactones with a 2-furanone skeleton and specific substitution patterns. The current program does not account for the structural constraints that define butenolides, such as the presence of a four-membered lactone ring fused to the 2-furanone ring.
+from rdkit import Chem
+from rdkit.Chem import AllChem
 
-To improve the classification accuracy, the program should incorporate additional structural constraints that are characteristic of butenolides. Here are some potential improvements:
+def is_butenolide(smiles: str) -> tuple[bool, str]:
+    """
+    Determines if a molecule is a butenolide based on its SMILES string.
 
-1. **Check for the presence of a fused lactone ring**: Butenolides have a four-membered lactone ring fused to the 2-furanone ring. This structural feature can be checked using SMARTS patterns or by analyzing the ring systems present in the molecule.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-2. **Analyze the ring system**: Butenolides have a specific ring system consisting of a five-membered furanone ring fused to a four-membered lactone ring. This ring system can be identified and checked for specific substitution patterns or stereochemistry.
+    Returns:
+        bool: True if molecule is a butenolide, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-3. **Consider molecular weight and atom counts**: Butenolides typically have a relatively small molecular weight and specific atom counts (e.g., a specific number of carbon, oxygen, and hydrogen atoms). These properties can be used as additional filters to eliminate false positives.
+    # Look for 2-furanone skeleton
+    furanone_pattern = Chem.MolFromSmarts("O=C1OCC=C1")
+    if not mol.HasSubstructMatch(furanone_pattern):
+        return False, "Missing 2-furanone skeleton"
 
-4. **Incorporate machine learning models**: If a sufficient number of butenolide and non-butenolide examples are available, a machine learning model can be trained to classify compounds based on their structural features and SMILES strings.
+    # Check for substitutions on the furanone ring
+    substituted_pattern = Chem.MolFromSmarts("O=C1OC(*)C=C1*")
+    if not mol.HasSubstructMatch(substituted_pattern):
+        return True, "Unsubstituted 2-furanone skeleton (butenolide)"
 
-5. **Use expert-curated rules or databases**: Consulting expert-curated rules or databases of known butenolides can provide additional guidance on the structural features and constraints that define this class of compounds.
+    # Check for specific substitutions (optional)
+    # ...
 
-By incorporating these improvements, the program should be able to more accurately classify butenolides and reduce the number of false positives and false negatives.
+    return True, "Contains a substituted 2-furanone skeleton (butenolide)"
