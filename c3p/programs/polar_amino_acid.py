@@ -24,62 +24,75 @@ def is_polar_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Improved amino acid pattern: alpha carbon connected to amino and carboxyl groups
-    # Allows for NH2, NH3+, COOH, or COO-
-    amino_acid_pattern = MolFromSmarts("[NX3;H2,H3+][CX4H]([CX3]=[OX1])[!$([#1])]")
+    # Amino acid pattern: amino group (NH2/NH3+) connected to alpha carbon with carboxyl group
+    amino_acid_pattern = MolFromSmarts("[NX3;H2,H3+]-[CX4H]([CX3](=[OX1])[OX2H1,O-])-[!H0]")
     if not mol.HasSubstructMatch(amino_acid_pattern):
         return False, "Not an amino acid"
     
-    # Find the alpha carbon and its substituents
+    # Find alpha carbon (second atom in the match)
     matches = mol.GetSubstructMatches(amino_acid_pattern)
     if not matches:
         return False, "No alpha carbon found"
-    
-    # Get side chain atoms (the non-amino/non-carboxyl substituent on alpha carbon)
     alpha_carbon_idx = matches[0][1]
     alpha_carbon = mol.GetAtomWithIdx(alpha_carbon_idx)
     
-    # Find the side chain atom (non-amino, non-carboxyl neighbor of alpha carbon)
-    side_chain_atom = None
+    # Identify side chain starting atom (non-amino, non-carboxyl substituent)
+    side_chain_start = None
     for neighbor in alpha_carbon.GetNeighbors():
+        # Check if neighbor is part of amino group
         if neighbor.GetAtomicNum() == 7 and neighbor.GetTotalNumHs() >= 2:
-            continue  # amino group
-        if neighbor.GetAtomicNum() == 6 and any(a.GetAtomicNum() == 8 for a in neighbor.GetNeighbors()):
-            continue  # carboxyl group (C connected to O)
-        side_chain_atom = neighbor
+            continue
+        # Check if neighbor is part of carboxyl group
+        if neighbor.GetAtomicNum() == 6:
+            carboxyl_oxygen = any(a.GetAtomicNum() == 8 and a.GetTotalNumHs() >=1 
+                                 for a in neighbor.GetNeighbors())
+            if carboxyl_oxygen:
+                continue
+        side_chain_start = neighbor
         break
     
-    if not side_chain_atom:
+    if not side_chain_start:
         return False, "No side chain found"
     
-    # Extract side chain submol starting from the side chain atom
-    side_chain = Chem.ReplaceSidechains(mol, [(alpha_carbon_idx, side_chain_atom.GetIdx())])
-    if not side_chain:
-        return False, "Failed to extract side chain"
+    # Collect all side chain atoms (excluding alpha carbon)
+    side_chain_atoms = set()
+    stack = [side_chain_start]
+    while stack:
+        atom = stack.pop()
+        if atom.GetIdx() == alpha_carbon_idx or atom.GetIdx() in side_chain_atoms:
+            continue
+        side_chain_atoms.add(atom.GetIdx())
+        for nbr in atom.GetNeighbors():
+            if nbr.GetIdx() not in side_chain_atoms and nbr.GetIdx() != alpha_carbon_idx:
+                stack.append(nbr)
     
-    # Check for polar groups in the side chain
+    # Check for polar groups in side chain atoms
     polar_patterns = {
-        "hydroxyl": MolFromSmarts("[OX2H]"),  # -OH
-        "thiol": MolFromSmarts("[SX2H]"),     # -SH
-        "amide": MolFromSmarts("[CX3](=O)[NX3H2]"),  # -CONH2
-        "guanidine": MolFromSmarts("[NH]C(=N)N"),    # arginine's group
-        "imidazole": MolFromSmarts("[nH]1cccn1"),    # histidine
-        "carboxyl": MolFromSmarts("[CX3](=O)[OX2H1]"),  # -COOH (as in aspartic/glutamic)
-        "amino": MolFromSmarts("[NX3H2]"),           # -NH2 (lysine)
-        "ether": MolFromSmarts("[OX2H0]([#6])[#6]"), # ether oxygen (e.g., serine's -CH2OH)
-        "aromatic_nitrogen": MolFromSmarts("[nH]")   # aromatic N (histidine)
+        "hydroxyl": MolFromSmarts("[OX2H]"),
+        "thiol": MolFromSmarts("[SX2H]"),
+        "amide": MolFromSmarts("[CX3](=O)[NX3H2]"),
+        "guanidine": MolFromSmarts("[NH]C(=N)N"),
+        "imidazole": MolFromSmarts("[nH]1cccn1"),
+        "carboxyl": MolFromSmarts("[CX3](=O)[OX2H1,O-]"),
+        "amino": MolFromSmarts("[NX3H2]"),
+        "ether_oxygen": MolFromSmarts("[OX2H0][#6]"),
+        "aromatic_nitrogen": MolFromSmarts("[nH]"),
     }
     
     for group_name, pattern in polar_patterns.items():
-        if side_chain.HasSubstructMatch(pattern):
-            return True, f"Side chain contains {group_name} group"
+        if pattern is None:
+            continue
+        matches = mol.GetSubstructMatches(pattern)
+        for match in matches:
+            if any(idx in side_chain_atoms for idx in match):
+                return True, f"Side chain contains {group_name} group"
     
-    # Check for aromatic rings with polar substituents (e.g., tyrosine's -OH on benzene)
-    aromatic_rings = Chem.GetSymmSSSR(side_chain)
-    for ring in aromatic_rings:
-        for atom_idx in ring:
-            atom = side_chain.GetAtomWithIdx(atom_idx)
-            if atom.GetAtomicNum() in [7, 8]:
-                return True, "Aromatic ring with polar substituent"
+    # Special case: aromatic rings with polar substituents (e.g., tyrosine)
+    for atom_idx in side_chain_atoms:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        if atom.GetIsAromatic():
+            for nbr in atom.GetNeighbors():
+                if nbr.GetAtomicNum() == 8 and nbr.GetTotalNumHs() == 1:
+                    return True, "Aromatic ring with hydroxyl group"
     
     return False, "No polar groups in side chain"
