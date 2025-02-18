@@ -29,7 +29,8 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
 
     # Check for glycerol backbone with phosphate at position 3
     # The pattern matches a glycerol backbone with a phosphate group at position 3
-    glycerol_phosphate_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OHX2])[CH2X4][OX2][PX4](=[OX1])([OX2-])[OX2-]")
+    # The phosphate group can be in different protonation states
+    glycerol_phosphate_pattern = Chem.MolFromSmarts("[CH2X4][CHX4]([OHX2])[CH2X4][OX2][PX4](=[OX1])([OX2H,OX2-])[OX2H,OX2-]")
     if not mol.HasSubstructMatch(glycerol_phosphate_pattern):
         return False, "No glycerol backbone with phosphate at position 3 found"
 
