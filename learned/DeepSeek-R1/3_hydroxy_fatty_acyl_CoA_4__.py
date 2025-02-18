@@ -9,36 +9,42 @@ from rdkit.Chem import AllChem
 
 def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
     """
-    Determines if a molecule is a 3-hydroxy fatty acyl-CoA(4-) based on its SMILES string.
-    Must have: 3-hydroxy acyl thioester, three phosphate groups with four deprotonated oxygens,
-    and a linear fatty acid chain of at least 4 carbons.
+    Determines if a molecule is a 3-hydroxy fatty acyl-CoA(4-) based on SMILES.
+    Must have: 3-hydroxy acyl thioester, three phosphorus atoms (phosphate groups),
+    four deprotonated oxygens, and a linear fatty acid chain of at least 4 carbons.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for 3-hydroxy acyl thioester pattern (S-C(=O)-CH2-CH(OH)-*)
-    thioester_pattern = Chem.MolFromSmarts("[S]-C(=O)-[CH2]-[CH](-O)")
+    # Check 3-hydroxy acyl thioester: S-C(=O)-CH2-CH(OH)-R
+    thioester_pattern = Chem.MolFromSmarts("[S]-C(=O)-[CH2]-[CH](-O)-*")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "Missing 3-hydroxy acyl thioester group"
 
-    # Check acyl chain linearity and length (minimum 4 carbons total)
+    # Check acyl chain linearity and length (minimum 4 carbons in chain)
     min_chain_length = 4
     valid_chain_found = False
-    
+    chain_length = 0  # Initialize to avoid reference before assignment
+
     for match in thioester_matches:
         try:
-            s_idx, co_idx, c1_idx, c2_idx = match  # S, C=O, CH2, CH(OH)
+            s_idx = match[0]
+            co_idx = match[1]
+            c1_idx = match[2]  # CH2
+            c2_idx = match[3]  # CH(OH)
+            
             current_idx = c2_idx
             prev_idx = c1_idx
-            chain_length = 4  # S-C(=O)-CH2-CH(OH) counts as 4 carbons
-
+            chain_length = 3  # S-C(=O)-CH2-CH(OH) (hydroxy at position 3)
+            
+            # Traverse the chain from CH(OH)
             while True:
                 next_carbons = []
                 for neighbor in mol.GetAtomWithIdx(current_idx).GetNeighbors():
-                    if (neighbor.GetAtomicNum() == 6 and 
-                        neighbor.GetIdx() != prev_idx and 
+                    if (neighbor.GetAtomicNum() == 6 and
+                        neighbor.GetIdx() != prev_idx and
                         neighbor.GetIdx() not in {s_idx, co_idx, c1_idx}):
                         next_carbons.append(neighbor.GetIdx())
                 
@@ -58,14 +64,14 @@ def is_3_hydroxy_fatty_acyl_CoA_4__(smiles: str):
             continue
 
     if not valid_chain_found:
-        return False, f"Acyl chain too short ({chain_length}) or branched"
+        return False, f"Acyl chain too short ({chain_length}) or branched" if chain_length else "Invalid acyl chain structure"
 
-    # Verify three phosphorus atoms (three phosphate groups)
+    # Verify three phosphorus atoms (CoA has three P: diphosphate + 1)
     p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
     if p_count != 3:
         return False, f"Found {p_count} phosphorus atoms, need 3"
 
-    # Count deprotonated oxygens (-O) attached to phosphorus
+    # Count deprotonated oxygens (-O-) attached to phosphorus
     o_minus_count = 0
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() == 15:
