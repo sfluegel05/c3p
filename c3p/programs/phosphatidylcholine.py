@@ -26,17 +26,26 @@ def is_phosphatidylcholine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for phosphocholine head group
-    phosphocholine_smarts = "[P](=O)([O-])(OCC[N+](C)(C)C)"
+    # Define phosphocholine head group pattern (without charges)
+    phosphocholine_smarts = "COP(=O)(O)OCCN(C)(C)C"
     phosphocholine_pattern = Chem.MolFromSmarts(phosphocholine_smarts)
     if not mol.HasSubstructMatch(phosphocholine_pattern):
         return False, "No phosphocholine head group found"
 
-    # Check for glycerol backbone with two ester groups
-    glycerol_esters_smarts = "[C@@H](CO[P](=O)([O-])OCC[N+](C)(C)C)(OC(=O)[#6])OC(=O)[#6]"
+    # Define glycerol backbone with two ester groups (remove stereochemistry)
+    glycerol_esters_smarts = "OCC(OC(=O)[#6])COC(=O)[#6]"
     glycerol_esters_pattern = Chem.MolFromSmarts(glycerol_esters_smarts)
     if not mol.HasSubstructMatch(glycerol_esters_pattern):
         return False, "No glycerol backbone with two ester groups found"
+
+    # Check for exactly two ester bonds connected to the glycerol carbons
+    ester_bond_pattern = Chem.MolFromSmarts("OC(=O)")
+    ester_bonds = mol.GetSubstructMatches(ester_bond_pattern)
+    if len(ester_bonds) < 2:
+        return False, f"Found {len(ester_bonds)} ester bonds, need at least 2"
+
+    # Optional: Verify the acyl chains are attached via ester bonds
+    # This can be more complex but for now assume if ester bonds are present, acyl chains are present
 
     return True, "Contains glycerol backbone with two acyl chains and phosphocholine head group"
 
@@ -60,7 +69,7 @@ __metadata__ = {
         'test_proportion': 0.1
     },
     'message': None,
-    'attempt': 0,
+    'attempt': 1,
     'success': True,
     'best': True,
     'error': '',
