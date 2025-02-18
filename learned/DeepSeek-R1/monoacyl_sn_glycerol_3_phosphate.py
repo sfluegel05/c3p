@@ -23,35 +23,48 @@ def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
     if not mol:
         return False, "Invalid SMILES"
     
-    # Check for phosphate group attached to glycerol's C3
-    # SMARTS for glycerol with phosphate on C3: C(C(COP(=O)(O)O)O)...
-    phosphate_pattern = Chem.MolFromSmarts("[CH2][CH]([OH])[CH2]OP(=O)([OH])[OH]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group on glycerol's C3"
+    # Add hydrogens to accurately count H's on oxygen
+    mol = Chem.AddHs(mol)
     
-    # Check for exactly one ester group (acyl) on C1 or C2
-    ester_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[O;!H0]=[C]([OH0])[OX2]"))
-    # Filter esters connected to glycerol's C1 or C2
-    glycerol_esters = 0
-    for match in ester_matches:
-        ester_oxygen = match[1]  # Assuming the oxygen in the ester is the third atom in the SMARTS
-        atom = mol.GetAtomWithIdx(ester_oxygen)
-        for neighbor in atom.GetNeighbors():
-            if neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() >= 2:  # Check if connected to glycerol's CH2 or CH
-                glycerol_esters += 1
+    # SMARTS for sn-glycerol-3-phosphate backbone with correct stereochemistry
+    # Matches: [CH2]-O-[C@H](O)-CH2-OP(=O)(O)O
+    glycerol_pattern = Chem.MolFromSmarts("[CH2]O[C@H](O)COP(=O)(O)O")
+    matches = mol.GetSubstructMatches(glycerol_pattern)
+    if not matches:
+        return False, "No sn-glycerol-3-phosphate backbone found"
     
-    if glycerol_esters != 1:
-        return False, f"Found {glycerol_esters} acyl groups, expected 1"
+    # Get the oxygen atoms attached to C1 and C2 of glycerol
+    # Indices in SMARTS pattern: [0:CH2, 1:O (C1-O), 2:C@H (C2), 3:O (C2-OH), 4:C (C3), ...]
+    o_c1_idx = matches[0][1]
+    o_c2_idx = matches[0][3]
     
-    # Check remaining hydroxyl groups on glycerol (positions not acylated)
-    hydroxyl_count = 0
-    for atom in mol.GetAtoms():
-        if atom.GetSymbol() == 'O' and atom.GetTotalNumHs() > 0:
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetSymbol() == 'C' and neighbor.GetTotalNumHs() >= 2:  # Glycerol's C1/C2
-                    hydroxyl_count += 1
+    # Function to check if oxygen is part of an ester (O-C=O)
+    def is_ester_o(o_atom):
+        for neighbor in o_atom.GetNeighbors():
+            if neighbor.GetSymbol() == 'C':
+                for bond in neighbor.GetBonds():
+                    if bond.GetBondType() == Chem.BondType.DOUBLE:
+                        other_atom = bond.GetOtherAtom(neighbor)
+                        if other_atom.GetSymbol() == 'O':
+                            return True
+        return False
     
-    if hydroxyl_count < 1:  # At least one OH should remain (since only one acyl group)
-        return False, "Missing hydroxyl groups on glycerol"
+    # Check each oxygen for ester linkage
+    o_c1 = mol.GetAtomWithIdx(o_c1_idx)
+    o_c2 = mol.GetAtomWithIdx(o_c2_idx)
+    
+    ester_count = 0
+    if is_ester_o(o_c1):
+        ester_count += 1
+    if is_ester_o(o_c2):
+        ester_count += 1
+    
+    if ester_count != 1:
+        return False, f"Found {ester_count} acyl groups, expected 1"
+    
+    # Check the other oxygen has a hydroxyl group
+    other_o = o_c2 if is_ester_o(o_c1) else o_c1
+    if other_o.GetTotalNumHs() < 1:
+        return False, "Non-acylated position lacks hydroxyl group"
     
     return True, "Monoacyl-sn-glycerol 3-phosphate structure confirmed"
