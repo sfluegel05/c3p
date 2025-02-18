@@ -2,7 +2,7 @@
 Classifies: CHEBI:16180 N-acylglycine
 """
 """
-Classifies: CHEBI: N-acylglycine
+Classifies: N-acylglycine (CHEBI:53438)
 """
 from rdkit import Chem
 
@@ -15,7 +15,7 @@ def is_N_acylglycine(smiles: str):
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is an N-acylglycine, False otherwise
+        bool: True if molecule contains N-acylglycine substructure, False otherwise
         str: Reason for classification
     """
     # Parse SMILES
@@ -23,11 +23,17 @@ def is_N_acylglycine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for N-acylglycine core structure:
-    # Acyl group (C=O) attached to nitrogen, which is connected to CH2-C(=O)OH (glycine part)
-    pattern = Chem.MolFromSmarts('[NX3]([CX3](=O))[CH2][CX3](=O)[OX2H1]')
+    # Define SMARTS pattern for N-acylglycine core:
+    # Acyl group (C=O) attached to nitrogen with one H (excludes peptides),
+    # connected to glycine's CH2 and carboxylic acid (protonated or deprotonated)
+    pattern = Chem.MolFromSmarts('[CX3](=O)-[NX3H1]-[CH2]-[CX3](=O)-[OX2H1,OX1-]')
     
     if mol.HasSubstructMatch(pattern):
         return True, "Contains N-acylglycine core structure"
+    
+    # Additional check for esterified carboxylic acid (like in Mortivinacin B)
+    ester_pattern = Chem.MolFromSmarts('[CX3](=O)-[NX3H1]-[CH2]-[CX3](=O)-[OX2]')
+    if mol.HasSubstructMatch(ester_pattern):
+        return True, "Contains N-acylglycine ester variant"
     
     return False, "Does not match N-acylglycine pattern"
