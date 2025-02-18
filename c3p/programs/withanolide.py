@@ -4,6 +4,7 @@ Classifies: CHEBI:74716 withanolide
 #!/usr/bin/env python
 """
 Classifies: Withanolide – “Any steroid lactone that is a C28 steroid with a modified side chain forming a lactone ring and its substituted derivatives.”
+An improved algorithm uses overall carbon count, fused ring (steroid) detection, and a lactone ring that lies outside the core ring system.
 """
 
 from rdkit import Chem
@@ -12,10 +13,13 @@ from rdkit.Chem import rdMolDescriptors
 def is_withanolide(smiles: str):
     """
     Determines if a molecule is a withanolide based on its SMILES string.
-    Withanolides are defined as steroid lactones that have a fused steroid nucleus
-    (typically a cyclopentanoperhydrophenanthrene system with around 17 carbons in the nucleus)
-    and a side chain that forms a lactone (cyclic ester) ring. The overall molecule should be roughly C28 (with some tolerance)
-    and must not be heavily glycosylated or decorated.
+    Withanolides are defined as steroid lactones that have roughly 28 carbons overall,
+    and contain a fused ring system (steroid nucleus) plus a lactone (cyclic ester) attached as a side chain.
+    
+    This improved approach:
+      1. Checks that the overall carbon count is in a reasonable range (~27 to 33).
+      2. Identifies fused rings (only rings of size 5 or 6 are considered) as candidate steroid nucleus.
+      3. Requires that a lactone ring (identified by a SMARTS) exists that is not completely part of the candidate nucleus.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -24,67 +28,77 @@ def is_withanolide(smiles: str):
         bool: True if molecule meets withanolide criteria, False otherwise.
         str: Explanation of the decision.
     """
-    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Count total carbons in the molecule.
+
+    # Count the total number of carbons in the entire molecule.
     total_carbons = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if total_carbons < 28:
+    # Withanolides are C28 steroids (allowing slight substitution tolerance)
+    if total_carbons < 27:
         return False, f"Total carbon count is {total_carbons}, which is too low for a typical withanolide."
-    if total_carbons > 35:
-        return False, f"Total carbon count is {total_carbons}, which is too high – may indicate glycosylated cardiac glycoside."
+    if total_carbons > 33:
+        return False, f"Total carbon count is {total_carbons}, which is too high – possible glycosylated or unrelated structure."
     
-    # Retrieve ring information (only consider rings of size 5 or 6, typical for steroid rings).
+    # Identify rings of size 5 or 6 (the typical sizes in steroid rings).
     ring_info = mol.GetRingInfo()
-    all_rings = ring_info.AtomRings()  # each is a tuple of atom indices
-    rings_filtered = [set(ring) for ring in all_rings if len(ring) in {5, 6}]
-    if not rings_filtered:
-        return False, "No 5- or 6-membered rings detected; expected a steroid nucleus."
+    rings = [set(r) for r in ring_info.AtomRings() if len(r) in {5, 6}]
+    if not rings:
+        return False, "No 5- or 6-membered rings detected; expected a fused ring system in a steroid."
     
-    # Group overlapping rings into clusters (fused ring systems).
+    # Group overlapping rings (fused rings) into clusters.
     clusters = []
-    for ring in rings_filtered:
+    for ring in rings:
         merged = False
         for cluster in clusters:
-            if cluster & ring:  # if they share at least one atom
+            if cluster & ring:
                 cluster.update(ring)
                 merged = True
                 break
         if not merged:
             clusters.append(set(ring))
     
-    # Assume that the largest fused-cluster is the steroid nucleus.
-    nucleus_atoms = max(clusters, key=lambda s: len(s))
+    # Choose the largest cluster (by number of atoms) as candidate steroid nucleus.
+    nucleus = max(clusters, key=lambda s: len(s))
     
-    # Count how many of our filtered rings are (mostly) contained in the nucleus.
-    fused_ring_count = sum(1 for ring in rings_filtered if ring.issubset(nucleus_atoms))
-    if fused_ring_count < 2:
-        return False, f"Only {fused_ring_count} fused ring(s) detected in nucleus; expected at least 2 for a steroid nucleus."
+    # Require that the nucleus includes at least two rings.
+    nucleus_ring_count = sum(1 for ring in rings if ring.issubset(nucleus))
+    if nucleus_ring_count < 2:
+        return False, f"Fused ring system (nucleus) has only {nucleus_ring_count} ring(s); expected at least 2 for a steroid nucleus."
     
-    # Count the carbons in the nucleus. The steroid nucleus is expected to be around 17 carbons (allowing a tolerance).
-    nucleus_carbons = sum(1 for idx in nucleus_atoms if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
-    if not (15 <= nucleus_carbons <= 18):
-        return False, f"Steroid nucleus has {nucleus_carbons} carbons; expected roughly 17."
+    # (Optional) Here one may check that the nucleus contains a reasonable number of carbons.
+    nucleus_carbons = sum(1 for idx in nucleus if mol.GetAtomWithIdx(idx).GetAtomicNum() == 6)
+    # While classical steroids have ~17 carbons in the nucleus,
+    # some withanolides are modified so we use a tolerant range.
+    if nucleus_carbons < 10:
+        return False, f"Steroid nucleus has {nucleus_carbons} carbons; seems too low for a typical steroid core."
+    # We don't set an upper bound since substitution may add extra carbons.
     
-    # Look for a lactone ring (cyclic ester). The SMARTS here looks for a carbonyl (CX3=O) bound to an O that is in a ring.
-    lactone_smarts = "[CX3](=O)[OX2;r]"  # matches an ester oxygen inside a ring (r indicates ring membership)
+    # Look for a lactone ring.
+    # This SMARTS matches a lactone fragment: a carbonyl (CX3=O) adjacent to an oxygen that is in a ring.
+    lactone_smarts = "[CX3](=O)[OX2;r]"
     lactone_pattern = Chem.MolFromSmarts(lactone_smarts)
     lactone_matches = mol.GetSubstructMatches(lactone_pattern)
+    if not lactone_matches:
+        return False, "No lactone substructure detected; withanolides require a side-chain lactone."
     
+    # Check if at least one lactone match is not entirely contained within the nucleus.
     lactone_found = False
-    # For each match, check that the lactone fragment is not completely part of the nucleus.
     for match in lactone_matches:
         match_set = set(match)
-        if not match_set.issubset(nucleus_atoms):
+        # If not all atoms of the lactone match belong to the fused nucleus, consider it as a side-chain lactone.
+        if not match_set.issubset(nucleus):
             lactone_found = True
             break
     if not lactone_found:
-        return False, "No side chain lactone detected. Withanolides require a modified side chain that forms a lactone ring."
+        return False, "Lactone substructure found but appears to be part of the fused ring system rather than a side chain."
     
-    return True, "Molecule is a withanolide: Contains a steroid nucleus (~17 carbons) and a side chain lactone within a total of ~28 carbons."
+    return True, f"Molecule is a withanolide: Total carbons = {total_carbons}, nucleus carbons = {nucleus_carbons}, and a side‐chain lactone detected."
+
 
 # Example usage:
-# result, reason = is_withanolide("C[C@@H]([C@H]1CC[C@H]2[C@@H]3C[C@H]4O[C@]44[C@@H](O)C=CC(=O)[C@]4(C)[C@H]3CC[C@]12C)[C@H]1CC(C)=C(CO)C(=O)O1")
-# print(result, reason)
+if __name__ == "__main__":
+    # Test one of the approved examples (withaperuvin B)
+    test_smiles = "OC12C(C(O)(CC1)C(O)(C3OC(=O)C(=C(C3)C)C)C)(CCC4C2CC(O)C5(O)C4(C)C(=O)C=CC5O)C"
+    result, reason = is_withanolide(test_smiles)
+    print(result, reason)
