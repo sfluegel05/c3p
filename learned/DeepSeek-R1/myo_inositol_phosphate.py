@@ -7,78 +7,66 @@ from rdkit.Chem import AllChem
 def is_myo_inositol_phosphate(smiles: str):
     """
     Determines if a molecule is a myo-inositol phosphate based on its SMILES string.
-    A myo-inositol phosphate has a six-membered carbon ring with myo-configuration (5 hydroxyls in one configuration,
-    one axial) and at least one phosphate group attached.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a myo-inositol phosphate, False otherwise
-        str: Reason for classification
+    Must have the myo-inositol core structure (specific stereochemistry) with at least one phosphate group.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Find all six-membered carbon rings
-    rings = mol.GetRingInfo().AtomRings()
-    six_membered_carbon_rings = [ring for ring in rings if len(ring) == 6 and all(mol.GetAtomWithIdx(a).GetAtomicNum() == 6 for a in ring)]
+    # Define myo-inositol core SMARTS with correct stereochemistry (axial OH at position 2)
+    # SMARTS based on myo-inositol structure: O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@@H]1O
+    myo_core_smarts = Chem.MolFromSmarts("""
+        [C@H]1([C@H]([C@@H]([C@H]([C@@H]([C@@H]1O)O)O)O)O)O
+    """)
+    if not mol.HasSubstructMatch(myo_core_smarts):
+        return False, "No myo-inositol core found"
 
-    if not six_membered_carbon_rings:
-        return False, "No six-membered carbon ring"
+    # Find all oxygen atoms attached to the core (potential hydroxyl/phosphate sites)
+    core_match = mol.GetSubstructMatch(myo_core_smarts)
+    core_o = []
+    for atom_idx in core_match:
+        atom = mol.GetAtomWithIdx(atom_idx)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 8 and neighbor.GetIdx() not in core_match:
+                core_o.append(neighbor.GetIdx())
 
-    for ring in six_membered_carbon_rings:
-        # Check all substituents on ring carbons are oxygen atoms
-        all_oxygen_substituents = True
-        for a in ring:
-            atom = mol.GetAtomWithIdx(a)
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() not in ring and neighbor.GetAtomicNum() != 8:
-                    all_oxygen_substituents = False
-                    break
-            if not all_oxygen_substituents:
+    # Check for at least one phosphate group attached to core oxygen
+    phosphate_pattern = Chem.MolFromSmarts("[O][P](=O)([O])[O]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if not phosphate_matches:
+        return False, "No phosphate groups detected"
+
+    # Verify at least one phosphate is attached to the inositol core
+    core_attached_phosphate = False
+    for match in phosphate_matches:
+        p_idx = match[0]
+        # Check if this phosphate is connected to a core oxygen
+        for o_idx in core_o:
+            if mol.GetBondBetweenAtoms(o_idx, p_idx) is not None:
+                core_attached_phosphate = True
                 break
-        if not all_oxygen_substituents:
+        if core_attached_phosphate:
+            break
+
+    if not core_attached_phosphate:
+        return False, "Phosphate not attached to myo-inositol core"
+
+    # Check all core substituents are either hydroxyl or phosphate groups
+    valid_substituents = True
+    for o_idx in core_o:
+        atom = mol.GetAtomWithIdx(o_idx)
+        # Check what's attached to the oxygen (should be H or P)
+        if atom.GetDegree() == 1:  # Hydroxyl (-OH)
             continue
-
-        # Check all six carbons are stereocenters
-        stereocenters = []
-        for a in ring:
-            atom = mol.GetAtomWithIdx(a)
-            if atom.GetChiralTag() not in (Chem.ChiralType.CHI_TETRAHEDRAL_CW, Chem.ChiralType.CHI_TETRAHEDRAL_CCW):
+        # Check if connected to phosphorus (phosphate)
+        for neighbor in atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 15:
                 break
-            stereocenters.append(atom.GetChiralTag())
         else:
-            # Count CW and CCW
-            count_cw = sum(1 for tag in stereocenters if tag == Chem.ChiralType.CHI_TETRAHEDRAL_CW)
-            count_ccw = sum(1 for tag in stereocenters if tag == Chem.ChiralType.CHI_TETRAHEDRAL_CCW)
+            valid_substituents = False
+            break
 
-            if (count_cw == 5 and count_ccw == 1) or (count_ccw == 5 and count_cw == 1):
-                # Check for at least one phosphate group (P connected via O)
-                phosphate_found = False
-                for a in ring:
-                    atom = mol.GetAtomWithIdx(a)
-                    for neighbor in atom.GetNeighbors():
-                        if neighbor.GetAtomicNum() == 8:
-                            # Traverse from oxygen to find phosphorus
-                            stack = [neighbor]
-                            visited = set()
-                            while stack and not phosphate_found:
-                                current = stack.pop()
-                                if current.GetIdx() in visited:
-                                    continue
-                                visited.add(current.GetIdx())
-                                if current.GetAtomicNum() == 15:  # Phosphorus found
-                                    phosphate_found = True
-                                    break
-                                # Add neighboring atoms except the ring carbon
-                                for nbr in current.GetNeighbors():
-                                    if nbr.GetIdx() != atom.GetIdx():
-                                        stack.append(nbr)
-                    if phosphate_found:
-                        break
-                if phosphate_found:
-                    return True, "myo-inositol core with phosphate group(s)"
+    if not valid_substituents:
+        return False, "Non-phosphate/hydroxyl substituents present"
 
-    return False, "Does not meet myo-inositol phosphate criteria"
+    return True, "myo-inositol core with phosphate group(s)"
