@@ -6,68 +6,74 @@ Classifies: CHEBI:29348 fatty amide
 Classifies: fatty amide
 
 A fatty amide is defined as a monocarboxylic acid amide derived from a fatty acid.
-Heuristic improvements in this version:
-  1. Identify an amide (C(=O)N) group.
-  2. From the carbonyl carbon, exclude the oxygen and the amide nitrogen and choose the acyl candidate.
-  3. Walk in a linear (non–branched) manner along eligible (aliphatic, nonaromatic, non‐ring) carbons.
-     A qualifying acyl chain must contain at least 4 contiguous carbons.
-  4. Verify that the acyl chain accounts for at least a minimum fraction (here 20%) of all heavy atoms.
-  5. Check that the substituent attached to the amide N (besides the carbonyl partner) is “small” (fewer than 20 heavy atoms).
-If no qualifying amide group is found, the program returns False with an explanation.
+In this version we look for an amide group (C(=O)N) with two substituents:
+  - One side (the acyl chain) must be a contiguous, linear, non‐aromatic, non‐ring chain of at least 4 carbons.
+  - The acyl chain must “dominate” the amide fragment, meaning that the ratio:
+        acyl_chain_size / (acyl_chain_size + amine_substituent_size)
+    is at least 0.50.
+This aims both to ensure that a genuine fatty acid residue is present and to avoid false positives
+from peptide bonds or heavily decorated amine substituents.
+If no qualifying amide group is found, the function returns (False, reason).
 """
+
 from rdkit import Chem
 
 def is_fatty_amide(smiles: str):
     """
     Determines whether the given SMILES string corresponds to a fatty amide.
-    The molecule must contain a C(=O)N group where:
-      - The substituent on the carbonyl carbon (the acyl portion) is a contiguous linear chain
-        of at least 4 aliphatic carbons (nonaromatic, non‐ring) and this chain represents a significant part of the molecule (at least 20% of heavy atoms).
-      - Additionally, the substituent on the amide nitrogen (aside from the carbonyl carbon) should be relatively small (<20 heavy atoms).
-      
+    The molecule must contain an amide (C(=O)N) group where:
+      - One substituent on the carbonyl carbon (the acyl side) is a contiguous,
+        linear aliphatic chain (nonaromatic, non‐ring) of at least 4 carbon atoms.
+      - The ratio of acyl chain heavy atoms to total (acyl chain + N‐substituent heavy atoms)
+        is at least 0.50.
+    
     Args:
-      smiles (str): The SMILES string of the molecule.
-      
+       smiles (str): The SMILES string of the molecule.
+    
     Returns:
-      (bool, str): A tuple of a boolean and an explanatory string.
+      (bool, str): A tuple (result, explanation).
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Build heavy atoms count for later: count atoms with atomic number > 1.
+    # Count overall heavy atoms (Z>1) if needed later.
     total_heavy = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1)
-
-    # Define a SMARTS to find an amide group: carbonyl carbon (index 0), carbonyl oxygen (index 1), and amide nitrogen (index 2)
+    
+    # Define a simple SMARTS to find an amide group: carbonyl carbon, its oxygen, and an adjacent nitrogen.
+    # The match orders are: carbonyl carbon, oxygen, nitrogen.
     amide_pattern = Chem.MolFromSmarts("C(=O)N")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     if not amide_matches:
         return False, "No amide (C(=O)N) functional group found"
     
-    # An iterative function to “walk” along a linear chain.
+    # Helper function: Walk linearly from a starting carbon (attached to the carbonyl carbon)
+    # along a chain that is nonaromatic, non‐ring and composed solely of carbon atoms.
     def linear_chain_length(start_idx, parent_idx):
         """
-        Walks (iteratively) from start_idx (attached to parent_idx) along a chain of carbon atoms.
-        Only nonaromatic, nonring carbons are allowed. The walk stops if more than one eligible neighbor is encountered.
-        Returns (length, chain_atom_indices) where length includes the starting atom.
+        Walks the chain from start_idx (which is attached to parent_idx) as far as possible in a linear fashion.
+        The allowed atoms are carbons that are not aromatic and not in rings.
+        It stops if branching (more than one eligible neighbor) is encountered.
+        Returns (chain_length, chain_indices)
         """
         chain = [start_idx]
         current_idx = start_idx
         prev_idx = parent_idx
         while True:
             current_atom = mol.GetAtomWithIdx(current_idx)
-            # Get eligible neighbors: must be carbon, nonaromatic, not in a ring, and not the one we came from.
             eligible = []
+            # Check all neighbors except the one we came from.
             for nbr in current_atom.GetNeighbors():
                 nbr_idx = nbr.GetIdx()
                 if nbr_idx == prev_idx:
                     continue
+                # The candidate must be a carbon; allow both sp2 and sp3 provided not aromatic and not in a ring.
                 if nbr.GetAtomicNum() != 6:
                     continue
                 if nbr.GetIsAromatic() or nbr.IsInRing():
                     continue
                 eligible.append(nbr_idx)
-            # For a linear (non‐branched) chain, there should be exactly one eligible neighbor.
+            # For a linear chain, ensure there is at most one eligible continuation.
             if len(eligible) == 1:
                 chain.append(eligible[0])
                 prev_idx, current_idx = current_idx, eligible[0]
@@ -75,32 +81,34 @@ def is_fatty_amide(smiles: str):
                 break
         return len(chain), chain
 
-    # A DFS to count the size of the fragment (the amine substituent) attached to the amide nitrogen.
-    def count_heavy_atoms(atom_idx, excluded, visited):
-        visited = visited | {atom_idx}
-        count = 1  # count this atom
+    # Helper function: recursively count heavy atoms (atomic number > 1) starting from atom_idx.
+    def dfs_count(atom_idx, excluded, visited):
+        visited.add(atom_idx)
+        count = 1  # count self
         atom = mol.GetAtomWithIdx(atom_idx)
         for nbr in atom.GetNeighbors():
             nbr_idx = nbr.GetIdx()
             if nbr_idx in visited or nbr_idx in excluded:
                 continue
-            if mol.GetAtomWithIdx(nbr_idx).GetAtomicNum() == 1:  # skip hydrogens
+            if nbr.GetAtomicNum() == 1:  # skip hydrogens
                 continue
-            count += count_heavy_atoms(nbr_idx, excluded, visited)
+            count += dfs_count(nbr_idx, excluded, visited)
         return count
 
-    # We set a threshold for the amine substituent size.
-    AMINE_SIZE_THRESHOLD = 20
-    # We also require that the acyl chain represents at least this fraction of all heavy atoms.
-    ACYL_FRACTION_THRESHOLD = 0.20
-    reasons = []
+    # We set our threshold for the ratio:
+    RATIO_THRESHOLD = 0.50
+    # And minimum acyl chain contiguous carbon count:
+    MIN_CHAIN_LENGTH = 4
     
+    reasons = []  # collect reasons for failing different matches
+
+    # For each amide match, try to find a qualifying acyl substituent.
     for match in amide_matches:
         carbonyl_idx = match[0]
         oxy_idx = match[1]
         amideN_idx = match[2]
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
-        # Determine acyl candidate(s): the neighbors of the carbonyl carbon, except the oxygen and the amide nitrogen.
+        # Determine acyl candidate(s): neighbors of the carbonyl carbon that are not oxygen or amide nitrogen.
         neighbors = [nbr.GetIdx() for nbr in carbonyl_atom.GetNeighbors()]
         acyl_candidates = [n for n in neighbors if n not in (oxy_idx, amideN_idx)]
         if not acyl_candidates:
@@ -111,50 +119,53 @@ def is_fatty_amide(smiles: str):
         acyl_reason = ""
         for candidate in acyl_candidates:
             candidate_atom = mol.GetAtomWithIdx(candidate)
-            # Candidate must be carbon, nonaromatic, and not in a ring.
+            # Must be a carbon, not aromatic, and not in a ring.
             if candidate_atom.GetAtomicNum() != 6:
                 continue
             if candidate_atom.GetIsAromatic() or candidate_atom.IsInRing():
                 continue
-            # Walk along the supposed acyl chain.
+            # Walk the chain starting from this candidate.
             chain_length, chain_atoms = linear_chain_length(candidate, carbonyl_idx)
-            if chain_length < 4:
-                acyl_reason = f"Found amide group but acyl chain only has {chain_length} contiguous aliphatic carbons (need at least 4)."
+            if chain_length < MIN_CHAIN_LENGTH:
+                acyl_reason = (f"Found amide group but acyl chain only has {chain_length} contiguous aliphatic carbons "
+                               f"(need at least {MIN_CHAIN_LENGTH}).")
                 continue
-            # Check that the chain represents a significant fraction of the molecule.
-            if chain_length / total_heavy < ACYL_FRACTION_THRESHOLD:
-                acyl_reason = f"Acyl chain ({chain_length} carbons) is too small a fraction of the molecule (fraction {chain_length/total_heavy:.2f}; needed ≥ {ACYL_FRACTION_THRESHOLD})."
-                continue
-            # If we pass both tests then we have a qualifying acyl chain.
-            acyl_chain_ok = True
-            acyl_reason = f"Found amide group with an acyl chain of {chain_length} contiguous aliphatic carbons."
-            break
-        
+            
+            # Now compute the amine substituent’s heavy atom count.
+            # Start from the amide nitrogen and follow all neighbors except the carbonyl.
+            amideN_atom = mol.GetAtomWithIdx(amideN_idx)
+            n_neighbors = [nbr.GetIdx() for nbr in amideN_atom.GetNeighbors() if nbr.GetIdx() != carbonyl_idx]
+            amine_size = 0
+            visited_overall = set()
+            for nbr in n_neighbors:
+                amine_size += dfs_count(nbr, {carbonyl_idx}, visited_overall.copy())
+            # (If no substituent exists, consider it as a very small fragment.)
+            if amine_size == 0:
+                amine_size = 1
+            # Compute the ratio of the acyl chain heavy atoms to the combined substituents (acyl + amine).
+            ratio = chain_length / (chain_length + amine_size)
+            # Accept if the ratio is at least our threshold.
+            if ratio >= RATIO_THRESHOLD:
+                acyl_chain_ok = True
+                acyl_reason = (f"Found amide group with an acyl chain of {chain_length} contiguous aliphatic carbons "
+                               f"and an acyl/total substituent ratio of {ratio:.2f}.")
+                break
+            else:
+                acyl_reason = (f"Acyl chain of {chain_length} carbons found, but its ratio compared to the "
+                               f"amine fragment (size {amine_size}) is only {ratio:.2f} (needed ≥ {RATIO_THRESHOLD}).")
         if not acyl_chain_ok:
             reasons.append(acyl_reason)
             continue
         
-        # Now check the N‐side (amine substituent) size.
-        amideN_atom = mol.GetAtomWithIdx(amideN_idx)
-        # Exclude the carbonyl carbon.
-        n_neighbors = [nbr.GetIdx() for nbr in amideN_atom.GetNeighbors() if nbr.GetIdx() != carbonyl_idx]
-        amine_size = 0
-        for nbr in n_neighbors:
-            amine_size += count_heavy_atoms(nbr, {carbonyl_idx}, set())
-        if amine_size > AMINE_SIZE_THRESHOLD:
-            reasons.append(f"Acyl chain qualifies, but the amine fragment attached to the amide nitrogen is too large ({amine_size} heavy atoms; threshold {AMINE_SIZE_THRESHOLD}).")
-            continue
-        
         # If we reach here for any amide match, we classify the molecule as a fatty amide.
         return True, acyl_reason
-
+    
     if reasons:
-        # Return the first encountered reason.
         return False, reasons[0]
     else:
         return False, "No fatty amide (with a qualifying fatty acyl chain) found."
 
-# Example usage:
+# Example usage: (When run as a script, try a few test cases.)
 if __name__ == '__main__':
     test_smiles = [
         "NC(CCCCCCCCCCCCCCC)=O",         # hexadecanamide: expected True
@@ -162,7 +173,11 @@ if __name__ == '__main__':
         "CCCCCCCC(=O)NCCO",               # N-(octanoyl)ethanolamine: expected True
         "CCCCCCCCCCCC(N)=O",              # dodecanamide: expected True
         "CC\\C=C/C\\C=C/C\\C=C/CCCCCCCC(=O)Nc1ccccc1",  # linolenic acid anilide: expected True
-        "O=C(NCC[NH3+])C[C@](CC(=O)NC[C@@H](C([O-])=O)[NH3+])(C([O-])=O)O" # example false positive from peptides
+        # Some examples that were previously false positives/negatives:
+        "O=C(N[C@H](C(=O)N[C@@H](C(C)C)C(O)=O)CO)[C@@H](N)CCCCN", # Lys-Ser-Val (false positive previously)
+        "CCCC(=O)Nc1ncnc2n(cnc12)[C@@H]1O[C@@H]2COP(O)(=O)O[C@H]2[C@H]1O", # N(6)-butyryl-cAMP (expected False due to short acyl chain)
+        "N1C=C(CCNC(CCCCCCC/C=C\\CCCCCCCC)=O)C2=C1C=CC(O)=C2", # N-oleoylserotonin (expected True)
+        "S1C(=N[C@@H](C1)C=C)C[C@H]([C@H](C[C@@H](CCN(C(=O)[C@@H](CC)C)C)C)C)C", # Kalkitoxin (expected False)
     ]
     for smi in test_smiles:
         flag, reason = is_fatty_amide(smi)
