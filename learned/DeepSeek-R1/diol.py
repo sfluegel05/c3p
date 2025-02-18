@@ -9,7 +9,7 @@ from rdkit import Chem
 def is_diol(smiles: str):
     """
     Determines if a molecule is a diol based on its SMILES string.
-    A diol contains exactly two hydroxy groups (-OH) regardless of their chemical environment.
+    A diol contains exactly two hydroxy groups (-OH) that are not part of carboxylic acids or phenols.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -25,20 +25,21 @@ def is_diol(smiles: str):
     
     # Find all hydroxyl groups (-OH)
     hydroxyl_pattern = Chem.MolFromSmarts("[OH]")
-    total_hydroxyl = len(mol.GetSubstructMatches(hydroxyl_pattern))
+    hydroxyl_matches = mol.GetSubstructMatches(hydroxyl_pattern)
+    total_hydroxyl = len(hydroxyl_matches)
     
-    # Subtract hydroxyls that are part of carboxylic acids
-    carboxylic_acid_pattern = Chem.MolFromSmarts("[OH]-C(=O)")
-    carb_oh = len(mol.GetSubstructMatches(carboxylic_acid_pattern))
+    # Find hydroxyls in carboxylic acids
+    carboxylic_acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OH]")
+    carboxylic_matches = len(mol.GetSubstructMatches(carboxylic_acid_pattern))
     
-    # Subtract hydroxyls that are part of enols (C=C-OH)
-    enol_pattern = Chem.MolFromSmarts("C=C-O")
-    enol_oh = len(mol.GetSubstructMatches(enol_pattern))
+    # Find phenolic hydroxyl groups
+    phenol_pattern = Chem.MolFromSmarts("[c]O[!H0]")
+    phenol_matches = len(mol.GetSubstructMatches(phenol_pattern))
     
-    # Adjusted hydroxyl count
-    adjusted_oh = total_hydroxyl - carb_oh - enol_oh
+    # Calculate alcoholic hydroxyls
+    alcoholic_hydroxyl = total_hydroxyl - carboxylic_matches - phenol_matches
     
-    if adjusted_oh == 2:
-        return True, f"Contains exactly two hydroxyl groups (adjusted count: {adjusted_oh})"
+    if alcoholic_hydroxyl == 2:
+        return True, "Contains exactly two alcoholic hydroxyl groups"
     else:
-        return False, f"Adjusted hydroxyl count: {adjusted_oh}, need exactly 2"
+        return False, f"Found {alcoholic_hydroxyl} alcoholic hydroxyl groups, need exactly 2"
