@@ -321,8 +321,8 @@ def learn_program_single_iter(
     options = {}
     if "llama" in config.llm_model_name:
         options = {"max_tokens": 3000}
-    if "deepseek" in config.llm_model_name:
-        options = {"max_tokens": 8192}
+    if "deepseek" in config.llm_model_name.lower():
+        options = {"max_tokens": 8192 * 2}
     if "o1" in config.llm_model_name:
         response = model.prompt(f"SYSTEM PROMPT: {system_prompt} MAIN PROMPT: {main_prompt}", stream=False)
     else:
