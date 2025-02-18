@@ -1,185 +1,49 @@
 """
 Classifies: CHEBI:36498 galactosylceramide
 """
- - N-(2-hydroxypalmitoyl)-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-palmitoyl-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxyeicosanoyl)-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-[(2R)-2-hydroxyarachidoyl]-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxystearoyl)-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxyarachidoyl)-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxynervonoyl)-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxydocosanoyl)-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(lignoceroyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxytricosanoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypalmitoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypentacosanoyl)-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](COC1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxystearoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxyarachidoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxylignoceroyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxydocosanoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypentacosanoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxynervonoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxybehenoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxytricosanoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyeicosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxyarachidoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxydocosanoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypentacosanoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxystearoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCC[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxypalmitoyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxyarachidoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxydocosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxypentacosanoyl)sphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - beta-D-galactosyl-N-(2-hydroxynervonoyl)sphingosine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-(2-hydroxylignoceroyl)-beta-D-galactosylsphingosine: SMILES: CCCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO[C@@H]1O[C@H](CO)[C@H](O)[C@H](O)[C@H]1O)[C@H](O)\C=C\CCCCCCCC
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_galactosylceramide(smiles: str):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Define galactose pattern (beta-D-galactopyranose)
+    # This SMARTS matches the ring with hydroxyls in typical positions, allowing for substitutions (like sulfates)
+    galactose_pattern = Chem.MolFromSmarts("[C@H]1[C@H]([C@@H]([C@H]([C@@H](O1)CO)O)O)O")
+    if not mol.HasSubstructMatch(galactose_pattern):
+        # Check for alpha-D-galactose as well?
+        # Alternatively, use a more general pattern ignoring stereochemistry
+        # galactose_pattern = Chem.MolFromSmarts("[C]1[C]([C]([C]([C](O1)CO)O)O)O")
+        # if not mol.HasSubstructMatch(galactose_pattern):
+        return False, "No galactose moiety found"
+    
+    # Check that galactose is connected via an oxygen to the ceramide
+    # Find the oxygen atom connecting galactose to the rest
+    # This part is tricky; perhaps look for an oxygen that is part of the glycosidic bond
+    # The oxygen in the galactose ring that is connected to the ceramide
+    # We can check if the galactose substructure is connected via an oxygen to another part of the molecule
+    matches = mol.GetSubstructMatches(galactose_pattern)
+    for match in matches:
+        for atom_idx in match:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetSymbol() == 'O' and neighbor.GetDegree() == 2:  # Assuming glycosidic O is connecting two carbons
+                    # Check if this oxygen connects to a non-galactose part (ceramide)
+                    for bond in neighbor.GetBonds():
+                        other_atom = bond.GetOtherAtom(neighbor)
+                        if other_atom.GetIdx() not in match:
+                            # Now check if the other part has a ceramide structure
+                            # Ceramide has an amide group (CONH) connected to two chains
+                            # Look for CONH where the NH is connected to a chain
+                            ceramide_pattern = Chem.MolFromSmarts("[CX4][CX4][NH1][C](=O)[CX4]")
+                            ceramide_matches = mol.GetSubstructMatches(ceramide_pattern)
+                            if ceramide_matches:
+                                # Check for long chains (e.g., at least 10 carbons)
+                                # This is a simplification; real chains are longer
+                                # Count carbons in the fatty acid and sphingosine parts
+                                # This part may need refinement
+                                return True, "Galactose linked to ceramide structure"
+    
+    return False, "No ceramide structure linked to galactose"
