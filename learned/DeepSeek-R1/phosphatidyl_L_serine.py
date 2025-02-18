@@ -1,56 +1,12 @@
 """
 Classifies: CHEBI:18303 phosphatidyl-L-serine
 """
-"""
-Classifies: CHEBI:16015 phosphatidyl-L-serine
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+</think>
 
-def is_phosphatidyl_L_serine(smiles: str):
-    """
-    Determines if a molecule is a phosphatidyl-L-serine based on its SMILES string.
-    A phosphatidyl-L-serine consists of a glycerol backbone with two fatty acid esters,
-    a phosphate group, and an L-serine moiety attached.
+Okay, let's figure out why the previous code didn't work. The main issue seems to be that all the test cases were missed because the L-serine moiety wasn't detected properly. The error messages mention "Missing L-serine moiety with correct stereochemistry". Let's look at the previous code's approach to detecting serine.
 
-    Args:
-        smiles (str): SMILES string of the molecule
+The previous code used a SMARTS pattern for serine: `[NH2,NH3+][C@](C(=O)[O-,OH])([OH,O-])OP(=O)([O-])[O-]`. Maybe this pattern is too strict. Let's break down what's in the SMILES examples.
 
-    Returns:
-        bool: True if molecule is a phosphatidyl-L-serine, False otherwise
-        str: Reason for classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES"
+Looking at the example SMILES, the serine part is usually something like `OC[C@H](N)C(O)=O` (like in the first example). The pattern should account for the amino group (N), the central chiral carbon (with correct stereochemistry), the carboxylate (COO), and the phosphate connection.
 
-    # Check for phosphate group (O=P(O)(O)O...)
-    phosphate_pattern = Chem.MolFromSmarts("[O][P](=O)([O])[O]")
-    if not mol.HasSubstructMatch(phosphate_pattern):
-        return False, "No phosphate group"
-
-    # Check for serine moiety: NH2-CH(COO)-OPO3 connected in proper structure
-    # L-serine has S configuration at the alpha carbon (C4 in IUPAC numbering)
-    serine_pattern = Chem.MolFromSmarts("[NH2,NH3+][C@](C(=O)[O-,OH])([OH,O-])OP(=O)([O-])[O-]")
-    if not mol.HasSubstructMatch(serine_pattern):
-        return False, "Missing L-serine moiety with correct stereochemistry"
-
-    # Check for two ester groups (fatty acids)
-    ester_pattern = Chem.MolFromSmarts("[OX2]C(=O)")
-    esters = mol.GetSubstructMatches(ester_pattern)
-    if len(esters) < 2:
-        return False, f"Expected at least 2 ester groups, found {len(esters)}"
-
-    # Check for glycerol backbone (O-C-O-C-O-C structure)
-    glycerol_backbone = Chem.MolFromSmarts("[CH2]O[CH2]")
-    if not mol.HasSubstructMatch(glycerol_backbone):
-        return False, "Glycerol backbone not found"
-
-    # Optional: Check approximate chain lengths (at least 8 carbons in each fatty acid)
-    # This is a heuristic and may need adjustment
-    long_chain = Chem.MolFromSmarts("C-C-C-C-C-C-C-C")
-    if len(mol.GetSubstructMatches(long_chain)) < 2:
-        return False, "Insufficient long-chain fatty acids"
-
-    return True, "Phosphatidyl group esterified to L-serine with two fatty acid chains"
+Wait, in the previous SMARTS, the pattern starts with [NH2,NH3+], but in the SMILES examples, the serine's amino group might be protonated (like `[NH3+]` in some cases) or not. Also, the carboxylate could be in different forms (like `C(O)=O` vs `C(=O)O
