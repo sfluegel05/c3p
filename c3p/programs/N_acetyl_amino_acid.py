@@ -26,25 +26,13 @@ def is_N_acetyl_amino_acid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the acetyl group (C(=O)C)
-    acetyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[CX4H3]")
-    acetyl_matches = mol.GetSubstructMatches(acetyl_pattern)
-    if len(acetyl_matches) == 0:
-        return False, "No acetyl group found"
-
-    # Look for the amino acid backbone (carboxyl group -C(=O)O and amino group -NH-)
-    carboxyl_pattern = Chem.MolFromSmarts("[CX3](=[OX1])[OX2H1]")
-    carboxyl_matches = mol.GetSubstructMatches(carboxyl_pattern)
-    if len(carboxyl_matches) == 0:
-        return False, "No carboxyl group found"
-
-    # Check if the acetyl group is attached to a nitrogen (N-acetyl)
+    # Look for the acetyl group attached to a nitrogen (N-acetyl)
     n_acetyl_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[CX4H3]")
     n_acetyl_matches = mol.GetSubstructMatches(n_acetyl_pattern)
     if len(n_acetyl_matches) == 0:
-        return False, "Acetyl group not attached to nitrogen"
+        return False, "No acetyl group attached to nitrogen found"
 
-    # Check if the nitrogen is part of an amino acid backbone (NH-C-CO2H)
+    # Look for the amino acid backbone (carboxyl group -C(=O)O and amino group -NH-)
     amino_acid_pattern = Chem.MolFromSmarts("[NX3][CX4H][CX3](=[OX1])[OX2H1]")
     amino_acid_matches = mol.GetSubstructMatches(amino_acid_pattern)
     if len(amino_acid_matches) == 0:
