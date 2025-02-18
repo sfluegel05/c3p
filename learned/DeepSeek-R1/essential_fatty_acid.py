@@ -1,286 +1,43 @@
 """
 Classifies: CHEBI:59549 essential fatty acid
 """
- - (5Z,8Z,11Z,14Z,17Z)-icosa-5,8,11,14,17-pentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (7Z,10Z,13Z,16Z,19Z)-docosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCC(O)=O
- - (8Z,11Z,14Z,17Z)-hexacosatetraenoic acid: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(O)=O
- - (7Z,10Z,13Z,16Z,19Z,22Z)-tetracosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCC(O)=O
- - (20Z,23Z,26Z,29Z,32Z)-pentatriacontapentaenoic acid: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCCCCC(O)=O
- - (9Z,12Z,15Z)-octadecatrienoic acid: SMILES: CCCCC\C=C/C\C=C/C\C=C/CCCCCC(O)=O
- - (5Z,8Z,11Z,14Z)-icosa-5,8,11,14-tetraenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/CCCCC(O)=O
- - (9Z,12Z,15Z,18Z,21Z)-tetracosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC(O)=O
- - (10Z,13Z,16Z,19Z)-octacosatetraenoic acid: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-icosa-5,8,11,14,17-pentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (14Z,17Z,20Z,23Z)-hexacosatetraenoic acid: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCC(O)=O
- - (16Z,19Z,22Z,25Z,28Z)-dotriacontapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCCCCCCCC(O)=O
- - (9Z,12Z,15Z,18Z,21Z,24Z)-hexacosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC(O)=O
- - (10Z,13Z,16Z,19Z,22Z)-pentacosapentaenoic acid: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC(O)=O
- - (6Z,9Z,12Z,15Z)-octadecatetraenoic acid: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (4Z,7Z,10Z,13Z,16Z,19Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z)-eicosatetraenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/CCCCC(O)=O
- - (9Z,12Z,15Z,18Z,21Z)-tetracosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCCCCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CC(O)=O
- - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoic acid: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(O)=O
- - (5Z,8Z,11Z,14Z,17Z,20Z)-docosahexaenoic acid: SMILES: CC\C=C/C\C=C
+"""
+Classifies: essential fatty acid (CHEBI:67011)
+"""
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+
+def is_essential_fatty_acid(smiles: str):
+    """
+    Determines if a molecule is an essential fatty acid based on its SMILES string.
+    Essential fatty acids are polyunsaturated with a carboxylic acid group and all cis double bonds.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an essential fatty acid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if not mol:
+        return False, "Invalid SMILES"
+
+    # Check for carboxylic acid group
+    carboxyl = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    if not mol.HasSubstructMatch(carboxyl):
+        return False, "No carboxylic acid group"
+
+    # Count double bonds
+    double_bonds = sum(1 for bond in mol.GetBonds() if bond.GetBondType() == Chem.BondType.DOUBLE)
+    if double_bonds < 2:
+        return False, f"Found {double_bonds} double bonds, need at least 2"
+
+    # Check all double bonds are cis (Z) or unspecified
+    for bond in mol.GetBonds():
+        if bond.GetBondType() == Chem.BondType.DOUBLE:
+            stereo = bond.GetStereo()
+            if stereo == Chem.BondStereo.STEREOE:
+                return False, "Trans double bond present"
+
+    return True, "Carboxylic acid with ≥2 cis double bonds"
