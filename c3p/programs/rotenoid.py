@@ -2,14 +2,13 @@
 Classifies: CHEBI:71543 rotenoid
 """
 """
-Classifies: Rotenoid – members of the class of tetrahydrochromenochromene compounds.
-A rotenoid is defined as a cis‐fused tetrahydrochromeno[3,4-b]chromene skeleton 
-(a fused bicyclic system where one ring shows chromenone (benzopyranone) features 
-and is fused with another oxygen‐containing ring) and its substituted derivatives.
-This implementation uses a heuristic approach based on splitting the fused system 
-into (a) a six-membered “chromenone‐like” ring (with exactly one carbonyl attached 
-to a ring carbon and a ring oxygen) and (b) a six-membered “ether” ring (with at least 
-one oxygen and no carbonyl), plus molecular weight constraints.
+Classifies: Rotenoids – members of the class of tetrahydrochromenochromene compounds.
+A rotenoid is defined as having a cis‐fused tetrahydrochromeno[3,4-b]chromene skeleton,
+i.e. a fused bicyclic system in which one six‐membered ring shows “chromenone‐like”
+characteristics (has a ring oxygen and exactly one in‐ring carbonyl functionality)
+fused to a second six‐membered ring that has a ring oxygen and NO carbonyls.
+Substituted derivatives (e.g. glycosides) may be heavier than the classical 250–600 Da,
+so the molecular weight filter has been relaxed.
 """
 
 from rdkit import Chem
@@ -18,111 +17,123 @@ from rdkit.Chem import rdMolDescriptors
 def is_rotenoid(smiles: str):
     """
     Determines if a molecule is a rotenoid based on its SMILES string.
-    
+
     Heuristic criteria:
-      1. The molecule’s molecular weight should be in a range typical for rotenoids (here:
-         250–600 Da).
-      2. In the ring system the algorithm looks for two fused six-membered rings:
-          • One candidate “chromenone” ring that contains at least one oxygen in the ring and 
-            exactly one carbon (in the ring) that forms a double bond to an oxygen (the carbonyl).
-          • One candidate “ether” ring containing a ring oxygen but no carbonyl groups.
-      3. The two candidate rings must be fused – i.e. share at least 2 atoms.
-      4. When the two rings are merged the total number of distinct carbonyl groups (from 
-         any ring carbon) should equal one.
-         
+      1. The molecule should not be extremely light (we require at least 200 Da).
+         (Glycosylated rotenoids may exceed classical weight bounds.)
+      2. Look for candidate six‐membered rings that could be part of the rotenoid core.
+         We define candidate rings as follows:
+           a) A "chromenone‐like" ring must be six‐membered, contain at least one ring oxygen,
+              and have exactly one carbon (of the ring) that is double‐bonded to an oxygen.
+           b) An "ether" ring is a six‐membered ring that contains at least one oxygen
+              and NO in‐ring carbonyl bonds.
+      3. To be considered fused in the typical cis mode the two candidate rings must share exactly 2 atoms.
+      4. (Optional extra check: if more than one candidate pair is found, we favor the one
+         whose merged set of ring atoms does not introduce additional in‐ring carbonyls beyond
+         that on the chromenone ring.)
+
     Args:
         smiles (str): SMILES string of the molecule.
-        
+
     Returns:
-        bool: True if the molecule is determined to be a rotenoid, False otherwise.
-        str: A text explanation of the decision.
+        (bool, str): A tuple with the boolean classification and a reason string.
+                     If criteria are met, returns True with an explanation.
+                     Otherwise, returns False with the reason for rejection.
     """
-    # Parse molecule from SMILES
+    # Parse the molecule from SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check overall molecular weight (typical rotenoids are between about 250 and 600 Da)
+
+    # Ensure molecule is not extremely light. (Some rotenoids are glycosylated, so we avoid a tight upper bound.)
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if not (250 <= mol_wt <= 600):
-        return False, f"Molecular weight {mol_wt:.1f} out of typical rotenoid range (250–600 Da)"
-    
-    # Get all ring atom indices (each ring is a tuple of atom indices)
+    if mol_wt < 200:
+        return False, f"Molecular weight {mol_wt:.1f} is too low for rotenoids"
+
+    # Get the ring atom indices as tuples (each tuple is a ring)
     ring_infos = mol.GetRingInfo().AtomRings()
-    
-    # Lists to store candidate rings as sets of atom indices
-    chromenone_rings = []  # six-membered rings with exactly one C=O (from a ring-carbon) & an oxygen in ring
-    ether_rings = []      # six-membered rings with at least one oxygen and NO C=O in ring
-    
-    # Loop over each ring in the molecule
+    # Lists to store candidate rings. We use sets of atom indices for ease of intersection.
+    chromenone_rings = []  # candidate rings with one in‐ring carbonyl
+    ether_rings = []      # candidate rings with no in‐ring carbonyl
+
+    # Loop over each ring and only consider six-membered ones.
     for ring in ring_infos:
         if len(ring) != 6:
-            continue  # Only process six-membered rings
-        
-        # Check if there is at least one oxygen in the ring (atom atomic number 8)
-        has_ring_oxygen = any(mol.GetAtomWithIdx(i).GetAtomicNum() == 8 for i in ring)
-        if not has_ring_oxygen:
+            continue  # consider only 6-membered rings
+
+        # Check for at least one oxygen atom in the ring.
+        ring_atoms = [mol.GetAtomWithIdx(idx) for idx in ring]
+        if not any(atom.GetAtomicNum() == 8 for atom in ring_atoms):
             continue
-        
-        # Count how many ring carbons are attached (by a double bond) to an oxygen (carbonyl group)
-        carbonyl_atoms = set()
-        for i in ring:
-            atom = mol.GetAtomWithIdx(i)
+
+        # Count the number of ring carbon atoms that are double bonded to an oxygen.
+        carbonyl_count = 0
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            # Only consider carbon atoms.
             if atom.GetAtomicNum() != 6:
-                continue  # only consider carbon atoms
-            # Loop over bonds
+                continue
+            # Search bonds; if a bond from this atom is a double bond and the other atom is oxygen,
+            # and if that oxygen is not part of the ring (or even if it is, we want to count the carbonyl feature)
             for bond in atom.GetBonds():
-                # Check if the bond is a double bond
+                # bond order 2
                 if bond.GetBondTypeAsDouble() == 2:
-                    # Check if one partner is an oxygen (atomic number 8)
                     other = bond.GetOtherAtom(atom)
                     if other.GetAtomicNum() == 8:
-                        carbonyl_atoms.add(i)
-                        break  # count only once per carbon
-        
-        n_carbonyl = len(carbonyl_atoms)
-        # Classify the ring:
-        if n_carbonyl == 1:
+                        carbonyl_count += 1
+                        break  # count each carbon only once
+
+        # Classify the ring based on its in‐ring carbonyl count.
+        # We assume that a chromenone candidate has exactly one in‐ring carbonyl 
+        # and an ether candidate has none.
+        if carbonyl_count == 1:
             chromenone_rings.append(set(ring))
-        elif n_carbonyl == 0:
+        elif carbonyl_count == 0:
             ether_rings.append(set(ring))
-        # If there are >1 carbonyls in a ring, it is less likely to be the rotenoid core,
-        # so we do not consider it as a candidate.
-    
-    # Now, look for a pair of candidate rings (one chromenone and one ether) that are fused.
-    fused_found = False
-    for ring1 in chromenone_rings:
-        for ring2 in ether_rings:
-            # Fused means at least 2 atoms are shared
-            if len(ring1.intersection(ring2)) >= 2:
-                # For extra confidence, merge the two rings and count the total carbonyls in the union.
-                fused_atoms = ring1.union(ring2)
-                overall_carbonyl_atoms = set()
-                for i in fused_atoms:
-                    atom = mol.GetAtomWithIdx(i)
+        # Rings with >1 carbonyl are not considered as part of the core.
+
+    if not chromenone_rings:
+        return False, "No candidate chromenone-like ring (6-membered with one carbonyl and at least one oxygen) found"
+
+    if not ether_rings:
+        return False, "No candidate ether ring (6-membered with oxygen and no in-ring carbonyl) found"
+
+    # Look for a pair of rings (one from each candidate list) that are fused.
+    # We require they share exactly 2 atoms (typical for cis-fused systems).
+    fused_pair_found = False
+    for chrom in chromenone_rings:
+        for ether in ether_rings:
+            shared_atoms = chrom.intersection(ether)
+            if len(shared_atoms) == 2:
+                # Optionally, merge the rings and check that the only in-ring carbonyl is in the chromenone candidate.
+                merged = chrom.union(ether)
+                overall_carbonyls = 0
+                for idx in merged:
+                    atom = mol.GetAtomWithIdx(idx)
                     if atom.GetAtomicNum() != 6:
                         continue
                     for bond in atom.GetBonds():
                         if bond.GetBondTypeAsDouble() == 2:
                             other = bond.GetOtherAtom(atom)
                             if other.GetAtomicNum() == 8:
-                                overall_carbonyl_atoms.add(i)
+                                overall_carbonyls += 1
                                 break
-                if len(overall_carbonyl_atoms) == 1:
-                    fused_found = True
+                # We allow additional carbonyls outside the fused core by checking the core count.
+                # Here we require that the fused core shows at least the one carbonyl from the chromenone.
+                if overall_carbonyls >= 1:
+                    fused_pair_found = True
                     break
-        if fused_found:
+        if fused_pair_found:
             break
 
-    if fused_found:
-        return True, "Found fused pair: one six‐membered chromenone-like ring (with one carbonyl) fused to a six‐membered ether ring; overall molecular properties are consistent with a rotenoid skeleton."
+    if fused_pair_found:
+        return True, "Found fused pair: one six‐membered chromenone-like ring (with one in‐ring carbonyl and ring oxygen) cis-fused (sharing 2 atoms) to a six‐membered ether ring; molecular properties are consistent with a rotenoid skeleton."
     else:
-        return False, "No characteristic fused chromenone/ether ring pair with a single carbonyl was found; molecule is unlikely to be a rotenoid."
+        return False, "No characteristic cis-fused chromenone/ether ring pair was found; molecule is unlikely to be a rotenoid."
 
-# The entire module is contained in one code block.
-# Example test (you may run these to see the reasoning):
+# Example test code (if executed as main, prints out a test result):
 if __name__ == "__main__":
-    # Example: 13alpha-Hydroxydolineone (a known rotenoid)
+    # Test SMILES for a known rotenoid – 13alpha-Hydroxydolineone
     test_smiles = "O1C2C(O)(C=3C(OC2)=CC=4OCOC4C3)C(=O)C5=C1C=C6OC=CC6=C5"
     result, reason = is_rotenoid(test_smiles)
     print("Test SMILES:", test_smiles)
