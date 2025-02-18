@@ -1,28 +1,88 @@
 """
 Classifies: CHEBI:31998 N-acylphytosphingosine
 """
-</think>
+"""
+Classifies: CHEBI:78231 N-acylphytosphingosine
+"""
+from rdkit import Chem
 
-Okay, let's try to figure out why the previous code didn't work. The error mentioned was an "unexpected indent" in line 1. Looking at the previous code, I notice that the user provided a list of SMILES examples, but the code they tried to run was actually just a list of SMILES strings, not valid Python code. The assistant must have mistakenly included those SMILES as part of the code block instead of properly writing the function.
+def is_N_acylphytosphingosine(smiles: str):
+    """
+    Determines if a molecule is an N-acylphytosphingosine based on its SMILES string.
+    An N-acylphytosphingosine is a ceramide with a phytosphingosine backbone (at least three hydroxyl groups)
+    and a fatty acyl group attached via an amide bond.
 
-So, the main issue was that the previous code wasn't valid Python. The function wasn't properly structured. Now, I need to create the correct function for is_N_acylphytosphingosine.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-First, the definition says it's a ceramide which is phytosphingosine with a fatty acyl group attached to the nitrogen. Phytosphingosine has a specific structure: a sphingoid base with three hydroxyl groups and an amino group. The N-acyl part means a fatty acid is attached via an amide bond to the nitrogen.
+    Returns:
+        bool: True if molecule is N-acylphytosphingosine, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
 
-Steps to check:
-1. Check for the phytosphingosine backbone: a long chain with three hydroxyl groups and an amino group attached.
-2. Look for an amide group (N attached to a carbonyl group) as the fatty acyl attachment.
-3. Ensure the fatty acyl group is a long chain (probably at least 12 carbons or so).
+    # Find amide groups [N connected to carbonyl]
+    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if not amide_matches:
+        return False, "No amide group found"
 
-Possible RDKit steps:
-- Parse the SMILES into a molecule.
-- Check for the presence of an amide group (NC(=O)).
-- Find the nitrogen in the amide and ensure it's connected to the phytosphingosine backbone.
-- The phytosphingosine part should have three hydroxyl groups and a long carbon chain.
-- The fatty acyl group should be a long chain attached via the amide.
+    for amide_match in amide_matches:
+        nitrogen_idx = amide_match[0]
+        carbonyl_idx = amide_match[1]
+        nitrogen = mol.GetAtomWithIdx(nitrogen_idx)
+        carbonyl = mol.GetAtomWithIdx(carbonyl_idx)
 
-Let me structure the code accordingly. I'll start by parsing the SMILES, then check for the amide group. Then verify the phytosphingosine structure with three OH groups and a long chain. Also, check the fatty acyl chain length.
+        # Check sphingoid base for at least three hydroxyl groups
+        visited = set([carbonyl_idx])
+        stack = [nitrogen]
+        hydroxyl_count = 0
 
-I'll need to use SMARTS patterns to find specific substructures. For the amide, the pattern would be [NX3][CX3](=[OX1]). For the phytosphingosine backbone, maybe a chain with three hydroxyls and an amino group connected appropriately. Also, checking the chain lengths via number of carbons or molecular weight.
+        while stack:
+            atom = stack.pop()
+            if atom.GetIdx() in visited:
+                continue
+            visited.add(atom.GetIdx())
 
-Wait, phytosphingosine's structure is (2S,3S,4R)-2-aminooctadecane
+            # Check for hydroxyl groups attached to this atom
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() >= 1:
+                    hydroxyl_count += 1
+
+            # Add neighbors except those leading to the acyl group
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() not in visited:
+                    stack.append(neighbor)
+
+        if hydroxyl_count < 3:
+            continue  # Not enough hydroxyls in sphingoid base
+
+        # Check acyl chain length (R in R-C(=O)-N...)
+        acyl_chain_carbons = 0
+        visited_acyl = set()
+        # Get R groups attached to carbonyl (excluding nitrogen)
+        r_groups = []
+        for neighbor in carbonyl.GetNeighbors():
+            if neighbor.GetIdx() != nitrogen_idx:
+                r_groups.append(neighbor)
+
+        # Traverse each R group to count carbons
+        for r in r_groups:
+            stack_acyl = [r]
+            while stack_acyl:
+                atom = stack_acyl.pop()
+                if atom.GetIdx() in visited_acyl:
+                    continue
+                visited_acyl.add(atom.GetIdx())
+                if atom.GetAtomicNum() == 6:
+                    acyl_chain_carbons += 1
+                for neighbor in atom.GetNeighbors():
+                    if neighbor.GetIdx() not in visited_acyl:
+                        stack_acyl.append(neighbor)
+
+        if acyl_chain_carbons >= 4:  # Minimum of 4 carbons for fatty acyl
+            return True, f"Phytosphingosine backbone with {hydroxyl_count} hydroxyls and {acyl_chain_carbons}-carbon acyl chain"
+
+    return False, "Does not meet N-acylphytosphingosine criteria"
