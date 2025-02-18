@@ -43,7 +43,7 @@ def is_hydroxynaphthoquinone(smiles: str):
     if len(hydroxy_matches) == 0:
         return False, "No hydroxy group found"
 
-    # Ensure the hydroxy group is directly attached to the naphthoquinone moiety
+    # Ensure the hydroxy group is attached to the naphthoquinone moiety
     naphthoquinone_atoms = set()
     for match in mol.GetSubstructMatches(naphthoquinone_pattern):
         naphthoquinone_atoms.update(match)
@@ -52,6 +52,6 @@ def is_hydroxynaphthoquinone(smiles: str):
         hydroxy_atom = mol.GetAtomWithIdx(hydroxy_match[0])
         neighbor_atom = hydroxy_atom.GetNeighbors()[0]
         if neighbor_atom.GetIdx() not in naphthoquinone_atoms:
-            return False, "Hydroxy group not directly attached to the naphthoquinone moiety"
+            return False, "Hydroxy group not attached to the naphthoquinone moiety"
 
-    return True, "Contains a naphthoquinone moiety with at least one hydroxy group directly attached to the naphthoquinone moiety"
+    return True, "Contains a naphthoquinone moiety with at least one hydroxy group attached to the naphthoquinone moiety"
