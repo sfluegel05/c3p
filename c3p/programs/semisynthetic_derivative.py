@@ -7,7 +7,7 @@ from rdkit.Chem import AllChem
 def is_semisynthetic_derivative(smiles: str):
     """
     Determines if a molecule is likely classified as a semisynthetic derivative.
-    It checks for the presence of natural skeletons with synthetic modifications.
+    It attempts to identify natural product-like cores with synthetic structural modifications.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,25 +22,29 @@ def is_semisynthetic_derivative(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Search for natural product core structures (e.g., steroids, lactones, etc.)
-    steroid_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]2-[#6]-[#6]3-[#6]-[#6]4-[#6]-1-[#6]-[#6]2-[#6]-[#6]3-[#6]-[#6]4")
-    lactone_pattern = Chem.MolFromSmarts("[#6]1:[#6]:[#8]:[#6]-1")
+    # Define potential natural product core patterns
+    core_patterns = [
+        Chem.MolFromSmarts("[#6]1-[#6]=[#6]-[#6]2-[#6]=[#6]-[#6]-[#6]3-[#6]-1-[#6]-[#6]4-[#6]-[#6](#[#6])-[#6]2-[#6]-[#6]3-[#6]-4"), # steroid-like
+        Chem.MolFromSmarts("c1ccccc1"),  # Aryl ring (present in many natural products)
+        Chem.MolFromSmarts("[#6]1-[#6]-[#8]-[#6]-[#6]=[#6]-[#8]-1"),  # lactone
+    ]
     
-    # Check for synthetic modifications such as unusual bridging or extra functional groups
-    unusual_fu_group = Chem.MolFromSmarts("[#6][C@](=[O,N])[O,N,c]")  # includes acetals, amide bridge
-    protecting_group_pattern = Chem.MolFromSmarts("[#6][O][C]([#6])[#6]")  # typical protecting groups
+    # Define synthetic modification patterns
+    synthetic_patterns = [
+        Chem.MolFromSmarts("[#6][C](=[O,N])[O,N,c]"),  # general ester/amide
+        Chem.MolFromSmarts("[#8]C(=O)"),  # carboxylic ester
+        Chem.MolFromSmarts("[#6](=O)C"),  # amide linkage
+    ]
     
-    steroid_matches = mol.HasSubstructMatch(steroid_pattern)
-    lactone_matches = mol.HasSubstructMatch(lactone_pattern)
+    # Check for natural core patterns
+    core_matches = any(mol.HasSubstructMatch(pattern) for pattern in core_patterns)
     
-    unusual_matches = mol.GetSubstructMatches(unusual_fu_group)
-    protecting_group_matches = mol.GetSubstructMatches(protecting_group_pattern)
+    # Check for synthetic modifications
+    synthetic_matches = any(mol.HasSubstructMatch(pattern) for pattern in synthetic_patterns)
     
     # Evaluate matches and make a decision
-    if (steroid_matches or lactone_matches) and (len(unusual_matches) > 0 or len(protecting_group_matches) > 0):
-        reason = "Molecule has natural core with synthetic modifications: "
-        reason += f"Unusual functional groups ({len(unusual_matches)}), " if len(unusual_matches) > 0 else ""
-        reason += f"Protecting group patterns ({len(protecting_group_matches)})" if len(protecting_group_matches) > 0 else ""
-        return True, reason.strip(", ")
+    if core_matches and synthetic_matches:
+        reason = "Molecule has natural product-like core with synthetic modifications"
+        return True, reason
     
-    return False, "No characteristic semisynthetic derivative patterns identified"
+    return False, "No characteristic semisynthetic derivative patterns detected"
