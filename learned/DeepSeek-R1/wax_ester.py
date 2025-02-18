@@ -10,7 +10,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_wax_ester(smiles: str):
     """
     Determines if a molecule is a wax ester based on its SMILES string.
-    A wax ester is an ester of a fatty acid and a fatty alcohol.
+    A wax ester is an ester resulting from a fatty acid and a fatty alcohol.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -24,58 +24,60 @@ def is_wax_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find ester groups (-O-C(=O)-)
+    # Check for exactly one ester group
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    # Must have exactly one ester group
     if len(ester_matches) != 1:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
+
+    # Split molecule into two parts at the ester bond
+    ester_bond = mol.GetBondBetweenAtoms(ester_matches[0][0], ester_matches[0][1])
+    if not ester_bond:
+        return False, "Invalid ester bond structure"
     
-    # Get the oxygen and carbonyl carbon from the ester group
-    ester_atoms = ester_matches[0]
-    oxygen_idx = ester_atoms[0]
-    carbonyl_carbon_idx = ester_atoms[1]
+    # Break the ester bond to separate alcohol and acid parts
+    fragmented_mols = Chem.FragmentOnBonds(mol, [ester_bond.GetIdx()], addDummies=False)
+    fragments = Chem.GetMolFrags(fragmented_mols, asMols=True)
+    if len(fragments) != 2:
+        return False, "Ester does not split molecule into two parts"
+
+    # Determine which fragment is alcohol (RO-) and which is acid (RCOO-)
+    def is_acid_fragment(frag):
+        return any(atom.GetAtomicNum() == 8 and atom.GetDegree() == 2 for atom in frag.GetAtoms() if atom.GetIdx() != ester_matches[0][1])
     
-    # Get neighboring atoms to determine chains
-    oxygen = mol.GetAtomWithIdx(oxygen_idx)
-    carbonyl_carbon = mol.GetAtomWithIdx(carbonyl_carbon_idx)
-    
-    # Alcohol chain: connected to oxygen (excluding the ester)
-    alcohol_neighbors = [n for n in oxygen.GetNeighbors() if n.GetIdx() != carbonyl_carbon_idx]
-    if not alcohol_neighbors:
-        return False, "No alcohol chain attached to ester oxygen"
-    alcohol_start = alcohol_neighbors[0]
-    
-    # Acid chain: connected to carbonyl carbon (excluding the oxygen)
-    acid_neighbors = [n for n in carbonyl_carbon.GetNeighbors() if n.GetIdx() != oxygen_idx]
-    if not acid_neighbors:
-        return False, "No acid chain attached to ester carbonyl"
-    acid_start = acid_neighbors[0]
-    
-    # Helper function to count carbons in a chain starting from atom, excluding ester atoms
-    def count_chain_carbons(atom, visited=None):
-        if visited is None:
-            visited = set()
-        if atom.GetIdx() in visited:
-            return 0
-        if atom.GetAtomicNum() != 6:  # Only consider carbons
-            return 0
-        visited.add(atom.GetIdx())
-        count = 1  # Count this carbon
-        for neighbor in atom.GetNeighbors():
-            # Avoid revisiting ester atoms (oxygen and carbonyl carbon)
-            if neighbor.GetIdx() in {oxygen_idx, carbonyl_carbon_idx}:
-                continue
-            count += count_chain_carbons(neighbor, visited)
-        return count
-    
-    # Count carbons in alcohol and acid chains
-    alcohol_carbons = count_chain_carbons(alcohol_start)
-    acid_carbons = count_chain_carbons(acid_start)
-    
-    # Check chain lengths (minimum 8 carbons each for typical wax esters)
-    if alcohol_carbons < 8 or acid_carbons < 8:
-        return False, f"Chains too short (alcohol: {alcohol_carbons}, acid: {acid_carbons})"
-    
-    return True, "Contains a single ester group linking two long hydrocarbon chains"
+    acid_frag, alcohol_frag = (fragments[0], fragments[1]) if is_acid_fragment(fragments[0]) else (fragments[1], fragments[0])
+
+    # Check chain lengths using longest carbon chain
+    def get_longest_chain(fragment):
+        chains = []
+        for atom in fragment.GetAtoms():
+            if atom.GetAtomicNum() == 6 and atom.GetDegree() == 1:  # Start from terminal carbon
+                chain = rdMolDescriptors.CalcNumAtomStereoCenters(fragment, atom.GetIdx())
+                chains.append(rdMolDescriptors.CalcLongestChain(fragment, atom.GetIdx()))
+        return max(chains) if chains else 0
+
+    alcohol_chain = get_longest_chain(alcohol_frag)
+    acid_chain = get_longest_chain(acid_frag) - 1  # Subtract carboxyl carbon
+
+    if alcohol_chain < 12 or acid_chain < 12:
+        return False, f"Chains too short (alcohol: {alcohol_chain}, acid: {acid_chain})"
+
+    # Check for other functional groups
+    forbidden_patterns = [
+        "[N,S,P]",  # No heteroatoms besides O in ester
+        "[#6][F,Cl,Br,I]",  # No halogens
+        "[*]=O",  # No other carbonyl groups
+        "[*]=[*]=[*]",  # No allenes
+        "[*]#[*]",  # No triple bonds
+        "[*]O[C,S,N]",  # No ethers/thioesters/amides
+    ]
+    for pattern in forbidden_patterns:
+        if mol.HasSubstructMatch(Chem.MolFromSmarts(pattern)):
+            return False, f"Contains forbidden pattern: {pattern}"
+
+    # Check molecular weight (typical wax esters >350 g/mol)
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 350:
+        return False, f"Molecular weight too low ({mol_wt:.1f} Da)"
+
+    return True, "Contains single ester linking two long hydrocarbon chains"
