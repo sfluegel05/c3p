@@ -29,42 +29,32 @@ def is_decanoate_ester(smiles: str):
     if not ester_matches:
         return False, "No ester group found"
     
-    # Check each ester group for decanoate (10-carbon chain on the acid side)
+    # Check each ester group for decanoate (10 carbons in acid part including carbonyl)
     for match in ester_matches:
-        # Get the carbonyl carbon (index 1 in the SMARTS pattern)
         carbonyl_carbon = match[1]
-        
-        # Traverse the chain attached to the carbonyl carbon
-        # Exclude the oxygen and the rest of the ester
-        chain = []
-        stack = [(carbonyl_carbon, 0)]  # (atom index, chain length)
-        visited = set()
+        visited = set([match[0]])  # Exclude ester oxygen from traversal
+        stack = [carbonyl_carbon]
+        carbon_count = 0
         
         while stack:
-            atom_idx, length = stack.pop()
+            atom_idx = stack.pop()
             if atom_idx in visited:
                 continue
             visited.add(atom_idx)
+            
             atom = mol.GetAtomWithIdx(atom_idx)
+            if atom.GetAtomicNum() != 6:
+                continue  # Only count carbons
             
-            # Stop at branching or non-carbon atoms
-            if atom.GetDegree() > 2 or atom.GetAtomicNum() != 6:
-                continue
+            carbon_count += 1
             
-            # Add neighbors (excluding the carbonyl oxygen)
+            # Add all adjacent atoms except ester oxygen
             for neighbor in atom.GetNeighbors():
-                neighbor_idx = neighbor.GetIdx()
-                if neighbor_idx == match[0]:  # Skip the ester oxygen
-                    continue
-                if neighbor.GetAtomicNum() == 6:
-                    stack.append((neighbor_idx, length + 1))
-            
-            chain.append(length)
+                if neighbor.GetIdx() not in visited and neighbor.GetIdx() != match[0]:
+                    stack.append(neighbor.GetIdx())
         
-        max_chain_length = max(chain) if chain else 0
-        
-        # Check if the chain length is 9 (since the carbonyl is the 10th carbon)
-        if max_chain_length >= 9:
-            return True, "Contains a decanoate ester group"
+        # Need at least 10 carbons in acid chain (carbonyl + 9 more)
+        if carbon_count >= 10:
+            return True, "Contains decanoate chain in ester group"
     
-    return False, "No decanoate chain found in ester groups"
+    return False, "No ester group with 10-carbon acid chain found"
