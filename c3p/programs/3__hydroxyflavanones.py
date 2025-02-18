@@ -4,145 +4,117 @@ Classifies: CHEBI:48024 3'-hydroxyflavanones
 #!/usr/bin/env python
 """
 Classifies: 3'-hydroxyflavanones
-Definition: Any hydroxyflavanone with a hydroxy substituent at position 3' (meta to the point of attachment
-            on the B ring) of the phenyl substituent (B ring). This code first confirms the presence of a 
-            simplified flavanone (chromanone) core, then identifies a single six-membered aromatic ring
-            (candidate B ring) that attaches to this core at exactly one atom. It then “orders” that ring so
-            that the meta positions (two atoms away) are computed and checked for a free –OH.
-            
-NOTE: This is still a simplified approach. In production further refinement may be required.
+Definition: Any hydroxyflavanone with a hydroxy substituent at position 3' (meta to the attachment on the B ring) of the phenyl ring.
 """
-from rdkit import Chem
 
-def order_ring(mol, ring_set, start_atom):
-    """
-    Given a molecule and a set of atom indices that form a ring (assumed to be a simple cycle,
-    e.g. benzene), order the ring atoms in sequence starting from start_atom.
-    Returns a list of atom indices in order or None if ordering fails.
-    """
-    ordered = [start_atom]
-    current = start_atom
-    previous = None
-    # For the starting atom, get ring-neighbors within the set:
-    neighbors = [nbr.GetIdx() for nbr in mol.GetAtomWithIdx(current).GetNeighbors() if nbr.GetIdx() in ring_set]
-    if not neighbors:
-        return None
-    # Pick an arbitrary neighbor (our ring is symmetric)
-    next_atom = neighbors[0]
-    ordered.append(next_atom)
-    previous = current
-    current = next_atom
-    while len(ordered) < len(ring_set):
-        nbrs = [nbr.GetIdx() for nbr in mol.GetAtomWithIdx(current).GetNeighbors() 
-                if nbr.GetIdx() in ring_set and nbr.GetIdx() != previous]
-        if not nbrs:
-            break
-        next_atom = nbrs[0]
-        ordered.append(next_atom)
-        previous, current = current, next_atom
-    if len(ordered) != len(ring_set):
-        return None
-    return ordered
+from rdkit import Chem
 
 def is_3__hydroxyflavanones(smiles: str):
     """
     Determines if a molecule is a 3'-hydroxyflavanone based on its SMILES string.
     
-    Requirements:
-      1. The molecule must contain a flavanone (chromanone) core. We use a simplified SMARTS:
-         "C1CC(=O)c2ccccc2O1".
-      2. The molecule must feature exactly one six-membered aromatic ring (the B ring) that is attached
-         to the core by a single bond (a unique attachment atom).
-      3. In that benzene ring, when we order the atoms so that the attachment atom is position 0,
-         the meta positions (positions 2 and 4 in the ordered list) are examined.
-         At least one of these meta carbons must have a free –OH group, defined as an oxygen atom 
-         with only one heavy-atom connection (i.e. degree 1 as far as non-hydrogen neighbors) and bearing 
-         at least one hydrogen.
+    We require:
+      1. A flavanone core (a 2-phenylchroman-4-one fragment).
+         Here we use the simple SMARTS "C1CC(=O)c2ccccc2O1" which captures the chromanone ring.
+      2. An extra aromatic ring (“B ring”) attached to the core at the substitution carbon.
+      3. That aromatic ring must have a hydroxy (-OH) substituent at the meta position
+         (i.e. two bonds away from the connecting carbon of the ring).
     
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule fits the class, False otherwise
-        str: Reason for classification.
+        bool: True if the molecule fits the class, False otherwise.
+        str: Reason for the classification.
     """
-    # Parse the SMILES string.
+    # Parse SMILES string
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Use simplified flavanone (chromanone) core SMARTS.
+        
+    # Define a SMARTS for a simplistic flavanone/chromanone core.
+    # This pattern represents a 2-phenylchroman-4-one fragment.
+    # The assumption is that the first atom in the match (index 0) is the chiral (or substitution) center 
+    # that should be connected to the extra (B) aromatic ring.
     core_smarts = "C1CC(=O)c2ccccc2O1"
     core_query = Chem.MolFromSmarts(core_smarts)
     if core_query is None:
         return False, "Failed to create substructure query for flavanone core"
-
+    
     core_matches = mol.GetSubstructMatches(core_query)
     if not core_matches:
         return False, "Molecule does not contain a flavanone (chromanone) core"
-
-    # Retrieve ring information for later use.
-    ring_info = mol.GetRingInfo().AtomRings()
-
-    # For each flavanone core match, search for the B ring.
-    for core_match in core_matches:
-        core_set = set(core_match)
-        candidate_B_rings = []
-        # Review all atoms in the molecule that are aromatic and not part of the core.
-        # We want to identify a six-membered aromatic ring that is attached to the core by exactly one bond.
-        for ring in ring_info:
-            if len(ring) != 6:
-                continue
-            # Check every atom in this ring is aromatic.
-            if not all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
-                continue
-            # Count how many atoms in the ring are attached to an atom in the core.
-            attach_atoms = []
-            for idx in ring:
-                atom = mol.GetAtomWithIdx(idx)
-                for nbr in atom.GetNeighbors():
-                    if nbr.GetIdx() in core_set:
-                        attach_atoms.append(idx)
+        
+    # For this implementation, we assume that if the core is present, we can use the first match.
+    core_match = core_matches[0]
+    # The core SMARTS was written so that the first atom (core_match[0]) is expected to be the substitution center.
+    substitution_center_idx = core_match[0]
+    
+    # Now, loop over neighbors of the substitution center.
+    # In a flavanone, one of these neighbors (not part of the core) should be an aromatic carbon belonging to the B ring.
+    atom_sub_center = mol.GetAtomWithIdx(substitution_center_idx)
+    b_ring_attachment_idx = None
+    for nb in atom_sub_center.GetNeighbors():
+        # if this neighbor is not part of the core match then it is the attached phenyl (B) ring.
+        if nb.GetIdx() not in core_match and nb.GetIsAromatic():
+            b_ring_attachment_idx = nb.GetIdx()
+            break
+            
+    if b_ring_attachment_idx is None:
+        return False, "Could not find the attached aromatic (B) ring from the flavanone core"
+        
+    # Now we search for an aromatic ring that contains the B ring attachment atom.
+    ring_info = mol.GetRingInfo()
+    aromatic_rings = []
+    for ring in ring_info.AtomRings():
+        # We narrow to rings of size 6 (benzene rings) and all atoms aromatic.
+        if len(ring) == 6:
+            if b_ring_attachment_idx in ring:
+                # Check that all atoms in the ring are aromatic.
+                if all(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring):
+                    aromatic_rings.append(ring)
+                    
+    if not aromatic_rings:
+        return False, "No aromatic six‐membered ring (B ring) found attached to the flavanone core"
+    
+    # Assume that the first aromatic ring that contains the attachment atom is the B ring.
+    b_ring = aromatic_rings[0]
+    
+    # Now, we search for a hydroxy (-OH) group on the B ring 
+    # at a position meta to the attachment.
+    # In benzene, "meta" means the topological distance along the ring (within the ring) is 2.
+    # We use RDKit’s shortest path function to measure the distance.
+    found_meta_OH = False
+    for atom_idx in b_ring:
+        # Skip the attachment atom itself.
+        if atom_idx == b_ring_attachment_idx:
+            continue
+        # Compute the topological distance between the attachment atom and this atom.
+        path = Chem.GetShortestPath(mol, b_ring_attachment_idx, atom_idx)
+        # In a benzene ring, adjacent (ortho) means path length 1, meta means 2, para means 3.
+        if len(path) - 1 == 2:  # exactly meta
+            # For the candidate atom, check its neighbors for an -OH substituent.
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for nbr in atom.GetNeighbors():
+                # We want an oxygen (atomic number 8) that is attached by a single bond.
+                if nbr.GetAtomicNum() == 8:
+                    # Using GetTotalNumHs to check if it has an attached hydrogen (typical for an -OH group).
+                    # (This excludes –O–C glycosidic linkages where the oxygen would have no hydrogen.)
+                    if nbr.GetTotalNumHs() >= 1:
+                        found_meta_OH = True
                         break
-            # We require exactly one atom in the ring is the attachment point.
-            if len(attach_atoms) == 1:
-                candidate_B_rings.append((ring, attach_atoms[0]))
+            if found_meta_OH:
+                break
+                
+    if not found_meta_OH:
+        return False, "No hydroxy (-OH) group found at the 3' (meta) position on the B ring"
+        
+    # If we passed all tests:
+    return True, "Molecule contains flavanone core with a hydroxy group at the 3' position on the B ring"
 
-        if not candidate_B_rings:
-            continue  # Try the next core match if none found for this match.
-
-        # For each candidate B ring, check the free -OH condition on the meta positions.
-        for ring, attach_idx in candidate_B_rings:
-            ring_set = set(ring)
-            ordered_ring = order_ring(mol, ring_set, attach_idx)
-            if ordered_ring is None:
-                continue
-            # In an ordered benzene ring, let the attachment index be position 0.
-            # The two meta positions (two away along a 6-membered ring) are at indices 2 and 4.
-            # (Note: using modulo arithmetic for circularity)
-            meta_idx1 = ordered_ring[(ordered_ring.index(attach_idx) + 2) % 6]
-            meta_idx2 = ordered_ring[(ordered_ring.index(attach_idx) - 2) % 6]
-            meta_positions = [meta_idx1, meta_idx2]
-            for meta in meta_positions:
-                meta_atom = mol.GetAtomWithIdx(meta)
-                # Look for substituents off the meta carbon.
-                for nbr in meta_atom.GetNeighbors():
-                    # Do not consider atoms in the ring.
-                    if nbr.GetIdx() in ring_set:
-                        continue
-                    # Check if the neighbor is an oxygen.
-                    if nbr.GetAtomicNum() == 8:
-                        # Check that this oxygen is a free -OH (degree=1 for heavy atoms and at least one H).
-                        # (Note: RDKit counts hydrogens automatically unless suppressed.)
-                        if nbr.GetDegree() == 1 and nbr.GetTotalNumHs() >= 1:
-                            return True, ("Molecule contains flavanone core with a free -OH group at the "
-                                          "3' (meta) position on the B ring (attachment at atom idx {} in ring)".format(attach_idx))
-        # If none of the candidate B rings satisfy the free -OH condition, try next core match.
-    return False, "No free -OH group found at the 3' (meta) position on the B ring attached to the flavanone core"
-
-# When run directly, perform a simple test.
+# For testing purposes – you could run:
 if __name__ == "__main__":
-    # Test using (2S)-3'-hydroxyflavanone (should return True)
-    test_smiles = "Oc1cccc(c1)[C@@H]1CC(=O)c2ccccc2O1"
-    result, reason = is_3__hydroxyflavanones(test_smiles)
+    # Example: (2S)-3'-hydroxyflavanone
+    smiles_example = "Oc1cccc(c1)[C@@H]1CC(=O)c2ccccc2O1"
+    result, reason = is_3__hydroxyflavanones(smiles_example)
     print(result, reason)
