@@ -36,17 +36,30 @@ def is_fatty_alcohol(smiles: str):
         return False, "Molecule contains aromatic rings, not aliphatic"
 
     # Count the number of carbon atoms in the longest aliphatic chain
-    # Use the largest aliphatic chain to determine the carbon count
-    aliphatic_chains = Chem.MolFromSmarts("[CX4H2]")
+    # Use a more inclusive pattern to match all carbon atoms in the chain
+    aliphatic_chains = Chem.MolFromSmarts("[C]")
     matches = mol.GetSubstructMatches(aliphatic_chains)
     if not matches:
         return False, "No aliphatic chain found"
     
     # Find the longest aliphatic chain
-    longest_chain = max(matches, key=len)
-    c_count = len(longest_chain)
-    if c_count < 3 or c_count > 27:
-        return False, f"Carbon chain length {c_count} is outside the range of 3 to 27"
+    # Use a graph-based approach to find the longest continuous carbon chain
+    longest_chain = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 6:  # Carbon atom
+            visited = set()
+            stack = [(atom, 1)]  # (atom, chain length)
+            while stack:
+                current_atom, chain_length = stack.pop()
+                visited.add(current_atom.GetIdx())
+                if chain_length > longest_chain:
+                    longest_chain = chain_length
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                        stack.append((neighbor, chain_length + 1))
+
+    if longest_chain < 3 or longest_chain > 27:
+        return False, f"Carbon chain length {longest_chain} is outside the range of 3 to 27"
 
     # Count the number of oxygen atoms (should be at least one, but can be more)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
@@ -78,4 +91,4 @@ def is_fatty_alcohol(smiles: str):
     if non_aliphatic_count > 3:
         return False, "Molecule contains too many non-aliphatic functional groups"
 
-    return True, f"Aliphatic alcohol with {c_count} carbon atoms and {o_count} oxygen atoms"
+    return True, f"Aliphatic alcohol with {longest_chain} carbon atoms and {o_count} oxygen atoms"
