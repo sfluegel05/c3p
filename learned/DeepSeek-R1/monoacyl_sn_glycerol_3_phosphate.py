@@ -1,56 +1,497 @@
 """
 Classifies: CHEBI:17088 monoacyl-sn-glycerol 3-phosphate
 """
-"""
-Classifies: CHEBI:17525 monoacyl-sn-glycerol 3-phosphate
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-
-def is_monoacyl_sn_glycerol_3_phosphate(smiles: str):
-    """
-    Determines if a molecule is a monoacyl-sn-glycerol 3-phosphate.
-    It has a glycerol backbone with a phosphate at position 3 and exactly one acyl group at position 1 or 2.
-    
-    Args:
-        smiles (str): SMILES string of the molecule
-        
-    Returns:
-        bool: True if the molecule fits the criteria
-        str: Reason for the decision
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if not mol:
-        return False, "Invalid SMILES"
-    
-    # Corrected SMARTS for sn-glycerol-3-phosphate backbone with proper stereochemistry
-    # Pattern: [CH2]-O-[C@@H](O)-CH2-O-P(=O)(O)O
-    glycerol_pattern = Chem.MolFromSmarts("[CH2]O[C@@H](O)COP(=O)(O)O")
-    matches = mol.GetSubstructMatches(glycerol_pattern)
-    if not matches:
-        return False, "No sn-glycerol-3-phosphate backbone found"
-    
-    # Get the oxygen atoms attached to C1 and C2 of glycerol from the match
-    # Indices in SMARTS: [0:CH2, 1:O (C1-O), 2:C@@H (C2), 3:O (C2-OH), 4:CH2 (C3), 5:O (C3-O-P), 6:P, ...]
-    o_c1_idx = matches[0][1]  # O attached to C1
-    o_c2_idx = matches[0][3]  # O (hydroxyl) on C2
-    
-    # SMARTS for ester group: O-C(=O)
-    ester_pattern = Chem.MolFromSmarts("[OX2]-C(=O)")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    
-    # Check which oxygens (C1-O or C2-O) are part of ester groups
-    c1_ester = any(o_c1_idx in match for match in ester_matches)
-    c2_ester = any(o_c2_idx in match for match in ester_matches)
-    
-    ester_count = sum([c1_ester, c2_ester])
-    if ester_count != 1:
-        return False, f"Found {ester_count} acyl groups, expected 1"
-    
-    # Check the non-acylated oxygen has a hydroxyl (degree 1 and at least one H)
-    non_acylated_o = o_c2_idx if c1_ester else o_c1_idx
-    o_atom = mol.GetAtomWithIdx(non_acylated_o)
-    if o_atom.GetDegree() != 1 or o_atom.GetTotalNumHs() < 1:
-        return False, "Non-acylated position lacks hydroxyl group"
-    
-    return True, "Monoacyl-sn-glycerol 3-phosphate structure confirmed"
+ - 1-(5Z,8Z,11Z,14Z-eicosatetraenoyl)-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)(O)(O)=O
+ - LysoPA(20:3(8Z,11Z,14Z)/0:0): SMILES: P(OCC(O)COC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCC)(O)(O)=O
+ - 1-(13Z,16Z-docosadienoyl)-sn-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CCCCCCCCCCC/C=C\C/C=C\CCCCC)(O)(O)=O
+ - LysoPA(0:0/16:1(9Z)): SMILES: P(OCC(OC(=O)CCCCCCCC/C=C\CCCC)CO)(O)(O)=O
+ - LysoPA(0:0/20:4(5Z,8Z,11Z,14Z)): SMILES: P(OCC(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)CO)(O)(O)=O
+ - 1-pentadecanoyl-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CCCCCCCCCCCCCC)(O)(O)=O
+ - 1-palmitoyl-2-linoleoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCCCCCCCC(=O)O[C@H](COP(O)(O)=O)COC(=O)CCCCCCC/C=C\C/C=C\CCCCC
+ - 1-octadecanoyl-sn-glycero-3-phosphate: SMILES: CCCCCCCCCCCCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - LysoPA(0:0/20:3(8Z,11Z,14Z)): SMILES: P(OCC(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCC)CO)(O)(O)=O
+ - 1-arachidonoyl-sn-glycero-3-phosphate: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - 1-(9Z-octadecenoyl)-sn-glycero-3-phosphate: SMILES: CCCCCCCC\C=C/CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - LysoPA(0:0/14:0): SMILES: P(OCC(OC(=O)CCCCCCCCCCCC)CO)(O)(O)=O
+ - 1-(9Z,12Z-octadecadienoyl)-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CCCCCC/C=C\C/C=C\CCCCCC)(O)(O)=O
+ - 1-(9Z-hexadecenoyl)-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CCCCCC/C=C\CCCCCC)(O)(O)=O
+ - 1-(9Z,12Z,15Z-octadecatrienoyl)-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CCCC/C=C\C/C=C\C/C=C\CCCCCC)(O)(O)=O
+ - 1-(11Z,14Z,17Z-eicosatrienoyl)-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CCCCCCCC/C=C\C/C=C\C/C=C\CCCC)(O)(O)=O
+ - 1-(5Z,8Z,11Z,14Z,17Z-eicosapentaenoyl)-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)(O)(O)=O
+ - 1-(5Z,8Z,11Z-eicosatrienoyl)-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CCCCCC/C=C\C/C=C\C/C=C\CCCCC)(O)(O)=O
+ - 1-(7Z,10Z,13Z,16Z,19Z-docosapentaenoyl)-glycero-3-phosphate: SMILES: P(OC[C@H](O)COC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)(O)(O)=O
+ - LysoPA(0:0/20:5(5Z,8Z,11Z,14Z,17Z)): SMILES: P(OCC(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)CO)(O)(O)=O
+ - LysoPA(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: P(OCC(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)CO)(O)(O)=O
+ - LysoPA(0:0/24:1(15Z)): SMILES: P(OCC(OC(=O)CCCCCCCCCCCCCCCCCCCC/C=C\CC)CO)(O)(O)=O
+ - 1-(9Z-octadecenoyl)-sn-glycerol 3-phosphate: SMILES: CCCCCCCC\C=C/CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - 1-(9Z,12Z,15Z-octadecatrienoyl)-sn-glycero-3-phosphate: SMILES: CCCCC/C=C\C/C=C\C/C=C\CCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - LysoPA(0:0/18:3(9Z,12Z,15Z)): SMILES: P(OCC(OC(=O)CCCC/C=C\C/C=C\C/C=C\CCCCCC)CO)(O)(O)=O
+ - 1-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phosphate: SMILES: CCCCCCC/C=C\C/C=C\CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - 1-(9Z-octadecenoyl)-sn-glycero-3-phosphate: SMILES: CCCCCCCC\C=C/CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - 1-(9Z-octadecenoyl)-sn-glycerol 3-phosphate: SMILES: CCCCCCCC\C=C/CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - LysoPA(0:0/18:4(6Z,9Z,12Z,15Z)): SMILES: P(OCC(OC(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)CO)(O)(O)=O
+ - LysoPA(0:0/20:2(11Z,14Z)): SMILES: P(OCC(OC(=O)CCCCCCCCC/C=C\C/C=C\CCCCCCCC)CO)(O)(O)=O
+ - 1-(11Z,14Z-eicosadienoyl)-sn-glycero-3-phosphate: SMILES: CCCCCCCCC/C=C\C/C=C\CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - LysoPA(0:0/22:5(7Z,10Z,13Z,16Z,19Z)): SMILES: P(OCC(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)CO)(O)(O)=O
+ - LysoPA(0:0/24:0): SMILES: P(OCC(OC(=O)CCCCCCCCCCCCCCCCCCCCCCCC)CO)(O)(O)=O
+ - 1-(5Z,8Z,11Z,14Z-eicosatetraenoyl)-sn-glycero-3-phosphate: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - LysoPA(0:0/22:4(7Z,10Z,13Z,16Z)): SMILES: P(OCC(OC(=O)CCCCCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC)CO)(O)(O)=O
+ - 1-(9Z,12Z-octadecadienoyl)-sn-glycero-3-phosphate: SMILES: CCCCCCC/C=C\C/C=C\CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - 1-(5Z,8Z,11Z,14Z,17Z-eicosapentaenoyl)-sn-glycero-3-phosphate: SMILES: CCCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - 1-(9Z,12Z,15Z-octadecatrienoyl)-sn-glycero-3-phosphate: SMILES: CCCCC/C=C\C/C=C\C/C=C\CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - LysoPA(0:0/22:1(13Z)): SMILES: P(OCC(OC(=O)CCCCCCCCCCCCCCCCCC/C=C\C)CO)(O)(O)=O
+ - 1-(13Z,16Z-docosadienoyl)-sn-glycero-3-phosphate: SMILES: CCCCCCCCCCC/C=C\C/C=C\CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - 1-(9Z,12Z,15Z-octadecatrienoyl)-sn-glycero-3-phosphate: SMILES: CCCCC/C=C\C/C=C\C/C=C\CCCCCCCC(=O)OC[C@@H](O)COP(O)(O)=O
+ - LysoPA(0:0/22:2(13Z,16Z)): SMILES: P(OCC(OC(=O)CCCCCCCCCCCC/C=C\C/C=C\CCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/18:1(9Z)): SMILES: P(OCC(OC(=O)CCCCCCC/C=C\CCCCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/20:1(11Z)): SMILES: P(OCC(OC(=O)CCCCCCCCCC/C=C\CCCCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/14:1(9Z)): SMILES: P(OCC(OC(=O)CCCCCC/C=C\CCCC)CO)(O)(O)=O
+ - LysoPA(0:0/16:1(9Z)): SMILES: P(OCC(OC(=O)CCCCCCCC/C=C\CCCC)CO)(O)(O)=O
+ - LysoPA(0:0/22:1(13Z)): SMILES: P(OCC(OC(=O)CCCCCCCCCCCCCCCCCC/C=C\C)CO)(O)(O)=O
+ - LysoPA(0:0/24:1(15Z)): SMILES: P(OCC(OC(=O)CCCCCCCCCCCCCCCCCCCC/C=C\CC)CO)(O)(O)=O
+ - LysoPA(0:0/20:3(5Z,8Z,11Z)): SMILES: P(OCC(OC(=O)CCCCC/C=C\C/C=C\C/C=C\CCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/22:5(4Z,7Z,10Z,13Z,16Z)): SMILES: P(OCC(OC(=O)CCCC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCCC)CO)(O)(O)=O
+ - LysoPA(0:0/20:4(5Z,8Z,11Z,14Z)): SMILES: P(OCC(OC(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCC)CO)(O)(O)=O
+ - LysoPA(0:0/22:6(4Z,7Z,10Z,13Z,16Z,19Z)): SMILES: P(OCC(OC(=O)CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CC)CO)(O)(O)=O
+ - LysoPA(0:0/18:0): SMILES: P(OCC(OC(=O)CCCCCCCCCCCCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/16:0): SMILES: P(OCC(OC(=O)CCCCCCCCCCCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/14:0): SMILES: P(OCC(OC(=O)CCCCCCCCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/12:0): SMILES: P(OCC(OC(=O)CCCCCCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/10:0): SMILES: P(OCC(OC(=O)CCCCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/8:0): SMILES: P(OCC(OC(=O)CCCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/6:0): SMILES: P(OCC(OC(=O)CCCCC)CO)(O)(O)=O
+ - LysoPA(0:0/4:0): SMILES: P(OCC(OC(=O)CCC)CO)(O)(O)=O
+ - LysoPA(0:0/2:0): SMILES: P(OCC(OC(=O)C)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0:0): SMILES: P(OCC(CO)CO)(O)(O)=O
+ - LysoPA(0:0/0
