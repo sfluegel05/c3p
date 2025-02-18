@@ -26,6 +26,11 @@ def is_phosphoinositide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
+    # Check molecular weight - phosphoinositides are typically >600 Da
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt < 600:
+        return False, "Molecular weight too low for phosphoinositide"
+
     # Look for glycerol backbone pattern (C-C-C with 3 oxygens attached)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     if not mol.HasSubstructMatch(glycerol_pattern):
@@ -42,52 +47,34 @@ def is_phosphoinositide(smiles: str):
     if not mol.HasSubstructMatch(phosphate_glycerol_pattern):
         return False, "No phosphate group attached to glycerol backbone"
 
-    # Look for inositol ring (6-membered ring with 6 oxygens)
-    inositol_pattern = Chem.MolFromSmarts("[C@H]1([C@H]([C@H]([C@H]([C@H]([C@H]1O)O)O)O)O)O")
+    # Look for inositol ring (6-membered ring with 6 oxygens, no stereochemistry requirement)
+    inositol_pattern = Chem.MolFromSmarts("[C]1([C]([C]([C]([C]([C]1O)O)O)O)O)O")
     if not mol.HasSubstructMatch(inositol_pattern):
         return False, "No inositol ring found"
 
-    # Look for at least one phosphate group attached to inositol (P-O-C in inositol)
-    phosphate_inositol_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2][C@H]1[C@H]([C@H]([C@H]([C@H]([C@H]1O)O)O)O)O)[OX2]")
-    if not mol.HasSubstructMatch(phosphate_inositol_pattern):
-        return False, "No phosphate group attached to inositol ring"
-
-    # Count the number of phosphate groups attached to inositol
+    # Look for phosphate groups attached to inositol (more flexible pattern)
+    phosphate_inositol_pattern = Chem.MolFromSmarts("[PX4](=[OX1])([OX2][C]1[C]([C]([C]([C]([C]1O)O)O)O)O)[OX2]")
     phosphate_inositol_matches = mol.GetSubstructMatches(phosphate_inositol_pattern)
+    
+    # Must have at least one phosphate on inositol
     if len(phosphate_inositol_matches) < 1:
         return False, "No phosphorylation on inositol ring"
+    
+    # Count total phosphate groups (should be at least 2: one on glycerol, one on inositol)
+    total_phosphates = len(mol.GetSubstructMatches(Chem.MolFromSmarts("[PX4](=[OX1])([OX2])[OX2]")))
+    if total_phosphates < 2:
+        return False, f"Found only {total_phosphates} phosphate groups, need at least 2"
 
-    return True, "Contains glycerol backbone with 2 fatty acid chains, a phosphate group, and phosphorylated inositol ring"
+    # Check element counts
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    p_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15)
+    
+    if c_count < 20:
+        return False, "Too few carbons for phosphoinositide"
+    if o_count < 10:
+        return False, "Too few oxygens for phosphoinositide"
+    if p_count < 2:
+        return False, "Too few phosphorus atoms for phosphoinositide"
 
-
-__metadata__ = {   'chemical_class': {   'id': 'CHEBI:18179',
-                          'name': 'phosphoinositide',
-                          'definition': 'Any phosphatidylinositol that is '
-                                        'phosphorylated at one or more of the '
-                                        'hydroxy groups of inositol.',
-                          'parents': ['CHEBI:26039', 'CHEBI:26040']},
-    'config': {   'llm_model_name': 'lbl/claude-sonnet',
-                  'f1_threshold': 0.8,
-                  'max_attempts': 5,
-                  'max_positive_instances': None,
-                  'max_positive_to_test': None,
-                  'max_negative_to_test': None,
-                  'max_positive_in_prompt': 50,
-                  'max_negative_in_prompt': 20,
-                  'max_instances_in_prompt': 100,
-                  'test_proportion': 0.1},
-    'message': None,
-    'attempt': 0,
-    'success': True,
-    'best': True,
-    'error': '',
-    'stdout': None,
-    'num_true_positives': 150,
-    'num_false_positives': 4,
-    'num_true_negatives': 182407,
-    'num_false_negatives': 23,
-    'num_negatives': None,
-    'precision': 0.974025974025974,
-    'recall': 0.8670520231213873,
-    'f1': 0.9174311926605504,
-    'accuracy': 0.9998521228585199}
+    return True, "Contains glycerol backbone with 2 fatty acid chains, phosphate groups, and phosphorylated inositol ring"
