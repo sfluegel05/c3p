@@ -5,15 +5,16 @@ Classifies: CHEBI:32876 tertiary amine
 Classifies: CHEBI:32876 tertiary amine
 """
 from rdkit import Chem
+from rdkit.Chem import HybridizationType
 
 def is_tertiary_amine(smiles: str):
     """
     Determines if a molecule is a tertiary amine based on its SMILES string.
     A tertiary amine has a nitrogen atom bonded to three hydrocarbyl groups (carbon-based substituents).
-    
+
     Args:
         smiles (str): SMILES string of the molecule
-        
+
     Returns:
         bool: True if molecule is a tertiary amine, False otherwise
         str: Reason for classification
@@ -26,6 +27,10 @@ def is_tertiary_amine(smiles: str):
         if atom.GetAtomicNum() == 7:  # Nitrogen atom
             # Skip aromatic nitrogens (e.g., in pyridine/pyrrole)
             if atom.GetIsAromatic():
+                continue
+            
+            # Check for SP3 hybridization (excludes conjugated/planar nitrogens)
+            if atom.GetHybridization() != HybridizationType.SP3:
                 continue
             
             # Check valence: exactly three bonds (excluding hydrogen)
