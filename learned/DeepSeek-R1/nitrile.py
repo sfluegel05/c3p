@@ -23,11 +23,12 @@ def is_nitrile(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for nitrile group (C#N)
-    nitrile_pattern = Chem.MolFromSmarts("[C]#[N]")
+    # Define SMARTS pattern for nitrile group (RC#N where R is carbon-based)
+    # The pattern matches a carbon connected to another carbon via single bond, then triple bond to N
+    nitrile_pattern = Chem.MolFromSmarts("[C][C]#[N]")
     
-    # Check for presence of nitrile group
+    # Check for presence of nitrile group with carbon substituent
     if mol.HasSubstructMatch(nitrile_pattern):
-        return True, "Contains a nitrile group (C#N)"
+        return True, "Contains a nitrile group (RC#N)"
     else:
-        return False, "No nitrile group (C#N) found"
+        return False, "No nitrile group (RC#N) found"
