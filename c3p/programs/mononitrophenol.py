@@ -44,19 +44,21 @@ def is_mononitrophenol(smiles: str):
     if not phenol_o_indices:
         return False, "No phenolic OH group found"
 
-    # For each ring, check if it contains exactly one phenolic oxygen and one nitro group
+    # For each ring, check if it contains at least one phenolic oxygen and the nitro group
     for ring in atom_rings:
         ring_set = set(ring)
-        hydroxyl_count = 0
-        nitro_count = 0
+        hydroxyl_found = False
+        nitro_found = False
 
         # Check for phenolic oxygen in ring
         for o_idx in phenol_o_indices:
             o_atom = mol.GetAtomWithIdx(o_idx)
             for neighbor in o_atom.GetNeighbors():
                 if neighbor.GetIdx() in ring_set:
-                    hydroxyl_count +=1
-                    break  # Only count once per ring
+                    hydroxyl_found = True
+                    break
+            if hydroxyl_found:
+                break
 
         # Check for nitro group attached to ring
         for nitro_match in nitro_matches:
@@ -64,11 +66,13 @@ def is_mononitrophenol(smiles: str):
             n_atom = mol.GetAtomWithIdx(n_idx)
             for neighbor in n_atom.GetNeighbors():
                 if neighbor.GetIdx() in ring_set:
-                    nitro_count +=1
-                    break  # Only count once per ring
+                    nitro_found = True
+                    break
+            if nitro_found:
+                break
 
-        # Check if ring has exactly one phenolic oxygen and one nitro group
-        if hydroxyl_count == 1 and nitro_count == 1:
+        # Check if ring has at least one phenolic OH and one nitro group
+        if hydroxyl_found and nitro_found:
             return True, "Contains phenol ring with one nitro group attached"
 
-    return False, "No ring with exactly one phenolic OH and one nitro group found"
+    return False, "No ring containing both phenolic OH and nitro group found"
