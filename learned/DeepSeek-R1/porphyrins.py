@@ -23,42 +23,49 @@ def is_porphyrins(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Improved SMARTS pattern for porphyrin core (four pyrroles connected by methine bridges)
-    porphyrin_core = Chem.MolFromSmarts("[nH]1c2c([nH]c3c([nH]c4c([nH]c1cc4)cc3)cc2)cc1")
+    # Validate and create SMARTS patterns with error handling
+    try:
+        # Core porphyrin pattern (16-membered macrocycle with four pyrrole subunits)
+        porphyrin_core = Chem.MolFromSmarts("c1c2nc3c4nc1cccc1c3nc2c(c1)c4")
+        # Metalloporphyrin pattern (metal coordinated to four nitrogens)
+        metal_porphyrin = Chem.MolFromSmarts("[Mg,Fe,Zn,Co,Pd,Pt]~[n]~[n]~[n]~[n]")
+    except:
+        return False, "SMARTS pattern error"
+
+    if porphyrin_core is None or metal_porphyrin is None:
+        return False, "SMARTS initialization failed"
+
+    # Check core porphyrin structure
     if mol.HasSubstructMatch(porphyrin_core):
-        return True, "Contains porphyrin macrocycle with four pyrrole rings connected by methine groups"
+        return True, "Contains porphyrin macrocycle core"
 
-    # Check for metalloporphyrins (common in heme/chlorophyll)
-    metal_porphyrin = Chem.MolFromSmarts("[Mg,Fe,Zn,Co,Pd,Pt]@[n]1c2c([n]c3c([n]c4c([n]c1cc4)cc3)cc2)cc1")
+    # Check for metalloporphyrins (common in biological systems)
     if mol.HasSubstructMatch(metal_porphyrin):
-        return True, "Contains metalloporphyrin core structure"
+        # Verify the metal is part of a macrocycle
+        ring_info = mol.GetRingInfo()
+        for ring in ring_info.AtomRings():
+            if len(ring) >= 16:  # Core porphyrin ring size
+                metal_in_ring = any(mol.GetAtomWithIdx(a).GetAtomicNum() in {12, 26, 30, 27, 46, 78} for a in ring)
+                if metal_in_ring:
+                    return True, "Metalloporphyrin structure detected"
 
-    # Check for macrocycle with 16 atoms (porphine skeleton size)
+    # Macrocycle verification fallback
     ring_info = mol.GetRingInfo()
-    macrocycle = False
     for ring in ring_info.AtomRings():
-        if len(ring) == 16:
-            # Check for four nitrogens in the macrocycle
-            nitro_count = sum(1 for atom in ring if mol.GetAtomWithIdx(atom).GetAtomicNum() == 7)
+        if 16 <= len(ring) <= 24:  # Allow some substitution variations
+            nitro_count = sum(1 for a in ring if mol.GetAtomWithIdx(a).GetAtomicNum() == 7)
             if nitro_count == 4:
                 # Verify each nitrogen is in a pyrrole-like 5-membered ring
                 pyrrole_nitro = 0
                 for atom in ring:
                     a = mol.GetAtomWithIdx(atom)
                     if a.GetAtomicNum() == 7:
-                        # Check if nitrogen is in a 5-membered aromatic ring
-                        for bond in a.GetBonds():
-                            if bond.GetBondType() == Chem.BondType.AROMATIC:
-                                neigh = bond.GetOtherAtomIdx(atom)
-                                # Check if the ring is 5-membered
-                                for r in ring_info.AtomRings():
-                                    if atom in r and neigh in r and len(r) == 5:
-                                        pyrrole_nitro +=1
-                                        break
-                if pyrrole_nitro >=4:
-                    macrocycle = True
-                    break
-    if macrocycle:
-        return True, "16-membered macrocycle with four pyrrole-like nitrogens"
+                        # Check for participation in a 5-membered ring
+                        for r in ring_info.AtomRings():
+                            if atom in r and len(r) == 5:
+                                pyrrole_nitro += 1
+                                break
+                if pyrrole_nitro >= 4:
+                    return True, "Macrocycle with four pyrrole-like nitrogens"
 
     return False, "Does not match porphyrin structural criteria"
