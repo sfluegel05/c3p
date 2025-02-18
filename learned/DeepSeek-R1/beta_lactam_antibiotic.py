@@ -1,18 +1,256 @@
 """
 Classifies: CHEBI:27933 beta-lactam antibiotic
 """
-</think>
-
-Okay, I need to create a function called is_beta_lactam_antibiotic that checks if a SMILES string represents a beta-lactam antibiotic. The definition says it's an organonitrogen heterocyclic antibiotic containing a beta-lactam ring. 
-
-First, the beta-lactam ring is a four-membered ring with one nitrogen and a carbonyl group. The SMARTS pattern for that should be something like a four-membered ring where one atom is nitrogen (like [#7]) and another is a carbonyl carbon (C=O). So the SMARTS could be "[#7]1-C-C(=O)-C-1" or similar. Wait, but the ring might have different connectivity. Maybe using a more flexible pattern like "[#7]1~*~C(=O)~*1" where ~ allows any bond type.
-
-Next, the molecule must be an antibiotic. But how to check that programmatically? Maybe look for common antibiotic substructures or functional groups often present in antibiotics. Alternatively, since the problem states "organonitrogen heterocyclic", we can check for a heterocycle containing nitrogen. The beta-lactam ring itself is a heterocycle, so maybe that's sufficient if combined with other typical features.
-
-So the steps would be:
-1. Check for the presence of a beta-lactam ring.
-2. Ensure it's an antibiotic. Since antibiotic activity is hard to determine from structure alone, maybe check for common substituents like a carboxylate group (common in penicillins and cephalosporins) or other groups often present in beta-lactams.
-
-Wait, the examples given (like benzylpenicillin) have a carboxylate group. Maybe requiring a carboxylic acid or its derivative (like ester) could help. But some beta-lactams might have different groups. Alternatively, maybe just the presence of the beta-lactam ring is enough, given the problem's definition.
-
-But the definition says "organonitrogen heterocyclic antibiotic". So the molecule must be an antibiotic (which is a biological activity), but how to determine that from structure? Perhaps we can't directly, so maybe the presence of the beta-lactam ring is the main criterion. However, some molecules might have a beta-lactam ring but not be antibiotics. But according to the problem statement, the class
+ - (5R,6R)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - cefoxitin: SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C(=O)O
+ - 7-[(2-furanylcarbonyl)amino]-3-[[(5-methyl-1,3,4-thiadiazol-2-yl)thio]methyl]-8-oxo-5-thia-1-azabicyclo[4.2.0]oct-2-ene-2-carboxylic acid: SMILES: CC1=NN=C(S1)SCC2=C(N3C(C(C3=O)NC(=O)C4=CC=CO4)SC2)C(=O)O
+ - 6-(alpha-D-glucopyranosyl)-6-epi-thienamycin: SMILES: C([C@@H]1[C@H]([C@@H]([C@H]([C@H](O1)O)O)O)O)N[C@]12SCC(C=C3C(=O)N1C3=O)=C(C(=O)O)N2
+ - cefoxazole: SMILES: [H][C@]12SC(C)=C(N1C(=O)[C@H]2NC(=O)c1c(C)nnn1C)C(=O)O
+ - cefmenoxime: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c1cnc[nH]1)C(=O)O
+ - cefprozil: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C(=O)O
+ - cefcapene: SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C(=O)O
+ - (6R,7R)-7-[[(2R)-2-amino-2-phenylacetyl]amino]-3-[(1-methyltetrazol-5-yl)sulfanylmethyl]-8-oxo-5-thia-1-azabicyclo[4.2.0]oct-2-ene-2-carboxylic acid: SMILES: CN1N=NN=C1SCC2=C(N3C(C(C3=O)NC(=O)[C@H](C4=CC=CC=C4)N)SC2)C(=O)O
+ - (6R,7R)-7-[[(2R)-2-amino-2-phenylacetyl]amino]-3-[(1-methyltetrazol-5-yl)sulfanylmethyl]-8-oxo-5-thia-1-azabicyclo[4.2.0]oct-2-ene-2-carboxylic acid: SMILES: CN1N=NN=C1SCC2=C(N3C(C(C3=O)NC(=O)[C@H](C4=CC=CC=C4)N)SC2)C(=O)O
+ - cefotetan: SMILES: CC(C)(C(=O)O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C(=O)O
+ - (5R,6S)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - cefsulodin: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc1ccc(cc1)S(=O)(=O)O)C(O)=O
+ - (5R,6R)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - cefotaxime: SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c1csc(N)n1)C(=O)O
+ - cefamandole: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C(=O)O
+ - (6R,7R)-7-[[(2R)-2-amino-2-(4-hydroxyphenyl)acetyl]amino]-3-[(1-methyltetrazol-5-yl)sulfanylmethyl]-8-oxo-5-thia-1-azabicyclo[4.2.0]oct-2-ene-2-carboxylic acid: SMILES: CN1N=NN=C1SCC2=C(N3C(C(C3=O)NC(=O)[C@H](C4=CC=C(O)C=C4)N)SC2)C(=O)O
+ - (5R,6S)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - cefodizime: SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C(=O)O
+ - cefotiam: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc1ccccc1)N)C(=O)O
+ - (5R,6R)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - cefixime: SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c1csc(N)n1)C(=O)O
+ - (5R,6S)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - (5R,6R)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - (5R,6S)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - cefuroxime: SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c1csc(N)n1)C(=O)O
+ - cefmetazole: SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C(=O)O
+ - cefazolin(1-): SMILES: [C@]12(N(C(=C(CS1)CSC3=NN=C(S3)C)C([O-])=O)C([C@H]2NC(=O)CN4C=NN=N4)=O)[H]
+ - cefaclor: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cl)C)C(=O)O
+ - (5R,6R)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - cefaloridine: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc1ccccc1)C(=O)O.[Cl-]
+ - cefotiam hexetil: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)OCCCCCCOC(C)=O
+ - (5R,6S)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - (5R,6R)-6-[(1R)-1-hydroxyethyl]-3-[(E)-2-(4-methylpiperazin-1-yl)vinyl]-7-oxo-1-azabicyclo[3.2.0]hept-2-ene-2-carboxylic acid: SMILES: C[C@H](O)[C@H]1[C@H]2C/C(=C\CN3CCN(C)CC3)/C(=O)N2C1=O
+ - ceforanide: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccc(cc3)Cl)N)C(=O)O
+ - cefalexin: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O
+ - cefoperazone: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O
+ - cefradine: SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)C(C)N)C(=O)O
+ - cefamandole nafate: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C(=O)O.O=S(=O)(O)O
+ - cefpiramide: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O
+ - cefbuperazone: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O
+ - cefoperazone sodium: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O.[Na+]
+ - cefonicid: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O
+ - ceforanide(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccc(cc3)Cl)N)C([O-])=O
+ - cefazedone: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefazedone(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - ceftezole: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefpirome: SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O
+ - cefpirome(1+): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O.[Na+]
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefonicid(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - cefpiramide(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - cefazedone(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - ceftezole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - cefpirome(1+): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O.[Na+]
+ - cefbuperazone(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - cefradine(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)C(C)N)C([O-])=O
+ - cefalexin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - cefoperazone(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O
+ - cefamandole nafate(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O.OS3(=O)(=O)O
+ - cefpirome(1+): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O.[Na+]
+ - cefaloridine(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccccc3)C(=O)O.[Cl-]
+ - cefpirome(1+): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C(=O)O.[Na+]
+ - cefoperazone sodium(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.[Na+]
+ - cefaclor(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cl)C)C([O-])=O
+ - cefazolin(1-): SMILES: [C@]12(N(C(=C(CS1)CSC3=NN=C(S3)C)C([O-])=O)C([C@H]2NC(=O)CN4C=NN=N4)=O)[H]
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefuroxime pivoxetil(1-): SMILES: C=1(N2[C@](SCC1COC(N)=O)([C@@](C2=O)(NC(/C(/C=3OC=CC3)=N\OC)=O)[H])[H])C(OC(C)OC(=O)C(C)(C)OC)=O
+ - cefetamet(1-): SMILES: C(O)(=O)C=1N2[C@@]([C@@H](C2=O)NC(/C(=N\OC)/C3=CSC(=N3)N)=O)(SCC1C)[H]
+ - cefminox(1-): SMILES: N(C(CSC[C@H](C([O-])=O)N)=O)[C@@]1(OC)[C@@]2(N(C1=O)C(C([O-])=O)=C(CS2)CSC=3N(C)N=NN3)[H]
+ - cefotetan(2-): SMILES: CC(C)(C([O-])=O)SN=C(C1C(=O)N2[C@H](SC1)[C@H](C2=O)NC(=O)C(C3=CC=CC=C3)N)C([O-])=O
+ - cefalotin(1-): SMILES: [H][C@@]1(NC(=O)Cc2cccs2)C(=O)N2C(C([O-])=O)=C(COC(C)=O)CS[C@]12[H]
+ - cefoxitin(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefotiam hexetil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(Cc3ccccc3)N)C([O-])=O.OCCCCCCOC(C)=O
+ - cefodizime(1-): SMILES: [H][C@]12SCC(COC=3N=CN=C3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefotaxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefsulodin(1-): SMILES: [H][C@]12SC(C)(C)[C@@H](N1C(=O)[C@H]2NC(=O)Cc3ccc(cc3)S(=O)(=O)O)C([O-])=O
+ - cefmetazole(1-): SMILES: COC1=C(C(=O)O[C@@H]1C)[C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(C)(C)O)C([O-])=O
+ - cefamandole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C)O)C([O-])=O
+ - cefuroxime(1-): SMILES: [H][C@]12SCC(COC(N)=O)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefoxazole(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)c3c(C)nnn3C)C([O-])=O
+ - cefprozil(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)[C@H](C(C)C)N)C([O-])=O
+ - cefcapene(1-): SMILES: [H][C@]12SCC(COC(=O)NC3CCCC3)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\C3=CSC(N)=N3)C([O-])=O
+ - cefixime(1-): SMILES: [H][C@]12SCC(COC)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3csc(N)n3)C([O-])=O
+ - cefmenoxime(1-): SMILES: [H][C@]12SCC(C)=C(N1C(=O)[C@H]2NC(=O)C(=N/OC)\c3cnc[nH]3)C([O-])=O
+ - cefpodoxime(1-): SMILES: [H][C@]
