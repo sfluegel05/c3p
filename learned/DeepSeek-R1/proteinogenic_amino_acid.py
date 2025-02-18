@@ -1,0 +1,526 @@
+"""
+Classifies: CHEBI:83813 proteinogenic amino acid
+"""
+ - L-tryptophan: SMILES: OC(=O)[C@@H](N)Cc1c[nH]c2c1cccc2
+ - L-selenocysteine: SMILES: O=C(O)[C@@H](N)C[SeH]
+ - L-tyrosine: SMILES: N[C@@H](Cc1ccc(O)cc1)C(O)=O
+ - L-methionine sulfoxide: SMILES: CS(=O)CC[C@H](N)C(O)=O
+ - L-cysteine-d2: SMILES: OC(=O)[C@H](CS)N([2H])[2H]
+ - L-asparagine-d3: SMILES: N([2H])[C@@H](CC(N)=O)C(=O)O[2H]
+ - L-lysine-d4: SMILES: OC(=O)[C@H](N)CCCCN([2H])[2H]
+ - L-serine-d3: SMILES: O=C(O)[C@H](N)CO[2H]
+ - L-glutamic acid-d5: SMILES: O=C(O)[C@H](N)CC([2H])([2H])C(=O)O[2H]
+ - L-threonine-d4: SMILES: O=C(O)[C@H](N)[C@@H](O)C([2H])([2H])[2H]
+ - L-phenylalanine: SMILES: N[C@@H](Cc1ccccc1)C(O)=O
+ - N-formyl-L-methionine: SMILES: CN(C(=O)SCCC[C@H](N)C(=O)O)C=O
+ - L-ornithine: SMILES: N[C@@H](CCCN)C(O)=O
+ - L-homoserine: SMILES: C[C@H](O)[C@H](N)C(=O)O
+ - L-ornithine-d6: SMILES: OC(=O)[C@H](N)CC[15CH2]N([2H])[2H]
+ - L-aspartic acid 4-phosphate: SMILES: N[C@@H](CC(=O)OP(=O)(O)O)C(=O)O
+ - L-cysteine sulfinic acid: SMILES: O=C(O)[C@@H](N)CS(=O)O
+ - L-methionine sulfone: SMILES: CS(=O)(=O)CC[C@H](N)C(=O)O
+ - O-phospho-L-serine: SMILES: O=P(O)(O)OC[C@H](N)C(=O)O
+ - L-threonine O-phosphate: SMILES: O=P(O)(O)O[C@H](C)[C@H](N)C(=O)O
+ - L-tyrosine O-sulfate: SMILES: O=S(=O)(O)OCc1ccc(cc1)C[C@H](N)C(=O)O
+ - L-cysteic acid: SMILES: O=C(O)[C@@H](N)CS(=O)(=O)O
+ - L-hydroxyproline: SMILES: OC[C@H]1CNC[C@H]1C(=O)O
+ - L-citrulline: SMILES: O=C(NCCC[C@H](N)C(=O)O)NCCCC([NH3+])C(=O)O
+ - L-dopa: SMILES: N[C@@H](Cc1ccc(O)c(O)c1)C(=O)O
+ - L-lysinoalanine: SMILES: NC(CCCCN)C(=O)NC(CCN)C(=O)O
+ - L-alaninol: SMILES: NCCO
+ - L-argininic acid: SMILES: NC(=N)NCCCC[C@H](N)C(=O)O
+ - L-homocysteine: SMILES: N[C@@H](CCS)C(=O)O
+ - L-3,5-diiodotyrosine: SMILES: N[C@@H](Cc1cc(I)c(O)c(I)c1)C(=O)O
+ - L-3-iodotyrosine: SMILES: N[C@@H](Cc1cc(I)c(O)cc1)C(=O)O
+ - L-3-nitrotyrosine: SMILES: N[C@@H](Cc1cc([N+](=O)[O-])c(O)cc1)C(=O)O
+ - L-4-hydroxyproline: SMILES: O[C@H]1C[C@H](N)CCO1
+ - L-5-hydroxytryptophan: SMILES: N[C@@H](Cc1c[nH]c2c1ccc(O)c2)C(=O)O
+ - L-α-methyltyrosine: SMILES: C[C@H](C(=O)O)NC(=O)Cc1ccc(O)cc1
+ - L-canavanine: SMILES: O=C(NC(CCCNC(=N)N)N)O
+ - L-cystathionine: SMILES: O=C(O)[C@@H](N)CCSCC[C@H](N)C(=O)O
+ - L-djenkolic acid: SMILES: O=C(O)[C@@H](N)CSCCSC[C@H](N)C(=O)O
+ - L-glutathione: SMILES: C(CC(=O)N[C@@H](CS)C(=O)NCC(=O)O)[C@H](N)C(=O)O
+ - L-homoarginine: SMILES: NC(=N)NCCCC[C@H](N)C(=O)O
+ - L-homocystine: SMILES: O=C(O)[C@@H](N)CCSSC[C@H](N)C(=O)O
+ - L-kynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(N)cc1
+ - L-lanthionine: SMILES: O=C(O)[C@@H](N)CCSCC[C@H](N)C(=O)O
+ - L-ornithine: SMILES: N[C@@H](CCCN)C(=O)O
+ - L-thyroxine: SMILES: NC(CC1=CC(=C(C(=C1I)O)I)O)C(=O)O
+ - L-thyronine: SMILES: NC(CC1=CC(=C(C(=C1)O)O)O)C(=O)O
+ - L-tryptophanamide: SMILES: NC(=O)[C@@H](N)Cc1c[nH]c2c1cccc2
+ - L-tyrosinamide: SMILES: NC(=O)[C@@H](N)Cc1ccc(O)cc1
+ - L-valinol: SMILES: CC(C)CO
+ - N(alpha)-acetyl-L-lysine: SMILES: CC(=O)N[C@@H](CCCCN)C(=O)O
+ - N-acetyl-L-aspartic acid: SMILES: CC(=O)N[C@@H](CC(=O)O)C(=O)O
+ - N-acetyl-L-glutamic acid: SMILES: CC(=O)N[C@@H](CCC(=O)O)C(=O)O
+ - N-acetyl-L-methionine: SMILES: CSCC[C@H](NC(=O)C)C(=O)O
+ - N-acetyl-L-phenylalanine: SMILES: CC(=O)N[C@@H](Cc1ccccc1)C(=O)O
+ - N-acetyl-L-tryptophan: SMILES: CC(=O)N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O
+ - N-acetyl-L-tyrosine: SMILES: CC(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)O
+ - N-formyl-L-leucine: SMILES: O=CN[C@@H](CC(C)C)C(=O)O
+ - O-acetyl-L-serine: SMILES: CC(=O)O[C@H](CO)C(=O)O
+ - O-phospho-L-threonine: SMILES: O=P(O)(O)O[C@H](C(C)O)[C@H](N)C(=O)O
+ - S-adenosyl-L-homocysteine: SMILES: C1=NC(=C2C(=N1)N=CN2[C@H]3[C@@H]([C@@H]([C@H](O3)COP(=O)(O)OC[C@H]4[C@@H]([C@H]([C@@H](O4)N5C=NC6=C5N=CN=C6N)O)O)O)O)SC[C@H](N)C(=O)O
+ - S-methyl-L-cysteine: SMILES: CSCC[C@H](N)C(=O)O
+ - S-methyl-L-methionine: SMILES: CS(=O)CC[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-cysteine: SMILES: C(CC(=O)N[C@@H](CS)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-glutamic acid: SMILES: C(CC(=O)N[C@@H](CCC(=O)O)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamylglycine: SMILES: C(CC(=O)NCC(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamylleucine: SMILES: C(CC(=O)N[C@@H](CC(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamylvaline: SMILES: C(CC(=O)N[C@@H](C(C)C)C(=O)O)[C@H](N)C(=O)O
+ - L-argininosuccinic acid: SMILES: O=C(O)[C@@H](N)CCCNC(=N)NC(CC(=O)O)C(=O)O
+ - L-cystine: SMILES: C(C(C(=O)O)N)SSCC(C(=O)O)N
+ - L-djenkolate: SMILES: O=C(O)[C@@H](N)CSCCSC[C@H](N)C(=O)O
+ - L-glutamyl-L-alanine: SMILES: C(CC(=O)N[C@@H](C)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-asparagine: SMILES: C(CC(=O)N[C@@H](CC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-glutamine: SMILES: C(CC(=O)N[C@@H](CCC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-histidine: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]cn1)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-isoleucine: SMILES: C(CC(=O)N[C@@H]([C@H](CC)C)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-leucine: SMILES: C(CC(=O)N[C@@H](CC(C)C)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-methionine: SMILES: C(CC(=O)N[C@@H](CCSC)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-phenylalanine: SMILES: C(CC(=O)N[C@@H](Cc1ccccc1)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-proline: SMILES: C(CC(=O)N1CCC[C@H]1C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-serine: SMILES: C(CC(=O)N[C@@H](CO)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-threonine: SMILES: C(CC(=O)N[C@@H]([C@H](O)C)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-tryptophan: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-tyrosine: SMILES: C(CC(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)O)[C@H](N)C(=O)O
+ - L-glutamyl-L-valine: SMILES: C(CC(=O)N[C@@H](C(C)C)C(=O)O)[C@H](N)C(=O)O
+ - L-homocitrulline: SMILES: NC(=O)NCCCC[C@H](N)C(=O)O
+ - L-homophenylalanine: SMILES: N[C@@H](CCc1ccccc1)C(=O)O
+ - L-isoglutamine: SMILES: N[C@@H](CC(=O)N)C(=O)O
+ - L-norleucine: SMILES: CCCCC[C@H](N)C(=O)O
+ - L-norvaline: SMILES: CCCC[C@H](N)C(=O)O
+ - L-ornithine: SMILES: N[C@@H](CCCN)C(=O)O
+ - L-phenylglycine: SMILES: N[C@@H](c1ccccc1)C(=O)O
+ - L-theanine: SMILES: C(CC(=O)O)NCCCC[C@H](N)C(=O)O
+ - L-thyronine: SMILES: NC(CC1=CC(=C(C(=C1)O)O)O)C(=O)O
+ - L-thyroxine: SMILES: NC(CC1=CC(=C(C(=C1I)O)I)O)C(=O)O
+ - L-tryptophanol: SMILES: NC(=O)[C@@H](N)Cc1c[nH]c2c1cccc2
+ - L-tyrosinol: SMILES: NC(=O)[C@@H](N)Cc1ccc(O)cc1
+ - N(epsilon)-acetyl-L-lysine: SMILES: CC(=O)NCCCC[C@H](N)C(=O)O
+ - N(epsilon)-trimethyl-L-lysine: SMILES: C[N+](C)(C)CCN[C@@H](CCCCN)C(=O)O
+ - N(gamma)-methyl-L-arginine: SMILES: CNCCCC[C@H](N)C(=O)O
+ - N-methyl-L-alanine: SMILES: CN[C@@H](C)C(=O)O
+ - N-methyl-L-leucine: SMILES: CN[C@@H](CC(C)C)C(=O)O
+ - N-methyl-L-methionine: SMILES: CN[C@@H](CCSC)C(=O)O
+ - N-methyl-L-phenylalanine: SMILES: CN[C@@H](Cc1ccccc1)C(=O)O
+ - N-methyl-L-proline: SMILES: CN1C[C@H](C(=O)O)CC1
+ - N-methyl-L-serine: SMILES: CN[C@@H](CO)C(=O)O
+ - N-methyl-L-tryptophan: SMILES: CN[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O
+ - N-methyl-L-tyrosine: SMILES: CN[C@@H](Cc1ccc(O)cc1)C(=O)O
+ - O-acetyl-L-threonine: SMILES: CC(=O)O[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-serine: SMILES: COC[C@H](N)C(=O)O
+ - O-methyl-L-threonine: SMILES: CO[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-tyrosine: SMILES: COCc1ccc(cc1)C[C@H](N)C(=O)O
+ - O-phospho-L-tyrosine: SMILES: O=P(O)(O)OCc1ccc(cc1)C[C@H](N)C(=O)O
+ - S-(2-aminoethyl)-L-cysteine: SMILES: NCCSCC[C@H](N)C(=O)O
+ - S-(3-hydroxypropyl)-L-cysteine: SMILES: OCCCSCC[C@H](N)C(=O)O
+ - S-allyl-L-cysteine: SMILES: C=CCSCC[C@H](N)C(=O)O
+ - S-carbamoyl-L-cysteine: SMILES: NC(=O)SCC[C@H](N)C(=O)O
+ - S-carboxymethyl-L-cysteine: SMILES: O=C(O)CSC[C@H](N)C(=O)O
+ - S-methyl-L-cysteine sulfoxide: SMILES: CS(=O)CC[C@H](N)C(=O)O
+ - S-methyl-L-homocysteine: SMILES: CSCCC[C@H](N)C(=O)O
+ - S-methylthio-L-cysteine: SMILES: CSCC[C@H](N)C(=O)O
+ - S-sulfo-L-cysteine: SMILES: O=S(=O)(O)SCC[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-alanine: SMILES: C(CC(=O)N[C@@H](C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-asparagine: SMILES: C(CC(=O)N[C@@H](CC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-glutamine: SMILES: C(CC(=O)N[C@@H](CCC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-histidine: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]cn1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-isoleucine: SMILES: C(CC(=O)N[C@@H]([C@H](CC)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-leucine: SMILES: C(CC(=O)N[C@@H](CC(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-methionine: SMILES: C(CC(=O)N[C@@H](CCSC)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-phenylalanine: SMILES: C(CC(=O)N[C@@H](Cc1ccccc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-proline: SMILES: C(CC(=O)N1CCC[C@H]1C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-serine: SMILES: C(CC(=O)N[C@@H](CO)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-threonine: SMILES: C(CC(=O)N[C@@H]([C@H](O)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tryptophan: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tyrosine: SMILES: C(CC(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-valine: SMILES: C(CC(=O)N[C@@H](C(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyltaurine: SMILES: C(CC(=O)NCCS(=O)(=O)O)[C@H](N)C(=O)O
+ - gamma-methyl-L-glutamate: SMILES: CC[C@H](C(=O)O)NC(=O)CC[C@H](N)C(=O)O
+ - L-2-aminoadipic acid: SMILES: O=C(O)C(CCCC(=O)O)N
+ - L-2-aminobutyric acid: SMILES: CCC[C@H](N)C(=O)O
+ - L-3,4-dihydroxyphenylalanine: SMILES: N[C@@H](Cc1ccc(O)c(O)c1)C(=O)O
+ - L-3-hydroxykynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(O)c(N)c1
+ - L-4-fluorophenylalanine: SMILES: N[C@@H](Cc1ccc(F)cc1)C(=O)O
+ - L-5-hydroxytryptophan: SMILES: N[C@@H](Cc1c[nH]c2c1ccc(O)c2)C(=O)O
+ - L-alloisoleucine: SMILES: CC[C@H](C)[C@H](N)C(=O)O
+ - L-allylglycine: SMILES: C=CC[C@H](N)C(=O)O
+ - L-azetidine-2-carboxylic acid: SMILES: O=C(O)[C@@H]1CCN1
+ - L-beta-methyltryptophan: SMILES: CC(C(=O)O)N[C@H](CC1=CNC2=CC=CC=C12)C(=O)O
+ - L-carnitine: SMILES: C[N+](C)(C)CC(CC(=O)O)O
+ - L-citrulline: SMILES: NC(=O)NCCC[C@H](N)C(=O)O
+ - L-djenkolic acid: SMILES: O=C(O)[C@@H](N)CSCCSC[C@H](N)C(=O)O
+ - L-ergothioneine: SMILES: CN1[C@@H](CC(=O)O)NC(=O)C=C1
+ - L-ethionine: SMILES: CCSCC[C@H](N)C(=O)O
+ - L-homoarginine: SMILES: NC(=N)NCCCC[C@H](N)C(=O)O
+ - L-homocystine: SMILES: O=C(O)[C@@H](N)CCSSC[C@H](N)C(=O)O
+ - L-homophenylalanine: SMILES: N[C@@H](CCc1ccccc1)C(=O)O
+ - L-isovaline: SMILES: CC(C)[C@H](N)C(=O)O
+ - L-kynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(N)cc1
+ - L-lanthionine: SMILES: O=C(O)[C@@H](N)CCSCC[C@H](N)C(=O)O
+ - L-mimosine: SMILES: O=C(O)[C@@H](N)Cc1c(O)c(=O)[nH]c2c1cccc2
+ - L-norleucine: SMILES: CCCCC[C@H](N)C(=O)O
+ - L-norvaline: SMILES: CCCC[C@H](N)C(=O)O
+ - L-ornithine: SMILES: N[C@@H](CCCN)C(=O)O
+ - L-ovothiol A: SMILES: C1[C@H](NCCS1)C(=O)O
+ - L-phenylglycine: SMILES: N[C@@H](c1ccccc1)C(=O)O
+ - L-pipecolic acid: SMILES: O=C(O)C1CCCCN1
+ - L-saccharopine: SMILES: NC(CCCCN)C(=O)NC(CCC(=O)O)C(=O)O
+ - L-selenocystine: SMILES: C(C(C(=O)O)N)[Se][Se]CC(C(=O)O)N
+ - L-tert-leucine: SMILES: CC(C)(C)[C@H](N)C(=O)O
+ - L-theanine: SMILES: C(CC(=O)O)NCCCC[C@H](N)C(=O)O
+ - L-thioproline: SMILES: O=C(O)C1CCSN1
+ - L-thyronine: SMILES: NC(CC1=CC(=C(C(=C1)O)O)O)C(=O)O
+ - L-thyroxine: SMILES: NC(CC1=CC(=C(C(=C1I)O)I)O)C(=O)O
+ - L-tryptophanol: SMILES: NC(=O)[C@@H](N)Cc1c[nH]c2c1cccc2
+ - L-tyrosinol: SMILES: NC(=O)[C@@H](N)Cc1ccc(O)cc1
+ - N(alpha)-acetyl-L-lysine: SMILES: CC(=O)N[C@@H](CCCCN)C(=O)O
+ - N(epsilon)-acetyl-L-lysine: SMILES: CC(=O)NCCCC[C@H](N)C(=O)O
+ - N(epsilon)-trimethyl-L-lysine: SMILES: C[N+](C)(C)CCN[C@@H](CCCCN)C(=O)O
+ - N(gamma)-methyl-L-arginine: SMILES: CNCCCC[C@H](N)C(=O)O
+ - N-methyl-L-alanine: SMILES: CN[C@@H](C)C(=O)O
+ - N-methyl-L-leucine: SMILES: CN[C@@H](CC(C)C)C(=O)O
+ - N-methyl-L-methionine: SMILES: CN[C@@H](CCSC)C(=O)O
+ - N-methyl-L-phenylalanine: SMILES: CN[C@@H](Cc1ccccc1)C(=O)O
+ - N-methyl-L-proline: SMILES: CN1C[C@H](C(=O)O)CC1
+ - N-methyl-L-serine: SMILES: CN[C@@H](CO)C(=O)O
+ - N-methyl-L-tryptophan: SMILES: CN[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O
+ - N-methyl-L-tyrosine: SMILES: CN[C@@H](Cc1ccc(O)cc1)C(=O)O
+ - O-acetyl-L-threonine: SMILES: CC(=O)O[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-serine: SMILES: COC[C@H](N)C(=O)O
+ - O-methyl-L-threonine: SMILES: CO[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-tyrosine: SMILES: COCc1ccc(cc1)C[C@H](N)C(=O)O
+ - O-phospho-L-tyrosine: SMILES: O=P(O)(O)OCc1ccc(cc1)C[C@H](N)C(=O)O
+ - S-(2-aminoethyl)-L-cysteine: SMILES: NCCSCC[C@H](N)C(=O)O
+ - S-(3-hydroxypropyl)-L-cysteine: SMILES: OCCCSCC[C@H](N)C(=O)O
+ - S-allyl-L-cysteine: SMILES: C=CCSCC[C@H](N)C(=O)O
+ - S-carbamoyl-L-cysteine: SMILES: NC(=O)SCC[C@H](N)C(=O)O
+ - S-carboxymethyl-L-cysteine: SMILES: O=C(O)CSC[C@H](N)C(=O)O
+ - S-methyl-L-cysteine sulfoxide: SMILES: CS(=O)CC[C@H](N)C(=O)O
+ - S-methyl-L-homocysteine: SMILES: CSCCC[C@H](N)C(=O)O
+ - S-methylthio-L-cysteine: SMILES: CSCC[C@H](N)C(=O)O
+ - S-sulfo-L-cysteine: SMILES: O=S(=O)(O)SCC[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-alanine: SMILES: C(CC(=O)N[C@@H](C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-asparagine: SMILES: C(CC(=O)N[C@@H](CC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-glutamine: SMILES: C(CC(=O)N[C@@H](CCC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-histidine: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]cn1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-isoleucine: SMILES: C(CC(=O)N[C@@H]([C@H](CC)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-leucine: SMILES: C(CC(=O)N[C@@H](CC(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-methionine: SMILES: C(CC(=O)N[C@@H](CCSC)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-phenylalanine: SMILES: C(CC(=O)N[C@@H](Cc1ccccc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-proline: SMILES: C(CC(=O)N1CCC[C@H]1C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-serine: SMILES: C(CC(=O)N[C@@H](CO)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-threonine: SMILES: C(CC(=O)N[C@@H]([C@H](O)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tryptophan: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tyrosine: SMILES: C(CC(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-valine: SMILES: C(CC(=O)N[C@@H](C(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyltaurine: SMILES: C(CC(=O)NCCS(=O)(=O)O)[C@H](N)C(=O)O
+ - gamma-methyl-L-glutamate: SMILES: CC[C@H](C(=O)O)NC(=O)CC[C@H](N)C(=O)O
+ - L-2-aminoadipic acid: SMILES: O=C(O)C(CCCC(=O)O)N
+ - L-2-aminobutyric acid: SMILES: CCC[C@H](N)C(=O)O
+ - L-3,4-dihydroxyphenylalanine: SMILES: N[C@@H](Cc1ccc(O)c(O)c1)C(=O)O
+ - L-3-hydroxykynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(O)c(N)c1
+ - L-4-fluorophenylalanine: SMILES: N[C@@H](Cc1ccc(F)cc1)C(=O)O
+ - L-5-hydroxytryptophan: SMILES: N[C@@H](Cc1c[nH]c2c1ccc(O)c2)C(=O)O
+ - L-alloisoleucine: SMILES: CC[C@H](C)[C@H](N)C(=O)O
+ - L-allylglycine: SMILES: C=CC[C@H](N)C(=O)O
+ - L-azetidine-2-carboxylic acid: SMILES: O=C(O)[C@@H]1CCN1
+ - L-beta-methyltryptophan: SMILES: CC(C(=O)O)N[C@H](CC1=CNC2=CC=CC=C12)C(=O)O
+ - L-carnitine: SMILES: C[N+](C)(C)CC(CC(=O)O)O
+ - L-citrulline: SMILES: NC(=O)NCCC[C@H](N)C(=O)O
+ - L-djenkolic acid: SMILES: O=C(O)[C@@H](N)CSCCSC[C@H](N)C(=O)O
+ - L-ergothioneine: SMILES: CN1[C@@H](CC(=O)O)NC(=O)C=C1
+ - L-ethionine: SMILES: CCSCC[C@H](N)C(=O)O
+ - L-homoarginine: SMILES: NC(=N)NCCCC[C@H](N)C(=O)O
+ - L-homocystine: SMILES: O=C(O)[C@@H](N)CCSSC[C@H](N)C(=O)O
+ - L-homophenylalanine: SMILES: N[C@@H](CCc1ccccc1)C(=O)O
+ - L-isovaline: SMILES: CC(C)[C@H](N)C(=O)O
+ - L-kynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(N)cc1
+ - L-lanthionine: SMILES: O=C(O)[C@@H](N)CCSCC[C@H](N)C(=O)O
+ - L-mimosine: SMILES: O=C(O)[C@@H](N)Cc1c(O)c(=O)[nH]c2c1cccc2
+ - L-norleucine: SMILES: CCCCC[C@H](N)C(=O)O
+ - L-norvaline: SMILES: CCCC[C@H](N)C(=O)O
+ - L-ornithine: SMILES: N[C@@H](CCCN)C(=O)O
+ - L-ovothiol A: SMILES: C1[C@H](NCCS1)C(=O)O
+ - L-phenylglycine: SMILES: N[C@@H](c1ccccc1)C(=O)O
+ - L-pipecolic acid: SMILES: O=C(O)C1CCCCN1
+ - L-saccharopine: SMILES: NC(CCCCN)C(=O)NC(CCC(=O)O)C(=O)O
+ - L-selenocystine: SMILES: C(C(C(=O)O)N)[Se][Se]CC(C(=O)O)N
+ - L-tert-leucine: SMILES: CC(C)(C)[C@H](N)C(=O)O
+ - L-theanine: SMILES: C(CC(=O)O)NCCCC[C@H](N)C(=O)O
+ - L-thioproline: SMILES: O=C(O)C1CCSN1
+ - L-thyronine: SMILES: NC(CC1=CC(=C(C(=C1)O)O)O)C(=O)O
+ - L-thyroxine: SMILES: NC(CC1=CC(=C(C(=C1I)O)I)O)C(=O)O
+ - L-tryptophanol: SMILES: NC(=O)[C@@H](N)Cc1c[nH]c2c1cccc2
+ - L-tyrosinol: SMILES: NC(=O)[C@@H](N)Cc1ccc(O)cc1
+ - N(alpha)-acetyl-L-lysine: SMILES: CC(=O)N[C@@H](CCCCN)C(=O)O
+ - N(epsilon)-acetyl-L-lysine: SMILES: CC(=O)NCCCC[C@H](N)C(=O)O
+ - N(epsilon)-trimethyl-L-lysine: SMILES: C[N+](C)(C)CCN[C@@H](CCCCN)C(=O)O
+ - N(gamma)-methyl-L-arginine: SMILES: CNCCCC[C@H](N)C(=O)O
+ - N-methyl-L-alanine: SMILES: CN[C@@H](C)C(=O)O
+ - N-methyl-L-leucine: SMILES: CN[C@@H](CC(C)C)C(=O)O
+ - N-methyl-L-methionine: SMILES: CN[C@@H](CCSC)C(=O)O
+ - N-methyl-L-phenylalanine: SMILES: CN[C@@H](Cc1ccccc1)C(=O)O
+ - N-methyl-L-proline: SMILES: CN1C[C@H](C(=O)O)CC1
+ - N-methyl-L-serine: SMILES: CN[C@@H](CO)C(=O)O
+ - N-methyl-L-tryptophan: SMILES: CN[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O
+ - N-methyl-L-tyrosine: SMILES: CN[C@@H](Cc1ccc(O)cc1)C(=O)O
+ - O-acetyl-L-threonine: SMILES: CC(=O)O[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-serine: SMILES: COC[C@H](N)C(=O)O
+ - O-methyl-L-threonine: SMILES: CO[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-tyrosine: SMILES: COCc1ccc(cc1)C[C@H](N)C(=O)O
+ - O-phospho-L-tyrosine: SMILES: O=P(O)(O)OCc1ccc(cc1)C[C@H](N)C(=O)O
+ - S-(2-aminoethyl)-L-cysteine: SMILES: NCCSCC[C@H](N)C(=O)O
+ - S-(3-hydroxypropyl)-L-cysteine: SMILES: OCCCSCC[C@H](N)C(=O)O
+ - S-allyl-L-cysteine: SMILES: C=CCSCC[C@H](N)C(=O)O
+ - S-carbamoyl-L-cysteine: SMILES: NC(=O)SCC[C@H](N)C(=O)O
+ - S-carboxymethyl-L-cysteine: SMILES: O=C(O)CSC[C@H](N)C(=O)O
+ - S-methyl-L-cysteine sulfoxide: SMILES: CS(=O)CC[C@H](N)C(=O)O
+ - S-methyl-L-homocysteine: SMILES: CSCCC[C@H](N)C(=O)O
+ - S-methylthio-L-cysteine: SMILES: CSCC[C@H](N)C(=O)O
+ - S-sulfo-L-cysteine: SMILES: O=S(=O)(O)SCC[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-alanine: SMILES: C(CC(=O)N[C@@H](C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-asparagine: SMILES: C(CC(=O)N[C@@H](CC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-glutamine: SMILES: C(CC(=O)N[C@@H](CCC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-histidine: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]cn1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-isoleucine: SMILES: C(CC(=O)N[C@@H]([C@H](CC)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-leucine: SMILES: C(CC(=O)N[C@@H](CC(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-methionine: SMILES: C(CC(=O)N[C@@H](CCSC)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-phenylalanine: SMILES: C(CC(=O)N[C@@H](Cc1ccccc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-proline: SMILES: C(CC(=O)N1CCC[C@H]1C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-serine: SMILES: C(CC(=O)N[C@@H](CO)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-threonine: SMILES: C(CC(=O)N[C@@H]([C@H](O)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tryptophan: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tyrosine: SMILES: C(CC(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-valine: SMILES: C(CC(=O)N[C@@H](C(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyltaurine: SMILES: C(CC(=O)NCCS(=O)(=O)O)[C@H](N)C(=O)O
+ - gamma-methyl-L-glutamate: SMILES: CC[C@H](C(=O)O)NC(=O)CC[C@H](N)C(=O)O
+ - L-2-aminoadipic acid: SMILES: O=C(O)C(CCCC(=O)O)N
+ - L-2-aminobutyric acid: SMILES: CCC[C@H](N)C(=O)O
+ - L-3,4-dihydroxyphenylalanine: SMILES: N[C@@H](Cc1ccc(O)c(O)c1)C(=O)O
+ - L-3-hydroxykynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(O)c(N)c1
+ - L-4-fluorophenylalanine: SMILES: N[C@@H](Cc1ccc(F)cc1)C(=O)O
+ - L-5-hydroxytryptophan: SMILES: N[C@@H](Cc1c[nH]c2c1ccc(O)c2)C(=O)O
+ - L-alloisoleucine: SMILES: CC[C@H](C)[C@H](N)C(=O)O
+ - L-allylglycine: SMILES: C=CC[C@H](N)C(=O)O
+ - L-azetidine-2-carboxylic acid: SMILES: O=C(O)[C@@H]1CCN1
+ - L-beta-methyltryptophan: SMILES: CC(C(=O)O)N[C@H](CC1=CNC2=CC=CC=C12)C(=O)O
+ - L-carnitine: SMILES: C[N+](C)(C)CC(CC(=O)O)O
+ - L-citrulline: SMILES: NC(=O)NCCC[C@H](N)C(=O)O
+ - L-djenkolic acid: SMILES: O=C(O)[C@@H](N)CSCCSC[C@H](N)C(=O)O
+ - L-ergothioneine: SMILES: CN1[C@@H](CC(=O)O)NC(=O)C=C1
+ - L-ethionine: SMILES: CCSCC[C@H](N)C(=O)O
+ - L-homoarginine: SMILES: NC(=N)NCCCC[C@H](N)C(=O)O
+ - L-homocystine: SMILES: O=C(O)[C@@H](N)CCSSC[C@H](N)C(=O)O
+ - L-homophenylalanine: SMILES: N[C@@H](CCc1ccccc1)C(=O)O
+ - L-isovaline: SMILES: CC(C)[C@H](N)C(=O)O
+ - L-kynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(N)cc1
+ - L-lanthionine: SMILES: O=C(O)[C@@H](N)CCSCC[C@H](N)C(=O)O
+ - L-mimosine: SMILES: O=C(O)[C@@H](N)Cc1c(O)c(=O)[nH]c2c1cccc2
+ - L-norleucine: SMILES: CCCCC[C@H](N)C(=O)O
+ - L-norvaline: SMILES: CCCC[C@H](N)C(=O)O
+ - L-ornithine: SMILES: N[C@@H](CCCN)C(=O)O
+ - L-ovothiol A: SMILES: C1[C@H](NCCS1)C(=O)O
+ - L-phenylglycine: SMILES: N[C@@H](c1ccccc1)C(=O)O
+ - L-pipecolic acid: SMILES: O=C(O)C1CCCCN1
+ - L-saccharopine: SMILES: NC(CCCCN)C(=O)NC(CCC(=O)O)C(=O)O
+ - L-selenocystine: SMILES: C(C(C(=O)O)N)[Se][Se]CC(C(=O)O)N
+ - L-tert-leucine: SMILES: CC(C)(C)[C@H](N)C(=O)O
+ - L-theanine: SMILES: C(CC(=O)O)NCCCC[C@H](N)C(=O)O
+ - L-thioproline: SMILES: O=C(O)C1CCSN1
+ - L-thyronine: SMILES: NC(CC1=CC(=C(C(=C1)O)O)O)C(=O)O
+ - L-thyroxine: SMILES: NC(CC1=CC(=C(C(=C1I)O)I)O)C(=O)O
+ - L-tryptophanol: SMILES: NC(=O)[C@@H](N)Cc1c[nH]c2c1cccc2
+ - L-tyrosinol: SMILES: NC(=O)[C@@H](N)Cc1ccc(O)cc1
+ - N(alpha)-acetyl-L-lysine: SMILES: CC(=O)N[C@@H](CCCCN)C(=O)O
+ - N(epsilon)-acetyl-L-lysine: SMILES: CC(=O)NCCCC[C@H](N)C(=O)O
+ - N(epsilon)-trimethyl-L-lysine: SMILES: C[N+](C)(C)CCN[C@@H](CCCCN)C(=O)O
+ - N(gamma)-methyl-L-arginine: SMILES: CNCCCC[C@H](N)C(=O)O
+ - N-methyl-L-alanine: SMILES: CN[C@@H](C)C(=O)O
+ - N-methyl-L-leucine: SMILES: CN[C@@H](CC(C)C)C(=O)O
+ - N-methyl-L-methionine: SMILES: CN[C@@H](CCSC)C(=O)O
+ - N-methyl-L-phenylalanine: SMILES: CN[C@@H](Cc1ccccc1)C(=O)O
+ - N-methyl-L-proline: SMILES: CN1C[C@H](C(=O)O)CC1
+ - N-methyl-L-serine: SMILES: CN[C@@H](CO)C(=O)O
+ - N-methyl-L-tryptophan: SMILES: CN[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O
+ - N-methyl-L-tyrosine: SMILES: CN[C@@H](Cc1ccc(O)cc1)C(=O)O
+ - O-acetyl-L-threonine: SMILES: CC(=O)O[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-serine: SMILES: COC[C@H](N)C(=O)O
+ - O-methyl-L-threonine: SMILES: CO[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-tyrosine: SMILES: COCc1ccc(cc1)C[C@H](N)C(=O)O
+ - O-phospho-L-tyrosine: SMILES: O=P(O)(O)OCc1ccc(cc1)C[C@H](N)C(=O)O
+ - S-(2-aminoethyl)-L-cysteine: SMILES: NCCSCC[C@H](N)C(=O)O
+ - S-(3-hydroxypropyl)-L-cysteine: SMILES: OCCCSCC[C@H](N)C(=O)O
+ - S-allyl-L-cysteine: SMILES: C=CCSCC[C@H](N)C(=O)O
+ - S-carbamoyl-L-cysteine: SMILES: NC(=O)SCC[C@H](N)C(=O)O
+ - S-carboxymethyl-L-cysteine: SMILES: O=C(O)CSC[C@H](N)C(=O)O
+ - S-methyl-L-cysteine sulfoxide: SMILES: CS(=O)CC[C@H](N)C(=O)O
+ - S-methyl-L-homocysteine: SMILES: CSCCC[C@H](N)C(=O)O
+ - S-methylthio-L-cysteine: SMILES: CSCC[C@H](N)C(=O)O
+ - S-sulfo-L-cysteine: SMILES: O=S(=O)(O)SCC[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-alanine: SMILES: C(CC(=O)N[C@@H](C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-asparagine: SMILES: C(CC(=O)N[C@@H](CC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-glutamine: SMILES: C(CC(=O)N[C@@H](CCC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-histidine: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]cn1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-isoleucine: SMILES: C(CC(=O)N[C@@H]([C@H](CC)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-leucine: SMILES: C(CC(=O)N[C@@H](CC(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-methionine: SMILES: C(CC(=O)N[C@@H](CCSC)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-phenylalanine: SMILES: C(CC(=O)N[C@@H](Cc1ccccc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-proline: SMILES: C(CC(=O)N1CCC[C@H]1C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-serine: SMILES: C(CC(=O)N[C@@H](CO)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-threonine: SMILES: C(CC(=O)N[C@@H]([C@H](O)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tryptophan: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tyrosine: SMILES: C(CC(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-valine: SMILES: C(CC(=O)N[C@@H](C(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyltaurine: SMILES: C(CC(=O)NCCS(=O)(=O)O)[C@H](N)C(=O)O
+ - gamma-methyl-L-glutamate: SMILES: CC[C@H](C(=O)O)NC(=O)CC[C@H](N)C(=O)O
+ - L-2-aminoadipic acid: SMILES: O=C(O)C(CCCC(=O)O)N
+ - L-2-aminobutyric acid: SMILES: CCC[C@H](N)C(=O)O
+ - L-3,4-dihydroxyphenylalanine: SMILES: N[C@@H](Cc1ccc(O)c(O)c1)C(=O)O
+ - L-3-hydroxykynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(O)c(N)c1
+ - L-4-fluorophenylalanine: SMILES: N[C@@H](Cc1ccc(F)cc1)C(=O)O
+ - L-5-hydroxytryptophan: SMILES: N[C@@H](Cc1c[nH]c2c1ccc(O)c2)C(=O)O
+ - L-alloisoleucine: SMILES: CC[C@H](C)[C@H](N)C(=O)O
+ - L-allylglycine: SMILES: C=CC[C@H](N)C(=O)O
+ - L-azetidine-2-carboxylic acid: SMILES: O=C(O)[C@@H]1CCN1
+ - L-beta-methyltryptophan: SMILES: CC(C(=O)O)N[C@H](CC1=CNC2=CC=CC=C12)C(=O)O
+ - L-carnitine: SMILES: C[N+](C)(C)CC(CC(=O)O)O
+ - L-citrulline: SMILES: NC(=O)NCCC[C@H](N)C(=O)O
+ - L-djenkolic acid: SMILES: O=C(O)[C@@H](N)CSCCSC[C@H](N)C(=O)O
+ - L-ergothioneine: SMILES: CN1[C@@H](CC(=O)O)NC(=O)C=C1
+ - L-ethionine: SMILES: CCSCC[C@H](N)C(=O)O
+ - L-homoarginine: SMILES: NC(=N)NCCCC[C@H](N)C(=O)O
+ - L-homocystine: SMILES: O=C(O)[C@@H](N)CCSSC[C@H](N)C(=O)O
+ - L-homophenylalanine: SMILES: N[C@@H](CCc1ccccc1)C(=O)O
+ - L-isovaline: SMILES: CC(C)[C@H](N)C(=O)O
+ - L-kynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(N)cc1
+ - L-lanthionine: SMILES: O=C(O)[C@@H](N)CCSCC[C@H](N)C(=O)O
+ - L-mimosine: SMILES: O=C(O)[C@@H](N)Cc1c(O)c(=O)[nH]c2c1cccc2
+ - L-norleucine: SMILES: CCCCC[C@H](N)C(=O)O
+ - L-norvaline: SMILES: CCCC[C@H](N)C(=O)O
+ - L-ornithine: SMILES: N[C@@H](CCCN)C(=O)O
+ - L-ovothiol A: SMILES: C1[C@H](NCCS1)C(=O)O
+ - L-phenylglycine: SMILES: N[C@@H](c1ccccc1)C(=O)O
+ - L-pipecolic acid: SMILES: O=C(O)C1CCCCN1
+ - L-saccharopine: SMILES: NC(CCCCN)C(=O)NC(CCC(=O)O)C(=O)O
+ - L-selenocystine: SMILES: C(C(C(=O)O)N)[Se][Se]CC(C(=O)O)N
+ - L-tert-leucine: SMILES: CC(C)(C)[C@H](N)C(=O)O
+ - L-theanine: SMILES: C(CC(=O)O)NCCCC[C@H](N)C(=O)O
+ - L-thioproline: SMILES: O=C(O)C1CCSN1
+ - L-thyronine: SMILES: NC(CC1=CC(=C(C(=C1)O)O)O)C(=O)O
+ - L-thyroxine: SMILES: NC(CC1=CC(=C(C(=C1I)O)I)O)C(=O)O
+ - L-tryptophanol: SMILES: NC(=O)[C@@H](N)Cc1c[nH]c2c1cccc2
+ - L-tyrosinol: SMILES: NC(=O)[C@@H](N)Cc1ccc(O)cc1
+ - N(alpha)-acetyl-L-lysine: SMILES: CC(=O)N[C@@H](CCCCN)C(=O)O
+ - N(epsilon)-acetyl-L-lysine: SMILES: CC(=O)NCCCC[C@H](N)C(=O)O
+ - N(epsilon)-trimethyl-L-lysine: SMILES: C[N+](C)(C)CCN[C@@H](CCCCN)C(=O)O
+ - N(gamma)-methyl-L-arginine: SMILES: CNCCCC[C@H](N)C(=O)O
+ - N-methyl-L-alanine: SMILES: CN[C@@H](C)C(=O)O
+ - N-methyl-L-leucine: SMILES: CN[C@@H](CC(C)C)C(=O)O
+ - N-methyl-L-methionine: SMILES: CN[C@@H](CCSC)C(=O)O
+ - N-methyl-L-phenylalanine: SMILES: CN[C@@H](Cc1ccccc1)C(=O)O
+ - N-methyl-L-proline: SMILES: CN1C[C@H](C(=O)O)CC1
+ - N-methyl-L-serine: SMILES: CN[C@@H](CO)C(=O)O
+ - N-methyl-L-tryptophan: SMILES: CN[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O
+ - N-methyl-L-tyrosine: SMILES: CN[C@@H](Cc1ccc(O)cc1)C(=O)O
+ - O-acetyl-L-threonine: SMILES: CC(=O)O[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-serine: SMILES: COC[C@H](N)C(=O)O
+ - O-methyl-L-threonine: SMILES: CO[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-tyrosine: SMILES: COCc1ccc(cc1)C[C@H](N)C(=O)O
+ - O-phospho-L-tyrosine: SMILES: O=P(O)(O)OCc1ccc(cc1)C[C@H](N)C(=O)O
+ - S-(2-aminoethyl)-L-cysteine: SMILES: NCCSCC[C@H](N)C(=O)O
+ - S-(3-hydroxypropyl)-L-cysteine: SMILES: OCCCSCC[C@H](N)C(=O)O
+ - S-allyl-L-cysteine: SMILES: C=CCSCC[C@H](N)C(=O)O
+ - S-carbamoyl-L-cysteine: SMILES: NC(=O)SCC[C@H](N)C(=O)O
+ - S-carboxymethyl-L-cysteine: SMILES: O=C(O)CSC[C@H](N)C(=O)O
+ - S-methyl-L-cysteine sulfoxide: SMILES: CS(=O)CC[C@H](N)C(=O)O
+ - S-methyl-L-homocysteine: SMILES: CSCCC[C@H](N)C(=O)O
+ - S-methylthio-L-cysteine: SMILES: CSCC[C@H](N)C(=O)O
+ - S-sulfo-L-cysteine: SMILES: O=S(=O)(O)SCC[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-alanine: SMILES: C(CC(=O)N[C@@H](C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-asparagine: SMILES: C(CC(=O)N[C@@H](CC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-glutamine: SMILES: C(CC(=O)N[C@@H](CCC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-histidine: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]cn1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-isoleucine: SMILES: C(CC(=O)N[C@@H]([C@H](CC)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-leucine: SMILES: C(CC(=O)N[C@@H](CC(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-methionine: SMILES: C(CC(=O)N[C@@H](CCSC)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-phenylalanine: SMILES: C(CC(=O)N[C@@H](Cc1ccccc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-proline: SMILES: C(CC(=O)N1CCC[C@H]1C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-serine: SMILES: C(CC(=O)N[C@@H](CO)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-threonine: SMILES: C(CC(=O)N[C@@H]([C@H](O)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tryptophan: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-tyrosine: SMILES: C(CC(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-valine: SMILES: C(CC(=O)N[C@@H](C(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyltaurine: SMILES: C(CC(=O)NCCS(=O)(=O)O)[C@H](N)C(=O)O
+ - gamma-methyl-L-glutamate: SMILES: CC[C@H](C(=O)O)NC(=O)CC[C@H](N)C(=O)O
+ - L-2-aminoadipic acid: SMILES: O=C(O)C(CCCC(=O)O)N
+ - L-2-aminobutyric acid: SMILES: CCC[C@H](N)C(=O)O
+ - L-3,4-dihydroxyphenylalanine: SMILES: N[C@@H](Cc1ccc(O)c(O)c1)C(=O)O
+ - L-3-hydroxykynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(O)c(N)c1
+ - L-4-fluorophenylalanine: SMILES: N[C@@H](Cc1ccc(F)cc1)C(=O)O
+ - L-5-hydroxytryptophan: SMILES: N[C@@H](Cc1c[nH]c2c1ccc(O)c2)C(=O)O
+ - L-alloisoleucine: SMILES: CC[C@H](C)[C@H](N)C(=O)O
+ - L-allylglycine: SMILES: C=CC[C@H](N)C(=O)O
+ - L-azetidine-2-carboxylic acid: SMILES: O=C(O)[C@@H]1CCN1
+ - L-beta-methyltryptophan: SMILES: CC(C(=O)O)N[C@H](CC1=CNC2=CC=CC=C12)C(=O)O
+ - L-carnitine: SMILES: C[N+](C)(C)CC(CC(=O)O)O
+ - L-citrulline: SMILES: NC(=O)NCCC[C@H](N)C(=O)O
+ - L-djenkolic acid: SMILES: O=C(O)[C@@H](N)CSCCSC[C@H](N)C(=O)O
+ - L-ergothioneine: SMILES: CN1[C@@H](CC(=O)O)NC(=O)C=C1
+ - L-ethionine: SMILES: CCSCC[C@H](N)C(=O)O
+ - L-homoarginine: SMILES: NC(=N)NCCCC[C@H](N)C(=O)O
+ - L-homocystine: SMILES: O=C(O)[C@@H](N)CCSSC[C@H](N)C(=O)O
+ - L-homophenylalanine: SMILES: N[C@@H](CCc1ccccc1)C(=O)O
+ - L-isovaline: SMILES: CC(C)[C@H](N)C(=O)O
+ - L-kynurenine: SMILES: O=C(O)[C@@H](N)CC(=O)c1ccc(N)cc1
+ - L-lanthionine: SMILES: O=C(O)[C@@H](N)CCSCC[C@H](N)C(=O)O
+ - L-mimosine: SMILES: O=C(O)[C@@H](N)Cc1c(O)c(=O)[nH]c2c1cccc2
+ - L-norleucine: SMILES: CCCCC[C@H](N)C(=O)O
+ - L-norvaline: SMILES: CCCC[C@H](N)C(=O)O
+ - L-ornithine: SMILES: N[C@@H](CCCN)C(=O)O
+ - L-ovothiol A: SMILES: C1[C@H](NCCS1)C(=O)O
+ - L-phenylglycine: SMILES: N[C@@H](c1ccccc1)C(=O)O
+ - L-pipecolic acid: SMILES: O=C(O)C1CCCCN1
+ - L-saccharopine: SMILES: NC(CCCCN)C(=O)NC(CCC(=O)O)C(=O)O
+ - L-selenocystine: SMILES: C(C(C(=O)O)N)[Se][Se]CC(C(=O)O)N
+ - L-tert-leucine: SMILES: CC(C)(C)[C@H](N)C(=O)O
+ - L-theanine: SMILES: C(CC(=O)O)NCCCC[C@H](N)C(=O)O
+ - L-thioproline: SMILES: O=C(O)C1CCSN1
+ - L-thyronine: SMILES: NC(CC1=CC(=C(C(=C1)O)O)O)C(=O)O
+ - L-thyroxine: SMILES: NC(CC1=CC(=C(C(=C1I)O)I)O)C(=O)O
+ - L-tryptophanol: SMILES: NC(=O)[C@@H](N)Cc1c[nH]c2c1cccc2
+ - L-tyrosinol: SMILES: NC(=O)[C@@H](N)Cc1ccc(O)cc1
+ - N(alpha)-acetyl-L-lysine: SMILES: CC(=O)N[C@@H](CCCCN)C(=O)O
+ - N(epsilon)-acetyl-L-lysine: SMILES: CC(=O)NCCCC[C@H](N)C(=O)O
+ - N(epsilon)-trimethyl-L-lysine: SMILES: C[N+](C)(C)CCN[C@@H](CCCCN)C(=O)O
+ - N(gamma)-methyl-L-arginine: SMILES: CNCCCC[C@H](N)C(=O)O
+ - N-methyl-L-alanine: SMILES: CN[C@@H](C)C(=O)O
+ - N-methyl-L-leucine: SMILES: CN[C@@H](CC(C)C)C(=O)O
+ - N-methyl-L-methionine: SMILES: CN[C@@H](CCSC)C(=O)O
+ - N-methyl-L-phenylalanine: SMILES: CN[C@@H](Cc1ccccc1)C(=O)O
+ - N-methyl-L-proline: SMILES: CN1C[C@H](C(=O)O)CC1
+ - N-methyl-L-serine: SMILES: CN[C@@H](CO)C(=O)O
+ - N-methyl-L-tryptophan: SMILES: CN[C@@H](Cc1c[nH]c2c1cccc2)C(=O)O
+ - N-methyl-L-tyrosine: SMILES: CN[C@@H](Cc1ccc(O)cc1)C(=O)O
+ - O-acetyl-L-threonine: SMILES: CC(=O)O[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-serine: SMILES: COC[C@H](N)C(=O)O
+ - O-methyl-L-threonine: SMILES: CO[C@H](C(C)O)[C@H](N)C(=O)O
+ - O-methyl-L-tyrosine: SMILES: COCc1ccc(cc1)C[C@H](N)C(=O)O
+ - O-phospho-L-tyrosine: SMILES: O=P(O)(O)OCc1ccc(cc1)C[C@H](N)C(=O)O
+ - S-(2-aminoethyl)-L-cysteine: SMILES: NCCSCC[C@H](N)C(=O)O
+ - S-(3-hydroxypropyl)-L-cysteine: SMILES: OCCCSCC[C@H](N)C(=O)O
+ - S-allyl-L-cysteine: SMILES: C=CCSCC[C@H](N)C(=O)O
+ - S-carbamoyl-L-cysteine: SMILES: NC(=O)SCC[C@H](N)C(=O)O
+ - S-carboxymethyl-L-cysteine: SMILES: O=C(O)CSC[C@H](N)C(=O)O
+ - S-methyl-L-cysteine sulfoxide: SMILES: CS(=O)CC[C@H](N)C(=O)O
+ - S-methyl-L-homocysteine: SMILES: CSCCC[C@H](N)C(=O)O
+ - S-methylthio-L-cysteine: SMILES: CSCC[C@H](N)C(=O)O
+ - S-sulfo-L-cysteine: SMILES: O=S(=O)(O)SCC[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-alanine: SMILES: C(CC(=O)N[C@@H](C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-asparagine: SMILES: C(CC(=O)N[C@@H](CC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-glutamine: SMILES: C(CC(=O)N[C@@H](CCC(=O)N)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-histidine: SMILES: C(CC(=O)N[C@@H](Cc1c[nH]cn1)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-isoleucine: SMILES: C(CC(=O)N[C@@H]([C@H](CC)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-leucine: SMILES: C(CC(=O)N[C@@H](CC(C)C)C(=O)O)[C@H](N)C(=O)O
+ - gamma-L-glutamyl-L-methionine: SMILES: C(CC(=O)N[C@@H](CCSC)C(=O)O)[
