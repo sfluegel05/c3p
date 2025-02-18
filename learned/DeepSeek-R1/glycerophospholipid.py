@@ -23,27 +23,38 @@ def is_glycerophospholipid(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for glycerol backbone (three carbons connected as C-O-C-O-C)
-    glycerol = Chem.MolFromSmarts("[CH2]-[CH](-[OX2])-[CH2]")
+    # Check for glycerol backbone (three carbons in a row with oxygen substituents)
+    # Pattern allows for any substituents (including esters) on the carbons
+    glycerol = Chem.MolFromSmarts("[C;H2,H1]([OX2])-[C;H1]([OX2])-[C;H2,H1]([OX2])")
     if not mol.HasSubstructMatch(glycerol):
         return False, "No glycerol backbone"
 
-    # Find phosphate group (P connected to four oxygens, at least one ester linkage)
-    phosphate = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate)
+    # Find phosphate group connected via ester to a terminal carbon of glycerol
+    # Pattern: terminal CH2-O-P (phosphate ester)
+    phosphate_ester = Chem.MolFromSmarts("[CH2]-[OX2]-P(=O)([OX2])-[OX2]")
+    phosphate_matches = mol.GetSubstructMatches(phosphate_ester)
     if not phosphate_matches:
-        return False, "No phosphate group"
+        return False, "No phosphate ester group on terminal carbon"
 
-    # Verify phosphate is ester-linked to glycerol's terminal carbon
-    # Check if the phosphate is connected via an oxygen to the central carbon of glycerol
-    ester_link = Chem.MolFromSmarts("[CH2]-[CH](-[OX2]-P(=O)([OX2])[OX2])-[CH2]")
-    if not mol.HasSubstructMatch(ester_link):
-        return False, "Phosphate not ester-linked to glycerol"
+    # Verify the phosphate is attached to glycerol's terminal carbon
+    # Check if any phosphate ester oxygen is connected to glycerol's terminal carbon
+    glycerol_phosphate = Chem.MolFromSmarts(
+        "[C;H2,H1]([OX2])-[C;H1]([OX2])-[C;H2,H1]([OX2]-P(=O)([OX2])-[OX2])"
+    )
+    if not mol.HasSubstructMatch(glycerol_phosphate):
+        return False, "Phosphate not ester-linked to glycerol's terminal carbon"
 
-    # Check for two ester groups (fatty acids) on the other two oxygens of glycerol
-    ester = Chem.MolFromSmarts("[CX4][OX2]C(=O)")
-    ester_matches = mol.GetSubstructMatches(ester)
-    if len(ester_matches) < 2:
-        return False, f"Only {len(ester_matches)} ester groups, need at least 2"
+    # Check for at least one fatty acid ester (long chain)
+    ester_pattern = Chem.MolFromSmarts("[CX4][OX2]C(=O)")
+    ester_matches = mol.GetSubstructMatches(ester_pattern)
+    if len(ester_matches) < 1:
+        return False, "No fatty acid ester groups detected"
 
-    return True, "Glycerol backbone with phosphate and two ester groups"
+    # Optional: Check for typical chain length in fatty acids (e.g., at least 8 carbons)
+    # This is heuristic and may vary, but helps exclude short-chain esters
+    chain_pattern = Chem.MolFromSmarts("[CX4][CX4][CX4][CX4][CX4][CX4][CX4][CX4]")
+    chain_matches = mol.GetSubstructMatches(chain_pattern)
+    if not chain_matches:
+        return False, "Insufficient chain length for fatty acids"
+
+    return True, "Glycerol backbone with terminal phosphate ester and fatty acid(s)"
