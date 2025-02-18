@@ -21,24 +21,26 @@ def is_phytosterols(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # More inclusive steroid backbone pattern including common variations
-    steroid_pattern = Chem.MolFromSmarts("C1C[C@H]2CC[C@@]3(C)C2CC[C@H]4[C@]3(CC=C[C@H]1)C(C)(C)O")
+
+    # Steroid backbone: detection of the sterane core structure
+    steroid_pattern = Chem.MolFromSmarts("C1CCC2C(C1)CCC3C2CCC4C3(CCCC4)C")
     if not mol.HasSubstructMatch(steroid_pattern):
-        return False, "No inclusive tetracyclic steroid backbone found"
+        return False, "No tetracyclic steroid backbone detected"
+
+    # Detect hydroxy group in specific positions
+    hydroxy_pattern = Chem.MolFromSmarts("C[C@@H](O)")
+    if not mol.HasSubstructMatch(hydroxy_pattern):
+        return False, "Typical hydroxyl group not found"
+
+    # Check for unsaturation: presence of double bonds in side chains or rings
+    olefinic_patterns = [
+        Chem.MolFromSmarts("C=C"),  # Broad olefinic bond pattern
+    ]
+    has_unsaturation = any(mol.HasSubstructMatch(patt) for patt in olefinic_patterns)
     
-    # Check for specific hydroxyl group positions typical in phytosterols
-    hydroxyl_pattern = Chem.MolFromSmarts("[C@@H]([C@H]3[C@]4([C@@H](C)CC[C@]4(C)CC3)O)[C@H](O)C")
-    if not mol.HasSubstructMatch(hydroxyl_pattern):
-        return False, "No hydroxyl groups typically found on phytosterols"
-    
-    # Presence of multiple types of unsaturation preferred in side chains or rings
-    ring_unsaturation_pattern = Chem.MolFromSmarts("C=C[C@]3(C)[C@@H](CCC=C4C4(C)C)CC3(C)C")
-    side_chain_unsaturation_pattern = Chem.MolFromSmarts("\C=C\C")
-    has_unsaturation = mol.HasSubstructMatch(ring_unsaturation_pattern) or mol.HasSubstructMatch(side_chain_unsaturation_pattern)
-    
-    # Conclude on elements of phytosterols
-    if has_unsaturation:
-        return True, "Contains elements of unsaturation and inclusive tetracyclic steroid backbone typical of phytosterols"
-    
-    return False, "Fails to meet typical phytosterol criteria despite structural similarity"
+    # Typical side chain variations: noting longer chains or sp2 configurations 
+    side_chain_variation = Chem.MolFromSmarts("C[C@H](C)CCC")
+    if not mol.HasSubstructMatch(side_chain_variation) and not has_unsaturation:
+        return False, "No variation in side chain length or unsaturation typical of phytosterols"
+
+    return True, "Contains tetracyclic steroid backbone with phytosterol-specific side chain variations"
