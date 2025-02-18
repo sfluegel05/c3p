@@ -37,25 +37,13 @@ def is_cardiolipin(smiles: str):
     if len(ester_matches) != 4:
         return False, f"Found {len(ester_matches)} ester groups, need exactly 4"
 
-    # Detect glycerol backbones (three carbons with oxygen substituents)
-    # Updated pattern: Each carbon must have at least one oxygen (any type)
+    # Detect glycerol backbones (three carbons in a row with four bonds each)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     glycerol_matches = mol.GetSubstructMatches(glycerol_pattern)
     
-    # Filter matches to require oxygen on each carbon
-    valid_glycerols = []
-    for match in glycerol_matches:
-        c1, c2, c3 = match
-        if (mol.GetAtomWithIdx(c1).GetDegree() == 4 and
-            mol.GetAtomWithIdx(c2).GetDegree() == 4 and
-            mol.GetAtomWithIdx(c3).GetDegree() == 4 and
-            any(a.GetAtomicNum() == 8 for a in mol.GetAtomWithIdx(c1).GetNeighbors()) and
-            any(a.GetAtomicNum() == 8 for a in mol.GetAtomWithIdx(c2).GetNeighbors()) and
-            any(a.GetAtomicNum() == 8 for a in mol.GetAtomWithIdx(c3).GetNeighbors())):
-            valid_glycerols.append(match)
-    
-    if len(valid_glycerols) < 3:
-        return False, f"Found {len(valid_glycerols)} valid glycerol backbones, need at least 3"
+    # Require at least three glycerol backbones (central + two from phosphatidic acids)
+    if len(glycerol_matches) < 3:
+        return False, f"Found {len(glycerol_matches)} glycerol backbones, need at least 3"
 
     # Check phosphate groups (O-P-O linkages)
     phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2])[OX2]")
