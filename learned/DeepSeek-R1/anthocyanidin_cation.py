@@ -24,15 +24,14 @@ def is_anthocyanidin_cation(smiles: str):
         return False, "Invalid SMILES string"
     
     # Check for flavylium core (2-phenylchromenylium)
-    # SMARTS pattern for 2-phenylchromenylium: O+ in pyrylium ring fused to benzene, with phenyl substituent
-    flavylium_pattern = Chem.MolFromSmarts("[o+]1c2ccccc2cc1-c1ccccc1")
+    # Updated SMARTS pattern to match fused benzene and pyrylium with phenyl substituent
+    flavylium_pattern = Chem.MolFromSmarts("[o+]1c2ccccc2ccc1-c3ccccc3")
     if not mol.HasSubstructMatch(flavylium_pattern):
         return False, "Flavylium core (2-phenylchromenylium) not found"
     
     # Verify oxygen substituents (at least one oxygen atom besides the core O+)
-    # Count all oxygen atoms (including those in hydroxyl groups, ethers, etc.)
     oxygen_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
-    if oxygen_count < 1:
-        return False, "No oxygen substituents found"
+    if oxygen_count < 2:
+        return False, "Insufficient oxygen substituents (must have ≥1 beyond O+ core)"
     
     return True, "Contains flavylium core with phenyl group and oxygen substituents"
