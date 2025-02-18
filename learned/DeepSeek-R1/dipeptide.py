@@ -26,39 +26,50 @@ def is_dipeptide(smiles: str):
         return False, "Invalid SMILES string"
 
     # Find all amide bonds (C(=O)-N with single bond to N)
-    amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3H1]")
+    # Adjusted pattern to include any N with three bonds (including proline-like cases)
+    amide_pattern = Chem.MolFromSmarts("[CX3](=O)-[NX3]")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
-    if len(amide_matches) != 1:
-        return False, f"Found {len(amide_matches)} amide bonds, need exactly 1"
-
-    # Check that the amide connects two alpha carbons (each with possible side chains)
-    c_atom = amide_matches[0][0]
-    n_atom = amide_matches[0][1]
-
-    # Get neighboring carbons to the amide C and N (alpha carbons)
-    alpha1 = None
-    for neighbor in mol.GetAtomWithIdx(c_atom).GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != n_atom:
-            alpha1 = neighbor
-            break
-    if not alpha1:
-        return False, "No alpha carbon adjacent to amide C"
-
-    alpha2 = None
-    for neighbor in mol.GetAtomWithIdx(n_atom).GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != c_atom:
-            alpha2 = neighbor
-            break
-    if not alpha2:
-        return False, "No alpha carbon adjacent to amide N"
-
-    # Check if each alpha carbon has at least one substituent (side chain)
-    # Alpha1 should have at least two bonds (to amide C and another group)
-    if len(alpha1.GetBonds()) < 2:
-        return False, "First alpha carbon lacks substituents"
-
-    # Alpha2 should have at least two bonds (to amide N and another group)
-    if len(alpha2.GetBonds()) < 2:
-        return False, "Second alpha carbon lacks substituents"
-
+    
+    valid_peptide_bonds = 0
+    
+    for match in amide_matches:
+        c_atom_idx = match[0]
+        n_atom_idx = match[1]
+        
+        # Get alpha carbon adjacent to carbonyl C (not part of the amide N)
+        alpha1 = None
+        c_atom = mol.GetAtomWithIdx(c_atom_idx)
+        for neighbor in c_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != n_atom_idx:
+                alpha1 = neighbor
+                break
+        if not alpha1:
+            continue  # Not a peptide bond
+        
+        # Get alpha carbon adjacent to amide N (not part of the carbonyl C)
+        alpha2 = None
+        n_atom = mol.GetAtomWithIdx(n_atom_idx)
+        for neighbor in n_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() != c_atom_idx:
+                alpha2 = neighbor
+                break
+        if not alpha2:
+            continue  # Not a peptide bond
+        
+        # Check substituents on alpha carbons (must have at least one side chain)
+        # Check alpha1 (from C side) has at least one other neighbor besides carbonyl C
+        alpha1_substituents = [n for n in alpha1.GetNeighbors() if n.GetIdx() != c_atom_idx]
+        if not alpha1_substituents:
+            continue
+        
+        # Check alpha2 (from N side) has at least one other neighbor besides amide N
+        alpha2_substituents = [n for n in alpha2.GetNeighbors() if n.GetIdx() != n_atom_idx]
+        if not alpha2_substituents:
+            continue
+        
+        valid_peptide_bonds += 1
+    
+    if valid_peptide_bonds != 1:
+        return False, f"Found {valid_peptide_bonds} valid peptide bonds, need exactly 1"
+    
     return True, "Two amino acid residues connected by a peptide bond"
