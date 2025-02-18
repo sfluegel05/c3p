@@ -30,40 +30,51 @@ def is_medium_chain_fatty_acyl_CoA(smiles: str):
     if not thioester_matches:
         return False, "No thioester group found"
 
-    # Verify CoA structure presence (simplified check for pantetheine-phosphate-ribose-adenine)
-    # Look for adenine (N-containing aromatic), ribose (O-rich chain), and phosphate groups
-    # Simplified check: presence of adenine-like ring and multiple phosphate groups
-    adenine_pattern = Chem.MolFromSmarts("n1cnc2ncnc12")
-    phosphate_pattern = Chem.MolFromSmarts("[OX2]P(=O)([OX2-])[OX2]")
-    if not mol.HasSubstructMatch(adenine_pattern) or len(mol.GetSubstructMatches(phosphate_pattern)) < 2:
-        return False, "Missing CoA components (adenine/phosphate)"
+    # Verify CoA structure presence (adenine with amino group and multiple phosphates)
+    # Adenine pattern matches 6-aminopurine core
+    adenine_pattern = Chem.MolFromSmarts("n1c(N)nc2c1ncn2")
+    # Phosphate pattern matches any P with double bond to O and at least two O neighbors
+    phosphate_pattern = Chem.MolFromSmarts("[PX4](=O)([OX2])[OX2]")
+    
+    if not mol.HasSubstructMatch(adenine_pattern):
+        return False, "Missing adenine component"
+    
+    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    if len(phosphate_matches) < 2:
+        return False, f"Found {len(phosphate_matches)} phosphate groups, need at least 2"
 
     # Identify the fatty acid chain attached to the thioester
-    # Start from the sulfur atom in the thioester and traverse the carbon chain
     try:
+        # Get carbonyl carbon (attached to sulfur via thioester)
         sulfur_idx = thioester_matches[0][2]
-        neighbor = [a.GetIdx() for a in mol.GetAtomWithIdx(sulfur_idx).GetNeighbors() if a.GetSymbol() == "C"][0]
+        carbonyl_carbon = [a.GetIdx() for a in mol.GetAtomWithIdx(sulfur_idx).GetNeighbors() 
+                         if a.GetSymbol() == "C" and a.GetBondToAtomIdx(sulfur_idx).GetBondType() == Chem.BondType.SINGLE][0]
     except IndexError:
         return False, "Invalid thioester connectivity"
 
-    # Traverse the carbon chain from the sulfur-connected carbon
+    # Traverse the carbon chain from the carbonyl carbon (excluding CoA part)
     chain = []
     visited = set()
+    
     def traverse(atom_idx, prev_idx):
         if atom_idx in visited:
             return
         visited.add(atom_idx)
         atom = mol.GetAtomWithIdx(atom_idx)
-        if atom.GetSymbol() == "C":
-            chain.append(atom_idx)
+        # Follow carbons and oxygen (for possible branching with ester groups)
+        if atom.GetSymbol() in ["C", "O"]:
+            if atom.GetSymbol() == "C":
+                chain.append(atom_idx)
             for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() != prev_idx and neighbor.GetSymbol() in ["C", "O", "S"]:
+                if neighbor.GetIdx() != prev_idx:
                     traverse(neighbor.GetIdx(), atom_idx)
-    traverse(neighbor, sulfur_idx)
+    
+    traverse(carbonyl_carbon, sulfur_idx)
 
-    # Calculate chain length (excluding the thioester carbonyl)
-    chain_length = len(chain) - 1  # subtract the sulfur-attached carbon
+    # Calculate chain length (including carbonyl carbon)
+    chain_length = len([a for a in chain if mol.GetAtomWithIdx(a).GetSymbol() == "C"])
+    
     if not (6 <= chain_length <= 12):
-        return False, f"Chain length {chain_length} not in 6-12 range"
+        return False, f"Fatty acid chain length {chain_length} not in 6-12 range"
 
-    return True, f"Medium-chain ({chain_length} carbons) fatty acyl-CoA"
+    return True, f"Medium-chain ({chain_length} carbons) fatty acyl-CoA with valid CoA structure"
