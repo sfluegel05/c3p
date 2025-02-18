@@ -22,15 +22,17 @@ def is_7_hydroxyisoflavones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # SMARTS pattern for 7-hydroxyisoflavone core:
-    # Hydroxyl attached to benzene ring (position 7) fused to pyrone with oxygen-linked substituent
-    pattern = Chem.MolFromSmarts("[OH]-c1ccc2c(c1)oc(-*)cc2=O")
+    # Corrected SMARTS pattern for 7-hydroxyisoflavone core:
+    # Hydroxyl (O) attached to aromatic benzene (A ring) at position 7
+    # Fused to chromen-4-one system with substituent (B ring) at position 3
+    pattern = Chem.MolFromSmarts("[OH]c1ccc2c(c1)oc(-*)cc(=O)c2")
     if mol.HasSubstructMatch(pattern):
         return True, "7-hydroxy group present on isoflavone core"
     
-    # Alternative check for different substituents on the B ring
-    # Broader pattern allowing any substitution on the B ring
-    # Check if any hydroxyl is attached to the A ring at position 7
-    # This approach may require more complex atom mapping
+    # Additional check for cases where the B ring might be connected through different bonds
+    # This accounts for possible keto-enol tautomerism or alternate substituent attachments
+    alt_pattern = Chem.MolFromSmarts("[OH]c1ccc2c(c1)oc(=O)cc2-*")
+    if mol.HasSubstructMatch(alt_pattern):
+        return True, "7-hydroxy group present on isoflavone core (alternate pattern)"
     
     return False, "No 7-hydroxy group detected on isoflavone core"
