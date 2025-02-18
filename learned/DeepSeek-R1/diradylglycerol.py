@@ -25,43 +25,61 @@ def is_diradylglycerol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Adjusted glycerol pattern to account for possible substituents
-    # Three contiguous carbons with at least two CH2 groups (allowing any bonding)
+    # Glycerol backbone pattern: three contiguous carbons (C-C-C)
     glycerol_pattern = Chem.MolFromSmarts("[CH2X4][CHX4][CH2X4]")
     matches = mol.GetSubstructMatches(glycerol_pattern)
     if not matches:
         return False, "No glycerol backbone found"
 
-    # Define substituent patterns (acyl, alkyl, alk-1-enyl)
-    ester = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")  # Acyl (ester)
-    ether = Chem.MolFromSmarts("[OX2][CX4H2]")        # Alkyl (ether, at least two carbons)
-    vinyl_ether = Chem.MolFromSmarts("[OX2]/C=C/")    # Alk-1-enyl (vinyl ether with trans configuration)
-    vinyl_ether_cis = Chem.MolFromSmarts("[OX2]\\C=C\\")  # Cis vinyl ether
-
-    # Check all possible glycerol backbones
+    # Check each possible glycerol backbone configuration
     for backbone in matches:
-        substituents = 0
-        # Check each carbon in the backbone for substituents
+        substituent_count = 0
+        # Iterate through each carbon in the glycerol backbone
         for carbon_idx in backbone:
-            atom = mol.GetAtomWithIdx(carbon_idx)
-            # Look for oxygen neighbors
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetAtomicNum() == 8:
-                    # Check if oxygen is part of a substituent
-                    o_bond = atom.GetBondBetweenAtoms(carbon_idx, neighbor.GetIdx())
-                    if o_bond.GetBondType() != Chem.BondType.SINGLE:
-                        continue  # Only single bonds for substituents
-                    # Check for ester, ether, or vinyl ether patterns connected to this oxygen
-                    context = Chem.FindAtomEnvironmentOfRadiusN(mol, radius=2, rootedAtAtomIdx=neighbor.GetIdx())
-                    submol = Chem.PathToSubmol(mol, context)
-                    if submol.HasSubstructMatch(ester):
-                        substituents +=1
-                        break  # One substituent per carbon
-                    elif submol.HasSubstructMatch(ether) or submol.HasSubstructMatch(vinyl_ether) or submol.HasSubstructMatch(vinyl_ether_cis):
-                        substituents +=1
-                        break
-        # Check for exactly two substituents
-        if substituents == 2:
+            carbon = mol.GetAtomWithIdx(carbon_idx)
+            # Check all oxygen atoms attached to this carbon
+            for neighbor in carbon.GetNeighbors():
+                if neighbor.GetAtomicNum() != 8:
+                    continue  # Not an oxygen atom
+                oxygen_idx = neighbor.GetIdx()
+                # Ensure the bond is a single bond (ester/ether/vinyl ether)
+                bond = mol.GetBondBetweenAtoms(carbon_idx, oxygen_idx)
+                if bond.GetBondType() != Chem.BondType.SINGLE:
+                    continue
+                # Get the atom attached to the oxygen (substituent)
+                substituent_atoms = []
+                for o_neighbor in neighbor.GetNeighbors():
+                    if o_neighbor.GetIdx() != carbon_idx:
+                        substituent_atoms.append(o_neighbor)
+                # Check each substituent atom (typically one)
+                for sub_atom in substituent_atoms:
+                    # Acyl (ester): substituent is C connected to O via C=O
+                    if sub_atom.GetAtomicNum() == 6:
+                        # Check if this carbon is part of a carbonyl group
+                        for bond in sub_atom.GetBonds():
+                            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                                other_atom = bond.GetOtherAtom(sub_atom)
+                                if other_atom.GetAtomicNum() == 8:
+                                    substituent_count += 1
+                                    break
+                        else:
+                            # Alkyl (ether): check for at least one carbon chain
+                            # Alk-1-enyl (vinyl ether): check for adjacent double bond
+                            has_double = any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in sub_atom.GetBonds())
+                            if has_double:
+                                # Check if the double bond is between C1 and C2 (alk-1-enyl)
+                                next_atoms = [a for a in sub_atom.GetNeighbors() if a.GetIdx() != oxygen_idx]
+                                for a in next_atoms:
+                                    if mol.GetBondBetweenAtoms(sub_atom.GetIdx(), a.GetIdx()).GetBondType() == Chem.BondType.DOUBLE:
+                                        substituent_count += 1
+                                        break
+                            else:
+                                # Assume alkyl if no double bonds and has at least one more carbon
+                                if sub_atom.GetDegree() >= 1:
+                                    substituent_count += 1
+                    # If substituent is hydrogen (hydroxyl group), ignore
+        # Check if exactly two substituents found
+        if substituent_count == 2:
             return True, "Contains glycerol backbone with exactly two substituent groups (acyl/alkyl/alk-1-enyl)"
     
-    return False, f"Found {substituents} substituent groups, need exactly 2"
+    return False, "Found fewer or more than two valid substituent groups"
