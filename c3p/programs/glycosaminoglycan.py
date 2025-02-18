@@ -22,24 +22,25 @@ def is_glycosaminoglycan(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define the substructure patterns typical in GAGs
-    aminomonosaccharide_pattern = Chem.MolFromSmarts("[C;X4][N]")  # Simple representation for amino sugars
-    uronic_acid_pattern = Chem.MolFromSmarts("[C](=O)[O-]")  # Carboxylate functionality for uronic acids
-    sulfate_pattern = Chem.MolFromSmarts("O=S(=O)([O-])[O-]")  # Sulfate group
-
-    # Validate if patterns are correctly defined
-    if aminomonosaccharide_pattern is None or uronic_acid_pattern is None:
-        return None, "Error in defining substructure pattern"
+    # Define more specific patterns for common GAG substructure components
+    # Amino sugar patterns: N-acetylglucosamine or N-acetylgalactosamine
+    amino_sugar_pattern1 = Chem.MolFromSmarts("NC([C@H]1CO[C@H](O)[C@@H](O)[C@H]1O)C=O")
+    amino_sugar_pattern2 = Chem.MolFromSmarts("NC([C@@H]1CO[C@H](O)[C@@H](O)[C@H]1O)C=O")
+    # Uronic acid pattern: a sugar with a carboxylic acid
+    uronic_acid_pattern = Chem.MolFromSmarts("[C@H]1(C(O)=O)O[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")
+    # Sulfate pattern
+    sulfate_pattern = Chem.MolFromSmarts("OS(=O)(=O)O")
 
     # Check for the presence of amino sugars and uronic acid units
-    amino_matches = mol.GetSubstructMatches(aminomonosaccharide_pattern)
+    amino_matches1 = mol.GetSubstructMatches(amino_sugar_pattern1)
+    amino_matches2 = mol.GetSubstructMatches(amino_sugar_pattern2)
     uronic_matches = mol.GetSubstructMatches(uronic_acid_pattern)
     
-    # Optional check for sulfate groups
-    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern) if sulfate_pattern is not None else []
+    # Check for sulfate groups (optional)
+    sulfate_matches = mol.GetSubstructMatches(sulfate_pattern)
 
     # Evaluate if the structure corresponds to a GAG
-    if len(amino_matches) >= 1 and len(uronic_matches) >= 1:
+    if (len(amino_matches1) >= 1 or len(amino_matches2) >= 1) and len(uronic_matches) >= 1:
         reason = "Contains repeating units of amino sugars and uronic acids"
         if len(sulfate_matches) > 0:
             reason += " with sulfation"
