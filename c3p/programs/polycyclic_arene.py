@@ -2,6 +2,7 @@
 Classifies: CHEBI:33848 polycyclic arene
 """
 from rdkit import Chem
+from rdkit.Chem import AllChem
 from rdkit.Chem import rdMolDescriptors
 
 def is_polycyclic_arene(smiles: str):
@@ -22,9 +23,9 @@ def is_polycyclic_arene(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check if molecule is a hydrocarbon (relaxed check)
-    if not all(atom.GetAtomicNum() in [1, 6] for atom in mol.GetAtoms() if atom.IsInRing()):
-        return False, "Molecule contains heteroatoms in the ring system"
+    # Check if molecule is a hydrocarbon
+    if not all(atom.GetAtomicNum() in [1, 6] for atom in mol.GetAtoms()):
+        return False, "Molecule contains heteroatoms"
 
     # Check for at least 3 fused rings
     ring_info = mol.GetRingInfo()
@@ -42,14 +43,18 @@ def is_polycyclic_arene(smiles: str):
     # Check for aromaticity
     for ring in ring_info.AtomRings():
         ring_mol = Chem.PathToSubmol(mol, ring)
-        for atom in ring_mol.GetAtoms():
-            if not atom.GetIsAromatic():
-                return False, "Molecule is not aromatic"
+        if not AllChem.IsAromaticRing(ring_mol):
+            return False, "Molecule is not aromatic"
 
     # Check molecular weight and size
     mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
-    if mol_wt < 200:  # Minimum molecular weight for a polycyclic arene
-        return False, "Molecule is too small to be a polycyclic arene"
+    if mol_wt < 200 or mol_wt > 1000:  # Expected molecular weight range for a polycyclic arene
+        return False, "Molecule is outside the expected molecular weight range"
+
+    # Check number of carbon atoms
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if c_count < 10:  # Minimum number of carbon atoms in a polycyclic arene
+        return False, "Molecule does not have enough carbon atoms"
 
     return True, "Molecule is a polycyclic arene"
 
