@@ -44,9 +44,13 @@ def is_alkene(smiles: str):
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains rings"
 
-    # Verify molecular formula CnH2n
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    h_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 1)
+    # Add hydrogens to get accurate hydrogen count
+    mol_with_h = Chem.AddHs(mol)
+    
+    # Verify molecular formula CnH2n (including all hydrogens)
+    c_count = sum(1 for atom in mol_with_h.GetAtoms() if atom.GetAtomicNum() == 6)
+    h_count = sum(1 for atom in mol_with_h.GetAtoms() if atom.GetAtomicNum() == 1)
+    
     if h_count != 2 * c_count:
         return False, f"Molecular formula C{c_count}H{h_count} does not match CnH2n"
 
