@@ -1,216 +1,36 @@
 """
 Classifies: CHEBI:23849 diterpenoid
 """
- - 4-oxo-5alpha-androst-1-ene-17beta-carboxylic acid: SMILES: C1CC2=CC(=O)C3C(C2(C1)CCC4(C3CCC4C(=O)O)C)C
- - 4alpha,5beta,17beta-Trihydroxy-3-oxo-24-nor-4,9-secocholesta-1(10),2,5,7-tetraen-23-oic acid: SMILES: CC(C)(C)C(O)CC(=O)C1C(C(C2C1C(C3=C2C=CC4=C3C(=O)CC(O)C4)(C)O)O)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5beta-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 5alpha-Androstane-3alpha,17beta-diol: SMILES: C[C@]12CC[C@H]3[C@H]([C@@H]1CC[C@@H]2O)CC[C@H]4[C@@H]3CC[C@H]([C@]4(C)C)O
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholestan-26-oic acid: SMILES: CC(C)CCC(C)C(C)CCC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C(O)CC4CC(O)CCC4(C)C3CCC12C
- - 3alpha,7alpha,12alpha-Trihydroxy-5beta-cholest-24-en-26-oic acid: SMILES: CC(C)C(=O)CCC(C)C(C)C=CC(C)C(CCCC(C)(C)O)C(O)C1C(O)CC2C3C
+"""
+Classifies: CHEBI:23899 diterpenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+
+def is_diterpenoid(smiles: str):
+    """
+    Determines if a molecule is a diterpenoid based on its SMILES string.
+    Diterpenoids are derived from a C20 diterpene skeleton, which may be modified.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a diterpenoid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Check carbon count (allowing for some modification)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if not (18 <= c_count <= 22):
+        return False, f"Carbon count {c_count} outside diterpenoid range (18-22)"
+
+    # Check if it's a terpenoid (at least 4 isoprene units)
+    terpene_units = rdMolDescriptors.CalcNumTerpenes(mol)
+    if terpene_units < 4:
+        return False, f"Only {terpene_units} terpene units, need ≥4 for diterpenoid"
+
+    return True, f"{c_count} carbons and {terpene_units} terpene units indicate diterpenoid"
