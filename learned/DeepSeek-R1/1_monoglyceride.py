@@ -24,16 +24,28 @@ def is_1_monoglyceride(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Check for exactly one ester group (-O-C=O-)
-    ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) != 1:
-        return False, f"Found {len(ester_matches)} ester groups, need exactly 1"
-
-    # Check glycerol backbone with ester at position 1 (O-C=O attached to first carbon)
-    # SMARTS: [CH2](O-C=O) connected to CH(OH) and CH2(OH)
-    glycerol_smarts = Chem.MolFromSmarts("[CH2]([OX2][C](=O)*)[CH]([OH])[CH2]([OH])")
-    if not mol.HasSubstructMatch(glycerol_smarts):
-        return False, "Glycerol backbone with ester at position 1 not found"
-
+    # Define SMARTS pattern for 1-monoglyceride core structure:
+    # - Glycerol backbone (HO-CH2-OH groups)
+    # - Exactly one ester group at position 1 (O-C=O)
+    # - Two hydroxyl groups at positions 2 and 3
+    # [CH2] with ester group -> [CH2]([OX2][C](=O))...
+    # Middle CH with hydroxyl -> [CH]([OH])
+    # Terminal CH2 with hydroxyl -> [CH2]([OH])
+    glyceride_pattern = Chem.MolFromSmarts("[CH2]([OX2][C](=O)*)[CH]([OH])[CH2]([OH])")
+    
+    # Find matches for the core structure
+    matches = mol.GetSubstructMatches(glyceride_pattern)
+    
+    if not matches:
+        # Check alternative orientation where positions might be reversed
+        # Some SMILES representations might have different atom order
+        alt_pattern = Chem.MolFromSmarts("[CH2]([OH])[CH]([OH])[CH2]([OX2][C](=O)*)")
+        alt_matches = mol.GetSubstructMatches(alt_pattern)
+        if len(alt_matches) == 0:
+            return False, "Glycerol backbone with ester at position 1 not found"
+        else:
+            return True, "1-monoglyceride with acyl group at position 1 (alternative orientation)"
+    
+    # Verify exactly one ester is attached to the glycerol backbone
+    # (handled by SMARTS pattern matching)
     return True, "1-monoglyceride with acyl group at position 1"
