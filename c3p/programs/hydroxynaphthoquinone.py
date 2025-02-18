@@ -11,7 +11,7 @@ from rdkit.Chem import rdMolDescriptors
 def is_hydroxynaphthoquinone(smiles: str):
     """
     Determines if a molecule is a hydroxynaphthoquinone based on its SMILES string.
-    A hydroxynaphthoquinone is a naphthoquinone with at least one hydroxy group attached to the naphthoquinone moiety.
+    A hydroxynaphthoquinone is a naphthoquinone with at least one hydroxy group attached to the naphthalene ring.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -26,32 +26,26 @@ def is_hydroxynaphthoquinone(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define a more flexible naphthoquinone pattern that matches both 1,2 and 1,4-naphthoquinones
-    naphthoquinone_pattern = Chem.MolFromSmarts("[#6]1[#6]=[#6][#6]=[#6][#6]=1[C](=O)[#6]=[#6][C](=O)")
-    if naphthoquinone_pattern is None:
-        return False, "Invalid naphthoquinone pattern"
-    
+    # Define the naphthoquinone pattern (naphthalene with two ketone groups at positions 1 and 4)
+    naphthoquinone_pattern = Chem.MolFromSmarts("c1ccc2c(c1)C(=O)C=CC2=O")
     if not mol.HasSubstructMatch(naphthoquinone_pattern):
         return False, "No naphthoquinone moiety found"
 
-    # Look for at least one hydroxy group attached to the naphthoquinone moiety
+    # Look for at least one hydroxy group attached to the naphthalene ring
     hydroxy_pattern = Chem.MolFromSmarts("[OH]")
-    if hydroxy_pattern is None:
-        return False, "Invalid hydroxy pattern"
-    
     hydroxy_matches = mol.GetSubstructMatches(hydroxy_pattern)
     if len(hydroxy_matches) == 0:
         return False, "No hydroxy group found"
 
-    # Ensure the hydroxy group is attached to the naphthoquinone moiety
-    naphthoquinone_atoms = set()
+    # Ensure the hydroxy group is attached to the naphthalene ring
+    naphthalene_atoms = set()
     for match in mol.GetSubstructMatches(naphthoquinone_pattern):
-        naphthoquinone_atoms.update(match)
+        naphthalene_atoms.update(match)
 
     for hydroxy_match in hydroxy_matches:
         hydroxy_atom = mol.GetAtomWithIdx(hydroxy_match[0])
         neighbor_atom = hydroxy_atom.GetNeighbors()[0]
-        if neighbor_atom.GetIdx() not in naphthoquinone_atoms:
-            return False, "Hydroxy group not attached to the naphthoquinone moiety"
+        if neighbor_atom.GetIdx() not in naphthalene_atoms:
+            return False, "Hydroxy group not attached to the naphthalene ring"
 
-    return True, "Contains a naphthoquinone moiety with at least one hydroxy group attached to the naphthoquinone moiety"
+    return True, "Contains a naphthoquinone moiety with at least one hydroxy group attached to the naphthalene ring"
