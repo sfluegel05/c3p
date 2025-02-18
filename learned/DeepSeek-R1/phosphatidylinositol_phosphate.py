@@ -1,64 +1,144 @@
 """
 Classifies: CHEBI:28765 phosphatidylinositol phosphate
 """
-"""
-Classifies: phosphatidylinositol phosphate (PIP)
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-
-def is_phosphatidylinositol_phosphate(smiles: str):
-    """
-    Determines if a molecule is a phosphatidylinositol phosphate based on its SMILES.
-    These molecules have a glycerol backbone with two fatty acid esters, a phosphate group,
-    and a myo-inositol ring with at least one phosphate group.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a PIP, False otherwise
-        str: Reason for classification
-    """
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES"
-
-    # Improved glycerol pattern: three carbons with two esters and one phosphate
-    # Allows any chain configuration and stereochemistry
-    glycerol_pattern = Chem.MolFromSmarts(
-        "[CH2]OC(=O)-[CH](-OC(=O)-)-[CH2]OP(=O)(O)"
-    )
-    if not mol.HasSubstructMatch(glycerol_pattern):
-        return False, "Glycerol backbone with two esters and phosphate not found"
-
-    # Find phosphate connected to glycerol
-    phosphate_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[CH2]OP(=O)(O)"))
-    if not phosphate_matches:
-        return False, "No phosphate group on glycerol"
-
-    # Track inositol connection through phosphate oxygen
-    for p_match in phosphate_matches:
-        p_atom = mol.GetAtomWithIdx(p_match[2])  # P atom in CH2-OP group
-        # Find oxygen connecting to inositol
-        for o_atom in p_atom.GetNeighbors():
-            if o_atom.GetAtomicNum() == 8 and o_atom.GetDegree() == 2:
-                # Follow connection to inositol ring
-                inositol_atom = next((a for a in o_atom.GetNeighbors() if a.GetIdx() != p_match[2]), None)
-                if inositol_atom and inositol_atom.GetAtomicNum() == 6:
-                    # Check if part of a six-membered carbon ring
-                    ring_info = mol.GetRingInfo()
-                    for ring in ring_info.AtomRings():
-                        if len(ring) == 6 and inositol_atom.GetIdx() in ring:
-                            # Verify inositol has at least one phosphate group (not the connecting one)
-                            for atom_idx in ring:
-                                atom = mol.GetAtomWithIdx(atom_idx)
-                                for bond in atom.GetBonds():
-                                    if bond.GetBondType() == Chem.BondType.SINGLE:
-                                        neighbor = bond.GetOtherAtom(atom)
-                                        if neighbor.GetAtomicNum() == 15:  # Phosphorus
-                                            # Check for phosphate group (P=O)
-                                            if any(b.GetBondType() == Chem.BondType.DOUBLE for b in neighbor.GetBonds()):
-                                                return True, "Contains glycerol backbone with two esters, phosphate-linked myo-inositol with phosphates"
-
-    return False, "No phosphorylated myo-inositol ring found"
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3-phosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-4,5-bisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-5-phosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/18:1): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCC\C=C/CCCCCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-4-phosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP(18:0/20:4): SMILES: O=C(CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O[C@H](COC(=O)CCCCCCCCCCCCCCCCC)COP(O[C@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O)(=O)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3-phosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,5-bisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/16:0): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCCCCCCCCCC)O
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4-bisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-5-phosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-5-phosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4-bisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP2(16:0/18:1): SMILES: P(O[C@@H]1C(O)[C@H](OP(O)(O)=O)C(OP(O)(O)=O)C(O)C1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCCCCCC\C=C/CCCCCCCC)(O)=O
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,5-bisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@H]1[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-4-phosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](O)[C@@H](OP(O)(O)=O)[C@H](O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP2(18:0/20:4): SMILES: O=P(O[C@@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(16:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCCCCCCCCCC
+ - 1,2-dioctanoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O)[C@H]1O)OC(=O)CCCCCCC
+ - PIP3(18:0/20:4): SMILES: O=P(O[C@H]1[C@H](O)[C@H](OP(=O)(O)O)[C@@H](OP(=O)(O)O)[C@H](OP(=O)(O)O)[C@H]1O)(OC[C@H](OC(=O)CCCCCCCCCCCCCCCCC)COC(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC)O
+ - 1,2-dipalmitoyl-sn-glycero-3-phospho-(1D-myo-inositol-3,4,5-trisphosphate): SMILES: CCCCCCCCCCCCCCCC(=O)OC[C@H](COP(O)(=O)O[C@@H]1[C@H](O)[C@H](OP(O)(O)=O)[C@@H](OP(O)(O)=O)[C@H](OP(O)(O)=O
