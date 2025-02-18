@@ -5,7 +5,6 @@ Classifies: CHEBI:17522 alditol
 Classifies: CHEBI:17522 alditol
 """
 from rdkit import Chem
-from rdkit.Chem import Mol
 
 def is_alditol(smiles: str):
     """
@@ -23,23 +22,39 @@ def is_alditol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Check for rings
-    if mol.GetRingInfo().NumRings() > 0:
-        return False, "Molecule contains rings"
+    # Get all carbon atoms
+    carbons = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6]
+    
+    # Minimum 3 carbons (n ≥ 1 in general formula)
+    if len(carbons) < 3:
+        return False, "At least three carbons required"
 
-    # Check for branching (each carbon has <=2 carbon neighbors)
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:  # Carbon atom
-            carbon_neighbors = sum(1 for neighbor in atom.GetNeighbors() if neighbor.GetAtomicNum() == 6)
-            if carbon_neighbors > 2:
-                return False, "Branched carbon chain"
+    # Check linear chain structure
+    end_carbons = 0
+    for atom in carbons:
+        # Count carbon neighbors for branching check
+        carbon_neighbors = sum(1 for n in atom.GetNeighbors() if n.GetAtomicNum() == 6)
+        
+        if carbon_neighbors == 1:
+            end_carbons += 1
+        elif carbon_neighbors != 2:
+            return False, "Branched or non-linear chain"
 
-    # Check all carbons have at least one hydroxyl group
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 6:
-            has_hydroxyl = any(neighbor.GetAtomicNum() == 8 and neighbor.GetTotalNumHs() == 1 
-                              for neighbor in atom.GetNeighbors())
-            if not has_hydroxyl:
-                return False, f"Carbon {atom.GetIdx()+1} has no hydroxyl group"
+    # Must have exactly two end carbons (linear chain)
+    if end_carbons != 2:
+        return False, "Not a linear chain"
 
-    return True, "Acyclic, unbranched polyol with hydroxyls on all carbons"
+    # Check hydroxyl groups
+    for atom in carbons:
+        hydroxyl_count = 0
+        for neighbor in atom.GetNeighbors():
+            # Check for -OH groups (oxygen with single bond and one hydrogen)
+            if neighbor.GetAtomicNum() == 8:
+                bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
+                if bond and bond.GetBondType() == Chem.BondType.SINGLE:
+                    if neighbor.GetTotalNumHs() == 1:
+                        hydroxyl_count += 1
+        if hydroxyl_count != 1:
+            return False, f"Carbon {atom.GetIdx()+1} has {hydroxyl_count} hydroxyl groups"
+
+    return True, "Linear unbranched polyol with one hydroxyl per carbon"
