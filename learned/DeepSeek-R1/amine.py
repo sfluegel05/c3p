@@ -20,55 +20,66 @@ def is_amine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Add hydrogens for accurate valence calculation
-    mol = Chem.AddHs(mol)
+    # Preprocess exclusion patterns
+    nitro_pattern = Chem.MolFromSmarts('[N+](=O)[O-]')  # Nitro groups
+    amide_pattern = Chem.MolFromSmarts('[C,c](=O)[N,n]')  # Amides
+    sulfonamide_pattern = Chem.MolFromSmarts('[S,s](=O)(=O)[N,n]')  # Sulfonamides
+    nitrile_pattern = Chem.MolFromSmarts('[C,c]#[N,n]')  # Nitriles
+    azo_pattern = Chem.MolFromSmarts('[N,n]=[N,n]')  # Azo groups
+    
+    exclusion_matches = set()
+    for pattern in [nitro_pattern, amide_pattern, sulfonamide_pattern, nitrile_pattern, azo_pattern]:
+        if pattern:
+            matches = mol.GetSubstructMatches(pattern)
+            for match in matches:
+                exclusion_matches.update(match)
     
     # Get all nitrogen atoms
     nitrogens = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
     if not nitrogens:
         return False, "No nitrogen atoms present"
     
-    # Preprocess exclusion patterns
-    nitro_pattern = Chem.MolFromSmarts('[N+](=O)[O-]')  # Nitro groups
-    amide_pattern = Chem.MolFromSmarts('C(=O)N')        # Amides
-    nitro_matches = mol.GetSubstructMatches(nitro_pattern)
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    # Add hydrogens for accurate valence calculation
+    mol = Chem.AddHs(mol)
     
     for atom in nitrogens:
-        # Skip aromatic nitrogens (e.g., pyridine, pyrrole)
+        idx = atom.GetIdx()
+        if idx in exclusion_matches:
+            continue  # Skip excluded functional groups
+        
+        # Check if part of aromatic system (e.g., pyridine, pyrrole)
         if atom.GetIsAromatic():
             continue
         
-        # Check if part of nitro group
-        in_nitro = any(atom.GetIdx() in match for match in nitro_matches)
-        if in_nitro:
+        # Check valence and charge conditions
+        total_degree = atom.GetTotalDegree()
+        formal_charge = atom.GetFormalCharge()
+        
+        # Valid amine conditions: either neutral with 3 bonds or +1 charge with 4 bonds
+        if not ((formal_charge == 0 and total_degree == 3) or 
+                (formal_charge == 1 and total_degree == 4)):
             continue
         
-        # Check if part of amide group
-        in_amide = any(atom.GetIdx() in match for match in amide_matches)
-        if in_amide:
-            continue
-        
-        # Check neighbors: only carbon or hydrogen allowed
-        carbon_neighbors = []
+        # Count carbon and hydrogen substituents
+        carbon_count = 0
+        hydrogen_count = 0
         for neighbor in atom.GetNeighbors():
-            if neighbor.GetAtomicNum() not in {1, 6}:  # Only H or C allowed
-                break
             if neighbor.GetAtomicNum() == 6:
-                carbon_neighbors.append(neighbor)
-        else:  # Only executed if loop didn't break (all neighbors are H/C)
-            # Verify number of carbon substituents (1-3)
-            num_carbons = len(carbon_neighbors)
-            if num_carbons not in {1, 2, 3}:
-                continue
+                carbon_count += 1
+            elif neighbor.GetAtomicNum() == 1:
+                hydrogen_count += 1
+            else:  # Non-carbon/hydrogen substituent
+                break
+        else:  # Only executed if all neighbors are C or H
+            if carbon_count < 1:
+                continue  # At least one hydrocarbyl group required
             
-            # Check total valence (carbons + hydrogens) == 3
-            num_h = atom.GetTotalNumHs()
-            if (num_carbons + num_h) != 3:
-                continue
-            
-            # Successfully found valid amine group
-            amine_type = ['primary', 'secondary', 'tertiary'][num_carbons-1]
-            return True, f"Contains {amine_type} amine group"
+            # Verify substituent count matches valence
+            if formal_charge == 0 and (carbon_count + hydrogen_count) == 3:
+                amine_type = ['primary', 'secondary', 'tertiary'][carbon_count - 1]
+                return True, f"Contains {amine_type} amine group"
+            elif formal_charge == 1 and (carbon_count + hydrogen_count) == 4:
+                amine_type = ['primary', 'secondary', 'tertiary'][carbon_count - 1]
+                return True, f"Contains {amine_type} ammonium group"
     
     return False, "No valid amine groups detected"
