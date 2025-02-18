@@ -10,13 +10,13 @@ from rdkit.Chem import BondType
 def is_trichlorobenzene(smiles: str):
     """
     Determines if a molecule is a trichlorobenzene based on its SMILES string.
-    A trichlorobenzene has a benzene ring with exactly three chlorine substituents.
+    A trichlorobenzene has at least one benzene ring with exactly three chlorine substituents.
 
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if molecule is a trichlorobenzene, False otherwise
+        bool: True if molecule contains a benzene ring with three chlorines, False otherwise
         str: Reason for classification
     """
     # Parse SMILES
@@ -45,8 +45,7 @@ def is_trichlorobenzene(smiles: str):
     if not benzene_rings:
         return False, "No benzene ring found"
     
-    # Check each benzene ring for chlorine substituents
-    cl_counts = []
+    # Check each benzene ring for exactly three chlorine substituents
     for ring in benzene_rings:
         cl_count = 0
         for atom_idx in ring:
@@ -58,21 +57,7 @@ def is_trichlorobenzene(smiles: str):
                     continue
                 if neighbor.GetSymbol() == 'Cl':
                     cl_count += 1
-        cl_counts.append(cl_count)
+        if cl_count == 3:
+            return True, "Benzene ring with three chlorine substituents found"
     
-    # Check if exactly one benzene ring has three Cls and others have zero
-    valid_ring_found = False
-    for count in cl_counts:
-        if count == 3:
-            if valid_ring_found:
-                # Already found another valid ring, invalid
-                return False, "Multiple benzene rings with three chlorines"
-            valid_ring_found = True
-        elif count > 0:
-            # Other benzene rings have Cls
-            return False, "Other benzene rings have chlorines"
-    
-    if valid_ring_found:
-        return True, "Benzene ring with three chlorine substituents found"
-    else:
-        return False, "No benzene ring with three chlorines"
+    return False, "No benzene ring with three chlorines"
