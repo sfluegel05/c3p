@@ -40,8 +40,6 @@ def is_triradylglycerol(smiles: str):
     substituent_types = []
     for o_idx in o_indices:
         o_atom = mol.GetAtomWithIdx(o_idx)
-        if o_atom.GetDegree() != 1:
-            return False, f"Oxygen {o_idx} has multiple bonds"
         
         neighbor = o_atom.GetNeighbors()[0]  # Carbon attached to O
         if neighbor.GetAtomicNum() != 6:
@@ -52,7 +50,7 @@ def is_triradylglycerol(smiles: str):
         for bond in neighbor.GetBonds():
             if bond.GetBondType() == Chem.BondType.DOUBLE:
                 other_atom = bond.GetOtherAtom(neighbor)
-                if other_atom.GetAtomicNum() == 8:  # Double bond to oxygen
+                if other_atom.GetAtomicNum() == 8:  # Double bond to oxygen (carbonyl)
                     acyl = True
                     break
         if acyl:
