@@ -1,22 +1,18 @@
 """
 Classifies: CHEBI:27933 beta-lactam antibiotic
 """
-Testing this code with the example SMILES:
+</think>
 
-For example, benzylpenicillin (SMILES: N12C([C@H]([C@]1(SC([C@@H]2C(O)=O)(C)C)[H])NC(CC3=CC=CC=C3)=O)=O) should match the beta-lactam pattern. The code should return True.
+Okay, I need to create a function called is_beta_lactam_antibiotic that checks if a SMILES string represents a beta-lactam antibiotic. The definition says it's an organonitrogen heterocyclic antibiotic containing a beta-lactam ring. 
 
-However, the SMARTS pattern might not account for all variations. For instance, in some cases, the carbonyl might be part of a fused ring. But the SMARTS pattern should still match the four-membered ring portion.
+First, the beta-lactam ring is a four-membered ring with one nitrogen and a carbonyl group. The SMARTS pattern for that should be something like a four-membered ring where one atom is nitrogen (like [#7]) and another is a carbonyl carbon (C=O). So the SMARTS could be "[#7]1-C-C(=O)-C-1" or similar. Wait, but the ring might have different connectivity. Maybe using a more flexible pattern like "[#7]1~*~C(=O)~*1" where ~ allows any bond type.
 
-Another possible issue: the SMARTS pattern might not account for different hybridization states or charges. For example, the nitrogen might be in a different valence state. Using [#7] (any nitrogen) should cover that.
+Next, the molecule must be an antibiotic. But how to check that programmatically? Maybe look for common antibiotic substructures or functional groups often present in antibiotics. Alternatively, since the problem states "organonitrogen heterocyclic", we can check for a heterocycle containing nitrogen. The beta-lactam ring itself is a heterocycle, so maybe that's sufficient if combined with other typical features.
 
-In the code, after checking for the beta-lactam ring, it returns True. If that's the case, then the function should correctly identify the examples as beta-lactam antibiotics.
+So the steps would be:
+1. Check for the presence of a beta-lactam ring.
+2. Ensure it's an antibiotic. Since antibiotic activity is hard to determine from structure alone, maybe check for common substituents like a carboxylate group (common in penicillins and cephalosporins) or other groups often present in beta-lactams.
 
-But wait, the problem states that the function should return a boolean and a reason. The previous code's error was a syntax error, which this code avoids by proper formatting.
+Wait, the examples given (like benzylpenicillin) have a carboxylate group. Maybe requiring a carboxylic acid or its derivative (like ester) could help. But some beta-lactams might have different groups. Alternatively, maybe just the presence of the beta-lactam ring is enough, given the problem's definition.
 
-Thus, this code should work. Let's check for possible errors. The SMARTS "[#7]1-C(=O)-[#6]-[#6]-1" should correctly identify the beta-lactam ring. If that's the case, then the function will return True for all the example SMILES provided, which contain a beta-lactam ring.
-
-But wait, in the case of aztreonam, which is a monobactam (a single beta-lactam ring), the SMARTS should match. Let's look at its SMILES: C[C@H]1[C@H](NC(=O)C(=N/OC(C)(C)C(O)=O)\c2csc([NH3+])n2)C(=O)N1S([O-])(=O)=O. The beta-lactam ring here is N-C(=O)-C-C, forming a four-membered ring. So the SMARTS should match.
-
-Another example: tazobactam's SMILES is C[C@]1(Cn2ccnn2)[C@@H](N2[C@@H](CC2=O)S1(=O)=O)C(O)=O. The beta-lactam ring is part of the structure. The SMARTS should find it.
-
-Thus, the code should work. The previous error was due to invalid characters in the code (like the long dashes in the examples), which are now removed. The current code only includes the necessary parts.
+But the definition says "organonitrogen heterocyclic antibiotic". So the molecule must be an antibiotic (which is a biological activity), but how to determine that from structure? Perhaps we can't directly, so maybe the presence of the beta-lactam ring is the main criterion. However, some molecules might have a beta-lactam ring but not be antibiotics. But according to the problem statement, the class
