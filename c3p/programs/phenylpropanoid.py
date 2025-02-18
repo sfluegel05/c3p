@@ -15,41 +15,35 @@ def is_phenylpropanoid(smiles: str):
     Returns:
         bool: True if molecule is a phenylpropanoid, False otherwise
         str: Reason for classification
-    """    
+    """
     # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Key aromatic systems common in many phenylpropanoids
+    # Refined patterns for key aromatic systems in phenylpropanoids
     aromatic_system_patterns = [
-        Chem.MolFromSmarts("c1ccccc1"),  # Phenyl
-        Chem.MolFromSmarts("c1ccccc1C=C"),  # Phenyl with propene linkage
-        Chem.MolFromSmarts("c1ccc2c(c1)cccc2"),  # Naphthalene-like
-        Chem.MolFromSmarts("c1c2c(ccc1)c(=O)oc2"),  # Flavonoid core
-        Chem.MolFromSmarts("c1c2c(ccc1)oc(=O)c2"),  # Coumarin
-        Chem.MolFromSmarts("c1cc(c2cocc2)ccc1"),  # Coumarin
-        Chem.MolFromSmarts("c1ccc(cc1)-C=C-C(=O)"),  # Cinnamic acid-like
-        Chem.MolFromSmarts("c1c(oc2ccccc2)c(cc1)"),  # Chromone
-    ]
-    
-    # Check for aromatic systems
-    if not any(mol.HasSubstructMatch(pattern) for pattern in aromatic_system_patterns):
-        return False, "No suitable aromatic system found"
-
-    # Common functional groups in phenylpropanoids
-    functional_group_patterns = [
-        Chem.MolFromSmarts("[OX2H]"),    # Hydroxyl group (phenolic OH)
-        Chem.MolFromSmarts("C(=O)C"),    # Carbonyl groups
-        Chem.MolFromSmarts("C(=O)OC"),   # Ester linkage
-        Chem.MolFromSmarts("Oc1ccccc1"), # Phenolic hydroxyl directly on aromatic rings
-        Chem.MolFromSmarts("C=C[OX2]"),  # Enolic or diradical oxygens
-        Chem.MolFromSmarts("C(C)=C"),    # Alkenyl (from side propane chain)
-        Chem.MolFromSmarts("OCc1ccc(cc1)"),  # Ether linkage to aromatic
+        Chem.MolFromSmarts("c1ccccc1C=C"),   # Basic phenylpropane structure
+        Chem.MolFromSmarts("c1ccccc1CO"),    # Phenyl with hydroxymethyl linkage (common in chromen-based compounds)
+        Chem.MolFromSmarts("c1ccc2c(c1)cc(=O)oc2"),  # Core flavonoid/coumarin
     ]
 
-    # Check for functional groups
-    if not any(mol.HasSubstructMatch(pattern) for pattern in functional_group_patterns):
-        return False, "No common phenylpropanoid functional groups found"
+    # Check for aromatic backbone
+    backbone_match = any(mol.HasSubstructMatch(pattern) for pattern in aromatic_system_patterns)
+    if not backbone_match:
+        return False, "No suitable phenylpropane skeleton found"
+
+    # Specific functional group and subclass patterns
+    subclass_patterns = [
+        Chem.MolFromSmarts("c1c(oc2ccccc2)c(cc1)"),  # Flavone/core chromone scaffold
+        Chem.MolFromSmarts("c1c(oc2ccc(cc2)o1)"),    # Coumarin or 2H-chromen-2-one flag
+        Chem.MolFromSmarts("Oc1ccc(cc1)C=C"),        # Phenolic compound with propenyl linkage
+    ]
+
+    # Check if any subclass pattern matches
+    subclass_match = any(mol.HasSubstructMatch(pattern) for pattern in subclass_patterns)
     
-    return True, "Structure contains an aromatic system and functional groups characteristic of a phenylpropanoid."
+    if not subclass_match:
+        return False, "No specific phenylpropanoid subclass structures found"
+
+    return True, "Structure contains a phenylpropane skeleton with functional groups typical of phenylpropanoids."
