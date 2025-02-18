@@ -1,277 +1,46 @@
 """
 Classifies: CHEBI:61703 nonclassic icosanoid
 """
- - 5,6,15S-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-oxo-lipoxin A4: SMILES: CCCCCC(=O)\C=C\C=C/C=C/C=C/[C@@H](O)[C@@H](O)CCCC(O)=O
- - 8,9-epoxy-20-hydroxy-(5Z,11Z,14Z)-icosatrienoic acid: SMILES: C(CCCO)C/C=C\C/C=C\CC1C(C/C=C\CCCC(O)=O)O1
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5,6-epoxy-20-hydroxy-(8Z,11Z,14Z)-icosatrienoic acid: SMILES: C(CCCO)C/C=C\C/C=C\C/C=C\CC1C(CCCC(O)=O)O1
- - 15-oxo-13-epi-lipoxin A4: SMILES: CCCCCC(=O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 8,9-epoxy-20-hydroxy-(5Z,11Z,14Z)-icosatrienoic acid: SMILES: C(CCCO)C/C=C\C/C=C\CC1C(C/C=C\CCCC(O)=O)O1
- - 14,15-epoxy-20-hydroxy-(5Z,8Z,11Z)-icosatrienoic acid: SMILES: C(CCCO)CC1C(C/C=C\C/C=C\C/C=C\CCCC(O)=O)O1
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5(S),6(S),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 5,6-epoxy-20-hydroxy-(8Z,11Z,14Z)-icosatrienoic acid: SMILES: C(CCCO)C/C=C\C/C=C\C/C=C\CC1C(CCCC(O)=O)O1
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6-epoxy-20-hydroxy-(8Z,11Z,14Z)-icosatrienoic acid: SMILES: C(CCCO)C/C=C\C/C=C\C/C=C\CC1C(CCCC(O)=O)O1
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@H](O)CCCCC
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 15-epi-lipoxin A4: SMILES: CCCCC[C@H](O)\C=C\C=C/C=C/C=C/[C@H](O)[C@H](O)CCCC(O)=O
- - 5(S),6(R)-Lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC)=O)[C@H](O)/C=C/C=C/C=C\C=C\[C@@H](O)CCCCC
- - 15-epi-lipoxin B4: SMILES: CCCCC[C@@H](O)[C@H](O)\C=C\C=C\C=C/C=C/[C@@H](O)CCCC(O)=O
- - 5,6,15-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C(C(CCCC(=O)O)O)O
- - 5(S),6(R),15(S)-trihydroxy-7E,9E,11Z,13E,17Z-icosapentaenoic acid: SMILES: C(\C=C/C=C/[C@H](C/C=C\CC)O)=C/C=C/C([C@H](CCCC(=O)O)O)O
- - 15-epi-lipoxin A4 methyl ester: SMILES: O[C@@H](CCCC(OC
+"""
+Classifies: nonclassic icosanoid
+"""
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+
+def is_nonclassic_icosanoid(smiles: str):
+    """
+    Determines if a molecule is a nonclassic icosanoid based on its SMILES string.
+    Nonclassic icosanoids are C20 fatty acid derivatives with oxygenation, excluding prostanoids and leukotrienes.
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+
+    # Check for carboxylic acid or ester group
+    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")  # Carboxylic acid
+    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2][#6]")  # Ester
+    if not mol.HasSubstructMatch(acid_pattern) and not mol.HasSubstructMatch(ester_pattern):
+        return False, "No carboxylic acid or ester group"
+
+    # Check longest carbon chain is 20 (C20 backbone)
+    longest_chain = rdMolDescriptors.CalcLongestChain(mol)
+    if longest_chain != 20:
+        return False, f"Longest chain length {longest_chain} ≠ 20"
+
+    # Check oxygenation: at least one hydroxyl, epoxy, or ketone (excluding acid/ester)
+    hydroxyl = mol.HasSubstructMatch(Chem.MolFromSmarts("[OH]"))
+    epoxy = mol.HasSubstructMatch(Chem.MolFromSmarts("C1OC1"))
+    ketone = mol.HasSubstructMatch(Chem.MolFromSmarts("[CX3]=[OX1]"))  # Exclude acid/ester
+    if not (hydroxyl or epoxy or ketone):
+        return False, "No hydroxyl, epoxy, or ketone groups"
+
+    # Exclude prostanoids (cyclopentane ring)
+    if mol.HasSubstructMatch(Chem.MolFromSmarts("C1C(C)CCC1")):
+        return False, "Contains cyclopentane ring (prostanoid)"
+
+    # Exclude leukotrienes (conjugated trienes: three consecutive double bonds)
+    triene_pattern = Chem.MolFromSmarts("C=C-C=C-C=C")
+    if mol.HasSubstructMatch(triene_pattern):
+        return False, "Contains conjugated triene (leukotriene)"
+
+    return True, "C20 fatty acid derivative with oxygenation, not prostanoid/leukotriene"
