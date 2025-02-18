@@ -1,256 +1,42 @@
 """
 Classifies: CHEBI:26377 pterocarpans
 """
- - (6aR,11aR)-3,9-Dimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(=C4)OC
- - 3,4,9-Trimethoxypterocarpan: SMILES: O1C2C(C3=C1C=C(OC)C=C3)COC4=C2C=CC(OC)=C4OC
- - (6aR,11aR)-3,8-dihydroxy-9-methoxypterocarpan: SMILES: OC1=C2[C@@H]3COC4=C([C@@H]3OC2=C(C=C1)OC)C=CC(O)=C4
- - 3,9-Dihydroxy-4-methoxypterocarpan: SMILES: O1C2C(C3=C1C=C(OC)C=C3)COC4=C2C=CC(O)=C4O
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4-Dihydroxy-9-methoxypterocarpan: SMILES: OC1=C2[C@@H]3COC4=C([C@@H]3OC2=C(C=C1)OC)C=CC(O)=C4
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,9-Dimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(=C4)OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C@@H]3COC4=C([C@@H]3O2)C=CC(OC)=C4OC
- - (6aR,11aR)-3,4,9-Trimethoxypterocarpan: SMILES: COC1=CC2=C(C=C1)[C
+"""
+Classifies: CHEBI:26308 pterocarpans
+"""
+from rdkit import Chem
+
+def is_pterocarpans(smiles: str):
+    """
+    Determines if a molecule is a pterocarpan based on its SMILES string.
+    Pterocarpans have a 6a,11a-dihydro-6H-[1]benzofuro[3,2-c]chromene skeleton.
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        bool: True if molecule is a pterocarpan, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # SMARTS pattern for the pterocarpan core skeleton:
+    # Benzofuro[3,2-c]chromene with 6a,11a-dihydro (two adjacent CH2 groups in the chromene part)
+    pterocarpan_core = Chem.MolFromSmarts(
+        "[O]1c2ccccc2C2[C@@H]1C1c3c(cccc3)O[C@H]1C2"  # Accounts for stereochemistry in fused rings
+    )
+    
+    # Check if the core structure is present
+    if mol.HasSubstructMatch(pterocarpan_core):
+        return True, "Contains benzofurochromene skeleton with 6a,11a-dihydro structure"
+    
+    # Alternative check without stereochemistry if the first fails
+    alt_core = Chem.MolFromSmarts(
+        "O1c2ccccc2C2C1C1c3c(cccc3)OC1C2"  # Non-stereospecific version
+    )
+    if mol.HasSubstructMatch(alt_core):
+        return True, "Contains benzofurochromene skeleton (non-stereo)"
+    
+    return False, "Lacks pterocarpan core structure"
