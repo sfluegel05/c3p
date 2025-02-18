@@ -4,10 +4,9 @@ Classifies: CHEBI:76575 monoradylglycerol
 """
 Classifies: monoradylglycerol
 Definition: Any lipid that is glycerol bearing a single acyl, alkyl or alk-1-enyl substituent at an unspecified position.
-In our algorithm, we search for a glycerol backbone (a series of three contiguous sp3 carbons) in which 
-each carbon bears one oxygen substituent. In a free glycerol all three oxygens would be –OH; here we demand 
-that exactly one oxygen lacks a hydrogen (“substituted” by an acyl/alkyl group), while the other two are free –OH.
-Furthermore, the substituent connected via the substituted oxygen is required to be a carbon-based chain of minimum length.
+In our algorithm we search for a glycerol-like backbone – three sp3 carbons connected in a line – where each carbon bears one oxygen substituent.
+Exactly one of those three oxygens is “substituted” (i.e. it has no attached hydrogen) and the connected substituent must be carbon-based,
+acyclic, and contain at least a minimal number of connected carbon atoms.
 """
 
 from rdkit import Chem
@@ -16,9 +15,8 @@ def is_monoradylglycerol(smiles: str):
     """
     Determines if a molecule is a monoradylglycerol based on its SMILES string.
     A monoradylglycerol is defined as glycerol bearing a single acyl/alkyl/alk-1-enyl substituent.
-    In our model, we look for a three-carbon glycerol-like backbone where each carbon bears one oxygen.
-    Exactly one of these oxygens must be substituted (i.e. not free OH) and its attached group must be carbon-based 
-    with a minimum chain length (here >= 4 carbons).
+    Here we attempt to find a free glycerol (a three-carbon chain with each carbon bearing one oxygen), where exactly
+    one of the oxygens is substituted (has no hydrogen) and the attached substituent comes from a carbon chain of minimal length.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -27,112 +25,131 @@ def is_monoradylglycerol(smiles: str):
         bool: True if the molecule is classified as a monoradylglycerol, False otherwise.
         str: A reason for the classification.
     """
-    
-    # Parse the SMILES string to a molecule
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Helper function: recursively compute the longest chain of carbons starting from a given carbon atom.
-    def longest_carbon_chain(atom, parent_idx, visited):
-        # Only count carbon atoms
-        if atom.GetAtomicNum() != 6:
-            return 0
-        visited.add(atom.GetIdx())
-        max_length = 1  # count current atom
-        for nbr in atom.GetNeighbors():
-            if nbr.GetIdx() == parent_idx:
-                continue
-            if nbr.GetAtomicNum() == 6 and nbr.GetIdx() not in visited:
-                length = 1 + longest_carbon_chain(nbr, atom.GetIdx(), visited.copy())
-                if length > max_length:
-                    max_length = length
-        return max_length
 
-    # Iterate over atoms to find a candidate for the central (middle) carbon of the glycerol backbone.
+    # Helper: Given a starting atom, traverse (DFS) over connected carbons (atomic number 6)
+    # that are not part of the glycerol backbone. We also require that none is in a ring.
+    def count_carbon_chain(start_atom, blocked_ids):
+        visited = set()
+        def dfs(atom):
+            if atom.GetAtomicNum() != 6:
+                return 0
+            # if any atom in the fragment is in a ring, we abort to avoid sugar-like fragments.
+            if atom.IsInRing():
+                return -100  # mark as invalid fragment
+            visited.add(atom.GetIdx())
+            max_count = 1
+            for nbr in atom.GetNeighbors():
+                if nbr.GetIdx() in blocked_ids or nbr.GetIdx() in visited:
+                    continue
+                if nbr.GetAtomicNum() == 6:
+                    cnt = 1 + dfs(nbr)
+                    if cnt > max_count:
+                        max_count = cnt
+            return max_count
+        return dfs(start_atom)
+
+    # The minimal carbon chain length we demand for the substituent.
+    # (Acetate has two carbons so we require at least 2.)
+    MIN_CHAIN_LENGTH = 2
+
+    # Iterate over atoms to find a candidate for the middle carbon of a glycerol backbone.
+    # In free glycerol (or monoacyl/monoalkyl glycerol), the backbone is CH2-CHOH-CH2.
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 6:
             continue
-        # Only consider sp3 carbons (typical for glycerol backbone)
+        # Only consider sp3 carbons
         if atom.GetHybridization().name != "SP3":
             continue
-        
-        # Identify sp3 carbon neighbors of the candidate atom.
-        carbon_neighbors = [nbr for nbr in atom.GetNeighbors() 
-                            if nbr.GetAtomicNum() == 6 and nbr.GetHybridization().name == "SP3"]
-        if len(carbon_neighbors) < 2:
+        # Candidate for the middle: must have exactly two sp3 carbon neighbors.
+        nbr_carbons = [nbr for nbr in atom.GetNeighbors() 
+                       if nbr.GetAtomicNum()==6 and nbr.GetHybridization().name=="SP3"]
+        if len(nbr_carbons) != 2:
             continue
-        
-        # Consider each pair of neighboring carbons as potential backbone ends (c1 and c3).
-        for i in range(len(carbon_neighbors)):
-            for j in range(i+1, len(carbon_neighbors)):
-                c1 = carbon_neighbors[i]
-                c3 = carbon_neighbors[j]
-                # For a linear glycerol backbone, we expect that c1 and c3 are not directly bonded.
-                if mol.GetBondBetweenAtoms(c1.GetIdx(), c3.GetIdx()):
-                    continue  # skip if they are directly bonded (which might indicate a ring or a branched system)
-                
-                # Candidate backbone: c1 - atom (middle) - c3
-                backbone_atoms = [c1, atom, c3]
-                # For each backbone carbon, look for exactly one oxygen neighbor that is not part of the backbone.
-                oxygen_neighbors = []
-                valid_backbone = True
-                for carbon in backbone_atoms:
-                    # Gather oxygen neighbors not in the backbone.
-                    o_neighbors = [nbr for nbr in carbon.GetNeighbors() 
-                                   if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in [a.GetIdx() for a in backbone_atoms]]
-                    if len(o_neighbors) != 1:
-                        valid_backbone = False
-                        break
-                    oxygen_neighbors.append(o_neighbors[0])
-                if not valid_backbone:
-                    continue
-                
-                # Count free hydroxyl oxygens and those that are substituted.
-                # We assume a free -OH will have at least one hydrogen (implicit H counts via GetTotalNumHs).
-                free_OH_count = 0
-                substituted_index = -1
-                for idx, o_atom in enumerate(oxygen_neighbors):
-                    if o_atom.GetTotalNumHs() > 0:
-                        free_OH_count += 1
-                    else:
-                        substituted_index = idx
-                # We require exactly two free OH groups and one substituted oxygen.
-                if free_OH_count != 2 or substituted_index < 0:
-                    continue
-                
-                # Now examine the substituent group attached via the substituted oxygen.
-                sub_oxygen = oxygen_neighbors[substituted_index]
-                # For this oxygen, choose neighbors that are not the associated backbone carbon.
-                backbone_ids = [a.GetIdx() for a in backbone_atoms]
-                sub_neighbors = [nbr for nbr in sub_oxygen.GetNeighbors() if nbr.GetIdx() not in backbone_ids]
-                if not sub_neighbors:
-                    continue
-                # Ideally the substituent is carbon-based.
-                sub_atom = sub_neighbors[0]
-                if sub_atom.GetAtomicNum() != 6:
-                    continue
-                # Calculate the longest carbon chain starting from the substituent atom.
-                chain_length = longest_carbon_chain(sub_atom, sub_oxygen.GetIdx(), set())
-                min_chain_length = 4  # heuristic minimum chain length for a valid substituent
-                if chain_length < min_chain_length:
-                    continue
-                
-                reason = (f"Found glycerol backbone (atoms {', '.join(str(a.GetIdx()) for a in backbone_atoms)}) with substitution "
-                          f"at position {substituted_index+1}; substituent chain length = {chain_length}, free -OH groups = 2.")
-                return True, reason
+        # Also, the two neighbor carbons should not be directly bonded (to ensure a linear chain)
+        if mol.GetBondBetweenAtoms(nbr_carbons[0].GetIdx(), nbr_carbons[1].GetIdx()):
+            continue
 
-    return False, "No glycerol backbone with a single substituted oxygen (and two free OH groups) found."
+        # Define backbone as [terminal1, middle, terminal2]
+        # For ease of reporting, assign positions 1, 2, 3.
+        backbone = [nbr_carbons[0], atom, nbr_carbons[1]]
 
-# Example usage and testing of several SMILES strings representing monoradylglycerols:
+        # Further check: For a glycerol backbone, we expect each backbone carbon to have only one oxygen neighbor (not in the backbone).
+        oxygen_neighbors = []  # will be parallel to backbone so that index 0 is from position 1, etc.
+        valid_backbone = True
+        backbone_ids = set(a.GetIdx() for a in backbone)
+        for carbon in backbone:
+            # Get oxygen neighbors that are not in the backbone
+            oxygens = [nbr for nbr in carbon.GetNeighbors() 
+                       if nbr.GetAtomicNum() == 8 and nbr.GetIdx() not in backbone_ids]
+            if len(oxygens) != 1:
+                valid_backbone = False
+                break
+            oxygen_neighbors.append(oxygens[0])
+        if not valid_backbone:
+            continue
+
+        # Count free -OH groups vs substituted oxygen.
+        free_OH_count = 0
+        substituted_index = -1
+        for idx, o_atom in enumerate(oxygen_neighbors):
+            # We rely on GetTotalNumHs: a free hydroxyl oxygen should have at least one attached H.
+            # (Note: this may sometimes be implicit.)
+            if o_atom.GetTotalNumHs() and o_atom.GetTotalNumHs() > 0:
+                free_OH_count += 1
+            else:
+                substituted_index = idx
+        # Exactly two free OH and one substituted oxygen required.
+        if free_OH_count != 2 or substituted_index < 0:
+            continue
+
+        # Now examine the substituent attached via the substituted oxygen.
+        sub_o = oxygen_neighbors[substituted_index]
+        # Which backbone carbon is this oxygen attached to?
+        parent_carbon = None
+        for nbr in sub_o.GetNeighbors():
+            if nbr.GetIdx() in backbone_ids:
+                parent_carbon = nbr
+                break
+        if parent_carbon is None:
+            continue
+
+        # Among the oxygen's neighbors, choose the one that is not the backbone carbon.
+        sub_neighbors = [nbr for nbr in sub_o.GetNeighbors() if nbr.GetIdx() not in backbone_ids]
+        if not sub_neighbors:
+            continue
+        sub_anchor = sub_neighbors[0]
+        if sub_anchor.GetAtomicNum() != 6:
+            continue
+
+        # Perform a DFS starting from sub_anchor following only carbon atoms that are NOT in the backbone.
+        chain_length = count_carbon_chain(sub_anchor, blocked_ids=backbone_ids)
+        # Abort if the DFS encountered a ring (indicated by negative count)
+        if chain_length < MIN_CHAIN_LENGTH:
+            continue
+
+        pos = substituted_index + 1  # positions: 1 (first terminal), 2 (middle), or 3 (second terminal)
+
+        reason = (f"Found glycerol backbone (atoms {', '.join(str(a.GetIdx()) for a in backbone)}) with substitution "
+                  f"at position {pos}; substituent chain length = {chain_length}, free -OH groups = 2.")
+        return True, reason
+
+    return False, "No glycerol backbone with one substituted oxygen (and two free –OH groups) attached to a valid acyl/alkyl chain was found."
+
+
+# Example usage and testing with several SMILES strings:
 if __name__ == '__main__':
     test_smiles = [
-        "O=C(OC[C@@H](O)CO)CCCCCCC/C=C(\\CCCCCCCC)/C",  # 2,3-dihydroxypropyl (Z)-10-methyloctadec-9-enoate
-        "CCCCCCCC(=O)OCC(O)CO",                         # 1-monooctanoylglycerol
-        "CCCCCCCCCCCCCCCCCC(=O)OC[C@H](O)CO",           # 3-stearoyl-sn-glycerol
-        "O(C(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)C[C@@H](O)CO",  # MG(22:2(13Z,16Z)/0:0/0:0)
-        "O(C(=O)CCCCCCCCCCCCCCCCCCCCC)C[C@@H](O)CO",     # MG(0:0/22:0/0:0)
-        "CCCCCCCCCCCCCCCCCCCOC[C@@H](O)CO",              # 1-O-octadecyl-sn-glycerol
+        "O=C(OC[C@@H](O)CO)CCCCCCC/C=C(\\CCCCCCCC)/C",  # 2,3-dihydroxypropyl (Z)-10-methyloctadec-9-enoate (expected TRUE)
+        "CCCCCCCC(=O)OCC(O)CO",                         # 1-monooctanoylglycerol (expected TRUE)
+        "CCCCCCCCCCCCCCCCCC(=O)OC[C@H](O)CO",           # 3-stearoyl-sn-glycerol (expected TRUE)
+        "O(C(=O)CCCCCCCCCCC/C=C\\C/C=C\\CCCCC)C[C@@H](O)CO",  # MG(22:2(13Z,16Z)/0:0/0:0) (expected TRUE)
+        "O(C[C@@H](O)CO)C(=O)C",                        # (R)-glycerol 1-acetate (expected TRUE)
+        "O(CC(O)CO)C(=O)CC",                           # Glycerol 1-propanoate (expected TRUE)
+        # Some complex structures that should not be classified as monoradylglycerol:
+        "O([C@@H]1[C@@H](NC(=O)C)[C@@H](O[C@@H]([C@H]1O)CO)OC[C@H]2O[C@@H](O)[C@H](NC(=O)C)[C@@H](O)[C@H]2O)",  # example sugar derivative
     ]
     for s in test_smiles:
         result, reason = is_monoradylglycerol(s)
