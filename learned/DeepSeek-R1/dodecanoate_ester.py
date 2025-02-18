@@ -9,8 +9,8 @@ from rdkit.Chem import AllChem
 
 def is_dodecanoate_ester(smiles: str):
     """
-    Determines if a molecule is a dodecanoate ester based on its SMILES string.
-    A dodecanoate ester is a fatty acid ester where the carboxylic acid component is lauric acid (dodecanoic acid).
+    Determines if a molecule is a dodecanoate ester (laurate ester) based on its SMILES string.
+    A dodecanoate ester contains an ester group where the acyl chain is from lauric acid (12 carbons).
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -23,8 +23,8 @@ def is_dodecanoate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define SMARTS pattern for ester group [O]-C(=O)-C
-    ester_pattern = Chem.MolFromSmarts('[OX2]-[C](=[OX1])-[!O]')  # O connected to carbonyl, which is connected to non-O (acyl chain)
+    # Define SMARTS pattern for ester group O-C(=O)-C (acyl chain start)
+    ester_pattern = Chem.MolFromSmarts('[OX2]-C(=O)-[!O]')  # O connected to carbonyl, then non-O atom
     ester_matches = mol.GetSubstructMatches(ester_pattern)
     
     if not ester_matches:
@@ -32,7 +32,8 @@ def is_dodecanoate_ester(smiles: str):
     
     # Check each ester group for C12 acyl chain
     for match in ester_matches:
-        # Match indices: O, C=O, next atom (start of acyl chain)
+        if len(match) != 3:
+            continue  # Skip invalid matches (shouldn't occur with this pattern)
         o_idx, co_idx, acyl_start_idx = match
         
         acyl_start_atom = mol.GetAtomWithIdx(acyl_start_idx)
@@ -50,7 +51,7 @@ def is_dodecanoate_ester(smiles: str):
                 nbr_idx = neighbor.GetIdx()
                 if nbr_idx in visited:
                     continue
-                if neighbor.GetAtomicNum() == 6:
+                if neighbor.GetAtomicNum() == 6 and neighbor.GetTotalNumHs() >= 2:  # Chain carbons
                     next_carbons.append(neighbor)
             
             # Check for unbranched chain
@@ -60,7 +61,7 @@ def is_dodecanoate_ester(smiles: str):
             visited.add(current.GetIdx())
             count += 1
             
-            if count > 11:  # Prevent infinite loops
+            if count > 11:  # Safety break for long chains
                 break
         
         if count == 11:  # 11 carbons after carbonyl (total 12 with carbonyl)
