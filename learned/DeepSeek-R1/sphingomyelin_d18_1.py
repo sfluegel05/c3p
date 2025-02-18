@@ -1,190 +1,75 @@
 """
 Classifies: CHEBI:17636 sphingomyelin d18:1
 """
- - N-palmitoylsphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](COP([O-])(=O)OCC[N+](C)(C)C)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-(15Z-tetracosenoyl)sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCCCCCCCCCCCCCCCCCCCC)(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@H](/C=C/CCCCCCCCCCCCC)O
- - N-[(13Z)-docosenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadec-9-enoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-arachidoylsphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP([O-])(=O)OCC[N+](C)(C)C)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-behenoylsphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCCCCCCCCCCC(=O)N[C@@H](COP([O-])(=O)OCC[N+](C)(C)C)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-palmitoyl-sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCCCCC(=O)N[C@@H](COP([O-])(=O)OCC[N+](C)(C)C)[C@H](O)\C=C\CCCCCCCCCCCCC
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-(15Z-tetracosenoyl)sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-(11Z-icosenoyl)-sphingosine-1-phosphocholine: SMILES: C(CCCCCCCCCC)CC\C=C\[C@@H](O)[C@@H](NC(CCCCCCCCC/C=C\CCCCCCCC)=O)COP(=O)([O-])OCC[N+](C)(C)C
- - N-(17Z-hexacosenoyl)-sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-(9Z-hexadecenoyl)sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(15Z)-tetracosenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCCCC
- - N-pentacosanoylsphingosine-1-phosphocholine: SMILES: C(CCCCCCCCCCCCCCCCCCCCCCCC)(N[C@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)COP(OCC[N+](C)(C)C)(=O)[O-])=O
- - N-[(9Z)-octadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCCCCCCCCCCCCCCCCCCCC)(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@H](/C=C/CCCCCCCCCCCCC)O
- - N-[(9Z)-octadec-9-enoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCC\C=C/CCCCCC
- - N-[(9Z)-3-hydroxyhexadec-9-enoyl]sphingosine-1-phosphocholine: SMILES: C(\CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)=C\CCCCCC
- - N-[(13Z,16Z)-3-hydroxydocosa-13,16-enoyl]sphingosine-1-phosphocholine: SMILES: C(=C\C/C=C\CCCCC)\CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(15Z)-3-hydroxytetracos-15-enoyl]sphingosine-1-phosphocholine: SMILES: C(C/C=C\CCCCCCCC)CCCCCCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O
- - N-[(13Z)-3-hydroxydocos-13-enoyl]sphingosine-1-phosphocholine: SMILES: C(CCCCCC(CC(=O)N[C@@H](COP(OCC[N+](C)(C)C)(=O)[O-])[C@@H](\C=C\CCCCCCCCCCCCC)O)O)CCC/C=C\CCCCCCCC
- - N-[(13Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(15Z)-tetracosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docosenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-octadecenoyl]sphing-4-enine-1-phosphocholine: SMILES: [H][C@@](O)(\C=C\CCCCCCCCCCCCC)[C@]([H])(COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCC\C=C/CCCCCCCC
- - N-[(13Z)-docos-13-enoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCCCC\C=C\[C@@H](O)[C@H](COP([O-])(=O)OCC[N+](C)(C)C)NC(=O)CCCCCCCCCCCC\C=C/CCCCCCCC
- - N-[(9Z)-hexadecenoyl]sphingosine-1-phosphocholine: SMILES: CCCCCCCCCCC
+"""
+Classifies: CHEBI: sphingomyelin d18:1
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_sphingomyelin_d18_1(smiles: str):
+    """
+    Determines if a molecule is a sphingomyelin d18:1 based on its SMILES string.
+    A sphingomyelin d18:1 has a sphingosine backbone (18 carbons, one double bond at position 4)
+    with a phosphocholine group and an amide-linked fatty acid.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a sphingomyelin d18:1, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+
+    # Check for phosphocholine group: O-P(=O)(O-)OCC[N+](C)(C)C
+    phosphocholine_pattern = Chem.MolFromSmarts("[O][P](=[O])([O-])OCC[N+]($(C)(C)C)")
+    if not mol.HasSubstructMatch(phosphocholine_pattern):
+        return False, "Missing phosphocholine group"
+
+    # Check for amide-linked fatty acid: N-C(=O)
+    amide_pattern = Chem.MolFromSmarts("[NH][C](=O)")
+    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    if not amide_matches:
+        return False, "No amide bond found"
+
+    # Check sphingosine backbone: two hydroxyls and a trans double bond in the backbone
+    # The core structure: [C@H](O)[C@@H](/C=C/CCCCCCCCCCCCC)N
+    sphingosine_pattern = Chem.MolFromSmarts("[C@H]([OH])[C@@H](/C=C/CCCCCCCCCCCCC)N")
+    if not mol.HasSubstructMatch(sphingosine_pattern):
+        # Try without stereochemistry
+        sphingosine_pattern_fallback = Chem.MolFromSmarts("[CH]([OH])[CH](/C=C/CCCCCCCCCCCCC)N")
+        if not mol.HasSubstructMatch(sphingosine_pattern_fallback):
+            return False, "Sphingosine backbone not found"
+
+    # Verify the amide is connected to the sphingosine's nitrogen
+    # Get the nitrogen in the sphingosine pattern
+    sphingosine_n = None
+    for match in mol.GetSubstructMatches(sphingosine_pattern):
+        sphingosine_n = match[2]  # Assuming the N is the third atom in the SMARTS
+        break
+    if not sphingosine_n:
+        for match in mol.GetSubstructMatches(sphingosine_pattern_fallback):
+            sphingosine_n = match[2]
+            break
+
+    if sphingosine_n is None:
+        return False, "Sphingosine nitrogen not found"
+
+    # Check if the sphingosine N is connected to the amide's C=O
+    amide_n = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetSymbol() == 'N' and any(bond.GetBondType() == Chem.rdchem.BondType.SINGLE for bond in atom.GetBonds())]
+    valid_amide = False
+    for n_idx in amide_n:
+        for bond in mol.GetAtomWithIdx(n_idx).GetBonds():
+            if bond.GetBondType() == Chem.rdchem.BondType.SINGLE:
+                neighbor = bond.GetOtherAtomIdx(n_idx)
+                if mol.GetAtomWithIdx(neighbor).GetSymbol() == 'C' and any(b.GetBondType() == Chem.rdchem.BondType.DOUBLE for b in mol.GetAtomWithIdx(neighbor).GetBonds()):
+                    valid_amide = True
+                    if n_idx == sphingosine_n:
+                        break
+    if not valid_amide:
+        return False, "Amide not connected to sphingosine backbone"
+
+    return True, "Sphingosine backbone with phosphocholine and amide-linked fatty acid"
