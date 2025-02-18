@@ -1,370 +1,54 @@
 """
 Classifies: CHEBI:138675 gas molecular entity
 """
- - (3He)helium(0): SMILES: [3He]
- - dinitrogen: SMILES: N#N
- - tetrafluoromethane: SMILES: FC(F)(F)F
- - dichlorodifluoromethane: SMILES: ClC(Cl)(F)F
- - sulfur hexafluoride: SMILES: FS(F)(F)(F)(F)F
- - hydrogen sulfide: SMILES: S[H]
- - silane: SMILES: [SiH4]
- - arsine: SMILES: [AsH3]
- - stibine: SMILES: [SbH3]
- - germane: SMILES: [GeH4]
- - diborane: SMILES: B[B]
- - phosgene: SMILES: O=C(Cl)Cl
- - nitrosyl chloride: SMILES: ClN=O
- - nitric oxide: SMILES: [N]=O
- - nitrogen dioxide: SMILES: [O]N=O
- - carbonyl sulfide: SMILES: O=C=S
- - carbonyl selenide: SMILES: O=C=[Se]
- - thiophosgene: SMILES: S=C(Cl)Cl
- - boron trifluoride: SMILES: FB(F)F
- - boron trichloride: SMILES: ClB(Cl)Cl
- - chlorine trifluoride: SMILES: FCl(F)F
- - perchloryl fluoride: SMILES: O=Cl(=O)(=O)F
- - hexafluoroethane: SMILES: FC(F)(F)C(F)(F)F
- - octafluoropropane: SMILES: FC(F)(F)C(F)(F)C(F)(F)F
- - octafluorocyclobutane: SMILES: FC1(F)C(F)(F)C(F)(F)C1(F)F
- - hexafluorobutadiene: SMILES: FC(F)=C(F)C(F)=C(F)F
- - sulfuryl fluoride: SMILES: O=S(=O)(F)F
- - sulfur tetrafluoride: SMILES: FS(F)(F)F
- - selenium hexafluoride: SMILES: F[Se](F)(F)(F)(F)F
- - tellurium hexafluoride: SMILES: F[Te](F)(F)(F)(F)F
- - chlorine pentafluoride: SMILES: FCl(F)(F)(F)F
- - bromine pentafluoride: SMILES: FBr(F)(F)(F)F
- - iodine pentafluoride: SMILES: FI(F)(F)(F)F
- - iodine heptafluoride: SMILES: FI(F)(F)(F)(F)F
- - chlorine monoxide: SMILES: ClO
- - bromine monoxide: SMILES: BrO
- - iodine monoxide: SMILES: IO
- - dichlorine monoxide: SMILES: OClCl
- - dichlorine heptoxide: SMILES: O=ClOCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)=O
- - dichlorine trioxide: SMILES: O=ClOCl(=O)=O
- - dichlorine pentoxide: SMILES: O=ClOCl(=O)OCl(=O)=O
- - dichlorine hexoxide: SMILES: O=ClOCl(=O)OCl(=O)(=O)OCl(=O)=O
- - dichlorine tetroxide: SMILES: O=ClOCl(=O)OCl(=O)=O
- - dichlorine dioxide: SMILES: O=ClOCl=O
- - dichlorine octoxide: SMILES: O=ClOCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)=O
- - dichlorine nonoxide: SMILES: O=ClOCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)=O
- - dichlorine decaoxide: SMILES: O=ClOCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)(=O)OCl(=O)=O
- - nitrogen trifluoride: SMILES: FN(F)F
- - nitrogen triiodide: SMILES: IN(I)I
- - nitrogen trichloride: SMILES: ClN(Cl)Cl
- - nitrogen tribromide: SMILES: BrN(Br)Br
- - nitrosyl fluoride: SMILES: FN=O
- - nitryl fluoride: SMILES: O=N(=O)F
- - nitrosyl bromide: SMILES: BrN=O
- - nitryl chloride: SMILES: O=N(=O)Cl
- - nitryl bromide: SMILES: O=N(=O)Br
- - nitrosyl iodide: SMILES: IN=O
- - nitryl iodide: SMILES: O=N(=O)I
- - nitrosyl cyanide: SMILES: N#C[N+]=O
- - nitryl cyanide: SMILES: N#C[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl azide: SMILES: [N-]=[N+]=[N+][N+]=O
- - nitryl azide: SMILES: [N-]=[N+]=[N+][N+](=O)=O
- - nitrosyl isocyanate: SMILES: O=C=N[N+]=O
- - nitryl isocyanate: SMILES: O=C=N[N+](=O)=O
- - nitrosyl isothiocyanate: SMILES: S=C=N[N+]=O
- - nitryl isothiocyanate: SMILES: S=C=N[N+](=O)=O
- - nitrosyl selenocyanate: SMILES: [Se-]C#N[N+]=O
- - nitryl selenocyanate: SMILES: [Se-]C#N[N+](=O)=O
- - nitrosyl tellurocyanate: SMILES: [Te-]C#N[N+]=O
- - nitryl tellurocyanate: SMILES: [Te-]C#N[N+](=O)=O
- - nitrosyl thiocyanate: SMILES: N#CS[N+]=O
- - nitryl thiocyanate: SMILES: N#CS[N+](=O)=O
- - nitrosyl selen
+"""
+Classifies: CHEBI:138675 gas molecular entity
+"""
+from rdkit import Chem
+from rdkit.Chem import Descriptors, rdMolDescriptors
+
+def is_gas_molecular_entity(smiles: str):
+    """
+    Determines if a molecule is a gas at STP based on SMILES string.
+    Criteria: main group elements only, molecular weight <= 300, and absence of certain functional groups.
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if not mol:
+        return False, "Invalid SMILES"
+    
+    # Define allowed main group elements (H, He, groups 1,2,13-18 up to Rn)
+    allowed_atomic_numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                              11, 12, 13, 14, 15, 16, 17, 18,
+                              19, 20, 31, 32, 33, 34, 35, 36,
+                              37, 38, 49, 50, 51, 52, 53, 54,
+                              55, 56, 81, 82, 83, 84, 85, 86}
+    
+    # Check all atoms are main group
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in allowed_atomic_numbers:
+            return False, f"Contains non-main group element {atom.GetSymbol()}"
+    
+    # Calculate molecular weight
+    mol_wt = rdMolDescriptors.CalcExactMolWt(mol)
+    if mol_wt > 300:
+        return False, f"Molecular weight {mol_wt:.2f} exceeds 300"
+    
+    # Check for functional groups that typically indicate non-gaseous state
+    hydroxyl = Chem.MolFromSmarts("[OH]")
+    carboxylic_acid = Chem.MolFromSmarts("C(=O)O")
+    sulfonic_acid = Chem.MolFromSmarts("S(=O)(=O)O")
+    
+    if mol.HasSubstructMatch(hydroxyl):
+        return False, "Contains hydroxyl group"
+    if mol.HasSubstructMatch(carboxylic_acid):
+        return False, "Contains carboxylic acid group"
+    if mol.HasSubstructMatch(sulfonic_acid):
+        return False, "Contains sulfonic acid group"
+    
+    # Additional check for ionic compounds (charges)
+    for atom in mol.GetAtoms():
+        if atom.GetFormalCharge() != 0:
+            return False, "Molecule contains charged species"
+    
+    return True, "Main group elements, MW <=300, no problematic groups"
