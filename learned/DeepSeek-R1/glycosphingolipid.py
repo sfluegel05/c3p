@@ -6,54 +6,37 @@ Classifies: glycosphingolipid (CHEBI:24404)
 """
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
 
 def is_glycosphingolipid(smiles: str):
     """
     Determines if a molecule is a glycosphingolipid based on its SMILES string.
-    A glycosphingolipid has a carbohydrate attached via glycosidic linkage to a sphingoid or ceramide.
-    
-    Args:
-        smiles (str): SMILES string of the molecule
-        
-    Returns:
-        bool: True if molecule is a glycosphingolipid, False otherwise
-        str: Reason for classification
+    Criteria: Carbohydrate attached via glycosidic linkage to ceramide/sphingoid base.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
+
+    # Combined pattern: sphingoid/ceramide core connected via glycosidic O to a sugar
+    # 1. Ceramide part: amide group (N-C=O) attached to long chain
+    # 2. Glycosidic linkage: O connecting to a sugar (ring with multiple OH/O)
+    # 3. Sugar: at least 4 contiguous C-O/C-OH in a ring (heuristic for carbohydrate)
+    pattern = Chem.MolFromSmarts(
+        "[NX3][C](=[OX1])[CX4]."  # Ceramide amide group
+        "[OX2][C@H]("  # Glycosidic oxygen connected to sphingoid carbon
+            "[C@H]([OH0])[C@H](O)[CH2,CH][OH0]"  # Sphingoid backbone (simplified)
+        ")-!@*"  # Disconnected from sugar part (avoid same molecule)
+        ".[O;R]-[C;R]-[C;R]-[C;R]-[C;R]-[O;R]|"  # Pyranose ring (O in ring)
+        "[O;R]-[C;R]1-[C;R]-[C;R]-[C;R]-[O;R]-1"  # Furanose ring
+    )
     
-    # Check for ceramide (amide group) or sphingoid (NH2 and adjacent OH)
-    ceramide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[CX4]")
-    sphingoid_pattern = Chem.MolFromSmarts("[NH2]-[CX4]-[CX4]-[OH]")
-    has_ceramide = mol.HasSubstructMatch(ceramide_pattern)
-    has_sphingoid = mol.HasSubstructMatch(sphingoid_pattern)
+    if not mol.HasSubstructMatch(pattern):
+        # Fallback: Check for any O-linked sugar to ceramide/sphingoid
+        # General glycosphingolipid pattern: ceramide/sphingoid + O-linked sugar
+        general_pattern = Chem.MolFromSmarts(
+            "[NX3,CX3]([CX4])!@[OX2][C]("  # O linking to NH/CO and sugar
+            ").([#6]1@[#6](-[OH])@[#6](-[OH])@[#6]@[#6]@[#6]@1)"  # Carbohydrate ring
+        )
+        if not mol.HasSubstructMatch(general_pattern):
+            return False, "Missing glycosidic linkage between sugar and ceramide/sphingoid"
     
-    if not (has_ceramide or has_sphingoid):
-        return False, "No ceramide or sphingoid base found"
-    
-    # Check for glycosidic oxygen connected to a sugar (ether linkage to a ring with multiple OHs)
-    # General sugar pattern: any ring with at least two hydroxyls
-    sugar_pattern = Chem.MolFromSmarts("[C]1@[C]@[C]@[C]@[C]@[C]1(-[OH])-[OH]")
-    glycosidic_o_pattern = Chem.MolFromSmarts("[OX2][C]@[C]")
-    
-    # Check if there's a glycosidic oxygen connected to a sugar
-    has_glycosidic = False
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8 and atom.GetDegree() == 2:  # ether oxygen
-            neighbors = atom.GetNeighbors()
-            # Check if one side is part of ceramide/sphingoid and the other is a sugar
-            # Simplification: check if sugar pattern exists and is connected via this oxygen
-            # This is a heuristic and may not cover all cases
-            for neighbor in neighbors:
-                if neighbor.IsInRing() and mol.HasSubstructMatch(sugar_pattern):
-                    has_glycosidic = True
-                    break
-            if has_glycosidic:
-                break
-    
-    if not has_glycosidic:
-        return False, "No glycosidic linkage to a sugar found"
-    
-    return True, "Contains carbohydrate attached to ceramide/sphingoid via glycosidic bond"
+    return True, "Carbohydrate attached via glycosidic bond to ceramide/sphingoid"
