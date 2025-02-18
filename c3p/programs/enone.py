@@ -23,7 +23,7 @@ def is_enone(smiles: str):
 
     # Define SMARTS pattern for the enone motif
     # The pattern now specifies that the carbonyl carbon is not bonded to any H (except via double bond)
-    enone_pattern = Chem.MolFromSmarts("[C]=[C]-[C](=[O])[!H]")
+    enone_pattern = Chem.MolFromSmarts("[C;!H0]=[C;!H0]-[C](=[O])[C;!H0]")
     
     # Find the enone substructure
     matches = mol.GetSubstructMatches(enone_pattern)
