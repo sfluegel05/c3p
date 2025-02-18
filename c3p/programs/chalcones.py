@@ -26,32 +26,31 @@ def is_chalcones(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for the core chalcone structure: Ar-CH=CH-C(=O)-Ar
-    chalcone_pattern = Chem.MolFromSmarts("[c;H1]:[c;H1]-[CH]=[CH]-[C](=O)-[c;H1]:[c;H1]")
-    if not mol.HasSubstructMatch(chalcone_pattern):
-        return False, "No chalcone core structure found (Ar-CH=CH-C(=O)-Ar)"
+    # Look for the core chalcone structure: Ar-CH=CH-C(=O)-Ar or Ar-CH2-CH2-C(=O)-Ar (dihydrochalcone)
+    chalcone_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CH]=[CH]-[C](=O)-[c]2[c][c][c][c][c]2")
+    dihydrochalcone_pattern = Chem.MolFromSmarts("[c]1[c][c][c][c][c]1-[CH2]-[CH2]-[C](=O)-[c]2[c][c][c][c][c]2")
+    
+    if not (mol.HasSubstructMatch(chalcone_pattern) or mol.HasSubstructMatch(dihydrochalcone_pattern)):
+        return False, "No chalcone core structure found (Ar-CH=CH-C(=O)-Ar or Ar-CH2-CH2-C(=O)-Ar)"
 
     # Check for the presence of two aromatic rings (Ar)
     aromatic_rings = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetIsAromatic()]
     if len(aromatic_rings) < 2:
         return False, "Less than two aromatic rings found"
 
-    # Check for the presence of the propenone chain (CH=CH-C=O)
+    # Check for the presence of the propenone chain (CH=CH-C=O or CH2-CH2-C=O)
     propenone_chain = Chem.MolFromSmarts("[CH]=[CH]-[C](=O)")
-    if not mol.HasSubstructMatch(propenone_chain):
-        return False, "No propenone chain (CH=CH-C=O) found"
+    dihydro_propenone_chain = Chem.MolFromSmarts("[CH2]-[CH2]-[C](=O)")
+    
+    if not (mol.HasSubstructMatch(propenone_chain) or mol.HasSubstructMatch(dihydro_propenone_chain)):
+        return False, "No propenone chain (CH=CH-C=O or CH2-CH2-C=O) found"
 
     # Check for the presence of a ketone group (C=O)
     ketone_group = Chem.MolFromSmarts("[C](=O)")
     if not mol.HasSubstructMatch(ketone_group):
         return False, "No ketone group (C=O) found"
 
-    # Check for the presence of at least one double bond in the propenone chain
-    double_bond = Chem.MolFromSmarts("[CH]=[CH]")
-    if not mol.HasSubstructMatch(double_bond):
-        return False, "No double bond in the propenone chain"
-
-    return True, "Contains the core chalcone structure (Ar-CH=CH-C(=O)-Ar) with possible substitutions on the aromatic rings"
+    return True, "Contains the core chalcone structure (Ar-CH=CH-C(=O)-Ar or Ar-CH2-CH2-C(=O)-Ar) with possible substitutions on the aromatic rings"
 
 
 __metadata__ = {   'chemical_class': {   'id': 'CHEBI:23003',
