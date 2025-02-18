@@ -132,3 +132,319 @@ if __name__ == "__main__":
         print("SMILES:", smi)
         print("Verdict:", verdict, "| Reason:", reason)
         print("-" * 80)
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:61778',
+                          'name': 'triterpenoid saponin',
+                          'definition': 'A terpene glycoside in which the '
+                                        'terpene moiety is a triterpenoid.',
+                          'parents': ['CHEBI:26605', 'CHEBI:61777'],
+                          'xrefs': ['Wikipedia:Triterpenoid_saponin'],
+                          'all_positive_examples': []},
+    'config': None,
+    'code_statistics': {   'lines_of_code': 102,
+                           'log_lines_of_code': 4.624972813284271,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 4,
+                                                 5,
+                                                 4,
+                                                 5,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 2,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 3,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2],
+                           'max_indent': 5,
+                           'imports': [   'from rdkit import Chem',
+                                          'from rdkit.Chem import '
+                                          'rdMolDescriptors',
+                                          'from rdkit.Chem import '
+                                          'SanitizeFlags'],
+                           'imports_count': 3,
+                           'methods_called': [   'SanitizeMol',
+                                                 'RemoveAtom',
+                                                 'GetMolFrags',
+                                                 'GetMol',
+                                                 'GetIsAromatic',
+                                                 'GetNumAtoms',
+                                                 'GetAtomWithIdx',
+                                                 'update',
+                                                 'AtomRings',
+                                                 'CalcExactMolWt',
+                                                 'append',
+                                                 'GetAtoms',
+                                                 'EditableMol',
+                                                 'GetAtomicNum',
+                                                 'GetRingInfo',
+                                                 'MolFromSmiles',
+                                                 'Kekulize'],
+                           'methods_called_count': 17,
+                           'smarts_strings': [],
+                           'smarts_strings_count': 0,
+                           'defs': ['is_triterpenoid_saponin(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string."',
+                                          'False, f"Error parsing SMILES: {e}"',
+                                          'False, f"Sanitization error (even '
+                                          'with kekulization skipped): {e}"',
+                                          'False, "No sugar (glycoside) moiety '
+                                          'detected."',
+                                          'False, f"Error removing sugar atom '
+                                          'index {idx}: {e}"',
+                                          'False, "Sugar removal left no '
+                                          'aglycone fragment."',
+                                          'False, f"Aglycone carbon count not '
+                                          'in acceptable range (found '
+                                          '{aglycone_carbons})."',
+                                          'False, f"Insufficient rings in '
+                                          'aglycone (found '
+                                          '{len(aglycone_rings)})."',
+                                          'False, "Aglycone contains an '
+                                          'aromatic ring, not typical of '
+                                          'triterpenoids."',
+                                          'False, f"Molecular weight too low '
+                                          '({mol_wt:.1f} Da) for a '
+                                          'triterpenoid saponin."',
+                                          'True, ("Molecule contains a sugar '
+                                          'moiety plus a triterpenoid-like '
+                                          'aglycone " +'],
+                           'returns_count': 11,
+                           'complexity': 7.724994562656855},
+    'message': '\n'
+               'Error: Error executing '
+               "is_triterpenoid_saponin('CN(C)c1ncnc2n(cnc12)[C@@H]1O[C@H](CO)[C@@H](NC(=O)[C@@H]([NH3+])Cc2ccc(O)cc2)[C@H]1O'):\n"
+               " Can't kekulize mol.  Unkekulized atoms: 3 4 5 6 7 8 9 10 11\n"
+               'Attempt failed: F1 score of 0 is too low.\n'
+               'Outcomes:\n'
+               '------\n'
+               '\n'
+               'True positives: NONE\n'
+               'False positives: NONE\n'
+               'False negatives: NONE\n'
+               '------\n'
+               '\n'
+               'In your reasoning step, analyze the previous program and the '
+               'above outcomes, hypothesizing about what went wrong, and how '
+               'to improve.\n',
+    'sample_true_negatives': [   {   'smiles': 'O=C(N1CCCC1)CCCCCC/C=C\\C2=CC=3OCOC3C=C2',
+                                     'name': '(8E)-Piperamide-C9:1',
+                                     'reason': 'No sugar (glycoside) moiety '
+                                               'detected.'},
+                                 {   'smiles': '[H][C@@]12OC(=O)[C@H](C)[C@@]1(O)[C@@H](OC(C)=O)[C@]1([H])[C@@](C)([C@H](OC(C)=O)\\C=C/C(=C)[C@H]2OC)[C@@H](OC(=O)CC(C)C)[C@@H](OC(C)=O)[C@@H](OC(C)=O)[C@]11CO1',
+                                     'name': 'Gemmacolide M, (rel)-',
+                                     'reason': 'Insufficient rings in aglycone '
+                                               '(found 2).'},
+                                 {   'smiles': 'S(CC[C@H](NC(=O)[C@@H](NC(OCC1=CC=CC=C1)=O)CC=2C=3C(NC2)=CC=CC3)C(=O)N[C@@H](CC(O)=O)C(=O)N[C@@H](CC4=CC=CC=C4)C(=O)N)C',
+                                     'name': 'Gatratet',
+                                     'reason': 'No sugar (glycoside) moiety '
+                                               'detected.'},
+                                 {   'smiles': 'O=C(NCCC(=O)O)[C@@H]1N(NCCC1)C(=O)[C@H](NC(=O)[C@@H](NC(=O)[C@H]2N=C(C3=C(O)C=CC=C3)OC2)CO)CCCN(O)C=O',
+                                     'name': 'Cahuitamycin A',
+                                     'reason': 'No sugar (glycoside) moiety '
+                                               'detected.'},
+                                 {   'smiles': 'C[C@H]1CCCCO[C@@H]([C@@H](CN(C(=O)C2=C(O1)C=CC(=C2)N(C)C)[C@H](C)CO)C)CN(C)C(=O)CC3=CC=CC=C3',
+                                     'name': 'N-[[(3S,9S,10R)-16-(dimethylamino)-12-[(2R)-1-hydroxypropan-2-yl]-3,10-dimethyl-13-oxo-2,8-dioxa-12-azabicyclo[12.4.0]octadeca-1(14),15,17-trien-9-yl]methyl]-N-methyl-2-phenylacetamide',
+                                     'reason': 'No sugar (glycoside) moiety '
+                                               'detected.'},
+                                 {   'smiles': 'OC[C@H]1O[C@H](OC[C@H]2O[C@H](OC[C@H]3O[C@H](OC[C@H]4O[C@H](OC[C@H]5O[C@H](O[C@]6(CO)O[C@H](CO)[C@@H](O)[C@@H]6O)[C@H](O)[C@@H](O)[C@@H]5O)[C@H](O)[C@@H](O)[C@H]4O)[C@H](O)[C@@H](O)[C@H]3O)[C@H](O)[C@@H](O)[C@H]2O)[C@H](O)[C@@H](O)[C@H]1O',
+                                     'name': 'ajugose',
+                                     'reason': 'Aglycone carbon count not in '
+                                               'acceptable range (found 1).'},
+                                 {   'smiles': 'NC(=O)C[C@H]([NH3+])C([O-])=O',
+                                     'name': 'L-asparagine zwitterion',
+                                     'reason': 'No sugar (glycoside) moiety '
+                                               'detected.'},
+                                 {   'smiles': 'O=C(N[C@@H](CC1=CC=CC=C1)C([O-])=O)[C@@H]([NH3+])CC([O-])=O',
+                                     'name': '(3S)-3-Azaniumyl-4-[[(1S)-1-carboxylato-2-phenylethyl]amino]-4-oxobutanoate',
+                                     'reason': 'No sugar (glycoside) moiety '
+                                               'detected.'},
+                                 {   'smiles': 'CC1=CC(O)OC1=O',
+                                     'name': '5-hydroxy-3-methylfuran-2(5H)-one',
+                                     'reason': 'Aglycone carbon count not in '
+                                               'acceptable range (found 1).'},
+                                 {   'smiles': '[Co++].CC([O-])=O.CC([O-])=O',
+                                     'name': 'cobalt(II) acetate',
+                                     'reason': 'No sugar (glycoside) moiety '
+                                               'detected.'}],
+    'sample_false_negatives': [   {   'smiles': '[H][C@@]1(CC[C@]2(C)[C@]1([H])CC[C@]1([H])[C@@](C)(CCC(=O)OC)[C@@H](CC[C@@]21C)C(C)(C)O)[C@]1(C)CC[C@@H](O1)C(C)(C)O',
+                                      'name': 'methyl foveolate A',
+                                      'reason': 'Aglycone carbon count not in '
+                                                'acceptable range (found 23).'},
+                                  {   'smiles': '[H][C@]1(O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)O[C@@H]1[C@@H](O)[C@H](O)[C@@H](CO)O[C@@]1([H])O[C@H]1CC[C@@]2(C)[C@@]([H])(CC[C@]3(C)[C@]2([H])CC[C@]2([H])[C@]([H])([C@H](O)C[C@@]32C)[C@]2(C)CC[C@](CO[C@@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)(O2)C(C)C)C1(C)C',
+                                      'name': 'Operculinoside B',
+                                      'reason': 'Aglycone carbon count not in '
+                                                'acceptable range (found 22).'},
+                                  {   'smiles': 'C[C@H]1O[C@@H](O[C@H]2CC[C@@]3(C)[C@@H](CC[C@]4(C)[C@@H]3C=C[C@]35OC[C@@]6(CCC(C)(C)C[C@@H]36)[C@@H](O)C[C@@]45C)[C@]2(C)CO)[C@H](O)[C@@H](O[C@@H]2O[C@H](CO)[C@@H](O)[C@H](O)[C@H]2O)[C@H]1O',
+                                      'name': 'Saikosaponin A',
+                                      'reason': 'Aglycone carbon count not in '
+                                                'acceptable range (found 20).'},
+                                  {   'smiles': '[H][C@@]12CC[C@]3(C)[C@]([H])(C[C@H]4O[C@]44[C@]5([H])C[C@@](C)(C=O)[C@H](C[C@]5(C)[C@@H](O)C[C@@]34C)OC(=O)c3ccccc3NC)[C@@]1(C)CC[C@H](O[C@@H]1OC[C@H](O[C@@H]3O[C@H](CO)[C@@H](O)[C@H](O)[C@H]3O)[C@H](O)[C@H]1O[C@@H]1O[C@H](CO)[C@@H](O)[C@H](O)[C@H]1O)[C@@]2(C)CO',
+                                      'name': 'avenacin A-1',
+                                      'reason': 'Aglycone contains an aromatic '
+                                                'ring, not typical of '
+                                                'triterpenoids.'},
+                                  {   'smiles': '[H][C@]1(OC[C@@H](O)[C@H](O)[C@H]1O)O[C@@H]1[C@@H](O)[C@@H](O)CO[C@@]1([H])OC[C@H]1O[C@@]([H])(O[C@H]2CC[C@@]3(C)[C@@]([H])(CC[C@]4(C)[C@]3([H])CC=C3[C@]5([H])CC(C)(C)[C@]6([H])C[C@@]5([C@H](O)C[C@@]43C)C(=O)O6)C2(C)C)[C@H](NC(C)=O)[C@@H](O)[C@@H]1O',
+                                      'name': '3-O-[beta-D-xylopyranosyl(1->2)-alpha-L-arabinopyranosyl(1->6)]-2-acetamido-2-deoxy-beta-D-glucopyranosyl '
+                                              'acacic acid lactone',
+                                      'reason': 'Insufficient rings in '
+                                                'aglycone (found 3).'},
+                                  {   'smiles': '[H][C@@]1(CC[C@]2(C)[C@]1([H])CC[C@]1([H])[C@@]3(C)CCC(=O)OC(C)(C)[C@]3([H])CC[C@@]21C)[C@]1(C)CC[C@H](O1)C(C)(C)O',
+                                      'name': '20S,24S-epoxy-25-hydroxy-A-homo-4-oxadammaran-3-one',
+                                      'reason': 'Aglycone carbon count not in '
+                                                'acceptable range (found 22).'},
+                                  {   'smiles': '[H][C@]1(OC[C@H](O)[C@H](O)[C@H]1O)O[C@@H]1[C@@H](O)[C@@H](O)CO[C@@]1([H])OC[C@H]1O[C@@]([H])(O[C@H]2CC[C@@]3(C)[C@@]([H])(CC[C@]4(C)[C@]3([H])CC=C3[C@]5([H])CC(C)(C)[C@]6([H])C[C@@]5([C@H](O)C[C@@]43C)C(=O)O6)C2(C)C)[C@H](NC(C)=O)[C@@H](O)[C@@H]1O',
+                                      'name': '3-O-[alpha-L-arabinopyranosyl(1->2)-alpha-L-arabinopyranosyl(1->6)]-2-acetamido-2-deoxy-beta-D-glucopyranosyl '
+                                              'acacic acid lactone',
+                                      'reason': 'Insufficient rings in '
+                                                'aglycone (found 3).'},
+                                  {   'smiles': '[H][C@@]1(CC[C@]2(C)[C@]1([H])CC[C@]1([H])[C@@]3(C)CCC(=O)OC(C)(C)[C@]3([H])CC[C@@]21C)[C@@]1(C)CC[C@H](O1)C(C)(C)O',
+                                      'name': 'rel-20R,24S-epoxy-25-hydroxy-A-homo-4-oxadammaran-3-one',
+                                      'reason': 'Aglycone carbon count not in '
+                                                'acceptable range (found 22).'},
+                                  {   'smiles': '[H][C@]1(O[C@H](C)[C@@H](O[C@]2([H])O[C@H](CO)[C@@H](O)[C@H](O[C@]3([H])O[C@H](CO)[C@@H](O)[C@H](OC)[C@H]3O)[C@H]2O)[C@H](O)[C@H]1O)O[C@@H]1[C@@H](O)[C@@H](CO[C@@]1([H])O[C@H]1CC[C@]2(C)C3=C[C@H](O)C45C(=O)O[C@@](C)(CCC(O)C(C)C)[C@@]4(O)CC[C@@]5(C)[C@]3([H])CC[C@@]2([H])C1(C)C)OS(O)(=O)=O',
+                                      'name': 'holothurin A4 acid',
+                                      'reason': 'Aglycone carbon count not in '
+                                                'acceptable range (found 19).'},
+                                  {   'smiles': 'O([C@H]1[C@@]2([C@](C=3[C@]([C@]4([C@@]([C@@]5([C@@](CC4)(C([C@@H](O[C@@H]6O[C@@H]([C@@H](O)[C@H](O[C@@H]7OC[C@H](O)[C@H](O)[C@H]7O[C@@H]8O[C@H]([C@H](O)[C@@H](O)[C@H]8O)C)[C@H]6O[C@@H]9O[C@@H]([C@H](O)[C@H](O)[C@H]9O)CO)C(O)=O)CC5)(C)C)[H])C)(CC3)[H])C)(C1)C)(CC([C@@H](OC(=O)C)[C@@H]2OC(=O)/C=C/C%10=CC=CC=C%10)(C)C)[H])CO)C(=O)C',
+                                      'name': 'Assamsaponin J',
+                                      'reason': 'Aglycone carbon count not in '
+                                                'acceptable range (found '
+                                                '43).'}],
+    'attempt': 3,
+    'reasoning': 'Below is our reasoning. In our previous attempt the program '
+                 'tried to parse and sanitize the SMILES string right from the '
+                 'start. However, some molecules (like the one given) raise a '
+                 'kekulization error; that means some atoms couldn’t be '
+                 'assigned proper aromaticity. In our improved solution we '
+                 'first disable sanitization when reading the SMILES. Then, we '
+                 'try to sanitize the molecule while explicitly skipping the '
+                 'kekulization step. Finally, if desired, we force a '
+                 'kekulization with aromatic flags cleared. This '
+                 '“fallback‐sanitization” makes our sugar‐ and '
+                 'aglycone‐detection steps more robust. We also keep our '
+                 'original logic (detecting sugar rings, removing them to '
+                 'obtain an aglycone, counting carbons and rings, etc.) so '
+                 'that our heuristic is unchanged. \n'
+                 '\n'
+                 'Below is the complete Python code in one block:',
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 321,
+    'num_false_positives': 452,
+    'num_true_negatives': 141451,
+    'num_false_negatives': 76,
+    'num_negatives': None,
+    'precision': 0.4152652005174644,
+    'recall': 0.8085642317380353,
+    'f1': 0.5487179487179487,
+    'accuracy': 0.9962895291637386,
+    'negative_predictive_value': 0.9994629999929342}

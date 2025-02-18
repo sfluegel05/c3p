@@ -118,3 +118,246 @@ if __name__ == "__main__":
     smiles_example = "Oc1cccc(c1)[C@@H]1CC(=O)c2ccccc2O1"
     result, reason = is_3__hydroxyflavanones(smiles_example)
     print(result, reason)
+
+
+__metadata__ = {   'chemical_class': {   'id': 'CHEBI:48024',
+                          'name': "3'-hydroxyflavanones",
+                          'definition': 'Any hydroxyflavanone with a hydroxy '
+                                        "substituent at position 3' of the "
+                                        'phenyl ring.',
+                          'parents': ['CHEBI:24697'],
+                          'xrefs': ['MetaCyc:3-Hydroxy-Flavanones'],
+                          'all_positive_examples': []},
+    'config': None,
+    'code_statistics': {   'lines_of_code': 91,
+                           'log_lines_of_code': 4.51085950651685,
+                           'indent_by_line': [   1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 0,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 1,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 2,
+                                                 3,
+                                                 3,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 5,
+                                                 5,
+                                                 5,
+                                                 6,
+                                                 6,
+                                                 3,
+                                                 4,
+                                                 4,
+                                                 1,
+                                                 2,
+                                                 2,
+                                                 1,
+                                                 1,
+                                                 0,
+                                                 1,
+                                                 1,
+                                                 1,
+                                                 1],
+                           'max_indent': 6,
+                           'imports': ['from rdkit import Chem'],
+                           'imports_count': 1,
+                           'methods_called': [   'GetTotalNumHs',
+                                                 'GetIdx',
+                                                 'GetIsAromatic',
+                                                 'GetAtomicNum',
+                                                 'MolFromSmiles',
+                                                 'GetAtomWithIdx',
+                                                 'AtomRings',
+                                                 'MolFromSmarts',
+                                                 'GetShortestPath',
+                                                 'GetNeighbors',
+                                                 'append',
+                                                 'GetRingInfo',
+                                                 'GetSubstructMatches'],
+                           'methods_called_count': 13,
+                           'smarts_strings': ['core_smarts'],
+                           'smarts_strings_count': 1,
+                           'defs': ['is_3__hydroxyflavanones(smiles: str):'],
+                           'defs_count': 1,
+                           'returns': [   'False, "Invalid SMILES string"',
+                                          'False, "Failed to create '
+                                          'substructure query for flavanone '
+                                          'core"',
+                                          'False, "Molecule does not contain a '
+                                          'flavanone (chromanone) core"',
+                                          'False, "Could not find the attached '
+                                          'aromatic (B) ring from the '
+                                          'flavanone core"',
+                                          'False, "No aromatic six‐membered '
+                                          'ring (B ring) found attached to the '
+                                          'flavanone core"',
+                                          'False, "No hydroxy (-OH) group '
+                                          "found at the 3' (meta) position on "
+                                          'the B ring"',
+                                          'True, "Molecule contains flavanone '
+                                          "core with a hydroxy group at the 3' "
+                                          'position on the B ring"'],
+                           'returns_count': 7,
+                           'complexity': 6.30217190130337},
+    'message': None,
+    'sample_true_negatives': [   {   'smiles': 'O=C(N[C@@H](C(O)(C)C)C)[C@H]([C@@]1([C@@]2([C@@](CC1)(/C(/CCC2)=C/C=C\\3/C[C@@H](O)C[C@H](O)C3=C)[H])C)[H])C',
+                                     'name': '1alpha,25-dihydroxy-24-oxo-23-azavitamin '
+                                             'D2 / '
+                                             '1alpha,25-dihydroxy-24-oxo-23-azaergocalciferol',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCC(O)C([O-])=O',
+                                     'name': '2-hydroxyarachidate',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': 'C[C@@H](CN([C@@H](C)CO)C(=O)NC1=CC=C(C=C1)C(F)(F)F)[C@@H](CN(C)C(=O)C2CCOCC2)OC',
+                                     'name': 'N-[(2S,3S)-4-[[(2S)-1-hydroxypropan-2-yl]-[[4-(trifluoromethyl)phenyl]carbamoyl]amino]-2-methoxy-3-methylbutyl]-N-methyloxane-4-carboxamide',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': 'CC(=O)CC\\C=C(/C)CCC=C(C)C',
+                                     'name': 'geranyl acetone',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': 'O([C@H]1[C@H](O)[C@H](O[C@H](O)[C@H]1O)CO[C@H]2O[C@@H]([C@@H](O)[C@H](O)[C@@H]2O)CO)[C@H]3O[C@@H]([C@@H](O)[C@H](O)[C@@H]3O[C@H]4O[C@@H]([C@@H](O)[C@H](O)[C@@H]4O)CO)CO',
+                                     'name': '(2S,3S,4S,5S,6R)-2-[[(2R,3R,4S,5S,6S)-4-[(2R,3S,4S,5S,6R)-4,5-Dihydroxy-6-(hydroxymethyl)-3-[(2R,3S,4S,5S,6R)-3,4,5-trihydroxy-6-(hydroxymethyl)oxan-2-yl]oxyoxan-2-yl]oxy-3,5,6-trihydroxyoxan-2-yl]methoxy]-6-(hydroxymethyl)oxane-3,4,5-triol',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': 'O=C(OC1=C(C(O)=C(C(=O)O)C(=C1C)C)C)C2=C(OC)C(=C(OC(=O)C3=C(O)C=C(O)C=C3C)C=C2C)C',
+                                     'name': 'Thielavin Z5',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': '[C@@H]1([C@@H]([C@H]([C@@H]([C@H](O1)CO)O)O)NC(C)=O)O[C@@H]2[C@@H]([C@H](C(O[C@@H]2CO)O)O)O',
+                                     'name': 'beta-D-GlcpNAc-(1->4)-D-Galp',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': 'CN(C)C(=O)C1=CC=C(C=C1)C2=CC=C(C=C2)[C@@H]3[C@H]4CN(CC(=O)N4[C@H]3CO)C(=O)CC5CC5',
+                                     'name': '4-[4-[(6S,7R,8R)-4-(2-cyclopropyl-1-oxoethyl)-8-(hydroxymethyl)-2-oxo-1,4-diazabicyclo[4.2.0]octan-7-yl]phenyl]-N,N-dimethylbenzamide',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': 'CCCCCCCCCCCCCCCCCCCCC=C',
+                                     'name': '1-docosene',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'},
+                                 {   'smiles': 'C([C@@](OC(=O)CCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)([H])COC(=O)CC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC)OC(=O)CCCCC/C=C\\C/C=C\\C/C=C\\C/C=C\\C/C=C\\CC',
+                                     'name': 'TG(22:5(7Z,10Z,13Z,16Z,19Z)/20:5(5Z,8Z,11Z,14Z,17Z)/22:6(4Z,7Z,10Z,13Z,16Z,19Z))[iso6]',
+                                     'reason': 'Molecule does not contain a '
+                                               'flavanone (chromanone) core'}],
+    'sample_false_negatives': [],
+    'attempt': 0,
+    'reasoning': 'We can solve this problem in two major steps. First, we '
+                 '“recognize” a flavanone – that is, a molecule having the '
+                 '2‐phenylchroman-4‐one (or chromanone) core. In our '
+                 'implementation we use a simple SMARTS (without '
+                 'stereochemistry) to “flag” a flavanone. Next (for '
+                 'flavanones) we identify the phenyl (B) ring attached to the '
+                 'carbon that “connects” the chromanone core with the extra '
+                 'aromatic ring. Then we search that aromatic ring for a –OH '
+                 'group (an oxygen bound to a hydrogen) located at a “meta” '
+                 'position relative to the linking atom (i.e. a topological '
+                 'distance of 2 in the benzene ring). (Recall that in a '
+                 'benzene ring the positions relative to the substituent are '
+                 'defined as ortho: distance 1, meta: distance 2, para: '
+                 'distance 3.) \n'
+                 '\n'
+                 'Below is the complete Python code (all in one code block) '
+                 'that implements this logic. (Note that due to the inherent '
+                 'complexity of substructure detection and possible structural '
+                 'variation, some molecules may be borderline according to our '
+                 '“simple” SMARTS filter or our ring‐analysis. In such cases '
+                 'the function will return (False, “…”) as a reason if our '
+                 'criteria are not met.)\n'
+                 '\n'
+                 'Below is the complete code:',
+    'success': True,
+    'best': True,
+    'error': '',
+    'stdout': None,
+    'num_true_positives': 32,
+    'num_false_positives': 102,
+    'num_true_negatives': 142166,
+    'num_false_negatives': 0,
+    'num_negatives': None,
+    'precision': 0.23880597014925373,
+    'recall': 1.0,
+    'f1': 0.38554216867469876,
+    'accuracy': 0.9992832044975404,
+    'negative_predictive_value': 1.0}
