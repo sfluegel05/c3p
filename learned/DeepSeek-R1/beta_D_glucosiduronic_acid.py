@@ -1,116 +1,25 @@
 """
 Classifies: CHEBI:15341 beta-D-glucosiduronic acid
 """
- - 4-hydroxyestrone 16-O-(beta-D-glucuronide): SMILES: C1[C@]2([C@]3([C@@](C4=C(C(=C(O[C@H]5[C@@H]([C@H]([C@@H]([C@H](O5)C(=O)O)O)O)O)C=C4)O)CC3)(CC[C@@]2([C@H](C1)O)C)[H])[H])[H]
- - 6-(4-{5,7-dihydroxy-3-[(2Z)-4-hydroxy-3-(4-methylpent-3-en-1-yl)but-2-en-1-yl]-6-(3-methylbut-2-en-1-yl)-4-oxo-4H-chromen-2-yl}-3-hydroxyphenoxy)-3,4,5-trihydroxyoxane-2-carboxylic acid: SMILES: O1C(C(O)C(O)C(O)C1OC2=CC(O)=C(C=3OC4=C(C(=O)C3C/C=C(/CCC=C(C)C)\CO)C(O)=C(C(O)=C4)CC=C(C)C)C=C2)C(O)=O
- - 4-hydroxy-17beta-estradiol 17-O-(beta-D-glucuronide): SMILES: [C@H]1([C@H]([C@@H]([C@H]([C@@H](O1)OC=2C3=C([C@@]4([C@]([C@]5([C@@]([C@@H](O)CC5)(CC4)C)[H])(CC3)[H])[H])C=CC2O)O)O)O)C(=O)O
- - 3-hydroxybenzo[a]pyrene beta-D-glucuronide: SMILES: O[C@@H]1[C@@H](O)[C@@H](O[C@@H]([C@H]1O)C(O)=O)Oc2c3c4cccc5c4c(cc6c5cccc6)c3c(cc2)O
- - 2-hydroxyestrone 1-O-(beta-D-glucuronide): SMILES: C1[C@]2([C@]3([C@@](C4=C(C(=C(O[C@H]5[C@@H]([C@H]([C@@H]([C@H](O5)C(=O)O)O)O)O)C=C4)O)CC3)(CC[C@@]2(C(=O)C1)C)[H])[H])[H]
- - 4-hydroxy-17beta-estradiol 4-O-(beta-D-glucuronide): SMILES: [C@H]1([C@H]([C@@H]([C@H]([C@@H](O1)OC=2C3=C([C@@]4([C@]([C@]5([C@@]([C@@H](O)CC5)(CC4)C)[H])(CC3)[H])[H])C=CC2O)O)O)O)C(=O)O
- - 6-[5-(5,7-dihydroxy-3-{4-hydroxy-3-[(3,4,5-trihydroxy-6-methyloxan-2-yl)oxy]butyl}-4-oxo-4H-chromen-2-yl)-2-hydroxyphenoxy]-3,4,5-trihydroxyoxane-2-carboxylic acid: SMILES: O1C(C(O)C(O)C1OC2=C(OC3C(C(=O)C4=C(O3)C(O)=C(O)C=C4)CC(COC5OC(C)C(O)C(O)C5O)O)C=CC=C2)CO
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 3-hydroxybenzo[a]pyrene beta-D-glucuronide: SMILES: O[C@@H]1[C@@H](O)[C@@H](O[C@@H]([C@H]1O)C(O)=O)Oc2c3c4cccc5c4c(cc6c5cccc6)c3c(cc2)O
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferone beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C@@H](O)[C@H](O)[C@H]1O)C(=O)O)C2=CC3=C(C(=CC(O3)=O)C)C=C2
- - 4-methylumbelliferyl beta-D-glucuronide: SMILES: O([C@@H]1O[C@@H]([C
+"""
+Classifies: CHEBI:XXXXX beta-D-glucosiduronic acid
+"""
+from rdkit import Chem
+
+def is_beta_D_glucosiduronic_acid(smiles: str):
+    """
+    Determines if a molecule is a beta-D-glucosiduronic acid based on its SMILES string.
+    A beta-D-glucosiduronic acid contains a beta-D-glucuronic acid moiety linked via a glycosidic bond.
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # SMARTS pattern for beta-D-glucuronic acid with glycosidic bond
+    # Matches the core structure: [O]-C1-C(=O)O with correct stereochemistry
+    glucuronic_pattern = Chem.MolFromSmarts("[#8]-[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@@H](C(=O)O)O1")
+    
+    if mol.HasSubstructMatch(glucuronic_pattern):
+        return True, "Contains beta-D-glucuronic acid with glycosidic bond"
+    return False, "No beta-D-glucuronic acid glycoside detected"
