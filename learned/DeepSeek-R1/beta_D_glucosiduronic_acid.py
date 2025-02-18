@@ -2,25 +2,35 @@
 Classifies: CHEBI:15341 beta-D-glucosiduronic acid
 """
 """
-Classifies: CHEBI:XXXXX beta-D-glucosiduronic acid
+Classifies: CHEBI:16199 beta-D-glucosiduronic acid
 """
 from rdkit import Chem
 
 def is_beta_D_glucosiduronic_acid(smiles: str):
     """
     Determines if a molecule is a beta-D-glucosiduronic acid based on its SMILES string.
-    A beta-D-glucosiduronic acid contains a beta-D-glucuronic acid moiety linked via a glycosidic bond.
+    Must contain a beta-D-glucuronic acid moiety linked via glycosidic bond.
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
     
-    # SMARTS pattern for beta-D-glucuronic acid with glycosidic bond
-    # Beta configuration: C1-O-R is axial (same side as C5's substituent in D-sugar)
-    # Stereochemistry verified for all chiral centers in the glucuronic acid ring
-    glucuronic_pattern = Chem.MolFromSmarts("[#8;!H0]-[C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@H](C(=O)O)O1")
+    # Enhanced SMARTS pattern for beta-D-glucuronic acid with glycosidic bond:
+    # 1. [O;X2] = glycosidic oxygen (must have two bonds)
+    # 2. Correct stereochemistry at all chiral centers (beta-D configuration)
+    # 3. Carboxylic acid group at C5 (C(=O)O)
+    glucuronic_pattern = Chem.MolFromSmarts(
+        "[O;X2][C@H]1[C@@H](O)[C@H](O)[C@H](O)[C@@H](C(=O)O)O1"
+    )
     
+    # Verify pattern match and check for at least one glycosidic bond
     if mol.HasSubstructMatch(glucuronic_pattern):
-        return True, "Contains beta-D-glucuronic acid with glycosidic bond"
+        # Additional check for actual glycosidic linkage (O connected to non-H)
+        for match in mol.GetSubstructMatches(glucuronic_pattern):
+            glycosidic_oxygen_idx = match[0]
+            atom = mol.GetAtomWithIdx(glycosidic_oxygen_idx)
+            # Ensure oxygen is connected to another atom (not just part of the ring)
+            if atom.GetDegree() >= 2:
+                return True, "Contains beta-D-glucuronic acid with glycosidic bond"
+        
     return False, "No beta-D-glucuronic acid glycoside detected"
