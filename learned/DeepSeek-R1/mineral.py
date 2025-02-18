@@ -2,15 +2,19 @@
 Classifies: CHEBI:46662 mineral
 """
 """
-Classifies: Minerals as defined by geological processes, including ionic compounds and certain covalent structures.
+Classifies: Minerals as defined by geological processes, including ionic compounds, covalent structures, and elemental forms.
 """
 from rdkit import Chem
+from rdkit.Chem import Mol
 
 def is_mineral(smiles: str):
     """
     Determines if a molecule is a mineral based on its SMILES string.
-    Minerals are typically ionic compounds with metal cations and inorganic anions,
-    or covalent structures like oxides/sulfides of metals/metalloids.
+    Minerals are typically:
+    - Ionic compounds with metal cations and inorganic anions
+    - Covalent structures of metals with nonmetals (O, S, F, Cl, etc.)
+    - Elemental forms of metals/metalloids or certain nonmetals (e.g., sulfur)
+    - Hydrates where the core compound meets mineral criteria
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -22,59 +26,64 @@ def is_mineral(smiles: str):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # List of elements considered metals/metalloids for mineral classification
-    metals = {'Li', 'Be', 'Na', 'Mg', 'Al', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co',
-              'Ni', 'Cu', 'Zn', 'Ga', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd',
-              'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu',
-              'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir',
-              'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Si', 'B', 'As', 'Se', 'Te', 'Ge'}
-    
+
+    # Define metals/metalloids and allowed nonmetals for covalent structures
+    metals = {'Li','Be','Na','Mg','Al','K','Ca','Sc','Ti','V','Cr','Mn','Fe','Co',
+              'Ni','Cu','Zn','Ga','Rb','Sr','Y','Zr','Nb','Mo','Tc','Ru','Rh','Pd',
+              'Ag','Cd','In','Sn','Sb','Cs','Ba','La','Ce','Pr','Nd','Pm','Sm','Eu',
+              'Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu','Hf','Ta','W','Re','Os','Ir',
+              'Pt','Au','Hg','Tl','Pb','Bi','Po','Fr','Ra','Ac','Th','Pa','U','Si','B','As','Se','Te','Ge'}
+    covalent_nonmetals = {'O','S','F','Cl','Br','I','N','P'}
+
+    # Split into fragments (separate ions/metal complexes)
     fragments = Chem.GetMolFrags(mol, asMols=True, sanitizeFrags=False)
-    has_cation = False
-    has_anion = False
     
-    # Check for ionic compounds (multiple fragments with charges)
+    # Remove water fragments for hydrate handling
+    non_water_frags = []
     for frag in fragments:
-        for atom in frag.GetAtoms():
-            symbol = atom.GetSymbol()
-            charge = atom.GetFormalCharge()
-            # Check for metal cations
-            if symbol in metals and charge > 0:
-                has_cation = True
-            # Check for anions
-            if charge < 0:
-                has_anion = True
-                
-    if has_cation and has_anion:
-        return True, "Ionic compound with metal cation and anion"
+        formula = Chem.rdMolDescriptors.CalcMolFormula(frag)
+        if formula == 'H2O':
+            continue
+        non_water_frags.append(frag)
     
-    # Check for covalent metal oxides/sulfides (single fragment)
-    if len(fragments) == 1:
-        metal_present = False
-        oxygen_count = 0
-        sulfur_count = 0
-        for atom in mol.GetAtoms():
-            symbol = atom.GetSymbol()
-            if symbol in metals:
-                metal_present = True
-            if symbol == 'O':
-                oxygen_count += 1
-            if symbol == 'S':
-                sulfur_count += 1
+    # Check 1: Ionic compounds (multiple fragments with metal cations and inorganic anions)
+    if len(non_water_frags) >= 2:
+        has_metal_cation = False
+        has_inorganic_anion = False
         
-        # Metal oxide (e.g., SiO2, Fe2O3)
-        if metal_present and oxygen_count > 0:
-            return True, "Covalent metal oxide"
-        # Metal sulfide (e.g., FeS2 as covalent structure)
-        if metal_present and sulfur_count > 0:
-            return True, "Covalent metal sulfide"
-    
-    # Check for elemental forms (e.g., native metals, sulfur)
-    elements_present = {atom.GetSymbol() for atom in mol.GetAtoms()}
-    if len(elements_present) == 1:
-        elem = elements_present.pop()
-        if elem in metals or elem in {'S', 'C'}:
+        for frag in non_water_frags:
+            frag_charge = sum(atom.GetFormalCharge() for atom in frag.GetAtoms())
+            contains_metal = any(atom.GetSymbol() in metals for atom in frag.GetAtoms())
+            contains_carbon = any(atom.GetAtomicNum() == 6 for atom in frag.GetAtoms())
+            
+            if frag_charge > 0 and contains_metal:
+                has_metal_cation = True
+            elif frag_charge < 0 and not contains_carbon:  # Anion must be inorganic (no carbon)
+                has_inorganic_anion = True
+        
+        if has_metal_cation and has_inorganic_anion:
+            return True, "Ionic compound with metal cation and inorganic anion"
+
+    # Check 2: Covalent structures (single fragment with metal + nonmetal bonds)
+    if len(non_water_frags) == 1:
+        has_metal = False
+        has_nonmetal = False
+        for atom in non_water_frags[0].GetAtoms():
+            sym = atom.GetSymbol()
+            if sym in metals:
+                has_metal = True
+            elif sym in covalent_nonmetals:
+                has_nonmetal = True
+        
+        if has_metal and has_nonmetal:
+            return True, "Covalent metal-nonmetal compound"
+
+    # Check 3: Elemental forms (single element, neutral)
+    elements = {atom.GetSymbol() for atom in mol.GetAtoms()}
+    if len(elements) == 1:
+        elem = elements.pop()
+        total_charge = sum(atom.GetFormalCharge() for atom in mol.GetAtoms())
+        if (elem in metals or elem in {'S','C'}) and total_charge == 0:
             return True, "Elemental form of a mineral"
-    
+
     return False, "Does not meet mineral criteria"
