@@ -1,166 +1,38 @@
 """
 Classifies: CHEBI:22798 beta-D-glucoside
 """
- - beta-D-Glcp-(1->3)-alpha-D-Galp: SMILES: O([C@@H]1O[C@H]([C@H](O)[C@H](O)[C@H]1O)CO)[C@@H]2[C@H](O)[C@H](O)[C@H](O)O[C@@H]2CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-nonadecanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heneicosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-14-methylhexadecasphinganine: SMILES: C(CCCCCC(CC)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-pentacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-heptacosanoyl-15-methylhexadecasphinganine: SMILES: C(CCCCCCC(C)C)CCCC[C@@H](O)[C@@H](NC(CCCCCCCCCCCCCCCCCCCCCCCCC)=O)CO[C@@H]1O[C@@H]([C@@H](O)[C@@H]([C@H]1O)O)CO
- - beta-D-glucosyl-(1<->1')-N-tricosanoyl-15-methyl
+"""
+Classifies: CHEBI:XXXXX beta-D-glucoside
+"""
+from rdkit import Chem
+
+def is_beta_D_glucoside(smiles: str):
+    """
+    Determines if a molecule is a beta-D-glucoside based on its SMILES string.
+    A beta-D-glucoside has a glucose moiety where the anomeric carbon (C1) has a beta configuration.
+    
+    Args:
+        smiles (str): SMILES string of the molecule
+        
+    Returns:
+        bool: True if molecule is a beta-D-glucoside, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Define SMARTS pattern for beta-D-glucoside
+    # Pattern matches the anomeric carbon (C1) with beta configuration (C@@) and D-glucose stereochemistry
+    beta_D_glucoside_pattern = Chem.MolFromSmarts(
+        "[OX2;!H0]-[C@@H]1[C@@H]([!#1])[C@H]([!#1])[C@@H]([!#1])[C@H](CO)O1"
+    )
+    
+    if beta_D_glucoside_pattern is None:
+        return False, "Invalid SMARTS pattern"
+    
+    # Check for the presence of the beta-D-glucoside pattern
+    if mol.HasSubstructMatch(beta_D_glucoside_pattern):
+        return True, "Beta-D-glucoside detected: anomeric carbon in beta configuration with D-glucose stereochemistry"
+    
+    return False, "No beta-D-glucoside substructure found"
