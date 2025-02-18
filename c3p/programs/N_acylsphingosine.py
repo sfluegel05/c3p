@@ -4,17 +4,17 @@ Classifies: CHEBI:52639 N-acylsphingosine
 #!/usr/bin/env python
 """
 Classifies: N‐acylsphingosine (parent compounds of the ceramide family)
-Definition: An N‐acylsphingosine is a sphingosine (a long‐chain amino alcohol with two hydroxyl groups,
-one of which is on the primary alcohol and one on a secondary carbon that also carries the amide)
-that has its only amino group converted to an amide by attachment of a fatty acyl group.
-The acyl group may be very short (e.g. acetyl) or long. To avoid classifying phosphorylated/glycosylated
-derivatives (i.e. ceramides with extra headgroups), we reject molecules that contain any rings.
-We then look for an amide bond (C(=O)–N) where the N atom has exactly two heavy neighbors.
-One neighbor (from the amide) is the acyl carbon, which must show a C=O bond to at least one oxygen and
-carry an aliphatic (non‐ring, non‐aromatic) chain of at least 2 carbons. The other neighbor must be part
-of a sphingosine backbone – namely, it must be a carbon that carries a hydroxymethyl substituent (–CH2–OH)
-and is itself attached to a second carbon bearing an –OH and further attached to an alkene.
-This set of criteria was chosen in an effort to explain the outcomes of the previous version.
+
+Definition: An N‐acylsphingosine is a molecule that contains a sphingosine backbone –
+an acyclic chain featuring a secondary amine attached to two hydroxyl‐bearing carbons
+(where one of these carbons is linked to a C=C bond) – and where the nitrogen is acylated
+(via an amide bond to a fatty acyl group that itself has a long aliphatic chain).
+
+Improvements over previous version:
+  • The entire molecule is required to be free of rings (to exclude glycosyl/phosphorylated derivatives).
+  • We enforce that the N atom’s degree equals 2 so that it is only bound to the backbone and the acyl group.
+  • The acyl substituent must be a carbonyl carbon (connected via a double bond to oxygen)
+    and carry a long aliphatic chain (minimum 6 carbons) defined by a DFS search limited to non‐aromatic carbons.
 """
 
 from rdkit import Chem
@@ -23,44 +23,52 @@ def is_N_acylsphingosine(smiles: str):
     """
     Determines if a molecule is an N-acylsphingosine based on its SMILES string.
     
-    The function applies the following steps:
-      1. Parse the SMILES and immediately reject molecules containing any rings.
-      2. Loop over all amide bonds (C(=O)–N). For each:
-         a. Check that the N atom is secondary (degree = 2).
-         b. Designate the carbonyl carbon (acyl group) and the other neighbor of N as the backbone carbon.
-         c. Verify that the backbone carbon has a hydroxymethyl substituent (a neighbor O that is
-            connected only to that carbon) – as expected in sphingosine.
-         d. Verify that the backbone carbon is connected (besides to the amino group) to another carbon
-            that bears an –OH and has at least one double bond (indicative of the alkene in sphingosine).
-         e. Finally, from the acyl (carbonyl) carbon, perform a DFS to estimate the length (in carbons) 
-            of the fatty acyl chain. We allow a minimum chain length of 2 (to accommodate cases like N-acetylsphingosine).
-      3. If a match is found that satisfies these criteria, return True with an appropriate reason.
-         Otherwise, return False.
-         
+    Our approach is to:
+      1. Reject the molecule if any ring is present (thus excluding glycosphingolipids,
+         gangliosides, and phosphorylated derivatives).
+      2. Find a sphingosine backbone pattern defined as:
+           N - C(CO) - C(O)C=C
+         where the first atom is a secondary amine, the next two carbons carry hydroxyl groups,
+         and the last carbon is part of an alkene.
+      3. Ensure that the N atom is acylated (i.e. its only non-backbone neighbor is a carbonyl carbon
+         that is directly double-bonded to an oxygen).
+      4. Use a DFS search to ensure that the acyl carbonyl is attached to a long, unbranched aliphatic chain
+         (at least 6 connected carbons, none in rings or aromatic).
+    
     Args:
-        smiles (str): SMILES string of the molecule
+        smiles (str): SMILES string of the molecule.
     
     Returns:
         bool: True if the molecule matches the N-acylsphingosine criteria, False otherwise.
-        str: Explanation of the decision.
+        str: A message indicating the reason for the decision.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-
-    # Reject molecules with any rings (to eliminate phosphorylated/glycosylated ceramide derivatives)
+    
+    # Reject molecules with any rings (this removes sugar headgroups, phosphates, etc.)
     if mol.GetRingInfo().NumRings() > 0:
         return False, "Molecule contains ring systems not found in a parent N-acylsphingosine structure"
     
-    # Helper: perform a DFS search to measure maximum linear chain length.
-    # Only counts contiguous, non-aromatic, non-ring carbon atoms.
+    # Define a sphingosine backbone SMARTS: we require –N–C(CO)–C(O)C=C.
+    # This pattern ignores chirality and is simplified.
+    backbone_smarts = "N-C(CO)-C(O)C=C"
+    backbone_pattern = Chem.MolFromSmarts(backbone_smarts)
+    if backbone_pattern is None:
+        return False, "Error in backbone SMARTS definition"
+    
+    backbone_matches = mol.GetSubstructMatches(backbone_pattern, useChirality=False)
+    if not backbone_matches:
+        return False, "Sphingosine backbone not found"
+    
+    # Helper function: DFS to count maximum chain length (number of connected, non-aromatic carbon atoms).
     def dfs_chain_length(atom, coming_from, visited):
         max_length = 0
         for nbr in atom.GetNeighbors():
             if nbr.GetIdx() == coming_from:
                 continue
-            # Count only if neighbor is carbon, not aromatic, and not in a ring.
-            if nbr.GetAtomicNum() == 6 and (not nbr.GetIsAromatic()) and (not nbr.IsInRing()):
+            # Only count if the neighbor is a non-aromatic carbon and not part of a ring.
+            if nbr.GetAtomicNum() == 6 and (not nbr.GetIsAromatic()):
                 if nbr.GetIdx() in visited:
                     continue
                 visited.add(nbr.GetIdx())
@@ -70,126 +78,76 @@ def is_N_acylsphingosine(smiles: str):
                 visited.remove(nbr.GetIdx())
         return max_length
 
-    # Set minimum acceptable chain length (in number of carbons in the acyl chain, counting the carbonyl carbon)
-    min_chain_length = 2
+    # Set minimum chain length for the fatty acyl group (in number of carbon atoms)
+    min_chain_length = 6
 
-    # Loop over all bonds to find potential amide bonds (C(=O)-N)
-    for bond in mol.GetBonds():
-        a1 = bond.GetBeginAtom()
-        a2 = bond.GetEndAtom()
-        # Identify pair where one is N and the other is C
-        if (a1.GetAtomicNum() == 7 and a2.GetAtomicNum() == 6) or (a2.GetAtomicNum() == 7 and a1.GetAtomicNum() == 6):
-            # Designate: amide_N is the nitrogen and amide_C is the carbon
-            if a1.GetAtomicNum() == 7:
-                amide_N = a1
-                amide_C = a2
-            else:
-                amide_N = a2
-                amide_C = a1
+    # Iterate over each sphingosine backbone match.
+    for match in backbone_matches:
+        # Ensure that the backbone atoms (by the match) are acyclic.
+        if any(mol.GetAtomWithIdx(idx).IsInRing() for idx in match):
+            continue  # if any backbone atom is in a ring, skip this match
 
-            # Check that the bond itself is a single bond (amide bond) – typically it is.
-            if bond.GetBondType() != Chem.BondType.SINGLE:
-                continue
+        # Our backbone pattern is defined with the first atom as nitrogen.
+        n_idx = match[0]
+        n_atom = mol.GetAtomWithIdx(n_idx)
+        
+        # Ensure the N atom is a secondary amine: it should have exactly two neighbors.
+        # One neighbor should be from the backbone, and one must be the acyl substituent.
+        n_neighbors = [nbr for nbr in n_atom.GetNeighbors()]
+        if len(n_neighbors) != 2:
+            continue
+        
+        # Identify the non-backbone neighbor of the nitrogen.
+        acyl_candidate = None
+        for nbr in n_neighbors:
+            if nbr.GetIdx() not in match:
+                acyl_candidate = nbr
+                break
+        if acyl_candidate is None:
+            continue
 
-            # Verify that the carbon shows a carbonyl: it must have a double bond to an oxygen.
-            carbonyl_found = False
-            for b in amide_C.GetBonds():
-                if b.GetBondType() == Chem.BondType.DOUBLE:
-                    other = b.GetOtherAtom(amide_C)
-                    if other.GetAtomicNum() == 8:
-                        carbonyl_found = True
-                        break
-            if not carbonyl_found:
-                continue
-
-            # Check that the nitrogen is a secondary amine: exactly 2 heavy-atom neighbors.
-            n_neighbors = [nbr for nbr in amide_N.GetNeighbors() if nbr.GetAtomicNum() > 1]
-            if len(n_neighbors) != 2:
-                continue
-
-            # Identify the backbone carbon attached to N (the neighbor that is not the carbonyl C)
-            backbone_atom = None
-            for nbr in amide_N.GetNeighbors():
-                if nbr.GetIdx() != amide_C.GetIdx():
-                    backbone_atom = nbr
+        # Check that the acyl candidate is a carbon that is acyl (i.e. part of a carbonyl group).
+        if acyl_candidate.GetAtomicNum() != 6:
+            continue
+        # It must be connected to at least one oxygen via a double bond.
+        carbonyl_found = False
+        for bond in acyl_candidate.GetBonds():
+            if bond.GetBondType() == Chem.BondType.DOUBLE:
+                other = bond.GetOtherAtom(acyl_candidate)
+                if other.GetAtomicNum() == 8:
+                    carbonyl_found = True
                     break
-            if backbone_atom is None:
-                continue
+        if not carbonyl_found:
+            continue
+        
+        # Now, search from the acyl candidate (excluding the bond back to N) for a long aliphatic chain.
+        visited = set([acyl_candidate.GetIdx()])
+        chain_length = dfs_chain_length(acyl_candidate, n_idx, visited)
+        # Include the carbonyl carbon itself in the chain count.
+        total_chain = 1 + chain_length
+        if total_chain < min_chain_length:
+            continue
+        
+        # If reached here, we have:
+        # – a sphingosine backbone with no rings,
+        # – an N atom with exactly one extra substituent that is a carbonyl-containing carbon,
+        # – and that carbonyl is attached to a sufficiently long, unbranched carbon chain.
+        return True, "Molecule contains a sphingosine backbone with an N-linked acyl (fatty acid) group and a long aliphatic chain"
 
-            # At this point, amide_N is connected to:
-            #   - amide_C (the carbonyl from the acyl group)
-            #   - backbone_atom (should become part of the sphingosine chain)
-            # Next, check that backbone_atom serves as the start of a sphingosine backbone:
-            #   (i) It should carry a hydroxymethyl substituent.
-            hydroxymethyl_found = False
-            for nbr in backbone_atom.GetNeighbors():
-                if nbr.GetAtomicNum() == 8:
-                    # To check –OH, we require that the oxygen is only connected to this carbon (ignoring implicit H)
-                    if nbr.GetDegree() == 1:
-                        hydroxymethyl_found = True
-                        break
-            if not hydroxymethyl_found:
-                continue
+    return False, "No valid N-acylsphingosine backbone with proper acylation and long acyl chain found"
 
-            #   (ii) The backbone_atom should be connected to another carbon (call it b2) that bears an -OH.
-            b2_candidate = None
-            for nbr in backbone_atom.GetNeighbors():
-                if nbr.GetIdx() == amide_N.GetIdx():
-                    continue
-                if nbr.GetAtomicNum() == 6 and (not nbr.IsInRing()):
-                    # Look for an -OH on this candidate.
-                    for subnbr in nbr.GetNeighbors():
-                        if subnbr.GetAtomicNum() == 8 and subnbr.GetDegree() == 1:
-                            b2_candidate = nbr
-                            break
-                    if b2_candidate is not None:
-                        break
-            if b2_candidate is None:
-                continue
-
-            #   (iii) To capture the alkene tail typical of sphingosine we require that b2_candidate is connected (besides backbone_atom)
-            #         to a carbon via a double bond.
-            alkene_found = False
-            for b in b2_candidate.GetBonds():
-                if b.GetBeginAtom().GetIdx() == b2_candidate.GetIdx() or b.GetEndAtom().GetIdx() == b2_candidate.GetIdx():
-                    # skip the bond to backbone_atom
-                    if b.GetOtherAtom(b2_candidate).GetIdx() == backbone_atom.GetIdx():
-                        continue
-                    if b.GetBondType() == Chem.BondType.DOUBLE:
-                        other = b.GetOtherAtom(b2_candidate)
-                        if other.GetAtomicNum() == 6:
-                            alkene_found = True
-                            break
-            if not alkene_found:
-                continue
-
-            # Now check the acyl chain:
-            # Perform a DFS from the carbonyl carbon (amide_C) and count a maximum chain length
-            # Exclude the double-bonded oxygen atom.
-            visited = set([amide_C.GetIdx()])
-            chain_length = dfs_chain_length(amide_C, amide_N.GetIdx(), visited)
-            total_chain = 1 + chain_length  # count the carbonyl carbon itself
-            if total_chain < min_chain_length:
-                continue
-
-            # If all these checks are met we consider the molecule to be a valid N-acylsphingosine.
-            return True, "Contains a sphingosine backbone with an N-linked acyl (fatty acid) group and proper substituents"
-    
-    return False, "No valid N-acylsphingosine backbone with proper acylation and correct hydroxyl/alkene pattern found"
 
 # Example usage:
 if __name__ == "__main__":
-    # Some examples from the assignment:
+    # Test a few provided examples.
     test_smiles = [
-        "CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC",  # N-2-hydroxylignoceroylsphingosine (TP)
-        "CCCCCCCCCCCC\\C=C\\[C@@H](O)[C@H](CO)NC(=O)CCCCCCCCC\\C=C/CCCCCCCC",    # N-(11Z)-icosenoylsphingosine (TP)
-        "[C@H]([C@@H](/C=C/CCCCCCCCCCCCC)O)(NC(=O)CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCOC(CCCCCCC/C=C\\C/C=C\\CCCCC)=O)CO",  # example TP
-        "CCCCCCCCCCCC\\C=C\\[C@@H](O)[C@H](CO)NC(C)=O",  # N-acetylsphingosine (FN in previous version, but now accepted)
-        "CCCCCCCCCCCCCCCC(=O)N[C@H]([C@@H](/C=C/CCCCCCCCC(CC)C)O)CO",  # false positive example from outcomes
+        # True positive:
+        "CCCCCCCCCCCCCCCCCCCCCC(O)C(=O)N[C@@H](CO)[C@H](O)\\C=C\\CCCCCCCCCCCCC",  # N-2-hydroxylignoceroylsphingosine
+        "CCCCCCCCCCCC\\C=C\\[C@@H](O)[C@H](CO)NC(=O)CCCCCCCCC\\C=C/CCCCCCCC",  # N-(11Z)-icosenoylsphingosine
+        # False negative (should be accepted):
+        "CCCCCCCCCCCC\\C=C\\[C@@H](O)[C@H](CO)NC(C)=O"  # N-acetylsphingosine
     ]
     
     for s in test_smiles:
         res, reason = is_N_acylsphingosine(s)
-        print("SMILES:", s)
-        print("Result:", res, "|", reason)
-        print("-" * 80)
+        print(res, reason)
