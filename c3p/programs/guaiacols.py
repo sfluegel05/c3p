@@ -6,17 +6,18 @@ Classifies: CHEBI:134251 guaiacols
 Classifies: guaiacols
 Definition: Any phenol carrying an additional methoxy substituent at the ortho-position.
 We require that a benzene ring (six-membered aromatic ring) has:
-  - a phenolic –OH group (oxygen attached to the ring with exactly one hydrogen) on one carbon, and
-  - at least one adjacent (ortho) carbon on the same ring that carries a methoxy (-OCH3) substituent,
-    as defined by an oxygen connected to the ring and a methyl group (an sp³ carbon with exactly three hydrogens).
+  - a phenolic –OH group (an oxygen attached to the ring with exactly one hydrogen) on one carbon, and
+  - at least one adjacent (ortho) ring carbon carrying a methoxy (-OCH3) substituent.
+  
+This improved version restricts analysis to rings where every atom is an aromatic carbon.
 """
 
 from rdkit import Chem
 
 def is_guaiacols(smiles: str):
     """
-    Determines if a molecule is a guaiacol (a phenol with an additional methoxy substituent 
-    at an ortho-position) based on its SMILES string.
+    Determines if a molecule is classified as a guaiacol (a phenol with an additional methoxy
+    substituent at an ortho-position) based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule.
@@ -25,89 +26,88 @@ def is_guaiacols(smiles: str):
         bool: True if the molecule is classified as a guaiacol, False otherwise.
         str: Explanation for the classification.
     """
-    # Parse the SMILES string.
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
+        
     try:
-        # Add explicit hydrogens so that O–H and –OCH3 details are clear.
+        # Add explicit hydrogens so that –OH and –OCH3 details (including hydrogen counts) are explicit.
         mol = Chem.AddHs(mol)
         Chem.SanitizeMol(mol)
     except Exception as e:
-        return False, f"Error during sanitization: {e}"
+        return False, f"Error during molecule sanitization: {e}"
     
-    # Get ring information.
     ring_info = mol.GetRingInfo()
+    rings = ring_info.AtomRings()
     
-    # Iterate over all rings.
-    for ring in ring_info.AtomRings():
-        # Restrict search to benzene-like rings (6 members, all aromatic carbons).
+    # Iterate only over six-membered rings that are strictly benzene: all atoms are aromatic carbons.
+    for ring in rings:
         if len(ring) != 6:
-            continue  # skip non-benzene rings
-        # Verify that each atom in this ring is a carbon.
-        if any(mol.GetAtomWithIdx(idx).GetSymbol() != "C" for idx in ring):
+            continue  # we only consider six-membered rings
+        # Check that every atom in the ring is a carbon and is aromatic.
+        if not all(mol.GetAtomWithIdx(idx).GetSymbol() == "C" and mol.GetAtomWithIdx(idx).GetIsAromatic() 
+                   for idx in ring):
             continue
         
-        # Create dictionaries to store which ring atoms have an OH or a methoxy group.
-        has_OH = {}    # key: atom index in ring -> bool
-        has_OMe = {}   # key: atom index in ring -> bool
+        # For each ring atom, record if it carries a phenolic –OH or a methoxy group.
+        # We will use dictionaries with keys as atom indices in the ring.
+        has_OH = {}
+        has_OMe = {}
         
-        # Inspect each ring atom for substituents.
         for idx in ring:
             atom = mol.GetAtomWithIdx(idx)
-            # We expect aromatic carbon already by construction.
-            # Check all neighbors that are NOT part of the ring.
             oh_found = False
             ome_found = False
+            # Examine each substituent (neighbor not in the ring)
             for nbr in atom.GetNeighbors():
                 if nbr.GetIdx() in ring:
-                    continue  # skip atoms in the ring
-                # Case 1. Check if neighbor is –OH:
-                if nbr.GetAtomicNum() == 8:
-                    # Get the hydrogens attached to O.
-                    h_count = sum(1 for n in nbr.GetNeighbors() if n.GetAtomicNum() == 1)
+                    continue
+                # Case 1: Look for a hydroxyl (–OH) group.
+                if nbr.GetAtomicNum() == 8:  # oxygen neighbor
+                    # Count hydrogens attached to this oxygen.
+                    h_neighbors = [n for n in nbr.GetNeighbors() if n.GetAtomicNum() == 1]
                     # For a phenolic OH we expect exactly one hydrogen.
-                    if h_count == 1:
-                        oh_found = True
-                # Case 2. Check if neighbor is part of a methoxy group (-OCH3):
-                # Criteria: oxygen atom connected directly to the ring with exactly two neighbors,
-                # one in the ring (already the case) and one which is a methyl carbon.
+                    if len(h_neighbors) == 1:
+                        # Also check that, aside from the ring carbon, there is no other heavy atom attached.
+                        heavy_neighbors = [n for n in nbr.GetNeighbors() if n.GetAtomicNum() != 1 and n.GetIdx() not in ring]
+                        if len(heavy_neighbors) == 0:
+                            oh_found = True
+                # Case 2: Look for a methoxy group (-OCH3).
                 if nbr.GetAtomicNum() == 8:
+                    # For a methoxy group we require that this oxygen has exactly 2 neighbors: 
+                    # one is the ring atom and the other should be a CH3.
                     if nbr.GetDegree() == 2:
-                        # Identify the neighbor in addition to the ring atom.
                         other = None
                         for sub in nbr.GetNeighbors():
                             if sub.GetIdx() not in ring:
                                 other = sub
                         if other is not None and other.GetAtomicNum() == 6:
-                            # Check that the carbon is sp3 (methyl) and has exactly 3 hydrogens.
+                            # Check that the carbon is sp3 and has exactly 3 hydrogens.
                             if other.GetHybridization() == Chem.rdchem.HybridizationType.SP3:
-                                h_on_c = sum(1 for n in other.GetNeighbors() if n.GetAtomicNum() == 1)
-                                # Additionally, ensure that the carbon is connected only to the oxygen (and hydrogens).
-                                if h_on_c == 3:
+                                h_on_c = [n for n in other.GetNeighbors() if n.GetAtomicNum() == 1]
+                                if len(h_on_c) == 3:
                                     ome_found = True
             has_OH[idx] = oh_found
             has_OMe[idx] = ome_found
-
-        # Now, loop over ring atoms: if an atom has an OH, check its ortho (adjacent in ring) atoms for a methoxy.
-        # For benzene, the ortho atoms are those directly bonded to this atom.
-        # We check using the molecule's bond structure.
+            
+        # Now, for each ring atom that has an –OH, check that one of its ortho (adjacent within the ring) atoms 
+        # has a methoxy substituent.
         for idx in ring:
             if not has_OH.get(idx, False):
                 continue
-            # Get neighbors within the ring (these are the ortho positions).
+            # Get the ring atom object.
             atom = mol.GetAtomWithIdx(idx)
+            # Look for adjacent ring atoms (ortho positions) where has_OMe is True.
             for nbr in atom.GetNeighbors():
-                if nbr.GetIdx() in ring:
-                    if has_OMe.get(nbr.GetIdx(), False):
-                        return True, "Found benzene ring with a phenolic OH and an ortho methoxy group"
+                if nbr.GetIdx() in ring and has_OMe.get(nbr.GetIdx(), False):
+                    return True, "Found benzene ring with a phenolic OH and an ortho methoxy group"
+                    
     return False, "No benzene ring with ortho -OH and -OCH3 substituents found"
-
+    
 # Example usage (uncomment to test):
 # test_smiles = [
-#     "COc1ccc(O)cc1",  # guaiacol itself: 2-methoxyphenol should return True
-#     "c1cc(O)ccc1"     # phenol without the methoxy should return False
+#     "COc1ccc(O)cc1",  # 2-methoxyphenol (guaiacol): should return True
+#     "c1cc(O)ccc1"     # phenol: should return False
 # ]
 # for s in test_smiles:
 #     result, reason = is_guaiacols(s)
