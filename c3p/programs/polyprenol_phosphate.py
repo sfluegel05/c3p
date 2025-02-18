@@ -31,7 +31,8 @@ def is_polyprenol_phosphate(smiles: str):
 
     # Check for polyprenol chain (long chain of isoprene units)
     # Look for at least 5 isoprene units (C=C-C-C-C=C)
-    isoprene_pattern = Chem.MolFromSmarts("[CX4]=[CX3]-[CX4]-[CX4]-[CX3]=[CX4]")
+    # Relaxed pattern to account for different bond types and stereochemistry
+    isoprene_pattern = Chem.MolFromSmarts("[CX3]=[CX3]-[CX4]-[CX4]-[CX3]=[CX4]")
     isoprene_matches = mol.GetSubstructMatches(isoprene_pattern)
     if len(isoprene_matches) < 5:
         return False, f"Found {len(isoprene_matches)} isoprene units, need at least 5"
