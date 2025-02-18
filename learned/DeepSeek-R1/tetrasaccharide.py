@@ -6,7 +6,6 @@ Classifies: CHEBI:166592 tetrasaccharide
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
-from rdkit.Chem import Descriptors
 
 def is_tetrasaccharide(smiles: str):
     """
@@ -24,69 +23,44 @@ def is_tetrasaccharide(smiles: str):
     if not mol:
         return False, "Invalid SMILES"
 
-    # Find potential sugar rings (5 or 6-membered with oxygen)
-    sugar_rings = []
+    # Find all rings that are potential sugar rings (5 or 6-membered with oxygen)
     ri = mol.GetRingInfo()
+    sugar_rings = []
     for ring in ri.AtomRings():
-        if len(ring) in [5, 6] and any(mol.GetAtomWithIdx(a).GetAtomicNum() == 8 for a in ring):
-            sugar_rings.append(set(ring))
-
-    # Find glycosidic bonds (O connecting two carbons, one from sugar ring)
-    glycosidic_oxygens = set()
-    for bond in mol.GetBonds():
-        if bond.GetBondType() != Chem.BondType.SINGLE:
+        ring_size = len(ring)
+        if ring_size not in [5, 6]:
             continue
-        a1 = bond.GetBeginAtom()
-        a2 = bond.GetEndAtom()
-        # Check if one atom is O and the other is C
-        if {a1.GetAtomicNum(), a2.GetAtomicNum()} != {6, 8}:
-            continue
-        o_atom = a1 if a1.GetAtomicNum() == 8 else a2
-        c_atom = a1 if a1.GetAtomicNum() == 6 else a2
+        # Check if the ring contains an oxygen atom
+        has_oxygen = any(mol.GetAtomWithIdx(a).GetAtomicNum() == 8 for a in ring)
+        if has_oxygen:
+            sugar_rings.append(ring)
 
-        # Check if the carbon is in a sugar ring
-        c_in_ring = any(c_atom.GetIdx() in r for r in sugar_rings)
-        # Check if the oxygen is part of another sugar ring or connects to non-ring carbon (linear unit)
-        o_in_ring = any(o_atom.GetIdx() in r for r in sugar_rings)
+    if len(sugar_rings) != 4:
+        return False, f"Found {len(sugar_rings)} sugar rings, expected 4"
 
-        if c_in_ring and not o_in_ring:
-            glycosidic_oxygens.add(o_atom.GetIdx())
-        elif o_in_ring:
-            # Check if connected to a carbon not in the same ring
-            for r in sugar_rings:
-                if o_atom.GetIdx() in r and c_atom.GetIdx() not in r:
-                    glycosidic_oxygens.add(o_atom.GetIdx())
-                    break
+    # Find glycosidic bonds (ethers connecting different sugar rings)
+    glycosidic_bonds = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8 and atom.GetDegree() == 2:
+            neighbors = atom.GetNeighbors()
+            if len(neighbors) != 2:
+                continue
+            a1, a2 = neighbors
+            # Determine which sugar rings the neighbors belong to
+            ring_indices = []
+            for a in [a1, a2]:
+                for i, r in enumerate(sugar_rings):
+                    if a.GetIdx() in r:
+                        ring_indices.append(i)
+                        break
+            if len(ring_indices) == 2 and ring_indices[0] != ring_indices[1]:
+                glycosidic_bonds += 1
 
-    # Each glycosidic bond has one oxygen, so count unique oxygens
-    glycosidic_bonds = len(glycosidic_oxygens)
     if glycosidic_bonds < 3:
         return False, f"Found {glycosidic_bonds} glycosidic bonds, need at least 3"
 
-    # Check for four sugar units (approximated by rings + linear units with hydroxyls)
-    # Split into fragments by breaking glycosidic bonds
-    edmol = Chem.EditableMol(mol)
-    bonds_to_remove = []
-    for bond in mol.GetBonds():
-        if bond.GetBondType() == Chem.BondType.SINGLE:
-            a1 = bond.GetBeginAtom()
-            a2 = bond.GetEndAtom()
-            if {a1.GetAtomicNum(), a2.GetAtomicNum()} == {6, 8}:
-                o_atom = a1 if a1.GetAtomicNum() == 8 else a2
-                if o_atom.GetIdx() in glycosidic_oxygens:
-                    bonds_to_remove.append(bond.GetIdx())
+    # Additional check for molecular formula (optional)
+    # Calculate the number of oxygen atoms (each sugar has multiple O's, but this varies)
+    # Not reliable, but could add if needed.
 
-    # Remove bonds and count fragments
-    for bid in reversed(sorted(bonds_to_remove)):
-        edmol.RemoveBond(bid)
-    frags = Chem.GetMolFrags(edmol.GetMol(), asMols=True)
-    if len(frags) != 4:
-        return False, f"Split into {len(frags)} fragments, expected 4"
-
-    # Check each fragment is a potential monosaccharide (has multiple OH groups)
-    for frag in frags:
-        oh_count = sum(1 for atom in frag.GetAtoms() if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1)
-        if oh_count < 2:  # At least two hydroxyls for a monosaccharide
-            return False, f"Fragment has only {oh_count} hydroxyls"
-
-    return True, "Four sugar units connected by three glycosidic bonds"
+    return True, "Four sugar rings connected by three glycosidic bonds"
