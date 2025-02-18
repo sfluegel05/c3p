@@ -1,0 +1,207 @@
+"""
+Classifies: CHEBI:64985 bioconjugate
+"""
+ - (S)-PGD2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - 5-S-cysteinyldopa: SMILES: N[C@@H](CSc1ccc(O)c(O)c1C[C@H](N)C(O)=O)C(O)=O
+ - 5-S-cysteinyl-3-S-sulfodopa: SMILES: N[C@@H](CSc1cc(O)c(S(=O)(=O)O)c(O)c1C[C@H](N)C(O)=O)C(O)=O
+ - (5Z,8Z,11Z,14Z)-eicosatetraenoyl-CoA: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
+ - 5-S-cysteinyl-3-O-sulfodopa: SMILES: N[C@@H](CSc1cc(O)c(OS(=O)(=O)O)c(O)c1C[C@H](N)C(O)=O)C(O)=O
+ - (R)-PGJ2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@@H](C(C1)=O)/C=C/[C@H](CCCCC)O)SC[C@H](NC(=O)CC[C@H](N)C(=O)O)C(=O)NCC(=O)O)C/C=C\CCCC(=O)O
+ - 3,4-dihydroxyphenylglycol-S-cysteine: SMILES: N[C@@H](CSC1CC(O)C(O)CO)C(O)=O
+ - 4-(glutathion-S-yl)-1,2-dihydroxy-1,2-dihydronaphthalene: SMILES: C1C(C(C2=CC=CC=C21)O)O.SC[C@H](NC(=O)CC[C@H](N)C(=O)O)C(=O)NCC(=O)O
+ - (5Z,8Z,11Z,14Z,17Z)-eicosapentaenoyl-CoA: SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
+ - 5-S-cysteinyl-3-O-sulfodopa: SMILES: N[C@@H](CSc1cc(O)c(OS(=O)(=O)O)c(O)c1C[C@H](N)C(O)=O)C(O)=O
+ - (R)-PGF2alpha-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (5Z,8Z,11Z,14Z,17Z)-icosapentaenoyl-CoA(4-): SMILES: CC\C=C/C\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP([O-])(=O)OP([O-])(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP([O-])([O-])=O)N1C=NC2=C1N=CN=C2N
+ - (R)-PGE2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGE2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGF2alpha-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-PGE1-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGE1-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-PGA1-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGA1-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-PGA2-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGA2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-PGJ2-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](C(C1)=O)/C=C/[C@H](CCCCC)O)SC[C@H](NC(=O)CC[C@H](N)C(=O)O)C(=O)NCC(=O)O)C/C=C\CCCC(=O)O
+ - (S)-PGJ2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](C(C1)=O)/C=C/[C@H](CCCCC)O)SC[C@H](NC(=O)CC[C@H](N)C(=O)O)C(=O)NCC(=O)O)C/C=C\CCCC(=O)O
+ - (R)-PGF1alpha-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGF1alpha-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-PGF2alpha-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGF2alpha-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-PGH1-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGH1-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-PGH2-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGH2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-PGI2-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-PGI2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-TXA2-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-TXA2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-TXB2-S-glutathione conjugate: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-TXB2-S-glutathione conjugate: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTC4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTC4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTD4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTD4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTE4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTE4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTF4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTF4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTG4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTG4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTH4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTH4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTI4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTI4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTJ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTJ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTK4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTK4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTL4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTL4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTM4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTM4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTN4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTN4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTO4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTO4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTP4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTP4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTQ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTQ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTR4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTR4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTS4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTS4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTT4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTT4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTU4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTU4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTV4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTV4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTW4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTW4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTX4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTX4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTY4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTY4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTZ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTZ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTA4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTA4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTB4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTB4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTC4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTC4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTD4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTD4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTE4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTE4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTF4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTF4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTG4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTG4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTH4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTH4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTI4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTI4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTJ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTJ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTK4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTK4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTL4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTL4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTM4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTM4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTN4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTN4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTO4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTO4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTP4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTP4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTQ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTQ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTR4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTR4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTS4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTS4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTT4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTT4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTU4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTU4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTV4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTV4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTW4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTW4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTX4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTX4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTY4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTY4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTZ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTZ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTA4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTA4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTB4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTB4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTC4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTC4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTD4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTD4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTE4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTE4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTF4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTF4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTG4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTG4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTH4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTH4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTI4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTI4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTJ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTJ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTK4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTK4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTL4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTL4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTM4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTM4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@h](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTN4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTN4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTO4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTO4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTP4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTP4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTQ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTQ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTR4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTR4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTS4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTS4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTT4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTT4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTU4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTU4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTV4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@h](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTV4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTW4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTW4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTX4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTX4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTY4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTY4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTZ4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTZ4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTA4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTA4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTB4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTB4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTC4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTC4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTD4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTD4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTE4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTE4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTF4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTF4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (R)-LTG4: SMILES: [C@H]1([C@@H]([C@@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (S)-LTG4: SMILES: [C@H]1([C@H]([C@H](CC1=O)SC[C@H](NC(CC[C@H](N)C(=O)O)=O)C(=O)NCC(=O)O)/C=C/[C@H](CCCCC)O)C/C=C\CCCC(=O)O
+ - (
