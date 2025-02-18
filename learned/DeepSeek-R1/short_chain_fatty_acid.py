@@ -26,51 +26,41 @@ def is_short_chain_fatty_acid(smiles: str):
 
     # Check for exactly one carboxylic acid group
     carboxylic_pattern = MolFromSmarts("[CX3](=O)[OX2H1]")
-    matches = mol.GetSubstructMatches(carboxylic_pattern)
-    if len(matches) != 1:
-        return False, f"Found {len(matches)} carboxylic acid groups (needs 1)"
+    carboxylic_matches = mol.GetSubstructMatches(carboxylic_pattern)
+    if len(carboxylic_matches) != 1:
+        return False, f"Found {len(carboxylic_matches)} carboxylic acid groups (needs 1)"
 
-    # Check all atoms are only C, H, O
-    for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() not in {1, 6, 8}:
-            return False, "Contains non-C/H/O atoms"
-
-    # Verify exactly two oxygen atoms (carboxylic group only)
+    # Check oxygen count is exactly 2 (from COOH)
     o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
     if o_count != 2:
         return False, f"Found {o_count} oxygen atoms (must be exactly 2)"
 
-    # Get carbonyl carbon index from match
-    carbonyl_idx = matches[0][0]
-    carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
+    # Check for other heteroatoms
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() not in {1, 6, 8}:
+            return False, "Contains non-carbon/hydrogen/oxygen atoms"
+        if atom.GetAtomicNum() == 8:
+            # Verify oxygen is part of the carboxylic group
+            in_carboxylic = any(atom.GetIdx() in match for match in carboxylic_matches)
+            if not in_carboxylic:
+                return False, "Oxygen atom outside carboxylic group"
 
-    # Find alpha carbon (must be directly bonded to carbonyl)
-    alpha_candidates = []
-    for neighbor in carbonyl_atom.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6:
-            alpha_candidates.append(neighbor.GetIdx())
-    
-    if not alpha_candidates:
-        return False, "No alpha carbon found"
+    # Get the carbonyl carbon (first atom in the match)
+    carbonyl_carbon_idx = carboxylic_matches[0][0]
 
-    alpha_idx = alpha_candidates[0]
-
-    # DFS to find longest chain from alpha carbon (excluding carbonyl)
-    def dfs(current, visited):
-        max_length = 1  # Start counting from current atom
-        visited.add(current)
-        atom = mol.GetAtomWithIdx(current)
+    # Find longest carbon chain starting from carbonyl carbon
+    def dfs(atom_idx, visited, current_length):
+        visited.add(atom_idx)
+        max_length = current_length
+        atom = mol.GetAtomWithIdx(atom_idx)
         for neighbor in atom.GetNeighbors():
-            nbr_idx = neighbor.GetIdx()
-            if nbr_idx == carbonyl_idx:
-                continue  # Skip back to carbonyl
-            if neighbor.GetAtomicNum() == 6 and nbr_idx not in visited:
-                length = dfs(nbr_idx, visited.copy())
-                max_length = max(max_length, 1 + length)
+            if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in visited:
+                length = dfs(neighbor.GetIdx(), visited.copy(), current_length + 1)
+                if length > max_length:
+                    max_length = length
         return max_length
 
-    chain_length = dfs(alpha_idx, set())
-
+    chain_length = dfs(carbonyl_carbon_idx, set(), 1)
     if chain_length >= 6:
         return False, f"Main chain length {chain_length} >=6"
 
