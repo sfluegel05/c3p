@@ -24,25 +24,43 @@ def is_alpha_amino_acid_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Improved SMARTS patterns to account for varied bonding and ring systems
-    # Pattern 1: General case (linear or non-ring) with any bond type between N and alpha carbon
-    # [NX3] includes primary, secondary amines and aromatic nitrogens with three bonds
-    # [CX3,CX4] allows alpha carbon with 3 or 4 bonds (including ring carbons)
-    amino_ester_pattern = Chem.MolFromSmarts("[NX3]~[CX3,CX4]-C(=O)-[OX2]-[#6]")
-    
-    # Pattern 2: Nitrogen in a ring system (e.g., proline derivatives)
-    # Checks for ring-context amino groups connected to ester carbonyl
-    ring_amino_ester_pattern = Chem.MolFromSmarts("[NX3&R]~[CX3,CX4&R]-C(=O)-[OX2]-[#6]")
-    
-    # Check both patterns
-    if mol.HasSubstructMatch(amino_ester_pattern) or mol.HasSubstructMatch(ring_amino_ester_pattern):
+    # Define SMARTS pattern for alpha-amino acid ester core structure:
+    # [NH2/NH]-C(alpha)-C(=O)-O-R
+    # Where:
+    # - N is primary/secondary amine (not amide)
+    # - C(alpha) is connected to both N and ester carbonyl
+    # - Ester oxygen connected to any carbon (R group)
+    amino_ester_smart = Chem.MolFromSmarts(
+        "[NX3;H2,H1;!$(N-C=O)]-!@[CX4H0,CX4H1]"  # Amino group (NH2/NH) connected to alpha carbon
+        "(-[#6])"  # Alpha carbon must have at least one substituent (like amino acid side chain)
+        "-C(=O)-[OX2]-[#6]"  # Ester group: carbonyl connected to oxygen and R group
+    )
+
+    # Check for matches considering possible stereochemistry
+    if mol.HasSubstructMatch(amino_ester_smart):
         return True, "Contains amino group adjacent to ester carbonyl (alpha position)"
-    
-    # Additional check for cases where ester oxygen is part of a larger structure
-    # and alpha carbon has substituents (like in branched chains)
-    # This pattern allows up to two arbitrary atoms between N and ester carbonyl
-    extended_pattern = Chem.MolFromSmarts("[NX3]~[CX3,CX4](-[#6])-C(=O)-[OX2]-[#6]")
-    if mol.HasSubstructMatch(extended_pattern):
+
+    # Special case for cyclic amino acids (e.g., proline derivatives)
+    # Allows alpha carbon in a ring system
+    cyclic_amino_ester_smart = Chem.MolFromSmarts(
+        "[NX3;R;!$(N-C=O)]"  # Ring nitrogen (e.g., proline-like)
+        "-@[CX4;R]"  # Alpha carbon in ring connected to N
+        "-C(=O)-[OX2]-[#6]"  # Ester group
+    )
+    if mol.HasSubstructMatch(cyclic_amino_ester_smart):
+        return True, "Contains cyclic amino group adjacent to ester carbonyl (alpha position)"
+
+    # Check for ester groups in molecule (avoid false positives where carbonyl isn't ester)
+    ester_pattern = Chem.MolFromSmarts("[CX3](=[OX1])-[OX2]-[#6]")
+    if not mol.HasSubstructMatch(ester_pattern):
+        return False, "No ester groups present"
+
+    # Final check with relaxed pattern for complex cases (e.g., branched substituents)
+    relaxed_smart = Chem.MolFromSmarts(
+        "[NX3;H2,H1;!$(N-C=O)]-*!@[CX4]"  # More flexible alpha carbon connection
+        "-C(=O)-[OX2]-[#6]"
+    )
+    if mol.HasSubstructMatch(relaxed_smart):
         return True, "Contains amino group adjacent to ester carbonyl (alpha position)"
-    
+
     return False, "No alpha-amino acid ester substructure found"
