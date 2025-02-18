@@ -4,34 +4,28 @@ Classifies: CHEBI:35359 carboxamidine
 from rdkit import Chem
 
 def is_carboxamidine(smiles: str):
+    """
+    Determines if a molecule is a carboxamidine based on its SMILES string.
+    Carboxamidines have the structure RC(=NR)NR2 (a carbon double-bonded to an NR group and single-bonded to an NR2 group).
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a carboxamidine, False otherwise
+        str: Reason for classification
+    """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for carboxamidine core: C(=N)-N with appropriate substituents
-    pattern = Chem.MolFromSmarts("[C;!a](=[N;D2])[N;D3]")
-    matches = mol.GetSubstructMatches(pattern)
+    # SMARTS pattern for carboxamidine group
+    # [CX3;!a]: non-aromatic carbon with three bonds
+    # =[NX2;D2]: double bond to N with two connections (C and R/H)
+    # [NX3;D3]: single bond to N with three connections (C and two R/H)
+    pattern = Chem.MolFromSmarts("[CX3;!a](=[NX2;D2])[NX3;D3]")
     
-    if not matches:
-        return False, "No carboxamidine group detected"
-    
-    for match in matches:
-        c_idx, n1_idx, n2_idx = match  # Assuming pattern order is C, N1, N2
-        
-        c_atom = mol.GetAtomWithIdx(c_idx)
-        n1_atom = mol.GetAtomWithIdx(n1_idx)
-        n2_atom = mol.GetAtomWithIdx(n2_idx)
-        
-        # Check none of the atoms are aromatic
-        if (c_atom.GetIsAromatic() or 
-            n1_atom.GetIsAromatic() or 
-            n2_atom.GetIsAromatic()):
-            continue
-        
-        # Check degrees are correct (redundant due to SMARTS, but safe)
-        if n1_atom.GetDegree() != 2 or n2_atom.GetDegree() != 3:
-            continue
-        
+    if mol.HasSubstructMatch(pattern):
         return True, "Contains carboxamidine group (RC(=NR)NR2)"
-    
-    return False, "No valid carboxamidine group found"
+    else:
+        return False, "No carboxamidine group detected"
