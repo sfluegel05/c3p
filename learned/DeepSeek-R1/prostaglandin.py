@@ -1,34 +1,76 @@
 """
 Classifies: CHEBI:26333 prostaglandin
 """
-</think>
+"""
+Classifies: CHEBI:15846 prostaglandin
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-Okay, let's figure out why the previous code didn't work well. The main issues were false positives and false negatives. Let's look at the errors:
+def is_prostaglandin(smiles: str) -> tuple[bool, str]:
+    """
+    Determines if a molecule is a prostaglandin based on its SMILES string.
+    Prostaglandins are derived from prostanoic acid, featuring a cyclopentane ring with two substituent chains,
+    one ending in a carboxylic acid derivative, and containing oxygen functional groups and double bonds.
 
-False Positives: The code incorrectly classified some non-prostaglandins. For example, some had cyclopentane rings and substituents but weren't derived from prostanoic acid. The check for substituent chains might have been too lenient. Also, the carbon count (15-25) might be too broad.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-False Negatives: Some prostaglandins were missed. The cyclopentane check failed for prostaglandins A2, B2, etc., which have a cyclopentenone ring (cyclopentane with a ketone and double bond). The code's cyclopentane pattern (C1CCCC1) only checks for all-carbon rings, missing those with oxygen. Also, some missed due to substituent checks, like if the carboxylic acid was an amide or ester.
+    Returns:
+        bool: True if molecule is a prostaglandin, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
 
-So, the key problems are:
+    # Check for cyclopentane ring (all carbons)
+    cyclopentane = Chem.MolFromSmarts("C1CCCC1")
+    if not mol.HasSubstructMatch(cyclopentane):
+        return False, "No cyclopentane ring"
 
-1. **Cyclopentane detection**: The original code looked for a 5-membered all-carbon ring. But prostaglandins like A2 have a cyclopentenone (with a ketone and double bond in the ring). Need to adjust the ring pattern to allow oxygen and double bonds.
+    # Check for at least two substituent chains on the cyclopentane
+    matches = mol.GetSubstructMatches(cyclopentane)
+    has_two_substituents = False
+    for ring in matches:
+        substituent_count = 0
+        ring_atoms = set(ring)
+        for atom_idx in ring:
+            atom = mol.GetAtomWithIdx(atom_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetIdx() not in ring_atoms:
+                    substituent_count += 1
+                    break  # Count each ring atom with at least one substituent
+        if substituent_count >= 2:
+            has_two_substituents = True
+            break
+    if not has_two_substituents:
+        return False, "Cyclopentane ring does not have at least two substituent chains"
 
-2. **Substituent chains**: The check for two substituents on the ring might not account for proper chain lengths. Prostanoic acid has two side chains (one 7-carbon, one 8-carbon). Maybe check for longer chains.
+    # Check for carboxylic acid derivative (acid, ester, amide)
+    acid_pattern = Chem.MolFromSmarts("[CX3](=O)[O,N]")
+    if not mol.HasSubstructMatch(acid_pattern):
+        return False, "No carboxylic acid derivative group (acid, ester, amide)"
 
-3. **Carboxylic acid derivative**: The pattern [CX3](=O)[O,N] might miss some cases, like when the acid is part of an ester or amide. Need a better SMARTS pattern.
+    # Check oxygen count (prostaglandins have multiple O-containing groups)
+    o_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 8)
+    if o_count < 3:
+        return False, f"Insufficient oxygen atoms ({o_count})"
 
-4. **Carbon count**: The range 15-25 was too broad. Prostanoic acid is C20, but derivatives might vary. Maybe check for at least 15 carbons.
+    # Check carbon count (prostanoic acid is C20, derivatives may vary)
+    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
+    if not (15 <= c_count <= 25):
+        return False, f"Carbon count {c_count} outside typical range (15-25)"
 
-5. **Hydroxyl groups**: Some prostaglandins might have the hydroxyl in a different form (like esterified), but the parent should have them. The check for [OX2H] might miss if the hydroxyl is part of a different group.
+    # Check for at least one hydroxyl group
+    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
+    if not mol.HasSubstructMatch(hydroxyl_pattern):
+        return False, "No hydroxyl groups present"
 
-Let's adjust the approach:
+    # Check for at least one double bond
+    double_bond_pattern = Chem.MolFromSmarts("C=C")
+    if not mol.HasSubstructMatch(double_bond_pattern):
+        return False, "No double bonds present"
 
-- **Ring structure**: Use a SMARTS pattern that allows for a 5-membered ring with possible oxygen (like in some derivatives) and double bonds. Maybe something like C1C(=O)CCC1 for cyclopentenone, but also check for standard cyclopentane.
-
-- **Substituent chains**: Ensure that the substituents are long enough. Prostanoic acid has two chains (7 and 8 carbons). Maybe check that at least one chain has 7+ carbons.
-
-- **Carboxylic acid**: Look for a COOH group or its derivative (ester, amide) in one of the chains.
-
-- **Double bonds**: Ensure there's at least one in the structure.
-
-Implementing these changes should reduce false positives and negatives. Let's modify the code accordingly.
+    return True, "Contains cyclopentane ring with two substituent chains, carboxylic acid derivative, hydroxyl groups, and double bonds"
