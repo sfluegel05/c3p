@@ -1,222 +1,42 @@
 """
 Classifies: CHEBI:71543 rotenoid
 """
- - 12a-Hydroxy-13a-methyldeguelin: SMILES: O1C2C(O)(C=3C(OC2)=CC(OC)=C(OC)C3)C(=O)C4=C1C=5CC(OC5C=C4)C(C)(C)C
- - 12a-Hydroxyrotenone: SMILES: O1C2C(O)(C=3C(OC2)=CC(OC)=C(OC)C3)C(=O)C4=C1C=5CC(OC5C=C4)C(C)C
- - 6a,12a-Dihydro-6H-[1]benzopyrano[3,4-b][1]benzopyran-12-one: SMILES: O1C2C(C=3C(OC2)=CC=4OCOC4C3)C(=O)C5=C1C=6OCOC6C5
- - 12a-Hydroxyamorphigenin: SMILES: O1C2C(O)(C=3C(OC2)=CC(OC)=C(OC)C3)C(=O)C4=C1C=5CC(OC5C=C4)C(CO)=C
- - Munduserone: SMILES: COc1cc2OCC3Oc4cc(OC)ccc4C(=O)c3c2cc1OC
- - Rotenone: SMILES: [H][C@@]12COC3=C(C=C(OC)C(OC)=C3)[C@]1([H])C(=O)C1=C(O2)C2=C(OC(C)(C)C=C2)C=C1
- - 12a-Hydroxy-13a-methyldolineone: SMILES: O1C2C(O)(C=3C(OC2)=CC=4OCOC4C3)C(=O)C5=C1C=C6OC=CC6=C5
- - 12a-Hydroxy-13a-methyltephrosin: SMILES: [H][C@@]12COc3cc(OC)c(OC)cc3[C@]1(O)C(=O)c1ccc3OC(C)(C)C=Cc3c1O2
- - 12a-Hydroxytephrosin: SMILES: [H][C@@]12COc3cc(OC)c(OC)cc3[C@]1(O)C(=O)c1ccc3OC(C)(C)C=Cc3c1O2
- - Rotenolone: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)[H])O
- - Dalbinol: SMILES: O1C2C(O)(C=3C(OC2)=CC(OC)=C(OC)C3)C(=O)C4=C1C=5CC(OC5C=C4)C(CO)=C
- - 12a-Hydroxyrotenolone: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methyldeguelin: SMILES: O1C2C(O)(C=3C(OC2)=CC(OC)=C(OC)C3)C(=O)C4=C1C=5CC(OC5C=C4)C(C)(C)C
- - 12a-Hydroxy-13a-methyltephrosin: SMILES: [H][C@@]12COc3cc(OC)c(OC)cc3[C@]1(O)C(=O)c1ccc3OC(C)(C)C=Cc3c1O2
- - Amorphigenin: SMILES: O1C2C(C(=O)C3=C1C=4CC(OC4C=C3)C(CO)=C)C=5C(OC2)=CC(OC)=C(OC)C5
- - 12a-Hydroxy-13a-methylrotenone: SMILES: [H][C@@]12COC3=C(C=C(OC)C(OC)=C3)[C@]1(O)C(=O)C1=C(O2)C2=C(OC(C)(C)C=C2)C=C1
- - 12a-Hydroxy-13a-methylrotenolone: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - Rotenolone II: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methyldihydrorotenone: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)[H])O
- - 12a-Hydroxy-13a-methyldihydrorotenolone: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone II: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone III: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone IV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone V: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone VI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone VII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone VIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone IX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone X: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XXXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XL: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XLIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone L: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone LXXXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XC: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone XCIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone C: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXXXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXL: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXLIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CL: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CLXXXIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXC: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCIV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCV: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCVI: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCVII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCVIII: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 12a-Hydroxy-13a-methylrotenolone CXCIX: SMILES: O1[C@@]2([C@](C(=O)C3=C1C=4C[C@H](OC4C=C3)C(C)(C)C)(C=5C(OC2)=CC(OC)=C(OC)C5)O)O
- - 
+"""
+Classifies: CHEBI:72564 rotenoid
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_rotenoid(smiles: str):
+    """
+    Determines if a molecule is a rotenoid based on its SMILES string.
+    Rotenoids have a cis-fused tetrahydrochromeno[3,4-b]chromene skeleton with possible substitutions.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a rotenoid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+    
+    # Core scaffold pattern for cis-fused tetrahydrochromeno[3,4-b]chromene skeleton
+    # Matches fused bicyclic system with oxygen bridges and ketone group
+    scaffold_pattern = Chem.MolFromSmarts("[#6]1-&@[#8]-&@[#6]-&@[#6]2-&@[#6](=O)-&@[#6]-&@[#6]3-&@[#6]-&@[#6]-&@[#6]-&@[#6]-&@[#6]-3-&@[#6]-2-&@[#6]-1")
+    if not mol.HasSubstructMatch(scaffold_pattern):
+        return False, "Missing core chromenochromene scaffold"
+    
+    # Verify presence of at least one aromatic ring (characteristic of chromene systems)
+    aromatic_rings = [ring for ring in Chem.GetSymmSSSR(mol) if any(mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in ring)]
+    if len(aromatic_rings) < 2:
+        return False, "Insufficient aromatic rings for chromene systems"
+    
+    # Check for oxygen atoms in rings (characteristic of chromene oxygen bridges)
+    oxygen_in_rings = any(any(mol.GetAtomWithIdx(idx).GetAtomicNum() == 8 for idx in ring) for ring in Chem.GetSymmSSSR(mol))
+    if not oxygen_in_rings:
+        return False, "Missing oxygen in ring systems"
+    
+    return True, "Contains cis-fused chromenochromene scaffold with oxygen bridges"
