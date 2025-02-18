@@ -25,9 +25,14 @@ def is_dihydroflavonols(smiles: str):
     
     # Define SMARTS pattern for 3-hydroxyflavanone core
     # The pattern matches the flavanone skeleton with a hydroxyl group on position 3
-    pattern = Chem.MolFromSmarts("[OH]C1C(=O)C2=CC=CC=C2C1O")
+    # Adjusted to allow substituents on the B ring (aromatic carbons)
+    pattern = Chem.MolFromSmarts("[OH]C1C(=O)c2ccccc2C1O")
     
     if not mol.HasSubstructMatch(pattern):
-        return False, "Does not contain the 3-hydroxyflavanone core"
+        # Check if the hydroxyl is present in a different position
+        # Alternative pattern for different substitution patterns
+        alt_pattern = Chem.MolFromSmarts("[OH]C1C(C(=O))c2ccccc2C1")
+        if not mol.HasSubstructMatch(alt_pattern):
+            return False, "Does not contain the 3-hydroxyflavanone core"
     
     return True, "Contains 3-hydroxyflavanone structure"
