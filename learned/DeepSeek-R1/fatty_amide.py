@@ -5,6 +5,7 @@ Classifies: CHEBI:29348 fatty amide
 Classifies: CHEBI fatty amide (monocarboxylic acid amide derived from a fatty acid)
 """
 from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
 
 def is_fatty_amide(smiles: str):
     """
@@ -22,13 +23,22 @@ def is_fatty_amide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Find all amide groups (CX3=O-NX3)
-    amide_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[NX3H0,NX3H1]')
+    # Find all amide groups (including primary amides)
+    amide_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[NX3H2,H1,H0]')
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     if not amide_matches:
         return False, "No amide group found"
 
-    for match in amide_matches:
+    # Check for monocarboxylic acid origin (only one carboxylic acid-derived amide)
+    carboxylic_acid_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[OX2H1]')
+    if mol.HasSubstructMatch(carboxylic_acid_pattern):
+        return False, "Contains carboxylic acid group"
+
+    # Preferentially check primary amides first
+    primary_amide_pattern = Chem.MolFromSmarts('[CX3](=[OX1])[NH2]')
+    primary_amide_matches = mol.GetSubstructMatches(primary_amide_pattern)
+    
+    for match in primary_amide_matches + amide_matches:
         carbonyl_idx = match[0]
         carbonyl_atom = mol.GetAtomWithIdx(carbonyl_idx)
         
@@ -39,31 +49,14 @@ def is_fatty_amide(smiles: str):
                 r_carbon = neighbor
                 break
         if not r_carbon:
-            continue  # No R group (e.g., formamide)
+            continue
 
-        # Traverse the longest aliphatic chain from R carbon (excluding carbonyl)
-        visited = set()
-        max_chain = 0
-        stack = [(r_carbon, 1)]  # (atom, current_chain_length)
+        # Get longest aliphatic chain using RDKit's built-in function
+        chain = rdMolDescriptors._CalcCarbons(mol, rootAtom=r_carbon.GetIdx(), onlyOnAromatic=False)
+        chain_length = len(chain)
         
-        while stack:
-            atom, current_length = stack.pop()
-            if atom.GetIdx() in visited:
-                continue
-            visited.add(atom.GetIdx())
-            
-            if current_length > max_chain:
-                max_chain = current_length
-            
-            # Add adjacent non-aromatic, non-carbonyl carbons
-            for neighbor in atom.GetNeighbors():
-                if (neighbor.GetAtomicNum() == 6 and 
-                    not neighbor.GetIsAromatic() and 
-                    neighbor.GetIdx() != carbonyl_idx):
-                    stack.append((neighbor, current_length + 1))
-        
-        # Check if chain length meets minimum for fatty acid (>=4 carbons in R)
-        if max_chain >= 4:
-            return True, f"Amide with {max_chain}-carbon aliphatic chain"
+        # Check chain length and aliphatic nature
+        if chain_length >= 4 and all(not mol.GetAtomWithIdx(idx).GetIsAromatic() for idx in chain):
+            return True, f"Amide with {chain_length}-carbon aliphatic chain"
 
     return False, "No amide with sufficient aliphatic chain length"
