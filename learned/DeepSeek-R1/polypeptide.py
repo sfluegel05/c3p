@@ -22,13 +22,14 @@ def is_polypeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Calculate the number of amide bonds
-    num_amide = rdMolDescriptors.CalcNumAmideBonds(mol)
+    # Define peptide bond SMARTS: C(=O)-N connected to a carbon
+    peptide_smarts = Chem.MolFromSmarts('[CX3](=[OX1])-[NX3][CX4]')
+    peptide_bonds = len(mol.GetSubstructMatches(peptide_smarts))
     
-    # For linear peptides: residues = amide bonds + 1
-    # For cyclic peptides: residues = amide bonds
+    # For linear peptides: residues = peptide_bonds + 1
+    # For cyclic peptides: residues = peptide_bonds
     # Check if either case gives >=10 residues
-    if num_amide >= 9:  # Covers linear (9+1=10) or cyclic (>=10)
-        return True, f"Contains at least {num_amide} amide bonds, indicating 10 or more residues"
+    if peptide_bonds >= 9:  # Linear (9+1=10) or cyclic (>=10)
+        return True, f"Contains {peptide_bonds} peptide bonds, indicating 10 or more residues"
     else:
-        return False, f"Only {num_amide} amide bonds, insufficient for 10 residues"
+        return False, f"Only {peptide_bonds} peptide bonds, insufficient for 10 residues"
