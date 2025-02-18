@@ -5,7 +5,6 @@ Classifies: CHEBI:15904 long-chain fatty acid
 Classifies: long-chain fatty acid (C13-C22)
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_long_chain_fatty_acid(smiles: str):
     """
@@ -32,36 +31,34 @@ def is_long_chain_fatty_acid(smiles: str):
     if len(matches) != 1:
         return False, f"Found {len(matches)} carboxylic acid groups, need exactly 1"
 
-    # Get carbonyl and oxygen atoms from the match
+    # Get carbonyl carbon (first atom in the match)
     carbonyl_carbon = mol.GetAtomWithIdx(matches[0][0])
 
-    # Find the alpha carbon (connected to carbonyl, not part of the carboxylic acid oxygens)
-    alpha_carbon = None
-    for neighbor in carbonyl_carbon.GetNeighbors():
-        if neighbor.GetAtomicNum() == 6 and neighbor.GetIdx() not in matches[0][1:]:
-            alpha_carbon = neighbor
-            break
-    if alpha_carbon is None:
-        return False, "No alpha carbon found adjacent to carboxylic acid"
-
-    # Helper function to find longest chain from current atom, excluding previous atom
-    def get_longest_chain(current_atom, prev_atom):
-        max_length = 0
+    # Iterative DFS to find longest carbon chain from carbonyl carbon
+    max_length = 1  # Start with carbonyl carbon itself
+    stack = [(carbonyl_carbon, None, 1)]  # (current_atom, previous_atom, current_length)
+    
+    while stack:
+        current_atom, prev_atom, length = stack.pop()
+        if length > max_length:
+            max_length = length
+        
+        # Explore all neighboring carbons except previous atom
         for neighbor in current_atom.GetNeighbors():
-            if neighbor == prev_atom:
+            if neighbor.GetAtomicNum() != 6 or neighbor == prev_atom:
                 continue
-            if neighbor.GetAtomicNum() == 6:  # Only follow carbon atoms
-                chain_length = get_longest_chain(neighbor, current_atom)
-                if chain_length > max_length:
-                    max_length = chain_length
-        return 1 + max_length
-
-    # Calculate chain length from alpha carbon, excluding carbonyl
-    chain_length = get_longest_chain(alpha_carbon, carbonyl_carbon)
-    total_chain_length = chain_length + 1  # Include carbonyl carbon
+            
+            # Check if the bond is part of a ring to avoid counting ring atoms multiple times
+            bond = mol.GetBondBetweenAtoms(current_atom.GetIdx(), neighbor.GetIdx())
+            if bond.IsInRing():
+                continue  # Skip ring bonds to prevent cyclic path inflation
+            
+            stack.append((neighbor, current_atom, length + 1))
 
     # Check chain length
-    if 13 <= total_chain_length <= 22:
-        return True, f"Long-chain fatty acid with {total_chain_length} carbons"
+    if 13 <= max_length <= 22:
+        return True, f"Long-chain fatty acid with {max_length} carbons"
+    elif max_length < 13:
+        return False, f"Chain too short ({max_length} carbons)"
     else:
-        return False, f"Chain length {total_chain_length} is outside C13-C22 range"
+        return False, f"Chain too long ({max_length} carbons)"
