@@ -22,24 +22,47 @@ def is_N_sulfonylurea(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
 
-    # Urea pattern: two nitrogens connected by a carbonyl (N-C(=O)-N)
-    urea_pattern = Chem.MolFromSmarts("[NX3][CX3](=[OX1])[NX3]")
-    urea_matches = mol.GetSubstructMatches(urea_pattern)
-    if not urea_matches:
+    # Combined pattern for N-sulfonylurea core: urea with sulfonyl directly attached to one nitrogen
+    # Matches either N-SO2-C(=O)-N or N-C(=O)-N-SO2 arrangements
+    pattern = "C(=O)(N[SD4](=O)(=O))N"
+    core_pattern = Chem.MolFromSmarts(pattern)
+    if core_pattern is None:
+        return False, "Invalid SMARTS pattern"
+
+    # Check for presence of the core structure
+    has_core = mol.HasSubstructMatch(core_pattern)
+    if has_core:
+        return True, "Contains urea group with sulfonyl substitution on nitrogen"
+
+    # Alternative check using expanded SMARTS to capture all possible arrangements
+    # This covers both possible positions for the sulfonyl group relative to urea
+    alt_pattern = Chem.MolFromSmarts("[NX3]C(=O)[NX3][SD4](=O)(=O)")
+    if alt_pattern and mol.HasSubstructMatch(alt_pattern):
+        return True, "Contains urea group with sulfonyl substitution on nitrogen"
+
+    # Additional check for sulfonyl group attached to the other urea nitrogen
+    alt_pattern2 = Chem.MolFromSmarts("[NX3][SD4](=O)(=O)C(=O)[NX3]")
+    if alt_pattern2 and mol.HasSubstructMatch(alt_pattern2):
+        return True, "Contains urea group with sulfonyl substitution on nitrogen"
+
+    # Verify presence of urea group (as fallback)
+    urea_pattern = Chem.MolFromSmarts("[NX3]C(=O)[NX3]")
+    if not mol.HasSubstructMatch(urea_pattern):
         return False, "No urea group detected"
 
-    # Sulfonyl group attached to nitrogen with at least one hydrogen (N-S(=O)(=O))
-    sulfonyl_pattern = Chem.MolFromSmarts("[NX3;H1,H2][SX4](=[OX1])(=[OX1])")
-    sulfonyl_matches = mol.GetSubstructMatches(sulfonyl_pattern)
-    if not sulfonyl_matches:
-        return False, "No sulfonyl group attached to nitrogen"
+    # Verify sulfonamide group connected to urea nitrogen
+    sulfonyl_n_pattern = Chem.MolFromSmarts("[NX3][SD4](=O)(=O)")
+    sulfonyl_matches = mol.GetSubstructMatches(sulfonyl_n_pattern)
+    urea_matches = mol.GetSubstructMatches(urea_pattern)
 
-    # Check if any sulfonamide nitrogen is part of a urea group's nitrogens
+    # Check if any sulfonamide nitrogen is part of the urea group
+    urea_n_indices = set()
+    for match in urea_matches:
+        urea_n_indices.update([match[0], match[2]])  # Positions of N atoms in urea
+
     for sulf_match in sulfonyl_matches:
-        sulf_n_idx = sulf_match[0]  # Nitrogen connected to sulfonyl
-        for urea_match in urea_matches:
-            # Urea nitrogens are at positions 0 and 2 of the match
-            if sulf_n_idx in {urea_match[0], urea_match[2]}:
-                return True, "Urea group with sulfonyl substitution on nitrogen"
+        sulf_n_idx = sulf_match[0]
+        if sulf_n_idx in urea_n_indices:
+            return True, "Urea group with sulfonyl substitution on nitrogen"
 
     return False, "Sulfonyl group not attached to urea nitrogen"
