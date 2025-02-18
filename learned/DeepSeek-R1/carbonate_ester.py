@@ -23,42 +23,35 @@ def is_carbonate_ester(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # Define SMARTS pattern for the carbonate group O-C(=O)-O
+    # SMARTS pattern for O-C(=O)-O group
     carbonate_pattern = Chem.MolFromSmarts('[O][C](=O)[O]')
     matches = mol.GetSubstructMatches(carbonate_pattern)
     if not matches:
         return False, "No carbonate (O-C(=O)-O) group detected"
     
-    # Check each match for valid carbonate ester structure
+    # Check each match for organic substituents on both oxygens
     valid = False
     for match in matches:
-        # Each match must have exactly 3 atoms (O, C, O)
         if len(match) != 3:
-            continue  # Skip invalid matches
+            continue
         o1_idx, c_idx, o2_idx = match
         
-        # Check first oxygen (O1)
+        # Check O1's neighbors (excluding central C)
         o1 = mol.GetAtomWithIdx(o1_idx)
-        if o1.GetTotalNumHs() > 0:
-            continue  # Hydrogen present, not ester
-        # Check if O1 is connected to a carbon (other than central C)
         o1_neighbors = [n for n in o1.GetNeighbors() if n.GetIdx() != c_idx]
         if not any(n.GetAtomicNum() == 6 for n in o1_neighbors):
-            continue  # No organic substituent
+            continue
         
-        # Check second oxygen (O2)
+        # Check O2's neighbors (excluding central C)
         o2 = mol.GetAtomWithIdx(o2_idx)
-        if o2.GetTotalNumHs() > 0:
-            continue  # Hydrogen present, not ester
         o2_neighbors = [n for n in o2.GetNeighbors() if n.GetIdx() != c_idx]
         if not any(n.GetAtomicNum() == 6 for n in o2_neighbors):
-            continue  # No organic substituent
+            continue
         
-        # If any match passes all checks, return True
         valid = True
         break
     
     if valid:
-        return True, "Contains carbonate group with organic substituents"
+        return True, "Contains carbonate group with organic substituents on both oxygens"
     else:
         return False, "No valid carbonate ester groups found"
