@@ -21,57 +21,45 @@ def is_CDP_diacylglycerol(smiles: str):
         bool: True if molecule is a CDP-diacylglycerol, False otherwise
         str: Reason for classification
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
-    
-    # Check for two ester groups (acyl chains)
+
+    # Check for exactly two ester groups (acyl chains at positions 1 and 2)
     ester_pattern = Chem.MolFromSmarts("[OX2][CX3](=[OX1])")
     ester_matches = mol.GetSubstructMatches(ester_pattern)
-    if len(ester_matches) < 2:
-        return False, f"Found {len(ester_matches)} ester groups, need at least 2"
-    
-    # Check glycerol backbone connected to diphosphate
-    # Glycerol pattern: C-C-C with two esters and one diphosphate
-    # SMARTS: [CH2]-[CH](-O-C(=O)-*)-[CH2]-O-P
-    glycerol_diphosphate_pattern = Chem.MolFromSmarts("[CH2]-[CH](-O-C(=O)-*)-[CH2]-O-P")
-    if not mol.HasSubstructMatch(glycerol_diphosphate_pattern):
-        return False, "Glycerol backbone with diphosphate not found"
-    
-    # Check diphosphate bridge (P-O-P)
-    diphosphate_pattern = Chem.MolFromSmarts("[PX4]-O-[PX4]")
-    diphosphate_matches = mol.GetSubstructMatches(diphosphate_pattern)
-    if not diphosphate_matches:
+    if len(ester_matches) != 2:
+        return False, f"Found {len(ester_matches)} ester groups, need exactly 2"
+
+    # Verify glycerol backbone (C1-C2-C3 where C1 and C2 have ester groups)
+    # Modified to account for stereochemistry and branching
+    glycerol_backbone = Chem.MolFromSmarts("[CH2]-[CH](-O-C(=O)-*)-[CH2]")
+    if not mol.HasSubstructMatch(glycerol_backbone):
+        return False, "Glycerol backbone with ester groups not found"
+
+    # Check diphosphate bridge (P-O-P-O connection)
+    # More flexible pattern to match different protonation states
+    diphosphate_pattern = Chem.MolFromSmarts("P-O-P")
+    if not mol.HasSubstructMatch(diphosphate_pattern):
         return False, "Diphosphate bridge not found"
-    
-    # Check cytidine moiety: cytosine + ribose connected to diphosphate
-    # Cytosine pattern: pyrimidine ring with NH2 and C=O
-    cytosine_pattern = Chem.MolFromSmarts("n1c(=O)[nH]c(N)cc1")
+
+    # Updated cytosine pattern to match actual examples (n1c(=O)nc(N)cc1)
+    cytosine_pattern = Chem.MolFromSmarts("n1c(=O)nc(N)cc1")
     if not mol.HasSubstructMatch(cytosine_pattern):
-        return False, "Cytosine base not found"
-    
-    # Ribose pattern: five-membered ring with O and hydroxyl groups
-    ribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@@H](O)[C@@H]1O")
+        return False, "Cytosine base not detected"
+
+    # Simplified ribose check (five-membered ring with O and hydroxyls)
+    ribose_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@H](O)[C@@H]1O")
     if not mol.HasSubstructMatch(ribose_pattern):
-        return False, "Ribose sugar not found"
-    
-    # Check connectivity between ribose and diphosphate
-    # Combined pattern: ribose connected to diphosphate which is connected to glycerol
-    # This SMARTS is complex and approximate; might need adjustment
-    cdp_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](COP(=O)(O)OP(=O)(O)O[C@H](COC(=O)*)C(OC(=O)*)CO)[C@H](O)[C@@H]1O")
+        return False, "Ribose sugar not detected"
+
+    # Verify connectivity between components:
+    # Glycerol -> diphosphate -> ribose -> cytosine
+    # Using a more robust connectivity check
+    cdp_pattern = Chem.MolFromSmarts(
+        "[CH2]-[CH](-O-C(=O)-*)-[CH2]-O-P-O-P-O-C1-C-O-[C@H]2O[C@H](CO)[C@H](O)[C@@H]2O.n3c(=O)nc(N)cc3"
+    )
     if not mol.HasSubstructMatch(cdp_pattern):
-        return False, "CDP-glycerol structure not confirmed"
-    
-    # Optional: Check acyl chain length (e.g., at least 8 carbons each)
-    # This is example-based and may vary
-    # For each ester group, check the attached chain length
-    # This part is commented out as chain length may vary
-    # for ester in ester_matches:
-    #     chain_length = 0
-    #     # Traverse the acyl chain
-    #     # Implementation depends on exact structure
-    #     if chain_length < 8:
-    #         return False, "Acyl chain too short"
-    
-    return True, "Contains glycerol with two acyl groups and CDP group"
+        return False, "CDP-glycerol connectivity not confirmed"
+
+    return True, "Contains glycerol with two acyl groups and properly connected CDP group"
