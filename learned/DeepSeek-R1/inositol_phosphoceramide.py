@@ -11,137 +11,110 @@ from rdkit.Chem import Descriptors
 def is_inositol_phosphoceramide(smiles: str):
     """
     Determines if a molecule is an inositol phosphoceramide based on its SMILES string.
-    An inositol phosphoceramide consists of an inositol residue linked via a phosphodiester
-    bridge to a ceramide moiety, which contains a sphingoid base and a fatty acyl group.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is an inositol phosphoceramide, False otherwise
-        str: Reason for classification
+    Must have inositol linked via phosphodiester to a ceramide with amide and long chains.
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
-        return False, "Invalid SMILES string"
+        return False, "Invalid SMILES"
 
-    # Check for inositol (myo-inositol core with multiple hydroxyls)
-    inositol_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H]1O")
+    # Generalized inositol (cyclohexanehexol or similar)
+    inositol_pattern = Chem.MolFromSmarts("[C@H]1[C@H](O)[C@@H](O)[C@H](O)[C@@H](O)[C@H](O)[C@H]1O")
     if not mol.HasSubstructMatch(inositol_pattern):
-        return False, "No inositol moiety detected"
+        return False, "No inositol"
 
-    # Check for phosphate group connected to inositol
-    phosphate_pattern = Chem.MolFromSmarts("[O][P](=O)([O])[O]")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
+    # Find phosphate connected to inositol
+    phosphate = Chem.MolFromSmarts("[O]P(=O)(O)O")
+    phosphate_matches = mol.GetSubstructMatches(phosphate)
     if not phosphate_matches:
-        return False, "No phosphate group found"
+        return False, "No phosphate"
 
-    # Verify phosphate bridges inositol and ceramide
-    # Find phosphate atoms and check connectivity
-    p_connected_to_inositol = False
-    p_connected_to_ceramide = False
+    # Check phosphate bridges inositol and ceramide
     inositol_atoms = set(mol.GetSubstructMatch(inositol_pattern))
+    bridge_found = False
     for p_match in phosphate_matches:
         p_idx = p_match[0]
         p_atom = mol.GetAtomWithIdx(p_idx)
-        neighbors = p_atom.GetNeighbors()
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 8:  # Oxygen
-                # Check if oxygen is connected to inositol
-                for bond in neighbor.GetBonds():
-                    other_atom = bond.GetOtherAtom(neighbor)
-                    if other_atom.GetIdx() in inositol_atoms:
-                        p_connected_to_inositol = True
-                # Check if oxygen leads to ceramide (amide group)
-                # Traverse from this oxygen to find amide
-                visited = set()
-                stack = [(neighbor, 0)]
-                while stack:
-                    current_atom, depth = stack.pop()
-                    if current_atom.GetIdx() in visited:
-                        continue
-                    visited.add(current_atom.GetIdx())
-                    if depth > 6:  # Limit search depth
-                        continue
-                    # Look for amide group (CONH)
-                    for bond in current_atom.GetBonds():
-                        other_atom = bond.GetOtherAtom(current_atom)
-                        if other_atom.GetAtomicNum() == 6:  # Carbon
-                            for b in other_atom.GetBonds():
-                                if b.GetBondType() == Chem.BondType.DOUBLE and b.GetOtherAtom(other_atom).GetAtomicNum() == 8:
-                                    # Check adjacent to NH
-                                    for nb in other_atom.GetNeighbors():
-                                        if nb.GetAtomicNum() == 7:  # Nitrogen
-                                            p_connected_to_ceramide = True
-                                            break
-                    if not p_connected_to_ceramide:
-                        stack.extend([(a, depth+1) for a in current_atom.GetNeighbors() if a.GetAtomicNum() != 15])  # Exclude P
-        if p_connected_to_inositol and p_connected_to_ceramide:
+        # Check connections: one O to inositol, another O to ceramide
+        linked_to_inositol = False
+        linked_to_ceramide = False
+        for neighbor in p_atom.GetNeighbors():
+            if neighbor.GetAtomicNum() != 8:
+                continue
+            # Check if neighbor is connected to inositol
+            for bond in neighbor.GetBonds():
+                other = bond.GetOtherAtom(neighbor)
+                if other.GetIdx() in inositol_atoms:
+                    linked_to_inositol = True
+            # Check if neighbor connects to ceramide (amide with long chain)
+            stack = [(neighbor, 0)]
+            visited = set()
+            while stack:
+                current, depth = stack.pop()
+                if current.GetIdx() in visited:
+                    continue
+                visited.add(current.GetIdx())
+                if depth > 10:
+                    break
+                # Look for amide group (CONH)
+                if current.GetAtomicNum() == 6 and any(bond.GetBondType() == Chem.BondType.DOUBLE for bond in current.GetBonds()):
+                    for nbr in current.GetNeighbors():
+                        if nbr.GetAtomicNum() == 7 and any(bond.GetBondType() == Chem.BondType.SINGLE for bond in nbr.GetBonds()):
+                            # Check for long chain
+                            chain_length = 0
+                            chain_stack = [(current, 0)]
+                            chain_visited = set()
+                            while chain_stack:
+                                catom, clevel = chain_stack.pop()
+                                if catom.GetIdx() in chain_visited:
+                                    continue
+                                chain_visited.add(catom.GetIdx())
+                                if catom.GetAtomicNum() == 6:
+                                    chain_length += 1
+                                    if chain_length >= 14:
+                                        linked_to_ceramide = True
+                                        break
+                                    for b in catom.GetBonds():
+                                        next_atom = b.GetOtherAtom(catom)
+                                        if next_atom.GetAtomicNum() == 6 and clevel < 30:
+                                            chain_stack.append((next_atom, clevel+1))
+                                if linked_to_ceramide:
+                                    break
+                if not linked_to_ceramide:
+                    for b in current.GetBonds():
+                        next_a = b.GetOtherAtom(current)
+                        if next_a.GetAtomicNum() in [6,8] and next_a.GetIdx() not in visited:
+                            stack.append((next_a, depth+1))
+        if linked_to_inositol and linked_to_ceramide:
+            bridge_found = True
             break
-    else:
-        return False, "Phosphate not bridging inositol and ceramide"
+    if not bridge_found:
+        return False, "Phosphate bridge missing"
 
-    # Check for ceramide structure (amide with long chains)
-    amide_pattern = Chem.MolFromSmarts("[CX3](=O)[NX3H]")
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
+    # Verify ceramide has sphingoid base with hydroxyl
+    amide_matches = mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3](=O)[NX3H]"))
     if not amide_matches:
-        return False, "No amide group (ceramide) found"
-
-    # Check fatty acid chain length (at least 14 carbons)
-    fatty_acid_valid = False
-    for amide in amide_matches:
-        carbon_idx = amide[0]
-        carbon_atom = mol.GetAtomWithIdx(carbon_idx)
-        # Traverse away from amide to find fatty acid chain
-        chain = []
-        stack = [(carbon_atom, 0)]
-        visited = set()
-        while stack:
-            atom, depth = stack.pop()
-            if atom.GetIdx() in visited:
-                continue
-            visited.add(atom.GetIdx())
-            if atom.GetAtomicNum() != 6:
-                continue
-            chain.append(atom)
-            # Stop if chain branches or hits heteroatom
-            if depth > 20:  # Prevent infinite loops
-                break
-            for bond in atom.GetBonds():
-                next_atom = bond.GetOtherAtom(atom)
-                if next_atom.GetAtomicNum() == 6 and next_atom.GetIdx() not in visited:
-                    stack.append((next_atom, depth + 1))
-        if len(chain) >= 14:
-            fatty_acid_valid = True
-            break
-    if not fatty_acid_valid:
-        return False, "Fatty acid chain too short"
-
-    # Check sphingoid base has hydroxyl group
+        return False, "No amide"
     hydroxyl_found = False
     for amide in amide_matches:
-        nitrogen_idx = amide[2]
-        nitrogen_atom = mol.GetAtomWithIdx(nitrogen_idx)
-        # Traverse from nitrogen to find hydroxyl
-        stack = [(nitrogen_atom, 0)]
+        nh_atom = mol.GetAtomWithIdx(amide[2])
+        # Traverse from N to find OH
+        stack = [(nh_atom, 0)]
         visited = set()
         while stack:
             atom, depth = stack.pop()
-            if atom.GetIdx() in visited:
+            if atom.GetIdx() in visited or depth > 6:
                 continue
             visited.add(atom.GetIdx())
-            if depth > 10:
-                break
-            if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() >= 1:  # Hydroxyl oxygen
+            if atom.GetAtomicNum() == 8 and atom.GetTotalNumHs() > 0:
                 hydroxyl_found = True
                 break
             for bond in atom.GetBonds():
-                next_atom = bond.GetOtherAtom(atom)
-                if next_atom.GetAtomicNum() in [6,8] and next_atom.GetIdx() not in visited:
-                    stack.append((next_atom, depth + 1))
+                next_a = bond.GetOtherAtom(atom)
+                if next_a.GetAtomicNum() in [6,8]:
+                    stack.append((next_a, depth+1))
         if hydroxyl_found:
             break
     if not hydroxyl_found:
-        return False, "Sphingoid base lacks hydroxyl group"
+        return False, "No hydroxyl in sphingoid"
 
-    return True, "Contains inositol-phosphoceramide structure with phosphodiester bridge, amide, and long chains"
+    return True, "Inositol-phosphoceramide with phosphodiester bridge and ceramide"
