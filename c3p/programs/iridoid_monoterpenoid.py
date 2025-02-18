@@ -3,39 +3,40 @@ Classifies: CHEBI:50563 iridoid monoterpenoid
 """
 """
 Classifies: Iridoid monoterpenoid
-Definition: Monoterpenoids biosynthesized from isoprene units. Typically they contain
-a cyclopentane ring fused to a six‐membered oxygen heterocycle (the “iridoid core”).
+Definition: Iridoid monoterpenoids are monoterpenoids biosynthesized from isoprene units.
+They typically contain a cyclopentane ring fused to a six-membered oxygen heterocycle.
 Cleavage of a bond in the cyclopentane ring gives rise to secoiridoids.
 This program uses two strategies:
-  (1) Look for a fused bicyclic system where a 5‐membered ring and a 6‐membered ring share
-      at least 2 atoms. Then merge the rings (union) – if the total heavy‐atom count is 9
-      with 8 carbons and 1 oxygen (the “ideal” iridoid core), we classify as iridoid.
-  (2) If not found, then try to “rescue” secoiridoids by identifying a cyclopentane ring (5 carbons)
-      that carries at least two exocyclic carbonyl groups (C=O on a neighbor atom).
-      
-Note: This heuristic may still mis‐classify some molecules.
+  Stage 1 (ideal iridoid): Look for a fused bicyclic core where one ring is a cyclopentane
+         (5 carbons) and the other is a six-membered ring containing exactly one oxygen and 5 carbons.
+         In addition, we require that the rings share exactly 2 atoms.
+  Stage 2 (rescue logic for secoiridoids): If no fused core is found, then look for a cyclopentane ring
+         comprised solely of carbons that carries at least two exocyclic carbonyl (C=O) groups.
+Note: These heuristics aim to improve both sensitivity and selectivity.
 """
 
 from rdkit import Chem
 
 def is_iridoid_monoterpenoid(smiles: str):
     """
-    Determines if a molecule is an iridoid monoterpenoid (or its secoiridoid derivative)
+    Determines if a molecule is an iridoid monoterpenoid (or secoiridoid derivative)
     based on its SMILES string.
-    
-    It works in two stages:
-      Stage 1: Look for an ideal fused bicyclic core composed of a 5-membered ring (cyclopentane)
-               fused with a 6-membered ring that contains one oxygen. When the atoms in the two rings
-               are merged (shared atoms counted only once) the core should have 9 heavy atoms:
-               8 carbons and 1 oxygen.
-      Stage 2: If no fused bicyclic core is found, search for a cyclopentane ring (5-membered ring
-               composed solely of carbons) that has at least two exocyclic carbonyl (C=O) groups.
-    
+
+    Approach:
+      Stage 1: Look for a fused bicyclic core. We iterate over each pair of rings (from RDKit's
+               ring detection) looking specifically for one 5-membered ring whose atoms are all carbons,
+               and one 6-membered ring containing exactly one oxygen (and five carbons).
+               In addition, we require that the two rings share exactly 2 atoms.
+      Stage 2: If no ideal fused core is found, try to rescue a secoiridoid classification.
+               Search for any cyclopentane ring composed solely of carbons. For each atom in the ring,
+               count exocyclic substituents that are part of a carbonyl group.
+               We classify as secoiridoid if at least 2 such exocyclic carbonyl groups are attached.
+
     Args:
         smiles (str): SMILES string of the molecule.
-        
+
     Returns:
-        bool: True if the molecule is classified as an iridoid monoterpenoid (or secoiridoid),
+        bool: True if the molecule is classified as an iridoid monoterpenoid (or secoiridoid derivative),
               False otherwise.
         str: Reason for the classification decision.
     """
@@ -47,68 +48,82 @@ def is_iridoid_monoterpenoid(smiles: str):
     if not ring_info:
         return False, "No rings found in the molecule"
     
-    # Stage 1: Look for fused bicyclic core with a 5-membered and a 6-membered ring sharing >=2 atoms.
+    # Stage 1: Check for fused iridoid core.
+    # Look for two rings, one of size 5 and one of size 6.
+    # For the 5-membered ring, all atoms must be carbon.
+    # For the 6-membered ring, exactly one atom must be oxygen and the rest carbon.
+    # Also, the rings must share exactly 2 atoms.
     for i in range(len(ring_info)):
         for j in range(i+1, len(ring_info)):
             ring1 = set(ring_info[i])
             ring2 = set(ring_info[j])
-            # Check for one ring of size 5 and the other of size 6.
+            # Check for sizes: one must be 5 and the other 6.
             if (len(ring1) == 5 and len(ring2) == 6) or (len(ring1) == 6 and len(ring2) == 5):
-                shared_atoms = ring1.intersection(ring2)
-                if len(shared_atoms) >= 2:
-                    # Get the union of the two rings.
-                    core = ring1.union(ring2)
-                    # We expect an ideal iridoid core to have 9 heavy atoms.
-                    if len(core) == 9:
-                        # Count carbons and oxygens in the fused core.
-                        nC = 0
-                        nO = 0
-                        for idx in core:
-                            atom = mol.GetAtomWithIdx(idx)
-                            if atom.GetAtomicNum() == 6:
-                                nC += 1
-                            elif atom.GetAtomicNum() == 8:
-                                nO += 1
-                        if nC == 8 and nO == 1:
-                            reason = ("Found fused bicyclic core: a 5-membered ring and a 6-membered oxygen heterocycle "
-                                      "merging to 9 atoms (8 carbons, 1 oxygen) with {} shared atoms.".format(len(shared_atoms)))
-                            return True, reason
-                            
-    # Stage 2: Rescue approach for secoiridoids:
-    # Look for a cyclopentane ring (5-membered) that is composed entirely of carbons.
-    # Then count how many exocyclic carbonyl groups (C=O) are attached to atoms of the ring.
+                # Identify which is 5-membered and which is 6-membered.
+                if len(ring1) == 5:
+                    ring5 = ring1
+                    ring6 = ring2
+                else:
+                    ring5 = ring2
+                    ring6 = ring1
+                
+                # Verify the 5-membered ring is all carbon.
+                if any(mol.GetAtomWithIdx(idx).GetAtomicNum() != 6 for idx in ring5):
+                    continue
+                # Verify the 6-membered ring: count carbons and oxygens.
+                nC = 0
+                nO = 0
+                for idx in ring6:
+                    atomic_num = mol.GetAtomWithIdx(idx).GetAtomicNum()
+                    if atomic_num == 6:
+                        nC += 1
+                    elif atomic_num == 8:
+                        nO += 1
+                    else:
+                        nC = -1  # if other heteroatoms are present, skip
+                        break
+                if nC != 5 or nO != 1:
+                    continue
+                
+                # Check shared atoms: require exactly 2 shared atoms.
+                shared_atoms = ring5.intersection(ring6)
+                if len(shared_atoms) == 2:
+                    reason = ("Found fused bicyclic core: a 5-membered cyclopentane (all C) and a 6-membered ring "
+                              "with one oxygen (5C+1O) share exactly 2 atoms.")
+                    return True, reason
+    
+    # Stage 2: Rescue approach for secoiridoids.
+    # Look for a cyclopentane ring (5-membered ring composed solely of carbons).
     for ring in ring_info:
         if len(ring) == 5:
-            is_cyclopentane = True
-            for idx in ring:
-                atom = mol.GetAtomWithIdx(idx)
-                if atom.GetAtomicNum() != 6:
-                    is_cyclopentane = False
-                    break
-            if not is_cyclopentane:
+            if not all(mol.GetAtomWithIdx(idx).GetAtomicNum() == 6 for idx in ring):
                 continue
             carbonyl_count = 0
-            # For each atom in the cyclopentane ring, examine neighbors not in the ring.
+            # For each ring atom, examine neighbors not in the ring.
             for idx in ring:
                 atom = mol.GetAtomWithIdx(idx)
                 for nbr in atom.GetNeighbors():
                     nbr_idx = nbr.GetIdx()
                     if nbr_idx in ring:
                         continue
+                    # For the bond between atom and neighbor, if that neighbor (an exocyclic carbon)
+                    # has a double bond to oxygen, count it as a carbonyl.
                     bond = mol.GetBondBetweenAtoms(idx, nbr_idx)
-                    # Check if this neighbor carbon is part of a carbonyl group.
-                    # We require the bond to be a double bond and the neighbor to be carbon.
-                    if bond is not None and bond.GetBondTypeAsDouble() == 2 and nbr.GetAtomicNum() == 6:
-                        # Now check if the neighbor carbon is double-bonded to an oxygen.
-                        for nbr2 in nbr.GetNeighbors():
-                            if nbr2.GetIdx() == idx:
-                                continue
-                            bond2 = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
-                            if bond2 is not None and bond2.GetBondTypeAsDouble() == 2 and nbr2.GetAtomicNum() == 8:
-                                carbonyl_count += 1
-                                break  # Count once per exocyclic carbonyl
+                    if bond is None or bond.GetBondType() != Chem.BondType.DOUBLE:
+                        continue
+                    # Ensure the neighbor is carbon.
+                    if nbr.GetAtomicNum() != 6:
+                        continue
+                    # Check if this neighbor carbon is in turn double-bonded to at least one oxygen.
+                    for nbr2 in nbr.GetNeighbors():
+                        if nbr2.GetIdx() == idx:
+                            continue
+                        bond2 = mol.GetBondBetweenAtoms(nbr.GetIdx(), nbr2.GetIdx())
+                        if bond2 is not None and bond2.GetBondType() == Chem.BondType.DOUBLE and nbr2.GetAtomicNum() == 8:
+                            carbonyl_count += 1
+                            break  # Count each exocyclic carbonyl only once
             if carbonyl_count >= 2:
-                reason = ("Found cyclopentane ring (all carbon atoms) with {} exocyclic carbonyl substituents "
+                reason = ("Found cyclopentane ring (all C) with {} exocyclic carbonyl substituents "
                           "suggestive of a secoiridoid skeleton.".format(carbonyl_count))
                 return True, reason
 
@@ -116,15 +131,15 @@ def is_iridoid_monoterpenoid(smiles: str):
 
 # Example usage (for testing purposes):
 if __name__ == "__main__":
-    # Test examples: (true positives and negatives from the provided outcomes)
+    # Some example molecules (names given for clarity)
     examples = [
-        # True positive: fused core detected
+        # True positive based on fused core: cis-trans-nepetalactone
         ("[C@]12([C@@]([C@H](CC1)C)(C(OC=C2C)=O)[H])[H]", "cis-trans-nepetalactone"),
-        # An example secoiridoid: iridodial (one of the missed ones before)
+        # A secoiridoid example: iridodial (previously missed)
         ("CC1CCC(C(C)C=O)C1C=O", "iridodial"),
-        # A false positive example from the outcomes:
-        ("C1[C@@H](O[C@@H]([C@H]2[C@@H]1C3=C(O2)C=CC(=C3)NS(=O)(=O)C4=CC=CC=C4)CO)CC(=O)NCC(F)(F)F", "false positive example"),
-        # A false negative from prior run: oleuropein aglycone
+        # A false positive example from prior run:
+        ("C1[C@@H](O[C@@H]([C@H]2[C@@H]1C3=C(O2)C=CC(=C3)NS(=O)(=O)C4=CC=CC=C4)CO)CC(=O)NCC(F)(F)F", "Kadsurenone mimic"),
+        # A false negative from before: oleuropein aglycone (more challenging).
         ("O[C@H]1/C(/[C@](C(=CO1)C(=O)OC)([H])CC(=O)OCCC=2C=CC(=C(C2)O)O)=C/C", "oleuropein aglycone"),
     ]
     
