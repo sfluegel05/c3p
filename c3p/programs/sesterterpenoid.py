@@ -13,8 +13,8 @@ def is_sesterterpenoid(smiles: str):
         smiles (str): SMILES string of the molecule.
 
     Returns:
-        bool: True if molecule is a sesterterpenoid, False otherwise
-        str: Reason for classification
+        bool: True if molecule is a sesterterpenoid, False otherwise.
+        str: Reason for classification.
     """
 
     # Parse SMILES
@@ -25,31 +25,20 @@ def is_sesterterpenoid(smiles: str):
     # Count the number of carbon atoms
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
 
-    # Isoprene units are 5 carbons; sesterterpenoids typically have 25-carbon backbones
-    # Check if the carbon count is in a reasonable range for a sesterterpenoid (near 25)
-    if c_count < 20 or c_count > 35:
+    # Loosen the carbon count filter to range from 20 to 50
+    if c_count < 20 or c_count > 50:
         return False, f"Carbon count of {c_count} is outside typical range for sesterterpenoids"
 
-    # Check for functional groups common in sesterterpenoids: hydroxyl (OH), ester, and ketone
-    hydroxyl_pattern = Chem.MolFromSmarts("[OX2H]")
-    ketone_pattern = Chem.MolFromSmarts("C(=O)[CX4]")
-    ester_pattern = Chem.MolFromSmarts("C(=O)O[CX4]")
-
-    has_hydroxyl = mol.HasSubstructMatch(hydroxyl_pattern)
-    has_ketone = mol.HasSubstructMatch(ketone_pattern)
-    has_ester = mol.HasSubstructMatch(ester_pattern)
-
-    # Typically, sesterterpenoids will have these functional groups due to their biosynthetic derivations
-    if not (has_hydroxyl or has_ketone or has_ester):
-        return False, "Missing common functional groups: hydroxyl, ketone, or ester"
-
-    # Presence of isoprene components - although rearranged, some patterns should be similar
-    has_terpenoid_signature = False
-    isoprene_pattern = Chem.MolFromSmarts("[CX4]1[CX2]=[CX1][CX2][CX4]1")
-    if mol.HasSubstructMatch(isoprene_pattern):
-        has_terpenoid_signature = True
-
+    # Check for possible terpenoid structural patterns; more generic recognition
+    terpenoid_patterns = [
+        Chem.MolFromSmarts("[CX3]=[CX3]"),  # Alternative double bond pattern often seen in terpenoids
+        Chem.MolFromSmarts("C1=CC=C1"),     # Aromatic ring, as rearrangements might form such structures
+    ]
+    
+    has_terpenoid_signature = any(mol.HasSubstructMatch(p) for p in terpenoid_patterns)
+    
     if not has_terpenoid_signature:
-        return False, "Does not have clear terpenoid signature"
+        return False, "Does not have clear terpenoid-like structural features"
 
-    return True, "Contains characteristics typical of a sesterterpenoid including carbon count and functional groups"
+    # Acknowledge diversity in functional groups; hence, not strictly classifying based on specific groups
+    return True, "Contains characteristics typical of a sesterterpenoid with a modified and flexible outlook on carbon skeleton and functional diversity"
