@@ -22,24 +22,21 @@ def is_polypyrrole(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    pyrrole_count = 0
-    rings = mol.GetRingInfo().AtomRings()
+    # Define SMARTS pattern for a pyrrole ring: 5-membered aromatic ring with exactly one nitrogen
+    pyrrole_smarts = '[n;ar]1[c;ar][c;ar][c;ar][c;ar]1'
+    pyrrole_pattern = Chem.MolFromSmarts(pyrrole_smarts)
     
-    for ring in rings:
-        if len(ring) != 5:
-            continue  # Not a 5-membered ring
-        # Check if all atoms in the ring are aromatic
-        aromatic = True
-        for atom_idx in ring:
-            if not mol.GetAtomWithIdx(atom_idx).GetIsAromatic():
-                aromatic = False
-                break
-        if not aromatic:
-            continue
-        # Count nitrogen atoms in the ring
-        nitrogen_count = sum(1 for atom_idx in ring if mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 7)
-        if nitrogen_count == 1:
-            pyrrole_count += 1
+    if not pyrrole_pattern:
+        return False, "Failed to initialize pyrrole pattern"
+    
+    # Find all unique pyrrole rings (avoid overlapping matches)
+    matches = mol.GetSubstructMatches(pyrrole_pattern)
+    unique_rings = set()
+    for match in matches:
+        # Sort atom indices to handle different atom orders in SMARTS matches
+        unique_rings.add(tuple(sorted(match)))
+    
+    pyrrole_count = len(unique_rings)
     
     if pyrrole_count >= 2:
         return True, f"Contains {pyrrole_count} pyrrole rings"
