@@ -1,58 +1,117 @@
 """
 Classifies: CHEBI:51963 hopanoid
 """
-"""
-Classifies: CHEBI:XXXXX hopanoid
-"""
-from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
-
-def is_hopanoid(smiles: str):
-    """
-    Determines if a molecule is a hopanoid based on its SMILES string.
-    A hopanoid is a triterpenoid with a hopane skeleton (pentacyclic structure).
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule is a hopanoid, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES string"
-    
-    # Define SMARTS pattern for the hopane core (pentacyclic structure)
-    # Pattern captures the characteristic 5-ring system with bridge connections
-    hopane_core_smarts = Chem.MolFromSmarts(
-        "[C]1([C@@]2([C@]3([C@@H]([C@@]4([C@H](CC3)CC4)C)CC2)C)CCC1)CC[C@@]25C"
-    )
-    if hopane_core_smarts is None:
-        return None, None  # Fallback if SMARTS is invalid
-    
-    # Check for core structure match
-    if mol.HasSubstructMatch(hopane_core_smarts):
-        return True, "Contains hopane core pentacyclic structure"
-    
-    # Alternative pattern for hopene (with one double bond)
-    hopene_core_smarts = Chem.MolFromSmarts(
-        "[C]1([C@@]2([C@]3([C@@H]([C@@]4([C@H](CC3)=CC4)C)CC2)C)CCC1)CC[C@@]25C"
-    )
-    if hopene_core_smarts and mol.HasSubstructMatch(hopene_core_smarts):
-        return True, "Contains hopene core with unsaturation"
-    
-    # Additional check for triterpenoid characteristics (C30 skeleton)
-    # Triterpenoids have ~30 carbons, allowing for some functional groups
-    c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
-    if 25 <= c_count <= 35:  # Allow for functional group substitutions
-        # Check for pentacyclic system (5 rings)
-        ring_info = mol.GetRingInfo()
-        if len(ring_info.AtomRings()) >= 5:
-            # Verify molecular formula pattern (C30H52O is hopane base)
-            formula = rdMolDescriptors.CalcMolFormula(mol)
-            if 'C' in formula and 'H' in formula:
-                return True, "Pentacyclic triterpenoid structure with C30 base"
-    
-    return False, "No hopane core structure detected"
+ - 3beta,7beta,15alpha,22-tetrahydroxyhopane: SMILES: CC(C)(O)[C@H]1CC[C@@]2(C)[C@H]1C[C@H](O)[C@]1(C)[C@@H]2CC[C@@H]2[C@@]3(C)CCCC(C)(C)[C@@H]3C[C@H](O)[C@H](O)[C@@]12C
+ - 7beta,15alpha-dihydroxy-22(29)-hopene: SMILES: CC(=C)[C@H]1CC[C@@]2(C)[C@H]1C[C@H](O)[C@]1(C)[C@@H]2CC[C@@H]2[C@@]3(C)CCCC(C)(C)[C@@H]3C[C@H](O)[C@@]12C
+ - (32R,33R,34S)-35-O-(3-O-methyl-alpha-L-rhamnopyranosyl)-bacteriohopanetetrol: SMILES: CO[C@H]1O[C@@H]([C@H]([C@@H]([C@H]1O)O)O)OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)C
+ - 3beta,7beta-dihydroxy-22(29)-hopene: SMILES: CC(=C)[C@H]1CC[C@@]2(C)[C@H]1CC[C@]1(C)[C@@H]2CC[C@@H]2[C@@]3(C)CC[C@H](O)C(C)(C)[C@@H]3C[C@H](O)[C@@]12C
+ - 2beta-Methylhopan-22-ol: SMILES: OC1C(C2C(C3C(C4(C(C5(C(CC4)C(CC5)C(C)(C)O)C)CC3)C)(CC2)C)(CC1)C)(C)C
+ - 35-O-(alpha-L-rhamnopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O1
+ - 35-O-(alpha-D-galacturonopyranosyl)-bacteriohopanetetrol: SMILES: O=C1OC2C(O)[C@@H](OC1[C@@H]2O)OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]3[C@@H]4[C@]([C@@H]5[C@@]([C@]6([C@@H]([C@@]7([C@H](C(CCC7)(C)C)CC6)C)CC5)C)(C)CC4)(C)CC3)C)C
+ - 35-O-(beta-D-galactopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-glucopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)C)[C@@H](CO)O[C@H]1O
+ - 35-O-(beta-D-mannopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-xylopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)C)[C@H](CO)O[C@H]1O
+ - 35-O-(beta-L-arabinopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)C)[C@H](CO)O[C@H]1O
+ - 35-O-(beta-L-rhamnopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O1
+ - 35-O-(alpha-D-glucopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)C)[C@@H](CO)O[C@H]1O
+ - 35-O-(alpha-D-mannopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-xylopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)C)[C@H](CO)O[C@H]1O
+ - 35-O-(alpha-L-arabinopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)C)[C@H](CO)O[C@H]1O
+ - 35-O-(alpha-L-rhamnopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](O)[C@H](O)[C@@H](O)[C@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O1
+ - 35-O-(beta-D-galactofuranosyl)-bacteriohopanetertrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-glucuronopyranosyl)-bacteriohopanetetrol: SMILES: O=C1OC2C(O)[C@@H](OC1[C@@H]2O)OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]3[C@@H]4[C@]([C@@H]5[C@@]([C@]6([C@@H]([C@@]7([C@H](C(CCC7)(C)C)CC6)C)CC5)C)(C)CC4)(C)CC3)C)C
+ - 35-O-(beta-D-mannuronopyranosyl)-bacteriohopanetetrol: SMILES: O=C1OC2C(O)[C@@H](OC1[C@@H]2O)OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]3[C@@H]4[C@]([C@@H]5[C@@]([C@]6([C@@H]([C@@]7([C@H](C(CCC7)(C)C)CC6)C)CC5)C)(C)CC4)(C)CC3)C)C
+ - 35-O-(beta-L-gulopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-idopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-talopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-galactopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-glucuronopyranosyl)-bacteriohopanetetrol: SMILES: O=C1OC2C(O)[C@@H](OC1[C@@H]2O)OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]3[C@@H]4[C@]([C@@H]5[C@@]([C@]6([C@H]([C@@]7([C@H](C(CCC7)(C)C)CC6)C)CC5)C)(C)CC4)(C)CC3)C)C
+ - 35-O-(alpha-D-mannuronopyranosyl)-bacteriohopanetetrol: SMILES: O=C1OC2C(O)[C@@H](OC1[C@@H]2O)OCC([C@@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]3[C@@H]4[C@]([C@@H]5[C@@]([C@]6([C@@H]([C@@]7([C@H](C(CCC7)(C)C)CC6)C)CC5)C)(C)CC4)(C)CC3)C)C
+ - 35-O-(alpha-L-gulopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-idopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-talopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-fucopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-fucopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-fucopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-fucopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-ribopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-ribopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-ribopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-ribopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-lyxopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-lyxopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-lyxopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-lyxopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-allopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-allopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-allopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-allopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-altropyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-altropyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-altropyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-altropyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-psicopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-psicopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-psicopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-psicopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-sorbopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-sorbopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-sorbopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-sorbopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-tagatopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-tagatopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-tagatopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-tagatopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-fructopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-fructopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-fructopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-fructopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-rhamnofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-L-rhamnofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-D-rhamnofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-L-rhamnofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-galactofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-L-galactofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-D-galactofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-L-galactofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-glucofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-L-glucofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-D-glucofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-L-glucofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-mannofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-L-mannofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-D-mannofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-L-mannofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-fructofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-L-fructofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-D-fructofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-L-fructofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-sorbofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-L-sorbofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-D-sorbofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-L-sorbofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-tagatofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-L-tagatofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-D-tagatofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-L-tagatofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-psicofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-L-psicofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-D-psicofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(alpha-L-psicofuranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@H](O)[C@@H](O)[C@H](O1)COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C
+ - 35-O-(beta-D-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-apiopyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-D-altropyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(beta-L-altropyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-D-altropyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O)[C@H](O)[C@H](O)CC[C@H]([C@@H]2[C@@H]3[C@]([C@@H]4[C@@]([C@]5([C@@H]([C@@]6([C@H](C(CCC6)(C)C)CC5)C)CC4)C)(C)CC3)(C)CC2)C)O[C@H](O)[C@H](O)[C@H]1O
+ - 35-O-(alpha-L-altropyranosyl)-bacteriohopanetetrol: SMILES: O[C@H]1[C@@H](COC[C@H](O
