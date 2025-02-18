@@ -34,11 +34,6 @@ def is_fatty_aldehyde(smiles: str):
     adj_carbons = [atom for atom in mol.GetAtomWithIdx(aldehyde_carbon).GetNeighbors() if atom.GetAtomicNum() == 6]
     if len(adj_carbons) != 1:
         return False, "Aldehyde not terminal"
-    first_chain_carbon = adj_carbons[0].GetIdx()
-
-    # Check chain is aliphatic (no aromatic rings)
-    if mol.GetAtomWithIdx(first_chain_carbon).GetIsAromatic():
-        return False, "Aldehyde attached to aromatic system"
 
     # Check for forbidden elements (only C, H, O allowed)
     for atom in mol.GetAtoms():
@@ -46,9 +41,20 @@ def is_fatty_aldehyde(smiles: str):
             return False, "Contains non-C/H/O atoms"
 
     # Check oxygen atoms are only in aldehyde or hydroxyl groups
-    bad_oxygen = Chem.MolFromSmarts("[O;!$(O=[CX3H1]);!$(O[H])]")
-    if mol.HasSubstructMatch(bad_oxygen):
-        return False, "Contains non-aldehyde/hydroxyl oxygen"
+    al_oxygens = {match[1] for match in mol.GetSubstructMatches(Chem.MolFromSmarts("[CX3H1]=O"))}
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 8:
+            if atom.GetIdx() in al_oxygens:
+                continue
+            # Check for hydroxyl group (O with 1 H and bonded to 1 carbon)
+            if atom.GetTotalNumHs() == 1 and len([n for n in atom.GetNeighbors() if n.GetAtomicNum() == 6]) == 1:
+                continue
+            else:
+                return False, "Contains forbidden oxygen groups"
+
+    # Check for rings in the molecule
+    if mol.GetRingInfo().NumRings() > 0:
+        return False, "Contains cyclic structures"
 
     # Check minimum chain length (total carbons >=4)
     c_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
