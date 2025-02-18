@@ -25,8 +25,7 @@ def is_dipeptide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find all amide bonds (C(=O)-N with single bond to N)
-    # Adjusted pattern to include any N with three bonds (including proline-like cases)
+    # Find all amide bonds (C(=O)-N)
     amide_pattern = Chem.MolFromSmarts("[CX3](=O)-[NX3]")
     amide_matches = mol.GetSubstructMatches(amide_pattern)
     
@@ -36,7 +35,7 @@ def is_dipeptide(smiles: str):
         c_atom_idx = match[0]
         n_atom_idx = match[1]
         
-        # Get alpha carbon adjacent to carbonyl C (not part of the amide N)
+        # Get alpha carbon adjacent to carbonyl C (from first amino acid)
         alpha1 = None
         c_atom = mol.GetAtomWithIdx(c_atom_idx)
         for neighbor in c_atom.GetNeighbors():
@@ -44,9 +43,9 @@ def is_dipeptide(smiles: str):
                 alpha1 = neighbor
                 break
         if not alpha1:
-            continue  # Not a peptide bond
+            continue  # No alpha carbon on C side
         
-        # Get alpha carbon adjacent to amide N (not part of the carbonyl C)
+        # Get alpha carbon adjacent to amide N (from second amino acid)
         alpha2 = None
         n_atom = mol.GetAtomWithIdx(n_atom_idx)
         for neighbor in n_atom.GetNeighbors():
@@ -54,22 +53,30 @@ def is_dipeptide(smiles: str):
                 alpha2 = neighbor
                 break
         if not alpha2:
-            continue  # Not a peptide bond
-        
-        # Check substituents on alpha carbons (must have at least one side chain)
-        # Check alpha1 (from C side) has at least one other neighbor besides carbonyl C
-        alpha1_substituents = [n for n in alpha1.GetNeighbors() if n.GetIdx() != c_atom_idx]
-        if not alpha1_substituents:
-            continue
-        
-        # Check alpha2 (from N side) has at least one other neighbor besides amide N
-        alpha2_substituents = [n for n in alpha2.GetNeighbors() if n.GetIdx() != n_atom_idx]
-        if not alpha2_substituents:
-            continue
+            continue  # No alpha carbon on N side
         
         valid_peptide_bonds += 1
     
+    # Dipeptides must have exactly one peptide bond connecting two amino acids
     if valid_peptide_bonds != 1:
         return False, f"Found {valid_peptide_bonds} valid peptide bonds, need exactly 1"
+    
+    # Verify there are exactly two amino groups (one from each residue)
+    # Check for at least two amine groups (alpha amines or side chains)
+    amine_count = 0
+    for atom in mol.GetAtoms():
+        if atom.GetAtomicNum() == 7:
+            # Check if it's an amine (NH2, NH, or part of a peptide bond)
+            # Exclude the amide N in the peptide bond
+            if atom.GetIdx() != n_atom_idx:
+                # Check if it's part of an amino group (NH2 or NH)
+                # Count primary, secondary amines (exclude amides)
+                for bond in atom.GetBonds():
+                    if bond.GetBondType() == Chem.BondType.SINGLE and atom.GetDegree() <= 3:
+                        amine_count += 1
+                        break
+    
+    if amine_count < 2:
+        return False, f"Only {amine_count} amine groups found, need at least 2"
     
     return True, "Two amino acid residues connected by a peptide bond"
