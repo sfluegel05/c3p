@@ -19,26 +19,24 @@ def is_aralkylamine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Find amine: primary, secondary or tertiary
+    # Find an amine (N with attached hydrogens possibly attached to C, excluding amides)
     amine_pattern = Chem.MolFromSmarts("[NX3;H2,H1,H0;!$(NC=O)]")
     if not mol.HasSubstructMatch(amine_pattern):
         return False, "No primary, secondary, or tertiary amine group found"
 
-    # Find aromatic group
+    # Find aromatic ring
     aromatic_atoms = [atom.GetIdx() for atom in mol.GetAromaticAtoms()]
     if not aromatic_atoms:
         return False, "No aromatic group found"
-    
-    # Check connectivity between amine, alkyl chain, and aromatic
-    aralkylamine_pattern = Chem.MolFromSmarts("[NX3][C][C][c]") # Simplified aryl-alkyl connection
-    if not mol.HasSubstructMatch(aralkylamine_pattern):
-        return False, "No alkyl group substituted by aromatic group found attached to amine."
-   
-    # Additional pattern to capture more complex structures, ensuring connectivity
-    complex_aralkylamine_pattern = Chem.MolFromSmarts("[NX3][C,c][C,c][a]") 
-    if not (mol.HasSubstructMatch(aralkylamine_pattern) or mol.HasSubstructMatch(complex_aralkylamine_pattern)):
-        return False, "No alkyl group substituted by aromatic group found attached to amine."
-    
-    return True, "Molecule is an aralkylamine"
 
-# The refined patterns aim to be inclusive enough to capture the diversity of aralkylamines in question without including unrelated compounds.
+    # Look for connections: Amine to alkyl chain to aromatic group
+    # We use enhanced pattern with optional variables
+    aralkylamine_patterns = [
+        Chem.MolFromSmarts("[NX3][C,c]*[c]"),  # N-C-aromatic
+        Chem.MolFromSmarts("[NX3][C,c][C,c][a]")  # N-C-C-aromatic
+    ]
+    for pattern in aralkylamine_patterns:
+        if mol.HasSubstructMatch(pattern):
+            return True, "Molecule is an aralkylamine"
+    
+    return False, "No alkyl group substituted by aromatic group found attached to amine."
