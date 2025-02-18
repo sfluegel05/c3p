@@ -11,7 +11,7 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     """
     Determines if a molecule is a 2-hydroxydicarboxylic acid based on its SMILES string.
     A 2-hydroxydicarboxylic acid has two carboxy groups (-COOH) and a hydroxyl group (-OH)
-    on the alpha carbon (adjacent to at least one carboxy group).
+    on an alpha carbon (adjacent to a carboxy group) that connects both carboxy groups.
 
     Args:
         smiles (str): SMILES string of the molecule
@@ -30,23 +30,32 @@ def is_2_hydroxydicarboxylic_acid(smiles: str):
     if len(carboxy_matches) != 2:
         return False, f"Found {len(carboxy_matches)} carboxy groups (needs exactly 2)"
 
-    # Check for hydroxyl group on alpha carbon (adjacent to any carboxy group)
-    alpha_hydroxyl = False
-    for carboxy_match in carboxy_matches:
-        carboxy_carbon = carboxy_match[0]  # Carbon in the carboxy group (C=O)
-        # Get neighboring atoms to the carboxy carbon
-        neighbors = mol.GetAtomWithIdx(carboxy_carbon).GetNeighbors()
-        for neighbor in neighbors:
-            if neighbor.GetAtomicNum() == 6:  # Adjacent carbon (alpha position)
-                # Check if this alpha carbon has a hydroxyl group
-                hydroxyls = [a for a in neighbor.GetNeighbors() if a.GetAtomicNum() == 8 and a.GetTotalNumHs() >= 1]
-                if hydroxyls:
-                    alpha_hydroxyl = True
+    # Get carboxy carbons from matches
+    carboxy_carbons = [match[0] for match in carboxy_matches]
+    carb1, carb2 = carboxy_carbons
+
+    # Check connectivity between carboxy groups through the hydroxyl-bearing carbon
+    hydroxyl_found = False
+    for carboxy_carbon in [carb1, carb2]:
+        # Get alpha carbons (direct neighbors to carboxy carbon)
+        alpha_carbons = [n.GetIdx() for n in mol.GetAtomWithIdx(carboxy_carbon).GetNeighbors() if n.GetAtomicNum() == 6]
+        
+        for alpha in alpha_carbons:
+            # Check if alpha carbon has hydroxyl (-OH)
+            alpha_atom = mol.GetAtomWithIdx(alpha)
+            hydroxyls = [n for n in alpha_atom.GetNeighbors() 
+                        if n.GetAtomicNum() == 8 and n.GetTotalNumHs() >= 1]
+            
+            if hydroxyls:
+                # Check if this alpha carbon is on the path between both carboxy groups
+                path = Chem.GetShortestPath(mol, alpha, carb2 if carboxy_carbon == carb1 else carb1)
+                if path:
+                    hydroxyl_found = True
                     break
-        if alpha_hydroxyl:
+        if hydroxyl_found:
             break
 
-    if not alpha_hydroxyl:
-        return False, "No hydroxyl group on alpha carbon adjacent to carboxy group"
+    if not hydroxyl_found:
+        return False, "No hydroxyl on alpha carbon connecting both carboxy groups"
 
-    return True, "Two carboxy groups with hydroxyl on alpha carbon"
+    return True, "Two carboxy groups with hydroxyl on connecting alpha carbon"
