@@ -6,43 +6,45 @@ from rdkit.Chem import AllChem
 
 def is_bioconjugate(smiles: str):
     """
-    Determines if a molecule is a bioconjugate (contains at least two biological molecules linked covalently).
+    Determines if a molecule is a bioconjugate (contains at least one biological component and a covalent linker).
     """
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Define SMARTS patterns for biological molecule parts
-    amino_acid = Chem.MolFromSmarts("[NH2]-[CH]-[C](=O)[OH]")  # Basic amino acid pattern
-    sugar = Chem.MolFromSmarts("[C]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O")  # Pyranose ring
-    fatty_acid = Chem.MolFromSmarts("CCCCCCCCCCCC(=O)OH")  # Long chain carboxylic acid
+    # Define valid biological component patterns
+    amino_acid = Chem.MolFromSmarts("[NH2,NH3+]-[CH](-[C](=[O])[OH,O-])-*")
+    sugar = Chem.MolFromSmarts("[C]1O[C@H](O)[C@H](O)[C@H](O)[C@H]1O")
+    nucleobase = Chem.MolFromSmarts("[nH]1cnc2ncnc12")
+    coa = Chem.MolFromSmarts("SCCNC(=O)CCNC(=O)")
+    fatty_acid = Chem.MolFromSmarts("[CX3](=O)[OX2H,O-]")
     
-    # Check for matches
-    has_amino = mol.HasSubstructMatch(amino_acid)
-    has_sugar = mol.HasSubstructMatch(sugar)
-    has_fatty = mol.HasSubstructMatch(fatty_acid)
+    # Check for biological components (skip None patterns)
+    bio_matches = 0
+    for pattern in [amino_acid, sugar, nucleobase, coa, fatty_acid]:
+        if pattern and mol.HasSubstructMatch(pattern):
+            bio_matches += 1
     
-    # Count biological components
-    bio_count = sum([has_amino, has_sugar, has_fatty])
-    
-    if bio_count >= 2:
-        return True, "Contains multiple biological components"
-    
-    # Check for peptide bonds (amide links)
-    amide = Chem.MolFromSmarts("[CX3](=O)[NX3H]")
-    if len(mol.GetSubstructMatches(amide)) >= 2:
-        return True, "Contains peptide bonds"
-    
-    # Check for disulfide bonds (S-S)
+    # Define covalent linker patterns
     disulfide = Chem.MolFromSmarts("[S][S]")
-    if mol.HasSubstructMatch(disulfide):
-        return True, "Contains disulfide bond"
-    
-    # Check for thioether (S connected to two carbons)
     thioether = Chem.MolFromSmarts("[S]([#6])[#6]")
-    if mol.HasSubstructMatch(thioether):
-        # Check if connected to a peptide or amino acid
-        if has_amino or len(mol.GetSubstructMatches(amide)) >= 1:
-            return True, "Thioether linked to peptide/amino acid"
+    ester = Chem.MolFromSmarts("[O][CX3](=O)[#6]")
+    amide = Chem.MolFromSmarts("[CX3](=O)[NX3H]")
+    
+    # Check for linkers (skip None patterns)
+    linker_found = any(
+        pattern and mol.HasSubstructMatch(pattern)
+        for pattern in [disulfide, thioether, ester, amide]
+    )
+    
+    # Require at least one biological component and one linker
+    if bio_matches >= 1 and linker_found:
+        return True, "Contains biological component(s) and covalent linker"
+    
+    # Special case for CoA-like structures with thioester bonds
+    thioester = Chem.MolFromSmarts("[#6][S][CX3](=O)[#6]")
+    if thioester and mol.HasSubstructMatch(thioester):
+        if coa and mol.HasSubstructMatch(coa):
+            return True, "Contains CoA-like structure with thioester bond"
     
     return False, "Does not meet bioconjugate criteria"
