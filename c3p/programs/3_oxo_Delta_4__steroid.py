@@ -3,10 +3,10 @@ Classifies: CHEBI:47909 3-oxo-Delta(4) steroid
 """
 #!/usr/bin/env python3
 """
-Classifies: 3-oxo-Delta(4) steroid
-Definition: A 3-oxo steroid conjugated to a C=C double bond at the alpha,beta position.
-This code verifies that the molecule contains a fused tetracyclic (steroid) nucleus and that an 
-alpha,beta-unsaturated ketone (enone) is present in one of its six-membered rings.
+Classifies: 3-oxo-Delta(4) steroid 
+Definition: A 3-oxo steroid conjugated to a C=C double bond at the alpha,beta position,
+i.e. a steroid (with a fused tetracyclic nucleus) that contains an α,β-unsaturated ketone 
+(enone) in one of its six-membered rings.
 """
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
@@ -14,13 +14,14 @@ from rdkit.Chem import rdMolDescriptors
 def is_3_oxo_Delta_4__steroid(smiles: str):
     """
     Determines if a molecule is a 3-oxo-Delta(4) steroid based on its SMILES string.
-    A 3-oxo-Delta(4) steroid is defined as a steroid (with a fused tetracyclic nucleus with 
-    three six-membered rings and one five-membered ring, typically totaling 17 carbons) having 
-    a 3-oxo group that is conjugated to an adjacent C=C double bond (enone) in a six-membered ring.
-    
+    The molecule must have a fused steroid nucleus (three six-membered rings and one five-membered ring,
+    with a sufficient number of ring atoms) and, in one of the six-membered rings, an enone motif
+    is identified. The enone is defined here as a carbon that bears a carbonyl (C=O) group and is 
+    connected by a single bond to a carbon that is part of a C=C double bond with a neighboring carbon (all within the same ring).
+
     Args:
-        smiles (str): SMILES string of the molecule
-        
+        smiles (str): SMILES string of the molecule.
+
     Returns:
         bool: True if the molecule is a 3-oxo-Delta(4) steroid, False otherwise.
         str: Explanation of the classification.
@@ -31,60 +32,97 @@ def is_3_oxo_Delta_4__steroid(smiles: str):
         return False, "Invalid SMILES string"
     
     # ---------------------------
-    # 1. Check for steroid nucleus
+    # 1. Verify steroid nucleus structure.
     # ---------------------------
-    # We use a heuristic based on the typical steroid nucleus:
-    #   - It is a fused tetracyclic system.
-    #   - It must contain at least three 6-membered rings and one 5-membered ring.
-    #   - Their union should cover roughly 17 carbon atoms.
+    # Steroids typically have a fused tetracyclic nucleus consisting of three six-membered rings
+    # and one five-membered ring. We use ring information as a heuristic.
     ring_info = mol.GetRingInfo()
     rings = ring_info.AtomRings()
+    
+    # Count six- and five-membered rings.
     count6 = sum(1 for r in rings if len(r) == 6)
     count5 = sum(1 for r in rings if len(r) == 5)
-    
     if count6 < 3 or count5 < 1:
         return False, "Steroid nucleus not found (insufficient six-membered and/or five-membered rings)"
     
-    # Build a union of all atoms belonging to rings of size 5 or 6.
+    # Build a set of all atoms that are in rings of size 5 or 6.
     steroid_atoms = set()
     for r in rings:
         if len(r) in [5,6]:
             steroid_atoms.update(r)
-    # A steroid nucleus usually comprises 17 carbons;
-    # here we require at least 15 heavy atoms in the fused ring system (to allow for some substitutions).
     if len(steroid_atoms) < 15:
         return False, "Steroid nucleus not found (fused ring atom count too low)"
     
     # ---------------------------
-    # 2. Check for enone functionality within a six-membered ring
+    # 2. Detect enone functionality within one six-membered ring of the nucleus.
     # ---------------------------
-    # We define an enone as a ketone (C(=O)) directly attached to a C=C double bond.
-    enone_smarts = "C(=O)C=C"
-    enone = Chem.MolFromSmarts(enone_smarts)
-    if enone is None:
-        return False, "Error in generating enone SMARTS pattern"
+    # Instead of a fixed SMARTS pattern, we search each six-membered ring for an enone motif.
+    # The desired pattern is:
+    #   (a) A carbon atom (C1) that is part of a six-membered ring and has a double bond to an oxygen (C=O).
+    #   (b) C1 must be connected (via a single bond) to a beta carbon (C2) in the ring.
+    #   (c) This beta carbon C2 must participate in a double bond (C=C) with a gamma carbon (C3) in the same ring.
+    rings6 = [set(r) for r in rings if len(r) == 6]
     
-    enone_matches = mol.GetSubstructMatches(enone)
-    if not enone_matches:
-        return False, "Missing 3-oxo / Δ(4) enone motif"
-    
-    # Ensure that the enone match is part of a six-membered ring.
-    enone_in_six = False
-    for match in enone_matches:
-        for ring in rings:
-            if len(ring) == 6 and set(match).issubset(ring):
-                enone_in_six = True
+    enone_found = False
+    for ring in rings6:
+        # For each atom index in the six-membered ring, check for the pattern.
+        for idx in ring:
+            atom = mol.GetAtomWithIdx(idx)
+            # Look for carbonyl carbon: must be carbon and have a double bond to oxygen.
+            if atom.GetAtomicNum() != 6:
+                continue
+            has_carbonyl = False
+            # List to hold the oxygen neighbor indices involved in C=O.
+            carbonyl_oxygens = []
+            for bond in atom.GetBonds():
+                if bond.GetBondType() == Chem.rdchem.BondType.DOUBLE:
+                    nbr = bond.GetOtherAtom(atom)
+                    if nbr.GetAtomicNum() == 8:
+                        has_carbonyl = True
+                        carbonyl_oxygens.append(nbr.GetIdx())
+            if not has_carbonyl:
+                continue
+            
+            # Now look for a beta carbon: a neighbor (other than the oxygen) that is in the same ring.
+            for bond in atom.GetBonds():
+                nbr = bond.GetOtherAtom(atom)
+                if nbr.GetIdx() not in ring:
+                    continue  # Only consider atoms in the same ring.
+                if nbr.GetAtomicNum() != 6:
+                    continue  # Should be a carbon.
+                if nbr.GetIdx() in carbonyl_oxygens:
+                    continue  # Skip the oxygen atom.
+                
+                # Check if this beta carbon participates in a C=C double bond
+                # with another carbon (gamma carbon) also in the ring and not the original carbonyl carbon.
+                for bond2 in nbr.GetBonds():
+                    if bond2.GetBondType() != Chem.rdchem.BondType.DOUBLE:
+                        continue
+                    gamma = bond2.GetOtherAtom(nbr)
+                    if gamma.GetIdx() == atom.GetIdx():
+                        continue  # Skip bond back to the carbonyl carbon.
+                    if gamma.GetIdx() not in ring:
+                        continue  # Must be in the same ring.
+                    if gamma.GetAtomicNum() != 6:
+                        continue
+                    # Found a candidate enone: C1 (carbonyl) - C2 (beta, single bond) and C2=C3 (double bond).
+                    enone_found = True
+                    break
+                if enone_found:
+                    break
+            if enone_found:
                 break
-        if enone_in_six:
+        if enone_found:
             break
-    if not enone_in_six:
-        return False, "Enone motif not found in a six-membered ring"
+            
+    if not enone_found:
+        return False, "Enone motif not found in a six-membered ring within the steroid nucleus"
     
-    return True, "Contains a fused tetracyclic (steroid) nucleus with an alpha,beta-unsaturated ketone (3-oxo Δ(4))"
+    return True, "Contains a fused steroid nucleus with a 3-oxo/Δ(4) enone motif in a six-membered ring."
 
 # Example usage (for testing purposes):
 if __name__ == "__main__":
-    # Test example: (20S)-20-hydroxypregn-4-en-3-one
+    # Example: (20S)-20-hydroxypregn-4-en-3-one
     test_smiles = "[H][C@@]1(CC[C@@]2([H])[C@]3([H])CCC4=CC(=O)CC[C@]4(C)[C@@]3([H])CC[C@]12C)[C@H](C)O"
     result, reason = is_3_oxo_Delta_4__steroid(test_smiles)
     print(result, reason)
