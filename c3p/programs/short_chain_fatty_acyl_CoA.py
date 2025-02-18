@@ -20,41 +20,44 @@ def is_short_chain_fatty_acyl_CoA(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for Coenzyme A specific fragments
-    coA_pattern = Chem.MolFromSmarts("OP(=O)(O)OC[C@H]1O[C@H]([C@@H](O)[C@H]1OP(=O)(O)O)n1cnc2c(N)ncnc12")
+    # Coenzyme A specific fragments: check for the entire CoA scaffold
+    coA_pattern = Chem.MolFromSmarts("OC(=O)CNC(=O)[C@H](O)[C@H](C)C(=O)NCCC(=O)NCC")
     if not mol.HasSubstructMatch(coA_pattern):
         return False, "Coenzyme A structure not found"
 
-    # Look for thioester linkage: S-C(=O) for fatty acyl attachment
+    # Thioester linkage: S-C(=O)
     thioester_pattern = Chem.MolFromSmarts("S-[CX3](=O)-")
     thioester_matches = mol.GetSubstructMatches(thioester_pattern)
     if not thioester_matches:
         return False, "No thioester linkage found"
 
-    # Check if the chain length from the carbon in S-C(=O)-C linkage is 2 to 6 carbons
+    # Check if the chain length starting from the carbonyl carbon is 2 to 6 carbons
     for match in thioester_matches:
         carbonyl_carbon_idx = match[1]
-        next_carbon_idx = match[2]
 
-        # Use BFS to traverse the carbon chain starting from next_carbon
-        queue = [next_carbon_idx]
-        visited = {next_carbon_idx}
-        chain_length = 1
+        # Start BFS from the carbon atom next in the chain
+        neighbors = [a for a in mol.GetAtomWithIdx(carbonyl_carbon_idx).GetNeighbors() if a.GetIdx() != match[0]]
+        
+        chain_length = 0
+        queue = [(n, 1) for n in neighbors]  # Store (atom, current_chain_length)
+        visited = set()
 
         while queue:
-            current_idx = queue.pop(0)
-            current_atom = mol.GetAtomWithIdx(current_idx)
+            current_atom, current_length = queue.pop(0)
+            current_idx = current_atom.GetIdx()
 
-            for neighbor in current_atom.GetNeighbors():
-                n_idx = neighbor.GetIdx()
-                n_atom = mol.GetAtomWithIdx(n_idx)
+            if current_idx in visited:
+                continue
+            
+            visited.add(current_idx)
 
-                # Visit only carbon atoms that are part of the chain and not revisiting
-                if n_idx not in visited and n_atom.GetAtomicNum() == 6:
-                    visited.add(n_idx)
-                    queue.append(n_idx)
-                    chain_length += 1
-        
+            if current_atom.GetAtomicNum() == 6:
+                chain_length = current_length
+
+                for neighbor in current_atom.GetNeighbors():
+                    if neighbor.GetIdx() not in visited:
+                        queue.append((neighbor, current_length + 1))
+
         # Validate if chain length is 2 to 6
         if 2 <= chain_length <= 6:
             return True, "Contains Coenzyme A linked with a short-chain fatty acid"
