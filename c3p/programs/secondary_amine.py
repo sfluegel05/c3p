@@ -30,18 +30,29 @@ def is_secondary_amine(smiles: str):
     
     # Check if the molecule contains the secondary amine pattern
     if mol.HasSubstructMatch(secondary_amine_pattern):
-        # Exclude cases where the nitrogen is part of an amide, sulfonamide, or other non-secondary amine functional groups
+        # Exclude cases where the nitrogen is part of an amide, sulfonamide, imine, or other non-secondary amine functional groups
         amide_pattern = Chem.MolFromSmarts("[NX3]([CX3]=[OX1])")
         sulfonamide_pattern = Chem.MolFromSmarts("[NX3]([SX4](=[OX1])=[OX1])")
+        imine_pattern = Chem.MolFromSmarts("[NX2]=[CX3]")
+        enamine_pattern = Chem.MolFromSmarts("[NX3]([CX3]=[CX3])")
         
-        if mol.HasSubstructMatch(amide_pattern) or mol.HasSubstructMatch(sulfonamide_pattern):
-            return False, "Nitrogen is part of an amide or sulfonamide, not a secondary amine"
+        if (mol.HasSubstructMatch(amide_pattern) or 
+            mol.HasSubstructMatch(sulfonamide_pattern) or 
+            mol.HasSubstructMatch(imine_pattern) or 
+            mol.HasSubstructMatch(enamine_pattern)):
+            return False, "Nitrogen is part of an amide, sulfonamide, imine, or enamine, not a secondary amine"
         
         return True, "Contains a nitrogen atom bonded to two carbon atoms and one hydrogen atom (secondary amine)"
     else:
         # Check for cases where the nitrogen is part of a ring or bonded to non-carbon atoms
         ring_nitrogen_pattern = Chem.MolFromSmarts("[NX3;H1]([CX4])([CX4])@*")
         if mol.HasSubstructMatch(ring_nitrogen_pattern):
+            # Ensure the nitrogen in the ring is not part of an amide, sulfonamide, imine, or enamine
+            if (mol.HasSubstructMatch(amide_pattern) or 
+                mol.HasSubstructMatch(sulfonamide_pattern) or 
+                mol.HasSubstructMatch(imine_pattern) or 
+                mol.HasSubstructMatch(enamine_pattern)):
+                return False, "Nitrogen in ring is part of an amide, sulfonamide, imine, or enamine, not a secondary amine"
             return True, "Contains a nitrogen atom bonded to two carbon atoms and one hydrogen atom in a ring (secondary amine)"
         
         return False, "No secondary amine pattern found"
