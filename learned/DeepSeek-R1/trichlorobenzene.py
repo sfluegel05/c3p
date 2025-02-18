@@ -45,12 +45,12 @@ def is_trichlorobenzene(smiles: str):
     if not benzene_rings:
         return False, "No benzene ring found"
     
-    # Check each benzene ring for exactly three chlorine substituents
+    # Check each benzene ring for chlorine substituents
+    cl_counts = []
     for ring in benzene_rings:
         cl_count = 0
         for atom_idx in ring:
             atom = mol.GetAtomWithIdx(atom_idx)
-            # Check all neighbors of this ring atom
             for neighbor in atom.GetNeighbors():
                 # Ensure the bond is single (substituent, not part of a fused ring)
                 bond = mol.GetBondBetweenAtoms(atom.GetIdx(), neighbor.GetIdx())
@@ -58,7 +58,21 @@ def is_trichlorobenzene(smiles: str):
                     continue
                 if neighbor.GetSymbol() == 'Cl':
                     cl_count += 1
-        if cl_count == 3:
-            return True, "Benzene ring with three chlorine substituents found"
+        cl_counts.append(cl_count)
     
-    return False, "No benzene ring with three chlorines"
+    # Check if exactly one benzene ring has three Cls and others have zero
+    valid_ring_found = False
+    for count in cl_counts:
+        if count == 3:
+            if valid_ring_found:
+                # Already found another valid ring, invalid
+                return False, "Multiple benzene rings with three chlorines"
+            valid_ring_found = True
+        elif count > 0:
+            # Other benzene rings have Cls
+            return False, "Other benzene rings have chlorines"
+    
+    if valid_ring_found:
+        return True, "Benzene ring with three chlorine substituents found"
+    else:
+        return False, "No benzene ring with three chlorines"
