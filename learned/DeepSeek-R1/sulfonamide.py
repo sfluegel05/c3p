@@ -23,8 +23,8 @@ def is_sulfonamide(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Define sulfonamide pattern: S(=O)(=O) connected to N which has at least one carbon neighbor
-    sulfonamide_pattern = Chem.MolFromSmarts('[S](=[O])(=[O])-[#7;!$(N-[O,S]);$([#7][#6])]')
+    # Define sulfonamide pattern: S(=O)(=O)-N connected to carbon and not bonded to oxygen
+    sulfonamide_pattern = Chem.MolFromSmarts('[S](=[O])(=[O])-[N;!$(N-O);$([N][#6])]')
     
     # Check for presence of sulfonamide group
     if mol.HasSubstructMatch(sulfonamide_pattern):
