@@ -5,11 +5,10 @@ Classifies: CHEBI:27283 very long-chain fatty acid
 Classifies: CHEBI:27283 very long-chain fatty acid
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
 
 def is_very_long_chain_fatty_acid(smiles: str):
     """
-    Determines if a molecule is a very long-chain fatty acid (chain length ≥ C22) based on its SMILES string.
+    Determines if a molecule is a very long-chain fatty acid (chain length > C22) based on its SMILES string.
     
     Args:
         smiles (str): SMILES string of the molecule
@@ -36,18 +35,10 @@ def is_very_long_chain_fatty_acid(smiles: str):
     if mol.GetAtomWithIdx(carbonyl_carbon).GetIsAromatic():
         return False, "Carboxylic acid attached to aromatic ring"
 
-    # Find alpha carbon (adjacent to carbonyl)
-    alpha_carbons = [n for n in mol.GetAtomWithIdx(carbonyl_carbon).GetNeighbors() 
-                    if n.GetAtomicNum() == 6 and n.GetIdx() != matches[0][1]]
+    # Count all carbon atoms in the molecule
+    carbon_count = sum(1 for atom in mol.GetAtoms() if atom.GetAtomicNum() == 6)
     
-    if not alpha_carbons:
-        return False, "No alpha carbon found"
-    
-    # Calculate longest chain from alpha carbon using RDKit's built-in function
-    chain_atoms = rdMolDescriptors._CalcCarbons(mol, alpha_carbons[0].GetIdx(), doubleBondTerminal=True)
-    chain_length = len(chain_atoms) + 1  # Include carbonyl carbon
-    
-    if chain_length >= 22:
-        return True, f"Main carbon chain length ({chain_length}) ≥ 22"
+    if carbon_count > 22:
+        return True, f"Total carbon count ({carbon_count}) > 22"
     else:
-        return False, f"Main carbon chain length ({chain_length}) < 22"
+        return False, f"Total carbon count ({carbon_count}) ≤ 22"
