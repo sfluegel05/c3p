@@ -1,26 +1,53 @@
 """
 Classifies: CHEBI:83411 beta-D-glucosiduronate
 """
-Based on the previous code and the outcomes provided, there are a few issues that led to the incorrect classification of some molecules as beta-D-glucosiduronates:
+"""
+Classifies: CHEBI:27718 beta-D-glucosiduronate
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdMolDescriptors
 
-1. **Multiple deprotonated carboxyl groups**: The code checks for the presence of exactly one deprotonated carboxyl group. However, some molecules, such as those containing sulfonic acid groups or multiple carboxyl groups (e.g., candesartan O-beta-D-glucuronoside(2-), zolarsartan O-beta-D-glucuronoside(2-), hyocholate 6-O-(beta-D-glucuronide)(2-), etc.), were incorrectly classified as false negatives because they have more than one deprotonated group.
+def is_beta_D_glucosiduronate(smiles: str):
+    """
+    Determines if a molecule is a beta-D-glucosiduronate based on its SMILES string.
+    A beta-D-glucosiduronate is a carbohydrate acid derivative anion obtained by deprotonation
+    of the carboxy group of any beta-D-glucosiduronic acid.
 
-2. **Identifying glucuronic acid moiety**: The code uses a SMARTS pattern to identify the glucuronic acid moiety. While this works for most cases, it may fail to recognize some variants or alternative representations of the glucuronic acid moiety.
+    Args:
+        smiles (str): SMILES string of the molecule
 
-3. **Molecular weight check**: The molecular weight check (> 300 Da) may be too strict or not inclusive enough for all beta-D-glucosiduronates. Some smaller molecules, such as 4-methylumbelliferone beta-D-glucuronide(1-), may be incorrectly classified as false negatives due to their lower molecular weight.
+    Returns:
+        bool: True if molecule is a beta-D-glucosiduronate, False otherwise
+        str: Reason for classification
+    """
+    
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
 
-To improve the program, the following modifications could be made:
+    # Look for deprotonated carboxyl group(s)
+    deprotonated_pattern = Chem.MolFromSmarts("[O-,C-](=O)O")
+    deprotonated_matches = mol.GetSubstructMatches(deprotonated_pattern)
+    if not deprotonated_matches:
+        return False, "No deprotonated carboxyl group found"
 
-1. **Relax the deprotonated carboxyl group check**: Instead of checking for exactly one deprotonated carboxyl group, the code could check for the presence of at least one deprotonated carboxyl group and optionally flag molecules with multiple deprotonated groups for manual review.
+    # Look for glucuronic acid moiety
+    glucuronic_acid_patterns = [
+        Chem.MolFromSmarts("O[C@@H]1[C@@H]([C@H]([C@@H]([C@H](O1)C(=O)[O-])O)O)O"),  # Standard pattern
+        Chem.MolFromSmarts("O[C@@H]1[C@@H]([C@H]([C@@H]([C@H](O1)C(=O)O)O)O)O"),  # Alternate pattern
+        # Add more patterns as needed
+    ]
+    glucuronic_acid_match = False
+    for pattern in glucuronic_acid_patterns:
+        if mol.HasSubstructMatch(pattern):
+            glucuronic_acid_match = True
+            break
+    if not glucuronic_acid_match:
+        return False, "No glucuronic acid moiety found"
 
-2. **Improve the glucuronic acid moiety identification**: Instead of relying solely on a SMARTS pattern, the code could use a combination of SMARTS patterns, substructure matching, and other heuristics to more robustly identify the glucuronic acid moiety and its variants.
+    # Check for additional structural features (optional)
+    # ...
 
-3. **Revise the molecular weight check**: The molecular weight check could be revised or removed altogether, as it may not be a reliable indicator for all beta-D-glucosiduronates.
-
-4. **Incorporate additional checks or rules**: Additional checks or rules could be added to the code to improve the classification accuracy. For example, checking for the presence of specific functional groups, atom environments, or other structural features characteristic of beta-D-glucosiduronates.
-
-5. **Implement a machine learning approach**: Instead of relying on hard-coded rules, a machine learning model could be trained on a labeled dataset of beta-D-glucosiduronates and non-beta-D-glucosiduronates to learn the patterns and features that distinguish the two classes.
-
-6. **Manual review and curation**: For challenging cases or molecules with ambiguous classifications, it may be helpful to incorporate a manual review and curation process by domain experts to ensure accurate classification.
-
-By addressing these issues and implementing the suggested improvements, the program's ability to accurately classify beta-D-glucosiduronates can be enhanced, reducing false positives and false negatives.
+    return True, "Contains a deprotonated carboxyl group and a glucuronic acid moiety"
