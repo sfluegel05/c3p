@@ -1,158 +1,67 @@
 """
 Classifies: CHEBI:25608 nucleoside phosphate
 """
- - (E)-3-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C(=C\C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12)C
- - (E)-2-methylpentadec-3-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-4-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-5-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-6-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-7-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-8-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-9-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-10-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-11-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-12-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-13-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-14-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-15-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-16-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-17-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-18-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-19-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-20-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-21-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-22-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-23-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-24-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-25-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-26-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-27-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-28-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-29-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-30-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-31-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-32-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-33-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-34-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-35-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-36-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-37-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-38-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-39-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-40-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-41-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-42-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-43-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-44-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-45-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-46-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-47-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-48-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-49-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-50-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-51-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-52-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-53-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-54-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-55-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-56-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-57-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-58-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-59-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-60-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-61-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-62-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-63-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-64-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-65-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-66-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-67-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-68-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-69-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-70-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-71-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-72-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-73-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-74-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-75-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-76-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-77-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-78-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-79-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-80-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-81-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-82-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-83-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-84-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-85-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-86-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-87-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-88-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-89-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-90-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-91-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-92-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-93-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-94-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-95-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-96-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-97-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-98-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-99-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-100-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-101-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-102-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-103-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-104-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-105-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-106-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-107-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-108-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-109-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-110-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-111-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-112-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-113-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-114-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-115-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-116-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-117-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-118-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-119-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-120-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-121-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-122-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-123-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-124-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-125-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-126-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-127-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-128-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-129-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-130-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-131-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-132-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-133-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-134-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-135-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-136-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-137-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-138-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-139-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-140-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-141-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-142-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-143-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-144-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-145-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-146-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-147-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-148-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-149-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-150-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-151-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-152-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-153-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-154-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-155-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)OP(O)(=O)OC[C@H]1O[C@H]([C@H](O)[C@@H]1OP(O)(O)=O)n1cnc2c(N)ncnc12
- - (E)-156-methylpentadec-2-enoyl-CoA: SMILES: CCCCCCCCCCCCC\C=C(/C)C(=O)SCCNC(=O)CCNC(=O)[C@H](O)C(C)(C)COP(O)(=O)
+"""
+Classifies: CHEBI:17596 nucleoside phosphate
+"""
+from rdkit import Chem
+from rdkit.Chem import AllChem
+
+def is_nucleoside_phosphate(smiles: str):
+    """
+    Determines if a molecule is a nucleoside phosphate based on its SMILES string.
+    A nucleoside phosphate consists of a nucleobase attached to a sugar with one or more phosphate groups.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is a nucleoside phosphate, False otherwise
+        str: Reason for classification
+    """
+    # Parse SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES string"
+
+    # Check for presence of phosphorus (phosphate requirement)
+    has_phosphorus = any(atom.GetAtomicNum() == 15 for atom in mol.GetAtoms())
+    if not has_phosphorus:
+        return False, "No phosphorus atoms found"
+
+    # Define nucleobase pattern (purine/pyrimidine core)
+    base_pattern = Chem.MolFromSmarts("[n&R]1[c&R][n&R][c&R][n&R]1")  # Purine base
+    if not mol.HasSubstructMatch(base_pattern):
+        # Try pyrimidine pattern if purine not found
+        base_pattern = Chem.MolFromSmarts("[n&R]1[c&R][n&R][c&R][c&R]1")  # Pyrimidine base
+        if not mol.HasSubstructMatch(base_pattern):
+            return False, "No nucleobase detected"
+
+    # Define sugar pattern (ribose-like structure)
+    sugar_pattern = Chem.MolFromSmarts("[C@H]1O[C@H](CO)[C@@H](O)[C@H]1O")
+    sugar_matches = mol.GetSubstructMatches(sugar_pattern)
+    if not sugar_matches:
+        return False, "No sugar moiety detected"
+
+    # Check phosphate linkage to sugar
+    phosphate_attached = False
+    for sugar_match in sugar_matches:
+        # Get the oxygen atoms in the sugar
+        sugar_o_indices = [i for i in sugar_match if mol.GetAtomWithIdx(i).GetAtomicNum() == 8]
+        
+        # Check if any sugar oxygen is connected to phosphorus
+        for o_idx in sugar_o_indices:
+            atom = mol.GetAtomWithIdx(o_idx)
+            for neighbor in atom.GetNeighbors():
+                if neighbor.GetAtomicNum() == 15:  # Phosphorus
+                    phosphate_attached = True
+                    break
+            if phosphate_attached:
+                break
+        if phosphate_attached:
+            break
+
+    if not phosphate_attached:
+        return False, "No phosphate attached to sugar"
+
+    return True, "Contains nucleobase-sugar with phosphate linkage"
