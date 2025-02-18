@@ -20,36 +20,48 @@ def is_fatty_alcohol(smiles: str):
     if mol is None:
         return False, "Invalid SMILES"
     
-    # Check for at least one hydroxyl group on an aliphatic carbon
-    hydroxyl_found = False
+    # Find hydroxyl groups on non-aromatic, non-ring carbons
+    hydroxyl_carbons = []
     for atom in mol.GetAtoms():
-        if atom.GetAtomicNum() == 8:  # Oxygen
-            if atom.GetDegree() == 1 and atom.GetTotalNumHs() >= 1:
-                carbon = atom.GetNeighbors()[0]
-                if carbon.GetAtomicNum() == 6 and not carbon.GetIsAromatic():
-                    hydroxyl_found = True
-                    break
-    if not hydroxyl_found:
-        return False, "No hydroxyl group on aliphatic carbon"
+        if atom.GetAtomicNum() == 8 and atom.GetDegree() == 1 and atom.GetTotalNumHs() >= 1:
+            neighbor = atom.GetNeighbors()[0]
+            if (neighbor.GetAtomicNum() == 6 and 
+                not neighbor.GetIsAromatic() and 
+                not neighbor.IsInRing()):
+                hydroxyl_carbons.append(neighbor)
     
-    # Function to find the longest carbon chain
-    def get_longest_chain(mol):
-        carbons = [a.GetIdx() for a in mol.GetAtoms() if a.GetAtomicNum() == 6]
-        max_length = 0
-        for start in carbons:
-            for end in carbons:
-                if start == end:
-                    continue
-                try:
-                    path = Chem.GetShortestPath(mol, start, end)
-                except:
-                    continue
-                if len(path) > max_length:
-                    max_length = len(path)
+    if not hydroxyl_carbons:
+        return False, "No hydroxyl group on aliphatic non-ring carbon"
+    
+    # Function to calculate longest aliphatic chain from a starting atom
+    def get_chain_length(start_atom):
+        visited = set()
+        max_length = 1
+        stack = [(start_atom, 1)]
+        
+        while stack:
+            atom, length = stack.pop()
+            visited.add(atom.GetIdx())
+            
+            for neighbor in atom.GetNeighbors():
+                if (neighbor.GetAtomicNum() == 6 and
+                    not neighbor.GetIsAromatic() and
+                    not neighbor.IsInRing() and
+                    neighbor.GetIdx() not in visited):
+                    
+                    new_length = length + 1
+                    if new_length > max_length:
+                        max_length = new_length
+                    stack.append((neighbor, new_length))
+        
         return max_length
     
-    chain_length = get_longest_chain(mol)
-    if chain_length < 3:
-        return False, f"Longest carbon chain is {chain_length} (<3)"
+    # Check chain lengths for all hydroxyl-bearing carbons
+    max_chain = max(get_chain_length(carbon) for carbon in hydroxyl_carbons)
     
-    return True, f"Aliphatic alcohol with {chain_length}-carbon chain"
+    if max_chain < 3:
+        return False, f"Longest hydroxyl chain: {max_chain} (<3)"
+    if max_chain > 27:
+        return True, f"Aliphatic alcohol with {max_chain}-carbon chain (over 27)"
+    
+    return True, f"Aliphatic alcohol with {max_chain}-carbon chain"
