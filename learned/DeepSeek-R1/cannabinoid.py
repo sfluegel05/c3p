@@ -1,0 +1,423 @@
+"""
+Classifies: CHEBI:67194 cannabinoid
+"""
+ - 2-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - N-oleoyl dopamine: SMILES: CCCCCCCC\C=C/CCCCCCCC(=O)NCCc1ccc(O)c(O)c1
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 5Z,8Z,11Z,14Z-eicosatetraenamide: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)N
+ - N-arachidonoyl dopamine: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)NCCc1ccc(O)c(O)c1
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - N-stearoyl ethanolamide: SMILES: CCCCCCCCCCCCCCCCCC(=O)NCCO
+ - N-palmitoyl ethanolamide: SMILES: CCCCCCCCCCCCCCCC(=O)NCCO
+ - N-arachidonoyl ethanolamide: SMILES: CCCCC\C=C/C\C=C/C\C=C/C\C=C/CCCC(=O)NCCO
+ - N-oleoyl ethanolamide: SMILES: CCCCCCCC\C=C/CCCCCCCC(=O)NCCO
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - N-stearoyl dopamine: SMILES: CCCCCCCCCCCCCCCCCC(=O)NCCc1ccc(O)c(O)c1
+ - N-palmitoyl dopamine: SMILES: CCCCCCCCCCCCCCCC(=O)NCCc1ccc(O)c(O)c1
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-eicosa-5,8,11,14-tetraenoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 2-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-linoleoyl glycerol: SMILES: O(C(CO)CO)C(=O)CCCC\C=C/C\C=C/CCCCCCCC
+ - 1-palmitoleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCC\C=C/CCCCCCCC
+ - 1-oleoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC\C=C/CCCCCCCC
+ - 2-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 1-eicosa-5,8,11,14-tetraenoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC/C=C\C/C=C\C/C=C\C/C=C\CCCCC
+ - 2-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-arachidonoylglycerol: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 1-AG: SMILES: O(C(CO)CO)C(=O)CCC\C=C/C\C=C/C\C=C/C\C=C/CCCCC
+ - 2-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCC
+ - 2-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-stearoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCCCCCCCCCCC
+ - 1-palmitoylglycerol: SMILES: O(C(CO)CO)C(=O)CCCCCCCC
