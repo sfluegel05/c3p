@@ -2,99 +2,106 @@
 Classifies: CHEBI:29256 thiol
 """
 """
-Classifies: Thiol – An organosulfur compound in which a thiol group (-SH) 
-is attached to a carbon atom of any aliphatic or aromatic moiety.
-Exceptions: When the S-containing group is part of an amino acid or peptide backbone 
-(i.e. the carbon attached to S appears as an α–carbon with both an amine and a carbonyl-bearing neighbor),
-the molecule should not be classified as a simple thiol.
+Classifies: Thiol – An organosulfur compound in which a thiol group (-SH) is attached 
+to a carbon atom of any aliphatic or aromatic moiety. However, when the S-containing group 
+is part of a peptide backbone (i.e. the S is attached to a peptide α–carbon which has both 
+an amine and a carbonyl neighbor), the molecule should not be classified as a simple thiol.
 """
 
 from rdkit import Chem
+from rdkit.Chem import rdchem
 
 def is_thiol(smiles: str):
     """
-    Determines if a molecule is a nonpeptidic thiol based on its SMILES string.
+    Determines if a molecule is a valid (nonpeptidic) thiol based on its SMILES string.
     
     Strategy:
-      1. Parse the molecule and add implicit hydrogens.
+      1. Parse the molecule.
       2. Loop over all sulfur atoms (atomic number 16). For each S:
-           a. Skip it if it is oxidized (i.e. S is double-bonded to an oxygen).
+           a. Skip if the sulfur is oxidized (i.e. attached via a double bond to oxygen).
            b. Check that the S atom has at least one hydrogen attached (for an –SH group).
-           c. Check that the S atom is attached to exactly one heavy (non-hydrogen) neighbor.
-              (A genuine thiol –SH should have one attachment to a carbon.)
-           d. Ensure that the attached carbon is not in a peptide-like environment.
-              We use a heuristic: if this carbon (C_thiol) has at least one nitrogen neighbor and 
-              at least one neighbor (other than the S) that is a carbon double-bonded to oxygen (a carbonyl), 
-              then we consider it peptide-like.
-      3. If any sulfur passing these tests is found, return True with an explanation.
-      4. Otherwise return False.
+           c. Require that S is attached to exactly one heavy (non-hydrogen) neighbor.
+           d. Check that the heavy neighbor is a carbon.
+           e. If that carbon is aromatic, accept the group.
+           f. Otherwise (for an aliphatic carbon) we check if that carbon looks peptide‐like:
+              If the carbon (excluding the S neighbor) has at least one nitrogen neighbor 
+              and at least one neighbor that is a carbon double-bonded to an oxygen (a carbonyl), 
+              then we mark it as peptide-like and skip this S.
+      3. If any S passes these tests, return True with an explanation.
+         Otherwise return False with the reason.
     
     Args:
         smiles (str): SMILES string of the molecule.
     
     Returns:
-        bool: True if a valid (nonpeptidic) thiol group is found, False otherwise.
-        str: Explanation / Reason for the classification.
+        bool: True if molecule contains a nonpeptidic free thiol (-SH) group, False otherwise.
+        str: Explanation for the classification.
     """
-    # Parse SMILES
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         return False, "Invalid SMILES string"
     
-    # For our purposes the implicit hydrogens are used via GetTotalNumHs().
-    # Loop over every atom to find S (atomic number 16)
+    # Loop over every atom to check for sulfur atoms
     for atom in mol.GetAtoms():
         if atom.GetAtomicNum() != 16:
-            continue  # not sulfur
+            continue  # not a sulfur
         
-        # Skip oxidized sulfur atoms (i.e. S with a double bond to O).
-        if any(bond.GetBondTypeAsDouble() == 2.0 and bond.GetOtherAtom(atom).GetAtomicNum() == 8
-               for bond in atom.GetBonds()):
+        # Skip S if it is oxidized (i.e. S has a double bond to an oxygen)
+        oxidized = False
+        for bond in atom.GetBonds():
+            # Use GetBondType() for a more robust double-bond check
+            if bond.GetBondType() == rdchem.BondType.DOUBLE:
+                other = bond.GetOtherAtom(atom)
+                if other.GetAtomicNum() == 8:
+                    oxidized = True
+                    break
+        if oxidized:
             continue
         
-        # Check that the sulfur has at least one hydrogen attached.
-        # In a genuine thiol group (-SH), the S should carry one hydrogen.
+        # Check that the sulfur atom has at least one hydrogen attached (free –SH group) 
+        # (implicit hydrogens are taken into account)
         if atom.GetTotalNumHs() < 1:
             continue
         
-        # Get heavy (non-hydrogen) neighbors
+        # Get the heavy (non-hydrogen) neighbors of S
         heavy_neighbors = [nbr for nbr in atom.GetNeighbors() if nbr.GetAtomicNum() > 1]
-        # For a free thiol (-SH) the S should be attached to exactly one heavy atom.
+        # A free thiol (-SH) should be attached to exactly one heavy atom.
         if len(heavy_neighbors) != 1:
             continue
         
         neighbor = heavy_neighbors[0]
-        # The heavy neighbor must be a carbon to qualify as a typical thiol.
+        # The neighbor must be a carbon (atomic number 6) for thiol classification.
         if neighbor.GetAtomicNum() != 6:
             continue
+
+        # If the attached carbon is aromatic, we assume it is a valid thiol group.
+        if neighbor.GetIsAromatic():
+            return True, "Molecule contains a free thiol (-SH) group attached to an aromatic carbon."
         
-        # Heuristic to detect peptide-like environment:
-        # Check if the carbon (C_thiol) attached to S has:
-        #   a) at least one neighboring nitrogen, and 
-        #   b) at least one neighboring carbon (other than the S) that is double-bonded to an oxygen.
-        peptide_like = False
+        # For an aliphatic carbon, check if it appears peptide-like.
+        # Heuristic: if the carbon (excluding the S) has at least one nitrogen neighbor
+        # and at least one neighbor (other than S) which is a carbon that is double-bonded to O,
+        # then assume it is part of a peptide backbone.
         neighbors_of_c = [n for n in neighbor.GetNeighbors() if n.GetIdx() != atom.GetIdx()]
-        
         has_nitrogen = any(n.GetAtomicNum() == 7 for n in neighbors_of_c)
-        
         has_carbonyl = False
         for n in neighbors_of_c:
             if n.GetAtomicNum() == 6:
-                # Look for a double bond from this carbon to an oxygen.
                 for bond in n.GetBonds():
-                    # bond.GetOtherAtom(n) returns the neighbor
-                    if bond.GetBondTypeAsDouble() == 2.0 and bond.GetOtherAtom(n).GetAtomicNum() == 8:
-                        has_carbonyl = True
-                        break
+                    if bond.GetBondType() == rdchem.BondType.DOUBLE:
+                        other = bond.GetOtherAtom(n)
+                        if other.GetAtomicNum() == 8:
+                            has_carbonyl = True
+                            break
             if has_carbonyl:
                 break
         
         if has_nitrogen and has_carbonyl:
-            peptide_like = True
-        
-        # If this S--C link is not peptide-like, we count it as a valid thiol group.
-        if not peptide_like:
-            return True, "Molecule contains a free thiol (-SH) group attached to a carbon outside a peptide backbone."
+            # The S–C link appears to be in a peptide-like environment; skip it.
+            continue
+        else:
+            return True, ("Molecule contains a free thiol (-SH) group attached to a carbon "
+                          "outside a peptide backbone.")
     
     return False, "No valid (nonpeptidic) thiol (-SH) group found."
 
