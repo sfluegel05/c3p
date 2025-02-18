@@ -24,12 +24,13 @@ def is_phenylpropanoid(smiles: str):
     # Key aromatic systems common in many phenylpropanoids
     aromatic_system_patterns = [
         Chem.MolFromSmarts("c1ccccc1"),  # Phenyl
-        Chem.MolFromSmarts("c1ccccc1C(=O)"),  # Phenyl with carbonyl
+        Chem.MolFromSmarts("c1ccccc1C=C"),  # Phenyl with propene linkage
         Chem.MolFromSmarts("c1ccc2c(c1)cccc2"),  # Naphthalene-like
-        Chem.MolFromSmarts("c1cc(c2cocc2)ccc1"),  # Coumarin
         Chem.MolFromSmarts("c1c2c(ccc1)c(=O)oc2"),  # Flavonoid core
-        Chem.MolFromSmarts("c1ccc(cc1)-c2cc(c(c(c2)O)O)C=C"),  # Flavanol
+        Chem.MolFromSmarts("c1c2c(ccc1)oc(=O)c2"),  # Coumarin
+        Chem.MolFromSmarts("c1cc(c2cocc2)ccc1"),  # Coumarin
         Chem.MolFromSmarts("c1ccc(cc1)-C=C-C(=O)"),  # Cinnamic acid-like
+        Chem.MolFromSmarts("c1c(oc2ccccc2)c(cc1)"),  # Chromone
     ]
     
     # Check for aromatic systems
@@ -39,11 +40,12 @@ def is_phenylpropanoid(smiles: str):
     # Common functional groups in phenylpropanoids
     functional_group_patterns = [
         Chem.MolFromSmarts("[OX2H]"),    # Hydroxyl group (phenolic OH)
-        Chem.MolFromSmarts("C(=O)C"),    # Carbonyl in ketones or aldehydes
+        Chem.MolFromSmarts("C(=O)C"),    # Carbonyl groups
         Chem.MolFromSmarts("C(=O)OC"),   # Ester linkage
         Chem.MolFromSmarts("Oc1ccccc1"), # Phenolic hydroxyl directly on aromatic rings
         Chem.MolFromSmarts("C=C[OX2]"),  # Enolic or diradical oxygens
         Chem.MolFromSmarts("C(C)=C"),    # Alkenyl (from side propane chain)
+        Chem.MolFromSmarts("OCc1ccc(cc1)"),  # Ether linkage to aromatic
     ]
 
     # Check for functional groups
