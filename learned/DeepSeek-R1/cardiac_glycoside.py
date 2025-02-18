@@ -1,80 +1,34 @@
 """
 Classifies: CHEBI:83970 cardiac glycoside
 """
-"""
-Classifies: CHEBI:37701 cardiac glycoside
-"""
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdMolDescriptors
+</think>
 
-def is_cardiac_glycoside(smiles: str):
-    """
-    Determines if a molecule is a cardiac glycoside based on its SMILES string.
-    Cardiac glycosides contain a steroid nucleus with a lactone ring and sugar residues.
-    
-    Args:
-        smiles (str): SMILES string of the molecule
-        
-    Returns:
-        bool: True if molecule is a cardiac glycoside, False otherwise
-        str: Reason for classification
-    """
-    # Parse SMILES
-    mol = Chem.MolFromSmiles(smiles)
-    if mol is None:
-        return False, "Invalid SMILES"
-    
-    # 1. Check for butenolide lactone ring (O=C1OC=CC1)
-    lactone_pattern = Chem.MolFromSmarts('O=C1OC=CC1')
-    lactone_matches = mol.GetSubstructMatches(lactone_pattern)
-    if not lactone_matches:
-        return False, "No lactone ring detected"
-    
-    # 2. Verify lactone is attached to fused ring system (steroid nucleus)
-    fused_ring_found = False
-    for match in lactone_matches:
-        # Get carbon attached to lactone oxygen (position 1 in SMARTS)
-        c_idx = match[1]
-        c_atom = mol.GetAtomWithIdx(c_idx)
-        # Check if this carbon is in at least two fused rings
-        ring_info = mol.GetRingInfo()
-        rings = ring_info.AtomRings()
-        ring_count = sum(1 for ring in rings if c_idx in ring)
-        if ring_count >= 2:
-            fused_ring_found = True
-            break
-    if not fused_ring_found:
-        return False, "Lactone not attached to fused ring system (steroid)"
-    
-    # 3. Check for sugar residues via glycosidic bonds
-    # Find oxygen atoms in rings (potential sugar moieties)
-    sugar_o_pattern = Chem.MolFromSmarts('[O;R]')
-    sugar_matches = mol.GetSubstructMatches(sugar_o_pattern)
-    if not sugar_matches:
-        return False, "No sugar residues found"
-    
-    # Verify glycosidic bond connects sugar to steroid/lactone core
-    glycosidic_bond = False
-    for o_match in sugar_matches:
-        o_atom = mol.GetAtomWithIdx(o_match[0])
-        # Check neighbors for connection to non-sugar part
-        for neighbor in o_atom.GetNeighbors():
-            # Check if neighbor atom is not in a sugar ring
-            in_sugar = False
-            for ring in rings:
-                if neighbor.GetIdx() in ring:
-                    # Count oxygens in ring to determine sugar likelihood
-                    o_count = sum(1 for a in ring if mol.GetAtomWithIdx(a).GetAtomicNum() == 8)
-                    if o_count >= 3:  # Heuristic for sugar rings
-                        in_sugar = True
-                        break
-            if not in_sugar:
-                glycosidic_bond = True
-                break
-        if glycosidic_bond:
-            break
-    if not glycosidic_bond:
-        return False, "No glycosidic bond linking sugar to core"
-    
-    return True, "Steroid lactone with glycosidic sugar residues"
+Okay, let's figure out why the previous code failed. The main issue was that all the test cases were missing the lactone ring. The error messages said "No lactone ring detected". So, the problem must be with the SMARTS pattern used to detect the lactone.
+
+Looking at the previous code, the lactone pattern was 'O=C1OC=CC1'. That's a five-membered lactone ring (like a butenolide). But maybe some of the examples have a six-membered lactone instead. For instance, some cardiac glycosides have a six-membered lactone ring (cardenolide vs. bufadienolide). The initial SMARTS only checks for five-membered rings.
+
+So, the solution is to expand the lactone detection to include both five and six-membered rings. Let's adjust the SMARTS pattern to match either O=C1OC=CC1 (5-membered) or O=C1OCCCC1 (6-membered). Also, maybe the atoms in the ring could have different connectivity, so using a more general pattern.
+
+Another possibility is that the lactone might be part of a larger ring system, so the SMARTS wasn't matching. Maybe using a more flexible pattern that allows any size lactone ring as long as it has the ester group.
+
+Additionally, checking the fused ring system might have been too strict. The code checked if the lactone is attached to a carbon in two fused rings (steroid nucleus), but maybe the way the rings are counted isn't accurate. Alternatively, using a steroid-like pattern could help.
+
+Also, the sugar detection might have issues. The previous code looked for oxygen in rings and tried to count oxygens, but maybe a better approach is to look for actual sugar moieties using SMARTS patterns for common sugars like glucose, rhamnose, etc.
+
+So, the plan is:
+
+1. Update the lactone detection to include both 5 and 6-membered lactones.
+2. Use a more reliable method to detect the steroid nucleus, perhaps using a SMARTS pattern for the tetracyclic structure.
+3. Improve sugar residue detection by looking for glycosidic bonds and actual sugar units.
+
+Let's adjust the code accordingly. First, modify the lactone pattern. Then, check for the steroid structure. Then, verify the presence of sugar residues via glycosidic bonds. Also, handle cases where the lactone might be part of a fused system differently.
+
+Another thing: in the previous code, the fused ring check might not have worked because the atom's ring count wasn't correctly identifying the steroid. Maybe using a SMARTS pattern for the steroid nucleus would be better.
+
+So, new steps:
+
+1. Check for any lactone ring (5 or 6-membered) with the ester group.
+2. Check for a steroid-like tetracyclic structure.
+3. Check for sugar residues attached via glycosidic bonds.
+
+Let's implement these changes.
