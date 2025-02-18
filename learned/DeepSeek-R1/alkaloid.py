@@ -1,135 +1,61 @@
 """
 Classifies: CHEBI:22315 alkaloid
 """
- - 6,7-didehydro-4,5α-epoxy-3-methoxy-17-methylmorphinan: SMILES: CN1CCC23C4C1CC5=C2C(=C(C=C5)OC)OC3C4
- - 5,7-dihydroxy-6-methyl-2-phenyl-4H-chromen-4-one: SMILES: CC1=C(C(=C2C(=C1O)C(=O)C=C(O2)C3=CC=CC=C3)O)O
- - (3S,5R,8R,9S,10S,13S,14S,17S)-17-[(1R,4S)-4-hydroxy-2,3,3-trimethylcyclohexyl]-10,13-dimethyl-2,3,4,5,6,7,8,9,11,12,14,15,16,17-tetradecahydro-1H-cyclopenta[a]phenanthren-3-ol: SMILES: C[C@H]1CC[C@H]2[C@@H]3[C@H](C[C@H](O)C3)[C@]4([H])CC[C@H](C(=C4)CC2)CC1.CC(C)[C@@H]1CC[C@H](O)C(C)(C)C1
- - 2,3-dihydro-1H-pyrrolo[2,1-a]isoquinolin-5-ium: SMILES: C1CN2C=CC=CC2=C1C1=CC=CC=C1
- - (1R,9S,10R)-7,15-diazatetracyclo[7.7.1.02,7.010,15]heptadeca-2,4,6-triene: SMILES: C1C[C@]23NCC=C4[C@]1([H])CC[C@]1([C@]4([H])C[C@]31[H])N2
- - 2-[(1R,6S,9R)-3-methyl-2,6-diaza-4-azoniatricyclo[4.4.0.03,9]dec-3-en-5-yl]ethanol: SMILES: C[C@H]1N2C[C@H]3CN1C[C@H]23CCO
- - 1-[(1R)-2-[(3-chlorophenyl)methyl]-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]yl]-2-cyclopropylethanone: SMILES: CN1C2=C(C=CC(=C2)OC)C3=C1[C@@H](N(CC34CN(C4)C(=O)CC5CC5)CC6=CC(=CC=C6)Cl)CO
- - 4,5,6,7-tetradehydro-18,19-dihydrocorynantheol: SMILES: C[C@H]1CC[C@H]2C[C@H]3C[C@H](C4=CC=CC=C4N3C)[C@]21C
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-2-[(3-chlorophenyl)methyl]-1-(hydroxymethyl)-7-methoxy-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,3'-azetidine]yl]-2-cyclopropylethanone: SMILES: CCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - 2-(1,3-dihydroxypropan-2-yl)-5,6-dimethoxy-3-methylisoindolin-1-one: SMILES: COC1=C(OC)C2=C(C(=O)N(C)C2C(C)(CO)CO)C=C1
- - (3R,5R,8R,9S,10S,13S,14S,17S)-17-[(1R,4S)-4-hydroxy-2,3,3-trimethylcyclohexyl]-10,13-dimethyl-1,2,3,4,5,6,7,8,9,11,12,14,15,16-tetradecahydrocyclopenta[a]phenanthren-3-ol: SMILES: C[C@H]1CC[C@H]2[C@@H]3[C@H](C[C@H](O)C3)[C@]4([H])CC[C@H](C(=C4)CC2)CC1.CC(C)[C@@H]1CC[C@H](O)C(C)(C)C1
- - 1-[(1R)-2-[(3,5-dimethoxyphenyl)methyl]-7-methoxy-9-methyl-1'-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]yl]-2-cyclopropylethanone: SMILES: CN1C2=C(C=CC(=C2)OC)C3=C1[C@@H](N(CC34CCN(CC4)C(=O)CC5CC5)CC6=CC(=CC(=C6)OC)OC)CO
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: COC1=CC2=C(C=C1)C3=C(N2)[C@@H](N(CC34CN(C4)C(=O)NC5=CC(=CC=C5)F)CO)CO
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-2-[(3-chlorophenyl)methyl]-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]yl]-2-cyclopropylethanone: SMILES: CN1C2=C(C=CC(=C2)OC)C3=C1[C@@H](N(CC34CN(C4)C(=O)CC5CC5)CC6=CC(=CC=C6)Cl)CO
- - (1R)-2-[(3,5-dimethoxyphenyl)methyl]-1-(hydroxymethyl)-7-methoxy-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,3'-azetidine]yl]-2-cyclopropylethanone: SMILES: COC1=CC(=CC(=C1)OC)CC2N3CC4(C2)CN([C@H](C5=C4C6=C(N5)C=C(C=C6)OC)CO)C(=O)CC7CC7
- - 3-O-acetyl-4'-O-demethylpapaveroxine: SMILES: C1=C2CCN([C@](C2=C(C=3OCOC13)O)([C@H](C=4C=CC(=C(C4C=O)OC)OC)OC(C)=O)[H])C
- - 1-[(1R)-2-[(3,5-dimethoxyphenyl)methyl]-1-(hydroxymethyl)-7-methoxy-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,3'-azetidine]yl]-2-cyclopropylethanone: SMILES: COC1=CC(=CC(=C1)OC)CC2N3CC4(C2)CN([C@H](C5=C4C6=C(N5)C=C(C=C6)OC)CO)C(=O)CC7CC7
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: COC1=CC2=C(C=C1)C3=C(N2)[C@@H](N(CC34CCN(CC4)C(=O)NC5=CC(=CC=C5)F)CO)CO
- - (1R)-2-[(3-chlorophenyl)methyl]-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]yl]-2-cyclopropylethanone: SMILES: CN1C2=C(C=CC(=C2)OC)C3=C1[C@@H](N(CC34CCN(CC4)C(=O)CC5CC5)CC6=CC(=CC=C6)Cl)CO
- - (1R)-2-[(3,5-dimethoxyphenyl)methyl]-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]yl]-2-cyclopropylethanone: SMILES: CN1C2=C(C=CC(=C2)OC)C3=C1[C@@H](N(CC34CCN(CC4)C(=O)CC5CC5)CC6=CC(=CC(=C6)OC)OC)CO
- - (1R)-2-[(3-chlorophenyl)methyl]-1-(hydroxymethyl)-7-methoxy-1'-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,4'-piperidine]yl]-2-cyclopropylethanone: SMILES: COC1=CC2=C(C=C1)C3=C(N2)[C@@H](N(CC34CCN(CC4)C(=O)CC5CC5)CC6=CC(=CC=C6)Cl)CO
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-1'-(3-methylphenyl)sulfonyl-2-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-1'-(3-methylphenyl)sulfonyl-2-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-1'-(3-methylphenyl)sulfonyl-2-spiro[3,9-dihydro-1H-pyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'_piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorop-phenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CC3(C2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CCCC(=O)N1CCC2(CC1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,4'-piperidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2CCC3(CC2)CN([C@H](C4=C3C5=C(N4C)C=C(C=C5)OC)CO)C(=O)NC6=CC(=CC=C6)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(1-oxobutyl)-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CCCC(=O)N1CC2(C1)CN([C@H](C3=C2C4=C(N3C)C=C(C=C4)OC)CO)C(=O)NC5=CC(=CC=C5)F
- - (1R)-N-(3-fluorophenyl)-1-(hydroxymethyl)-7-methoxy-9-methyl-1'-(3-methylphenyl)sulfonyl-2-spiro[1,3-dihydropyrido[3,4-b]indole-4,3'-azetidine]carboxamide: SMILES: CC1=CC(=CC=C1)S(=O)(=O)N2
+"""
+Classifies: CHEBI:22333 alkaloid
+"""
+from rdkit import Chem
+from rdkit.Chem import Descriptors
+
+def is_alkaloid(smiles: str):
+    """
+    Determines if a molecule is an alkaloid based on its SMILES string.
+    Alkaloids are nitrogen-containing compounds, typically with heterocyclic structures,
+    excluding amino acids, peptides, proteins, nucleotides, and simple amines.
+
+    Args:
+        smiles (str): SMILES string of the molecule
+
+    Returns:
+        bool: True if molecule is an alkaloid, False otherwise
+        str: Reason for classification
+    """
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return False, "Invalid SMILES"
+
+    # Check for presence of nitrogen atoms
+    nitrogens = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 7]
+    if not nitrogens:
+        return False, "No nitrogen atoms present"
+
+    # Check for amino acids (carboxylic acid + amine group)
+    carboxylic_acid = Chem.MolFromSmarts("[CX3](=O)[OX2H1]")
+    amine = Chem.MolFromSmarts("[NH2]")
+    if mol.HasSubstructMatch(carboxylic_acid) and mol.HasSubstructMatch(amine):
+        return False, "Amino acid detected"
+
+    # Check for nucleotides (simplified: phosphate + sugar-like structure)
+    phosphate = Chem.MolFromSmarts("[PX4]")
+    sugar = Chem.MolFromSmarts("C1OCC(O)C1")  # Rough sugar pattern
+    if mol.HasSubstructMatch(phosphate) and mol.HasSubstructMatch(sugar):
+        return False, "Nucleotide detected"
+
+    # Check if any nitrogen is in a ring (heterocyclic)
+    ring_info = mol.GetRingInfo()
+    for n in nitrogens:
+        if ring_info.NumAtomRings(n.GetIdx()) > 0:
+            return True, "Nitrogen atom in a heterocyclic ring"
+
+    # Check for complex structures with rings and nitrogen (even if not in ring)
+    if ring_info.NumRings() > 0:
+        return True, "Complex structure with rings and nitrogen"
+
+    # Exclude small amines (primary/secondary with low molecular weight)
+    primary_secondary = Chem.MolFromSmarts("[NH2,NH1]")
+    if mol.HasSubstructMatch(primary_secondary):
+        mol_wt = Descriptors.ExactMolWt(mol)
+        if mol_wt < 200:  # Arbitrary threshold for simple amines
+            return False, "Simple low molecular weight amine"
+
+    return True, "Nitrogen-containing compound meeting alkaloid criteria"
