@@ -2,18 +2,18 @@
 Classifies: CHEBI:72588 semisynthetic derivative
 """
 from rdkit import Chem
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import AllChem
 
 def is_semisynthetic_derivative(smiles: str):
     """
-    Determines if a molecule can be classified as a semisynthetic derivative based on broad chemical patterns.
-    Semisynthetic derivatives are typically derived from natural products with additional synthetic modifications.
-
+    Determines if a molecule is likely classified as a semisynthetic derivative.
+    It checks for the presence of natural skeletons with synthetic modifications.
+    
     Args:
         smiles (str): SMILES string of the molecule
 
     Returns:
-        bool: True if evidence suggests a semisynthetic derivative, False if not a confident classification
+        bool: True if molecule is likely semisynthetic, False otherwise
         str: Reason for classification
     """
     
@@ -22,21 +22,25 @@ def is_semisynthetic_derivative(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # Look for presence of patterns commonly introduced in semisynthetic derivatives
-    ester_pattern = Chem.MolFromSmarts("[CX3](=O)[OX2H0]")  # Ester linkage
-    amide_pattern = Chem.MolFromSmarts("[NX3][CX3](=O)[#6]")  # Amide linkage
-    halogen_pattern = Chem.MolFromSmarts("[#6][F,Cl,Br,I]")  # Halogen bonded to carbon
-
-    ester_matches = mol.GetSubstructMatches(ester_pattern)
-    amide_matches = mol.GetSubstructMatches(amide_pattern)
-    halogen_matches = mol.GetSubstructMatches(halogen_pattern)
-
-    # Determine if there are significant matches to provide indirect evidence
-    if len(ester_matches) > 0 or len(amide_matches) > 0 or len(halogen_matches) > 0:
-        reason = "Molecule contains synthetic-like modifications: "
-        reason += f"Ester linkages ({len(ester_matches)}), " if len(ester_matches) > 0 else ""
-        reason += f"Amide linkages ({len(amide_matches)}), " if len(amide_matches) > 0 else ""
-        reason += f"Halogen substitutions ({len(halogen_matches)})" if len(halogen_matches) > 0 else ""
+    # Search for natural product core structures (e.g., steroids, lactones, etc.)
+    steroid_pattern = Chem.MolFromSmarts("[#6]1-[#6]-[#6]2-[#6]-[#6]3-[#6]-[#6]4-[#6]-1-[#6]-[#6]2-[#6]-[#6]3-[#6]-[#6]4")
+    lactone_pattern = Chem.MolFromSmarts("[#6]1:[#6]:[#8]:[#6]-1")
+    
+    # Check for synthetic modifications such as unusual bridging or extra functional groups
+    unusual_fu_group = Chem.MolFromSmarts("[#6][C@](=[O,N])[O,N,c]")  # includes acetals, amide bridge
+    protecting_group_pattern = Chem.MolFromSmarts("[#6][O][C]([#6])[#6]")  # typical protecting groups
+    
+    steroid_matches = mol.HasSubstructMatch(steroid_pattern)
+    lactone_matches = mol.HasSubstructMatch(lactone_pattern)
+    
+    unusual_matches = mol.GetSubstructMatches(unusual_fu_group)
+    protecting_group_matches = mol.GetSubstructMatches(protecting_group_pattern)
+    
+    # Evaluate matches and make a decision
+    if (steroid_matches or lactone_matches) and (len(unusual_matches) > 0 or len(protecting_group_matches) > 0):
+        reason = "Molecule has natural core with synthetic modifications: "
+        reason += f"Unusual functional groups ({len(unusual_matches)}), " if len(unusual_matches) > 0 else ""
+        reason += f"Protecting group patterns ({len(protecting_group_matches)})" if len(protecting_group_matches) > 0 else ""
         return True, reason.strip(", ")
     
-    return False, "No significant synthetic patterns detected, classification not confident"
+    return False, "No characteristic semisynthetic derivative patterns identified"
