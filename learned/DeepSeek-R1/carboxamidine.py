@@ -19,13 +19,34 @@ def is_carboxamidine(smiles: str):
     if mol is None:
         return False, "Invalid SMILES string"
 
-    # SMARTS pattern for carboxamidine group
-    # [CX3;!a]: non-aromatic carbon with three bonds
-    # =[NX2;D2]: double bond to N with two connections (C and R/H)
-    # [NX3;D3]: single bond to N with three connections (C and two R/H)
-    pattern = Chem.MolFromSmarts("[CX3;!a](=[NX2;D2])[NX3;D3]")
+    # Improved SMARTS pattern:
+    # [CX3;!a] = Non-aromatic carbon with three bonds (double + two single)
+    # =[NX2]   = Double bond to nitrogen with two connections (C and R group)
+    # [NX3]    = Single bond to nitrogen with three connections (C and two R groups)
+    pattern = Chem.MolFromSmarts("[CX3;!a](=[NX2])[NX3]")
     
-    if mol.HasSubstructMatch(pattern):
-        return True, "Contains carboxamidine group (RC(=NR)NR2)"
-    else:
-        return False, "No carboxamidine group detected"
+    # Check for matches and verify nitrogen environments
+    matches = mol.GetSubstructMatches(pattern)
+    if matches:
+        # Additional validation to exclude cases where nitrogens are part of aromatic systems
+        for match in matches:
+            c_idx, n1_idx, n2_idx = match  # Assuming pattern order is C-N=N
+            c_atom = mol.GetAtomWithIdx(c_idx)
+            n1_atom = mol.GetAtomWithIdx(n1_idx)
+            n2_atom = mol.GetAtomWithIdx(n2_idx)
+            
+            # Ensure none of the atoms are in aromatic rings
+            if (c_atom.GetIsAromatic() or 
+                n1_atom.GetIsAromatic() or 
+                n2_atom.GetIsAromatic()):
+                continue
+                
+            # Check hybridization states
+            if (c_atom.GetHybridization() != Chem.HybridizationType.SP2 or
+                n1_atom.GetHybridization() != Chem.HybridizationType.SP2 or
+                n2_atom.GetHybridization() != Chem.HybridizationType.SP3):
+                continue
+                
+            return True, "Contains carboxamidine group (RC(=NR)NR2)"
+    
+    return False, "No carboxamidine group detected"
