@@ -9,71 +9,74 @@ from rdkit.Chem import AllChem
 
 def is_long_chain_fatty_acyl_CoA_4__(smiles: str):
     """
-    Determines if a molecule is a long-chain fatty acyl-CoA(4-) based on its SMILES string.
-    A long-chain fatty acyl-CoA(4-) has a thioester-linked long fatty acid chain, CoA structure,
-    and a formal charge of -4 from deprotonated phosphate groups.
-
-    Args:
-        smiles (str): SMILES string of the molecule
-
-    Returns:
-        bool: True if molecule matches the criteria, False otherwise
-        str: Reason for classification
+    Determines if a molecule is a long-chain fatty acyl-CoA(4-) based on SMILES.
+    Criteria:
+    - Contains thioester-linked fatty acid (S-C=O)
+    - Has pantetheine linkage (S-CC-N-C=O)
+    - Contains two phosphate groups with total 4 deprotonated oxygens (charge -4)
+    - Fatty acid chain length ≥12 carbons
     """
     mol = Chem.MolFromSmiles(smiles)
     if not mol:
         return False, "Invalid SMILES"
 
-    # Check for thioester group (S-C(=O))
-    thioester_pattern = Chem.MolFromSmarts("[SX2]C(=O)")
-    if not mol.HasSubstructMatch(thioester_pattern):
-        return False, "No thioester group (S-C=O) found"
+    # Thioester check (S-C=O)
+    thioester = Chem.MolFromSmarts("[SX2]C(=O)")
+    if not mol.HasSubstructMatch(thioester):
+        return False, "Missing thioester group"
 
-    # Check pantetheine linkage (S-CC-N-C(=O))
-    pantetheine_pattern = Chem.MolFromSmarts("[SX2]CCNC(=O)")
-    if not mol.HasSubstructMatch(pantetheine_pattern):
-        return False, "Pantetheine linkage (S-CC-N-C=O) not found"
+    # Pantetheine linkage (S-CC-N-C=O)
+    pantetheine = Chem.MolFromSmarts("[SX2]CCNC(=O)")
+    if not mol.HasSubstructMatch(pantetheine):
+        return False, "Missing pantetheine linkage"
 
-    # Check for two phosphate groups with two deprotonated oxygens each
-    phosphate_pattern = Chem.MolFromSmarts("[PX4]([O-])([O-])(=O)O")
-    phosphate_matches = mol.GetSubstructMatches(phosphate_pattern)
-    if len(phosphate_matches) < 2:
-        return False, f"Found {len(phosphate_matches)} deprotonated phosphate groups, need at least 2"
+    # Phosphate group validation - must have 2 P atoms with total 4 O- charges
+    p_atoms = [atom for atom in mol.GetAtoms() if atom.GetAtomicNum() == 15]
+    if len(p_atoms) != 2:
+        return False, f"Expected 2 P atoms, found {len(p_atoms)}"
+    
+    total_o_neg = 0
+    for p in p_atoms:
+        o_neg = sum(1 for n in p.GetNeighbors() 
+                   if n.GetAtomicNum() == 8 and n.GetFormalCharge() == -1)
+        total_o_neg += o_neg
+    
+    if total_o_neg != 4:
+        return False, f"Found {total_o_neg} deprotonated phosphate oxygens, need 4"
 
-    # Calculate acyl chain length from thioester
-    c_o_match = mol.GetSubstructMatch(thioester_pattern)
-    s_idx = c_o_match[0]
-    c_idx = c_o_match[1]
-
-    # Find the acyl chain starting from the carbonyl carbon (excluding S side)
-    acyl_start = None
-    for neighbor in mol.GetAtomWithIdx(c_idx).GetNeighbors():
-        if neighbor.GetIdx() != s_idx:
-            acyl_start = neighbor
-            break
+    # Acyl chain length check from thioester
+    thio_match = mol.GetSubstructMatch(thioester)
+    s_idx = thio_match[0]
+    c_idx = thio_match[1]
+    
+    # Get first carbon in acyl chain (neighbor of carbonyl not S)
+    acyl_start = next((n for n in mol.GetAtomWithIdx(c_idx).GetNeighbors() 
+                      if n.GetIdx() != s_idx), None)
     if not acyl_start:
-        return False, "Acyl chain not found"
+        return False, "No acyl chain found"
 
-    # Traverse the acyl chain to count carbons
-    visited = {c_idx, s_idx}
+    # Traverse all connected carbons from start
+    visited = set()
     stack = [acyl_start]
-    carbon_count = 0
-
+    chain_carbons = 0
+    
     while stack:
         atom = stack.pop()
+        if atom.GetIdx() in visited:
+            continue
+        visited.add(atom.GetIdx())
+        
         if atom.GetAtomicNum() == 6:  # Carbon atom
-            carbon_count += 1
-            visited.add(atom.GetIdx())
-            for neighbor in atom.GetNeighbors():
-                if neighbor.GetIdx() not in visited:
-                    stack.append(neighbor)
+            chain_carbons += 1
+            # Add non-visited neighbors (exclude backtracking to thioester)
+            stack.extend([n for n in atom.GetNeighbors() 
+                         if n.GetIdx() not in visited and n.GetIdx() != c_idx])
 
-    if carbon_count < 12:
-        return False, f"Acyl chain too short ({carbon_count} carbons), needs ≥12"
+    if chain_carbons < 12:
+        return False, f"Acyl chain too short ({chain_carbons} carbons)"
 
-    # Verify formal charge is -4
-    charge = Chem.GetFormalCharge(mol)
-    if charge != -4:
-        return False, f"Formal charge is {charge}, expected -4"
+    # Verify total charge matches -4
+    if Chem.GetFormalCharge(mol) != -4:
+        return False, "Formal charge not -4"
 
-    return True, "Long-chain fatty acyl-CoA(4-) with all required structural features"
+    return True, "Meets all criteria for long-chain fatty acyl-CoA(4-)"
